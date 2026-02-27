@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
@@ -30,6 +30,16 @@ export default function HoroscopePage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [formattedDate, setFormattedDate] = useState('')
+
+  useEffect(() => {
+    setFormattedDate(new Date().toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }))
+  }, [language])
 
   const handleSubmit = async () => {
     if (!selectedSign) {
@@ -166,7 +176,7 @@ export default function HoroscopePage() {
                   {language === 'tr' ? selectedSignData?.tr : selectedSignData?.en}
                 </h2>
                 <p className="text-deep-purple-300 text-sm">
-                  {new Date().toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {formattedDate}
                 </p>
               </div>
             </div>
