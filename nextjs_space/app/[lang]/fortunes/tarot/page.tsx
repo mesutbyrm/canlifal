@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import { Star, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
+import SocialShare from '@/components/social-share'
 import Image from 'next/image'
 
 export default function TarotFortunePage() {
@@ -183,6 +184,12 @@ export default function TarotFortunePage() {
                   {fortune}
                 </p>
               </div>
+              
+              <SocialShare 
+                title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
+                text={fortune} 
+              />
+              
               <button
                 onClick={() => {
                   setFortune('')

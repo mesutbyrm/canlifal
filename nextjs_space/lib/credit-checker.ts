@@ -4,6 +4,10 @@ export const FORTUNE_COSTS = {
   coffee: 5,
   tarot: 7,
   dream: 5,
+  horoscope: 3,
+  numerology: 4,
+  love: 5,
+  yesno: 2,
 } as const
 
 export type FortuneType = keyof typeof FORTUNE_COSTS

@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import { Moon, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
+import SocialShare from '@/components/social-share'
 import Image from 'next/image'
 
 export default function DreamFortunePage() {
@@ -167,6 +168,12 @@ export default function DreamFortunePage() {
                   {fortune}
                 </p>
               </div>
+              
+              <SocialShare 
+                title={language === 'tr' ? 'Rüya Tabirim' : 'My Dream Interpretation'} 
+                text={fortune} 
+              />
+              
               <button
                 onClick={() => {
                   setFortune('')

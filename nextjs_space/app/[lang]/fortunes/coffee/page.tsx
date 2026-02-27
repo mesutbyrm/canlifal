@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import { Coffee, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
+import SocialShare from '@/components/social-share'
 import Image from 'next/image'
 
 export default function CoffeeFortunePage() {
@@ -167,6 +168,12 @@ export default function CoffeeFortunePage() {
                   {fortune}
                 </p>
               </div>
+              
+              <SocialShare 
+                title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
+                text={fortune} 
+              />
+              
               <button
                 onClick={() => {
                   setFortune('')
