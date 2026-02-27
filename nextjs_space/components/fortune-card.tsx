@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { Sparkles } from 'lucide-react'
 
 interface FortuneCardProps {
-  type: 'coffee' | 'tarot' | 'dream' | 'horoscope' | 'numerology' | 'love' | 'yesno'
+  type: 'coffee' | 'tarot' | 'dream' | 'horoscope' | 'numerology' | 'love' | 'yesno' | 'katina' | 'palm' | 'istikhara' | 'angel' | 'birthchart' | 'aura'
   imageSrc: string
   cost: number
 }
@@ -20,16 +20,28 @@ const FORTUNE_NAMES: Record<string, { en: string; tr: string }> = {
   numerology: { en: 'Numerology', tr: 'Numeroloji' },
   love: { en: 'Love Compatibility', tr: 'Aşk Uyumu' },
   yesno: { en: 'Yes/No Oracle', tr: 'Evet/Hayır Falı' },
+  katina: { en: 'Katina Cards', tr: 'Katina Falı' },
+  palm: { en: 'Palm Reading', tr: 'El Falı' },
+  istikhara: { en: 'Istikhara', tr: 'İstikhare' },
+  angel: { en: 'Angel Cards', tr: 'Melek Kartları' },
+  birthchart: { en: 'Birth Chart', tr: 'Doğum Haritası' },
+  aura: { en: 'Aura Reading', tr: 'Aura Okuma' },
 }
 
 const FORTUNE_DESCRIPTIONS: Record<string, { en: string; tr: string }> = {
-  coffee: { en: 'Discover hidden messages in your coffee cup', tr: 'Fincanınızdaki gizli mesajları keşfedin' },
+  coffee: { en: 'Upload cup photos for AI analysis', tr: 'Fincan fotoğrafı yükleyerek fal baktırın' },
   tarot: { en: 'Let the cards reveal your path', tr: 'Kartlar yolunuzu aydınlatsın' },
   dream: { en: 'Unlock the secrets of your dreams', tr: 'Rüyalarınızın sırlarını çözün' },
   horoscope: { en: 'Your cosmic guidance for today', tr: 'Bugün için kozmik rehberliğiniz' },
   numerology: { en: 'Your numbers reveal your destiny', tr: 'Sayılarınız kaderinizi açığa çıkarır' },
   love: { en: 'Discover your cosmic connection', tr: 'Kozmik bağınızı keşfedin' },
   yesno: { en: 'Quick answers from the universe', tr: 'Evrenden hızlı cevaplar' },
+  katina: { en: '32 Katina cards reveal your future', tr: '32 Katina kartı geleceğinizi açığa çıkarır' },
+  palm: { en: 'Upload palm photo for destiny reading', tr: 'El fotoğrafı yükleyerek kaderinizi okuyun' },
+  istikhara: { en: 'Spiritual guidance and inner peace', tr: 'Manevi rehberlik ve iç huzur' },
+  angel: { en: 'Receive divine angelic messages', tr: 'İlahi melek mesajları alın' },
+  birthchart: { en: 'Complete astrological analysis', tr: 'Detaylı astrolojik analiz' },
+  aura: { en: 'Discover your energy field colors', tr: 'Enerji alanınızın renklerini keşfedin' },
 }
 
 export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) {
