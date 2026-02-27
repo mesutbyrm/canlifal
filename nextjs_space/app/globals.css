@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 264 91% 10%;
+    --foreground: 48 90% 80%;
+    --card: 264 71% 15%;
+    --card-foreground: 48 90% 80%;
+    --popover: 264 71% 15%;
+    --popover-foreground: 48 90% 80%;
+    --primary: 48 100% 65%;
+    --primary-foreground: 264 91% 10%;
+    --secondary: 264 71% 20%;
+    --secondary-foreground: 48 90% 80%;
+    --muted: 264 51% 20%;
+    --muted-foreground: 48 60% 60%;
+    --accent: 264 71% 25%;
+    --accent-foreground: 48 90% 80%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 264 31% 30%;
+    --input: 264 31% 30%;
+    --ring: 48 100% 65%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-[#0a0118] text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+@layer utilities {
+  .text-gold {
+    @apply text-gold-600;
+  }
+  .text-mystical {
+    @apply text-deep-purple-300;
+  }
+  .bg-mystical {
+    @apply bg-deep-purple-975;
+  }
+  .bg-mystical-card {
+    @apply bg-deep-purple-950/50 backdrop-blur-sm;
+  }
+  .border-mystical {
+    @apply border-deep-purple-800/50;
+  }
+  .mystical-shadow {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  }
+  .gold-glow {
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a0b2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffd700;
+}
+
+/* Suppress hydration warnings */
+[data-hydration-error] {
+  display: none !important;
+}

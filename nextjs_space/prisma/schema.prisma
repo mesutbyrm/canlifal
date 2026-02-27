@@ -1,0 +1,92 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/fortune_telling_platform/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String
+  preferredLanguage String    @default("en")
+  credits           Int       @default(10)
+  role              String    @default("user")
+  createdAt         DateTime  @default(now())
+  fortunes          Fortune[]
+  accounts          Account[]
+  sessions          Session[]
+
+  @@map("users")
+}
+
+model Fortune {
+  id           String   @id @default(cuid())
+  userId       String
+  fortuneType  String
+  inputData    String
+  aiResponse   String
+  language     String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fortuneType])
+  @@index([createdAt])
+  @@map("fortunes")
+}
+
+model Translation {
+  id               String @id @default(cuid())
+  languageCode     String
+  translationKey   String
+  translationValue String
+
+  @@unique([languageCode, translationKey])
+  @@index([languageCode])
+  @@map("translations")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
