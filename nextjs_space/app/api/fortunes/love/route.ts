@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { checkAndDeductCredits } from '@/lib/credit-checker'
+import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +77,9 @@ export async function POST(request: Request) {
                       language: language || 'en',
                     },
                   })
+                  // Send fortune summary email (non-blocking)
+                  sendFortuneSummaryEmail(session.user.id, 'love', fullResponse, language || 'en')
+                    .catch(err => console.error('Fortune email error:', err))
                   continue
                 }
                 try {

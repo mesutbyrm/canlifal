@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
+import { sendNotificationEmail, getWelcomeEmailHtml, getNewUserSignupEmailHtml } from '@/lib/email-service'
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +41,23 @@ export async function POST(request: Request) {
         role: 'user',
       },
     })
+
+    // Send welcome email to user (non-blocking)
+    const userLanguage = preferredLanguage || 'en'
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_WELCOME_EMAIL || '',
+      recipientEmail: email,
+      subject: userLanguage === 'tr' ? '✨ Falcı\'ya Hoş Geldiniz!' : '✨ Welcome to Falcı!',
+      htmlBody: getWelcomeEmailHtml(name, userLanguage),
+    }).catch(err => console.error('Welcome email error:', err))
+
+    // Send notification to admin (non-blocking)
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_NEW_USER_SIGNUP || '',
+      recipientEmail: 'mesutbyrm1@gmail.com',
+      subject: `🎉 Yeni Kullanıcı: ${name}`,
+      htmlBody: getNewUserSignupEmailHtml(name, email),
+    }).catch(err => console.error('Admin notification error:', err))
 
     return NextResponse.json(
       {

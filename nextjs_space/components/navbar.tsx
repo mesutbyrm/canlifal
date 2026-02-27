@@ -83,6 +83,14 @@ export default function Navbar() {
               </>
             )}
             
+            {/* Contact Link */}
+            <Link
+              href={`/${language}/contact`}
+              className="text-deep-purple-200 hover:text-gold-400 transition-colors"
+            >
+              {language === 'tr' ? 'İletişim' : 'Contact'}
+            </Link>
+            
             {/* Language Switcher */}
             <button
               onClick={toggleLanguage}
