@@ -368,6 +368,135 @@ export default function ChatRoomPage() {
 
         {/* Main Content */}
         <div className="flex-1 flex gap-4 overflow-hidden">
+          {/* Active Users Sidebar - Left Side */}
+          <div className="hidden md:flex md:flex-col w-72 bg-[#1a0b2e]/50 rounded-xl border border-gold-500/20 p-4 overflow-hidden">
+            <h3 className="text-gold-300 font-semibold text-lg mb-4 flex items-center gap-2">
+              <Users className="w-6 h-6" />
+              {t('chat.active_users')} ({activeUsers.length})
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {activeUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-purple-800/30 transition-colors ${selectedUser?.id === user.id ? 'bg-purple-800/40 border border-gold-500/30' : ''}`}
+                  onClick={() => myPermissions && user.id !== session?.user?.id ? setSelectedUser(user) : null}
+                >
+                  <div className="w-3 h-3 bg-green-400 rounded-full flex-shrink-0 shadow-lg shadow-green-400/50" />
+                  {user.chatRole && (
+                    <span className={`${ROLE_COLORS[user.chatRole]} flex items-center gap-1 flex-shrink-0`}>
+                      <span className="w-5 h-5">{ROLE_ICONS[user.chatRole]}</span>
+                      <span className="font-bold text-base">{user.roleSymbol}</span>
+                    </span>
+                  )}
+                  <span className={`truncate text-base font-medium ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
+                    {user.name}
+                  </span>
+                  {user.isAdmin && !user.chatRole && (
+                    <span className="ml-auto text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded">
+                      {language === 'tr' ? 'Site Admin' : 'Site Admin'}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {activeUsers.length === 0 && (
+                <p className="text-purple-400/50 text-base">
+                  {language === 'tr' ? 'Kimse yok' : 'No one here'}
+                </p>
+              )}
+            </div>
+
+            {/* Moderation Panel */}
+            {selectedUser && myPermissions && selectedUser.id !== session?.user?.id && (
+              <div className="mt-4 pt-4 border-t border-gold-500/20">
+                <h4 className="text-gold-300 text-base font-medium mb-3">
+                  {language === 'tr' ? 'Moderasyon:' : 'Moderation:'} {selectedUser.name}
+                </h4>
+                <div className="space-y-2">
+                  {myPermissions.canMuteUsers && (
+                    <button
+                      onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-base"
+                    >
+                      <MicOff className="w-5 h-5" />
+                      {language === 'tr' ? 'Sustur (30dk)' : 'Mute (30min)'}
+                    </button>
+                  )}
+                  {myPermissions.canKickUsers && (
+                    <button
+                      onClick={() => performModAction('kick_user', selectedUser.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 text-base"
+                    >
+                      <UserMinus className="w-5 h-5" />
+                      {language === 'tr' ? 'At' : 'Kick'}
+                    </button>
+                  )}
+                  {myPermissions.canBanUsers && (
+                    <button
+                      onClick={() => performModAction('ban_user', selectedUser.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-base"
+                    >
+                      <Ban className="w-5 h-5" />
+                      {language === 'tr' ? 'Engelle' : 'Ban'}
+                    </button>
+                  )}
+                  
+                  {/* Role Management */}
+                  {(myPermissions.canGiveVoice || myPermissions.canGiveOp || myPermissions.canGiveAdmin) && (
+                    <div className="pt-2 border-t border-gold-500/10">
+                      <p className="text-purple-400/70 text-sm mb-2">{language === 'tr' ? 'Yetki Ver:' : 'Grant Role:'}</p>
+                      {myPermissions.canGiveVoice && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 text-base mb-1"
+                        >
+                          <Mic className="w-5 h-5" /> +Voice
+                        </button>
+                      )}
+                      {myPermissions.canGiveOp && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 text-base mb-1"
+                        >
+                          <Star className="w-5 h-5" /> @Op
+                        </button>
+                      )}
+                      {myPermissions.canGiveAdmin && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-base mb-1"
+                        >
+                          <Shield className="w-5 h-5" /> &Admin
+                        </button>
+                      )}
+                      {myPermissions.canGiveFounder && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-base mb-1"
+                        >
+                          <Crown className="w-5 h-5" /> ~Founder
+                        </button>
+                      )}
+                      {selectedUser.chatRole && (
+                        <button
+                          onClick={() => performModAction('remove_role', selectedUser.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 text-base"
+                        >
+                          {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="w-full mt-3 text-purple-400/70 text-base hover:text-purple-300"
+                >
+                  {language === 'tr' ? 'Kapat' : 'Close'}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Messages Area */}
           <div className="flex-1 flex flex-col bg-[#1a0b2e]/50 rounded-xl border border-gold-500/20 overflow-hidden">
             {/* Messages List */}
@@ -375,7 +504,7 @@ export default function ChatRoomPage() {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
                   <Sparkles className="w-12 h-12 mb-4" />
-                  <p>{t('chat.no_messages')}</p>
+                  <p className="text-lg">{t('chat.no_messages')}</p>
                 </div>
               ) : (
                 messages.map((msg) => (
@@ -387,26 +516,26 @@ export default function ChatRoomPage() {
                   >
                     <div className={`max-w-[70%] ${msg.user.id === session?.user?.id 
                       ? 'bg-gold-500/20 border-gold-500/30' 
-                      : 'bg-purple-800/30 border-purple-500/30'} border rounded-xl p-3`}
+                      : 'bg-purple-800/30 border-purple-500/30'} border rounded-xl p-4`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-2">
                         {msg.user.chatRole && (
                           <span className={`${ROLE_COLORS[msg.user.chatRole] || 'text-gray-400'} flex items-center gap-1`}>
-                            {ROLE_ICONS[msg.user.chatRole]}
-                            <span className="font-bold">{msg.user.roleSymbol}</span>
+                            <span className="w-4 h-4">{ROLE_ICONS[msg.user.chatRole]}</span>
+                            <span className="font-bold text-base">{msg.user.roleSymbol}</span>
                           </span>
                         )}
-                        <span className={`text-sm font-medium ${msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : msg.user.id === session?.user?.id 
+                        <span className={`text-base font-semibold ${msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : msg.user.id === session?.user?.id 
                           ? 'text-gold-300' 
                           : 'text-purple-300'}`}
                         >
                           {msg.user.name}
                         </span>
-                        <span className="text-xs text-purple-400/50">
+                        <span className="text-sm text-purple-400/50">
                           {formatTime(msg.createdAt)}
                         </span>
                       </div>
-                      <p className="text-purple-100">{msg.content}</p>
+                      <p className="text-purple-100 text-base leading-relaxed">{msg.content}</p>
                     </div>
                   </motion.div>
                 ))
@@ -416,7 +545,7 @@ export default function ChatRoomPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 text-red-300 text-sm">
+              <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 text-red-300 text-base">
                 {error}
               </div>
             )}
@@ -431,12 +560,12 @@ export default function ChatRoomPage() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder={t('chat.placeholder')}
                     maxLength={500}
-                    className="flex-1 bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 transition-colors"
+                    className="flex-1 bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-base text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 transition-colors"
                   />
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || sending}
-                    className="px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-medium rounded-lg hover:from-gold-400 hover:to-gold-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                    className="px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-semibold text-base rounded-lg hover:from-gold-400 hover:to-gold-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                   >
                     <Send className="w-5 h-5" />
                     <span className="hidden sm:inline">{t('chat.send')}</span>
@@ -447,135 +576,11 @@ export default function ChatRoomPage() {
               <div className="p-4 border-t border-gold-500/20 text-center">
                 <Link
                   href={`/${language}/login`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-medium rounded-lg hover:from-gold-400 hover:to-gold-500 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-semibold text-base rounded-lg hover:from-gold-400 hover:to-gold-500 transition-all"
                 >
                   <LogIn className="w-5 h-5" />
                   {t('chat.login_required')}
                 </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Active Users Sidebar - Desktop Only */}
-          <div className="hidden lg:block w-64 bg-[#1a0b2e]/50 rounded-xl border border-gold-500/20 p-4">
-            <h3 className="text-gold-300 font-medium mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              {t('chat.active_users')}
-            </h3>
-            <div className="space-y-2">
-              {activeUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-purple-800/30 transition-colors ${selectedUser?.id === user.id ? 'bg-purple-800/30' : ''}`}
-                  onClick={() => myPermissions && user.id !== session?.user?.id ? setSelectedUser(user) : null}
-                >
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  {user.chatRole && (
-                    <span className={`${ROLE_COLORS[user.chatRole]} flex items-center`}>
-                      {ROLE_ICONS[user.chatRole]}
-                      <span className="font-bold ml-0.5">{user.roleSymbol}</span>
-                    </span>
-                  )}
-                  <span className={`truncate ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
-                    {user.name}
-                  </span>
-                </div>
-              ))}
-              {activeUsers.length === 0 && (
-                <p className="text-purple-400/50 text-sm">
-                  {language === 'tr' ? 'Kimse yok' : 'No one here'}
-                </p>
-              )}
-            </div>
-
-            {/* Moderation Panel */}
-            {selectedUser && myPermissions && selectedUser.id !== session?.user?.id && (
-              <div className="mt-4 pt-4 border-t border-gold-500/20">
-                <h4 className="text-gold-300 text-sm mb-2">
-                  {language === 'tr' ? 'Moderasyon:' : 'Moderation:'} {selectedUser.name}
-                </h4>
-                <div className="space-y-2">
-                  {myPermissions.canMuteUsers && (
-                    <button
-                      onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-sm"
-                    >
-                      <MicOff className="w-4 h-4" />
-                      {language === 'tr' ? 'Sustur (30dk)' : 'Mute (30min)'}
-                    </button>
-                  )}
-                  {myPermissions.canKickUsers && (
-                    <button
-                      onClick={() => performModAction('kick_user', selectedUser.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 text-sm"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                      {language === 'tr' ? 'At' : 'Kick'}
-                    </button>
-                  )}
-                  {myPermissions.canBanUsers && (
-                    <button
-                      onClick={() => performModAction('ban_user', selectedUser.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-sm"
-                    >
-                      <Ban className="w-4 h-4" />
-                      {language === 'tr' ? 'Engelle' : 'Ban'}
-                    </button>
-                  )}
-                  
-                  {/* Role Management */}
-                  {(myPermissions.canGiveVoice || myPermissions.canGiveOp || myPermissions.canGiveAdmin) && (
-                    <div className="pt-2 border-t border-gold-500/10">
-                      <p className="text-purple-400/70 text-xs mb-2">{language === 'tr' ? 'Yetki Ver:' : 'Grant Role:'}</p>
-                      {myPermissions.canGiveVoice && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
-                          className="w-full flex items-center gap-2 px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 text-sm mb-1"
-                        >
-                          <Mic className="w-4 h-4" /> +Voice
-                        </button>
-                      )}
-                      {myPermissions.canGiveOp && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
-                          className="w-full flex items-center gap-2 px-3 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 text-sm mb-1"
-                        >
-                          <Star className="w-4 h-4" /> @Op
-                        </button>
-                      )}
-                      {myPermissions.canGiveAdmin && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
-                          className="w-full flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-sm mb-1"
-                        >
-                          <Shield className="w-4 h-4" /> &Admin
-                        </button>
-                      )}
-                      {myPermissions.canGiveFounder && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
-                          className="w-full flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-sm mb-1"
-                        >
-                          <Crown className="w-4 h-4" /> ~Founder
-                        </button>
-                      )}
-                      {selectedUser.chatRole && (
-                        <button
-                          onClick={() => performModAction('remove_role', selectedUser.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 text-sm"
-                        >
-                          {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="w-full mt-2 text-purple-400/70 text-sm hover:text-purple-300"
-                >
-                  {language === 'tr' ? 'Kapat' : 'Close'}
-                </button>
               </div>
             )}
           </div>
