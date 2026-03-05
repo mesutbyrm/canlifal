@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2 } from 'lucide-react'
+import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { format } from 'date-fns'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Dialog from '@radix-ui/react-dialog'
 
 interface User {
   id: string
@@ -184,22 +186,53 @@ export default function AdminPage() {
           </h1>
         </motion.div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-4 mb-8">
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'users' ? 'bg-gold-600 text-black' : 'bg-deep-purple-800 text-deep-purple-200 hover:bg-deep-purple-700'}`}
-          >
-            <Users className="w-5 h-5 inline mr-2" />
-            {language === 'tr' ? 'Kullanıcılar' : 'Users'}
-          </button>
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'chat' ? 'bg-gold-600 text-black' : 'bg-deep-purple-800 text-deep-purple-200 hover:bg-deep-purple-700'}`}
-          >
-            <MessageCircle className="w-5 h-5 inline mr-2" />
-            {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
-          </button>
+        {/* Tab Navigation with Dropdown */}
+        <div className="flex gap-4 mb-8 items-center">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors">
+                {activeTab === 'users' ? (
+                  <>
+                    <Users className="w-5 h-5" />
+                    {language === 'tr' ? 'Kullanıcılar' : 'Users'}
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-5 h-5" />
+                    {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                  </>
+                )}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content 
+                className="min-w-[200px] bg-deep-purple-900 border border-deep-purple-700 rounded-lg shadow-xl p-1 z-50"
+                sideOffset={5}
+              >
+                <DropdownMenu.Item 
+                  onClick={() => setActiveTab('users')}
+                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'users' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
+                >
+                  <Users className="w-5 h-5" />
+                  {language === 'tr' ? 'Kullanıcılar' : 'Users'}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item 
+                  onClick={() => setActiveTab('chat')}
+                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'chat' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+          
+          <div className="flex-1" />
+          
+          <p className="text-deep-purple-400 text-sm">
+            FALCI {language === 'tr' ? 'Yönetim Paneli' : 'Admin Panel'}
+          </p>
         </div>
 
         {isLoading ? (
@@ -273,7 +306,7 @@ export default function AdminPage() {
                     <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{t('nav.credits')}</th>
                     <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'Fal Sayısı' : 'Fortunes'}</th>
                     <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'Kayıt' : 'Joined'}</th>
-                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'Açıklar' : 'Actions'}</th>
+                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'İşlemler' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -292,13 +325,40 @@ export default function AdminPage() {
                         {format(new Date(user?.createdAt), 'MMM dd')}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => setSelectedUser(user)}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-gold-600/20 text-gold-400 rounded hover:bg-gold-600/30 transition-colors text-sm"
-                        >
-                          <Plus className="w-4 h-4" />
-                          {language === 'tr' ? 'Kredi Ekle' : 'Add Credits'}
-                        </button>
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <button className="p-2 hover:bg-deep-purple-800 rounded-lg transition-colors">
+                              <MoreVertical className="w-5 h-5 text-deep-purple-300" />
+                            </button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content 
+                              className="min-w-[180px] bg-deep-purple-900 border border-deep-purple-700 rounded-lg shadow-xl p-1 z-50"
+                              sideOffset={5}
+                            >
+                              <DropdownMenu.Item 
+                                onClick={() => setSelectedUser(user)}
+                                className="flex items-center gap-2 px-3 py-2 text-gold-400 hover:bg-deep-purple-800 rounded cursor-pointer outline-none"
+                              >
+                                <Plus className="w-4 h-4" />
+                                {language === 'tr' ? 'Kredi Ekle' : 'Add Credits'}
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item 
+                                className="flex items-center gap-2 px-3 py-2 text-deep-purple-200 hover:bg-deep-purple-800 rounded cursor-pointer outline-none"
+                              >
+                                <Settings className="w-4 h-4" />
+                                {language === 'tr' ? 'Düzenle' : 'Edit'}
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
+                              <DropdownMenu.Item 
+                                className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-900/30 rounded cursor-pointer outline-none"
+                              >
+                                <Ban className="w-4 h-4" />
+                                {language === 'tr' ? 'Engelle' : 'Ban'}
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
                       </td>
                     </tr>
                   ))}
@@ -500,22 +560,18 @@ export default function AdminPage() {
         )}
 
         {/* Add Credits Modal */}
-        {selectedUser && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onClick={() => setSelectedUser(null)}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-mystical-card border border-mystical rounded-lg p-8 max-w-md w-full mystical-shadow"
-            >
-              <h3 className="font-serif text-2xl text-gold-400 mb-6">
+        <Dialog.Root open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-deep-purple-950 border border-deep-purple-700 rounded-lg p-8 max-w-md w-full z-50 shadow-2xl">
+              <Dialog.Title className="font-serif text-2xl text-gold-400 mb-6 flex items-center justify-between">
                 {t('admin.add_credits')}
-              </h3>
+                <Dialog.Close asChild>
+                  <button className="p-1 hover:bg-deep-purple-800 rounded-lg transition-colors">
+                    <X className="w-5 h-5 text-deep-purple-400" />
+                  </button>
+                </Dialog.Close>
+              </Dialog.Title>
 
               <div className="space-y-4 mb-6">
                 <div>
@@ -542,22 +598,21 @@ export default function AdminPage() {
               </div>
 
               <div className="flex gap-3">
+                <Dialog.Close asChild>
+                  <button className="flex-1 py-3 bg-deep-purple-800 text-deep-purple-200 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium">
+                    {t('form.cancel')}
+                  </button>
+                </Dialog.Close>
                 <button
-                  onClick={() => setSelectedUser(null)}
-                  className="flex-1 py-3 bg-deep-purple-800 text-deep-purple-200 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium"
-                >
-                  {t('form.cancel')}
-                </button>
-                <button
-                  onClick={() => addCredits(selectedUser?.id, creditAmount)}
+                  onClick={() => addCredits(selectedUser?.id ?? '', creditAmount)}
                   className="flex-1 py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold mystical-shadow"
                 >
                   {language === 'tr' ? 'Ekle' : 'Add'}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
     </div>
   )

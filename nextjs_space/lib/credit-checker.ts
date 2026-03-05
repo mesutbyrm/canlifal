@@ -15,6 +15,7 @@ export const FORTUNE_COSTS = {
   angel: 5,
   birthchart: 10,
   aura: 6,
+  kursundokme: 6,
 } as const
 
 export type FortuneType = keyof typeof FORTUNE_COSTS
@@ -110,6 +111,7 @@ export async function sendFortuneSummaryEmail(
       numerology: { en: 'Numerology', tr: 'Numeroloji' },
       love: { en: 'Love Compatibility', tr: 'Aşk Uyumu' },
       yesno: { en: 'Yes/No Oracle', tr: 'Evet/Hayır Kâhini' },
+      kursundokme: { en: 'Lead Pouring Fortune', tr: 'Kurşun Dökme Falı' },
     }
 
     const fortuneName = language === 'tr' 

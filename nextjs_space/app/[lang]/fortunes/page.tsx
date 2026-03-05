@@ -25,11 +25,11 @@ export default function FortunesPage() {
           </p>
           <p className="text-deep-purple-400 text-sm mt-3 flex items-center justify-center gap-2">
             <Camera className="w-4 h-4" />
-            {language === 'tr' ? 'Görsel yüklemeli fallar: Kahve Falı, El Falı' : 'Image upload fortunes: Coffee Fortune, Palm Reading'}
+            {language === 'tr' ? 'Etkileşimli fallar: Kahve Falı, El Falı, Kurşun Dökme' : 'Interactive fortunes: Coffee Fortune, Palm Reading, Lead Pouring'}
           </p>
         </motion.div>
 
-        {/* Featured - Image Upload Fortunes */}
+        {/* Featured - Interactive Fortunes */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -38,11 +38,12 @@ export default function FortunesPage() {
         >
           <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
-            {language === 'tr' ? 'Görsel Analiz ile Fal' : 'Fortune with Image Analysis'}
+            {language === 'tr' ? 'Etkileşimli & Görsel Fallar' : 'Interactive & Visual Fortunes'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FortuneCard type="coffee" imageSrc="/coffee_fortune_icon.jpg" cost={5} />
             <FortuneCard type="palm" imageSrc="/palm_icon.jpg" cost={8} />
+            <FortuneCard type="kursundokme" imageSrc="/kursun_dokme_icon.jpg" cost={6} />
           </div>
         </motion.div>
 

@@ -11,15 +11,15 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  title: 'Mystical Fortune Telling Platform',
-  description: 'Unlock the mysteries of your future with AI-powered fortune telling',
+  title: 'FALCI - Yapay Zeka Fal Platformu',
+  description: 'Yapay zeka destekli fal platformu ile geleceğinizi keşfedin - Kahve Falı, Tarot, Kurşun Dökme ve daha fazlası',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'Mystical Fortune Telling Platform',
-    description: 'Unlock the mysteries of your future with AI-powered fortune telling',
+    title: 'FALCI - Yapay Zeka Fal Platformu',
+    description: 'Yapay zeka destekli fal platformu ile geleceğinizi keşfedin',
     images: ['/og-image.png'],
   },
 }

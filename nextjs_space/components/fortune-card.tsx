@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { Sparkles } from 'lucide-react'
 
 interface FortuneCardProps {
-  type: 'coffee' | 'tarot' | 'dream' | 'horoscope' | 'numerology' | 'love' | 'yesno' | 'katina' | 'palm' | 'istikhara' | 'angel' | 'birthchart' | 'aura'
+  type: 'coffee' | 'tarot' | 'dream' | 'horoscope' | 'numerology' | 'love' | 'yesno' | 'katina' | 'palm' | 'istikhara' | 'angel' | 'birthchart' | 'aura' | 'kursundokme'
   imageSrc: string
   cost: number
 }
@@ -26,6 +26,7 @@ const FORTUNE_NAMES: Record<string, { en: string; tr: string }> = {
   angel: { en: 'Angel Cards', tr: 'Melek Kartları' },
   birthchart: { en: 'Birth Chart', tr: 'Doğum Haritası' },
   aura: { en: 'Aura Reading', tr: 'Aura Okuma' },
+  kursundokme: { en: 'Lead Pouring', tr: 'Kurşun Dökme' },
 }
 
 const FORTUNE_DESCRIPTIONS: Record<string, { en: string; tr: string }> = {
@@ -42,6 +43,7 @@ const FORTUNE_DESCRIPTIONS: Record<string, { en: string; tr: string }> = {
   angel: { en: 'Receive divine angelic messages', tr: 'İlahi melek mesajları alın' },
   birthchart: { en: 'Complete astrological analysis', tr: 'Detaylı astrolojik analiz' },
   aura: { en: 'Discover your energy field colors', tr: 'Enerji alanınızın renklerini keşfedin' },
+  kursundokme: { en: 'Flip phone to pour mystical lead', tr: 'Telefonu çevirerek kurşun dökün' },
 }
 
 export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) {

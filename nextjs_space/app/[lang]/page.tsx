@@ -36,15 +36,23 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="space-y-4"
           >
-            <div className="flex justify-center mb-6">
+            <div className="flex flex-col items-center mb-6">
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity }}
               >
-                <Sparkles className="w-20 h-20 text-gold-500" />
+                <Sparkles className="w-16 h-16 text-gold-500" />
               </motion.div>
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="font-serif text-6xl md:text-8xl text-gold-400 gold-glow tracking-wider mt-2"
+              >
+                FALCI
+              </motion.span>
             </div>
-            <h1 className="font-serif text-5xl md:text-7xl text-gold-500 gold-glow">
+            <h1 className="font-serif text-3xl md:text-5xl text-gold-500 gold-glow">
               {t('landing.hero.title')}
             </h1>
             <p className="text-xl md:text-2xl text-deep-purple-200">

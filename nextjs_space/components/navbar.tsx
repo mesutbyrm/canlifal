@@ -20,7 +20,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href={`/${language}`} className="flex items-center gap-2 text-gold-600 hover:text-gold-400 transition-colors">
             <Sparkles className="w-6 h-6" />
-            <span className="font-serif text-xl font-bold gold-glow">Mystical</span>
+            <span className="font-serif text-xl font-bold gold-glow">FALCI</span>
           </Link>
 
           {/* Nav Links */}
