@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${cinzel.variable}`}>
+    <html lang="tr" className={`${inter.variable} ${cinzel.variable}`}>
       <head>
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
       </head>

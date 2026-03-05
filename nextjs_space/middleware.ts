@@ -11,9 +11,9 @@ export default withAuth(
     const lang = pathname.split('/')?.[1]
     const isValidLang = lang === 'en' || lang === 'tr'
 
-    // If no valid language in path, redirect to English version
+    // If no valid language in path, redirect to Turkish version
     if (!isValidLang) {
-      return NextResponse.redirect(new URL(`/en${pathname}`, req.url))
+      return NextResponse.redirect(new URL(`/tr${pathname}`, req.url))
     }
 
     // Admin routes

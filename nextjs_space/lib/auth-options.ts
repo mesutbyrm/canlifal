@@ -73,7 +73,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/en/login',
+    signIn: '/tr/login',
   },
   session: {
     strategy: 'jwt',
