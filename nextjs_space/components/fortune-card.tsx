@@ -63,7 +63,7 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
       <Link href={`/${language}/fortunes/${type}`}>
         <div className="relative bg-mystical-card border border-mystical rounded-lg overflow-hidden mystical-shadow hover:shadow-2xl transition-all duration-300">
           {/* Image */}
-          <div className="relative aspect-square bg-deep-purple-900">
+          <div className="relative aspect-[4/3] sm:aspect-square bg-deep-purple-900">
             <Image
               src={imageSrc}
               alt={fortuneName}
@@ -74,19 +74,19 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
           </div>
 
           {/* Content */}
-          <div className="p-5 space-y-2">
-            <h3 className="font-serif text-xl text-gold-500 gold-glow group-hover:text-gold-400 transition-colors">
+          <div className="p-3 sm:p-4 md:p-5 space-y-1.5 sm:space-y-2">
+            <h3 className="font-serif text-base sm:text-lg md:text-xl lg:text-2xl text-gold-500 gold-glow group-hover:text-gold-400 transition-colors">
               {fortuneName}
             </h3>
-            <p className="text-deep-purple-200 text-sm line-clamp-2">
+            <p className="text-deep-purple-200 text-xs sm:text-sm line-clamp-2">
               {fortuneDesc}
             </p>
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-gold-500" />
-                <span className="text-gold-400 font-medium">{cost} {lang === 'tr' ? 'kredi' : 'credits'}</span>
+            <div className="flex items-center justify-between pt-1 sm:pt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-gold-500" />
+                <span className="text-gold-400 font-medium text-xs sm:text-sm md:text-base">{cost} {lang === 'tr' ? 'kredi' : 'credits'}</span>
               </div>
-              <span className="text-deep-purple-300 text-sm group-hover:text-gold-400 transition-colors">
+              <span className="text-deep-purple-300 text-xs sm:text-sm group-hover:text-gold-400 transition-colors">
                 {lang === 'tr' ? 'Keşfet →' : 'Explore →'}
               </span>
             </div>
