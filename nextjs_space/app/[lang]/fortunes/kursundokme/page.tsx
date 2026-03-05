@@ -19,94 +19,120 @@ export default function KursunDokmePage() {
   const [phase, setPhase] = useState<Phase>('ready')
   const [fortune, setFortune] = useState('')
   const [error, setError] = useState('')
-  const [isFlipped, setIsFlipped] = useState(false)
   const [shapes, setShapes] = useState<{x: number, y: number, size: number, type: string}[]>([])
+  const [shouldPour, setShouldPour] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const animationRef = useRef<number>(0)
   const particlesRef = useRef<{x: number, y: number, vx: number, vy: number, size: number, alpha: number}[]>([])
+  const audioContextRef = useRef<AudioContext | null>(null)
 
-  // Device orientation detection
-  useEffect(() => {
-    if (phase !== 'waiting_flip') return
-
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      const beta = event.beta ?? 0 // Front-back tilt
-      const gamma = event.gamma ?? 0 // Left-right tilt
-      
-      // Check if device is flipped upside down (beta > 90 or < -90)
-      if (Math.abs(beta) > 120 || (beta < -60 && beta > -180)) {
-        setIsFlipped(true)
-        startPouring()
-      }
-    }
-
-    // Request permission for iOS 13+
-    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      (DeviceOrientationEvent as any).requestPermission()
-        .then((response: string) => {
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation)
-          }
-        })
-        .catch(console.error)
-    } else {
-      window.addEventListener('deviceorientation', handleOrientation)
-    }
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation)
-    }
-  }, [phase])
-
-  // Create pouring sound
-  const playPouringSound = useCallback(() => {
+  // Hot iron in water sizzling sound - Kızgın demir suya girdiğindeki ses
+  const playSizzlingSound = useCallback(() => {
     try {
-      // Create audio context for water/liquid pouring sound
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      audioContextRef.current = audioContext
       
-      const duration = 3
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-      const filterNode = audioContext.createBiquadFilter()
+      const duration = 4
+      const now = audioContext.currentTime
+
+      // Main sizzling/hissing noise (white noise filtered)
+      const bufferSize = audioContext.sampleRate * duration
+      const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+      const output = noiseBuffer.getChannelData(0)
       
-      // Create bubbling/pouring effect
-      oscillator.type = 'sawtooth'
-      oscillator.frequency.setValueAtTime(100, audioContext.currentTime)
-      oscillator.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + duration)
-      
-      filterNode.type = 'lowpass'
-      filterNode.frequency.setValueAtTime(500, audioContext.currentTime)
-      filterNode.frequency.linearRampToValueAtTime(200, audioContext.currentTime + duration)
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
-      
-      oscillator.connect(filterNode)
-      filterNode.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-      
-      oscillator.start()
-      oscillator.stop(audioContext.currentTime + duration)
-      
-      // Add random bubbling sounds
-      for (let i = 0; i < 10; i++) {
-        setTimeout(() => {
-          const bubbleOsc = audioContext.createOscillator()
-          const bubbleGain = audioContext.createGain()
-          bubbleOsc.type = 'sine'
-          bubbleOsc.frequency.setValueAtTime(200 + Math.random() * 300, audioContext.currentTime)
-          bubbleGain.gain.setValueAtTime(0.1, audioContext.currentTime)
-          bubbleGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2)
-          bubbleOsc.connect(bubbleGain)
-          bubbleGain.connect(audioContext.destination)
-          bubbleOsc.start()
-          bubbleOsc.stop(audioContext.currentTime + 0.2)
-        }, i * 200 + Math.random() * 100)
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1
       }
+      
+      const whiteNoise = audioContext.createBufferSource()
+      whiteNoise.buffer = noiseBuffer
+      
+      // High-pass filter for sizzling character
+      const highPass = audioContext.createBiquadFilter()
+      highPass.type = 'highpass'
+      highPass.frequency.setValueAtTime(3000, now)
+      highPass.frequency.exponentialRampToValueAtTime(1500, now + duration)
+      
+      // Band-pass for steam sound
+      const bandPass = audioContext.createBiquadFilter()
+      bandPass.type = 'bandpass'
+      bandPass.frequency.setValueAtTime(4000, now)
+      bandPass.Q.setValueAtTime(2, now)
+      
+      // Gain envelope - starts loud, fades
+      const noiseGain = audioContext.createGain()
+      noiseGain.gain.setValueAtTime(0.4, now)
+      noiseGain.gain.exponentialRampToValueAtTime(0.15, now + 0.5)
+      noiseGain.gain.exponentialRampToValueAtTime(0.05, now + 2)
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration)
+      
+      whiteNoise.connect(highPass)
+      highPass.connect(bandPass)
+      bandPass.connect(noiseGain)
+      noiseGain.connect(audioContext.destination)
+      
+      whiteNoise.start(now)
+      whiteNoise.stop(now + duration)
+      
+      // Initial splash/impact sound
+      const splashOsc = audioContext.createOscillator()
+      const splashGain = audioContext.createGain()
+      splashOsc.type = 'sine'
+      splashOsc.frequency.setValueAtTime(150, now)
+      splashOsc.frequency.exponentialRampToValueAtTime(50, now + 0.3)
+      splashGain.gain.setValueAtTime(0.5, now)
+      splashGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+      splashOsc.connect(splashGain)
+      splashGain.connect(audioContext.destination)
+      splashOsc.start(now)
+      splashOsc.stop(now + 0.3)
+      
+      // Random bubble/pop sounds (steam bubbles)
+      for (let i = 0; i < 25; i++) {
+        const delay = Math.random() * 2.5
+        const bubbleOsc = audioContext.createOscillator()
+        const bubbleGain = audioContext.createGain()
+        const bubbleFilter = audioContext.createBiquadFilter()
+        
+        bubbleOsc.type = 'sine'
+        bubbleOsc.frequency.setValueAtTime(800 + Math.random() * 1500, now + delay)
+        bubbleOsc.frequency.exponentialRampToValueAtTime(200 + Math.random() * 400, now + delay + 0.08)
+        
+        bubbleFilter.type = 'bandpass'
+        bubbleFilter.frequency.setValueAtTime(1000 + Math.random() * 2000, now + delay)
+        bubbleFilter.Q.setValueAtTime(5, now + delay)
+        
+        bubbleGain.gain.setValueAtTime(0, now + delay)
+        bubbleGain.gain.linearRampToValueAtTime(0.15 + Math.random() * 0.1, now + delay + 0.01)
+        bubbleGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.1 + Math.random() * 0.1)
+        
+        bubbleOsc.connect(bubbleFilter)
+        bubbleFilter.connect(bubbleGain)
+        bubbleGain.connect(audioContext.destination)
+        bubbleOsc.start(now + delay)
+        bubbleOsc.stop(now + delay + 0.2)
+      }
+      
+      // Crackling sounds
+      for (let i = 0; i < 15; i++) {
+        const crackDelay = Math.random() * 3
+        const crackBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate)
+        const crackData = crackBuffer.getChannelData(0)
+        for (let j = 0; j < crackData.length; j++) {
+          crackData[j] = (Math.random() * 2 - 1) * Math.exp(-j / (crackData.length * 0.1))
+        }
+        const crackSource = audioContext.createBufferSource()
+        crackSource.buffer = crackBuffer
+        const crackGain = audioContext.createGain()
+        crackGain.gain.setValueAtTime(0.2 + Math.random() * 0.15, now + crackDelay)
+        crackSource.connect(crackGain)
+        crackGain.connect(audioContext.destination)
+        crackSource.start(now + crackDelay)
+      }
+      
     } catch (e) {
-      console.log('Audio not supported')
+      console.log('Audio not supported:', e)
     }
   }, [])
 
@@ -251,18 +277,55 @@ export default function KursunDokmePage() {
     setShapes(newShapes)
   }
 
-  const startPouring = useCallback(() => {
+  // Handle pouring trigger
+  useEffect(() => {
+    if (shouldPour && phase === 'waiting_flip') {
+      setShouldPour(false)
+      setPhase('pouring')
+      playSizzlingSound()
+      particlesRef.current = []
+      // Start animation in next tick
+      requestAnimationFrame(() => {
+        animatePour()
+      })
+    }
+  }, [shouldPour, phase, playSizzlingSound, animatePour])
+
+  // Device orientation detection
+  useEffect(() => {
     if (phase !== 'waiting_flip') return
-    setPhase('pouring')
-    playPouringSound()
-    particlesRef.current = []
-    animatePour()
-  }, [phase, playPouringSound, animatePour])
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const beta = event.beta ?? 0
+      
+      // Check if device is flipped upside down
+      if (Math.abs(beta) > 120 || (beta < -60 && beta > -180)) {
+        setShouldPour(true)
+      }
+    }
+
+    // Request permission for iOS 13+
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      (DeviceOrientationEvent as any).requestPermission()
+        .then((response: string) => {
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation)
+          }
+        })
+        .catch(console.error)
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation)
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation)
+    }
+  }, [phase])
 
   // For desktop users - click to pour
   const handleManualPour = () => {
     if (phase === 'waiting_flip') {
-      startPouring()
+      setShouldPour(true)
     }
   }
 
@@ -320,7 +383,7 @@ export default function KursunDokmePage() {
     setError('')
     setFortune('')
     setShapes([])
-    setIsFlipped(false)
+    setShouldPour(false)
     setPhase('waiting_flip')
 
     // Draw initial canvas
@@ -349,9 +412,12 @@ export default function KursunDokmePage() {
     setFortune('')
     setError('')
     setShapes([])
-    setIsFlipped(false)
+    setShouldPour(false)
     particlesRef.current = []
     cancelAnimationFrame(animationRef.current)
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {})
+    }
   }
 
   return (
