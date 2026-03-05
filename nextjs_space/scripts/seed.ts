@@ -234,7 +234,82 @@ async function main() {
     { languageCode: 'tr', translationKey: 'auth.register.subtitle', translationValue: 'Hesap oluşturun ve 10 ücretsiz kredi kazanın' },
     { languageCode: 'tr', translationKey: 'auth.no_account', translationValue: 'Hesabınız yok mu?' },
     { languageCode: 'tr', translationKey: 'auth.have_account', translationValue: 'Zaten hesabınız var mı?' },
+
+    // Chat - English
+    { languageCode: 'en', translationKey: 'chat.title', translationValue: 'Social Chat Rooms' },
+    { languageCode: 'en', translationKey: 'chat.subtitle', translationValue: 'Connect with fellow seekers of mystical wisdom' },
+    { languageCode: 'en', translationKey: 'chat.online', translationValue: 'online' },
+    { languageCode: 'en', translationKey: 'chat.send', translationValue: 'Send' },
+    { languageCode: 'en', translationKey: 'chat.placeholder', translationValue: 'Type your message...' },
+    { languageCode: 'en', translationKey: 'chat.join', translationValue: 'Join Room' },
+    { languageCode: 'en', translationKey: 'chat.active_users', translationValue: 'Active Users' },
+    { languageCode: 'en', translationKey: 'chat.no_messages', translationValue: 'No messages yet. Be the first to say hello!' },
+    { languageCode: 'en', translationKey: 'chat.login_required', translationValue: 'Please login to join the chat' },
+
+    // Chat - Turkish
+    { languageCode: 'tr', translationKey: 'chat.title', translationValue: 'Sosyal Sohbet Odaları' },
+    { languageCode: 'tr', translationKey: 'chat.subtitle', translationValue: 'Mistik bilgelik arayanlarla bağlantı kurun' },
+    { languageCode: 'tr', translationKey: 'chat.online', translationValue: 'çevrimiçi' },
+    { languageCode: 'tr', translationKey: 'chat.send', translationValue: 'Gönder' },
+    { languageCode: 'tr', translationKey: 'chat.placeholder', translationValue: 'Mesajınızı yazın...' },
+    { languageCode: 'tr', translationKey: 'chat.join', translationValue: 'Odaya Katıl' },
+    { languageCode: 'tr', translationKey: 'chat.active_users', translationValue: 'Aktif Kullanıcılar' },
+    { languageCode: 'tr', translationKey: 'chat.no_messages', translationValue: 'Henüz mesaj yok. İlk merhaba diyen siz olun!' },
+    { languageCode: 'tr', translationKey: 'chat.login_required', translationValue: 'Sohbete katılmak için lütfen giriş yapın' },
   ]
+
+  // Seed Chat Rooms
+  const chatRooms = [
+    {
+      slug: 'coffee',
+      nameEn: 'Coffee Fortune Room',
+      nameTr: 'Kahve Falı Odası',
+      descEn: 'Discuss coffee readings and share experiences',
+      descTr: 'Kahve falı yorumlarını tartışın ve deneyimlerinizi paylaşın',
+      icon: '☕',
+    },
+    {
+      slug: 'tarot',
+      nameEn: 'Tarot Room',
+      nameTr: 'Tarot Odası',
+      descEn: 'Talk about tarot cards and their meanings',
+      descTr: 'Tarot kartları ve anlamları hakkında konuşun',
+      icon: '🎴',
+    },
+    {
+      slug: 'astrology',
+      nameEn: 'Astrology Room',
+      nameTr: 'Astroloji Odası',
+      descEn: 'Discuss zodiac signs, horoscopes and birth charts',
+      descTr: 'Burçlar, günlük fallar ve doğum haritaları hakkında konuşun',
+      icon: '⭐',
+    },
+    {
+      slug: 'dreams',
+      nameEn: 'Dream Interpretation Room',
+      nameTr: 'Rüya Tabiri Odası',
+      descEn: 'Share your dreams and their interpretations',
+      descTr: 'Rüyalarınızı ve yorumlarınızı paylaşın',
+      icon: '🌙',
+    },
+    {
+      slug: 'general',
+      nameEn: 'General Chat',
+      nameTr: 'Genel Sohbet',
+      descEn: 'Chat about anything mystical and spiritual',
+      descTr: 'Mistik ve ruhani her konuda sohbet edin',
+      icon: '💬',
+    },
+  ]
+
+  for (const room of chatRooms) {
+    await prisma.chatRoom.upsert({
+      where: { slug: room.slug },
+      update: {},
+      create: room,
+    })
+  }
+  console.log(`Seeded ${chatRooms.length} chat rooms`)
 
   // Insert translations
   for (const translation of translations) {

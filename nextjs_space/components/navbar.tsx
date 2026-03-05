@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Sparkles, LogOut, User, Shield, Globe } from 'lucide-react'
+import { Sparkles, LogOut, User, Shield, Globe, MessageCircle } from 'lucide-react'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
@@ -32,6 +32,13 @@ export default function Navbar() {
                   className="text-deep-purple-200 hover:text-gold-400 transition-colors"
                 >
                   {t('nav.fortunes')}
+                </Link>
+                <Link
+                  href={`/${language}/chat`}
+                  className="text-deep-purple-200 hover:text-gold-400 transition-colors flex items-center gap-1"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden md:inline">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
                 </Link>
                 <Link
                   href={`/${language}/dashboard`}

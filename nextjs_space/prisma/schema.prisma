@@ -21,6 +21,8 @@ model User {
   fortunes          Fortune[]
   accounts          Account[]
   sessions          Session[]
+  chatMessages      ChatMessage[]
+  chatPresences     ChatPresence[]
 
   @@map("users")
 }
@@ -89,4 +91,47 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model ChatRoom {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  nameEn      String
+  nameTr      String
+  descEn      String
+  descTr      String
+  icon        String
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  messages    ChatMessage[]
+  presences   ChatPresence[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([userId])
+  @@map("chat_messages")
+}
+
+model ChatPresence {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  lastSeen  DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_presences")
 }
