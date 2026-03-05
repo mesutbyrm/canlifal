@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, ArrowLeft, Users, Sparkles, LogIn } from 'lucide-react'
+import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface Message {
@@ -15,6 +15,8 @@ interface Message {
   user: {
     id: string
     name: string
+    chatRole?: string
+    roleSymbol?: string
   }
 }
 
@@ -22,6 +24,10 @@ interface ActiveUser {
   id: string
   name: string
   lastSeen: string
+  chatRole?: string
+  roleSymbol?: string
+  roleLevel: number
+  isAdmin: boolean
 }
 
 interface ChatRoom {
@@ -32,6 +38,33 @@ interface ChatRoom {
   descEn: string
   descTr: string
   icon: string
+}
+
+interface MyPermissions {
+  role: string
+  canMuteUsers: boolean
+  canKickUsers: boolean
+  canBanUsers: boolean
+  canMuteRoom: boolean
+  canGiveVoice: boolean
+  canGiveOp: boolean
+  canGiveAdmin: boolean
+  canGiveFounder: boolean
+  isGlobalAdmin: boolean
+}
+
+const ROLE_COLORS: Record<string, string> = {
+  founder: 'text-red-400',
+  admin: 'text-orange-400',
+  op: 'text-green-400',
+  voice: 'text-blue-400'
+}
+
+const ROLE_ICONS: Record<string, React.ReactNode> = {
+  founder: <Crown className="w-3 h-3" />,
+  admin: <Shield className="w-3 h-3" />,
+  op: <Star className="w-3 h-3" />,
+  voice: <Mic className="w-3 h-3" />
 }
 
 export default function ChatRoomPage() {
@@ -46,6 +79,10 @@ export default function ChatRoomPage() {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [roomMuted, setRoomMuted] = useState(false)
+  const [myPermissions, setMyPermissions] = useState<MyPermissions | null>(null)
+  const [selectedUser, setSelectedUser] = useState<ActiveUser | null>(null)
+  const [error, setError] = useState<string | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTime = useRef<string | null>(null)
@@ -88,6 +125,10 @@ export default function ChatRoomPage() {
         if (data.length > 0) {
           lastMessageTime.current = data[data.length - 1].createdAt
         }
+        setError(null)
+      } else if (res.status === 403) {
+        const errorData = await res.json()
+        setError(errorData.error)
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -105,8 +146,9 @@ export default function ChatRoomPage() {
         method: 'POST'
       })
       if (res.ok) {
-        const users = await res.json()
-        setActiveUsers(users)
+        const data = await res.json()
+        setActiveUsers(data.users || [])
+        setRoomMuted(data.roomMuted || false)
       }
     } catch (error) {
       console.error('Error updating presence:', error)
@@ -120,13 +162,29 @@ export default function ChatRoomPage() {
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/presence`)
       if (res.ok) {
-        const users = await res.json()
-        setActiveUsers(users)
+        const data = await res.json()
+        setActiveUsers(data.users || [])
+        setRoomMuted(data.roomMuted || false)
       }
     } catch (error) {
       console.error('Error getting active users:', error)
     }
   }, [room])
+
+  // Fetch my permissions
+  const fetchMyPermissions = useCallback(async () => {
+    if (!room || !session?.user) return
+    
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/moderation`)
+      if (res.ok) {
+        const data = await res.json()
+        setMyPermissions(data.myPermissions)
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error)
+    }
+  }, [room, session])
 
   // Initial load
   useEffect(() => {
@@ -139,11 +197,12 @@ export default function ChatRoomPage() {
       fetchMessages(false)
       if (session?.user) {
         updatePresence()
+        fetchMyPermissions()
       } else {
         getActiveUsers()
       }
     }
-  }, [room, fetchMessages, session, updatePresence, getActiveUsers])
+  }, [room, fetchMessages, session, updatePresence, getActiveUsers, fetchMyPermissions])
 
   // Polling for new messages and presence
   useEffect(() => {
@@ -188,6 +247,10 @@ export default function ChatRoomPage() {
         setMessages(prev => [...prev, message])
         lastMessageTime.current = message.createdAt
         setNewMessage('')
+        setError(null)
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error)
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -196,12 +259,58 @@ export default function ChatRoomPage() {
     }
   }
 
+  // Moderation actions
+  const performModAction = async (action: string, targetUserId: string, extra?: Record<string, unknown>) => {
+    if (!room) return
+    
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, targetUserId, ...extra })
+      })
+      
+      if (res.ok) {
+        setSelectedUser(null)
+        // Refresh presence to see changes
+        if (session?.user) {
+          updatePresence()
+        }
+      } else {
+        const errorData = await res.json()
+        alert(errorData.error)
+      }
+    } catch (error) {
+      console.error('Mod action error:', error)
+    }
+  }
+
+  const toggleRoomMute = async () => {
+    if (!room) return
+    await performModAction(roomMuted ? 'unmute_room' : 'mute_room', '')
+    setRoomMuted(!roomMuted)
+  }
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  if (error && error.includes('banned')) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] flex items-center justify-center">
+        <div className="text-center">
+          <Ban className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-2xl text-red-400 mb-2">{language === 'tr' ? 'Bu odadan engellendiniz' : 'You are banned from this room'}</h1>
+          <Link href={`/${language}/chat`} className="text-gold-400 hover:text-gold-300">
+            {language === 'tr' ? 'Sohbet odalarına dön' : 'Back to chat rooms'}
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (loading || !room) {
@@ -230,8 +339,9 @@ export default function ChatRoomPage() {
             </Link>
             <span className="text-3xl">{room.icon}</span>
             <div>
-              <h1 className="text-2xl font-serif text-gold-300">
+              <h1 className="text-2xl font-serif text-gold-300 flex items-center gap-2">
                 {language === 'tr' ? room.nameTr : room.nameEn}
+                {roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
               </h1>
               <p className="text-purple-200/60 text-sm">
                 {language === 'tr' ? room.descTr : room.descEn}
@@ -239,9 +349,20 @@ export default function ChatRoomPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 text-green-400">
-            <Users className="w-5 h-5" />
-            <span>{activeUsers.length} {t('chat.online')}</span>
+          <div className="flex items-center gap-4">
+            {myPermissions?.canMuteRoom && (
+              <button
+                onClick={toggleRoomMute}
+                className={`p-2 rounded-lg ${roomMuted ? 'bg-red-500/20 text-red-400' : 'bg-purple-500/20 text-purple-300'} hover:opacity-80`}
+                title={roomMuted ? 'Unmute room' : 'Mute room'}
+              >
+                {roomMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+            )}
+            <div className="flex items-center gap-2 text-green-400">
+              <Users className="w-5 h-5" />
+              <span>{activeUsers.length} {t('chat.online')}</span>
+            </div>
           </div>
         </motion.div>
 
@@ -269,7 +390,13 @@ export default function ChatRoomPage() {
                       : 'bg-purple-800/30 border-purple-500/30'} border rounded-xl p-3`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-sm font-medium ${msg.user.id === session?.user?.id 
+                        {msg.user.chatRole && (
+                          <span className={`${ROLE_COLORS[msg.user.chatRole] || 'text-gray-400'} flex items-center gap-1`}>
+                            {ROLE_ICONS[msg.user.chatRole]}
+                            <span className="font-bold">{msg.user.roleSymbol}</span>
+                          </span>
+                        )}
+                        <span className={`text-sm font-medium ${msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : msg.user.id === session?.user?.id 
                           ? 'text-gold-300' 
                           : 'text-purple-300'}`}
                         >
@@ -286,6 +413,13 @@ export default function ChatRoomPage() {
               )}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 text-red-300 text-sm">
+                {error}
+              </div>
+            )}
 
             {/* Message Input */}
             {session?.user ? (
@@ -332,10 +466,19 @@ export default function ChatRoomPage() {
               {activeUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-2 text-purple-200"
+                  className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-purple-800/30 transition-colors ${selectedUser?.id === user.id ? 'bg-purple-800/30' : ''}`}
+                  onClick={() => myPermissions && user.id !== session?.user?.id ? setSelectedUser(user) : null}
                 >
                   <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="truncate">{user.name}</span>
+                  {user.chatRole && (
+                    <span className={`${ROLE_COLORS[user.chatRole]} flex items-center`}>
+                      {ROLE_ICONS[user.chatRole]}
+                      <span className="font-bold ml-0.5">{user.roleSymbol}</span>
+                    </span>
+                  )}
+                  <span className={`truncate ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
+                    {user.name}
+                  </span>
                 </div>
               ))}
               {activeUsers.length === 0 && (
@@ -344,6 +487,97 @@ export default function ChatRoomPage() {
                 </p>
               )}
             </div>
+
+            {/* Moderation Panel */}
+            {selectedUser && myPermissions && selectedUser.id !== session?.user?.id && (
+              <div className="mt-4 pt-4 border-t border-gold-500/20">
+                <h4 className="text-gold-300 text-sm mb-2">
+                  {language === 'tr' ? 'Moderasyon:' : 'Moderation:'} {selectedUser.name}
+                </h4>
+                <div className="space-y-2">
+                  {myPermissions.canMuteUsers && (
+                    <button
+                      onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-sm"
+                    >
+                      <MicOff className="w-4 h-4" />
+                      {language === 'tr' ? 'Sustur (30dk)' : 'Mute (30min)'}
+                    </button>
+                  )}
+                  {myPermissions.canKickUsers && (
+                    <button
+                      onClick={() => performModAction('kick_user', selectedUser.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 text-sm"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                      {language === 'tr' ? 'At' : 'Kick'}
+                    </button>
+                  )}
+                  {myPermissions.canBanUsers && (
+                    <button
+                      onClick={() => performModAction('ban_user', selectedUser.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-sm"
+                    >
+                      <Ban className="w-4 h-4" />
+                      {language === 'tr' ? 'Engelle' : 'Ban'}
+                    </button>
+                  )}
+                  
+                  {/* Role Management */}
+                  {(myPermissions.canGiveVoice || myPermissions.canGiveOp || myPermissions.canGiveAdmin) && (
+                    <div className="pt-2 border-t border-gold-500/10">
+                      <p className="text-purple-400/70 text-xs mb-2">{language === 'tr' ? 'Yetki Ver:' : 'Grant Role:'}</p>
+                      {myPermissions.canGiveVoice && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
+                          className="w-full flex items-center gap-2 px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 text-sm mb-1"
+                        >
+                          <Mic className="w-4 h-4" /> +Voice
+                        </button>
+                      )}
+                      {myPermissions.canGiveOp && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
+                          className="w-full flex items-center gap-2 px-3 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 text-sm mb-1"
+                        >
+                          <Star className="w-4 h-4" /> @Op
+                        </button>
+                      )}
+                      {myPermissions.canGiveAdmin && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
+                          className="w-full flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-sm mb-1"
+                        >
+                          <Shield className="w-4 h-4" /> &Admin
+                        </button>
+                      )}
+                      {myPermissions.canGiveFounder && (
+                        <button
+                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
+                          className="w-full flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-sm mb-1"
+                        >
+                          <Crown className="w-4 h-4" /> ~Founder
+                        </button>
+                      )}
+                      {selectedUser.chatRole && (
+                        <button
+                          onClick={() => performModAction('remove_role', selectedUser.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 text-sm"
+                        >
+                          {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="w-full mt-2 text-purple-400/70 text-sm hover:text-purple-300"
+                >
+                  {language === 'tr' ? 'Kapat' : 'Close'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

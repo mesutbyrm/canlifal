@@ -23,6 +23,11 @@ model User {
   sessions          Session[]
   chatMessages      ChatMessage[]
   chatPresences     ChatPresence[]
+  chatRoles         ChatUserRole[]
+  mutedIn           ChatMute[]  @relation("MutedUser")
+  mutedOthers       ChatMute[]  @relation("Muter")
+  bannedIn          ChatBan[]   @relation("BannedUser")
+  bannedOthers      ChatBan[]   @relation("Banner")
 
   @@map("users")
 }
@@ -102,9 +107,13 @@ model ChatRoom {
   descTr      String
   icon        String
   isActive    Boolean       @default(true)
+  isMuted     Boolean       @default(false)
   createdAt   DateTime      @default(now())
   messages    ChatMessage[]
   presences   ChatPresence[]
+  userRoles   ChatUserRole[]
+  mutes       ChatMute[]
+  bans        ChatBan[]
 
   @@map("chat_rooms")
 }
@@ -134,4 +143,56 @@ model ChatPresence {
   @@unique([roomId, userId])
   @@index([roomId])
   @@map("chat_presences")
+}
+
+// Chat user roles: founder (~), admin (&), op (@), voice (+)
+model ChatUserRole {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  role      String   // founder, admin, op, voice
+  grantedBy String?
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_user_roles")
+}
+
+// Muted users in a room
+model ChatMute {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  mutedBy   String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "MutedUser")
+  muter     User      @relation(fields: [mutedBy], references: [id], onDelete: Cascade, name: "Muter")
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_mutes")
+}
+
+// Banned users from a room
+model ChatBan {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  bannedBy  String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "BannedUser")
+  banner    User      @relation(fields: [bannedBy], references: [id], onDelete: Cascade, name: "Banner")
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_bans")
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { canUserSpeak, getUserRole, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,10 +12,19 @@ export async function GET(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') // For polling new messages
     const limit = parseInt(searchParams.get('limit') || '50')
+
+    // Check if user is banned (if logged in)
+    if (session?.user?.id) {
+      const banned = await isUserBanned(roomId, session.user.id)
+      if (banned) {
+        return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
+      }
+    }
 
     const whereClause: {
       roomId: string
@@ -32,6 +42,7 @@ export async function GET(
           select: {
             id: true,
             name: true,
+            role: true
           }
         }
       },
@@ -39,8 +50,33 @@ export async function GET(
       take: after ? 100 : limit
     })
 
+    // Get user roles for all message authors
+    const userIds = [...new Set(messages.map(m => m.userId))]
+    const userRoles = await prisma.chatUserRole.findMany({
+      where: {
+        roomId,
+        userId: { in: userIds }
+      }
+    })
+
+    const roleMap = new Map(userRoles.map(r => [r.userId, r.role]))
+
+    // Add role symbol to messages
+    const messagesWithRoles = messages.map(msg => {
+      const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
+      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+      return {
+        ...msg,
+        user: {
+          ...msg.user,
+          chatRole,
+          roleSymbol
+        }
+      }
+    })
+
     // If not polling (initial load), reverse to show oldest first
-    const orderedMessages = after ? messages : messages.reverse()
+    const orderedMessages = after ? messagesWithRoles : messagesWithRoles.reverse()
 
     return NextResponse.json(orderedMessages)
   } catch (error) {
@@ -70,6 +106,20 @@ export async function POST(
     const { roomId } = await params
     const { content } = await request.json()
 
+    // Check if user can speak
+    const speakCheck = await canUserSpeak(roomId, session.user.id)
+    if (!speakCheck.canSpeak) {
+      const errorMessages: Record<string, string> = {
+        banned: 'You are banned from this room',
+        muted: 'You are muted in this room',
+        room_muted: 'Room is muted. Only users with voice (+) or higher can speak.'
+      }
+      return NextResponse.json(
+        { error: errorMessages[speakCheck.reason || ''] || 'Cannot speak' },
+        { status: 403 }
+      )
+    }
+
     if (!content || content.trim().length === 0) {
       return NextResponse.json(
         { error: 'Message content is required' },
@@ -96,6 +146,10 @@ export async function POST(
       )
     }
 
+    // Get user's role for the response
+    const userRole = await getUserRole(roomId, session.user.id)
+    const roleSymbol = userRole !== 'none' ? ROLE_SYMBOLS[userRole] || '' : ''
+
     // Create message
     const message = await prisma.chatMessage.create({
       data: {
@@ -108,6 +162,7 @@ export async function POST(
           select: {
             id: true,
             name: true,
+            role: true
           }
         }
       }
@@ -128,7 +183,14 @@ export async function POST(
       }
     })
 
-    return NextResponse.json(message)
+    return NextResponse.json({
+      ...message,
+      user: {
+        ...message.user,
+        chatRole: userRole !== 'none' ? userRole : null,
+        roleSymbol
+      }
+    })
   } catch (error) {
     console.error('Error sending message:', error)
     return NextResponse.json(

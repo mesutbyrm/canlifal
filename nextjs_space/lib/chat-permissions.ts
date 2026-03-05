@@ -1,0 +1,152 @@
+import prisma from '@/lib/db'
+
+// Role hierarchy: founder (~) > admin (&) > op (@) > voice (+)
+export const ROLE_HIERARCHY = {
+  founder: 4,  // ~
+  admin: 3,    // &
+  op: 2,       // @
+  voice: 1,    // +
+  none: 0
+} as const
+
+export const ROLE_SYMBOLS: Record<string, string> = {
+  founder: '~',
+  admin: '&',
+  op: '@',
+  voice: '+'
+}
+
+export type ChatRole = keyof typeof ROLE_HIERARCHY
+
+export interface UserPermissions {
+  role: ChatRole
+  canMuteUsers: boolean
+  canKickUsers: boolean
+  canBanUsers: boolean
+  canMuteRoom: boolean
+  canGiveVoice: boolean
+  canGiveOp: boolean
+  canGiveAdmin: boolean
+  canGiveFounder: boolean
+  canSpeakInMutedRoom: boolean
+  isGlobalAdmin: boolean
+}
+
+export async function getUserRole(roomId: string, userId: string): Promise<ChatRole> {
+  // Check if user is global admin (site admin)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true }
+  })
+
+  if (user?.role === 'admin') {
+    return 'founder' // Site admin has founder rights in all rooms
+  }
+
+  const userRole = await prisma.chatUserRole.findUnique({
+    where: {
+      roomId_userId: { roomId, userId }
+    }
+  })
+
+  return (userRole?.role as ChatRole) || 'none'
+}
+
+export async function getUserPermissions(roomId: string, userId: string): Promise<UserPermissions> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true }
+  })
+
+  const isGlobalAdmin = user?.role === 'admin'
+  const role = await getUserRole(roomId, userId)
+  const roleLevel = ROLE_HIERARCHY[role]
+
+  return {
+    role,
+    isGlobalAdmin,
+    // @ and above can mute users
+    canMuteUsers: roleLevel >= ROLE_HIERARCHY.op,
+    // ~ can kick users
+    canKickUsers: roleLevel >= ROLE_HIERARCHY.founder,
+    // & and above can ban users
+    canBanUsers: roleLevel >= ROLE_HIERARCHY.admin,
+    // & and above can mute the room
+    canMuteRoom: roleLevel >= ROLE_HIERARCHY.admin,
+    // ~ can give voice when room is muted
+    canGiveVoice: roleLevel >= ROLE_HIERARCHY.founder,
+    // ~ can give op
+    canGiveOp: roleLevel >= ROLE_HIERARCHY.founder,
+    // ~ can give admin
+    canGiveAdmin: roleLevel >= ROLE_HIERARCHY.founder,
+    // Only global admin can give founder
+    canGiveFounder: isGlobalAdmin,
+    // + and above can speak in muted room
+    canSpeakInMutedRoom: roleLevel >= ROLE_HIERARCHY.voice
+  }
+}
+
+export async function canUserSpeak(roomId: string, userId: string): Promise<{ canSpeak: boolean; reason?: string }> {
+  // Check if user is banned
+  const ban = await prisma.chatBan.findUnique({
+    where: {
+      roomId_userId: { roomId, userId }
+    }
+  })
+
+  if (ban) {
+    if (!ban.expiresAt || ban.expiresAt > new Date()) {
+      return { canSpeak: false, reason: 'banned' }
+    }
+    // Ban expired, remove it
+    await prisma.chatBan.delete({ where: { id: ban.id } })
+  }
+
+  // Check if user is muted
+  const mute = await prisma.chatMute.findUnique({
+    where: {
+      roomId_userId: { roomId, userId }
+    }
+  })
+
+  if (mute) {
+    if (!mute.expiresAt || mute.expiresAt > new Date()) {
+      return { canSpeak: false, reason: 'muted' }
+    }
+    // Mute expired, remove it
+    await prisma.chatMute.delete({ where: { id: mute.id } })
+  }
+
+  // Check if room is muted
+  const room = await prisma.chatRoom.findUnique({
+    where: { id: roomId },
+    select: { isMuted: true }
+  })
+
+  if (room?.isMuted) {
+    const permissions = await getUserPermissions(roomId, userId)
+    if (!permissions.canSpeakInMutedRoom) {
+      return { canSpeak: false, reason: 'room_muted' }
+    }
+  }
+
+  return { canSpeak: true }
+}
+
+export async function isUserBanned(roomId: string, userId: string): Promise<boolean> {
+  const ban = await prisma.chatBan.findUnique({
+    where: {
+      roomId_userId: { roomId, userId }
+    }
+  })
+
+  if (ban) {
+    if (!ban.expiresAt || ban.expiresAt > new Date()) {
+      return true
+    }
+    // Ban expired, remove it
+    await prisma.chatBan.delete({ where: { id: ban.id } })
+  }
+
+  return false
+}
