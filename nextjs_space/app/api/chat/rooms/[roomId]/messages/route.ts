@@ -50,25 +50,40 @@ export async function GET(
       take: after ? 100 : limit
     })
 
-    // Get user roles for all message authors
+    // Get user roles and nicknames for all message authors
     const userIds = [...new Set(messages.map(m => m.userId))]
-    const userRoles = await prisma.chatUserRole.findMany({
-      where: {
-        roomId,
-        userId: { in: userIds }
-      }
-    })
+    const [userRoles, userPresences] = await Promise.all([
+      prisma.chatUserRole.findMany({
+        where: {
+          roomId,
+          userId: { in: userIds }
+        }
+      }),
+      prisma.chatPresence.findMany({
+        where: {
+          roomId,
+          userId: { in: userIds }
+        },
+        select: {
+          userId: true,
+          nickname: true
+        }
+      })
+    ])
 
     const roleMap = new Map(userRoles.map(r => [r.userId, r.role]))
+    const nicknameMap = new Map(userPresences.map(p => [p.userId, p.nickname]))
 
-    // Add role symbol to messages
+    // Add role symbol and nickname to messages
     const messagesWithRoles = messages.map(msg => {
       const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
       const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+      const nickname = nicknameMap.get(msg.userId) || msg.user.name
       return {
         ...msg,
         user: {
           ...msg.user,
+          nickname,
           chatRole,
           roleSymbol
         }
@@ -104,7 +119,7 @@ export async function POST(
     }
 
     const { roomId } = await params
-    const { content } = await request.json()
+    const { content, nickname } = await request.json()
 
     // Check if user can speak
     const speakCheck = await canUserSpeak(roomId, session.user.id)

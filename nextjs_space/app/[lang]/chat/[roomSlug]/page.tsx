@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff } from 'lucide-react'
+import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Edit2 } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface Message {
@@ -15,6 +15,7 @@ interface Message {
   user: {
     id: string
     name: string
+    nickname?: string
     chatRole?: string
     roleSymbol?: string
   }
@@ -23,6 +24,7 @@ interface Message {
 interface ActiveUser {
   id: string
   name: string
+  nickname?: string
   lastSeen: string
   chatRole?: string
   roleSymbol?: string
@@ -84,8 +86,18 @@ export default function ChatRoomPage() {
   const [selectedUser, setSelectedUser] = useState<ActiveUser | null>(null)
   const [error, setError] = useState<string | null>(null)
   
+  // Nickname system
+  const [nickname, setNickname] = useState('')
+  const [showNicknameModal, setShowNicknameModal] = useState(false)
+  const [nicknameInput, setNicknameInput] = useState('')
+  
+  // Mention notifications
+  const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTime = useRef<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const previousMessagesCount = useRef(0)
 
   // Fetch room info
   const fetchRoom = useCallback(async () => {
@@ -137,13 +149,38 @@ export default function ChatRoomPage() {
     }
   }, [room])
 
+  // Load saved nickname from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && session?.user) {
+      const savedNickname = localStorage.getItem(`chat_nickname_${session.user.id}`)
+      if (savedNickname) {
+        setNickname(savedNickname)
+      } else {
+        // Show nickname modal for first time users
+        setShowNicknameModal(true)
+      }
+    }
+  }, [session])
+
+  // Save nickname
+  const saveNickname = () => {
+    if (nicknameInput.trim() && session?.user) {
+      const name = nicknameInput.trim().slice(0, 20)
+      setNickname(name)
+      localStorage.setItem(`chat_nickname_${session.user.id}`, name)
+      setShowNicknameModal(false)
+    }
+  }
+
   // Update presence and get active users
   const updatePresence = useCallback(async () => {
     if (!room || !session?.user) return
     
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/presence`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: nickname || session.user.name })
       })
       if (res.ok) {
         const data = await res.json()
@@ -153,7 +190,7 @@ export default function ChatRoomPage() {
     } catch (error) {
       console.error('Error updating presence:', error)
     }
-  }, [room, session])
+  }, [room, session, nickname])
 
   // Get active users (for non-logged in users)
   const getActiveUsers = useCallback(async () => {
@@ -228,6 +265,43 @@ export default function ChatRoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Check for mentions in new messages
+  useEffect(() => {
+    if (!session?.user || !nickname) return
+    
+    // Only check new messages (not on initial load)
+    if (messages.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
+      const newMsgs = messages.slice(previousMessagesCount.current)
+      const myNickname = nickname.toLowerCase()
+      
+      for (const msg of newMsgs) {
+        // Don't notify for own messages
+        if (msg.user.id === session.user.id) continue
+        
+        // Check if message contains @mention
+        const mentionPattern = new RegExp(`@${myNickname}\\b`, 'i')
+        if (mentionPattern.test(msg.content)) {
+          setMentionNotification({
+            from: msg.user.nickname || msg.user.name,
+            content: msg.content.slice(0, 50) + (msg.content.length > 50 ? '...' : '')
+          })
+          
+          // Auto-hide after 5 seconds
+          setTimeout(() => setMentionNotification(null), 5000)
+          break
+        }
+      }
+    }
+    previousMessagesCount.current = messages.length
+  }, [messages, session, nickname])
+
+  // Add @mention to input when clicking on a user
+  const addMention = (userName: string) => {
+    const mention = `@${userName} `
+    setNewMessage(prev => prev + mention)
+    inputRef.current?.focus()
+  }
+
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -239,7 +313,10 @@ export default function ChatRoomPage() {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newMessage.trim() })
+        body: JSON.stringify({ 
+          content: newMessage.trim(),
+          nickname: nickname || session.user.name
+        })
       })
       
       if (res.ok) {
@@ -321,8 +398,100 @@ export default function ChatRoomPage() {
     )
   }
 
+  // Get display name for user
+  const getDisplayName = (user: {name: string, nickname?: string}) => {
+    return user.nickname || user.name
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118]">
+      {/* Nickname Modal */}
+      <AnimatePresence>
+        {showNicknameModal && session?.user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a0b2e] border border-gold-500/30 rounded-xl p-6 max-w-sm w-full"
+            >
+              <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
+                <Edit2 className="w-5 h-5" />
+                {language === 'tr' ? 'Takma Adınızı Seçin' : 'Choose Your Nickname'}
+              </h3>
+              <p className="text-purple-200/70 text-sm mb-4">
+                {language === 'tr' 
+                  ? 'Bu isim sohbette görünecek' 
+                  : 'This name will be shown in chat'}
+              </p>
+              <input
+                type="text"
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                placeholder={session.user.name || (language === 'tr' ? 'Takma ad...' : 'Nickname...')}
+                maxLength={20}
+                className="w-full bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 mb-4"
+                onKeyDown={(e) => e.key === 'Enter' && saveNickname()}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setNicknameInput(session.user?.name || '')
+                    saveNickname()
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30"
+                >
+                  {language === 'tr' ? 'Varsayılan Kullan' : 'Use Default'}
+                </button>
+                <button
+                  onClick={saveNickname}
+                  disabled={!nicknameInput.trim()}
+                  className="flex-1 px-4 py-2 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mention Notification */}
+      <AnimatePresence>
+        {mentionNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gold-500/20 border border-gold-500/50 rounded-xl px-6 py-4 shadow-xl backdrop-blur-sm max-w-md"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gold-500/30 rounded-full">
+                <Bell className="w-5 h-5 text-gold-400" />
+              </div>
+              <div>
+                <p className="text-gold-300 font-medium">
+                  <span className="text-gold-400">{mentionNotification.from}</span>
+                  {language === 'tr' ? ' senden bahsetti!' : ' mentioned you!'}
+                </p>
+                <p className="text-purple-200/70 text-sm mt-1">{mentionNotification.content}</p>
+              </div>
+              <button
+                onClick={() => setMentionNotification(null)}
+                className="text-purple-400 hover:text-white ml-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-6xl mx-auto h-[calc(100vh-4rem)] flex flex-col p-4">
         {/* Header */}
         <motion.div
@@ -350,6 +519,20 @@ export default function ChatRoomPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Edit nickname button */}
+            {session?.user && nickname && (
+              <button
+                onClick={() => {
+                  setNicknameInput(nickname)
+                  setShowNicknameModal(true)
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 text-sm"
+                title={language === 'tr' ? 'Takma adı değiştir' : 'Change nickname'}
+              >
+                <Edit2 className="w-4 h-4" />
+                <span className="hidden sm:inline">{nickname}</span>
+              </button>
+            )}
             {myPermissions?.canMuteRoom && (
               <button
                 onClick={toggleRoomMute}
@@ -379,7 +562,14 @@ export default function ChatRoomPage() {
                 <div
                   key={user.id}
                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-purple-800/30 transition-colors ${selectedUser?.id === user.id ? 'bg-purple-800/40 border border-gold-500/30' : ''}`}
-                  onClick={() => myPermissions && user.id !== session?.user?.id ? setSelectedUser(user) : null}
+                  onClick={() => {
+                    if (myPermissions && user.id !== session?.user?.id) {
+                      setSelectedUser(user)
+                    } else if (user.id !== session?.user?.id) {
+                      // Non-admin users can click to mention
+                      addMention(getDisplayName(user))
+                    }
+                  }}
                 >
                   <div className="w-3 h-3 bg-green-400 rounded-full flex-shrink-0 shadow-lg shadow-green-400/50" />
                   {user.chatRole && (
@@ -389,7 +579,7 @@ export default function ChatRoomPage() {
                     </span>
                   )}
                   <span className={`truncate text-base font-medium ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
-                    {user.name}
+                    {getDisplayName(user)}
                   </span>
                   {user.isAdmin && !user.chatRole && (
                     <span className="ml-auto text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded">
@@ -507,38 +697,68 @@ export default function ChatRoomPage() {
                   <p className="text-lg">{t('chat.no_messages')}</p>
                 </div>
               ) : (
-                messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${msg.user.id === session?.user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[70%] ${msg.user.id === session?.user?.id 
-                      ? 'bg-gold-500/20 border-gold-500/30' 
-                      : 'bg-purple-800/30 border-purple-500/30'} border rounded-xl p-4`}
+                messages.map((msg) => {
+                  const displayName = getDisplayName(msg.user)
+                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
+                  
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex ${msg.user.id === session?.user?.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        {msg.user.chatRole && (
-                          <span className={`${ROLE_COLORS[msg.user.chatRole] || 'text-gray-400'} flex items-center gap-1`}>
-                            <span className="w-4 h-4">{ROLE_ICONS[msg.user.chatRole]}</span>
-                            <span className="font-bold text-base">{msg.user.roleSymbol}</span>
+                      <div className={`max-w-[70%] ${
+                        isMentioned 
+                          ? 'bg-gold-500/30 border-gold-500/50 ring-2 ring-gold-500/30' 
+                          : msg.user.id === session?.user?.id 
+                            ? 'bg-gold-500/20 border-gold-500/30' 
+                            : 'bg-purple-800/30 border-purple-500/30'
+                      } border rounded-xl p-4`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          {msg.user.chatRole && (
+                            <span className={`${ROLE_COLORS[msg.user.chatRole] || 'text-gray-400'} flex items-center gap-1`}>
+                              <span className="w-4 h-4">{ROLE_ICONS[msg.user.chatRole]}</span>
+                              <span className="font-bold text-base">{msg.user.roleSymbol}</span>
+                            </span>
+                          )}
+                          <button
+                            onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
+                            className={`text-base font-semibold hover:underline cursor-pointer ${
+                              msg.user.chatRole 
+                                ? ROLE_COLORS[msg.user.chatRole] 
+                                : msg.user.id === session?.user?.id 
+                                  ? 'text-gold-300' 
+                                  : 'text-purple-300'
+                            }`}
+                            title={msg.user.id !== session?.user?.id ? (language === 'tr' ? 'Bahsetmek için tıkla' : 'Click to mention') : ''}
+                          >
+                            {displayName}
+                          </button>
+                          <span className="text-sm text-purple-400/50">
+                            {formatTime(msg.createdAt)}
                           </span>
-                        )}
-                        <span className={`text-base font-semibold ${msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : msg.user.id === session?.user?.id 
-                          ? 'text-gold-300' 
-                          : 'text-purple-300'}`}
-                        >
-                          {msg.user.name}
-                        </span>
-                        <span className="text-sm text-purple-400/50">
-                          {formatTime(msg.createdAt)}
-                        </span>
+                          {isMentioned && (
+                            <span className="text-xs bg-gold-500/30 text-gold-300 px-2 py-0.5 rounded flex items-center gap-1">
+                              <AtSign className="w-3 h-3" />
+                              {language === 'tr' ? 'Bahsedildi' : 'Mentioned'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-purple-100 text-base leading-relaxed whitespace-pre-wrap">
+                          {msg.content.split(/(@\w+)/g).map((part, i) => 
+                            part.startsWith('@') ? (
+                              <span key={i} className="text-gold-400 font-medium">{part}</span>
+                            ) : (
+                              <span key={i}>{part}</span>
+                            )
+                          )}
+                        </p>
                       </div>
-                      <p className="text-purple-100 text-base leading-relaxed">{msg.content}</p>
-                    </div>
-                  </motion.div>
-                ))
+                    </motion.div>
+                  )
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -555,6 +775,7 @@ export default function ChatRoomPage() {
               <form onSubmit={handleSendMessage} className="p-4 border-t border-gold-500/20">
                 <div className="flex gap-2">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}

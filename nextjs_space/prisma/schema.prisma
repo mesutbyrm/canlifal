@@ -136,6 +136,7 @@ model ChatPresence {
   id        String   @id @default(cuid())
   roomId    String
   userId    String
+  nickname  String?
   lastSeen  DateTime @default(now())
   room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

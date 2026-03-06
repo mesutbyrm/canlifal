@@ -57,6 +57,7 @@ export async function GET(
       return {
         id: p.user.id,
         name: p.user.name,
+        nickname: p.nickname || p.user.name,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -100,6 +101,15 @@ export async function POST(
     }
 
     const { roomId } = await params
+    
+    // Parse body for nickname
+    let nickname: string | undefined
+    try {
+      const body = await request.json()
+      nickname = body.nickname
+    } catch {
+      // Body might be empty for GET-like requests
+    }
 
     // Check if user is banned
     const banned = await isUserBanned(roomId, session.user.id)
@@ -107,7 +117,7 @@ export async function POST(
       return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
     }
 
-    // Update presence
+    // Update presence with nickname
     await prisma.chatPresence.upsert({
       where: {
         roomId_userId: {
@@ -115,10 +125,14 @@ export async function POST(
           userId: session.user.id
         }
       },
-      update: { lastSeen: new Date() },
+      update: { 
+        lastSeen: new Date(),
+        nickname: nickname || undefined
+      },
       create: {
         roomId,
-        userId: session.user.id
+        userId: session.user.id,
+        nickname: nickname || undefined
       }
     })
 
@@ -165,6 +179,7 @@ export async function POST(
       return {
         id: p.user.id,
         name: p.user.name,
+        nickname: p.nickname || p.user.name,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -173,10 +188,10 @@ export async function POST(
       }
     })
 
-    // Sort by role level (highest first), then alphabetically
+    // Sort by role level (highest first), then alphabetically by nickname
     activeUsers.sort((a, b) => {
       if (b.roleLevel !== a.roleLevel) return b.roleLevel - a.roleLevel
-      return a.name.localeCompare(b.name)
+      return (a.nickname || a.name).localeCompare(b.nickname || b.name)
     })
 
     return NextResponse.json({

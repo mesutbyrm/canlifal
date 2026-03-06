@@ -13,19 +13,29 @@ type Phase = 'ready' | 'waiting_flip' | 'pouring' | 'settling' | 'interpreting' 
 
 export default function KursunDokmePage() {
   const { data: session } = useSession() || {}
-  const { language, t } = useLanguage()
+  const { language } = useLanguage()
   const router = useRouter()
   
   const [phase, setPhase] = useState<Phase>('ready')
   const [fortune, setFortune] = useState('')
   const [error, setError] = useState('')
   const [shapes, setShapes] = useState<{x: number, y: number, size: number, type: string}[]>([])
-  const [shouldPour, setShouldPour] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const particlesRef = useRef<{x: number, y: number, vx: number, vy: number, size: number, alpha: number}[]>([])
   const audioContextRef = useRef<AudioContext | null>(null)
+  const phaseRef = useRef<Phase>('ready')
+  const shapesRef = useRef<{x: number, y: number, size: number, type: string}[]>([])
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
+  
+  useEffect(() => {
+    shapesRef.current = shapes
+  }, [shapes])
 
   // Hot iron in water sizzling sound - Kızgın demir suya girdiğindeki ses
   const playSizzlingSound = useCallback(() => {
@@ -210,9 +220,10 @@ export default function KursunDokmePage() {
       }
     })
 
-    // Generate random shapes when particles settle
-    if (activeParticles < 20 && phase === 'pouring') {
+    // Generate random shapes when particles settle - use ref for phase check
+    if (activeParticles < 20 && phaseRef.current === 'pouring') {
       generateShapes(ctx, width, height)
+      phaseRef.current = 'settling'
       setPhase('settling')
       setTimeout(() => {
         captureAndInterpret()
@@ -220,10 +231,11 @@ export default function KursunDokmePage() {
       return
     }
 
-    if (phase === 'pouring') {
+    // Continue animation if still pouring - use ref for phase check
+    if (phaseRef.current === 'pouring') {
       animationRef.current = requestAnimationFrame(animatePour)
     }
-  }, [phase])
+  }, [])
 
   // Generate random mystical shapes
   const generateShapes = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -274,33 +286,37 @@ export default function KursunDokmePage() {
       ctx.restore()
     }
     
+    shapesRef.current = newShapes
     setShapes(newShapes)
   }
 
-  // Handle pouring trigger
-  useEffect(() => {
-    if (shouldPour && phase === 'waiting_flip') {
-      setShouldPour(false)
-      setPhase('pouring')
-      playSizzlingSound()
-      particlesRef.current = []
-      // Start animation in next tick
-      requestAnimationFrame(() => {
-        animatePour()
-      })
-    }
-  }, [shouldPour, phase, playSizzlingSound, animatePour])
+  // Start pouring animation
+  const startPouring = useCallback(() => {
+    if (phaseRef.current !== 'waiting_flip') return
+    
+    phaseRef.current = 'pouring'
+    setPhase('pouring')
+    playSizzlingSound()
+    particlesRef.current = []
+    
+    // Start animation
+    requestAnimationFrame(animatePour)
+  }, [playSizzlingSound, animatePour])
 
   // Device orientation detection
   useEffect(() => {
     if (phase !== 'waiting_flip') return
 
+    let triggered = false
+    
     const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (triggered) return
       const beta = event.beta ?? 0
       
       // Check if device is flipped upside down
       if (Math.abs(beta) > 120 || (beta < -60 && beta > -180)) {
-        setShouldPour(true)
+        triggered = true
+        startPouring()
       }
     }
 
@@ -320,16 +336,17 @@ export default function KursunDokmePage() {
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation)
     }
-  }, [phase])
+  }, [phase, startPouring])
 
   // For desktop users - click to pour
   const handleManualPour = () => {
-    if (phase === 'waiting_flip') {
-      setShouldPour(true)
+    if (phaseRef.current === 'waiting_flip') {
+      startPouring()
     }
   }
 
   const captureAndInterpret = async () => {
+    phaseRef.current = 'interpreting'
     setPhase('interpreting')
     
     try {
@@ -337,7 +354,8 @@ export default function KursunDokmePage() {
       if (!canvas) throw new Error('Canvas not found')
       
       const imageData = canvas.toDataURL('image/png')
-      const shapesDescription = shapes.map(s => s.type).join(', ')
+      // Use ref to get shapes as they were set synchronously
+      const shapesDescription = shapesRef.current.map(s => s.type).join(', ')
       
       const response = await fetch('/api/fortunes/kursundokme', {
         method: 'POST',
@@ -367,9 +385,11 @@ export default function KursunDokmePage() {
         setFortune(result)
       }
 
+      phaseRef.current = 'complete'
       setPhase('complete')
     } catch (err: any) {
       setError(err.message || 'Bir hata oluştu')
+      phaseRef.current = 'ready'
       setPhase('ready')
     }
   }
@@ -383,7 +403,8 @@ export default function KursunDokmePage() {
     setError('')
     setFortune('')
     setShapes([])
-    setShouldPour(false)
+    shapesRef.current = []
+    phaseRef.current = 'waiting_flip'
     setPhase('waiting_flip')
 
     // Draw initial canvas
@@ -408,11 +429,12 @@ export default function KursunDokmePage() {
   }
 
   const resetFortune = () => {
+    phaseRef.current = 'ready'
     setPhase('ready')
     setFortune('')
     setError('')
     setShapes([])
-    setShouldPour(false)
+    shapesRef.current = []
     particlesRef.current = []
     cancelAnimationFrame(animationRef.current)
     if (audioContextRef.current) {
