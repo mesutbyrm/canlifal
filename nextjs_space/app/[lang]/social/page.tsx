@@ -195,9 +195,19 @@ export default function SocialPage() {
     }
   }
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
   const handleYoutubeSelect = (videoUrl: string, videoTitle: string, thumbnail: string) => {
     setSelectedYoutubeUrl(videoUrl)
     setSelectedYoutubeThumbnail(thumbnail)
+    // Set video title as default content if empty
+    if (!newPostContent.trim() && videoTitle) {
+      setNewPostContent(videoTitle)
+    }
+    // Focus on textarea after selection
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 100)
     // Clear image if YouTube is selected
     setSelectedImage(null)
     setImagePreview(null)
@@ -216,7 +226,8 @@ export default function SocialPage() {
   }
 
   const handleCreatePost = async () => {
-    if (!newPostContent.trim() || posting) return
+    // Allow posting if there's content, YouTube video, or image
+    if ((!newPostContent.trim() && !selectedYoutubeUrl && !selectedImage) || posting) return
     setPosting(true)
     
     try {
@@ -401,9 +412,12 @@ export default function SocialPage() {
               </div>
               <div className="flex-1">
                 <textarea
+                  ref={textareaRef}
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
-                  placeholder={language === 'tr' ? 'Ne düşünüyorsun?' : "What's on your mind?"}
+                  placeholder={selectedYoutubeUrl 
+                    ? (language === 'tr' ? 'Video hakkında bir şeyler yaz...' : 'Write something about this video...')
+                    : (language === 'tr' ? 'Ne düşünüyorsun?' : "What's on your mind?")}
                   className="w-full bg-transparent border-none outline-none text-white placeholder-purple-400/50 resize-none"
                   rows={3}
                   maxLength={6000}
@@ -492,7 +506,7 @@ export default function SocialPage() {
                   </div>
                   <button
                     onClick={handleCreatePost}
-                    disabled={!newPostContent.trim() || posting || uploadingImage}
+                    disabled={(!newPostContent.trim() && !selectedYoutubeUrl && !selectedImage) || posting || uploadingImage}
                     className="px-4 py-2 bg-gradient-to-r from-gold-500 to-gold-600 text-[#1a0b2e] font-semibold rounded-lg disabled:opacity-50 flex items-center gap-2"
                   >
                     {(posting || uploadingImage) ? (

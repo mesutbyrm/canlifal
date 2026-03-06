@@ -84,8 +84,13 @@ export async function POST(request: NextRequest) {
 
     const { content, postType, fortuneType, fortuneId, imageUrl, youtubeUrl, isPublic = true } = await request.json()
 
-    if (!content || !postType) {
-      return NextResponse.json({ error: 'Content and postType are required' }, { status: 400 })
+    // Allow posting if there's content, YouTube video, or image
+    if (!content && !youtubeUrl && !imageUrl) {
+      return NextResponse.json({ error: 'Content, image, or video is required' }, { status: 400 })
+    }
+    
+    if (!postType) {
+      return NextResponse.json({ error: 'postType is required' }, { status: 400 })
     }
 
     // Validate postType
@@ -106,7 +111,7 @@ export async function POST(request: NextRequest) {
     const post = await prisma.socialPost.create({
       data: {
         userId: session.user.id,
-        content,
+        content: content || '',
         postType,
         fortuneType: fortuneType || null,
         fortuneId: fortuneId || null,
