@@ -107,6 +107,36 @@ async function main() {
     { languageCode: 'tr', translationKey: 'fortune.dream.description', translationValue: 'Rüyalarınızdaki gizli anlamları çözün' },
     { languageCode: 'tr', translationKey: 'fortune.dream.cost', translationValue: '5 Kredi' },
 
+    // Additional Fortune Types - English
+    { languageCode: 'en', translationKey: 'fortune.katina.name', translationValue: 'Katina Fortune' },
+    { languageCode: 'en', translationKey: 'fortune.kursundokme.name', translationValue: 'Lead Pouring' },
+    { languageCode: 'en', translationKey: 'fortune.horoscope.name', translationValue: 'Horoscope' },
+    { languageCode: 'en', translationKey: 'fortune.palm.name', translationValue: 'Palm Reading' },
+    { languageCode: 'en', translationKey: 'fortune.numerology.name', translationValue: 'Numerology' },
+    { languageCode: 'en', translationKey: 'fortune.angel.name', translationValue: 'Angel Cards' },
+    { languageCode: 'en', translationKey: 'fortune.aura.name', translationValue: 'Aura Reading' },
+    { languageCode: 'en', translationKey: 'fortune.birthchart.name', translationValue: 'Birth Chart' },
+    { languageCode: 'en', translationKey: 'fortune.istikhara.name', translationValue: 'Istikhara' },
+    { languageCode: 'en', translationKey: 'fortune.love.name', translationValue: 'Love Fortune' },
+    { languageCode: 'en', translationKey: 'fortune.yesno.name', translationValue: 'Yes/No Fortune' },
+
+    // Additional Fortune Types - Turkish
+    { languageCode: 'tr', translationKey: 'fortune.katina.name', translationValue: 'Katina Falı' },
+    { languageCode: 'tr', translationKey: 'fortune.kursundokme.name', translationValue: 'Kurşun Dökme' },
+    { languageCode: 'tr', translationKey: 'fortune.horoscope.name', translationValue: 'Burç Yorumu' },
+    { languageCode: 'tr', translationKey: 'fortune.palm.name', translationValue: 'El Falı' },
+    { languageCode: 'tr', translationKey: 'fortune.numerology.name', translationValue: 'Numeroloji' },
+    { languageCode: 'tr', translationKey: 'fortune.angel.name', translationValue: 'Melek Kartları' },
+    { languageCode: 'tr', translationKey: 'fortune.aura.name', translationValue: 'Aura Analizi' },
+    { languageCode: 'tr', translationKey: 'fortune.birthchart.name', translationValue: 'Doğum Haritası' },
+    { languageCode: 'tr', translationKey: 'fortune.istikhara.name', translationValue: 'İstihare' },
+    { languageCode: 'tr', translationKey: 'fortune.love.name', translationValue: 'Aşk Falı' },
+    { languageCode: 'tr', translationKey: 'fortune.yesno.name', translationValue: 'Evet/Hayır Falı' },
+
+    // Share translations
+    { languageCode: 'en', translationKey: 'share.title', translationValue: 'Share your reading' },
+    { languageCode: 'tr', translationKey: 'share.title', translationValue: 'Falını paylaş' },
+
     // Landing Page - English
     { languageCode: 'en', translationKey: 'landing.hero.title', translationValue: 'Unlock the Mysteries of Your Future' },
     { languageCode: 'en', translationKey: 'landing.hero.subtitle', translationValue: 'AI-powered fortune telling with ancient wisdom' },
