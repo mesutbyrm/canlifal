@@ -223,8 +223,10 @@ model SocialPost {
   userId      String
   fortuneId   String?   // Optional: linked fortune
   content     String    @db.Text
+  imageUrl    String?   // Optional: image URL for the post
   postType    String    // "fortune", "text", "horoscope"
   fortuneType String?   // coffee, tarot, etc. if fortune post
+  isAuto      Boolean   @default(false) // True if auto-shared from fortune
   isPublic    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

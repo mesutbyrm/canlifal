@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -12,8 +12,10 @@ interface SocialPost {
   id: string
   userId: string
   content: string
+  imageUrl?: string
   postType: 'fortune' | 'text' | 'horoscope'
   fortuneType?: string
+  isAuto?: boolean
   isPublic: boolean
   createdAt: string
   user: {
@@ -77,6 +79,10 @@ export default function SocialPage() {
   const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [shareModal, setShareModal] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -96,26 +102,102 @@ export default function SocialPage() {
     fetchPosts()
   }, [fetchPosts])
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+        return
+      }
+      setSelectedImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      // Get presigned URL
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type,
+          isPublic: true
+        })
+      })
+      
+      if (!presignedRes.ok) throw new Error('Failed to get upload URL')
+      
+      const { uploadUrl, cloud_storage_path } = await presignedRes.json()
+      
+      // Upload to S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': file.type,
+          'Content-Disposition': 'attachment'
+        },
+        body: file
+      })
+      
+      if (!uploadRes.ok) throw new Error('Failed to upload image')
+      
+      // Get public URL
+      const urlRes = await fetch('/api/upload/get-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_storage_path, isPublic: true })
+      })
+      
+      if (!urlRes.ok) throw new Error('Failed to get image URL')
+      
+      const { url } = await urlRes.json()
+      return url
+    } catch (error) {
+      console.error('Image upload error:', error)
+      return null
+    }
+  }
+
   const handleCreatePost = async () => {
     if (!newPostContent.trim() || posting) return
     setPosting(true)
+    
     try {
+      let imageUrl = null
+      
+      // Upload image if selected
+      if (selectedImage) {
+        setUploadingImage(true)
+        imageUrl = await uploadImage(selectedImage)
+        setUploadingImage(false)
+      }
+      
       const res = await fetch('/api/social/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: newPostContent,
-          postType: 'text'
+          postType: 'text',
+          imageUrl
         })
       })
       if (res.ok) {
         setNewPostContent('')
+        setSelectedImage(null)
+        setImagePreview(null)
         fetchPosts()
       }
     } catch (error) {
       console.error('Failed to create post:', error)
     } finally {
       setPosting(false)
+      setUploadingImage(false)
     }
   }
 
@@ -272,17 +354,63 @@ export default function SocialPage() {
                   rows={3}
                   maxLength={1000}
                 />
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-purple-400/50">
-                    {newPostContent.length}/1000
-                  </span>
+                
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="relative mt-3 rounded-lg overflow-hidden">
+                    <Image 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      width={400} 
+                      height={300} 
+                      className="w-full max-h-64 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => {
+                        setSelectedImage(null)
+                        setImagePreview(null)
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center mt-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-purple-400 hover:text-gold-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                      title={language === 'tr' ? 'Resim ekle' : 'Add image'}
+                    >
+                      <ImagePlus className="w-5 h-5" />
+                    </button>
+                    <span className="text-xs text-purple-400/50">
+                      {newPostContent.length}/1000
+                    </span>
+                  </div>
                   <button
                     onClick={handleCreatePost}
-                    disabled={!newPostContent.trim() || posting}
+                    disabled={!newPostContent.trim() || posting || uploadingImage}
                     className="px-4 py-2 bg-gradient-to-r from-gold-500 to-gold-600 text-[#1a0b2e] font-semibold rounded-lg disabled:opacity-50 flex items-center gap-2"
                   >
-                    <Send className="w-4 h-4" />
-                    {language === 'tr' ? 'Paylaş' : 'Post'}
+                    {(posting || uploadingImage) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    {uploadingImage 
+                      ? (language === 'tr' ? 'Yükleniyor...' : 'Uploading...') 
+                      : (language === 'tr' ? 'Paylaş' : 'Post')}
                   </button>
                 </div>
               </div>
@@ -355,6 +483,27 @@ export default function SocialPage() {
                     {/* Post Content */}
                     <div className="px-4 pb-3">
                       <p className="text-purple-100 whitespace-pre-wrap">{post.content}</p>
+                      
+                      {/* Post Image */}
+                      {post.imageUrl && (
+                        <div className="mt-3 rounded-lg overflow-hidden">
+                          <Image 
+                            src={post.imageUrl} 
+                            alt="Post image" 
+                            width={600} 
+                            height={400} 
+                            className="w-full max-h-96 object-cover rounded-lg"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Auto-shared badge */}
+                      {post.isAuto && (
+                        <div className="mt-2 inline-flex items-center gap-1 text-xs text-purple-400/70 bg-purple-500/10 px-2 py-1 rounded-full">
+                          <Sparkles className="w-3 h-3" />
+                          {language === 'tr' ? 'Otomatik paylaşıldı' : 'Auto-shared'}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}

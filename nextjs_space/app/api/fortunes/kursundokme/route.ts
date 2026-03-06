@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
+import { autoShareFortune } from '@/lib/social-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -139,7 +140,7 @@ Respond in English. Use mystical and poetic language.`
 
           // Save fortune to database if we got a response
           if (fullResponse.length > 0) {
-            await prisma.fortune.create({
+            const fortune = await prisma.fortune.create({
               data: {
                 userId: session.user.id,
                 fortuneType: 'kursundokme',
@@ -148,6 +149,10 @@ Respond in English. Use mystical and poetic language.`
                 language: language || 'tr',
               },
             })
+
+            // Auto-share to social feed
+            autoShareFortune(session.user.id, fortune.id, 'kursundokme', fullResponse, language || 'tr')
+              .catch(err => console.error('Auto-share error:', err))
 
             // Send summary email
             sendFortuneSummaryEmail(

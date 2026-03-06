@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
+import { autoShareFortune } from '@/lib/social-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
-                  await prisma.fortune.create({
+                  const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
                       fortuneType: 'birthchart',
@@ -75,6 +76,9 @@ export async function POST(request: Request) {
                       language: language || 'en',
                     },
                   })
+                  // Auto-share to social feed (non-blocking)
+                  autoShareFortune(session.user.id, fortune.id, 'birthchart', fullResponse, language || 'en')
+                    .catch(err => console.error('Auto-share error:', err))
                   continue
                 }
                 try {
