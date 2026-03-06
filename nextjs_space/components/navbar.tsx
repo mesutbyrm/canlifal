@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X } from 'lucide-react'
@@ -13,6 +14,37 @@ export default function Navbar() {
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'tr' : 'en')
+  }
+
+  // Profile avatar component
+  const ProfileAvatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+    const sizeClasses = {
+      sm: 'w-7 h-7',
+      md: 'w-8 h-8',
+      lg: 'w-10 h-10'
+    }
+
+    if (session?.user?.image) {
+      return (
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500/50 hover:border-gold-400 transition-colors flex-shrink-0`}>
+          <Image
+            src={session.user.image}
+            alt={session.user.name || 'Profil'}
+            width={40}
+            height={40}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center border-2 border-gold-500/50 hover:border-gold-400 transition-colors flex-shrink-0`}>
+        <span className="text-deep-purple-950 font-bold text-sm">
+          {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+        </span>
+      </div>
+    )
   }
 
   return (
@@ -50,9 +82,20 @@ export default function Navbar() {
                   <Sparkles className="w-3.5 h-3.5 text-gold-500" />
                   <span className="text-gold-400 font-medium text-sm">{session?.user?.credits ?? 0}</span>
                 </div>
-                <Link href={`/${language}/profile`} className="text-deep-purple-200 hover:text-gold-400 transition-colors">
-                  <User className="w-5 h-5" />
+                
+                {/* Profile with image and name */}
+                <Link href={`/${language}/profile`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <ProfileAvatar size="md" />
+                  <div className="hidden xl:flex flex-col">
+                    <span className="text-deep-purple-100 text-sm font-medium truncate max-w-[120px]">
+                      {session.user.name}
+                    </span>
+                    <span className="text-deep-purple-400 text-xs truncate max-w-[120px]">
+                      {session.user.email}
+                    </span>
+                  </div>
                 </Link>
+                
                 <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -98,8 +141,8 @@ export default function Navbar() {
                   <Sparkles className="w-3 h-3 text-gold-500" />
                   <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
                 </div>
-                <Link href={`/${language}/profile`} className="text-deep-purple-200 hover:text-gold-400 transition-colors">
-                  <User className="w-5 h-5" />
+                <Link href={`/${language}/profile`} className="hover:opacity-80 transition-opacity">
+                  <ProfileAvatar size="sm" />
                 </Link>
                 <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
                   <LogOut className="w-5 h-5" />
@@ -124,10 +167,13 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center gap-3">
             {session?.user && (
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
-                <Sparkles className="w-3 h-3 text-gold-500" />
-                <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
-              </div>
+              <>
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
+                  <Sparkles className="w-3 h-3 text-gold-500" />
+                  <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
+                </div>
+                <ProfileAvatar size="sm" />
+              </>
             )}
             <button onClick={toggleLanguage} className="text-deep-purple-200 hover:text-gold-400 transition-colors p-1.5 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
               <Globe className="w-4 h-4" />
@@ -143,6 +189,15 @@ export default function Navbar() {
           <div className="md:hidden py-4 border-t border-deep-purple-800/50 space-y-2">
             {session?.user ? (
               <>
+                {/* User info section */}
+                <div className="flex items-center gap-3 px-3 py-2 mb-2 bg-deep-purple-900/30 rounded-lg">
+                  <ProfileAvatar size="lg" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-deep-purple-100 font-medium truncate">{session.user.name}</p>
+                    <p className="text-deep-purple-400 text-sm truncate">{session.user.email}</p>
+                  </div>
+                </div>
+                
                 <Link href={`/${language}/fortunes`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   {t('nav.fortunes')}
                 </Link>

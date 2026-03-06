@@ -117,24 +117,44 @@ export async function POST(
       return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
     }
 
-    // Update presence with nickname
-    await prisma.chatPresence.upsert({
-      where: {
-        roomId_userId: {
+    // Update presence with nickname (handle race condition with retry)
+    try {
+      await prisma.chatPresence.upsert({
+        where: {
+          roomId_userId: {
+            roomId,
+            userId: session.user.id
+          }
+        },
+        update: { 
+          lastSeen: new Date(),
+          nickname: nickname || undefined
+        },
+        create: {
           roomId,
-          userId: session.user.id
+          userId: session.user.id,
+          nickname: nickname || undefined
         }
-      },
-      update: { 
-        lastSeen: new Date(),
-        nickname: nickname || undefined
-      },
-      create: {
-        roomId,
-        userId: session.user.id,
-        nickname: nickname || undefined
+      })
+    } catch (upsertError: unknown) {
+      // Handle unique constraint error (race condition) by trying update only
+      if ((upsertError as { code?: string })?.code === 'P2002') {
+        await prisma.chatPresence.update({
+          where: {
+            roomId_userId: {
+              roomId,
+              userId: session.user.id
+            }
+          },
+          data: { 
+            lastSeen: new Date(),
+            nickname: nickname || undefined
+          }
+        })
+      } else {
+        throw upsertError
       }
-    })
+    }
 
     // Return updated active users
     const oneMinuteAgo = new Date(Date.now() - 60000)
