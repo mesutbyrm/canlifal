@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { Hand, Sparkles, Upload, X } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 
 export default function PalmReadingPage() {

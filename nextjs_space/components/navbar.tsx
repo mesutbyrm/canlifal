@@ -69,6 +69,9 @@ export default function Navbar() {
                   <MessageCircle className="w-4 h-4" />
                   <span>{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
                 </Link>
+                <Link href={`/${language}/social`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
+                  {language === 'tr' ? 'Sosyal' : 'Social'}
+                </Link>
                 <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
                   {t('nav.dashboard')}
                 </Link>
@@ -128,6 +131,9 @@ export default function Navbar() {
                 </Link>
                 <Link href={`/${language}/chat`} className="text-deep-purple-200 hover:text-gold-400 transition-colors">
                   <MessageCircle className="w-5 h-5" />
+                </Link>
+                <Link href={`/${language}/social`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
+                  {language === 'tr' ? 'Sosyal' : 'Social'}
                 </Link>
                 <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
                   {language === 'tr' ? 'Panel' : 'Dashboard'}
@@ -204,6 +210,9 @@ export default function Navbar() {
                 <Link href={`/${language}/chat`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   <MessageCircle className="w-4 h-4" />
                   {language === 'tr' ? 'Sohbet' : 'Chat'}
+                </Link>
+                <Link href={`/${language}/social`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
+                  {language === 'tr' ? 'Sosyal' : 'Social'}
                 </Link>
                 <Link href={`/${language}/dashboard`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   {t('nav.dashboard')}

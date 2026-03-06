@@ -31,6 +31,9 @@ model User {
   mutedOthers       ChatMute[]  @relation("Muter")
   bannedIn          ChatBan[]   @relation("BannedUser")
   bannedOthers      ChatBan[]   @relation("Banner")
+  socialPosts       SocialPost[]
+  socialComments    SocialComment[]
+  socialLikes       SocialLike[]
 
   @@map("users")
 }
@@ -44,6 +47,7 @@ model Fortune {
   language     String
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialPosts  SocialPost[]
 
   @@index([userId])
   @@index([fortuneType])
@@ -211,4 +215,55 @@ model SiteSetting {
   updatedAt DateTime @updatedAt
 
   @@map("site_settings")
+}
+
+// Social Posts - Users can share fortunes or custom text
+model SocialPost {
+  id          String    @id @default(cuid())
+  userId      String
+  fortuneId   String?   // Optional: linked fortune
+  content     String    @db.Text
+  postType    String    // "fortune", "text", "horoscope"
+  fortuneType String?   // coffee, tarot, etc. if fortune post
+  isPublic    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fortune     Fortune?  @relation(fields: [fortuneId], references: [id], onDelete: SetNull)
+  comments    SocialComment[]
+  likes       SocialLike[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([postType])
+  @@map("social_posts")
+}
+
+// Comments on social posts
+model SocialComment {
+  id        String     @id @default(cuid())
+  postId    String
+  userId    String
+  content   String     @db.Text
+  createdAt DateTime   @default(now())
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("social_comments")
+}
+
+// Likes on social posts
+model SocialLike {
+  id        String     @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime   @default(now())
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@map("social_likes")
 }

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Moon, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 
 export default function DreamFortunePage() {
@@ -169,10 +170,13 @@ export default function DreamFortunePage() {
                 </p>
               </div>
               
-              <SocialShare 
-                title={language === 'tr' ? 'Rüya Tabirim' : 'My Dream Interpretation'} 
-                text={fortune} 
-              />
+              <div className="flex flex-wrap gap-3">
+                <ShareToSocial fortuneType="dream" content={fortune} />
+                <SocialShare 
+                  title={language === 'tr' ? 'Rüya Tabirim' : 'My Dream Interpretation'} 
+                  text={fortune} 
+                />
+              </div>
               
               <button
                 onClick={() => {

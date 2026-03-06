@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Coffee, Sparkles, AlertCircle, Upload, Camera, FileText, X, ImageIcon } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 
 type InputMode = 'text' | 'image'
@@ -564,10 +565,13 @@ export default function CoffeeFortunePage() {
                 </p>
               </div>
               
-              <SocialShare 
-                title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
-                text={fortune} 
-              />
+              <div className="flex flex-wrap gap-3">
+                <ShareToSocial fortuneType="coffee" content={fortune} />
+                <SocialShare 
+                  title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
+                  text={fortune} 
+                />
+              </div>
               
               <button
                 onClick={resetForm}

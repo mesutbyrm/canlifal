@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Star, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 
 export default function TarotFortunePage() {
@@ -185,10 +186,13 @@ export default function TarotFortunePage() {
                 </p>
               </div>
               
-              <SocialShare 
-                title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
-                text={fortune} 
-              />
+              <div className="flex flex-wrap gap-3">
+                <ShareToSocial fortuneType="tarot" content={fortune} />
+                <SocialShare 
+                  title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
+                  text={fortune} 
+                />
+              </div>
               
               <button
                 onClick={() => {
