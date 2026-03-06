@@ -33,7 +33,19 @@ export async function autoShareFortune(
   aiResponse: string,
   language: string
 ): Promise<void> {
+  console.log(`[AUTO-SHARE] Starting auto-share for fortune ${fortuneId}, type: ${fortuneType}, userId: ${userId}`)
+  
   try {
+    if (!userId || !fortuneId || !fortuneType) {
+      console.error('[AUTO-SHARE] Missing required parameters:', { userId, fortuneId, fortuneType })
+      return
+    }
+    
+    if (!aiResponse || aiResponse.trim().length === 0) {
+      console.error('[AUTO-SHARE] Empty AI response, skipping auto-share')
+      return
+    }
+    
     const label = FORTUNE_TYPE_LABELS[fortuneType]?.[language] || fortuneType
     
     // Create a summary for the social post (first 500 chars)
@@ -41,8 +53,10 @@ export async function autoShareFortune(
       ? aiResponse.substring(0, 500) + '...'
       : aiResponse
     
+    console.log(`[AUTO-SHARE] Creating social post with content length: ${summary.length}`)
+    
     // Create social post
-    await prisma.socialPost.create({
+    const post = await prisma.socialPost.create({
       data: {
         userId,
         fortuneId,
@@ -54,9 +68,9 @@ export async function autoShareFortune(
       }
     })
     
-    console.log(`Auto-shared ${fortuneType} fortune to social feed for user ${userId}`)
+    console.log(`[AUTO-SHARE] Successfully created social post ${post.id} for fortune ${fortuneId}`)
   } catch (error) {
-    console.error('Auto-share fortune error:', error)
+    console.error('[AUTO-SHARE] Error creating social post:', error)
     // Don't throw - auto-sharing failure shouldn't break the fortune flow
   }
 }

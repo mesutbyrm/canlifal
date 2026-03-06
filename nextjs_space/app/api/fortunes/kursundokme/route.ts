@@ -151,8 +151,8 @@ Respond in English. Use mystical and poetic language.`
             })
 
             // Auto-share to social feed
-            autoShareFortune(session.user.id, fortune.id, 'kursundokme', fullResponse, language || 'tr')
-              .catch(err => console.error('Auto-share error:', err))
+            await autoShareFortune(session.user.id, fortune.id, 'kursundokme', fullResponse, language || 'tr')
+              
 
             // Send summary email
             sendFortuneSummaryEmail(

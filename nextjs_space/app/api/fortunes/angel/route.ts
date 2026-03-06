@@ -74,8 +74,8 @@ export async function POST(request: Request) {
                       language: language || 'en',
                     },
                   })
-                  autoShareFortune(session.user.id, fortune.id, 'angel', fullResponse, language || 'en')
-                    .catch(err => console.error('Auto-share error:', err))
+                  await autoShareFortune(session.user.id, fortune.id, 'angel', fullResponse, language || 'en')
+                    
                   continue
                 }
                 try {

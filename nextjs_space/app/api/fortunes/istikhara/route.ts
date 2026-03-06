@@ -77,8 +77,8 @@ export async function POST(request: Request) {
                     },
                   })
                   // Auto-share to social feed (non-blocking)
-                  autoShareFortune(session.user.id, fortune.id, 'istikhara', fullResponse, language || 'en')
-                    .catch(err => console.error('Auto-share error:', err))
+                  await autoShareFortune(session.user.id, fortune.id, 'istikhara', fullResponse, language || 'en')
+                    
                   continue
                 }
                 try {

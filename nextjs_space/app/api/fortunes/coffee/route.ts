@@ -97,9 +97,12 @@ export async function POST(request: Request) {
                       language: language || 'en',
                     },
                   })
-                  // Auto-share to social feed (non-blocking)
-                  autoShareFortune(session.user.id, fortune.id, 'coffee', fullResponse, language || 'en')
-                    .catch(err => console.error('Auto-share error:', err))
+                  // Auto-share to social feed - await to ensure it completes
+                  try {
+                    await autoShareFortune(session.user.id, fortune.id, 'coffee', fullResponse, language || 'en')
+                  } catch (err) {
+                    console.error('Auto-share error:', err)
+                  }
                   // Send fortune summary email (non-blocking)
                   sendFortuneSummaryEmail(session.user.id, 'coffee', fullResponse, language || 'en')
                     .catch(err => console.error('Fortune email error:', err))

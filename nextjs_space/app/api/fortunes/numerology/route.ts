@@ -77,8 +77,8 @@ export async function POST(request: Request) {
                     },
                   })
                   // Auto-share to social feed (non-blocking)
-                  autoShareFortune(session.user.id, fortune.id, 'numerology', fullResponse, language || 'en')
-                    .catch(err => console.error('Auto-share error:', err))
+                  await autoShareFortune(session.user.id, fortune.id, 'numerology', fullResponse, language || 'en')
+                    
                   // Send fortune summary email (non-blocking)
                   sendFortuneSummaryEmail(session.user.id, 'numerology', fullResponse, language || 'en')
                     .catch(err => console.error('Fortune email error:', err))
