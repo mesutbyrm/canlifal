@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
+    provider = "mysql"
     url      = env("DATABASE_URL")
 }
 
@@ -36,8 +36,8 @@ model Fortune {
   id           String   @id @default(cuid())
   userId       String
   fortuneType  String
-  inputData    String
-  aiResponse   String
+  inputData    String   @db.Text
+  aiResponse   String   @db.LongText
   language     String
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -122,7 +122,7 @@ model ChatMessage {
   id        String   @id @default(cuid())
   roomId    String
   userId    String
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
   room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -202,7 +202,7 @@ model ChatBan {
 model SiteSetting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String
+  value     String   @db.Text
   updatedAt DateTime @updatedAt
 
   @@map("site_settings")
