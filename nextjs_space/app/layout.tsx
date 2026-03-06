@@ -44,3 +44,4 @@ export default function RootLayout({
     </html>
   )
 }
+// PostgreSQL v2 - Fixed DATABASE_URL
