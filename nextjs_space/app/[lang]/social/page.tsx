@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2 } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import YouTubeSearchModal from '@/components/youtube-search-modal'
 
 interface SocialPost {
   id: string
   userId: string
   content: string
   imageUrl?: string
+  youtubeUrl?: string
   postType: 'fortune' | 'text' | 'horoscope'
   fortuneType?: string
   isAuto?: boolean
@@ -83,6 +85,9 @@ export default function SocialPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
+  const [selectedYoutubeUrl, setSelectedYoutubeUrl] = useState<string | null>(null)
+  const [selectedYoutubeThumbnail, setSelectedYoutubeThumbnail] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchPosts = useCallback(async () => {
@@ -165,6 +170,26 @@ export default function SocialPage() {
     }
   }
 
+  const handleYoutubeSelect = (videoUrl: string, videoTitle: string, thumbnail: string) => {
+    setSelectedYoutubeUrl(videoUrl)
+    setSelectedYoutubeThumbnail(thumbnail)
+    // Clear image if YouTube is selected
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const clearYoutubeSelection = () => {
+    setSelectedYoutubeUrl(null)
+    setSelectedYoutubeThumbnail(null)
+  }
+
+  // Extract video ID from YouTube URL
+  const extractYoutubeId = (url: string): string | null => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)
+    return match ? match[1] : null
+  }
+
   const handleCreatePost = async () => {
     if (!newPostContent.trim() || posting) return
     setPosting(true)
@@ -185,13 +210,16 @@ export default function SocialPage() {
         body: JSON.stringify({
           content: newPostContent,
           postType: 'text',
-          imageUrl
+          imageUrl,
+          youtubeUrl: selectedYoutubeUrl
         })
       })
       if (res.ok) {
         setNewPostContent('')
         setSelectedImage(null)
         setImagePreview(null)
+        setSelectedYoutubeUrl(null)
+        setSelectedYoutubeThumbnail(null)
         fetchPosts()
       }
     } catch (error) {
@@ -378,6 +406,35 @@ export default function SocialPage() {
                     </button>
                   </div>
                 )}
+
+                {/* YouTube Preview */}
+                {selectedYoutubeUrl && selectedYoutubeThumbnail && (
+                  <div className="relative mt-3 rounded-lg overflow-hidden bg-black/30">
+                    <div className="relative aspect-video">
+                      <Image 
+                        src={selectedYoutubeThumbnail} 
+                        alt="YouTube Video" 
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-12 bg-red-600 rounded-xl flex items-center justify-center">
+                          <div className="w-0 h-0 border-l-[12px] border-l-white border-y-[8px] border-y-transparent ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={clearYoutubeSelection}
+                      className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                      <Youtube className="w-3 h-3 text-red-500" />
+                      YouTube
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center mt-3">
                   <div className="flex items-center gap-3">
@@ -390,10 +447,19 @@ export default function SocialPage() {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-purple-400 hover:text-gold-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                      disabled={!!selectedYoutubeUrl}
+                      className="p-2 text-purple-400 hover:text-gold-400 hover:bg-purple-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title={language === 'tr' ? 'Resim ekle' : 'Add image'}
                     >
                       <ImagePlus className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setYoutubeModalOpen(true)}
+                      disabled={!!selectedImage}
+                      className="p-2 text-purple-400 hover:text-red-500 hover:bg-purple-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={language === 'tr' ? 'YouTube video ekle' : 'Add YouTube video'}
+                    >
+                      <Youtube className="w-5 h-5" />
                     </button>
                     <span className="text-xs text-purple-400/50">
                       {newPostContent.length}/6000
@@ -495,6 +561,21 @@ export default function SocialPage() {
                             height={400} 
                             className="w-full max-h-96 object-cover rounded-lg"
                           />
+                        </div>
+                      )}
+
+                      {/* YouTube Video Embed */}
+                      {post.youtubeUrl && (
+                        <div className="mt-3 rounded-lg overflow-hidden">
+                          <div className="relative aspect-video bg-black rounded-lg">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${extractYoutubeId(post.youtubeUrl)}?rel=0`}
+                              title="YouTube video"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="absolute inset-0 w-full h-full rounded-lg"
+                            />
+                          </div>
                         </div>
                       )}
                       
@@ -682,6 +763,14 @@ export default function SocialPage() {
           </div>
         )}
       </div>
+
+      {/* YouTube Search Modal */}
+      <YouTubeSearchModal
+        isOpen={youtubeModalOpen}
+        onClose={() => setYoutubeModalOpen(false)}
+        onSelect={handleYoutubeSelect}
+        language={language}
+      />
     </div>
   )
 }

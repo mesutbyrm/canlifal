@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { content, postType, fortuneType, fortuneId, imageUrl, isPublic = true } = await request.json()
+    const { content, postType, fortuneType, fortuneId, imageUrl, youtubeUrl, isPublic = true } = await request.json()
 
     if (!content || !postType) {
       return NextResponse.json({ error: 'Content and postType are required' }, { status: 400 })
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         fortuneType: fortuneType || null,
         fortuneId: fortuneId || null,
         imageUrl: imageUrl || null,
+        youtubeUrl: youtubeUrl || null,
         isPublic
       },
       include: {

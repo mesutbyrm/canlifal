@@ -226,6 +226,7 @@ model SocialPost {
   content     String    @db.Text
   imageUrl    String?   // Optional: image URL for the post
   audioUrl    String?   // Optional: audio URL for voice posts
+  youtubeUrl  String?   // Optional: YouTube video URL
   postType    String    // "fortune", "text", "horoscope"
   fortuneType String?   // coffee, tarot, etc. if fortune post
   isAuto      Boolean   @default(false) // True if auto-shared from fortune
