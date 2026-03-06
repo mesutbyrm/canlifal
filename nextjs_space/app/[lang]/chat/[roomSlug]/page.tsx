@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Edit2 } from 'lucide-react'
+import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Edit2, Wifi, WifiOff } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface Message {
@@ -85,6 +85,9 @@ export default function ChatRoomPage() {
   const [myPermissions, setMyPermissions] = useState<MyPermissions | null>(null)
   const [selectedUser, setSelectedUser] = useState<ActiveUser | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const [soundEnabled, setSoundEnabled] = useState(true)
   
   // Nickname system
   const [nickname, setNickname] = useState('')
@@ -95,9 +98,36 @@ export default function ChatRoomPage() {
   const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const lastMessageTime = useRef<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousMessagesCount = useRef(0)
+
+  // Initialize audio
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + 'A'.repeat(100))
+      // Create a simple notification sound
+      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+      audioRef.current = {
+        play: () => {
+          if (!soundEnabled) return Promise.resolve()
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          oscillator.frequency.value = 800
+          oscillator.type = 'sine'
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+          oscillator.start(audioContext.currentTime)
+          oscillator.stop(audioContext.currentTime + 0.2)
+          return Promise.resolve()
+        }
+      } as HTMLAudioElement
+    }
+  }, [soundEnabled])
 
   // Fetch room info
   const fetchRoom = useCallback(async () => {
@@ -115,28 +145,15 @@ export default function ChatRoomPage() {
     }
   }, [roomSlug])
 
-  // Fetch messages
-  const fetchMessages = useCallback(async (isPolling = false) => {
+  // Fetch initial messages
+  const fetchMessages = useCallback(async () => {
     if (!room) return
     
     try {
-      const url = isPolling && lastMessageTime.current
-        ? `/api/chat/rooms/${room.id}/messages?after=${encodeURIComponent(lastMessageTime.current)}`
-        : `/api/chat/rooms/${room.id}/messages`
-      
-      const res = await fetch(url)
+      const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (res.ok) {
         const data = await res.json()
-        
-        if (isPolling && data.length > 0) {
-          setMessages(prev => [...prev, ...data])
-        } else if (!isPolling) {
-          setMessages(data)
-        }
-        
-        if (data.length > 0) {
-          lastMessageTime.current = data[data.length - 1].createdAt
-        }
+        setMessages(data)
         setError(null)
       } else if (res.status === 403) {
         const errorData = await res.json()
@@ -149,6 +166,79 @@ export default function ChatRoomPage() {
     }
   }, [room])
 
+  // Connect to SSE stream
+  const connectSSE = useCallback(() => {
+    if (!room) return
+
+    // Close existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
+
+    const eventSource = new EventSource(`/api/chat/rooms/${room.id}/stream`)
+    eventSourceRef.current = eventSource
+
+    eventSource.onopen = () => {
+      setIsConnected(true)
+    }
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        switch (data.type) {
+          case 'connected':
+            setIsConnected(true)
+            break
+
+          case 'messages':
+            if (data.messages && data.messages.length > 0) {
+              setMessages(prev => {
+                const existingIds = new Set(prev.map(m => m.id))
+                const newMsgs = data.messages.filter((m: Message) => !existingIds.has(m.id))
+                if (newMsgs.length > 0) {
+                  // Play sound for new messages from others
+                  const hasNewFromOthers = newMsgs.some((m: Message) => m.user.id !== session?.user?.id)
+                  if (hasNewFromOthers && soundEnabled) {
+                    audioRef.current?.play().catch(() => {})
+                  }
+                  return [...prev, ...newMsgs]
+                }
+                return prev
+              })
+            }
+            break
+
+          case 'presence':
+            if (data.users) {
+              setActiveUsers(data.users)
+            }
+            break
+
+          case 'typing':
+            if (data.users) {
+              setTypingUsers(data.users)
+            }
+            break
+        }
+      } catch (err) {
+        console.error('SSE parse error:', err)
+      }
+    }
+
+    eventSource.onerror = () => {
+      setIsConnected(false)
+      // Reconnect after 3 seconds
+      setTimeout(() => {
+        if (room) connectSSE()
+      }, 3000)
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [room, session?.user?.id, soundEnabled])
+
   // Load saved nickname from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && session?.user) {
@@ -156,7 +246,6 @@ export default function ChatRoomPage() {
       if (savedNickname) {
         setNickname(savedNickname)
       } else {
-        // Show nickname modal for first time users
         setShowNicknameModal(true)
       }
     }
@@ -172,7 +261,7 @@ export default function ChatRoomPage() {
     }
   }
 
-  // Update presence and get active users
+  // Update presence
   const updatePresence = useCallback(async () => {
     if (!room || !session?.user) return
     
@@ -184,29 +273,12 @@ export default function ChatRoomPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setActiveUsers(data.users || [])
         setRoomMuted(data.roomMuted || false)
       }
     } catch (error) {
       console.error('Error updating presence:', error)
     }
   }, [room, session, nickname])
-
-  // Get active users (for non-logged in users)
-  const getActiveUsers = useCallback(async () => {
-    if (!room) return
-    
-    try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/presence`)
-      if (res.ok) {
-        const data = await res.json()
-        setActiveUsers(data.users || [])
-        setRoomMuted(data.roomMuted || false)
-      }
-    } catch (error) {
-      console.error('Error getting active users:', error)
-    }
-  }, [room])
 
   // Fetch my permissions
   const fetchMyPermissions = useCallback(async () => {
@@ -223,42 +295,63 @@ export default function ChatRoomPage() {
     }
   }, [room, session])
 
+  // Handle typing indicator
+  const handleTyping = useCallback(async () => {
+    if (!room || !session?.user) return
+
+    try {
+      await fetch(`/api/chat/rooms/${room.id}/typing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTyping: true })
+      })
+
+      // Clear typing after 3 seconds
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      typingTimeoutRef.current = setTimeout(async () => {
+        await fetch(`/api/chat/rooms/${room.id}/typing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isTyping: false })
+        })
+      }, 3000)
+    } catch (error) {
+      console.error('Error updating typing:', error)
+    }
+  }, [room, session])
+
   // Initial load
   useEffect(() => {
     fetchRoom()
   }, [fetchRoom])
 
-  // Load messages when room is available
+  // Load messages and connect SSE when room is available
   useEffect(() => {
     if (room) {
-      fetchMessages(false)
+      fetchMessages()
+      connectSSE()
       if (session?.user) {
         updatePresence()
         fetchMyPermissions()
-      } else {
-        getActiveUsers()
       }
     }
-  }, [room, fetchMessages, session, updatePresence, getActiveUsers, fetchMyPermissions])
 
-  // Polling for new messages and presence
-  useEffect(() => {
-    if (!room) return
-    
-    const messageInterval = setInterval(() => fetchMessages(true), 3000)
-    const presenceInterval = setInterval(() => {
-      if (session?.user) {
-        updatePresence()
-      } else {
-        getActiveUsers()
-      }
-    }, 10000)
-    
     return () => {
-      clearInterval(messageInterval)
-      clearInterval(presenceInterval)
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
     }
-  }, [room, fetchMessages, session, updatePresence, getActiveUsers])
+  }, [room, fetchMessages, connectSSE, session, updatePresence, fetchMyPermissions])
+
+  // Update presence periodically
+  useEffect(() => {
+    if (!room || !session?.user) return
+    
+    const presenceInterval = setInterval(updatePresence, 30000)
+    return () => clearInterval(presenceInterval)
+  }, [room, session, updatePresence])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -269,16 +362,13 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!session?.user || !nickname) return
     
-    // Only check new messages (not on initial load)
     if (messages.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
       const newMsgs = messages.slice(previousMessagesCount.current)
       const myNickname = nickname.toLowerCase()
       
       for (const msg of newMsgs) {
-        // Don't notify for own messages
         if (msg.user.id === session.user.id) continue
         
-        // Check if message contains @mention
         const mentionPattern = new RegExp(`@${myNickname}\\b`, 'i')
         if (mentionPattern.test(msg.content)) {
           setMentionNotification({
@@ -286,7 +376,6 @@ export default function ChatRoomPage() {
             content: msg.content.slice(0, 50) + (msg.content.length > 50 ? '...' : '')
           })
           
-          // Auto-hide after 5 seconds
           setTimeout(() => setMentionNotification(null), 5000)
           break
         }
@@ -295,7 +384,7 @@ export default function ChatRoomPage() {
     previousMessagesCount.current = messages.length
   }, [messages, session, nickname])
 
-  // Add @mention to input when clicking on a user
+  // Add @mention to input
   const addMention = (userName: string) => {
     const mention = `@${userName} `
     setNewMessage(prev => prev + mention)
@@ -309,6 +398,17 @@ export default function ChatRoomPage() {
     if (!newMessage.trim() || !room || !session?.user || sending) return
     
     setSending(true)
+    
+    // Clear typing
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    await fetch(`/api/chat/rooms/${room.id}/typing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isTyping: false })
+    }).catch(() => {})
+
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`, {
         method: 'POST',
@@ -322,7 +422,6 @@ export default function ChatRoomPage() {
       if (res.ok) {
         const message = await res.json()
         setMessages(prev => [...prev, message])
-        lastMessageTime.current = message.createdAt
         setNewMessage('')
         setError(null)
       } else {
@@ -349,10 +448,6 @@ export default function ChatRoomPage() {
       
       if (res.ok) {
         setSelectedUser(null)
-        // Refresh presence to see changes
-        if (session?.user) {
-          updatePresence()
-        }
       } else {
         const errorData = await res.json()
         alert(errorData.error)
@@ -376,6 +471,10 @@ export default function ChatRoomPage() {
     })
   }
 
+  const getDisplayName = (user: {name: string, nickname?: string}) => {
+    return user.nickname || user.name
+  }
+
   if (error && error.includes('banned')) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] flex items-center justify-center">
@@ -396,11 +495,6 @@ export default function ChatRoomPage() {
         <div className="w-12 h-12 border-4 border-gold-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
-  }
-
-  // Get display name for user
-  const getDisplayName = (user: {name: string, nickname?: string}) => {
-    return user.nickname || user.name
   }
 
   return (
@@ -511,6 +605,12 @@ export default function ChatRoomPage() {
               <h1 className="text-2xl font-serif text-gold-300 flex items-center gap-2">
                 {language === 'tr' ? room.nameTr : room.nameEn}
                 {roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
+                {/* Connection indicator */}
+                {isConnected ? (
+                  <Wifi className="w-4 h-4 text-green-400" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-red-400 animate-pulse" />
+                )}
               </h1>
               <p className="text-purple-200/60 text-sm">
                 {language === 'tr' ? room.descTr : room.descEn}
@@ -519,6 +619,14 @@ export default function ChatRoomPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Sound toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`p-2 rounded-lg ${soundEnabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'} hover:opacity-80`}
+              title={soundEnabled ? (language === 'tr' ? 'Sesi kapat' : 'Mute sounds') : (language === 'tr' ? 'Sesi aç' : 'Enable sounds')}
+            >
+              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
             {/* Edit nickname button */}
             {session?.user && nickname && (
               <button
@@ -566,7 +674,6 @@ export default function ChatRoomPage() {
                     if (myPermissions && user.id !== session?.user?.id) {
                       setSelectedUser(user)
                     } else if (user.id !== session?.user?.id) {
-                      // Non-admin users can click to mention
                       addMention(getDisplayName(user))
                     }
                   }}
@@ -763,6 +870,29 @@ export default function ChatRoomPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Typing Indicator */}
+            <AnimatePresence>
+              {typingUsers.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-4 py-2 text-purple-300/70 text-sm flex items-center gap-2"
+                >
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span>
+                    {typingUsers.slice(0, 3).join(', ')}
+                    {typingUsers.length > 3 && ` +${typingUsers.length - 3}`}
+                    {language === 'tr' ? ' yazıyor...' : ' typing...'}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Error Message */}
             {error && (
               <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 text-red-300 text-base">
@@ -778,7 +908,10 @@ export default function ChatRoomPage() {
                     ref={inputRef}
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value)
+                      handleTyping()
+                    }}
                     placeholder={t('chat.placeholder')}
                     maxLength={500}
                     className="flex-1 bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-base text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 transition-colors"

@@ -133,13 +133,15 @@ model ChatMessage {
 }
 
 model ChatPresence {
-  id        String   @id @default(cuid())
-  roomId    String
-  userId    String
-  nickname  String?
-  lastSeen  DateTime @default(now())
-  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  roomId     String
+  userId     String
+  nickname   String?
+  isTyping   Boolean   @default(false)
+  lastTyping DateTime?
+  lastSeen   DateTime  @default(now())
+  room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
