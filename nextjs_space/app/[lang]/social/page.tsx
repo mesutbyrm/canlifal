@@ -336,6 +336,9 @@ export default function SocialPage() {
 
   const handleShare = (platform: string, post: SocialPost) => {
     const url = `${window.location.origin}/${language}/social?post=${post.id}`
+    // TikTok-friendly short text (under 150 chars with hashtags)
+    const shortText = post.content.substring(0, 80) + (post.content.length > 80 ? '...' : '')
+    const tiktokText = `${shortText} #falci #fal #keşfet #fortune`
     const text = post.content.substring(0, 100) + (post.content.length > 100 ? '...' : '')
 
     switch (platform) {
@@ -347,6 +350,13 @@ export default function SocialPage() {
         break
       case 'whatsapp':
         window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank')
+        break
+      case 'tiktok':
+        // TikTok doesn't have direct share URL, copy text for manual paste
+        navigator.clipboard.writeText(tiktokText + '\n\n' + url)
+        alert(language === 'tr' 
+          ? '📋 TikTok için metin kopyalandı!\n\nTikTok uygulamasını açın ve bu metni yapıştırın.' 
+          : '📋 Text copied for TikTok!\n\nOpen TikTok app and paste this text.')
         break
       case 'copy':
         navigator.clipboard.writeText(url)
@@ -760,6 +770,15 @@ export default function SocialPage() {
                               </button>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => handleShare('tiktok', post)}
+                                className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-[#00f2ea]/20 to-[#ff0050]/20 text-white rounded-lg hover:from-[#00f2ea]/30 hover:to-[#ff0050]/30 col-span-2 font-semibold"
+                              >
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                                </svg>
+                                TikTok
+                              </button>
                               <button
                                 onClick={() => handleShare('twitter', post)}
                                 className="flex items-center justify-center gap-2 p-3 bg-[#1DA1F2]/20 text-[#1DA1F2] rounded-lg hover:bg-[#1DA1F2]/30"
