@@ -9,6 +9,8 @@ import { Coffee, Sparkles, AlertCircle, Upload, Camera, FileText, X, ImageIcon }
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
+import TextToSpeech from '@/components/text-to-speech'
+import VoiceInput from '@/components/voice-input'
 import Image from 'next/image'
 
 type InputMode = 'text' | 'image'
@@ -505,14 +507,18 @@ export default function CoffeeFortunePage() {
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-deep-purple-200 text-sm font-medium">
-                      {language === 'tr' ? 'Fincanda ne görüyorsunuz?' : 'What do you see in the cup?'}
+                    <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between">
+                      <span>{language === 'tr' ? 'Fincanda ne görüyorsunuz?' : 'What do you see in the cup?'}</span>
+                      <VoiceInput 
+                        onTranscript={(text) => setDescription(prev => prev + ' ' + text)}
+                        disabled={isLoading}
+                      />
                     </label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e?.target?.value ?? '')}
                       className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors min-h-[150px]"
-                      placeholder={language === 'tr' ? 'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın...' : 'Describe the shapes, patterns, and what you see in your cup in detail...'}
+                      placeholder={language === 'tr' ? 'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın... (Mikrofon ile de konuşabilirsiniz)' : 'Describe the shapes, patterns, and what you see in your cup in detail... (You can also use the microphone)'}
                       required
                     />
                   </div>
@@ -563,6 +569,11 @@ export default function CoffeeFortunePage() {
                 <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">
                   {fortune}
                 </p>
+              </div>
+              
+              {/* Text to Speech */}
+              <div className="mb-4">
+                <TextToSpeech text={fortune} />
               </div>
               
               <div className="flex flex-wrap gap-3">

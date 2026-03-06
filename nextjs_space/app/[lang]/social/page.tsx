@@ -353,7 +353,7 @@ export default function SocialPage() {
                   placeholder={language === 'tr' ? 'Ne düşünüyorsun?' : "What's on your mind?"}
                   className="w-full bg-transparent border-none outline-none text-white placeholder-purple-400/50 resize-none"
                   rows={3}
-                  maxLength={1000}
+                  maxLength={6000}
                 />
                 
                 {/* Image Preview */}
@@ -396,7 +396,7 @@ export default function SocialPage() {
                       <ImagePlus className="w-5 h-5" />
                     </button>
                     <span className="text-xs text-purple-400/50">
-                      {newPostContent.length}/1000
+                      {newPostContent.length}/6000
                     </span>
                   </div>
                   <button

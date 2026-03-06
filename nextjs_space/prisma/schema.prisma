@@ -34,6 +34,7 @@ model User {
   socialPosts       SocialPost[]
   socialComments    SocialComment[]
   socialLikes       SocialLike[]
+  notifications     Notification[]
 
   @@map("users")
 }
@@ -224,6 +225,7 @@ model SocialPost {
   fortuneId   String?   // Optional: linked fortune
   content     String    @db.Text
   imageUrl    String?   // Optional: image URL for the post
+  audioUrl    String?   // Optional: audio URL for voice posts
   postType    String    // "fortune", "text", "horoscope"
   fortuneType String?   // coffee, tarot, etc. if fortune post
   isAuto      Boolean   @default(false) // True if auto-shared from fortune
@@ -268,4 +270,53 @@ model SocialLike {
   @@unique([postId, userId])
   @@index([postId])
   @@map("social_likes")
+}
+
+// Anonymous users who use the platform without registration
+model AnonymousUser {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  deviceId        String   @unique
+  credits         Int      @default(0)
+  adsWatched      Int      @default(0)
+  adsWatchedToday Int      @default(0)
+  lastAdDate      DateTime?
+  fortunesUsed    Int      @default(0)
+  createdAt       DateTime @default(now())
+  anonymousFortunes AnonymousFortune[]
+
+  @@map("anonymous_users")
+}
+
+// Fortune readings for anonymous users
+model AnonymousFortune {
+  id              String        @id @default(cuid())
+  anonymousUserId String
+  fortuneType     String
+  inputData       String        @db.Text
+  aiResponse      String        @db.Text
+  language        String
+  createdAt       DateTime      @default(now())
+  anonymousUser   AnonymousUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+
+  @@index([anonymousUserId])
+  @@map("anonymous_fortunes")
+}
+
+// Notifications for users (likes, comments, etc.)
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "like", "comment", "share"
+  message   String
+  postId    String?
+  fromUserId String?
+  fromUserName String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

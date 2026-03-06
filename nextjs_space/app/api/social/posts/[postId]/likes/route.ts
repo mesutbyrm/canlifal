@@ -59,6 +59,20 @@ export async function POST(
         where: { postId: params.postId }
       })
 
+      // Create notification for post owner (if not self-like)
+      if (post.userId !== session.user.id) {
+        await prisma.notification.create({
+          data: {
+            userId: post.userId,
+            type: 'like',
+            message: 'liked your post',
+            postId: params.postId,
+            fromUserId: session.user.id,
+            fromUserName: session.user.name || 'Birisi'
+          }
+        }).catch(err => console.error('Notification error:', err))
+      }
+
       return NextResponse.json({ liked: true, likeCount })
     }
   } catch (error) {

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Star, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 

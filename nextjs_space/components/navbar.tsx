@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X } from 'lucide-react'
+import NotificationBell from './notification-bell'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
@@ -99,6 +100,11 @@ export default function Navbar() {
                   </div>
                 </Link>
                 
+                <NotificationBell />
+                <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2.5 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-sm font-medium uppercase">{language}</span>
+                </button>
                 <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -111,15 +117,15 @@ export default function Navbar() {
                 <Link href={`/${language}/register`} className="px-3 py-1.5 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-colors font-medium text-sm xl:text-base">
                   {t('nav.register')}
                 </Link>
+                <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2.5 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-sm font-medium uppercase">{language}</span>
+                </button>
               </>
             )}
             <Link href={`/${language}/contact`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
               {language === 'tr' ? 'İletişim' : 'Contact'}
             </Link>
-            <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2.5 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
-              <Globe className="w-4 h-4" />
-              <span className="text-sm font-medium uppercase">{language}</span>
-            </button>
           </div>
 
           {/* Tablet Nav (md-lg) */}
@@ -150,6 +156,7 @@ export default function Navbar() {
                 <Link href={`/${language}/profile`} className="hover:opacity-80 transition-opacity">
                   <ProfileAvatar size="sm" />
                 </Link>
+                <NotificationBell />
                 <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -171,14 +178,14 @@ export default function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-3">
+          <div className="flex md:hidden items-center gap-2">
             {session?.user && (
               <>
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
                   <Sparkles className="w-3 h-3 text-gold-500" />
                   <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
                 </div>
-                <ProfileAvatar size="sm" />
+                <NotificationBell />
               </>
             )}
             <button onClick={toggleLanguage} className="text-deep-purple-200 hover:text-gold-400 transition-colors p-1.5 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">

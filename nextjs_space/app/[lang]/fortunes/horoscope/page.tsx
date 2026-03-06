@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { Star, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 
 const ZODIAC_SIGNS = [

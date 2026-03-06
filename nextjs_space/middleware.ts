@@ -23,8 +23,8 @@ export default withAuth(
       }
     }
 
-    // Protected user routes
-    const protectedRoutes = ['/dashboard', '/profile', '/fortunes']
+    // Protected user routes (fortunes removed - now accessible without login)
+    const protectedRoutes = ['/dashboard', '/profile']
     const isProtectedRoute = protectedRoutes.some(route => pathname.includes(route))
     
     if (isProtectedRoute && !isAuth) {

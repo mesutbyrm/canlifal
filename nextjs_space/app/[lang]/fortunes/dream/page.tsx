@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { Moon, Sparkles, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import TextToSpeech from '@/components/text-to-speech'
+import VoiceInput from '@/components/voice-input'
 import ShareToSocial from '@/components/share-to-social'
 import Image from 'next/image'
 
@@ -131,7 +133,13 @@ export default function DreamFortunePage() {
 
               <div className="space-y-2">
                 <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between">
-                  {t('dream.prompt')}
+                  <span className="flex items-center gap-2">
+                    {t('dream.prompt')}
+                    <VoiceInput 
+                      onTranscript={(text) => setDreamDescription(prev => prev + ' ' + text)}
+                      disabled={isLoading}
+                    />
+                  </span>
                   <span className="flex items-center gap-1 text-gold-500">
                     <Sparkles className="w-4 h-4" />
                     5 {t('nav.credits')}
@@ -141,7 +149,7 @@ export default function DreamFortunePage() {
                   value={dreamDescription}
                   onChange={(e) => setDreamDescription(e?.target?.value ?? '')}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors min-h-[150px]"
-                  placeholder={t('dream.placeholder')}
+                  placeholder={language === 'tr' ? 'Rüyanızı anlatın... (Mikrofon ile de konuşabilirsiniz)' : 'Describe your dream... (You can also use the microphone)'}
                   required
                 />
               </div>
@@ -168,6 +176,11 @@ export default function DreamFortunePage() {
                 <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">
                   {fortune}
                 </p>
+              </div>
+              
+              {/* Text to Speech */}
+              <div className="mb-4">
+                <TextToSpeech text={fortune} />
               </div>
               
               <div className="flex flex-wrap gap-3">

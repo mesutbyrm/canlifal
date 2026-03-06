@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Hand, Sparkles, Upload, X } from 'lucide-react'
+import { Hand, Sparkles, Upload, X, Camera, RotateCcw } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
+import TextToSpeech from '@/components/text-to-speech'
 import Image from 'next/image'
 
 export default function PalmReadingPage() {
@@ -20,7 +21,57 @@ export default function PalmReadingPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
+  const [showCamera, setShowCamera] = useState(false)
+  const [stream, setStream] = useState<MediaStream | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const startCamera = useCallback(async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      setStream(mediaStream)
+      setShowCamera(true)
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream
+        }
+      }, 100)
+    } catch (err) {
+      setError(language === 'tr' ? 'Kamera erişimi reddedildi' : 'Camera access denied')
+    }
+  }, [language])
+
+  const stopCamera = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+      setStream(null)
+    }
+    setShowCamera(false)
+  }, [stream])
+
+  const capturePhoto = useCallback(() => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'palm-capture.jpg', { type: 'image/jpeg' })
+            setPalmImage(file)
+            setPalmPreview(canvas.toDataURL('image/jpeg'))
+            stopCamera()
+          }
+        }, 'image/jpeg', 0.9)
+      }
+    }
+  }, [stopCamera])
 
   const handleImageSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -149,24 +200,75 @@ export default function PalmReadingPage() {
                 <label className="block text-deep-purple-200 mb-3 font-medium">
                   {language === 'tr' ? 'El Fotoğrafınız *' : 'Your Palm Photo *'}
                 </label>
-                <div
-                  onClick={() => inputRef.current?.click()}
-                  className={`relative aspect-video rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${palmPreview ? 'border-gold-500' : 'border-deep-purple-600 hover:border-gold-500/50'}`}
-                >
-                  {palmPreview ? (
-                    <>
-                      <Image src={palmPreview} alt="Palm" fill className="object-cover" />
-                      <button onClick={(e) => { e.stopPropagation(); setPalmImage(null); setPalmPreview(''); }} className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white">
-                        <X className="w-4 h-4" />
+                
+                {/* Camera View */}
+                {showCamera && (
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-black">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4">
+                      <button
+                        onClick={capturePhoto}
+                        className="p-4 bg-gold-500 rounded-full text-deep-purple-950 hover:bg-gold-400 transition-all shadow-lg"
+                      >
+                        <Camera className="w-8 h-8" />
                       </button>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                      <Upload className="w-12 h-12 mb-2" />
-                      <p className="text-sm text-center px-4">{language === 'tr' ? 'El içi fotoğrafınızı yükleyin' : 'Upload your palm photo'}</p>
+                      <button
+                        onClick={stopCamera}
+                        className="p-4 bg-red-500 rounded-full text-white hover:bg-red-400 transition-all shadow-lg"
+                      >
+                        <X className="w-8 h-8" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                    <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                      {hand === 'right' 
+                        ? (language === 'tr' ? 'Sağ elinizi gösterin' : 'Show your right hand')
+                        : (language === 'tr' ? 'Sol elinizi gösterin' : 'Show your left hand')
+                      }
+                    </div>
+                  </div>
+                )}
+
+                {!showCamera && (
+                  <>
+                    <div
+                      onClick={() => inputRef.current?.click()}
+                      className={`relative aspect-video rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${palmPreview ? 'border-gold-500' : 'border-deep-purple-600 hover:border-gold-500/50'}`}
+                    >
+                      {palmPreview ? (
+                        <>
+                          <Image src={palmPreview} alt="Palm" fill className="object-cover" />
+                          <button onClick={(e) => { e.stopPropagation(); setPalmImage(null); setPalmPreview(''); }} className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
+                          <Upload className="w-12 h-12 mb-2" />
+                          <p className="text-sm text-center px-4">{language === 'tr' ? 'El içi fotoğrafınızı yükleyin' : 'Upload your palm photo'}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Camera Button */}
+                    {!palmPreview && (
+                      <button
+                        onClick={startCamera}
+                        className="mt-3 w-full py-3 flex items-center justify-center gap-2 bg-purple-600/30 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-600/50 transition-all"
+                      >
+                        <Camera className="w-5 h-5" />
+                        {language === 'tr' ? 'Kamera ile Çek' : 'Take Photo'}
+                      </button>
+                    )}
+                  </>
+                )}
+                
                 <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0])} />
               </div>
 
@@ -193,6 +295,12 @@ export default function PalmReadingPage() {
               </div>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
+            
+            {/* Text to Speech */}
+            <div className="mt-6 mb-4">
+              <TextToSpeech text={response} />
+            </div>
+            
             <SocialShare title={language === 'tr' ? 'El Falım' : 'My Palm Reading'} text={response} />
             <button onClick={() => { setResponse(''); setPalmImage(null); setPalmPreview(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
               {language === 'tr' ? 'Yeni Fal Bak' : 'Get New Reading'}
