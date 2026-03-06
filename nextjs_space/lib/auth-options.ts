@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import prisma from './db'
@@ -8,11 +7,12 @@ import prisma from './db'
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'placeholder-client-id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'placeholder-client-secret',
-      allowDangerousEmailAccountLinking: true,
-    }),
+    // Google SSO - Şimdilik pasif
+    // GoogleProvider({
+    //   clientId: process.env.GOOGLE_CLIENT_ID || '',
+    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    //   allowDangerousEmailAccountLinking: true,
+    // }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -54,27 +54,13 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session, account }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
         token.role = user.role || 'user'
         token.credits = user.credits ?? 10
         token.preferredLanguage = user.preferredLanguage || 'tr'
         token.image = user.image
-      }
-      
-      // For Google OAuth, fetch additional user data from database
-      if (account?.provider === 'google' && token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { role: true, credits: true, preferredLanguage: true, image: true }
-        })
-        if (dbUser) {
-          token.role = dbUser.role
-          token.credits = dbUser.credits
-          token.preferredLanguage = dbUser.preferredLanguage
-          token.image = dbUser.image
-        }
       }
       
       // Update token when session is updated
