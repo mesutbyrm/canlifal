@@ -48,19 +48,15 @@ export async function autoShareFortune(
     
     const label = FORTUNE_TYPE_LABELS[fortuneType]?.[language] || fortuneType
     
-    // Create a summary for the social post (first 500 chars)
-    const summary = aiResponse.length > 500 
-      ? aiResponse.substring(0, 500) + '...'
-      : aiResponse
+    // Share the full fortune content
+    console.log(`[AUTO-SHARE] Creating social post with full content length: ${aiResponse.length}`)
     
-    console.log(`[AUTO-SHARE] Creating social post with content length: ${summary.length}`)
-    
-    // Create social post
+    // Create social post with full fortune content
     const post = await prisma.socialPost.create({
       data: {
         userId,
         fortuneId,
-        content: summary,
+        content: aiResponse,
         postType: 'fortune',
         fortuneType,
         isAuto: true,
