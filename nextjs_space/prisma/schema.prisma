@@ -197,3 +197,13 @@ model ChatBan {
   @@index([roomId])
   @@map("chat_bans")
 }
+
+// Site settings for ads and other configurations
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

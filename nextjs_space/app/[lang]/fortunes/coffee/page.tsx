@@ -5,12 +5,13 @@ import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
-import { Coffee, Sparkles, AlertCircle, Upload, Camera, FileText, X } from 'lucide-react'
+import { Coffee, Sparkles, AlertCircle, Upload, Camera, FileText, X, ImageIcon } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import Image from 'next/image'
 
 type InputMode = 'text' | 'image'
+type ImageSource = 'gallery' | 'camera'
 
 export default function CoffeeFortunePage() {
   const { data: session } = useSession() || {}
@@ -29,9 +30,12 @@ export default function CoffeeFortunePage() {
   const [cupPreview, setCupPreview] = useState<string>('')
   const [saucerPreview, setSaucerPreview] = useState<string>('')
   const [uploadProgress, setUploadProgress] = useState('')
+  const [showImageSourceModal, setShowImageSourceModal] = useState<'cup' | 'saucer' | null>(null)
   
   const cupInputRef = useRef<HTMLInputElement>(null)
   const saucerInputRef = useRef<HTMLInputElement>(null)
+  const cupCameraRef = useRef<HTMLInputElement>(null)
+  const saucerCameraRef = useRef<HTMLInputElement>(null)
 
   const handleImageSelect = (file: File, type: 'cup' | 'saucer') => {
     if (!file.type.startsWith('image/')) {
@@ -288,6 +292,62 @@ export default function CoffeeFortunePage() {
         >
           {!fortune ? (
             <>
+              {/* Image Source Selection Modal */}
+              {showImageSourceModal && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowImageSourceModal(null)}>
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-deep-purple-900 border border-gold-500/30 rounded-xl p-6 max-w-sm w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="text-gold-500 font-serif text-xl mb-4 text-center">
+                      {language === 'tr' ? 'Fotoğraf Kaynağı Seçin' : 'Select Photo Source'}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => {
+                          if (showImageSourceModal === 'cup') {
+                            cupCameraRef.current?.click()
+                          } else {
+                            saucerCameraRef.current?.click()
+                          }
+                          setShowImageSourceModal(null)
+                        }}
+                        className="flex flex-col items-center gap-3 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-lg border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                      >
+                        <Camera className="w-10 h-10 text-gold-500" />
+                        <span className="text-deep-purple-100 font-medium">
+                          {language === 'tr' ? 'Kamera' : 'Camera'}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (showImageSourceModal === 'cup') {
+                            cupInputRef.current?.click()
+                          } else {
+                            saucerInputRef.current?.click()
+                          }
+                          setShowImageSourceModal(null)
+                        }}
+                        className="flex flex-col items-center gap-3 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-lg border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                      >
+                        <ImageIcon className="w-10 h-10 text-gold-500" />
+                        <span className="text-deep-purple-100 font-medium">
+                          {language === 'tr' ? 'Galeri' : 'Gallery'}
+                        </span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowImageSourceModal(null)}
+                      className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors"
+                    >
+                      {language === 'tr' ? 'İptal' : 'Cancel'}
+                    </button>
+                  </motion.div>
+                </div>
+              )}
+
               {/* Image Upload Mode */}
               {inputMode === 'image' && (
                 <div className="space-y-6">
@@ -298,7 +358,7 @@ export default function CoffeeFortunePage() {
                         {language === 'tr' ? 'Fincan İçi *' : 'Cup Interior *'}
                       </label>
                       <div
-                        onClick={() => cupInputRef.current?.click()}
+                        onClick={() => setShowImageSourceModal('cup')}
                         className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
                           cupPreview
                             ? 'border-gold-500'
@@ -321,17 +381,30 @@ export default function CoffeeFortunePage() {
                           </>
                         ) : (
                           <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                            <Upload className="w-12 h-12 mb-2" />
+                            <div className="flex gap-2 mb-2">
+                              <Camera className="w-8 h-8" />
+                              <ImageIcon className="w-8 h-8" />
+                            </div>
                             <p className="text-sm text-center px-4">
-                              {language === 'tr' ? 'Fincan içi fotoğrafını yükleyin' : 'Upload cup interior photo'}
+                              {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
                             </p>
                           </div>
                         )}
                       </div>
+                      {/* Hidden file inputs for gallery */}
                       <input
                         ref={cupInputRef}
                         type="file"
                         accept="image/*"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
+                      />
+                      {/* Hidden camera input */}
+                      <input
+                        ref={cupCameraRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
                         className="hidden"
                         onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
                       />
@@ -343,7 +416,7 @@ export default function CoffeeFortunePage() {
                         {language === 'tr' ? 'Tabak (İsteğe Bağlı)' : 'Saucer (Optional)'}
                       </label>
                       <div
-                        onClick={() => saucerInputRef.current?.click()}
+                        onClick={() => setShowImageSourceModal('saucer')}
                         className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
                           saucerPreview
                             ? 'border-gold-500'
@@ -366,17 +439,30 @@ export default function CoffeeFortunePage() {
                           </>
                         ) : (
                           <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                            <Upload className="w-12 h-12 mb-2" />
+                            <div className="flex gap-2 mb-2">
+                              <Camera className="w-8 h-8" />
+                              <ImageIcon className="w-8 h-8" />
+                            </div>
                             <p className="text-sm text-center px-4">
-                              {language === 'tr' ? 'Tabak fotoğrafını yükleyin' : 'Upload saucer photo'}
+                              {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
                             </p>
                           </div>
                         )}
                       </div>
+                      {/* Hidden file inputs for gallery */}
                       <input
                         ref={saucerInputRef}
                         type="file"
                         accept="image/*"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
+                      />
+                      {/* Hidden camera input */}
+                      <input
+                        ref={saucerCameraRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
                         className="hidden"
                         onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
                       />

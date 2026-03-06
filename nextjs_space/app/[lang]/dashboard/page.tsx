@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Coffee, Star, Moon, Sparkles, Calendar } from 'lucide-react'
+import { Coffee, Star, Moon, Sparkles, Calendar, Droplets } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { format } from 'date-fns'
+import WatchAdCredits from '@/components/watch-ad-credits'
 
 interface Fortune {
   id: string
@@ -45,6 +46,8 @@ export default function DashboardPage() {
         return <Star className="w-6 h-6" />
       case 'dream':
         return <Moon className="w-6 h-6" />
+      case 'kursundokme':
+        return <Droplets className="w-6 h-6" />
       default:
         return <Sparkles className="w-6 h-6" />
     }
@@ -62,6 +65,11 @@ export default function DashboardPage() {
           <h1 className="font-serif text-4xl md:text-6xl text-gold-500 gold-glow mb-4">
             {t('dashboard.title')}
           </h1>
+          
+          {/* Watch Ad for Credits */}
+          <div className="flex justify-center mt-6">
+            <WatchAdCredits />
+          </div>
         </motion.div>
 
         {isLoading ? (

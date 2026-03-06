@@ -13,7 +13,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { shapes, language } = await request.json()
+    let shapes: string
+    let language: string
+    
+    try {
+      const body = await request.json()
+      shapes = body.shapes || ''
+      language = body.language || 'tr'
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
 
     // Check and deduct credits
     const creditResult = await checkAndDeductCredits(session.user.id, 'kursundokme')
@@ -23,6 +32,12 @@ export async function POST(request: Request) {
         { status: 402 }
       )
     }
+
+    // Generate mystical shape descriptions if none provided
+    const shapeTypes = ['kuş', 'kalp', 'göz', 'hilal', 'yıldız', 'el', 'yılan', 'ağaç', 'balık', 'halka']
+    const finalShapes = shapes && shapes.trim().length > 0 
+      ? shapes 
+      : shapeTypes.sort(() => Math.random() - 0.5).slice(0, 4 + Math.floor(Math.random() * 3)).join(', ')
 
     const systemPrompt = language === 'tr' ? `Sen deneyimli bir kurşun dökme falcısısın. Geleneksel Türk kurşun dökme ritüelini çok iyi biliyorsun.
 
@@ -50,8 +65,8 @@ Provide a detailed and mystical interpretation based on the shapes formed:
 Respond in English. Use mystical and poetic language.`
 
     const userPrompt = language === 'tr'
-      ? `Kurşun döküldü ve şu şekiller oluştu: ${shapes || 'çeşitli gizemli şekiller'}. Bu şekillerin anlamını yorumla ve falımı söyle.`
-      : `The lead was poured and these shapes formed: ${shapes || 'various mysterious shapes'}. Interpret the meaning of these shapes and tell my fortune.`
+      ? `Kurşun döküldü ve şu şekiller oluştu: ${finalShapes}. Bu şekillerin anlamını yorumla ve falımı söyle.`
+      : `The lead was poured and these shapes formed: ${finalShapes}. Interpret the meaning of these shapes and tell my fortune.`
 
     // Call LLM API
     const llmResponse = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
@@ -73,13 +88,21 @@ Respond in English. Use mystical and poetic language.`
     })
 
     if (!llmResponse.ok) {
-      throw new Error('Failed to get fortune interpretation')
+      const errorText = await llmResponse.text()
+      console.error('LLM API error:', errorText)
+      return NextResponse.json(
+        { error: language === 'tr' ? 'Fal yorumu alınamadı. Lütfen tekrar deneyin.' : 'Failed to get fortune interpretation. Please try again.' },
+        { status: 500 }
+      )
     }
 
     // Stream the response
     const reader = llmResponse.body?.getReader()
     if (!reader) {
-      throw new Error('No response body')
+      return NextResponse.json(
+        { error: language === 'tr' ? 'Yanıt alınamadı' : 'No response received' },
+        { status: 500 }
+      )
     }
 
     const encoder = new TextEncoder()
@@ -114,27 +137,30 @@ Respond in English. Use mystical and poetic language.`
             }
           }
 
-          // Save fortune to database
-          await prisma.fortune.create({
-            data: {
-              userId: session.user.id,
-              fortuneType: 'kursundokme',
-              inputData: JSON.stringify({ shapes }),
-              aiResponse: fullResponse,
-              language: language || 'tr',
-            },
-          })
+          // Save fortune to database if we got a response
+          if (fullResponse.length > 0) {
+            await prisma.fortune.create({
+              data: {
+                userId: session.user.id,
+                fortuneType: 'kursundokme',
+                inputData: JSON.stringify({ shapes: finalShapes }),
+                aiResponse: fullResponse,
+                language: language || 'tr',
+              },
+            })
 
-          // Send summary email
-          sendFortuneSummaryEmail(
-            session.user.id,
-            'kursundokme',
-            fullResponse.substring(0, 500),
-            language || 'tr'
-          ).catch(err => console.error('Email error:', err))
+            // Send summary email
+            sendFortuneSummaryEmail(
+              session.user.id,
+              'kursundokme',
+              fullResponse.substring(0, 500),
+              language || 'tr'
+            ).catch(err => console.error('Email error:', err))
+          }
 
           controller.close()
         } catch (error) {
+          console.error('Stream error:', error)
           controller.error(error)
         }
       },

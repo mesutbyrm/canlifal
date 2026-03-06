@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings } from 'lucide-react'
+import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { format } from 'date-fns'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -64,7 +64,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [creditAmount, setCreditAmount] = useState(10)
-  const [activeTab, setActiveTab] = useState<'users' | 'chat'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads'>('users')
   
   // Chat management state
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -78,8 +78,13 @@ export default function AdminPage() {
   const [roleUserId, setRoleUserId] = useState('')
   const [roleType, setRoleType] = useState('op')
 
+  // Ads management state
+  const [adSettings, setAdSettings] = useState<Record<string, string>>({})
+  const [adSaveStatus, setAdSaveStatus] = useState<string | null>(null)
+
   useEffect(() => {
     fetchData()
+    fetchAdSettings()
   }, [])
 
   const fetchData = async () => {
@@ -171,6 +176,36 @@ export default function AdminPage() {
     }
   }
 
+  const fetchAdSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings')
+      if (res.ok) {
+        const data = await res.json()
+        setAdSettings(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch ad settings:', error)
+    }
+  }
+
+  const saveAdSetting = async (key: string, value: string) => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      })
+
+      if (res.ok) {
+        setAdSettings(prev => ({ ...prev, [key]: value }))
+        setAdSaveStatus(key)
+        setTimeout(() => setAdSaveStatus(null), 2000)
+      }
+    } catch (error) {
+      console.error('Failed to save ad setting:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
       <div className="max-w-7xl mx-auto">
@@ -196,10 +231,15 @@ export default function AdminPage() {
                     <Users className="w-5 h-5" />
                     {language === 'tr' ? 'Kullanıcılar' : 'Users'}
                   </>
-                ) : (
+                ) : activeTab === 'chat' ? (
                   <>
                     <MessageCircle className="w-5 h-5" />
                     {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                  </>
+                ) : (
+                  <>
+                    <Megaphone className="w-5 h-5" />
+                    {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
                   </>
                 )}
                 <ChevronDown className="w-4 h-4" />
@@ -223,6 +263,13 @@ export default function AdminPage() {
                 >
                   <MessageCircle className="w-5 h-5" />
                   {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item 
+                  onClick={() => setActiveTab('ads')}
+                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'ads' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
+                >
+                  <Megaphone className="w-5 h-5" />
+                  {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
@@ -366,7 +413,7 @@ export default function AdminPage() {
               </table>
             </motion.div>
           </>
-        ) : (
+        ) : activeTab === 'chat' ? (
           /* Chat Management Tab */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -555,6 +602,231 @@ export default function AdminPage() {
                   </p>
                 </div>
               )}
+            </div>
+          </motion.div>
+        ) : (
+          /* Ads Management Tab */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Info Banner */}
+            <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
+              <h3 className="text-blue-300 font-medium mb-2">
+                {language === 'tr' ? 'Google Ads Entegrasyonu' : 'Google Ads Integration'}
+              </h3>
+              <p className="text-blue-200 text-sm">
+                {language === 'tr' 
+                  ? 'Google AdSense kodlarınızı aşağıdaki alanlara yapıştırın. Her alan farklı bir konumda görüntülenecektir.'
+                  : 'Paste your Google AdSense codes in the fields below. Each field will display in a different location.'}
+              </p>
+            </div>
+
+            {/* Ad Slots */}
+            <div className="grid gap-6">
+              {/* Header Ad */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium">
+                      {language === 'tr' ? 'Üst Banner Reklamı' : 'Header Banner Ad'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' ? 'Sayfanın üst kısmında görünür' : 'Appears at the top of pages'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_header' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_header'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_header: e.target.value }))}
+                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
+                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_header', adSettings['ads_header'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+
+              {/* Sidebar Ad */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium">
+                      {language === 'tr' ? 'Kenar Çubuğu Reklamı' : 'Sidebar Ad'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' ? 'Sayfa kenarında görünür' : 'Appears in the sidebar'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_sidebar' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_sidebar'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_sidebar: e.target.value }))}
+                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
+                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_sidebar', adSettings['ads_sidebar'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+
+              {/* Inline Ad (between content) */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium">
+                      {language === 'tr' ? 'İçerik Arası Reklam' : 'Inline Content Ad'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' ? 'İçerik arasında görünür' : 'Appears between content sections'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_inline' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_inline'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_inline: e.target.value }))}
+                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
+                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_inline', adSettings['ads_inline'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+
+              {/* Footer Ad */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium">
+                      {language === 'tr' ? 'Alt Banner Reklamı' : 'Footer Banner Ad'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' ? 'Sayfanın alt kısmında görünür' : 'Appears at the bottom of pages'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_footer' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_footer'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_footer: e.target.value }))}
+                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
+                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_footer', adSettings['ads_footer'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+
+              {/* Rewarded Ad (Watch to earn credits) */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium flex items-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      {language === 'tr' ? 'Ödüllü Reklam (Kredi Kazanma)' : 'Rewarded Ad (Earn Credits)'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' 
+                        ? 'Kullanıcılar bu reklamı izleyerek 5 kredi kazanır. Günlük limit: 10 reklam.'
+                        : 'Users earn 5 credits by watching this ad. Daily limit: 10 ads.'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_rewarded' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_rewarded'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_rewarded: e.target.value }))}
+                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
+                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_rewarded', adSettings['ads_rewarded'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
+
+              {/* Google AdSense Client ID */}
+              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-gold-400 font-medium">
+                      {language === 'tr' ? 'Google AdSense Script' : 'Google AdSense Script'}
+                    </h3>
+                    <p className="text-deep-purple-400 text-sm">
+                      {language === 'tr' 
+                        ? 'Google AdSense ana script kodunu buraya yapıştırın (head bölümüne eklenecek)'
+                        : 'Paste your Google AdSense main script code here (will be added to head)'}
+                    </p>
+                  </div>
+                  {adSaveStatus === 'ads_script' && (
+                    <span className="flex items-center gap-1 text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={adSettings['ads_script'] || ''}
+                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_script: e.target.value }))}
+                  placeholder='<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXX" crossorigin="anonymous"></script>'
+                  className="w-full h-24 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
+                />
+                <button
+                  onClick={() => saveAdSetting('ads_script', adSettings['ads_script'] || '')}
+                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
+                >
+                  <Save className="w-4 h-4" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

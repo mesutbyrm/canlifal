@@ -348,12 +348,9 @@ export default function KursunDokmePage() {
   const captureAndInterpret = async () => {
     phaseRef.current = 'interpreting'
     setPhase('interpreting')
+    setError('')
     
     try {
-      const canvas = canvasRef.current
-      if (!canvas) throw new Error('Canvas not found')
-      
-      const imageData = canvas.toDataURL('image/png')
       // Use ref to get shapes as they were set synchronously
       const shapesDescription = shapesRef.current.map(s => s.type).join(', ')
       
@@ -361,19 +358,24 @@ export default function KursunDokmePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageData,
           shapes: shapesDescription,
           language,
         }),
       })
 
+      // Check if response is JSON error
+      const contentType = response.headers.get('content-type')
       if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(errData.error || 'Failed to interpret')
+        if (contentType?.includes('application/json')) {
+          const errData = await response.json()
+          throw new Error(errData.error || (language === 'tr' ? 'Fal yorumu alınamadı' : 'Failed to get fortune'))
+        } else {
+          throw new Error(language === 'tr' ? 'Fal yorumu alınamadı' : 'Failed to get fortune')
+        }
       }
 
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('No reader')
+      if (!reader) throw new Error(language === 'tr' ? 'Yanıt alınamadı' : 'No response')
 
       const decoder = new TextDecoder()
       let result = ''
@@ -385,10 +387,15 @@ export default function KursunDokmePage() {
         setFortune(result)
       }
 
+      if (result.length === 0) {
+        throw new Error(language === 'tr' ? 'Fal yorumu boş geldi. Lütfen tekrar deneyin.' : 'Fortune interpretation was empty. Please try again.')
+      }
+
       phaseRef.current = 'complete'
       setPhase('complete')
     } catch (err: any) {
-      setError(err.message || 'Bir hata oluştu')
+      console.error('Fortune interpretation error:', err)
+      setError(err.message || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
       phaseRef.current = 'ready'
       setPhase('ready')
     }
