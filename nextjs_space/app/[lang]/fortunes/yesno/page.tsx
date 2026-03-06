@@ -80,14 +80,14 @@ export default function YesNoOraclePage() {
             <HelpCircle className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('fortune.yesno.name') || (language === 'tr' ? 'Evet/Hayır Falı' : 'Yes/No Oracle')}
+            {language === 'tr' ? 'Evet/Hayır Falı' : 'Yes/No Oracle'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
             {language === 'tr' ? 'Sorunuzu sorun, evren yanıtlayacak' : 'Ask your question, the universe will answer'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            2 {t('credits') || 'credits'}
+            2 {language === 'tr' ? 'kredi' : 'credits'}
           </p>
         </motion.div>
 

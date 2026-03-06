@@ -108,14 +108,14 @@ export default function HoroscopePage() {
             <Star className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('fortune.horoscope.name') || (language === 'tr' ? 'Günlük Burç' : 'Daily Horoscope')}
+            {language === 'tr' ? 'Günlük Burç Yorumu' : 'Daily Horoscope'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
             {language === 'tr' ? 'Burcunuzu seçin ve bugünün mesajını alın' : 'Select your sign and receive today\'s message'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            3 {t('credits') || 'credits'}
+            3 {language === 'tr' ? 'kredi' : 'credits'}
           </p>
         </motion.div>
 

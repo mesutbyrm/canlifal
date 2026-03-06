@@ -100,14 +100,14 @@ export default function LoveCompatibilityPage() {
             <Heart className="w-16 h-16 text-pink-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('fortune.love.name') || (language === 'tr' ? 'Aşk Uyumu' : 'Love Compatibility')}
+            {language === 'tr' ? 'Aşk Uyumu' : 'Love Compatibility'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
             {language === 'tr' ? 'İki kalbin kozmik bağını keşfedin' : 'Discover the cosmic connection between two hearts'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            5 {t('credits') || 'credits'}
+            5 {language === 'tr' ? 'kredi' : 'credits'}
           </p>
         </motion.div>
 

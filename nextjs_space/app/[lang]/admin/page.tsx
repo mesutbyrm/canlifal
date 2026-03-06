@@ -315,21 +315,21 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <Coffee className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{t('fortune.coffee.name')}</span>
+                      <span className="text-deep-purple-200">{language === 'tr' ? 'Kahve Falı' : 'Coffee Fortune'}</span>
                     </div>
                     <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.coffee ?? 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{t('fortune.tarot.name')}</span>
+                      <span className="text-deep-purple-200">{language === 'tr' ? 'Tarot Falı' : 'Tarot Reading'}</span>
                     </div>
                     <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.tarot ?? 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <Moon className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{t('fortune.dream.name')}</span>
+                      <span className="text-deep-purple-200">{language === 'tr' ? 'Rüya Tabiri' : 'Dream Interpretation'}</span>
                     </div>
                     <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.dream ?? 0}</span>
                   </div>

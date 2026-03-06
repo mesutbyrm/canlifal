@@ -81,14 +81,14 @@ export default function NumerologyPage() {
             <Hash className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('fortune.numerology.name') || (language === 'tr' ? 'Numeroloji' : 'Numerology')}
+            {language === 'tr' ? 'Numeroloji' : 'Numerology'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
             {language === 'tr' ? 'İsminiz ve doğum tarihiniz yazılı kaderinizi açığa çıkarır' : 'Your name and birth date reveal your written destiny'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            4 {t('credits') || 'credits'}
+            4 {language === 'tr' ? 'kredi' : 'credits'}
           </p>
         </motion.div>
 
