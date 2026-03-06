@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bell, X, Heart, MessageCircle, Share2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Notification {
@@ -19,6 +20,7 @@ interface Notification {
 export default function NotificationBell() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
+  const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
@@ -82,17 +84,35 @@ export default function NotificationBell() {
     return () => clearInterval(interval)
   }, [fetchNotifications])
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
+    if (unreadCount === 0) return
+    
     try {
       await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAll: true })
       })
-      setNotifications(notifications.map(n => ({ ...n, isRead: true })))
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
       setUnreadCount(0)
     } catch (error) {
       console.error('Failed to mark notifications:', error)
+    }
+  }, [unreadCount])
+
+  // Mark all as read when dropdown opens
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) {
+      markAllAsRead()
+    }
+  }, [isOpen])
+
+  const handleNotificationClick = (notif: Notification) => {
+    setIsOpen(false)
+    if (notif.postId) {
+      router.push(`/${language}/social?postId=${notif.postId}`)
+    } else {
+      router.push(`/${language}/social`)
     }
   }
 
@@ -174,6 +194,7 @@ export default function NotificationBell() {
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
                       className={`p-3 hover:bg-purple-500/10 transition-colors cursor-pointer ${
                         !notif.isRead ? 'bg-purple-500/5' : ''
                       }`}

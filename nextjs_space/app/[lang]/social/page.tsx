@@ -88,6 +88,7 @@ export default function SocialPage() {
   const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
   const [selectedYoutubeUrl, setSelectedYoutubeUrl] = useState<string | null>(null)
   const [selectedYoutubeThumbnail, setSelectedYoutubeThumbnail] = useState<string | null>(null)
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchPosts = useCallback(async () => {
@@ -107,6 +108,30 @@ export default function SocialPage() {
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
+
+  // Handle scroll to post from notification
+  useEffect(() => {
+    if (!loading && posts.length > 0) {
+      const params = new URLSearchParams(window.location.search)
+      const postId = params.get('postId')
+      if (postId) {
+        setHighlightedPostId(postId)
+        // Scroll to post after a short delay
+        setTimeout(() => {
+          const postElement = document.getElementById(`post-${postId}`)
+          if (postElement) {
+            postElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 300)
+        // Clear highlight after animation
+        setTimeout(() => {
+          setHighlightedPostId(null)
+          // Clean URL
+          window.history.replaceState({}, '', `/${language}/social`)
+        }, 3000)
+      }
+    }
+  }, [loading, posts, language])
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -499,15 +524,30 @@ export default function SocialPage() {
             <AnimatePresence>
               {posts.map((post, index) => {
                 const IconComponent = FORTUNE_ICONS[post.fortuneType || 'default'] || FORTUNE_ICONS.default
+                const isHighlighted = highlightedPostId === post.id
 
                 return (
                   <motion.div
                     key={post.id}
+                    id={`post-${post.id}`}
                     initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    animate={{ 
+                      opacity: 1, 
+                      y: 0,
+                      scale: isHighlighted ? [1, 1.02, 1] : 1,
+                      boxShadow: isHighlighted ? ['0 0 0 rgba(212, 175, 55, 0)', '0 0 20px rgba(212, 175, 55, 0.5)', '0 0 0 rgba(212, 175, 55, 0)'] : 'none'
+                    }}
                     exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-[#1a0b2e]/80 border border-purple-500/20 rounded-xl overflow-hidden"
+                    transition={{ 
+                      delay: index * 0.05,
+                      scale: { duration: 1.5, repeat: isHighlighted ? 2 : 0 },
+                      boxShadow: { duration: 1.5, repeat: isHighlighted ? 2 : 0 }
+                    }}
+                    className={`bg-[#1a0b2e]/80 border rounded-xl overflow-hidden ${
+                      isHighlighted 
+                        ? 'border-gold-500 ring-2 ring-gold-500/50' 
+                        : 'border-purple-500/20'
+                    }`}
                   >
                     {/* Post Header */}
                     <div className="p-4 pb-2">
