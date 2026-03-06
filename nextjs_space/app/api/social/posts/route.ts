@@ -31,6 +31,14 @@ export async function GET(request: NextRequest) {
           },
           likes: {
             select: { userId: true }
+          },
+          comments: {
+            include: {
+              user: {
+                select: { id: true, name: true, image: true }
+              }
+            },
+            orderBy: { createdAt: 'asc' }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -40,8 +48,19 @@ export async function GET(request: NextRequest) {
       prisma.socialPost.count({ where })
     ])
 
+    // Add fortune count for auto-shared posts
+    const postsWithStats = await Promise.all(posts.map(async (post) => {
+      if (post.isAuto && post.fortuneType) {
+        const fortuneCount = await prisma.fortune.count({
+          where: { fortuneType: post.fortuneType }
+        })
+        return { ...post, fortuneCount }
+      }
+      return post
+    }))
+
     return NextResponse.json({
-      posts,
+      posts: postsWithStats,
       pagination: {
         page,
         limit,

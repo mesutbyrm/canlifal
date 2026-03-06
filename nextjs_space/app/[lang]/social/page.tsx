@@ -18,6 +18,7 @@ interface SocialPost {
   isAuto?: boolean
   isPublic: boolean
   createdAt: string
+  fortuneCount?: number
   user: {
     id: string
     name: string
@@ -497,11 +498,21 @@ export default function SocialPage() {
                         </div>
                       )}
                       
-                      {/* Auto-shared badge */}
+                      {/* Auto-shared badge with fortune count */}
                       {post.isAuto && (
-                        <div className="mt-2 inline-flex items-center gap-1 text-xs text-purple-400/70 bg-purple-500/10 px-2 py-1 rounded-full">
-                          <Sparkles className="w-3 h-3" />
-                          {language === 'tr' ? 'Otomatik paylaşıldı' : 'Auto-shared'}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <div className="inline-flex items-center gap-1 text-xs text-purple-400/70 bg-purple-500/10 px-2 py-1 rounded-full">
+                            <Sparkles className="w-3 h-3" />
+                            {language === 'tr' ? 'Otomatik paylaşıldı' : 'Auto-shared'}
+                          </div>
+                          {post.fortuneCount && post.fortuneCount > 0 && (
+                            <div className="inline-flex items-center gap-1 text-xs text-gold-400/80 bg-gold-500/10 px-2 py-1 rounded-full">
+                              <User className="w-3 h-3" />
+                              {language === 'tr' 
+                                ? `Bu kullanıcı ile birlikte ${post.fortuneCount} kişi bu fala baktırdı`
+                                : `${post.fortuneCount} people including this user viewed this fortune`}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
