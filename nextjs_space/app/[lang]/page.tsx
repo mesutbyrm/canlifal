@@ -6,19 +6,10 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Coins, User, ChevronRight, Star, Video, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { Coins, ChevronRight, Star, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 
 interface UserCredits {
   credits: number
-}
-
-interface LiveTeller {
-  id: string
-  displayName: string
-  avatar: string | null
-  isOnline: boolean
-  rating: number
-  specialties: string[]
 }
 
 interface DailyHoroscope {
@@ -126,7 +117,6 @@ export default function HomePage() {
   const { data: session, status } = useSession() || {}
   const [credits, setCredits] = useState<number>(0)
   const [greeting, setGreeting] = useState('')
-  const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [horoscope, setHoroscope] = useState<DailyHoroscope | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(false)
   const [horoscopeExpanded, setHoroscopeExpanded] = useState(false)
@@ -159,16 +149,7 @@ export default function HomePage() {
         .finally(() => setHoroscopeLoading(false))
     }
 
-    // Fetch online tellers
-    fetch('/api/fortune-tellers')
-      .then(res => res.json())
-      .then(data => {
-        if (data.tellers) {
-          const online = data.tellers.filter((t: LiveTeller) => t.isOnline).slice(0, 4)
-          setLiveTellers(online)
-        }
-      })
-      .catch(() => {})
+
   }, [session, language])
 
   const featuredCard = FORTUNE_CARDS.find(c => c.featured)
@@ -285,68 +266,7 @@ export default function HomePage() {
           </motion.div>
         )}
 
-        {/* Live Fortune Tellers */}
-        {liveTellers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-2xl p-4 border border-purple-500/20"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <h3 className="text-white font-medium">
-                  {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
-                </h3>
-              </div>
-              <Link 
-                href={`/${language}/live-tellers`}
-                className="text-gold-400 text-sm flex items-center gap-1 hover:text-gold-300"
-              >
-                {language === 'tr' ? 'Tümü' : 'All'}
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {liveTellers.map((teller) => (
-                <Link
-                  key={teller.id}
-                  href={`/${language}/live-tellers/${teller.id}`}
-                  className="flex-shrink-0"
-                >
-                  <div className="w-16 text-center">
-                    <div className="relative">
-                      <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-pink-600 p-0.5">
-                        <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-                          {teller.avatar ? (
-                            <Image
-                              src={teller.avatar}
-                              alt={teller.displayName}
-                              width={56}
-                              height={56}
-                              className="object-cover"
-                            />
-                          ) : (
-                            <User className="w-6 h-6 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-[#0a0118] flex items-center justify-center">
-                        <Video className="w-3 h-3 text-white" />
-                      </div>
-                    </div>
-                    <p className="text-white text-xs mt-2 truncate">{teller.displayName.split(' ')[0]}</p>
-                    <div className="flex items-center justify-center gap-0.5">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-yellow-400 text-xs">{teller.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
+
 
         {/* Fortune Cards Grid */}
         <div className="grid grid-cols-2 gap-3 md:gap-4">
