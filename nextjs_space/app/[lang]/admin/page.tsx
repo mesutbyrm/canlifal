@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video } from 'lucide-react'
+import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { LiveVisitorCount } from '@/components/live-visitor-count'
@@ -321,6 +321,14 @@ export default function AdminPage() {
                   >
                     <Sparkles className="w-5 h-5" />
                     {language === 'tr' ? 'Kredi Paketleri' : 'Credit Packages'}
+                  </DropdownMenu.Item>
+                </Link>
+                <Link href={`/${language}/admin/payment-methods`}>
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    {language === 'tr' ? 'Ödeme Yöntemleri' : 'Payment Methods'}
                   </DropdownMenu.Item>
                 </Link>
                 <Link href={`/${language}/admin/settings`}>

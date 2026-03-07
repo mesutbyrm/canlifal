@@ -133,6 +133,10 @@ async function main() {
     { languageCode: 'tr', translationKey: 'fortune.love.name', translationValue: 'Aşk Falı' },
     { languageCode: 'tr', translationKey: 'fortune.yesno.name', translationValue: 'Evet/Hayır Falı' },
 
+    // Daily Horoscope
+    { languageCode: 'en', translationKey: 'fortune.daily_horoscope.name', translationValue: 'Daily Horoscope' },
+    { languageCode: 'tr', translationKey: 'fortune.daily_horoscope.name', translationValue: 'Günlük Burç Yorumu' },
+
     // Share translations
     { languageCode: 'en', translationKey: 'share.title', translationValue: 'Share your reading' },
     { languageCode: 'tr', translationKey: 'share.title', translationValue: 'Falını paylaş' },

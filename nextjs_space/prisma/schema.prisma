@@ -562,6 +562,23 @@ model Payment {
   @@map("payments")
 }
 
+// Payment Methods Configuration
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  type        String   @unique // credit_card, bitcoin, bank_transfer
+  name        String
+  nameEn      String?
+  description String?
+  descriptionEn String?
+  isActive    Boolean  @default(true)
+  config      String?  // JSON string for configuration (bank details, wallet address, etc.)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payment_methods")
+}
+
 // Platform settings for admin
 model PlatformSettings {
   id                    String   @id @default(cuid())
