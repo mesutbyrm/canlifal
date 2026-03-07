@@ -54,6 +54,9 @@ model User {
   payments              Payment[]
   referredBy            User?                @relation("UserReferrals", fields: [referredById], references: [id])
   referrals             User[]               @relation("UserReferrals")
+  videoStreams          VideoStream[]
+  videoStreamComments   VideoStreamComment[]
+  videoStreamLikes      VideoStreamLike[]
 
   @@index([referralCode])
   @@index([referredById])
@@ -624,4 +627,73 @@ model TellerChatMessage {
   @@index([chatSessionId])
   @@index([createdAt])
   @@map("teller_chat_messages")
+}
+
+// TikTok-style Video Stream
+model VideoStream {
+  id            String              @id @default(cuid())
+  userId        String
+  title         String?
+  description   String?
+  status        String              @default("live") // live, ended
+  viewerCount   Int                 @default(0)
+  likeCount     Int                 @default(0)
+  roomId        String              @unique @default(cuid())
+  category      String?             // fortune, chat, general
+  thumbnailUrl  String?
+  startedAt     DateTime            @default(now())
+  endedAt       DateTime?
+  createdAt     DateTime            @default(now())
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments      VideoStreamComment[]
+  likes         VideoStreamLike[]
+  viewers       VideoStreamViewer[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("video_streams")
+}
+
+// Comments on video streams
+model VideoStreamComment {
+  id          String      @id @default(cuid())
+  streamId    String
+  userId      String
+  content     String
+  createdAt   DateTime    @default(now())
+  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([streamId])
+  @@index([createdAt])
+  @@map("video_stream_comments")
+}
+
+// Likes on video streams
+model VideoStreamLike {
+  id        String      @id @default(cuid())
+  streamId  String
+  userId    String
+  createdAt DateTime    @default(now())
+  stream    VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@map("video_stream_likes")
+}
+
+// Track viewers in video streams
+model VideoStreamViewer {
+  id         String      @id @default(cuid())
+  streamId   String
+  viewerId   String
+  viewerName String?
+  joinedAt   DateTime    @default(now())
+  leftAt     DateTime?
+  stream     VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([streamId])
+  @@map("video_stream_viewers")
 }
