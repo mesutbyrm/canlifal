@@ -42,6 +42,7 @@ model User {
   socialComments        SocialComment[]
   socialLikes           SocialLike[]
   socialPosts           SocialPost[]
+  payments              Payment[]
   referredBy            User?                @relation("UserReferrals", fields: [referredById], references: [id])
   referrals             User[]               @relation("UserReferrals")
 
@@ -147,6 +148,7 @@ model LiveSession {
   teller         LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
   user           User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
   review         LiveTellerReview?
+  chatSession    TellerChatSession?
 
   @@index([tellerId])
   @@index([userId])
@@ -481,4 +483,94 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// Credit Package for purchasing credits
+model CreditPackage {
+  id           String    @id @default(cuid())
+  name         String
+  nameEn       String?
+  credits      Int
+  price        Float
+  currency     String    @default("TRY")
+  stripePriceId String?
+  isActive     Boolean   @default(true)
+  isFeatured   Boolean   @default(false)
+  bonusCredits Int       @default(0)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  payments     Payment[]
+
+  @@map("credit_packages")
+}
+
+// Payment/Purchase tracking
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String
+  packageId         String?
+  stripeSessionId   String?       @unique
+  stripePaymentIntentId String?   @unique
+  amount            Float
+  currency          String        @default("TRY")
+  creditsAwarded    Int
+  status            String        @default("pending") // pending, completed, failed, refunded
+  paymentMethod     String?
+  createdAt         DateTime      @default(now())
+  completedAt       DateTime?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package           CreditPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeSessionId])
+  @@map("payments")
+}
+
+// Platform settings for admin
+model PlatformSettings {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  value                 String
+  description           String?
+  updatedAt             DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// Live Chat Session between user and fortune teller
+model TellerChatSession {
+  id              String              @id @default(cuid())
+  liveSessionId   String              @unique
+  userId          String
+  tellerId        String
+  status          String              @default("active") // active, closed
+  createdAt       DateTime            @default(now())
+  closedAt        DateTime?
+  liveSession     LiveSession         @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  messages        TellerChatMessage[]
+
+  @@index([userId])
+  @@index([tellerId])
+  @@index([status])
+  @@map("teller_chat_sessions")
+}
+
+// Messages in the live chat
+model TellerChatMessage {
+  id            String            @id @default(cuid())
+  chatSessionId String
+  senderId      String
+  senderType    String            // "user" or "teller"
+  content       String
+  messageType   String            @default("text") // text, image
+  imageUrl      String?
+  isRead        Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  chatSession   TellerChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  @@index([chatSessionId])
+  @@index([createdAt])
+  @@map("teller_chat_messages")
 }
