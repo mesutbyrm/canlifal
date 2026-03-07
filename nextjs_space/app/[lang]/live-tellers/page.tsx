@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle } from 'lucide-react'
+import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import Link from 'next/link'
 
@@ -169,15 +169,23 @@ export default function LiveTellersPage() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={toggleOnlineStatus}
-                disabled={togglingOnline}
-                className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  tellerStatus.isOnline
-                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
-                    : 'bg-green-500 text-white hover:bg-green-400'
-                } disabled:opacity-50`}
-              >
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/${language}/live-tellers/dashboard`}
+                  className="px-4 py-2.5 rounded-lg font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30 transition-all flex items-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  {language === 'tr' ? 'Panel' : 'Dashboard'}
+                </Link>
+                <button
+                  onClick={toggleOnlineStatus}
+                  disabled={togglingOnline}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    tellerStatus.isOnline
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
+                      : 'bg-green-500 text-white hover:bg-green-400'
+                  } disabled:opacity-50`}
+                >
                 {togglingOnline ? (
                   <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
@@ -188,6 +196,7 @@ export default function LiveTellersPage() {
                   : (language === 'tr' ? 'Çevrimiçi Ol' : 'Go Online')
                 }
               </button>
+              </div>
             </div>
           </motion.div>
         )}

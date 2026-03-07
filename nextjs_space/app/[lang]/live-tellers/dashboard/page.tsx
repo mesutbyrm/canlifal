@@ -1,0 +1,496 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/lib/language-context'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import {
+  ArrowLeft,
+  Star,
+  Clock,
+  BadgeCheck,
+  User,
+  Video,
+  Check,
+  X,
+  MessageCircle,
+  CreditCard,
+  Calendar,
+  Bell,
+  Loader2,
+  RefreshCw,
+  Phone,
+  AlertCircle
+} from 'lucide-react'
+
+interface Session {
+  id: string
+  fortuneType: string
+  status: string
+  creditsCharged: number
+  createdAt: string
+  startedAt: string | null
+  endedAt: string | null
+  user: {
+    name: string | null
+    image: string | null
+    email?: string
+  }
+}
+
+interface TellerProfile {
+  id: string
+  displayName: string
+  bio: string | null
+  avatar: string | null
+  specialties: string[]
+  pricePerSession: number
+  rating: number
+  totalSessions: number
+  isOnline: boolean
+  isVerified: boolean
+  isActive: boolean
+  applicationStatus: string
+  totalEarnings: number
+}
+
+const FORTUNE_TYPE_NAMES: Record<string, { tr: string; en: string }> = {
+  coffee: { tr: 'Kahve Falı', en: 'Coffee Reading' },
+  tarot: { tr: 'Tarot', en: 'Tarot Reading' },
+  astrology: { tr: 'Astroloji', en: 'Astrology' },
+  palmistry: { tr: 'El Falı', en: 'Palm Reading' },
+  numerology: { tr: 'Numeroloji', en: 'Numerology' },
+  general: { tr: 'Genel Danışmanlık', en: 'General Consultation' }
+}
+
+const STATUS_LABELS: Record<string, { tr: string; en: string; color: string }> = {
+  pending: { tr: 'Bekliyor', en: 'Pending', color: 'bg-yellow-500/20 text-yellow-400' },
+  active: { tr: 'Aktif', en: 'Active', color: 'bg-green-500/20 text-green-400' },
+  completed: { tr: 'Tamamlandı', en: 'Completed', color: 'bg-blue-500/20 text-blue-400' },
+  cancelled: { tr: 'İptal Edildi', en: 'Cancelled', color: 'bg-red-500/20 text-red-400' }
+}
+
+export default function TellerDashboard() {
+  const { data: session, status } = useSession() || {}
+  const router = useRouter()
+  const { language } = useLanguage()
+
+  const [teller, setTeller] = useState<TellerProfile | null>(null)
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isOnline, setIsOnline] = useState(false)
+  const [togglingOnline, setTogglingOnline] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'history'>('pending')
+
+  useEffect(() => {
+    if (status === 'loading') return
+    if (!session?.user) {
+      router.push(`/${language}/login`)
+      return
+    }
+    fetchTellerData()
+  }, [session, status, language])
+
+  const fetchTellerData = async () => {
+    try {
+      // Get teller profile
+      const tellerRes = await fetch('/api/fortune-tellers/my-profile')
+      if (!tellerRes.ok) {
+        if (tellerRes.status === 404) {
+          setError(language === 'tr' ? 'Falcı profiliniz bulunamadı' : 'Your teller profile not found')
+          return
+        }
+        throw new Error('Failed to fetch teller profile')
+      }
+      const tellerData = await tellerRes.json()
+      setTeller(tellerData)
+      setIsOnline(tellerData.isOnline)
+
+      // Get sessions
+      const sessionsRes = await fetch(`/api/fortune-tellers/${tellerData.id}/session`)
+      if (sessionsRes.ok) {
+        const sessionsData = await sessionsRes.json()
+        setSessions(sessionsData)
+      }
+    } catch (err) {
+      console.error('Fetch error:', err)
+      setError(language === 'tr' ? 'Veriler yüklenirken hata oluştu' : 'Error loading data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleOnline = async () => {
+    if (!teller) return
+    setTogglingOnline(true)
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online', {
+        method: 'POST'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsOnline(data.isOnline)
+        setTeller(prev => prev ? { ...prev, isOnline: data.isOnline } : null)
+      }
+    } catch (err) {
+      console.error('Toggle online error:', err)
+    } finally {
+      setTogglingOnline(false)
+    }
+  }
+
+  const handleSessionAction = async (sessionId: string, action: 'accept' | 'complete' | 'cancel') => {
+    setActionLoading(sessionId)
+    try {
+      const res = await fetch(`/api/fortune-tellers/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+      if (res.ok) {
+        // Refresh sessions
+        fetchTellerData()
+      }
+    } catch (err) {
+      console.error('Session action error:', err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const filteredSessions = sessions.filter(s => {
+    if (activeTab === 'pending') return s.status === 'pending'
+    if (activeTab === 'active') return s.status === 'active'
+    return s.status === 'completed' || s.status === 'cancelled'
+  })
+
+  const pendingCount = sessions.filter(s => s.status === 'pending').length
+  const activeCount = sessions.filter(s => s.status === 'active').length
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0a0118] flex flex-col items-center justify-center p-4">
+        <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
+        <p className="text-white text-xl mb-4">{error}</p>
+        <Link
+          href={`/${language}/live-tellers/apply`}
+          className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg"
+        >
+          {language === 'tr' ? 'Falcı Olarak Başvur' : 'Apply as Fortune Teller'}
+        </Link>
+      </div>
+    )
+  }
+
+  if (!teller) return null
+
+  return (
+    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href={`/${language}/live-tellers`}
+            className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            {language === 'tr' ? 'Geri' : 'Back'}
+          </Link>
+          <button
+            onClick={fetchTellerData}
+            className="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
+
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">
+          {language === 'tr' ? 'Falcı Paneli' : 'Fortune Teller Dashboard'}
+        </h1>
+
+        {/* Status Warning */}
+        {teller.applicationStatus !== 'approved' && (
+          <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-xl">
+            <p className="text-yellow-300">
+              {teller.applicationStatus === 'pending'
+                ? (language === 'tr' ? 'Başvurunuz inceleniyor. Onaylandıktan sonra randevu alabilirsiniz.' : 'Your application is under review. You can receive bookings after approval.')
+                : (language === 'tr' ? 'Başvurunuz reddedildi.' : 'Your application was rejected.')}
+            </p>
+          </div>
+        )}
+
+        {/* Profile & Stats Cards */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          {/* Profile Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
+                  {teller.avatar ? (
+                    <img src={teller.avatar} alt={teller.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 text-white/70" />
+                  )}
+                </div>
+                <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-deep-purple-900 ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  {teller.displayName}
+                  {teller.isVerified && <BadgeCheck className="w-5 h-5 text-blue-400" />}
+                </h3>
+                <div className="flex items-center gap-2 text-sm text-purple-300">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  {teller.rating.toFixed(1)}
+                </div>
+              </div>
+            </div>
+
+            {/* Online Toggle */}
+            <button
+              onClick={toggleOnline}
+              disabled={togglingOnline || teller.applicationStatus !== 'approved'}
+              className={`w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                isOnline
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {togglingOnline ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isOnline ? (
+                <>
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                  {language === 'tr' ? 'Çevrimiçi' : 'Online'}
+                </>
+              ) : (
+                <>
+                  <span className="w-3 h-3 bg-gray-500 rounded-full" />
+                  {language === 'tr' ? 'Çevrimdışı' : 'Offline'}
+                </>
+              )}
+            </button>
+          </motion.div>
+
+          {/* Stats Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+          >
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Video className="w-5 h-5 text-purple-400" />
+              {language === 'tr' ? 'İstatistikler' : 'Statistics'}
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-purple-300">{language === 'tr' ? 'Toplam Seans' : 'Total Sessions'}</span>
+                <span className="text-white font-semibold">{teller.totalSessions}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-purple-300">{language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}</span>
+                <span className="text-gold-400 font-semibold">{teller.totalEarnings} kredi</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-purple-300">{language === 'tr' ? 'Seans Ücreti' : 'Session Price'}</span>
+                <span className="text-white font-semibold">{teller.pricePerSession} kredi</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Pending Requests Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+          >
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Bell className="w-5 h-5 text-purple-400" />
+              {language === 'tr' ? 'Bekleyen Talepler' : 'Pending Requests'}
+            </h3>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-white mb-2">{pendingCount}</div>
+              <p className="text-purple-300 text-sm">
+                {pendingCount > 0
+                  ? (language === 'tr' ? 'Yeni randevu talebi var!' : 'New session requests!')
+                  : (language === 'tr' ? 'Henüz talep yok' : 'No pending requests')}
+              </p>
+              {activeCount > 0 && (
+                <p className="text-green-400 text-sm mt-2">
+                  {activeCount} {language === 'tr' ? 'aktif seans' : 'active session(s)'}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Sessions Tabs */}
+        <div className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 overflow-hidden">
+          <div className="flex border-b border-purple-500/20">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex-1 py-4 px-4 text-center font-medium transition-colors relative ${
+                activeTab === 'pending' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
+              }`}
+            >
+              {language === 'tr' ? 'Bekleyenler' : 'Pending'}
+              {pendingCount > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex-1 py-4 px-4 text-center font-medium transition-colors ${
+                activeTab === 'active' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
+              }`}
+            >
+              {language === 'tr' ? 'Aktif' : 'Active'}
+              {activeCount > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-green-500 text-black text-xs rounded-full">
+                  {activeCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 py-4 px-4 text-center font-medium transition-colors ${
+                activeTab === 'history' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
+              }`}
+            >
+              {language === 'tr' ? 'Geçmiş' : 'History'}
+            </button>
+          </div>
+
+          <div className="p-4">
+            {filteredSessions.length === 0 ? (
+              <div className="text-center py-12 text-purple-400">
+                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>
+                  {activeTab === 'pending'
+                    ? (language === 'tr' ? 'Bekleyen randevu talebi yok' : 'No pending requests')
+                    : activeTab === 'active'
+                      ? (language === 'tr' ? 'Aktif seans yok' : 'No active sessions')
+                      : (language === 'tr' ? 'Geçmiş seans yok' : 'No session history')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredSessions.map(sess => (
+                  <motion.div
+                    key={sess.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-deep-purple-900/30 rounded-lg border border-purple-500/10 p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                          {sess.user.image ? (
+                            <img src={sess.user.image} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <User className="w-6 h-6 text-white/70" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium">
+                            {sess.user.name || (language === 'tr' ? 'Anonim Kullanıcı' : 'Anonymous User')}
+                          </h4>
+                          <p className="text-sm text-purple-300">
+                            {FORTUNE_TYPE_NAMES[sess.fortuneType]?.[language as 'tr' | 'en'] || sess.fortuneType}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_LABELS[sess.status]?.color || 'bg-gray-500/20 text-gray-400'}`}>
+                          {STATUS_LABELS[sess.status]?.[language as 'tr' | 'en'] || sess.status}
+                        </span>
+                        <p className="text-gold-400 font-semibold mt-1">
+                          {sess.creditsCharged} kredi
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-xs text-purple-500">
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        {new Date(sess.createdAt).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                      </p>
+
+                      {/* Action Buttons */}
+                      {sess.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSessionAction(sess.id, 'accept')}
+                            disabled={actionLoading === sess.id}
+                            className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {actionLoading === sess.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleSessionAction(sess.id, 'cancel')}
+                            disabled={actionLoading === sess.id}
+                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            <X className="w-4 h-4" />
+                            {language === 'tr' ? 'Reddet' : 'Reject'}
+                          </button>
+                        </div>
+                      )}
+
+                      {sess.status === 'active' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSessionAction(sess.id, 'complete')}
+                            disabled={actionLoading === sess.id}
+                            className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {actionLoading === sess.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                {language === 'tr' ? 'Tamamla' : 'Complete'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

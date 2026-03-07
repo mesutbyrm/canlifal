@@ -38,6 +38,12 @@ export async function POST(
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
     }
 
+    // Get user info for notification
+    const fullUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true }
+    });
+
     // Create session and deduct credits
     const [liveSession] = await prisma.$transaction([
       prisma.liveSession.create({
@@ -54,6 +60,33 @@ export async function POST(
         data: { credits: { decrement: teller.pricePerSession } }
       })
     ]);
+
+    // Send notification to the fortune teller
+    const fortuneTypeNames: Record<string, { tr: string; en: string }> = {
+      coffee: { tr: 'Kahve Falı', en: 'Coffee Reading' },
+      tarot: { tr: 'Tarot', en: 'Tarot Reading' },
+      astrology: { tr: 'Astroloji', en: 'Astrology' },
+      palmistry: { tr: 'El Falı', en: 'Palm Reading' },
+      numerology: { tr: 'Numeroloji', en: 'Numerology' },
+      general: { tr: 'Genel Danışmanlık', en: 'General Consultation' }
+    };
+
+    const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames.general;
+    
+    await prisma.notification.create({
+      data: {
+        userId: teller.userId,
+        type: 'session_request',
+        title: 'Yeni Randevu Talebi / New Session Request',
+        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName.tr} için randevu talep etti. / ${fullUser?.name || 'A user'} requested a ${ftName.en} session with you.`,
+        data: JSON.stringify({
+          sessionId: liveSession.id,
+          fortuneType: fortuneType || 'general',
+          userName: fullUser?.name,
+          creditsCharged: teller.pricePerSession
+        })
+      }
+    });
 
     return NextResponse.json(liveSession, { status: 201 });
   } catch (error) {

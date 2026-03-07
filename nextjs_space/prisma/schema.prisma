@@ -468,7 +468,9 @@ model Notification {
   id           String   @id @default(cuid())
   userId       String
   type         String
+  title        String?
   message      String
+  data         String?
   postId       String?
   fromUserId   String?
   fromUserName String?
