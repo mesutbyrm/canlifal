@@ -21,8 +21,7 @@ export async function GET(
         _count: {
           select: {
             comments: true,
-            likes: true,
-            viewers: true
+            likes: true
           }
         }
       }
@@ -32,9 +31,17 @@ export async function GET(
       return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
     }
 
+    // Count active viewers (those who haven't left)
+    const activeViewerCount = await prisma.videoStreamViewer.count({
+      where: {
+        streamId: params.streamId,
+        leftAt: null
+      }
+    })
+
     return NextResponse.json({
       ...stream,
-      viewerCount: stream._count.viewers,
+      viewerCount: activeViewerCount,
       likeCount: stream._count.likes,
       commentCount: stream._count.comments
     })

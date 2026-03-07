@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, TouchEvent } from 'react'
+import { useState, useEffect, useRef, TouchEvent, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -17,10 +17,10 @@ import {
   Radio,
   Plus,
   Music2,
-  Bookmark,
   Video,
   Gift,
-  Coins
+  Coins,
+  Users
 } from 'lucide-react'
 
 interface VideoStream {
@@ -51,11 +51,12 @@ interface GiftType {
   animation: string
 }
 
-interface FloatingGift {
-  id: number
-  icon: string
-  x: number
+interface RecentGift {
+  id: string
   senderName: string
+  icon: string
+  giftName: string
+  timestamp: number
 }
 
 interface FloatingHeart {
@@ -65,6 +66,11 @@ interface FloatingHeart {
 }
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' }
+]
 
 export default function VideoStreamPage() {
   const { data: session } = useSession() || {}
@@ -74,45 +80,214 @@ export default function VideoStreamPage() {
   const [streams, setStreams] = useState<VideoStream[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [showGifts, setShowGifts] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
-  const [floatingGifts, setFloatingGifts] = useState<FloatingGift[]>([])
+  const [recentGifts, setRecentGifts] = useState<RecentGift[]>([])
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [viewerCount, setViewerCount] = useState(0)
   const [showStartModal, setShowStartModal] = useState(false)
   const [streamTitle, setStreamTitle] = useState('')
   const [isStartingStream, setIsStartingStream] = useState(false)
   const [giftTypes, setGiftTypes] = useState<GiftType[]>([])
   const [userCredits, setUserCredits] = useState(0)
   const [sendingGift, setSendingGift] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<string>('connecting')
   
   const touchStartY = useRef(0)
   const touchEndY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const heartIdRef = useRef(0)
-  const giftIdRef = useRef(0)
+  const pcRef = useRef<RTCPeerConnection | null>(null)
+  const viewerIdRef = useRef<string>('')
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastGiftIdRef = useRef<string>('')
+  const currentStreamIdRef = useRef<string>('')
+
+  const currentStream = streams[currentIndex]
 
   useEffect(() => {
     fetchStreams()
     fetchGiftTypes()
     if (session?.user) fetchCredits()
-    const interval = setInterval(fetchStreams, 5000)
-    return () => clearInterval(interval)
+    const interval = setInterval(fetchStreams, 8000)
+    return () => {
+      clearInterval(interval)
+      cleanupStream(currentStreamIdRef.current)
+    }
   }, [])
 
   useEffect(() => {
-    const currentStream = streams[currentIndex]
-    if (currentStream) {
+    if (currentStream && currentStream.id !== currentStreamIdRef.current) {
+      // Cleanup previous stream
+      cleanupStream(currentStreamIdRef.current)
+      
+      // Join new stream
+      currentStreamIdRef.current = currentStream.id
+      joinStream(currentStream.id)
       setLikeCount(currentStream.likeCount)
+      setViewerCount(currentStream.viewerCount)
       checkIfLiked(currentStream.id)
       fetchComments(currentStream.id)
-      pollGifts(currentStream.id)
     }
-  }, [currentIndex, streams.length])
+  }, [currentIndex, currentStream?.id])
+
+  const joinStream = async (streamId: string) => {
+    try {
+      // Register as viewer
+      const joinRes = await fetch(`/api/video-streams/${streamId}/join`, { method: 'POST' })
+      if (joinRes.ok) {
+        const data = await joinRes.json()
+        viewerIdRef.current = data.viewerId
+      }
+
+      // Setup WebRTC
+      setupWebRTC(streamId)
+
+      // Start polling for signals and gifts
+      pollIntervalRef.current = setInterval(() => {
+        pollSignals(streamId)
+        pollGifts(streamId)
+        fetchStreamStats(streamId)
+      }, 2000)
+    } catch (error) {
+      console.error('Error joining stream:', error)
+    }
+  }
+
+  const cleanupStream = (streamId?: string) => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    if (pcRef.current) {
+      pcRef.current.close()
+      pcRef.current = null
+    }
+    // Fire and forget leave request
+    if (streamId && viewerIdRef.current) {
+      fetch(`/api/video-streams/${streamId}/join?viewerId=${viewerIdRef.current}`, { method: 'DELETE' }).catch(() => {})
+    }
+    viewerIdRef.current = ''
+    setConnectionStatus('connecting')
+  }
+
+  const setupWebRTC = (streamId: string) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
+    pcRef.current = pc
+
+    pc.ontrack = (event) => {
+      console.log('Received track:', event.track.kind)
+      if (remoteVideoRef.current && event.streams[0]) {
+        remoteVideoRef.current.srcObject = event.streams[0]
+        setConnectionStatus('connected')
+      }
+    }
+
+    pc.onicecandidate = async (event) => {
+      if (event.candidate) {
+        await fetch('/api/video-streams/signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            streamId,
+            type: 'ice-candidate',
+            receiverId: 'broadcaster',
+            data: { candidate: event.candidate }
+          })
+        })
+      }
+    }
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE state:', pc.iceConnectionState)
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setConnectionStatus('connected')
+      } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        setConnectionStatus('disconnected')
+      }
+    }
+
+    // Send join signal to broadcaster
+    fetch('/api/video-streams/signal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        streamId,
+        type: 'viewer-join',
+        receiverId: 'broadcaster',
+        data: { viewerId: session?.user?.id || viewerIdRef.current }
+      })
+    })
+  }
+
+  const pollSignals = async (streamId: string) => {
+    if (!pcRef.current) return
+    try {
+      const myId = session?.user?.id || viewerIdRef.current
+      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${myId}`)
+      if (!res.ok) return
+      const signals = await res.json()
+
+      for (const signal of signals) {
+        if (signal.type === 'offer' && pcRef.current) {
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
+          const answer = await pcRef.current.createAnswer()
+          await pcRef.current.setLocalDescription(answer)
+          await fetch('/api/video-streams/signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              streamId,
+              type: 'answer',
+              receiverId: signal.senderId,
+              data: { answer }
+            })
+          })
+        } else if (signal.type === 'ice-candidate' && signal.data?.candidate && pcRef.current) {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+        }
+      }
+    } catch (error) {
+      console.error('Poll signals error:', error)
+    }
+  }
+
+  const fetchStreamStats = async (streamId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setViewerCount(data.viewerCount || 0)
+        setLikeCount(data.likeCount || 0)
+      }
+    } catch (e) {}
+  }
+
+  const pollGifts = async (streamId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/gifts`)
+      if (!res.ok) return
+      const gifts = await res.json()
+      
+      if (gifts.length > 0) {
+        const newGifts = gifts.filter((g: any) => 
+          new Date(g.createdAt).getTime() > Date.now() - 10000
+        ).map((g: any) => ({
+          id: g.id,
+          senderName: g.sender.name,
+          icon: g.giftType.icon,
+          giftName: g.giftType.name,
+          timestamp: new Date(g.createdAt).getTime()
+        }))
+        setRecentGifts(newGifts.slice(0, 3))
+      }
+    } catch (e) {}
+  }
 
   const fetchStreams = async () => {
     try {
@@ -131,12 +306,8 @@ export default function VideoStreamPage() {
   const fetchGiftTypes = async () => {
     try {
       const res = await fetch('/api/video-streams/gifts')
-      if (res.ok) {
-        setGiftTypes(await res.json())
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+      if (res.ok) setGiftTypes(await res.json())
+    } catch (e) {}
   }
 
   const fetchCredits = async () => {
@@ -146,9 +317,7 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setUserCredits(data.credits)
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const checkIfLiked = async (streamId: string) => {
@@ -159,58 +328,17 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setIsLiked(data.isLiked)
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const fetchComments = async (streamId: string) => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/comments`)
-      if (res.ok) {
-        setComments(await res.json())
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }
-
-  const pollGifts = (streamId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/video-streams/${streamId}/gifts`)
-        if (res.ok) {
-          const gifts = await res.json()
-          // Show new gifts as floating animations
-          if (gifts.length > 0) {
-            const recentGift = gifts[0]
-            if (recentGift.createdAt && new Date(recentGift.createdAt).getTime() > Date.now() - 5000) {
-              addFloatingGift(recentGift.giftType.icon, recentGift.sender.name)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error:', error)
-      }
-    }, 3000)
-    return () => clearInterval(interval)
-  }
-
-  const addFloatingGift = (icon: string, senderName: string) => {
-    const newGift: FloatingGift = {
-      id: giftIdRef.current++,
-      icon,
-      x: Math.random() * 60 + 20,
-      senderName
-    }
-    setFloatingGifts(prev => [...prev, newGift])
-    setTimeout(() => {
-      setFloatingGifts(prev => prev.filter(g => g.id !== newGift.id))
-    }, 3000)
+      if (res.ok) setComments(await res.json())
+    } catch (e) {}
   }
 
   const handleLike = async () => {
-    const currentStream = streams[currentIndex]
     if (!currentStream || !session?.user) return
 
     for (let i = 0; i < 3; i++) {
@@ -221,9 +349,7 @@ export default function VideoStreamPage() {
           color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
         }
         setFloatingHearts(prev => [...prev, newHeart])
-        setTimeout(() => {
-          setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id))
-        }, 2000)
+        setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id)), 2000)
       }, i * 100)
     }
 
@@ -234,15 +360,11 @@ export default function VideoStreamPage() {
         setIsLiked(data.isLiked)
         setLikeCount(data.likeCount)
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const handleSendComment = async () => {
-    const currentStream = streams[currentIndex]
     if (!currentStream || !newComment.trim() || !session?.user) return
-
     try {
       const res = await fetch(`/api/video-streams/${currentStream.id}/comments`, {
         method: 'POST',
@@ -254,13 +376,10 @@ export default function VideoStreamPage() {
         setComments(prev => [comment, ...prev])
         setNewComment('')
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const handleSendGift = async (giftType: GiftType) => {
-    const currentStream = streams[currentIndex]
     if (!currentStream || !session?.user) return
     if (userCredits < giftType.price) {
       alert(language === 'tr' ? 'Yetersiz jeton!' : 'Insufficient credits!')
@@ -277,14 +396,18 @@ export default function VideoStreamPage() {
       if (res.ok) {
         const data = await res.json()
         setUserCredits(data.newBalance)
-        addFloatingGift(giftType.icon, session.user.name || 'You')
         setShowGifts(false)
+        // Add to recent gifts
+        setRecentGifts(prev => [{
+          id: Date.now().toString(),
+          senderName: session.user?.name || 'Sen',
+          icon: giftType.icon,
+          giftName: giftType.name,
+          timestamp: Date.now()
+        }, ...prev].slice(0, 3))
       }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setSendingGift(null)
-    }
+    } catch (e) {}
+    setSendingGift(null)
   }
 
   const handleTouchStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY }
@@ -317,11 +440,8 @@ export default function VideoStreamPage() {
         const newStream = await res.json()
         router.push(`/${language}/chat/video/broadcast/${newStream.id}`)
       }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setIsStartingStream(false)
-    }
+    } catch (e) {}
+    setIsStartingStream(false)
   }
 
   const formatCount = (count: number) => {
@@ -329,8 +449,6 @@ export default function VideoStreamPage() {
     if (count >= 1000) return (count / 1000).toFixed(1) + 'K'
     return count.toString()
   }
-
-  const currentStream = streams[currentIndex]
 
   if (loading) {
     return (
@@ -368,30 +486,36 @@ export default function VideoStreamPage() {
         </div>
       ) : (
         <>
-          {/* Full Screen Video Placeholder */}
+          {/* Full Screen Video */}
           <div className="absolute inset-0 bg-gradient-to-b from-purple-900/50 via-black to-black">
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
               muted={isMuted}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
             />
-            {/* Placeholder when no video */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
-                  {currentStream?.user?.image ? (
-                    <Image src={currentStream.user.image} alt="" width={96} height={96} className="rounded-full" />
-                  ) : (
-                    <span className="text-4xl text-white font-bold">{currentStream?.user?.name?.[0]}</span>
-                  )}
+            {connectionStatus !== 'connected' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                <div className="text-center">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    {currentStream?.user?.image ? (
+                      <Image src={currentStream.user.image} alt="" width={96} height={96} className="rounded-full" />
+                    ) : (
+                      <span className="text-4xl text-white font-bold">{currentStream?.user?.name?.[0]}</span>
+                    )}
+                  </div>
+                  <p className="text-white font-bold text-lg">@{currentStream?.user?.name}</p>
+                  <p className="text-white/60 text-sm mt-1">
+                    {connectionStatus === 'connecting' 
+                      ? (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...') 
+                      : (language === 'tr' ? 'Bağlantı kesildi' : 'Disconnected')}
+                  </p>
+                  <div className="mt-4 w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
                 </div>
-                <p className="text-white font-bold text-lg">@{currentStream?.user?.name}</p>
-                <p className="text-white/60 text-sm mt-1">{currentStream?.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}</p>
               </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-72 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+            )}
+            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
           </div>
 
           {/* Top bar */}
@@ -401,7 +525,10 @@ export default function VideoStreamPage() {
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 <span className="text-white text-xs font-semibold">LIVE</span>
               </div>
-              <span className="text-white/80 text-xs">{currentStream?.viewerCount || 0}</span>
+              <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded-sm">
+                <Users className="w-3 h-3 text-white" />
+                <span className="text-white/80 text-xs">{viewerCount}</span>
+              </div>
             </div>
             <button
               onClick={handleStartStream}
@@ -412,27 +539,30 @@ export default function VideoStreamPage() {
             </button>
           </div>
 
+          {/* Recent Gifts - Top Right */}
+          <div className="absolute top-28 right-3 z-20">
+            <AnimatePresence>
+              {recentGifts.map((gift, idx) => (
+                <motion.div
+                  key={gift.id}
+                  initial={{ opacity: 0, x: 50, scale: 0.8 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 50, scale: 0.8 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 backdrop-blur-sm px-3 py-2 rounded-full mb-2"
+                >
+                  <span className="text-2xl">{gift.icon}</span>
+                  <div className="text-right">
+                    <p className="text-white text-xs font-bold">{gift.senderName}</p>
+                    <p className="text-yellow-300 text-[10px]">{gift.giftName}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
           {/* Right side actions */}
           <div className="absolute right-3 bottom-36 flex flex-col items-center gap-5 z-10">
-            {/* Floating gifts */}
-            <div className="relative h-16">
-              <AnimatePresence>
-                {floatingGifts.map(gift => (
-                  <motion.div
-                    key={gift.id}
-                    initial={{ opacity: 1, y: 0, scale: 0.5 }}
-                    animate={{ opacity: 0, y: -150, scale: 1.5 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 3 }}
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
-                  >
-                    <span className="text-4xl">{gift.icon}</span>
-                    <span className="text-white text-xs bg-black/50 px-2 rounded">{gift.senderName}</span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-
             {/* Profile */}
             <div className="relative mb-2">
               <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-800">

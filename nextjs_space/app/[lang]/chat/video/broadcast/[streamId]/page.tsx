@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -19,7 +19,8 @@ import {
   Radio,
   Gift,
   Share2,
-  Coins
+  Coins,
+  Users
 } from 'lucide-react'
 
 interface Comment {
@@ -37,10 +38,11 @@ interface StreamGift {
   createdAt: string
 }
 
-interface FloatingGift {
-  id: number
-  icon: string
+interface RecentGift {
+  id: string
   senderName: string
+  icon: string
+  giftName: string
 }
 
 interface FloatingHeart {
@@ -50,6 +52,11 @@ interface FloatingHeart {
 }
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' }
+]
 
 export default function BroadcastPage() {
   const { data: session } = useSession() || {}
@@ -62,11 +69,10 @@ export default function BroadcastPage() {
   const [likeCount, setLikeCount] = useState(0)
   const [totalGiftCredits, setTotalGiftCredits] = useState(0)
   const [comments, setComments] = useState<Comment[]>([])
-  const [recentGifts, setRecentGifts] = useState<StreamGift[]>([])
+  const [recentGifts, setRecentGifts] = useState<RecentGift[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
-  const [floatingGifts, setFloatingGifts] = useState<FloatingGift[]>([])
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
@@ -74,9 +80,10 @@ export default function BroadcastPage() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const heartIdRef = useRef(0)
-  const giftIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!session?.user) {
@@ -86,15 +93,16 @@ export default function BroadcastPage() {
     startBroadcast()
     
     const durationInterval = setInterval(() => setDuration(prev => prev + 1), 1000)
-    const pollInterval = setInterval(() => {
+    pollIntervalRef.current = setInterval(() => {
       fetchStats()
       fetchComments()
       fetchGifts()
+      pollViewerSignals()
     }, 2000)
 
     return () => {
       clearInterval(durationInterval)
-      clearInterval(pollInterval)
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
       endStream()
     }
   }, [session])
@@ -102,8 +110,17 @@ export default function BroadcastPage() {
   const startBroadcast = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 } },
-        audio: true
+        video: { 
+          facingMode,
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 1280, max: 1920 },
+          aspectRatio: { ideal: 9/16 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       })
       localStreamRef.current = stream
       if (localVideoRef.current) {
@@ -117,6 +134,91 @@ export default function BroadcastPage() {
     }
   }
 
+  const pollViewerSignals = async () => {
+    if (!localStreamRef.current) return
+    try {
+      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=broadcaster`)
+      if (!res.ok) return
+      const signals = await res.json()
+
+      for (const signal of signals) {
+        if (signal.type === 'viewer-join') {
+          // Create new peer connection for this viewer
+          await createPeerConnectionForViewer(signal.senderId, signal.data?.viewerId || signal.senderId)
+        } else if (signal.type === 'answer' && signal.data?.answer) {
+          const pc = peerConnectionsRef.current.get(signal.senderId)
+          if (pc && pc.signalingState === 'have-local-offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+          }
+        } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
+          const pc = peerConnectionsRef.current.get(signal.senderId)
+          if (pc) {
+            await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Poll viewer signals error:', error)
+    }
+  }
+
+  const createPeerConnectionForViewer = async (viewerId: string, displayId: string) => {
+    if (peerConnectionsRef.current.has(viewerId)) {
+      // Already have connection for this viewer
+      return
+    }
+
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
+    peerConnectionsRef.current.set(viewerId, pc)
+
+    // Add local tracks to connection
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current!)
+      })
+    }
+
+    pc.onicecandidate = async (event) => {
+      if (event.candidate) {
+        await fetch('/api/video-streams/signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            streamId,
+            type: 'ice-candidate',
+            receiverId: viewerId,
+            data: { candidate: event.candidate }
+          })
+        })
+      }
+    }
+
+    pc.oniceconnectionstatechange = () => {
+      console.log(`Viewer ${displayId} connection state:`, pc.iceConnectionState)
+      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed') {
+        peerConnectionsRef.current.delete(viewerId)
+      }
+    }
+
+    // Create and send offer
+    try {
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+      await fetch('/api/video-streams/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          streamId,
+          type: 'offer',
+          receiverId: viewerId,
+          data: { offer }
+        })
+      })
+    } catch (error) {
+      console.error('Error creating offer:', error)
+    }
+  }
+
   const fetchStats = async () => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}`)
@@ -125,9 +227,7 @@ export default function BroadcastPage() {
         setViewerCount(data.viewerCount || 0)
         setLikeCount(data.likeCount || 0)
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const fetchComments = async () => {
@@ -137,9 +237,7 @@ export default function BroadcastPage() {
         const data = await res.json()
         setComments(data.slice(0, 10))
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const fetchGifts = async () => {
@@ -147,31 +245,29 @@ export default function BroadcastPage() {
       const res = await fetch(`/api/video-streams/${streamId}/gifts`)
       if (res.ok) {
         const gifts: StreamGift[] = await res.json()
-        setRecentGifts(gifts.slice(0, 5))
         
         // Calculate total credits earned
         const total = gifts.reduce((sum, g) => sum + Math.floor(g.giftType.price * g.quantity * 0.7), 0)
         setTotalGiftCredits(total)
         
-        // Show animation for new gifts
+        // Show recent gifts at top right
+        const recent = gifts.slice(0, 3).map(g => ({
+          id: g.id,
+          senderName: g.sender.name,
+          icon: g.giftType.icon,
+          giftName: g.giftType.name
+        }))
+        setRecentGifts(recent)
+        
+        // Animate new gift
         if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {
           lastGiftIdRef.current = gifts[0].id
-          addFloatingGift(gifts[0].giftType.icon, gifts[0].sender.name)
-          // Also add hearts for gift animation
           for (let i = 0; i < 5; i++) {
             setTimeout(() => addFloatingHeart(), i * 100)
           }
         }
       }
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }
-
-  const addFloatingGift = (icon: string, senderName: string) => {
-    const newGift: FloatingGift = { id: giftIdRef.current++, icon, senderName }
-    setFloatingGifts(prev => [...prev, newGift])
-    setTimeout(() => setFloatingGifts(prev => prev.filter(g => g.id !== newGift.id)), 3000)
+    } catch (e) {}
   }
 
   const addFloatingHeart = () => {
@@ -209,34 +305,64 @@ export default function BroadcastPage() {
     setFacingMode(newFacing)
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: { ideal: 1080 }, height: { ideal: 1920 } },
-        audio: true
+        video: { 
+          facingMode: newFacing,
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 1280, max: 1920 },
+          aspectRatio: { ideal: 9/16 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       })
+
+      // Stop old tracks
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop())
       }
+      
       localStreamRef.current = newStream
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream
       }
+
+      // Update all peer connections with new tracks
+      peerConnectionsRef.current.forEach(async (pc, viewerId) => {
+        const senders = pc.getSenders()
+        const videoSender = senders.find(s => s.track?.kind === 'video')
+        const audioSender = senders.find(s => s.track?.kind === 'audio')
+        
+        const videoTrack = newStream.getVideoTracks()[0]
+        const audioTrack = newStream.getAudioTracks()[0]
+        
+        if (videoSender && videoTrack) await videoSender.replaceTrack(videoTrack)
+        if (audioSender && audioTrack) await audioSender.replaceTrack(audioTrack)
+      })
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error switching camera:', error)
     }
   }
 
   const endStream = async () => {
+    // Close all peer connections
+    peerConnectionsRef.current.forEach(pc => pc.close())
+    peerConnectionsRef.current.clear()
+
+    // Stop local stream
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop())
     }
+
+    // Update stream status
     try {
       await fetch(`/api/video-streams/${streamId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'ended' })
       })
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    } catch (e) {}
   }
 
   const handleEndStream = async () => {
@@ -257,19 +383,19 @@ export default function BroadcastPage() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Video */}
+      {/* Video - Object-contain for proper aspect ratio */}
       <video
         ref={localVideoRef}
         autoPlay
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-contain bg-black"
         style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
       />
 
       {/* Gradient overlays */}
       <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 pt-12 px-4 z-10">
@@ -283,7 +409,7 @@ export default function BroadcastPage() {
               <span className="text-white text-xs font-medium">{formatDuration(duration)}</span>
             </div>
             <div className="flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-sm">
-              <Eye className="w-3.5 h-3.5 text-white" />
+              <Users className="w-3.5 h-3.5 text-white" />
               <span className="text-white text-xs font-medium">{formatCount(viewerCount)}</span>
             </div>
           </div>
@@ -306,27 +432,30 @@ export default function BroadcastPage() {
         )}
       </div>
 
-      {/* Right side - Stats and floating animations */}
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-5 z-10">
-        {/* Floating gifts */}
-        <div className="relative h-24 w-16">
-          <AnimatePresence>
-            {floatingGifts.map(gift => (
-              <motion.div
-                key={gift.id}
-                initial={{ opacity: 1, y: 0, scale: 0.5 }}
-                animate={{ opacity: 0, y: -150, scale: 1.5 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 3 }}
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
-              >
-                <span className="text-5xl">{gift.icon}</span>
-                <span className="text-white text-xs bg-black/60 px-2 py-0.5 rounded mt-1">{gift.senderName}</span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+      {/* Recent Gifts - Top Right (Fixed Position) */}
+      <div className="absolute top-28 right-3 z-20">
+        <AnimatePresence>
+          {recentGifts.map((gift, idx) => (
+            <motion.div
+              key={gift.id}
+              initial={{ opacity: 0, x: 50, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 50, scale: 0.8 }}
+              transition={{ delay: idx * 0.1 }}
+              className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 backdrop-blur-sm px-3 py-2 rounded-full mb-2"
+            >
+              <span className="text-2xl">{gift.icon}</span>
+              <div className="text-right">
+                <p className="text-white text-xs font-bold">{gift.senderName}</p>
+                <p className="text-yellow-300 text-[10px]">{gift.giftName}</p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
+      {/* Right side - Stats */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-5 z-10">
         {/* Floating hearts */}
         <div className="relative h-20 w-16">
           <AnimatePresence>
@@ -398,30 +527,6 @@ export default function BroadcastPage() {
           ))}
         </div>
       </div>
-
-      {/* Recent gifts notification */}
-      {recentGifts.length > 0 && (
-        <div className="absolute left-4 bottom-80 z-10">
-          <AnimatePresence>
-            {recentGifts.slice(0, 3).map((gift, idx) => (
-              <motion.div
-                key={gift.id}
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ delay: idx * 0.1 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-3 py-2 rounded-full mb-2"
-              >
-                <span className="text-2xl">{gift.giftType.icon}</span>
-                <div>
-                  <p className="text-white text-xs font-medium">{gift.sender.name}</p>
-                  <p className="text-yellow-400 text-[10px]">{gift.giftType.name} x{gift.quantity}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
 
       {/* Bottom controls */}
       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 z-10 px-4">

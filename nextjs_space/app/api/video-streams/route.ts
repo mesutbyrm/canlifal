@@ -19,16 +19,27 @@ export async function GET() {
         _count: {
           select: {
             comments: true,
-            likes: true,
-            viewers: true
+            likes: true
           }
         }
       }
     })
 
+    // Get active viewer counts for each stream
+    const streamIds = streams.map(s => s.id)
+    const viewerCounts = await prisma.videoStreamViewer.groupBy({
+      by: ['streamId'],
+      where: {
+        streamId: { in: streamIds },
+        leftAt: null
+      },
+      _count: { id: true }
+    })
+    const viewerCountMap = new Map(viewerCounts.map(v => [v.streamId, v._count.id]))
+
     return NextResponse.json(streams.map(s => ({
       ...s,
-      viewerCount: s._count.viewers,
+      viewerCount: viewerCountMap.get(s.id) || 0,
       likeCount: s._count.likes,
       commentCount: s._count.comments
     })))
