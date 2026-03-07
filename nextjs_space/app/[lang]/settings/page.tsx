@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   ArrowLeft,
   User,
@@ -20,7 +19,11 @@ import {
   Check,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Mail,
+  Phone,
+  AtSign,
+  AlertCircle
 } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
@@ -55,8 +58,12 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [error, setError] = useState('')
 
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [image, setImage] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthTime, setBirthTime] = useState('')
@@ -79,6 +86,9 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json()
         setName(data.name || '')
+        setUsername(data.username || '')
+        setEmail(data.email || '')
+        setPhone(data.phone || '')
         setImage(data.image || '')
         setBirthDate(data.birthDate ? data.birthDate.split('T')[0] : '')
         setBirthTime(data.birthTime || '')
@@ -93,7 +103,6 @@ export default function SettingsPage() {
     }
   }
 
-  // Calculate zodiac sign from birth date
   const calculateZodiacSign = (dateStr: string): string => {
     if (!dateStr) return ''
     const date = new Date(dateStr)
@@ -105,24 +114,16 @@ export default function SettingsPage() {
       const [endMonth, endDay] = sign.dates.end
 
       if (startMonth === endMonth) {
-        if (month === startMonth && day >= startDay && day <= endDay) {
-          return sign.id
-        }
+        if (month === startMonth && day >= startDay && day <= endDay) return sign.id
       } else if (startMonth > endMonth) {
-        // Capricorn case: Dec 22 - Jan 19
-        if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
-          return sign.id
-        }
+        if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) return sign.id
       } else {
-        if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
-          return sign.id
-        }
+        if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) return sign.id
       }
     }
     return ''
   }
 
-  // Auto-calculate zodiac when birth date changes
   useEffect(() => {
     if (birthDate) {
       const sign = calculateZodiacSign(birthDate)
@@ -134,7 +135,6 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
       return
@@ -142,40 +142,23 @@ export default function SettingsPage() {
 
     setUploadingImage(true)
     try {
-      // Get presigned URL
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          isPublic: true
-        })
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
       })
 
       if (!presignedRes.ok) throw new Error('Failed to get upload URL')
 
       const { uploadUrl, cloud_storage_path } = await presignedRes.json()
-
-      // Check if Content-Disposition is in signed headers
       const url = new URL(uploadUrl)
       const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders') || ''
       const headers: Record<string, string> = { 'Content-Type': file.type }
-      
-      if (signedHeaders.includes('content-disposition')) {
-        headers['Content-Disposition'] = 'attachment'
-      }
+      if (signedHeaders.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
 
-      // Upload to S3
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: file
-      })
-
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
       if (!uploadRes.ok) throw new Error('Failed to upload file')
 
-      // Get public URL
       const urlRes = await fetch('/api/upload/get-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,6 +178,7 @@ export default function SettingsPage() {
   }
 
   const handleSave = async () => {
+    setError('')
     setSaving(true)
     try {
       const res = await fetch('/api/user/profile', {
@@ -202,6 +186,9 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
+          username: username || null,
+          email,
+          phone: phone || null,
           image,
           birthDate: birthDate || null,
           birthTime: birthTime || null,
@@ -214,9 +201,23 @@ export default function SettingsPage() {
       if (res.ok) {
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
+      } else {
+        const data = await res.json()
+        if (data.error === 'username_taken') {
+          setError(language === 'tr' ? 'Bu kullanıcı adı zaten kullanılıyor' : 'This username is already taken')
+        } else if (data.error === 'username_invalid') {
+          setError(language === 'tr' ? 'Kullanıcı adı 3-20 karakter, sadece harf, rakam ve alt çizgi içerebilir' : 'Username must be 3-20 characters, letters, numbers and underscore only')
+        } else if (data.error === 'email_taken') {
+          setError(language === 'tr' ? 'Bu email adresi zaten kullanılıyor' : 'This email is already taken')
+        } else if (data.error === 'email_invalid') {
+          setError(language === 'tr' ? 'Geçerli bir email adresi girin' : 'Enter a valid email address')
+        } else {
+          setError(data.message || 'Kaydetme hatası')
+        }
       }
     } catch (err) {
       console.error('Save error:', err)
+      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
     } finally {
       setSaving(false)
     }
@@ -235,31 +236,21 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#0a0118] py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <Link
-          href={`/${language}/dashboard`}
-          className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
-        >
+        <Link href={`/${language}/dashboard`} className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6">
           <ArrowLeft className="w-5 h-5" />
           {language === 'tr' ? 'Panelim' : 'Dashboard'}
         </Link>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
             <User className="w-8 h-8 text-purple-400" />
             {language === 'tr' ? 'Profil Ayarları' : 'Profile Settings'}
           </h1>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-2xl border border-purple-500/20 p-6 space-y-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-2xl border border-purple-500/20 p-6 space-y-6">
+          
           {/* Profile Picture */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -271,195 +262,195 @@ export default function SettingsPage() {
                 )}
               </div>
               <label className="absolute bottom-0 right-0 w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors">
-                {uploadingImage ? (
-                  <Loader2 className="w-4 h-4 text-black animate-spin" />
-                ) : (
-                  <Camera className="w-4 h-4 text-black" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={uploadingImage}
-                />
+                {uploadingImage ? <Loader2 className="w-4 h-4 text-black animate-spin" /> : <Camera className="w-4 h-4 text-black" />}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
             </div>
-            <p className="text-purple-300 text-sm">
-              {language === 'tr' ? 'Profil resmini değiştir' : 'Change profile picture'}
-            </p>
+            <p className="text-purple-300 text-sm">{language === 'tr' ? 'Profil resmini değiştir' : 'Change profile picture'}</p>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              {error}
+            </div>
+          )}
 
           {/* Name */}
           <div>
-            <label className="block text-sm text-purple-300 mb-2">
-              {language === 'tr' ? 'İsim' : 'Name'}
+            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+              <User className="w-4 h-4" />
+              {language === 'tr' ? 'Ad Soyad' : 'Full Name'}
             </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
           </div>
 
-          {/* Birth Date - Simplified with dropdowns */}
+          {/* Username */}
           <div>
             <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}
+              <AtSign className="w-4 h-4" />
+              {language === 'tr' ? 'Kullanıcı Adı' : 'Username'}
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                value={birthDate ? new Date(birthDate).getDate() : ''}
-                onChange={(e) => {
-                  const day = e.target.value
-                  if (!day) { setBirthDate(''); return }
-                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
-                  currentDate.setDate(parseInt(day))
-                  setBirthDate(currentDate.toISOString().split('T')[0])
-                }}
-                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
-              >
-                <option value="">{language === 'tr' ? 'Gün' : 'Day'}</option>
-                {Array.from({length: 31}, (_, i) => i + 1).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-              <select
-                value={birthDate ? new Date(birthDate).getMonth() : ''}
-                onChange={(e) => {
-                  const month = e.target.value
-                  if (month === '') { setBirthDate(''); return }
-                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
-                  currentDate.setMonth(parseInt(month))
-                  setBirthDate(currentDate.toISOString().split('T')[0])
-                }}
-                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
-              >
-                <option value="">{language === 'tr' ? 'Ay' : 'Month'}</option>
-                {(language === 'tr' 
-                  ? ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-                  : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                ).map((m, i) => (
-                  <option key={i} value={i}>{m}</option>
-                ))}
-              </select>
-              <select
-                value={birthDate ? new Date(birthDate).getFullYear() : ''}
-                onChange={(e) => {
-                  const year = e.target.value
-                  if (!year) { setBirthDate(''); return }
-                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
-                  currentDate.setFullYear(parseInt(year))
-                  setBirthDate(currentDate.toISOString().split('T')[0])
-                }}
-                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
-              >
-                <option value="">{language === 'tr' ? 'Yıl' : 'Year'}</option>
-                {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">@</span>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                placeholder={language === 'tr' ? 'kullanici_adi' : 'your_username'}
+                className="w-full bg-deep-purple-900/50 text-white rounded-lg pl-8 pr-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
             </div>
+            <p className="text-purple-400/60 text-xs mt-1">{language === 'tr' ? '3-20 karakter, harf, rakam ve alt çizgi' : '3-20 chars, letters, numbers, underscore'}</p>
           </div>
 
-          {/* Birth Time - Optional simple dropdown */}
+          {/* Email */}
           <div>
             <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              {language === 'tr' ? 'Doğum Saati (opsiyonel)' : 'Birth Time (optional)'}
+              <Mail className="w-4 h-4" />
+              {language === 'tr' ? 'Email Adresi' : 'Email Address'}
             </label>
-            <select
-              value={birthTime}
-              onChange={(e) => setBirthTime(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-            >
-              <option value="">{language === 'tr' ? 'Bilmiyorum' : "Don't know"}</option>
-              {Array.from({length: 24}, (_, i) => {
-                const hour = i.toString().padStart(2, '0')
-                return (
-                  <option key={i} value={`${hour}:00`}>{`${hour}:00`}</option>
-                )
-              })}
-            </select>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
           </div>
 
-          {/* Zodiac Sign (auto-calculated) */}
-          {zodiacSign && currentZodiac && (
-            <div className="p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl border border-purple-500/30">
-              <div className="flex items-center gap-3">
-                <span className="text-4xl">{currentZodiac.emoji}</span>
-                <div>
-                  <p className="text-white font-semibold">
-                    {language === 'tr' ? 'Burçunuz' : 'Your Zodiac'}: {currentZodiac[language as 'tr' | 'en']}
-                  </p>
-                  <p className="text-purple-300 text-sm">
-                    {language === 'tr' ? 'Doğum tarihinize göre otomatik hesaplandı' : 'Auto-calculated from your birth date'}
-                  </p>
-                </div>
+          {/* Phone */}
+          <div>
+            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              {language === 'tr' ? 'Telefon Numarası (opsiyonel)' : 'Phone Number (optional)'}
+            </label>
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+              placeholder="+90 5XX XXX XX XX"
+              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-gold-500" />
+              {language === 'tr' ? 'Fal Bilgileri' : 'Fortune Details'}
+            </h3>
+
+            {/* Birth Date */}
+            <div className="mb-4">
+              <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <select value={birthDate ? new Date(birthDate).getDate() : ''}
+                  onChange={(e) => {
+                    const day = e.target.value
+                    if (!day) { setBirthDate(''); return }
+                    const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                    currentDate.setDate(parseInt(day))
+                    setBirthDate(currentDate.toISOString().split('T')[0])
+                  }}
+                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  <option value="">{language === 'tr' ? 'Gün' : 'Day'}</option>
+                  {Array.from({length: 31}, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select value={birthDate ? new Date(birthDate).getMonth() : ''}
+                  onChange={(e) => {
+                    const month = e.target.value
+                    if (month === '') { setBirthDate(''); return }
+                    const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                    currentDate.setMonth(parseInt(month))
+                    setBirthDate(currentDate.toISOString().split('T')[0])
+                  }}
+                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  <option value="">{language === 'tr' ? 'Ay' : 'Month'}</option>
+                  {(language === 'tr' 
+                    ? ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+                    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                  ).map((m, i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+                <select value={birthDate ? new Date(birthDate).getFullYear() : ''}
+                  onChange={(e) => {
+                    const year = e.target.value
+                    if (!year) { setBirthDate(''); return }
+                    const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                    currentDate.setFullYear(parseInt(year))
+                    setBirthDate(currentDate.toISOString().split('T')[0])
+                  }}
+                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  <option value="">{language === 'tr' ? 'Yıl' : 'Year'}</option>
+                  {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
               </div>
             </div>
-          )}
 
-          {/* Rising Sign (manual) */}
-          {birthTime && (
-            <div>
+            {/* Birth Time */}
+            <div className="mb-4">
               <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
-                <Moon className="w-4 h-4" />
-                {language === 'tr' ? 'Yüselen Burç' : 'Rising Sign'}
+                <Clock className="w-4 h-4" />
+                {language === 'tr' ? 'Doğum Saati (opsiyonel)' : 'Birth Time (optional)'}
               </label>
-              <select
-                value={risingSign}
-                onChange={(e) => setRisingSign(e.target.value)}
-                className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-              >
-                <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
-                {ZODIAC_SIGNS.map(sign => (
-                  <option key={sign.id} value={sign.id}>
-                    {sign.emoji} {sign[language as 'tr' | 'en']}
-                  </option>
-                ))}
+              <select value={birthTime} onChange={(e) => setBirthTime(e.target.value)}
+                className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                <option value="">{language === 'tr' ? 'Bilmiyorum' : "Don't know"}</option>
+                {Array.from({length: 24}, (_, i) => {
+                  const hour = i.toString().padStart(2, '0')
+                  return <option key={i} value={`${hour}:00`}>{`${hour}:00`}</option>
+                })}
               </select>
             </div>
-          )}
 
-          {/* Favorite Team */}
-          <div>
-            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
-              <Heart className="w-4 h-4" />
-              {language === 'tr' ? 'Tuttuğunuz Takım' : 'Favorite Team'}
-            </label>
-            <select
-              value={favoriteTeam}
-              onChange={(e) => setFavoriteTeam(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-            >
-              <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
-              {FOOTBALL_TEAMS.map(team => (
-                <option key={team} value={team}>{team}</option>
-              ))}
-            </select>
+            {/* Zodiac Sign (auto-calculated) */}
+            {zodiacSign && currentZodiac && (
+              <div className="p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl border border-purple-500/30 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">{currentZodiac.emoji}</span>
+                  <div>
+                    <p className="text-white font-semibold">
+                      {language === 'tr' ? 'Burçunuz' : 'Your Zodiac'}: {currentZodiac[language as 'tr' | 'en']}
+                    </p>
+                    <p className="text-purple-300 text-sm">
+                      {language === 'tr' ? 'Doğum tarihinize göre otomatik hesaplandı' : 'Auto-calculated from your birth date'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rising Sign (manual) */}
+            {birthTime && (
+              <div className="mb-4">
+                <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+                  <Moon className="w-4 h-4" />
+                  {language === 'tr' ? 'Yükselen Burç' : 'Rising Sign'}
+                </label>
+                <select value={risingSign} onChange={(e) => setRisingSign(e.target.value)}
+                  className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                  <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                  {ZODIAC_SIGNS.map(sign => (
+                    <option key={sign.id} value={sign.id}>{sign.emoji} {sign[language as 'tr' | 'en']}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Favorite Team */}
+            <div>
+              <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                {language === 'tr' ? 'Tuttuğunuz Takım' : 'Favorite Team'}
+              </label>
+              <select value={favoriteTeam} onChange={(e) => setFavoriteTeam(e.target.value)}
+                className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                {FOOTBALL_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Save Button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
+          <button onClick={handleSave} disabled={saving}
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50">
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : saved ? (
-              <>
-                <Check className="w-5 h-5" />
-                {language === 'tr' ? 'Kaydedildi!' : 'Saved!'}
-              </>
+              <><Check className="w-5 h-5" />{language === 'tr' ? 'Kaydedildi!' : 'Saved!'}</>
             ) : (
-              <>
-                <Save className="w-5 h-5" />
-                {language === 'tr' ? 'Kaydet' : 'Save'}
-              </>
+              <><Save className="w-5 h-5" />{language === 'tr' ? 'Kaydet' : 'Save'}</>
             )}
           </button>
         </motion.div>
