@@ -55,7 +55,7 @@ export default function LiveRoomPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState('');
   
   // Timer state
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -76,6 +76,16 @@ export default function LiveRoomPage() {
   const pingRef = useRef<NodeJS.Timeout | null>(null);
   const signalPollRef = useRef<NodeJS.Timeout | null>(null);
   const messagePollRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMessageTimeRef = useRef<string | null>(null);
+  const messageIdsRef = useRef<Set<string>>(new Set());
+  const roomDataRef = useRef<RoomData | null>(null);
+  const isInitialized = useRef(false);
+  const hasCreatedOffer = useRef(false);
+
+  // Update roomDataRef when roomData changes
+  useEffect(() => {
+    roomDataRef.current = roomData;
+  }, [roomData]);
 
   // Fetch room data
   const fetchRoomData = useCallback(async () => {
@@ -91,6 +101,7 @@ export default function LiveRoomPage() {
       }
       const data = await res.json();
       setRoomData(data);
+      roomDataRef.current = data;
       return data;
     } catch (err) {
       console.error('Error fetching room:', err);
@@ -103,7 +114,12 @@ export default function LiveRoomPage() {
 
   // Initialize WebRTC
   const initializeWebRTC = useCallback(async (roomInfo: RoomData) => {
+    if (isInitialized.current) return peerConnectionRef.current;
+    isInitialized.current = true;
+    
     try {
+      setConnectionStatus(language === 'tr' ? 'Kamera/mikrofon erişimi isteniyor...' : 'Requesting camera/microphone access...');
+      
       // Get local media stream
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -115,12 +131,18 @@ export default function LiveRoomPage() {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Create peer connection
+      setConnectionStatus(language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...');
+
+      // Create peer connection with more STUN/TURN servers
       const configuration: RTCConfiguration = {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
+        ],
+        iceCandidatePoolSize: 10
       };
 
       const pc = new RTCPeerConnection(configuration);
@@ -133,21 +155,24 @@ export default function LiveRoomPage() {
 
       // Handle remote stream
       pc.ontrack = (event) => {
+        console.log('Received remote track:', event.track.kind);
         if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
           setIsConnected(true);
+          setConnectionStatus('');
         }
       };
 
       // Handle ICE candidates
       pc.onicecandidate = async (event) => {
-        if (event.candidate) {
+        if (event.candidate && roomDataRef.current) {
+          console.log('Sending ICE candidate');
           await fetch('/api/room/signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               sessionId,
-              receiverId: roomInfo.peerId,
+              receiverId: roomDataRef.current.peerId,
               signalType: 'ice-candidate',
               signalData: event.candidate
             })
@@ -155,17 +180,36 @@ export default function LiveRoomPage() {
         }
       };
 
+      pc.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', pc.iceConnectionState);
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          setIsConnected(true);
+          setConnectionStatus('');
+        } else if (pc.iceConnectionState === 'disconnected') {
+          setConnectionStatus(language === 'tr' ? 'Bağlantı kesildi, yeniden bağlanılıyor...' : 'Disconnected, reconnecting...');
+        } else if (pc.iceConnectionState === 'failed') {
+          setConnectionStatus(language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed');
+        }
+      };
+
       pc.onconnectionstatechange = () => {
+        console.log('Connection state:', pc.connectionState);
         if (pc.connectionState === 'connected') {
           setIsConnected(true);
+          setConnectionStatus('');
         } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
           setIsConnected(false);
         }
       };
 
       // If user is the initiator (the person who booked), create offer
-      if (roomInfo.isUser) {
-        const offer = await pc.createOffer();
+      if (roomInfo.isUser && !hasCreatedOffer.current) {
+        hasCreatedOffer.current = true;
+        console.log('Creating offer as user...');
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true
+        });
         await pc.setLocalDescription(offer);
         
         await fetch('/api/room/signal', {
@@ -178,29 +222,39 @@ export default function LiveRoomPage() {
             signalData: offer
           })
         });
+        console.log('Offer sent');
       }
 
       return pc;
     } catch (err) {
       console.error('WebRTC initialization error:', err);
-      setError(language === 'tr' ? 'Kamera/mikrofon erişimi alınamadı' : 'Could not access camera/microphone');
+      isInitialized.current = false;
+      setError(language === 'tr' ? 'Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.' : 'Could not access camera/microphone. Please check permissions.');
       return null;
     }
   }, [sessionId, language]);
 
   // Poll for WebRTC signals
   const pollSignals = useCallback(async () => {
-    if (!peerConnectionRef.current || !roomData) return;
+    const pc = peerConnectionRef.current;
+    const currentRoomData = roomDataRef.current;
+    
+    if (!pc || !currentRoomData) return;
 
     try {
       const res = await fetch(`/api/room/signal?sessionId=${sessionId}`);
       if (!res.ok) return;
       
       const signals = await res.json();
-      const pc = peerConnectionRef.current;
 
       for (const signal of signals) {
+        console.log('Processing signal:', signal.signalType);
+        
         if (signal.signalType === 'offer') {
+          if (pc.signalingState !== 'stable') {
+            console.log('Ignoring offer, not in stable state');
+            continue;
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(signal.signalData));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
@@ -210,57 +264,88 @@ export default function LiveRoomPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               sessionId,
-              receiverId: roomData.peerId,
+              receiverId: currentRoomData.peerId,
               signalType: 'answer',
               signalData: answer
             })
           });
+          console.log('Answer sent');
         } else if (signal.signalType === 'answer') {
+          if (pc.signalingState !== 'have-local-offer') {
+            console.log('Ignoring answer, not in have-local-offer state');
+            continue;
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(signal.signalData));
+          console.log('Answer received and set');
         } else if (signal.signalType === 'ice-candidate') {
-          await pc.addIceCandidate(new RTCIceCandidate(signal.signalData));
+          if (pc.remoteDescription) {
+            await pc.addIceCandidate(new RTCIceCandidate(signal.signalData));
+            console.log('ICE candidate added');
+          }
         }
       }
     } catch (err) {
       console.error('Signal polling error:', err);
     }
-  }, [sessionId, roomData]);
+  }, [sessionId]);
 
-  // Fetch messages
+  // Fetch messages - fixed to avoid duplicates
   const fetchMessages = useCallback(async () => {
     try {
-      const lastMessage = messages[messages.length - 1];
-      const url = lastMessage 
-        ? `/api/room/${sessionId}/messages?after=${lastMessage.createdAt}`
+      const url = lastMessageTimeRef.current 
+        ? `/api/room/${sessionId}/messages?after=${encodeURIComponent(lastMessageTimeRef.current)}`
         : `/api/room/${sessionId}/messages`;
       
       const res = await fetch(url);
       if (!res.ok) return;
       
-      const newMessages = await res.json();
+      const newMessages: ChatMessage[] = await res.json();
+      
       if (newMessages.length > 0) {
-        setMessages(prev => [...prev, ...newMessages]);
+        // Filter out duplicates using messageIdsRef
+        const uniqueNewMessages = newMessages.filter(msg => {
+          if (messageIdsRef.current.has(msg.id)) {
+            return false;
+          }
+          messageIdsRef.current.add(msg.id);
+          return true;
+        });
+        
+        if (uniqueNewMessages.length > 0) {
+          // Update last message time
+          const lastMsg = uniqueNewMessages[uniqueNewMessages.length - 1];
+          lastMessageTimeRef.current = lastMsg.createdAt;
+          
+          setMessages(prev => [...prev, ...uniqueNewMessages]);
+        }
       }
     } catch (err) {
       console.error('Fetch messages error:', err);
     }
-  }, [sessionId, messages]);
+  }, [sessionId]);
 
   // Send message
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    const messageToSend = newMessage.trim();
+    setNewMessage(''); // Clear immediately
+
     try {
       const res = await fetch(`/api/room/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: newMessage })
+        body: JSON.stringify({ message: messageToSend })
       });
 
       if (res.ok) {
         const msg = await res.json();
-        setMessages(prev => [...prev, msg]);
-        setNewMessage('');
+        // Add to tracking set to prevent duplicate from polling
+        if (!messageIdsRef.current.has(msg.id)) {
+          messageIdsRef.current.add(msg.id);
+          lastMessageTimeRef.current = msg.createdAt;
+          setMessages(prev => [...prev, msg]);
+        }
       }
     } catch (err) {
       console.error('Send message error:', err);
@@ -296,6 +381,9 @@ export default function LiveRoomPage() {
 
       if (res.ok) {
         const data = await res.json();
+        // Update max seconds ref
+        maxSecondsRef.current += minutes * 60;
+        setRemainingSeconds(prev => prev + minutes * 60);
         fetchRoomData();
         alert(language === 'tr' 
           ? `${minutes} dakika eklendi. ${data.creditsUsed} kredi kullanıldı.`
@@ -371,9 +459,16 @@ export default function LiveRoomPage() {
     }
   }, []);
 
-  // Initialize on mount
+  // Initialize on mount - use ref to prevent double initialization
+  const hasInitRef = useRef(false);
+  const maxSecondsRef = useRef(0);
+  
   useEffect(() => {
+    if (hasInitRef.current || !session?.user) return;
+    
     const init = async () => {
+      hasInitRef.current = true;
+      
       const roomInfo = await fetchRoomData();
       if (roomInfo && roomInfo.status === 'active') {
         await initializeWebRTC(roomInfo);
@@ -381,6 +476,7 @@ export default function LiveRoomPage() {
         // Set up timers
         const maxSeconds = roomInfo.maxMinutes * 60;
         const usedSeconds = roomInfo.minutesUsed * 60;
+        maxSecondsRef.current = maxSeconds;
         setRemainingSeconds(maxSeconds - usedSeconds);
         setElapsedSeconds(usedSeconds);
         
@@ -388,11 +484,13 @@ export default function LiveRoomPage() {
         timerRef.current = setInterval(() => {
           setElapsedSeconds(prev => {
             const newElapsed = prev + 1;
-            setRemainingSeconds(maxSeconds - newElapsed);
+            const remaining = maxSecondsRef.current - newElapsed;
+            setRemainingSeconds(remaining);
             
             // Auto-end if time is up
-            if (newElapsed >= maxSeconds) {
-              endSession();
+            if (remaining <= 0) {
+              cleanup();
+              router.push(`/${language}/dashboard`);
             }
             return newElapsed;
           });
@@ -401,23 +499,23 @@ export default function LiveRoomPage() {
         // Ping server every minute
         pingRef.current = setInterval(pingServer, 60000);
         
-        // Poll for signals
-        signalPollRef.current = setInterval(pollSignals, 1000);
+        // Poll for signals every 1.5 seconds
+        signalPollRef.current = setInterval(pollSignals, 1500);
         
-        // Poll for messages
-        messagePollRef.current = setInterval(fetchMessages, 2000);
+        // Poll for messages every 3 seconds
+        messagePollRef.current = setInterval(fetchMessages, 3000);
         
         // Initial fetch
         fetchMessages();
       }
     };
 
-    if (session?.user) {
-      init();
-    }
+    init();
 
-    return cleanup;
-  }, [session]);
+    return () => {
+      cleanup();
+    };
+  }, [session, sessionId]);
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -574,7 +672,12 @@ export default function LiveRoomPage() {
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gold-500 mx-auto mb-4"></div>
                   <p className="text-white">
-                    {language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...'}
+                    {connectionStatus || (language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...')}
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    {language === 'tr' 
+                      ? 'Diğer tarafın odaya girmesini bekliyorsunuz'
+                      : 'Waiting for the other party to join'}
                   </p>
                 </div>
               </div>
