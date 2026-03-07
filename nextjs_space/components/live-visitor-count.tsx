@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Users, Eye } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useLanguage } from '@/lib/language-context';
 
 interface LiveVisitorCountProps {
   showIcon?: boolean;
@@ -20,8 +19,11 @@ export function LiveVisitorCount({
 }: LiveVisitorCountProps) {
   const [count, setCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const { language } = useLanguage();
+  
+  // Detect language from pathname
+  const language = pathname?.startsWith('/en') ? 'en' : 'tr';
 
   // Generate or get visitor ID
   const getVisitorId = useCallback(() => {
@@ -59,6 +61,12 @@ export function LiveVisitorCount({
   }, [getVisitorId, pathname]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     // Initial update
     updatePresence();
 
@@ -77,7 +85,12 @@ export function LiveVisitorCount({
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [updatePresence]);
+  }, [mounted, updatePresence]);
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
 
   if (variant === 'admin') {
     return (

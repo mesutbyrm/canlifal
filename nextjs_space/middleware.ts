@@ -50,6 +50,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|og-image.png|.*\\.jpg|.*\\.png|.*\\.svg).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|favicon.svg|og-image.png|manifest.json|sw.js|icons/.*|.*\\.jpg|.*\\.png|.*\\.svg|.*\\.mp3).*)',
   ],
 }
