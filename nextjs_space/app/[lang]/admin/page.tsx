@@ -58,14 +58,26 @@ interface Statistics {
   fortunesByType: Record<string, number>
 }
 
+interface VisitorStats {
+  today: { total: number; unique: number }
+  week: { total: number; unique: number }
+  month: { total: number; unique: number }
+  year: { total: number; unique: number }
+  geo: {
+    countries: { country: string; count: number }[]
+    cities: { city: string; count: number }[]
+  }
+}
+
 export default function AdminPage() {
   const { language, t } = useLanguage()
   const [users, setUsers] = useState<User[]>([])
   const [statistics, setStatistics] = useState<Statistics | null>(null)
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [creditAmount, setCreditAmount] = useState(10)
-  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads' | 'visitors'>('users')
   
   // Chat management state
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -86,6 +98,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetchData()
     fetchAdSettings()
+    fetchVisitorStats()
   }, [])
 
   const fetchData = async () => {
@@ -107,6 +120,18 @@ export default function AdminPage() {
       console.error('Failed to fetch admin data:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchVisitorStats = async () => {
+    try {
+      const res = await fetch('/api/admin/visitor-stats')
+      if (res.ok) {
+        const data = await res.json()
+        setVisitorStats(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch visitor stats:', error)
     }
   }
 
@@ -271,6 +296,13 @@ export default function AdminPage() {
                 >
                   <Megaphone className="w-5 h-5" />
                   {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item 
+                  onClick={() => setActiveTab('visitors')}
+                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'visitors' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
@@ -617,7 +649,7 @@ export default function AdminPage() {
               )}
             </div>
           </motion.div>
-        ) : (
+        ) : activeTab === 'ads' ? (
           /* Ads Management Tab */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -842,7 +874,158 @@ export default function AdminPage() {
               </div>
             </div>
           </motion.div>
-        )}
+        ) : activeTab === 'visitors' ? (
+          /* Visitor Statistics Tab */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="mb-8">
+              <h2 className="font-serif text-3xl text-gold-400 mb-2">
+                {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
+              </h2>
+              <p className="text-deep-purple-300">
+                {language === 'tr' ? 'Tekil ve toplam ziyaretçi sayıları ile coğrafi dağılım' : 'Unique and total visitor counts with geographic distribution'}
+              </p>
+            </div>
+
+            {/* Time-based Statistics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* Today */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bugün' : 'Today'}</span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
+                    <p className="text-2xl font-bold text-blue-400">{visitorStats?.today?.unique ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
+                    <p className="text-lg text-blue-300">{visitorStats?.today?.total ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Week */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-green-400" />
+                  </div>
+                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
+                    <p className="text-2xl font-bold text-green-400">{visitorStats?.week?.unique ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
+                    <p className="text-lg text-green-300">{visitorStats?.week?.total ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Month */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-yellow-400" />
+                  </div>
+                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Ay' : 'This Month'}</span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
+                    <p className="text-2xl font-bold text-yellow-400">{visitorStats?.month?.unique ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
+                    <p className="text-lg text-yellow-300">{visitorStats?.month?.total ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Year */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Yıl' : 'This Year'}</span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
+                    <p className="text-2xl font-bold text-purple-400">{visitorStats?.year?.unique ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
+                    <p className="text-lg text-purple-300">{visitorStats?.year?.total ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Geographic Statistics */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Countries */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                  🌍 {language === 'tr' ? 'Ülkelere Göre (Son 30 Gün)' : 'By Country (Last 30 Days)'}
+                </h3>
+                <div className="space-y-3">
+                  {visitorStats?.geo?.countries?.length ? (
+                    visitorStats.geo.countries.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <span className="text-deep-purple-200">{item.country}</span>
+                        <span className="text-gold-400 font-semibold">{item.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Cities */}
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
+                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                  🏙️ {language === 'tr' ? 'Şehirlere Göre (Son 30 Gün)' : 'By City (Last 30 Days)'}
+                </h3>
+                <div className="space-y-3">
+                  {visitorStats?.geo?.cities?.length ? (
+                    visitorStats.geo.cities.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <span className="text-deep-purple-200">{item.city}</span>
+                        <span className="text-gold-400 font-semibold">{item.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Refresh Button */}
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={fetchVisitorStats}
+                className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors"
+              >
+                <TrendingUp className="w-5 h-5" />
+                {language === 'tr' ? 'Verileri Yenile' : 'Refresh Data'}
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
 
         {/* Add Credits Modal */}
         <Dialog.Root open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>

@@ -317,6 +317,24 @@ model SitePresence {
   @@map("site_presences")
 }
 
+// Persistent site visit tracking for analytics
+model SiteVisit {
+  id        String   @id @default(cuid())
+  visitorId String   // Unique visitor identifier
+  userId    String?  // Optional: logged-in user
+  visitedAt DateTime @default(now())
+  path      String?  // Page visited
+  userAgent String?
+  country   String?  // Country code (TR, US, etc.)
+  city      String?  // City name
+  ipHash    String?  // Hashed IP for privacy
+
+  @@index([visitedAt])
+  @@index([visitorId])
+  @@index([country])
+  @@map("site_visits")
+}
+
 // Notifications for users (likes, comments, etc.)
 model Notification {
   id        String   @id @default(cuid())

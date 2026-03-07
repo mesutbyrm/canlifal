@@ -25,28 +25,44 @@ export function LiveVisitorCount({
   // Detect language from pathname
   const language = pathname?.startsWith('/en') ? 'en' : 'tr';
 
-  // Generate or get visitor ID
-  const getVisitorId = useCallback(() => {
-    if (typeof window === 'undefined') return null;
+  // Generate or get visitor ID and check if new session
+  const getVisitorId = useCallback((): { visitorId: string | null; isNewSession: boolean } => {
+    if (typeof window === 'undefined') return { visitorId: null, isNewSession: false };
     
     let visitorId = localStorage.getItem('falci_visitor_id');
+    let isNewSession = false;
+    
     if (!visitorId) {
       visitorId = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('falci_visitor_id', visitorId);
+      isNewSession = true;
     }
-    return visitorId;
+    
+    // Check if it's a new day (for daily unique visits)
+    const lastVisitDate = localStorage.getItem('falci_last_visit_date');
+    const today = new Date().toDateString();
+    if (lastVisitDate !== today) {
+      localStorage.setItem('falci_last_visit_date', today);
+      isNewSession = true;
+    }
+    
+    return { visitorId, isNewSession };
   }, []);
 
   // Update presence and get count
-  const updatePresence = useCallback(async () => {
-    const visitorId = getVisitorId();
+  const updatePresence = useCallback(async (forceNewSession = false) => {
+    const { visitorId, isNewSession } = getVisitorId();
     if (!visitorId) return;
 
     try {
       const response = await fetch('/api/presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorId, path: pathname }),
+        body: JSON.stringify({ 
+          visitorId, 
+          path: pathname,
+          isNewSession: forceNewSession || isNewSession
+        }),
       });
       
       if (response.ok) {
