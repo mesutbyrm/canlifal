@@ -1,4 +1,3 @@
-// PostgreSQL database configuration
 generator client {
     provider = "prisma-client-js"
     binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
@@ -6,66 +5,59 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  emailVerified     DateTime?
-  password          String?
-  name              String
-  image             String?
-  preferredLanguage String    @default("tr")
-  credits           Int       @default(10)
-  role              String    @default("user")
-  createdAt         DateTime  @default(now())
-  
-  // Referral System
-  referralCode          String?   @unique
+  id                    String               @id @default(cuid())
+  email                 String               @unique
+  emailVerified         DateTime?
+  password              String?
+  name                  String
+  image                 String?
+  preferredLanguage     String               @default("tr")
+  credits               Int                  @default(10)
+  role                  String               @default("user")
+  createdAt             DateTime             @default(now())
+  referralCode          String?              @unique
+  referralCreditsEarned Int                  @default(0)
   referredById          String?
-  referredBy            User?     @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals             User[]    @relation("UserReferrals")
-  referralCreditsEarned Int       @default(0)
-  
-  fortunes          Fortune[]
-  accounts          Account[]
-  sessions          Session[]
-  chatMessages      ChatMessage[]
-  chatPresences     ChatPresence[]
-  chatRoles         ChatUserRole[]
-  mutedIn           ChatMute[]  @relation("MutedUser")
-  mutedOthers       ChatMute[]  @relation("Muter")
-  bannedIn          ChatBan[]   @relation("BannedUser")
-  bannedOthers      ChatBan[]   @relation("Banner")
-  socialPosts       SocialPost[]
-  socialComments    SocialComment[]
-  socialLikes       SocialLike[]
-  notifications     Notification[]
-  referralHistory   Referral[]  @relation("Referrer")
-  referredHistory   Referral[]  @relation("Referred")
-  passwordResets    PasswordResetToken[]
-  
-  // Live Fortune Teller
+  accounts              Account[]
+  bannedOthers          ChatBan[]            @relation("Banner")
+  bannedIn              ChatBan[]            @relation("BannedUser")
+  chatMessages          ChatMessage[]
+  mutedOthers           ChatMute[]           @relation("Muter")
+  mutedIn               ChatMute[]           @relation("MutedUser")
+  chatPresences         ChatPresence[]
+  chatRoles             ChatUserRole[]
+  fortunes              Fortune[]
   fortuneTellerProfile  LiveFortuneTeller?
-  liveSessions          LiveSession[]  @relation("SessionUser")
+  liveSessions          LiveSession[]        @relation("SessionUser")
+  notifications         Notification[]
+  passwordResets        PasswordResetToken[]
+  referredHistory       Referral[]           @relation("Referred")
+  referralHistory       Referral[]           @relation("Referrer")
+  sessions              Session[]
+  socialComments        SocialComment[]
+  socialLikes           SocialLike[]
+  socialPosts           SocialPost[]
+  referredBy            User?                @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals             User[]               @relation("UserReferrals")
 
   @@index([referralCode])
   @@index([referredById])
   @@map("users")
 }
 
-// Referral tracking
 model Referral {
-  id            String   @id @default(cuid())
-  referrerId    String
-  referredId    String
-  creditsAwarded Int     @default(50)
-  createdAt     DateTime @default(now())
-  
-  referrer      User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  referred      User     @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredId     String
+  creditsAwarded Int      @default(50)
+  createdAt      DateTime @default(now())
+  referred       User     @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  referrer       User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
 
   @@unique([referrerId, referredId])
   @@index([referrerId])
@@ -73,7 +65,6 @@ model Referral {
   @@map("referrals")
 }
 
-// Password Reset Tokens
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
@@ -81,7 +72,6 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
@@ -89,49 +79,38 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
-// Live Fortune Teller Profile
 model LiveFortuneTeller {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  displayName     String
-  bio             String?  @db.Text
-  specialties     String[] // Array of fortune types they specialize in
-  pricePerSession Int      @default(100) // Credits per session
-  rating          Float    @default(5.0)
-  totalSessions   Int      @default(0)
-  totalReviews    Int      @default(0)
-  totalEarnings   Int      @default(0) // Total credits earned
-  isOnline        Boolean  @default(false)
-  isVerified      Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  avatar          String?
-  
-  // Application status
-  applicationStatus String  @default("pending") // pending, approved, rejected
-  applicationNote   String? @db.Text
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  displayName       String
+  bio               String?
+  specialties       String[]
+  pricePerSession   Int                @default(100)
+  rating            Float              @default(5.0)
+  totalSessions     Int                @default(0)
+  totalReviews      Int                @default(0)
+  isOnline          Boolean            @default(false)
+  isVerified        Boolean            @default(false)
+  isActive          Boolean            @default(true)
+  avatar            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  applicationNote   String?
+  applicationStatus String             @default("pending")
   approvedAt        DateTime?
-  rejectedAt        DateTime?
-  
-  // Ban system
-  isBanned          Boolean  @default(false)
-  banReason         String?  @db.Text
+  banReason         String?
   bannedAt          DateTime?
-  
-  // Freeze system (earnings freeze)
-  isFrozen          Boolean  @default(false)
-  freezeReason      String?  @db.Text
+  bonusCredits      Int                @default(0)
+  freezeReason      String?
   frozenAt          DateTime?
-  
-  // Bonus/Rewards
-  bonusCredits      Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions        LiveSession[]
-  reviews         LiveTellerReview[]
-  warnings        TellerWarning[]
+  isBanned          Boolean            @default(false)
+  isFrozen          Boolean            @default(false)
+  rejectedAt        DateTime?
+  totalEarnings     Int                @default(0)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions          LiveSession[]
+  reviews           LiveTellerReview[]
+  warnings          TellerWarning[]
 
   @@index([isOnline])
   @@index([isVerified])
@@ -141,37 +120,33 @@ model LiveFortuneTeller {
   @@map("live_fortune_tellers")
 }
 
-// Warnings for Fortune Tellers
 model TellerWarning {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   tellerId  String
-  reason    String   @db.Text
-  issuedBy  String   // Admin user ID
-  createdAt DateTime @default(now())
-  
+  reason    String
+  issuedBy  String
+  createdAt DateTime          @default(now())
   teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
 
   @@index([tellerId])
   @@map("teller_warnings")
 }
 
-// Live Session between user and fortune teller
 model LiveSession {
-  id              String   @id @default(cuid())
-  tellerId        String
-  userId          String
-  fortuneType     String
-  status          String   @default("pending") // pending, active, completed, cancelled
-  creditsCharged  Int
-  startedAt       DateTime?
-  endedAt         DateTime?
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now())
-  
-  teller          LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
-  user            User              @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
-  messages        LiveSessionMessage[]
-  review          LiveTellerReview?
+  id             String               @id @default(cuid())
+  tellerId       String
+  userId         String
+  fortuneType    String
+  status         String               @default("pending")
+  creditsCharged Int
+  startedAt      DateTime?
+  endedAt        DateTime?
+  notes          String?
+  createdAt      DateTime             @default(now())
+  messages       LiveSessionMessage[]
+  teller         LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  user           User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  review         LiveTellerReview?
 
   @@index([tellerId])
   @@index([userId])
@@ -179,46 +154,42 @@ model LiveSession {
   @@map("live_sessions")
 }
 
-// Messages within a live session
 model LiveSessionMessage {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   sessionId String
   senderId  String
-  message   String   @db.Text
-  createdAt DateTime @default(now())
-  
+  message   String
+  createdAt DateTime    @default(now())
   session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@map("live_session_messages")
 }
 
-// Reviews for fortune tellers
 model LiveTellerReview {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   tellerId  String
-  sessionId String   @unique
-  rating    Int      // 1-5
-  comment   String?  @db.Text
-  createdAt DateTime @default(now())
-  
-  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  sessionId String            @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime          @default(now())
   session   LiveSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
 
   @@index([tellerId])
   @@map("live_teller_reviews")
 }
 
 model Fortune {
-  id           String   @id @default(cuid())
-  userId       String
-  fortuneType  String
-  inputData    String   @db.Text
-  aiResponse   String
-  language     String
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  socialPosts  SocialPost[]
+  id          String       @id @default(cuid())
+  userId      String
+  fortuneType String
+  inputData   String
+  aiResponse  String
+  language    String
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialPosts SocialPost[]
 
   @@index([userId])
   @@index([fortuneType])
@@ -250,8 +221,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -277,21 +247,21 @@ model VerificationToken {
 }
 
 model ChatRoom {
-  id          String        @id @default(cuid())
-  slug        String        @unique
-  nameEn      String
-  nameTr      String
-  descEn      String
-  descTr      String
-  icon        String
-  isActive    Boolean       @default(true)
-  isMuted     Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  messages    ChatMessage[]
-  presences   ChatPresence[]
-  userRoles   ChatUserRole[]
-  mutes       ChatMute[]
-  bans        ChatBan[]
+  id        String         @id @default(cuid())
+  slug      String         @unique
+  nameEn    String
+  nameTr    String
+  descEn    String
+  descTr    String
+  icon      String
+  isActive  Boolean        @default(true)
+  isMuted   Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  bans      ChatBan[]
+  messages  ChatMessage[]
+  mutes     ChatMute[]
+  presences ChatPresence[]
+  userRoles ChatUserRole[]
 
   @@map("chat_rooms")
 }
@@ -300,7 +270,7 @@ model ChatMessage {
   id        String   @id @default(cuid())
   roomId    String
   userId    String
-  content   String   @db.Text
+  content   String
   createdAt DateTime @default(now())
   room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -326,12 +296,11 @@ model ChatPresence {
   @@map("chat_presences")
 }
 
-// Chat user roles: founder (~), admin (&), op (@), voice (+)
 model ChatUserRole {
   id        String   @id @default(cuid())
   roomId    String
   userId    String
-  role      String   // founder, admin, op, voice
+  role      String
   grantedBy String?
   createdAt DateTime @default(now())
   room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -342,7 +311,6 @@ model ChatUserRole {
   @@map("chat_user_roles")
 }
 
-// Muted users in a room
 model ChatMute {
   id        String    @id @default(cuid())
   roomId    String
@@ -351,16 +319,15 @@ model ChatMute {
   reason    String?
   expiresAt DateTime?
   createdAt DateTime  @default(now())
+  muter     User      @relation("Muter", fields: [mutedBy], references: [id], onDelete: Cascade)
   room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "MutedUser")
-  muter     User      @relation(fields: [mutedBy], references: [id], onDelete: Cascade, name: "Muter")
+  user      User      @relation("MutedUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
   @@map("chat_mutes")
 }
 
-// Banned users from a room
 model ChatBan {
   id        String    @id @default(cuid())
   roomId    String
@@ -369,44 +336,42 @@ model ChatBan {
   reason    String?
   expiresAt DateTime?
   createdAt DateTime  @default(now())
+  banner    User      @relation("Banner", fields: [bannedBy], references: [id], onDelete: Cascade)
   room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "BannedUser")
-  banner    User      @relation(fields: [bannedBy], references: [id], onDelete: Cascade, name: "Banner")
+  user      User      @relation("BannedUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
   @@map("chat_bans")
 }
 
-// Site settings for ads and other configurations
 model SiteSetting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String   @db.Text
+  value     String
   updatedAt DateTime @updatedAt
 
   @@map("site_settings")
 }
 
-// Social Posts - Users can share fortunes or custom text
 model SocialPost {
-  id          String    @id @default(cuid())
+  id          String          @id @default(cuid())
   userId      String
-  fortuneId   String?   // Optional: linked fortune
-  content     String    @db.Text
-  imageUrl    String?   // Optional: image URL for the post
-  audioUrl    String?   // Optional: audio URL for voice posts
-  youtubeUrl  String?   // Optional: YouTube video URL
-  postType    String    // "fortune", "text", "horoscope"
-  fortuneType String?   // coffee, tarot, etc. if fortune post
-  isAuto      Boolean   @default(false) // True if auto-shared from fortune
-  isPublic    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fortune     Fortune?  @relation(fields: [fortuneId], references: [id], onDelete: SetNull)
+  fortuneId   String?
+  content     String
+  postType    String
+  fortuneType String?
+  isPublic    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  imageUrl    String?
+  isAuto      Boolean         @default(false)
+  audioUrl    String?
+  youtubeUrl  String?
   comments    SocialComment[]
   likes       SocialLike[]
+  fortune     Fortune?        @relation(fields: [fortuneId], references: [id])
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
@@ -414,12 +379,11 @@ model SocialPost {
   @@map("social_posts")
 }
 
-// Comments on social posts
 model SocialComment {
   id        String     @id @default(cuid())
   postId    String
   userId    String
-  content   String     @db.Text
+  content   String
   createdAt DateTime   @default(now())
   post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -429,7 +393,6 @@ model SocialComment {
   @@map("social_comments")
 }
 
-// Likes on social posts
 model SocialLike {
   id        String     @id @default(cuid())
   postId    String
@@ -443,29 +406,27 @@ model SocialLike {
   @@map("social_likes")
 }
 
-// Anonymous users who use the platform without registration
 model AnonymousUser {
-  id              String   @id @default(cuid())
-  username        String   @unique
-  deviceId        String   @unique
-  credits         Int      @default(0)
-  adsWatched      Int      @default(0)
-  adsWatchedToday Int      @default(0)
-  lastAdDate      DateTime?
-  fortunesUsed    Int      @default(0)
-  createdAt       DateTime @default(now())
+  id                String             @id @default(cuid())
+  username          String             @unique
+  deviceId          String             @unique
+  credits           Int                @default(0)
+  adsWatched        Int                @default(0)
+  adsWatchedToday   Int                @default(0)
+  lastAdDate        DateTime?
+  fortunesUsed      Int                @default(0)
+  createdAt         DateTime           @default(now())
   anonymousFortunes AnonymousFortune[]
 
   @@map("anonymous_users")
 }
 
-// Fortune readings for anonymous users
 model AnonymousFortune {
   id              String        @id @default(cuid())
   anonymousUserId String
   fortuneType     String
-  inputData       String        @db.Text
-  aiResponse      String        @db.Text
+  inputData       String
+  aiResponse      String
   language        String
   createdAt       DateTime      @default(now())
   anonymousUser   AnonymousUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
@@ -474,30 +435,28 @@ model AnonymousFortune {
   @@map("anonymous_fortunes")
 }
 
-// Site-wide presence tracking for visitor count
 model SitePresence {
   id        String   @id @default(cuid())
-  visitorId String   @unique // Session ID or user ID
-  userId    String?  // Optional: logged-in user
+  visitorId String   @unique
+  userId    String?
   lastSeen  DateTime @default(now())
   userAgent String?
-  path      String?  // Current page path
+  path      String?
 
   @@index([lastSeen])
   @@map("site_presences")
 }
 
-// Persistent site visit tracking for analytics
 model SiteVisit {
   id        String   @id @default(cuid())
-  visitorId String   // Unique visitor identifier
-  userId    String?  // Optional: logged-in user
+  visitorId String
+  userId    String?
   visitedAt DateTime @default(now())
-  path      String?  // Page visited
+  path      String?
   userAgent String?
-  country   String?  // Country code (TR, US, etc.)
-  city      String?  // City name
-  ipHash    String?  // Hashed IP for privacy
+  country   String?
+  city      String?
+  ipHash    String?
 
   @@index([visitedAt])
   @@index([visitorId])
@@ -505,18 +464,17 @@ model SiteVisit {
   @@map("site_visits")
 }
 
-// Notifications for users (likes, comments, etc.)
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // "like", "comment", "share"
-  message   String
-  postId    String?
-  fromUserId String?
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  message      String
+  postId       String?
+  fromUserId   String?
   fromUserName String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([createdAt])

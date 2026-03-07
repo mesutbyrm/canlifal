@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Sparkles, Star, Moon, MessageCircle, Users, Share2, Heart, Coffee, Scroll, Eye, Activity } from 'lucide-react'
+import { Sparkles, Star, Moon, MessageCircle, Users, Share2, Heart, Coffee, Scroll, Eye, Activity, Video, Circle, Shield } from 'lucide-react'
 import FortuneCard from '@/components/fortune-card'
 import { useEffect, useState } from 'react'
 
@@ -34,6 +34,19 @@ interface PublicStats {
   }
 }
 
+interface LiveTeller {
+  id: string
+  displayName: string
+  bio: string | null
+  specialties: string[]
+  pricePerSession: number
+  rating: number
+  totalSessions: number
+  isOnline: boolean
+  isVerified: boolean
+  avatar: string | null
+}
+
 const FORTUNE_NAMES: Record<string, { tr: string; en: string; icon: string }> = {
   coffee: { tr: 'Kahve Falı', en: 'Coffee Reading', icon: '☕' },
   tarot: { tr: 'Tarot', en: 'Tarot', icon: '🎴' },
@@ -55,11 +68,28 @@ export default function HomePage() {
   const { language } = useLanguage()
   const { data: session } = useSession() || {}
   const [stats, setStats] = useState<PublicStats | null>(null)
+  const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
 
   useEffect(() => {
     fetch('/api/public-stats')
       .then(res => res.json())
       .then(data => setStats(data))
+      .catch(console.error)
+
+    // Fetch live tellers
+    fetch('/api/fortune-tellers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.tellers) {
+          // Sort: online first, then by rating
+          const sorted = data.tellers.sort((a: LiveTeller, b: LiveTeller) => {
+            if (a.isOnline && !b.isOnline) return -1
+            if (!a.isOnline && b.isOnline) return 1
+            return b.rating - a.rating
+          })
+          setLiveTellers(sorted.slice(0, 6)) // Show top 6
+        }
+      })
       .catch(console.error)
   }, [])
 
@@ -186,6 +216,141 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Live Fortune Tellers Section */}
+      {liveTellers.length > 0 && (
+        <section className="py-12 sm:py-16 px-4 bg-gradient-to-b from-[#0a0118] via-deep-purple-950/50 to-[#0a0118]">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-center mb-8"
+            >
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <Video className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 animate-pulse" />
+                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-gold-500 gold-glow">
+                  {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
+                </h2>
+              </div>
+              <p className="text-gray-400 text-sm sm:text-base">
+                {language === 'tr' 
+                  ? 'Profesyonel falcılarımızla birebir görüşme yapın' 
+                  : 'Have a one-on-one session with our professional fortune tellers'}
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {liveTellers.map((teller, index) => (
+                <motion.div
+                  key={teller.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Link href={`/${language}/live-tellers`}>
+                    <div className={`relative bg-deep-purple-900/40 border rounded-xl p-4 hover:border-gold-500/50 transition-all group ${
+                      teller.isOnline 
+                        ? 'border-green-500/50 shadow-lg shadow-green-500/10' 
+                        : 'border-deep-purple-700/50'
+                    }`}>
+                      {/* Online Badge */}
+                      <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                        teller.isOnline 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      }`}>
+                        <Circle className={`w-2 h-2 fill-current ${teller.isOnline ? 'animate-pulse' : ''}`} />
+                        {teller.isOnline 
+                          ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
+                          : (language === 'tr' ? 'Çevrimdışı' : 'Offline')
+                        }
+                      </div>
+
+                      {/* Avatar & Info */}
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold-500/30 to-purple-500/30 flex items-center justify-center text-2xl font-bold text-gold-400 border-2 border-gold-500/30 flex-shrink-0">
+                          {teller.avatar ? (
+                            <Image 
+                              src={teller.avatar} 
+                              alt={teller.displayName}
+                              width={64}
+                              height={64}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            teller.displayName.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white truncate group-hover:text-gold-400 transition-colors">
+                              {teller.displayName}
+                            </h3>
+                            {teller.isVerified && (
+                              <Shield className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span>{teller.rating.toFixed(1)}</span>
+                            <span className="text-deep-purple-600">•</span>
+                            <span>{teller.totalSessions} {language === 'tr' ? 'seans' : 'sessions'}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {teller.specialties.slice(0, 3).map((specialty) => (
+                              <span 
+                                key={specialty}
+                                className="px-2 py-0.5 bg-deep-purple-800/50 text-gold-400/80 rounded text-xs"
+                              >
+                                {FORTUNE_NAMES[specialty]?.icon || '✨'} {FORTUNE_NAMES[specialty]?.[language] || specialty}
+                              </span>
+                            ))}
+                            {teller.specialties.length > 3 && (
+                              <span className="px-2 py-0.5 bg-deep-purple-800/50 text-gray-400 rounded text-xs">
+                                +{teller.specialties.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Price */}
+                      <div className="mt-4 pt-3 border-t border-deep-purple-700/50 flex items-center justify-between">
+                        <span className="text-sm text-gray-400">
+                          {language === 'tr' ? 'Seans Ücreti' : 'Session Price'}
+                        </span>
+                        <span className="text-gold-400 font-semibold">
+                          {teller.pricePerSession} {language === 'tr' ? 'kredi' : 'credits'}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* View All Button */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="text-center mt-8"
+            >
+              <Link 
+                href={`/${language}/live-tellers`}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-600/20 to-gold-500/10 border border-gold-500/30 rounded-full text-gold-400 hover:border-gold-500/50 hover:text-gold-300 transition-all"
+              >
+                <Video className="w-5 h-5" />
+                {language === 'tr' ? 'Tüm Falcıları Gör' : 'View All Tellers'}
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Live Stats Section */}
       <section className="py-10 sm:py-12 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">

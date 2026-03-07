@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {
       isActive: true,
-      isVerified: true,
+      applicationStatus: 'approved',
+      isBanned: false,
     };
 
     if (onlineOnly) {
@@ -39,10 +40,10 @@ export async function GET(request: NextRequest) {
       ]
     });
 
-    return NextResponse.json(tellers);
+    return NextResponse.json({ tellers });
   } catch (error) {
     console.error('Fortune tellers error:', error);
-    return NextResponse.json([]);
+    return NextResponse.json({ tellers: [] });
   }
 }
 

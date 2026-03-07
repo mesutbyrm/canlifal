@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter } from 'lucide-react'
+import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import Link from 'next/link'
 
@@ -26,6 +26,15 @@ interface FortuneTeller {
   }
 }
 
+interface TellerStatus {
+  isTeller: boolean
+  id?: string
+  isOnline?: boolean
+  applicationStatus?: string
+  isBanned?: boolean
+  displayName?: string
+}
+
 const FORTUNE_TYPES: Record<string, { tr: string; en: string; icon: string }> = {
   coffee: { tr: 'Kahve Falı', en: 'Coffee', icon: '☕' },
   tarot: { tr: 'Tarot', en: 'Tarot', icon: '🃏' },
@@ -43,10 +52,46 @@ export default function LiveTellersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'online'>('all')
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
+  const [tellerStatus, setTellerStatus] = useState<TellerStatus | null>(null)
+  const [togglingOnline, setTogglingOnline] = useState(false)
 
   useEffect(() => {
     fetchTellers()
-  }, [filter, specialtyFilter])
+    if (session?.user) {
+      fetchTellerStatus()
+    }
+  }, [filter, specialtyFilter, session])
+
+  const fetchTellerStatus = async () => {
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online')
+      const data = await res.json()
+      setTellerStatus(data)
+    } catch (error) {
+      console.error('Failed to fetch teller status:', error)
+    }
+  }
+
+  const toggleOnlineStatus = async () => {
+    if (!tellerStatus?.isTeller) return
+    setTogglingOnline(true)
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isOnline: !tellerStatus.isOnline }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setTellerStatus(prev => prev ? { ...prev, isOnline: data.isOnline } : null)
+      // Refresh tellers list
+      fetchTellers()
+    } catch (error) {
+      console.error('Failed to toggle online status:', error)
+    } finally {
+      setTogglingOnline(false)
+    }
+  }
 
   const fetchTellers = async () => {
     setIsLoading(true)
@@ -57,9 +102,10 @@ export default function LiveTellersPage() {
       
       const res = await fetch(url)
       const data = await res.json()
-      setTellers(data)
+      setTellers(data.tellers || [])
     } catch (error) {
       console.error('Failed to fetch tellers:', error)
+      setTellers([])
     } finally {
       setIsLoading(false)
     }
@@ -84,6 +130,67 @@ export default function LiveTellersPage() {
               : 'Get live sessions with professional fortune tellers for a personalized experience.'}
           </p>
         </motion.div>
+
+        {/* Teller Status Panel - Only show if user is a teller */}
+        {tellerStatus?.isTeller && tellerStatus.applicationStatus === 'approved' && !tellerStatus.isBanned && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className={`mb-8 p-4 rounded-xl border ${
+              tellerStatus.isOnline 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : 'bg-deep-purple-900/50 border-deep-purple-700'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  tellerStatus.isOnline 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : 'bg-deep-purple-800 text-deep-purple-400'
+                }`}>
+                  <Power className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">
+                    {tellerStatus.displayName}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Circle className={`w-2 h-2 fill-current ${
+                      tellerStatus.isOnline ? 'text-green-400 animate-pulse' : 'text-gray-500'
+                    }`} />
+                    <span className={tellerStatus.isOnline ? 'text-green-400' : 'text-gray-400'}>
+                      {tellerStatus.isOnline 
+                        ? (language === 'tr' ? 'Çevrimiçisiniz' : 'You are Online')
+                        : (language === 'tr' ? 'Çevrimdışısınız' : 'You are Offline')
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={toggleOnlineStatus}
+                disabled={togglingOnline}
+                className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  tellerStatus.isOnline
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
+                    : 'bg-green-500 text-white hover:bg-green-400'
+                } disabled:opacity-50`}
+              >
+                {togglingOnline ? (
+                  <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Power className="w-5 h-5" />
+                )}
+                {tellerStatus.isOnline 
+                  ? (language === 'tr' ? 'Çevrimdışı Ol' : 'Go Offline')
+                  : (language === 'tr' ? 'Çevrimiçi Ol' : 'Go Online')
+                }
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Filters */}
         <motion.div
