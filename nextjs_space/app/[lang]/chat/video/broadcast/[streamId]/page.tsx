@@ -18,17 +18,29 @@ import {
   SwitchCamera,
   Radio,
   Gift,
-  Share2
+  Share2,
+  Coins
 } from 'lucide-react'
 
 interface Comment {
   id: string
   content: string
   createdAt: string
-  user: {
-    name: string
-    image: string | null
-  }
+  user: { name: string; image: string | null }
+}
+
+interface StreamGift {
+  id: string
+  sender: { name: string }
+  giftType: { icon: string; name: string; price: number }
+  quantity: number
+  createdAt: string
+}
+
+interface FloatingGift {
+  id: number
+  icon: string
+  senderName: string
 }
 
 interface FloatingHeart {
@@ -48,18 +60,23 @@ export default function BroadcastPage() {
 
   const [viewerCount, setViewerCount] = useState(0)
   const [likeCount, setLikeCount] = useState(0)
+  const [totalGiftCredits, setTotalGiftCredits] = useState(0)
   const [comments, setComments] = useState<Comment[]>([])
+  const [recentGifts, setRecentGifts] = useState<StreamGift[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
+  const [floatingGifts, setFloatingGifts] = useState<FloatingGift[]>([])
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [streamStarted, setStreamStarted] = useState(false)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const heartIdRef = useRef(0)
+  const giftIdRef = useRef(0)
+  const lastGiftIdRef = useRef<string>('')
 
   useEffect(() => {
     if (!session?.user) {
@@ -68,14 +85,12 @@ export default function BroadcastPage() {
     }
     startBroadcast()
     
-    const durationInterval = setInterval(() => {
-      setDuration(prev => prev + 1)
-    }, 1000)
-
+    const durationInterval = setInterval(() => setDuration(prev => prev + 1), 1000)
     const pollInterval = setInterval(() => {
       fetchStats()
       fetchComments()
-    }, 3000)
+      fetchGifts()
+    }, 2000)
 
     return () => {
       clearInterval(durationInterval)
@@ -87,16 +102,14 @@ export default function BroadcastPage() {
   const startBroadcast = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: 720, height: 1280 },
+        video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 } },
         audio: true
       })
       localStreamRef.current = stream
-
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream
       }
-
-      pollForViewers()
+      setStreamStarted(true)
     } catch (error) {
       console.error('Error starting broadcast:', error)
       alert(language === 'tr' ? 'Kamera erişimi sağlanamadı' : 'Could not access camera')
@@ -104,88 +117,16 @@ export default function BroadcastPage() {
     }
   }
 
-  const pollForViewers = async () => {
-    setInterval(async () => {
-      try {
-        const res = await fetch(`/api/video-streams/${streamId}/signal`)
-        if (res.ok) {
-          const signals = await res.json()
-          for (const signal of signals) {
-            if (signal.type === 'join') {
-              await handleViewerJoin(signal.viewerId)
-            } else if (signal.type === 'answer') {
-              const pc = peerConnectionsRef.current.get(signal.viewerId)
-              if (pc) {
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp))
-              }
-            } else if (signal.type === 'ice-candidate' && signal.candidate) {
-              const pc = peerConnectionsRef.current.get(signal.viewerId)
-              if (pc) {
-                await pc.addIceCandidate(new RTCIceCandidate(signal.candidate))
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Polling error:', error)
-      }
-    }, 2000)
-  }
-
-  const handleViewerJoin = async (viewerId: string) => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    })
-
-    peerConnectionsRef.current.set(viewerId, pc)
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current!)
-      })
-    }
-
-    pc.onicecandidate = async (event) => {
-      if (event.candidate) {
-        await fetch(`/api/video-streams/${streamId}/signal`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            viewerId,
-            type: 'ice-candidate',
-            candidate: event.candidate
-          })
-        })
-      }
-    }
-
-    const offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
-
-    await fetch(`/api/video-streams/${streamId}/signal`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        viewerId,
-        type: 'offer',
-        sdp: offer
-      })
-    })
-  }
-
   const fetchStats = async () => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}`)
       if (res.ok) {
         const data = await res.json()
-        setViewerCount(data.viewerCount)
-        setLikeCount(data.likeCount)
+        setViewerCount(data.viewerCount || 0)
+        setLikeCount(data.likeCount || 0)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      console.error('Error:', error)
     }
   }
 
@@ -194,11 +135,53 @@ export default function BroadcastPage() {
       const res = await fetch(`/api/video-streams/${streamId}/comments`)
       if (res.ok) {
         const data = await res.json()
-        setComments(data.slice(0, 20))
+        setComments(data.slice(0, 10))
       }
     } catch (error) {
-      console.error('Error fetching comments:', error)
+      console.error('Error:', error)
     }
+  }
+
+  const fetchGifts = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/gifts`)
+      if (res.ok) {
+        const gifts: StreamGift[] = await res.json()
+        setRecentGifts(gifts.slice(0, 5))
+        
+        // Calculate total credits earned
+        const total = gifts.reduce((sum, g) => sum + Math.floor(g.giftType.price * g.quantity * 0.7), 0)
+        setTotalGiftCredits(total)
+        
+        // Show animation for new gifts
+        if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {
+          lastGiftIdRef.current = gifts[0].id
+          addFloatingGift(gifts[0].giftType.icon, gifts[0].sender.name)
+          // Also add hearts for gift animation
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => addFloatingHeart(), i * 100)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }
+
+  const addFloatingGift = (icon: string, senderName: string) => {
+    const newGift: FloatingGift = { id: giftIdRef.current++, icon, senderName }
+    setFloatingGifts(prev => [...prev, newGift])
+    setTimeout(() => setFloatingGifts(prev => prev.filter(g => g.id !== newGift.id)), 3000)
+  }
+
+  const addFloatingHeart = () => {
+    const newHeart: FloatingHeart = {
+      id: heartIdRef.current++,
+      x: Math.random() * 60 + 20,
+      color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
+    }
+    setFloatingHearts(prev => [...prev, newHeart])
+    setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id)), 2000)
   }
 
   const toggleVideo = () => {
@@ -224,31 +207,20 @@ export default function BroadcastPage() {
   const switchCamera = async () => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newFacing)
-
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: 720, height: 1280 },
+        video: { facingMode: newFacing, width: { ideal: 1080 }, height: { ideal: 1920 } },
         audio: true
       })
-
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop())
       }
-
       localStreamRef.current = newStream
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream
       }
-
-      const videoTrack = newStream.getVideoTracks()[0]
-      peerConnectionsRef.current.forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video')
-        if (sender) {
-          sender.replaceTrack(videoTrack)
-        }
-      })
     } catch (error) {
-      console.error('Error switching camera:', error)
+      console.error('Error:', error)
     }
   }
 
@@ -256,10 +228,6 @@ export default function BroadcastPage() {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop())
     }
-
-    peerConnectionsRef.current.forEach(pc => pc.close())
-    peerConnectionsRef.current.clear()
-
     try {
       await fetch(`/api/video-streams/${streamId}`, {
         method: 'PATCH',
@@ -267,7 +235,7 @@ export default function BroadcastPage() {
         body: JSON.stringify({ status: 'ended' })
       })
     } catch (error) {
-      console.error('Error ending stream:', error)
+      console.error('Error:', error)
     }
   }
 
@@ -283,28 +251,9 @@ export default function BroadcastPage() {
   }
 
   const formatCount = (count: number) => {
-    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
     if (count >= 1000) return (count / 1000).toFixed(1) + 'K'
     return count.toString()
   }
-
-  // Simulate incoming hearts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.6 && likeCount > 0) {
-        const newHeart: FloatingHeart = {
-          id: heartIdRef.current++,
-          x: Math.random() * 40 + 30,
-          color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
-        }
-        setFloatingHearts(prev => [...prev, newHeart])
-        setTimeout(() => {
-          setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id))
-        }, 2000)
-      }
-    }, 800)
-    return () => clearInterval(interval)
-  }, [likeCount])
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
@@ -319,32 +268,25 @@ export default function BroadcastPage() {
       />
 
       {/* Gradient overlays */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 pt-12 px-4 z-10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Live badge */}
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-[#fe2c55] px-2.5 py-1 rounded-sm">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
               <span className="text-white text-xs font-bold">LIVE</span>
             </div>
-            
-            {/* Duration */}
             <div className="bg-black/50 px-2.5 py-1 rounded-sm">
               <span className="text-white text-xs font-medium">{formatDuration(duration)}</span>
             </div>
-            
-            {/* Viewers */}
             <div className="flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-sm">
               <Eye className="w-3.5 h-3.5 text-white" />
               <span className="text-white text-xs font-medium">{formatCount(viewerCount)}</span>
             </div>
           </div>
-
-          {/* End button */}
           <button
             onClick={() => setShowEndConfirm(true)}
             className="bg-black/50 text-white px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5"
@@ -353,23 +295,46 @@ export default function BroadcastPage() {
             {language === 'tr' ? 'Bitir' : 'End'}
           </button>
         </div>
+
+        {/* Earnings display */}
+        {totalGiftCredits > 0 && (
+          <div className="mt-3 flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-3 py-2 rounded-lg w-fit">
+            <Coins className="w-5 h-5 text-yellow-400" />
+            <span className="text-yellow-400 font-bold">+{totalGiftCredits}</span>
+            <span className="text-white/70 text-sm">{language === 'tr' ? 'kazanıldı' : 'earned'}</span>
+          </div>
+        )}
       </div>
 
-      {/* Right side stats */}
+      {/* Right side - Stats and floating animations */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-5 z-10">
+        {/* Floating gifts */}
+        <div className="relative h-24 w-16">
+          <AnimatePresence>
+            {floatingGifts.map(gift => (
+              <motion.div
+                key={gift.id}
+                initial={{ opacity: 1, y: 0, scale: 0.5 }}
+                animate={{ opacity: 0, y: -150, scale: 1.5 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 3 }}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
+              >
+                <span className="text-5xl">{gift.icon}</span>
+                <span className="text-white text-xs bg-black/60 px-2 py-0.5 rounded mt-1">{gift.senderName}</span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
         {/* Floating hearts */}
-        <div className="relative h-20">
+        <div className="relative h-20 w-16">
           <AnimatePresence>
             {floatingHearts.map(heart => (
               <motion.div
                 key={heart.id}
                 initial={{ opacity: 1, y: 0, scale: 0.5 }}
-                animate={{ 
-                  opacity: 0, 
-                  y: -100, 
-                  scale: 1.2,
-                  x: (Math.random() - 0.5) * 30
-                }}
+                animate={{ opacity: 0, y: -100, scale: 1.2, x: (Math.random() - 0.5) * 30 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 2 }}
                 className="absolute bottom-0 left-1/2 -translate-x-1/2"
@@ -396,46 +361,67 @@ export default function BroadcastPage() {
           <span className="text-white text-xs font-medium">{formatCount(comments.length)}</span>
         </div>
 
+        {/* Gift count */}
+        <div className="flex flex-col items-center">
+          <div className="w-11 h-11 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
+            <Gift className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-white text-xs font-medium">{recentGifts.length}</span>
+        </div>
+
         {/* Share */}
         <div className="flex flex-col items-center">
           <div className="w-11 h-11 flex items-center justify-center">
             <Share2 className="w-7 h-7 text-white" />
           </div>
         </div>
-
-        {/* Gift */}
-        <div className="flex flex-col items-center">
-          <div className="w-11 h-11 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
-            <Gift className="w-6 h-6 text-white" />
-          </div>
-        </div>
       </div>
 
       {/* Live comments overlay */}
-      <div className="absolute left-4 bottom-32 right-24 max-h-40 overflow-hidden z-10">
+      <div className="absolute left-4 bottom-36 right-24 max-h-44 overflow-hidden z-10">
         <div className="space-y-2">
-          {comments.slice(0, 5).map(comment => (
+          {comments.slice(0, 6).map(comment => (
             <motion.div
               key={comment.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-start gap-2 bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2"
+              className="flex items-start gap-2 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {comment.user.image ? (
-                  <Image src={comment.user.image} alt="" width={28} height={28} className="object-cover" />
-                ) : (
-                  <span className="text-white text-[10px] font-bold">{comment.user.name[0]}</span>
-                )}
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+                <span className="text-white text-[10px] font-bold">{comment.user.name[0]}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-white/70 text-xs font-medium">{comment.user.name}</span>
-                <p className="text-white text-sm truncate">{comment.content}</p>
+                <p className="text-white text-sm line-clamp-1">{comment.content}</p>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
+
+      {/* Recent gifts notification */}
+      {recentGifts.length > 0 && (
+        <div className="absolute left-4 bottom-80 z-10">
+          <AnimatePresence>
+            {recentGifts.slice(0, 3).map((gift, idx) => (
+              <motion.div
+                key={gift.id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ delay: idx * 0.1 }}
+                className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-3 py-2 rounded-full mb-2"
+              >
+                <span className="text-2xl">{gift.giftType.icon}</span>
+                <div>
+                  <p className="text-white text-xs font-medium">{gift.sender.name}</p>
+                  <p className="text-yellow-400 text-[10px]">{gift.giftType.name} x{gift.quantity}</p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Bottom controls */}
       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 z-10 px-4">
@@ -443,22 +429,14 @@ export default function BroadcastPage() {
           onClick={toggleVideo}
           className={`w-14 h-14 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20 backdrop-blur-sm' : 'bg-[#fe2c55]'}`}
         >
-          {isVideoOn ? (
-            <Video className="w-6 h-6 text-white" />
-          ) : (
-            <VideoOff className="w-6 h-6 text-white" />
-          )}
+          {isVideoOn ? <Video className="w-6 h-6 text-white" /> : <VideoOff className="w-6 h-6 text-white" />}
         </button>
 
         <button
           onClick={toggleAudio}
           className={`w-14 h-14 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20 backdrop-blur-sm' : 'bg-[#fe2c55]'}`}
         >
-          {isAudioOn ? (
-            <Mic className="w-6 h-6 text-white" />
-          ) : (
-            <MicOff className="w-6 h-6 text-white" />
-          )}
+          {isAudioOn ? <Mic className="w-6 h-6 text-white" /> : <MicOff className="w-6 h-6 text-white" />}
         </button>
 
         <button
@@ -487,17 +465,19 @@ export default function BroadcastPage() {
               <div className="w-16 h-16 rounded-full bg-[#fe2c55]/20 flex items-center justify-center mx-auto mb-4">
                 <Radio className="w-8 h-8 text-[#fe2c55]" />
               </div>
-              
               <h2 className="text-xl font-bold text-white mb-2">
                 {language === 'tr' ? 'Yayını bitir?' : 'End stream?'}
               </h2>
-              
-              <p className="text-white/60 text-sm mb-6">
-                {language === 'tr'
-                  ? `Yayın süresi: ${formatDuration(duration)} • ${formatCount(viewerCount)} izleyici`
-                  : `Duration: ${formatDuration(duration)} • ${formatCount(viewerCount)} viewers`}
+              <p className="text-white/60 text-sm mb-2">
+                {language === 'tr' ? `Süre: ${formatDuration(duration)}` : `Duration: ${formatDuration(duration)}`}
               </p>
-              
+              {totalGiftCredits > 0 && (
+                <div className="flex items-center justify-center gap-2 mb-4 text-yellow-400">
+                  <Coins className="w-5 h-5" />
+                  <span className="font-bold">+{totalGiftCredits}</span>
+                  <span className="text-white/60 text-sm">{language === 'tr' ? 'jeton kazanıldı' : 'credits earned'}</span>
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowEndConfirm(false)}

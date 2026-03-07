@@ -57,6 +57,7 @@ model User {
   videoStreams          VideoStream[]
   videoStreamComments   VideoStreamComment[]
   videoStreamLikes      VideoStreamLike[]
+  streamGifts           StreamGift[]
 
   @@index([referralCode])
   @@index([referredById])
@@ -648,6 +649,7 @@ model VideoStream {
   comments      VideoStreamComment[]
   likes         VideoStreamLike[]
   viewers       VideoStreamViewer[]
+  gifts         StreamGift[]
 
   @@index([userId])
   @@index([status])
@@ -696,4 +698,54 @@ model VideoStreamViewer {
 
   @@index([streamId])
   @@map("video_stream_viewers")
+}
+
+// Gift types available for purchase
+model GiftType {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn      String
+  icon        String   // emoji or icon name
+  animation   String?  // animation type
+  price       Int      // price in credits
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  gifts       StreamGift[]
+
+  @@map("gift_types")
+}
+
+// Gifts sent during streams
+model StreamGift {
+  id          String      @id @default(cuid())
+  streamId    String
+  senderId    String
+  giftTypeId  String
+  quantity    Int         @default(1)
+  totalPrice  Int         // total credits spent
+  createdAt   DateTime    @default(now())
+  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  giftType    GiftType    @relation(fields: [giftTypeId], references: [id])
+
+  @@index([streamId])
+  @@index([senderId])
+  @@map("stream_gifts")
+}
+
+// WebRTC signaling for video streams
+model VideoStreamSignal {
+  id          String   @id @default(cuid())
+  streamId    String
+  senderId    String
+  receiverId  String?
+  signalType  String   // offer, answer, ice-candidate, join
+  signalData  String   @db.Text
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([streamId])
+  @@index([receiverId, processed])
+  @@map("video_stream_signals")
 }
