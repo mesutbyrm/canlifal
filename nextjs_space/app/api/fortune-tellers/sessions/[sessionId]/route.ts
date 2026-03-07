@@ -53,7 +53,18 @@ export async function PATCH(
           status: 'active',
           startedAt: new Date()
         };
-        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! / ${liveSession.teller.displayName} accepted your session request!`;
+        
+        // Create chat session for this live session
+        await prisma.tellerChatSession.create({
+          data: {
+            liveSessionId: liveSession.id,
+            userId: liveSession.userId,
+            tellerId: liveSession.tellerId,
+            status: 'active'
+          }
+        });
+        
+        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Sohbete başlayabilirsiniz. / ${liveSession.teller.displayName} accepted your session request! You can start chatting.`;
         break;
 
       case 'complete':
@@ -65,13 +76,27 @@ export async function PATCH(
           endedAt: new Date()
         };
         
-        // Update teller's total sessions and earnings
+        // Get commission rate from settings
+        const commissionSetting = await prisma.platformSettings.findUnique({
+          where: { key: 'commission_rate' }
+        });
+        const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
+        const commissionAmount = Math.floor(liveSession.creditsCharged * commissionRate / 100);
+        const tellerEarnings = liveSession.creditsCharged - commissionAmount;
+        
+        // Update teller's total sessions and earnings (after commission)
         await prisma.liveFortuneTeller.update({
           where: { id: liveSession.tellerId },
           data: {
             totalSessions: { increment: 1 },
-            totalEarnings: { increment: liveSession.creditsCharged }
+            totalEarnings: { increment: tellerEarnings }
           }
+        });
+        
+        // Close chat session
+        await prisma.tellerChatSession.updateMany({
+          where: { liveSessionId: liveSession.id },
+          data: { status: 'closed', closedAt: new Date() }
         });
         
         notificationMessage = `${liveSession.teller.displayName} ile seansınız tamamlandı. Değerlendirmenizi bekliyoruz! / Your session with ${liveSession.teller.displayName} is complete. Please leave a review!`;

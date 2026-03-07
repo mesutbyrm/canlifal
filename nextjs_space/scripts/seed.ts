@@ -360,6 +360,40 @@ async function main() {
   }
 
   console.log(`Seeded ${translations.length} translations`)
+
+  // Seed credit packages
+  const creditPackages = [
+    { name: 'Başlangıç', nameEn: 'Starter', credits: 50, price: 49, currency: 'TRY', bonusCredits: 0, sortOrder: 0 },
+    { name: 'Popüler', nameEn: 'Popular', credits: 100, price: 89, currency: 'TRY', bonusCredits: 10, isFeatured: true, sortOrder: 1 },
+    { name: 'Premium', nameEn: 'Premium', credits: 250, price: 199, currency: 'TRY', bonusCredits: 50, sortOrder: 2 },
+    { name: 'Mega', nameEn: 'Mega', credits: 500, price: 349, currency: 'TRY', bonusCredits: 150, sortOrder: 3 },
+  ]
+
+  for (const pkg of creditPackages) {
+    const existing = await prisma.creditPackage.findFirst({ where: { name: pkg.name } })
+    if (!existing) {
+      await prisma.creditPackage.create({ data: pkg })
+    }
+  }
+  console.log('Credit packages seeded')
+
+  // Seed platform settings
+  const settings = [
+    { key: 'commission_rate', value: '20', description: 'Commission rate for teller earnings (%)' },
+    { key: 'min_withdrawal', value: '100', description: 'Minimum credits for withdrawal' },
+    { key: 'referral_bonus', value: '50', description: 'Bonus credits for referrals' },
+    { key: 'welcome_credits', value: '10', description: 'Starting credits for new users' },
+  ]
+
+  for (const setting of settings) {
+    await prisma.platformSettings.upsert({
+      where: { key: setting.key },
+      update: {},
+      create: setting,
+    })
+  }
+  console.log('Platform settings seeded')
+
   console.log('Seed completed successfully!')
 }
 

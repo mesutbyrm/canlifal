@@ -314,6 +314,23 @@ export default function AdminPage() {
                     {language === 'tr' ? 'Canlı Falcı Yönetimi' : 'Live Teller Management'}
                   </DropdownMenu.Item>
                 </Link>
+                <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
+                <Link href={`/${language}/admin/credit-packages`}>
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {language === 'tr' ? 'Kredi Paketleri' : 'Credit Packages'}
+                  </DropdownMenu.Item>
+                </Link>
+                <Link href={`/${language}/admin/settings`}>
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
+                  >
+                    <Settings className="w-5 h-5" />
+                    {language === 'tr' ? 'Platform Ayarları' : 'Platform Settings'}
+                  </DropdownMenu.Item>
+                </Link>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>

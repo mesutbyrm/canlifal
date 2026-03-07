@@ -89,6 +89,10 @@ export default function Navbar() {
                 <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
                   {t('nav.dashboard')}
                 </Link>
+                <Link href={`/${language}/teller-chat`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden xl:inline">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
+                </Link>
                 {session?.user?.role === 'admin' && (
                   <Link href={`/${language}/admin`} className="text-deep-purple-200 hover:text-gold-400 transition-colors flex items-center gap-1 text-sm xl:text-base">
                     <Shield className="w-4 h-4" />
@@ -248,6 +252,10 @@ export default function Navbar() {
                 </Link>
                 <Link href={`/${language}/dashboard`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   {t('nav.dashboard')}
+                </Link>
+                <Link href={`/${language}/teller-chat`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
+                  <MessageCircle className="w-4 h-4" />
+                  {language === 'tr' ? 'Falcı Sohbetleri' : 'Teller Chats'}
                 </Link>
                 {session?.user?.role === 'admin' && (
                   <Link href={`/${language}/admin`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
