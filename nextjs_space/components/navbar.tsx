@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
+import TellerIncomingRequest from './teller-incoming-request'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
@@ -295,8 +296,11 @@ export default function Navbar() {
         />
       )}
 
-      {/* Incoming Call Modal */}
+      {/* Incoming Call Modal for users */}
       <IncomingCallModal />
+      
+      {/* Teller Incoming Request - shows popup for fortune tellers anywhere on the site */}
+      <TellerIncomingRequest />
     </>
   )
 }

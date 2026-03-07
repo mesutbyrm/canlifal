@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Coffee, Star, Moon, Sparkles, Calendar, Droplets, Video, Clock, User } from 'lucide-react'
+import { Coffee, Star, Moon, Sparkles, Calendar, Droplets, Video, Clock, User, ChevronRight } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { format } from 'date-fns'
 import WatchAdCredits from '@/components/watch-ad-credits'
@@ -81,17 +81,23 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
+    <div className="min-h-screen py-20 px-4 bg-[#0a0118]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12">
-          <h1 className="font-serif text-4xl md:text-6xl text-gold-500 gold-glow mb-4">
-            {t('dashboard.title')}
+          className="text-center mb-10">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
+            {language === 'tr' ? 'Panelim' : 'My Dashboard'}
           </h1>
+          <p className="text-purple-300">
+            {language === 'tr' ? 'Fallarınız ve hesap bilgileriniz' : 'Your fortunes and account info'}
+          </p>
           
           {/* Watch Ad for Credits */}
           <div className="flex justify-center mt-6">
@@ -151,17 +157,37 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
+        {/* My Fortunes Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <h2 className="text-xl font-bold text-gold-400 flex items-center gap-2">
+            <Star className="w-5 h-5" />
+            {language === 'tr' ? 'Fallarım' : 'My Fortunes'}
+          </h2>
+        </motion.div>
+
         {isLoading ? (
           <LoadingSpinner message={language === 'tr' ? 'Fallar yükleniyor...' : 'Loading fortunes...'} />
         ) : fortunes?.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-20">
-            <Sparkles className="w-16 h-16 text-gold-500 mx-auto mb-4" />
-            <p className="text-deep-purple-200 text-lg">
-              {t('dashboard.no_fortunes')}
+            className="text-center py-16 bg-purple-900/20 rounded-2xl border border-purple-700/30">
+            <Sparkles className="w-16 h-16 text-purple-500 mx-auto mb-4" />
+            <p className="text-purple-300 text-lg mb-4">
+              {language === 'tr' ? 'Henüz falınız yok' : 'No fortunes yet'}
             </p>
+            <Link
+              href={`/${language}/fortunes`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-colors"
+            >
+              <Sparkles className="w-5 h-5" />
+              {language === 'tr' ? 'Fal Baktır' : 'Get Your Fortune'}
+            </Link>
           </motion.div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -174,23 +200,23 @@ export default function DashboardPage() {
                 onClick={() => setSelectedFortune(fortune)}
                 className="group cursor-pointer"
               >
-                <div className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow hover:shadow-2xl transition-all duration-300 h-full">
+                <div className="bg-purple-900/30 border border-purple-700/50 rounded-2xl p-5 hover:border-gold-500/50 transition-all duration-300 h-full">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="text-gold-500">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white">
                       {getFortuneIcon(fortune?.fortuneType)}
                     </div>
-                    <h3 className="font-serif text-xl text-gold-400 group-hover:text-gold-300 transition-colors">
+                    <h3 className="font-semibold text-lg text-white group-hover:text-gold-400 transition-colors">
                       {t(`fortune.${fortune?.fortuneType}.name`)}
                     </h3>
                   </div>
 
-                  <p className="text-deep-purple-200 text-sm line-clamp-3 mb-4">
+                  <p className="text-purple-300 text-sm line-clamp-3 mb-4">
                     {fortune?.aiResponse}
                   </p>
 
-                  <div className="flex items-center gap-2 text-deep-purple-400 text-xs">
+                  <div className="flex items-center gap-2 text-purple-400 text-xs">
                     <Calendar className="w-4 h-4" />
-                    <span>{format(new Date(fortune?.createdAt), 'MMM dd, yyyy')}</span>
+                    <span>{format(new Date(fortune?.createdAt), 'dd MMM yyyy')}</span>
                   </div>
                 </div>
               </motion.div>

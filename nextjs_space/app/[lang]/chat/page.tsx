@@ -44,23 +44,22 @@ export default function ChatRoomsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] py-12 px-4">
+    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Sparkles className="w-8 h-8 text-gold-400" />
-            <h1 className="text-4xl md:text-5xl font-serif text-gold-300">
-              {t('chat.title')}
-            </h1>
-            <Sparkles className="w-8 h-8 text-gold-400" />
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+            <MessageCircle className="w-8 h-8 text-white" />
           </div>
-          <p className="text-purple-200/80 text-lg">
-            {t('chat.subtitle')}
+          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
+            {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
+          </h1>
+          <p className="text-purple-300">
+            {language === 'tr' ? 'Diğer kullanıcılarla sohbet edin ve deneyimlerinizi paylaşın' : 'Chat with others and share your experiences'}
           </p>
         </motion.div>
 

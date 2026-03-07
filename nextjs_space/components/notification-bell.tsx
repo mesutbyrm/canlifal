@@ -123,16 +123,19 @@ export default function NotificationBell() {
     }
     
     // Route based on notification type
-    if (notif.type === 'session_update') {
+    if (notif.type === 'session_update' || notif.type === 'session_request') {
       // Session notifications go to dashboard or live room
       if (parsedData?.action === 'accept' && parsedData?.sessionId) {
+        router.push(`/${language}/live-room/${parsedData.sessionId}`)
+      } else if (parsedData?.sessionId) {
+        // For session_request, go to live-tellers or live-room
         router.push(`/${language}/live-room/${parsedData.sessionId}`)
       } else {
         router.push(`/${language}/dashboard`)
       }
-    } else if (notif.postId) {
+    } else if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share' || notif.postId) {
       // Social notifications
-      router.push(`/${language}/social?postId=${notif.postId}`)
+      router.push(`/${language}/social${notif.postId ? `?postId=${notif.postId}` : ''}`)
     } else {
       // Default to dashboard
       router.push(`/${language}/dashboard`)
@@ -145,6 +148,7 @@ export default function NotificationBell() {
       case 'comment': return <MessageCircle className="w-4 h-4 text-blue-400" />
       case 'share': return <Share2 className="w-4 h-4 text-green-400" />
       case 'session_update': return <Video className="w-4 h-4 text-purple-400" />
+      case 'session_request': return <Video className="w-4 h-4 text-green-400" />
       default: return <Bell className="w-4 h-4 text-gold-400" />
     }
   }
@@ -152,7 +156,7 @@ export default function NotificationBell() {
   const getNotificationText = (notif: Notification) => {
     const senderName = notif.fromUserName || (language === 'tr' ? 'Birisi' : 'Someone')
     
-    if (notif.type === 'session_update') {
+    if (notif.type === 'session_update' || notif.type === 'session_request') {
       // Use the title/message from the notification directly
       return notif.title || notif.message
     }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard } from 'lucide-react'
+import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard, Zap } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import Link from 'next/link'
 
@@ -111,8 +111,11 @@ export default function LiveTellersPage() {
     }
   }
 
+  const onlineTellers = tellers.filter(t => t.isOnline)
+  const offlineTellers = tellers.filter(t => !t.isOnline)
+
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
+    <div className="min-h-screen py-20 px-4 bg-[#0a0118]">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
@@ -120,11 +123,13 @@ export default function LiveTellersPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <Video className="w-16 h-16 text-gold-400 mx-auto mb-4" />
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <Video className="w-8 h-8 text-white" />
+          </div>
           <h1 className="font-serif text-3xl sm:text-4xl text-gold-400 mb-2">
             {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
           </h1>
-          <p className="text-deep-purple-200 max-w-2xl mx-auto">
+          <p className="text-purple-300 max-w-2xl mx-auto">
             {language === 'tr' 
               ? 'Profesyonel falcılarla canlı seans yapın, kişiye özel fal deneyimi yaşayın.' 
               : 'Get live sessions with professional fortune tellers for a personalized experience.'}
@@ -201,47 +206,108 @@ export default function LiveTellersPage() {
           </motion.div>
         )}
 
+        {/* Online Tellers Section - Highlighted */}
+        {!isLoading && onlineTellers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-10"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <h2 className="text-xl font-bold text-green-400">
+                  {language === 'tr' ? 'Şu An Çevrimiçi' : 'Online Now'}
+                </h2>
+              </div>
+              <span className="text-green-400/60 text-sm">({onlineTellers.length})</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {onlineTellers.map((teller, index) => (
+                <motion.div
+                  key={teller.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-2 border-green-500/50 rounded-2xl p-4 hover:border-green-400 transition-all duration-300 relative overflow-hidden"
+                >
+                  {/* Live Badge */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 px-2 py-1 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    <span className="text-xs font-bold text-white">CANLI</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-2 ring-green-400">
+                        {teller.avatar || teller.user.image ? (
+                          <img src={teller.avatar || teller.user.image || ''} alt={teller.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-white">{teller.displayName.charAt(0)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-white truncate">{teller.displayName}</h3>
+                        {teller.isVerified && <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                        <span className="text-yellow-400">{teller.rating.toFixed(1)}</span>
+                        <span className="text-purple-400">• {teller.totalSessions} {language === 'tr' ? 'seans' : 'sessions'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-gold-400 font-bold">{teller.pricePerSession}</span>
+                      <span className="text-purple-400"> {language === 'tr' ? 'kredi' : 'credits'}</span>
+                    </div>
+                    <Link
+                      href={session?.user ? `/${language}/live-tellers/${teller.id}` : `/${language}/login`}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-bold rounded-lg transition-colors"
+                    >
+                      <Video className="w-4 h-4" />
+                      {language === 'tr' ? 'Bağlan' : 'Connect'}
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-wrap gap-3 mb-8"
+          transition={{ delay: 0.15 }}
+          className="flex flex-wrap gap-3 mb-6"
         >
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                filter === 'all'
-                  ? 'bg-gold-600 text-black'
-                  : 'bg-deep-purple-900/50 text-deep-purple-200 hover:bg-deep-purple-800'
-              }`}
-            >
-              {language === 'tr' ? 'Tümü' : 'All'}
-            </button>
-            <button
-              onClick={() => setFilter('online')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                filter === 'online'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-deep-purple-900/50 text-deep-purple-200 hover:bg-deep-purple-800'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              {language === 'tr' ? 'Çevrimiçi' : 'Online'}
-            </button>
-          </div>
-
           <select
             value={specialtyFilter}
             onChange={(e) => setSpecialtyFilter(e.target.value)}
-            className="px-4 py-2 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-200 focus:outline-none focus:border-gold-600"
+            className="px-4 py-2 bg-purple-900/30 border border-purple-700/50 rounded-lg text-purple-200 focus:outline-none focus:border-gold-500"
           >
             <option value="">{language === 'tr' ? 'Tüm Uzmanlıklar' : 'All Specialties'}</option>
             {Object.entries(FORTUNE_TYPES).map(([key, val]) => (
               <option key={key} value={key}>{val.icon} {val[language]}</option>
             ))}
           </select>
+        </motion.div>
+
+        {/* All Tellers Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-lg font-semibold text-purple-300 mb-4">
+            {language === 'tr' ? 'Tüm Falcılar' : 'All Fortune Tellers'}
+          </h2>
         </motion.div>
 
         {/* Tellers Grid */}
@@ -255,14 +321,14 @@ export default function LiveTellersPage() {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <Sparkles className="w-16 h-16 text-deep-purple-600 mx-auto mb-4" />
-            <p className="text-deep-purple-300 text-lg">
+            <Sparkles className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+            <p className="text-purple-300 text-lg">
               {language === 'tr' ? 'Henüz aktif falcı bulunmuyor.' : 'No active fortune tellers yet.'}
             </p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tellers.map((teller, index) => (
+            {(filter === 'online' ? onlineTellers : tellers).map((teller, index) => (
               <motion.div
                 key={teller.id}
                 initial={{ opacity: 0, y: 20 }}

@@ -3,30 +3,33 @@
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import FortuneCard from '@/components/fortune-card'
-import { Camera, Sparkles } from 'lucide-react'
+import { Camera, Sparkles, Star } from 'lucide-react'
 
 export default function FortunesPage() {
   const { language, t } = useLanguage()
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
+    <div className="min-h-screen py-20 px-4 bg-[#0a0118]">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <h1 className="font-serif text-4xl md:text-6xl text-gold-500 gold-glow mb-4">
-            {t('nav.fortunes')}
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+            <Star className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
+            {language === 'tr' ? 'Fallar' : 'Fortunes'}
           </h1>
-          <p className="text-deep-purple-200 text-lg max-w-2xl mx-auto">
+          <p className="text-purple-300 max-w-2xl mx-auto">
             {language === 'tr' ? 'Mistik dünyaya adım atın ve geleceğinizi keşfedin' : 'Step into the mystical world and discover your future'}
           </p>
-          <p className="text-deep-purple-400 text-sm mt-3 flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 mt-3 text-purple-400 text-sm">
             <Camera className="w-4 h-4" />
-            {language === 'tr' ? 'Etkileşimli fallar: Kahve Falı, El Falı, Kurşun Dökme' : 'Interactive fortunes: Coffee Fortune, Palm Reading, Lead Pouring'}
-          </p>
+            {language === 'tr' ? 'Etkileşimli fallar: Kahve Falı, El Falı, Kurşun Dökme' : 'Interactive: Coffee, Palm, Lead Pouring'}
+          </div>
         </motion.div>
 
         {/* Featured - Interactive Fortunes */}

@@ -387,18 +387,21 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-10"
         >
-          <h1 className="text-3xl md:text-4xl font-serif text-gold-400 mb-2">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+            <Heart className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
             {language === 'tr' ? 'Sosyal Akış' : 'Social Feed'}
           </h1>
-          <p className="text-purple-300/70">
+          <p className="text-purple-300">
             {language === 'tr'
               ? 'Fal yorumlarını paylaş, yorum yap ve beğen'
               : 'Share fortunes, comment and like'}

@@ -100,8 +100,9 @@ export default function TellerIncomingRequest() {
   }, [session, dismissedSessions, pendingRequest, playSound])
 
   useEffect(() => {
-    // Only run for fortune tellers on their dashboard
-    if (!session?.user || !pathname?.includes('/live-tellers/dashboard')) return
+    // Run for fortune tellers anywhere on the site, except live-room pages
+    if (!session?.user) return
+    if (pathname?.includes('/live-room/')) return // Don't show during active sessions
     
     checkPendingRequests()
     pollIntervalRef.current = setInterval(checkPendingRequests, 3000)
