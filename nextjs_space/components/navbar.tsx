@@ -1,19 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X, Video, Trophy } from 'lucide-react'
+import { 
+  Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
+  Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
+  Settings, CreditCard, ChevronDown
+} from 'lucide-react'
 import NotificationBell from './notification-bell'
-import { LiveVisitorCount } from './live-visitor-count'
 import IncomingCallModal from './incoming-call-modal'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
   const { language, setLanguage, t } = useLanguage()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [credits, setCredits] = useState<number>(0)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/user/credits')
+        .then(res => res.json())
+        .then(data => setCredits(data.credits || 0))
+        .catch(() => {})
+    }
+  }, [session])
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'tr' : 'en')
@@ -22,14 +36,14 @@ export default function Navbar() {
   // Profile avatar component
   const ProfileAvatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
     const sizeClasses = {
-      sm: 'w-7 h-7',
-      md: 'w-8 h-8',
+      sm: 'w-8 h-8',
+      md: 'w-9 h-9',
       lg: 'w-10 h-10'
     }
 
     if (session?.user?.image) {
       return (
-        <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500/50 hover:border-gold-400 transition-colors flex-shrink-0`}>
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500 flex-shrink-0`}>
           <Image
             src={session.user.image}
             alt={session.user.name || 'Profil'}
@@ -42,7 +56,7 @@ export default function Navbar() {
     }
 
     return (
-      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center border-2 border-gold-500/50 hover:border-gold-400 transition-colors flex-shrink-0`}>
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center border-2 border-gold-500 flex-shrink-0`}>
         <span className="text-deep-purple-950 font-bold text-sm">
           {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
         </span>
@@ -51,250 +65,238 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-deep-purple-950/95 backdrop-blur-md border-b border-deep-purple-800/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Main navbar row */}
-        <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo and Visitor Count */}
-          <div className="flex items-center gap-3">
-            <Link href={`/${language}`} className="flex items-center gap-2 text-gold-600 hover:text-gold-400 transition-colors flex-shrink-0">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="font-serif text-lg sm:text-xl font-bold gold-glow">FALCI</span>
-            </Link>
-            <div className="border-l border-deep-purple-700 h-5 sm:h-6 mx-1" />
-            <LiveVisitorCount showLabel className="flex" />
-          </div>
-
-          {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-4 xl:gap-6">
-            {session?.user ? (
-              <>
-                <Link href={`/${language}/fortunes`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
-                  {t('nav.fortunes')}
-                </Link>
-                <Link href={`/${language}/chat`} className="text-deep-purple-200 hover:text-gold-400 transition-colors flex items-center gap-1 text-sm xl:text-base">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
-                </Link>
-                <Link href={`/${language}/social`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
-                  {language === 'tr' ? 'Sosyal' : 'Social'}
-                </Link>
-                <Link href={`/${language}/live-tellers`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
-                  <Video className="w-4 h-4" />
-                  <span className="hidden xl:inline">{language === 'tr' ? 'Canlı' : 'Live'}</span>
-                </Link>
-                <Link href={`/${language}/leaderboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
-                  <Trophy className="w-4 h-4" />
-                  <span className="hidden xl:inline">{language === 'tr' ? 'Sıralama' : 'Rank'}</span>
-                </Link>
-                <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
-                  {t('nav.dashboard')}
-                </Link>
-                <Link href={`/${language}/teller-chat`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="hidden xl:inline">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
-                </Link>
-                {session?.user?.role === 'admin' && (
-                  <Link href={`/${language}/admin`} className="text-deep-purple-200 hover:text-gold-400 transition-colors flex items-center gap-1 text-sm xl:text-base">
-                    <Shield className="w-4 h-4" />
-                    {t('nav.admin')}
-                  </Link>
-                )}
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
-                  <Sparkles className="w-3.5 h-3.5 text-gold-500" />
-                  <span className="text-gold-400 font-medium text-sm">{session?.user?.credits ?? 0}</span>
-                </div>
-                
-                {/* Profile with image and name */}
-                <Link href={`/${language}/profile`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  <ProfileAvatar size="md" />
-                  <div className="hidden xl:flex flex-col">
-                    <span className="text-deep-purple-100 text-sm font-medium truncate max-w-[120px]">
-                      {session.user.name}
-                    </span>
-                    <span className="text-deep-purple-400 text-xs truncate max-w-[120px]">
-                      {session.user.email}
-                    </span>
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-14">
+            {/* Left - Credits */}
+            <div className="flex items-center gap-2">
+              {session?.user ? (
+                <Link
+                  href={`/${language}/credits`}
+                  className="flex items-center gap-1.5 bg-gold-500/20 px-3 py-1.5 rounded-full hover:bg-gold-500/30 transition-colors"
+                >
+                  <div className="w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center">
+                    <Coins className="w-3 h-3 text-black" />
                   </div>
+                  <span className="text-gold-400 font-semibold text-sm">{credits}</span>
                 </Link>
-                
-                <NotificationBell />
-                <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2.5 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
+              ) : (
+                <button
+                  onClick={toggleLanguage}
+                  className="flex items-center gap-1.5 text-purple-300 hover:text-white text-sm"
+                >
                   <Globe className="w-4 h-4" />
-                  <span className="text-sm font-medium uppercase">{language}</span>
+                  {language.toUpperCase()}
                 </button>
-                <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href={`/${language}/login`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
-                  {t('nav.login')}
-                </Link>
-                <Link href={`/${language}/register`} className="px-3 py-1.5 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-colors font-medium text-sm xl:text-base">
-                  {t('nav.register')}
-                </Link>
-                <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2.5 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-sm font-medium uppercase">{language}</span>
-                </button>
-              </>
-            )}
-            <Link href={`/${language}/contact`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
-              {language === 'tr' ? 'İletişim' : 'Contact'}
+              )}
+            </div>
+
+            {/* Center - Logo */}
+            <Link href={`/${language}`} className="absolute left-1/2 -translate-x-1/2">
+              <span className="font-serif text-2xl font-bold text-gold-400 tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
+                falcı
+              </span>
             </Link>
-          </div>
 
-          {/* Tablet Nav (md-lg) */}
-          <div className="hidden md:flex lg:hidden items-center gap-3">
-            {session?.user ? (
-              <>
-                <Link href={`/${language}/fortunes`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
-                  {language === 'tr' ? 'Fallar' : 'Fortunes'}
-                </Link>
-                <Link href={`/${language}/chat`} className="text-deep-purple-200 hover:text-gold-400 transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                </Link>
-                <Link href={`/${language}/social`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
-                  {language === 'tr' ? 'Sosyal' : 'Social'}
-                </Link>
-                <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
-                  {language === 'tr' ? 'Panel' : 'Dashboard'}
-                </Link>
-                {session?.user?.role === 'admin' && (
-                  <Link href={`/${language}/admin`} className="text-deep-purple-200 hover:text-gold-400 transition-colors">
-                    <Shield className="w-5 h-5" />
-                  </Link>
-                )}
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
-                  <Sparkles className="w-3 h-3 text-gold-500" />
-                  <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
-                </div>
-                <Link href={`/${language}/profile`} className="hover:opacity-80 transition-opacity">
-                  <ProfileAvatar size="sm" />
-                </Link>
-                <NotificationBell />
-                <button onClick={() => signOut({ callbackUrl: `/${language}` })} className="text-deep-purple-200 hover:text-gold-400 transition-colors" aria-label="Logout">
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href={`/${language}/login`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm">
-                  {t('nav.login')}
-                </Link>
-                <Link href={`/${language}/register`} className="px-3 py-1 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-colors font-medium text-sm">
-                  {t('nav.register')}
-                </Link>
-              </>
-            )}
-            <button onClick={toggleLanguage} className="flex items-center gap-1 text-deep-purple-200 hover:text-gold-400 transition-colors px-2 py-1 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
-              <Globe className="w-4 h-4" />
-              <span className="text-xs font-medium uppercase">{language}</span>
-            </button>
-          </div>
+            {/* Right - Profile/Auth */}
+            <div className="flex items-center gap-2">
+              {session?.user ? (
+                <>
+                  <NotificationBell />
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="flex items-center"
+                    >
+                      <ProfileAvatar size="md" />
+                    </button>
+                    
+                    {/* Profile dropdown */}
+                    {showProfileMenu && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
+                        <div className="px-4 py-2 border-b border-purple-700">
+                          <p className="text-white font-medium truncate">{session.user.name}</p>
+                          <p className="text-purple-400 text-sm truncate">{session.user.email}</p>
+                        </div>
+                        
+                        <Link
+                          href={`/${language}/dashboard`}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                          {language === 'tr' ? 'Panelim' : 'Dashboard'}
+                        </Link>
+                        
+                        <Link
+                          href={`/${language}/credits`}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          {language === 'tr' ? 'Kredi Satın Al' : 'Buy Credits'}
+                        </Link>
+                        
+                        <Link
+                          href={`/${language}/settings`}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <Settings className="w-4 h-4" />
+                          {language === 'tr' ? 'Ayarlar' : 'Settings'}
+                        </Link>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-2">
-            {session?.user && (
-              <>
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-deep-purple-900/50 rounded-full border border-gold-600/30">
-                  <Sparkles className="w-3 h-3 text-gold-500" />
-                  <span className="text-gold-400 font-medium text-xs">{session?.user?.credits ?? 0}</span>
-                </div>
-                <NotificationBell />
-              </>
-            )}
-            <button onClick={toggleLanguage} className="text-deep-purple-200 hover:text-gold-400 transition-colors p-1.5 border border-deep-purple-700 rounded-lg" aria-label="Switch Language">
-              <Globe className="w-4 h-4" />
-            </button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-deep-purple-200 hover:text-gold-400 transition-colors p-1.5" aria-label="Menu">
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+                        {session?.user?.role === 'admin' && (
+                          <Link
+                            href={`/${language}/admin`}
+                            className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                            onClick={() => setShowProfileMenu(false)}
+                          >
+                            <Shield className="w-4 h-4" />
+                            Admin
+                          </Link>
+                        )}
+                        
+                        <button
+                          onClick={toggleLanguage}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white w-full"
+                        >
+                          <Globe className="w-4 h-4" />
+                          {language === 'tr' ? 'English' : 'Türkçe'}
+                        </button>
+                        
+                        <div className="border-t border-purple-700 mt-2 pt-2">
+                          <button
+                            onClick={() => signOut({ callbackUrl: `/${language}` })}
+                            className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 w-full"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            {language === 'tr' ? 'Çıkış Yap' : 'Log Out'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href={`/${language}/login`}
+                  className="flex items-center gap-2 bg-gold-500 text-black px-4 py-1.5 rounded-full font-medium text-sm hover:bg-gold-400 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  {language === 'tr' ? 'Giriş' : 'Login'}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Mobile dropdown menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-deep-purple-800/50 space-y-2">
-            {session?.user ? (
-              <>
-                {/* User info section */}
-                <div className="flex items-center gap-3 px-3 py-2 mb-2 bg-deep-purple-900/30 rounded-lg">
-                  <ProfileAvatar size="lg" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-deep-purple-100 font-medium truncate">{session.user.name}</p>
-                    <p className="text-deep-purple-400 text-sm truncate">{session.user.email}</p>
-                  </div>
-                </div>
-                
-                <Link href={`/${language}/fortunes`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {t('nav.fortunes')}
-                </Link>
-                <Link href={`/${language}/chat`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <MessageCircle className="w-4 h-4" />
-                  {language === 'tr' ? 'Sohbet' : 'Chat'}
-                </Link>
-                <Link href={`/${language}/social`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {language === 'tr' ? 'Sosyal' : 'Social'}
-                </Link>
-                <Link href={`/${language}/live-tellers`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <Video className="w-4 h-4" />
-                  {language === 'tr' ? 'Canlı Falcılar' : 'Live Tellers'}
-                </Link>
-                <Link href={`/${language}/leaderboard`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <Trophy className="w-4 h-4" />
-                  {language === 'tr' ? 'Liderlik Tablosu' : 'Leaderboard'}
-                </Link>
-                <Link href={`/${language}/referral`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-gold-400 hover:text-gold-300 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <Sparkles className="w-4 h-4" />
-                  {language === 'tr' ? 'Davet Et & Kazan' : 'Invite & Earn'}
-                </Link>
-                <Link href={`/${language}/dashboard`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {t('nav.dashboard')}
-                </Link>
-                <Link href={`/${language}/teller-chat`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <MessageCircle className="w-4 h-4" />
-                  {language === 'tr' ? 'Falcı Sohbetleri' : 'Teller Chats'}
-                </Link>
-                {session?.user?.role === 'admin' && (
-                  <Link href={`/${language}/admin`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                    <Shield className="w-4 h-4" />
-                    {t('nav.admin')}
-                  </Link>
-                )}
-                <Link href={`/${language}/profile`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <User className="w-4 h-4" />
-                  {language === 'tr' ? 'Profil' : 'Profile'}
-                </Link>
-                <Link href={`/${language}/contact`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {language === 'tr' ? 'İletişim' : 'Contact'}
-                </Link>
-                <button onClick={() => { signOut({ callbackUrl: `/${language}` }); setIsMenuOpen(false); }} className="flex items-center gap-2 w-full py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  <LogOut className="w-4 h-4" />
-                  {language === 'tr' ? 'Çıkış' : 'Logout'}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href={`/${language}/login`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {t('nav.login')}
-                </Link>
-                <Link href={`/${language}/register`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-colors font-medium text-center">
-                  {t('nav.register')}
-                </Link>
-                <Link href={`/${language}/contact`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
-                  {language === 'tr' ? 'İletişim' : 'Contact'}
-                </Link>
-              </>
-            )}
+        {/* Bottom Navigation - Mobile Only */}
+        {session?.user && (
+          <div className="lg:hidden border-t border-purple-900/30">
+            <div className="flex justify-around items-center h-12">
+              <Link
+                href={`/${language}`}
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
+              >
+                <Home className="w-5 h-5" />
+                <span className="text-[10px]">{language === 'tr' ? 'Ana' : 'Home'}</span>
+              </Link>
+              
+              <Link
+                href={`/${language}/fortunes`}
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="text-[10px]">{language === 'tr' ? 'Fallar' : 'Fortunes'}</span>
+              </Link>
+              
+              <Link
+                href={`/${language}/live-tellers`}
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
+              >
+                <Video className="w-5 h-5" />
+                <span className="text-[10px]">{language === 'tr' ? 'Canlı' : 'Live'}</span>
+              </Link>
+              
+              <Link
+                href={`/${language}/chat`}
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-[10px]">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
+              </Link>
+              
+              <Link
+                href={`/${language}/social`}
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                <span className="text-[10px]">{language === 'tr' ? 'Sosyal' : 'Social'}</span>
+              </Link>
+            </div>
           </div>
         )}
-      </div>
-      
-      {/* Incoming Call Modal for Live Sessions */}
+
+        {/* Desktop Navigation */}
+        <div className="hidden lg:block border-t border-purple-900/30">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-center items-center gap-8 h-10">
+              <Link
+                href={`/${language}/fortunes`}
+                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                {language === 'tr' ? 'Fallar' : 'Fortunes'}
+              </Link>
+              
+              <Link
+                href={`/${language}/live-tellers`}
+                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
+              >
+                <Video className="w-4 h-4" />
+                {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
+              </Link>
+              
+              <Link
+                href={`/${language}/chat`}
+                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
+              </Link>
+              
+              <Link
+                href={`/${language}/social`}
+                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
+              >
+                <Users className="w-4 h-4" />
+                {language === 'tr' ? 'Sosyal' : 'Social'}
+              </Link>
+              
+              <Link
+                href={`/${language}/leaderboard`}
+                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
+              >
+                <Trophy className="w-4 h-4" />
+                {language === 'tr' ? 'Sıralama' : 'Leaderboard'}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Click outside to close profile menu */}
+      {showProfileMenu && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowProfileMenu(false)}
+        />
+      )}
+
+      {/* Incoming Call Modal */}
       <IncomingCallModal />
-    </nav>
+    </>
   )
 }
