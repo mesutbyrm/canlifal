@@ -5,12 +5,11 @@ import prisma from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
     const streamId = request.nextUrl.searchParams.get('streamId')
-    const recipientId = request.nextUrl.searchParams.get('recipientId') || session?.user?.id
+    const recipientId = request.nextUrl.searchParams.get('recipientId')
     
     if (!streamId || !recipientId) {
-      return NextResponse.json({ error: 'streamId and recipientId required' }, { status: 400 })
+      return NextResponse.json([])
     }
 
     // Get unprocessed signals for this recipient
@@ -18,10 +17,13 @@ export async function GET(request: NextRequest) {
       where: {
         streamId,
         receiverId: recipientId,
-        processed: false
+        processed: false,
+        createdAt: {
+          gte: new Date(Date.now() - 30000) // Only signals from last 30 seconds
+        }
       },
       orderBy: { createdAt: 'asc' },
-      take: 20
+      take: 30
     })
 
     // Mark as processed
@@ -32,36 +34,43 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json(signals.map(s => ({
-      id: s.id,
-      type: s.signalType,
-      senderId: s.senderId,
-      data: JSON.parse(s.signalData)
-    })))
+    return NextResponse.json(signals.map(s => {
+      let data = {}
+      try {
+        data = JSON.parse(s.signalData)
+      } catch (e) {}
+      return {
+        id: s.id,
+        type: s.signalType,
+        senderId: s.senderId,
+        data
+      }
+    }))
   } catch (error) {
     console.error('Signal GET error:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json([])
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const senderId = session?.user?.id || `guest_${Date.now()}`
-
     const body = await request.json()
     const { streamId, type, receiverId, data } = body
 
-    if (!streamId || !type) {
-      return NextResponse.json({ error: 'streamId and type required' }, { status: 400 })
+    if (!streamId || !type || !receiverId) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    // Get sender ID from session or use the viewerId from data
+    const session = await getServerSession(authOptions)
+    const senderId = session?.user?.id || data?.viewerId || `guest_${Date.now()}`
 
     // Store signal
     await prisma.videoStreamSignal.create({
       data: {
         streamId,
         senderId,
-        receiverId: receiverId || 'broadcaster',
+        receiverId,
         signalType: type,
         signalData: JSON.stringify(data || {})
       }
@@ -70,6 +79,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Signal POST error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
+// Cleanup old signals periodically (called internally)
+export async function DELETE() {
+  try {
+    await prisma.videoStreamSignal.deleteMany({
+      where: {
+        createdAt: {
+          lt: new Date(Date.now() - 60000) // Delete signals older than 1 minute
+        }
+      }
+    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
