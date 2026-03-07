@@ -60,8 +60,8 @@ export default function Navbar() {
               <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
               <span className="font-serif text-lg sm:text-xl font-bold gold-glow">FALCI</span>
             </Link>
-            <div className="hidden sm:block border-l border-deep-purple-700 h-6 mx-1" />
-            <LiveVisitorCount showLabel className="hidden sm:flex" />
+            <div className="border-l border-deep-purple-700 h-5 sm:h-6 mx-1" />
+            <LiveVisitorCount showLabel className="flex" />
           </div>
 
           {/* Desktop Nav Links */}
