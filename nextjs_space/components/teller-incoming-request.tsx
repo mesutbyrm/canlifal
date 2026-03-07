@@ -146,16 +146,28 @@ export default function TellerIncomingRequest() {
       const res = await fetch(`/api/fortune-tellers/sessions/${pendingRequest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel' })
+        body: JSON.stringify({ action: 'reject' })
       })
       
-      if (res.ok) {
+      const data = await res.json()
+      
+      if (res.ok || data.success) {
+        setDismissedSessions(prev => new Set([...prev, pendingRequest.id]))
+        setIsVisible(false)
+        setPendingRequest(null)
+      } else {
+        console.error('Reject failed:', data.error)
+        // Still dismiss the popup even if there was an error
         setDismissedSessions(prev => new Set([...prev, pendingRequest.id]))
         setIsVisible(false)
         setPendingRequest(null)
       }
     } catch (error) {
       console.error('Error rejecting session:', error)
+      // Dismiss popup on error to prevent stuck state
+      setDismissedSessions(prev => new Set([...prev, pendingRequest.id]))
+      setIsVisible(false)
+      setPendingRequest(null)
     } finally {
       setIsProcessing(false)
     }

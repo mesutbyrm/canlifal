@@ -19,7 +19,7 @@ export async function PATCH(
     const body = await request.json();
     const { action } = body;
 
-    if (!['accept', 'complete', 'cancel'].includes(action)) {
+    if (!['accept', 'complete', 'cancel', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
@@ -123,6 +123,7 @@ export async function PATCH(
         break;
 
       case 'cancel':
+      case 'reject':
         if (liveSession.status === 'completed') {
           return NextResponse.json({ error: 'Cannot cancel completed session' }, { status: 400 });
         }
@@ -137,7 +138,9 @@ export async function PATCH(
           data: { credits: { increment: liveSession.creditsCharged } }
         });
         
-        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi iptal etti. Krediniz iade edildi. / ${liveSession.teller.displayName} cancelled your session request. Your credits have been refunded.`;
+        notificationMessage = action === 'reject'
+          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Krediniz iade edildi. / ${liveSession.teller.displayName} rejected your session request. Your credits have been refunded.`
+          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Krediniz iade edildi. / ${liveSession.teller.displayName} cancelled your session request. Your credits have been refunded.`;
         break;
     }
 
@@ -154,8 +157,11 @@ export async function PATCH(
         type: 'session_update',
         title: action === 'accept' ? 'Randevu Kabul Edildi / Session Accepted' 
              : action === 'complete' ? 'Seans Tamamlandı / Session Completed'
+             : action === 'reject' ? 'Randevu Reddedildi / Session Rejected'
              : 'Randevu İptal Edildi / Session Cancelled',
         message: notificationMessage,
+        fromUserId: session.user.id,
+        fromUserName: liveSession.teller.displayName,
         data: JSON.stringify({
           sessionId: liveSession.id,
           tellerId: liveSession.tellerId,

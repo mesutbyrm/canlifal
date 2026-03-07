@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, XCircle } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
@@ -9,10 +9,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface Notification {
   id: string
-  type: 'like' | 'comment' | 'share'
+  type: string
+  title?: string
   message: string
   fromUserName?: string
   postId?: string
+  data?: string
   isRead: boolean
   createdAt: string
 }
@@ -109,10 +111,31 @@ export default function NotificationBell() {
 
   const handleNotificationClick = (notif: Notification) => {
     setIsOpen(false)
-    if (notif.postId) {
+    
+    // Parse data if exists
+    let parsedData: any = null
+    if (notif.data) {
+      try {
+        parsedData = JSON.parse(notif.data)
+      } catch (e) {
+        console.error('Failed to parse notification data')
+      }
+    }
+    
+    // Route based on notification type
+    if (notif.type === 'session_update') {
+      // Session notifications go to dashboard or live room
+      if (parsedData?.action === 'accept' && parsedData?.sessionId) {
+        router.push(`/${language}/live-room/${parsedData.sessionId}`)
+      } else {
+        router.push(`/${language}/dashboard`)
+      }
+    } else if (notif.postId) {
+      // Social notifications
       router.push(`/${language}/social?postId=${notif.postId}`)
     } else {
-      router.push(`/${language}/social`)
+      // Default to dashboard
+      router.push(`/${language}/dashboard`)
     }
   }
 
@@ -121,7 +144,29 @@ export default function NotificationBell() {
       case 'like': return <Heart className="w-4 h-4 text-red-400" />
       case 'comment': return <MessageCircle className="w-4 h-4 text-blue-400" />
       case 'share': return <Share2 className="w-4 h-4 text-green-400" />
-      default: return <Bell className="w-4 h-4" />
+      case 'session_update': return <Video className="w-4 h-4 text-purple-400" />
+      default: return <Bell className="w-4 h-4 text-gold-400" />
+    }
+  }
+
+  const getNotificationText = (notif: Notification) => {
+    const senderName = notif.fromUserName || (language === 'tr' ? 'Birisi' : 'Someone')
+    
+    if (notif.type === 'session_update') {
+      // Use the title/message from the notification directly
+      return notif.title || notif.message
+    }
+    
+    // Social notifications
+    switch (notif.type) {
+      case 'like':
+        return `${senderName} ${language === 'tr' ? 'paylaşımını beğendi' : 'liked your post'}`
+      case 'comment':
+        return `${senderName} ${language === 'tr' ? 'yorum yaptı' : 'commented on your post'}`
+      case 'share':
+        return `${senderName} ${language === 'tr' ? 'paylaştı' : 'shared your post'}`
+      default:
+        return notif.message
     }
   }
 
@@ -205,13 +250,7 @@ export default function NotificationBell() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white">
-                            <span className="font-semibold text-gold-400">
-                              {notif.fromUserName || 'Birisi'}
-                            </span>
-                            {' '}
-                            {notif.type === 'like' && (language === 'tr' ? 'paylaşımını beğendi' : 'liked your post')}
-                            {notif.type === 'comment' && (language === 'tr' ? 'yorum yaptı' : 'commented')}
-                            {notif.type === 'share' && (language === 'tr' ? 'paylaştı' : 'shared')}
+                            {getNotificationText(notif)}
                           </p>
                           <p className="text-xs text-purple-400 mt-1">
                             {formatTime(notif.createdAt)}

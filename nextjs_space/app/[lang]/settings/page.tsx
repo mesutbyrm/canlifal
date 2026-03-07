@@ -285,32 +285,86 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Birth Date */}
+          {/* Birth Date - Simplified with dropdowns */}
           <div>
             <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}
             </label>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-            />
+            <div className="grid grid-cols-3 gap-2">
+              <select
+                value={birthDate ? new Date(birthDate).getDate() : ''}
+                onChange={(e) => {
+                  const day = e.target.value
+                  if (!day) { setBirthDate(''); return }
+                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                  currentDate.setDate(parseInt(day))
+                  setBirthDate(currentDate.toISOString().split('T')[0])
+                }}
+                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
+              >
+                <option value="">{language === 'tr' ? 'Gün' : 'Day'}</option>
+                {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <select
+                value={birthDate ? new Date(birthDate).getMonth() : ''}
+                onChange={(e) => {
+                  const month = e.target.value
+                  if (month === '') { setBirthDate(''); return }
+                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                  currentDate.setMonth(parseInt(month))
+                  setBirthDate(currentDate.toISOString().split('T')[0])
+                }}
+                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
+              >
+                <option value="">{language === 'tr' ? 'Ay' : 'Month'}</option>
+                {(language === 'tr' 
+                  ? ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+                  : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                ).map((m, i) => (
+                  <option key={i} value={i}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={birthDate ? new Date(birthDate).getFullYear() : ''}
+                onChange={(e) => {
+                  const year = e.target.value
+                  if (!year) { setBirthDate(''); return }
+                  const currentDate = birthDate ? new Date(birthDate) : new Date(2000, 0, 1)
+                  currentDate.setFullYear(parseInt(year))
+                  setBirthDate(currentDate.toISOString().split('T')[0])
+                }}
+                className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center"
+              >
+                <option value="">{language === 'tr' ? 'Yıl' : 'Year'}</option>
+                {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Birth Time (for rising sign) */}
+          {/* Birth Time - Optional simple dropdown */}
           <div>
             <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              {language === 'tr' ? 'Doğum Saati (Yüselen burç için)' : 'Birth Time (for rising sign)'}
+              {language === 'tr' ? 'Doğum Saati (opsiyonel)' : 'Birth Time (optional)'}
             </label>
-            <input
-              type="time"
+            <select
               value={birthTime}
               onChange={(e) => setBirthTime(e.target.value)}
               className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none"
-            />
+            >
+              <option value="">{language === 'tr' ? 'Bilmiyorum' : "Don't know"}</option>
+              {Array.from({length: 24}, (_, i) => {
+                const hour = i.toString().padStart(2, '0')
+                return (
+                  <option key={i} value={`${hour}:00`}>{`${hour}:00`}</option>
+                )
+              })}
+            </select>
           </div>
 
           {/* Zodiac Sign (auto-calculated) */}

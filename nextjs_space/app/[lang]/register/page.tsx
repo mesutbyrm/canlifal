@@ -72,7 +72,8 @@ export default function RegisterPage() {
       if (result?.error) {
         router.push(`/${language}/login`)
       } else {
-        router.push(`/${language}/dashboard`)
+        // Redirect to homepage after successful registration
+        router.push(`/${language}`)
       }
     } catch (err) {
       setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
