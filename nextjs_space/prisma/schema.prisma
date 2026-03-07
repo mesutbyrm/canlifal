@@ -100,21 +100,59 @@ model LiveFortuneTeller {
   rating          Float    @default(5.0)
   totalSessions   Int      @default(0)
   totalReviews    Int      @default(0)
+  totalEarnings   Int      @default(0) // Total credits earned
   isOnline        Boolean  @default(false)
   isVerified      Boolean  @default(false)
   isActive        Boolean  @default(true)
   avatar          String?
+  
+  // Application status
+  applicationStatus String  @default("pending") // pending, approved, rejected
+  applicationNote   String? @db.Text
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  
+  // Ban system
+  isBanned          Boolean  @default(false)
+  banReason         String?  @db.Text
+  bannedAt          DateTime?
+  
+  // Freeze system (earnings freeze)
+  isFrozen          Boolean  @default(false)
+  freezeReason      String?  @db.Text
+  frozenAt          DateTime?
+  
+  // Bonus/Rewards
+  bonusCredits      Int      @default(0)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions        LiveSession[]
   reviews         LiveTellerReview[]
+  warnings        TellerWarning[]
 
   @@index([isOnline])
   @@index([isVerified])
   @@index([rating])
+  @@index([applicationStatus])
+  @@index([isBanned])
   @@map("live_fortune_tellers")
+}
+
+// Warnings for Fortune Tellers
+model TellerWarning {
+  id        String   @id @default(cuid())
+  tellerId  String
+  reason    String   @db.Text
+  issuedBy  String   // Admin user ID
+  createdAt DateTime @default(now())
+  
+  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+
+  @@index([tellerId])
+  @@map("teller_warnings")
 }
 
 // Live Session between user and fortune teller

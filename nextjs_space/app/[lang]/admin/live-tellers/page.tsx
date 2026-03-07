@@ -1,0 +1,910 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useLanguage } from '@/lib/language-context';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Users,
+  Shield,
+  Ban,
+  AlertTriangle,
+  Gift,
+  Snowflake,
+  Check,
+  X,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
+  Search,
+  Star,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  MessageCircle,
+} from 'lucide-react';
+
+interface Teller {
+  id: string;
+  userId: string;
+  displayName: string;
+  bio: string | null;
+  specialties: string[];
+  pricePerSession: number;
+  rating: number;
+  totalSessions: number;
+  totalReviews: number;
+  totalEarnings: number;
+  isOnline: boolean;
+  isVerified: boolean;
+  isActive: boolean;
+  avatar: string | null;
+  applicationStatus: string;
+  applicationNote: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  isBanned: boolean;
+  banReason: string | null;
+  bannedAt: string | null;
+  isFrozen: boolean;
+  freezeReason: string | null;
+  frozenAt: string | null;
+  bonusCredits: number;
+  createdAt: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    createdAt: string;
+  };
+  warnings: {
+    id: string;
+    reason: string;
+    issuedBy: string;
+    createdAt: string;
+  }[];
+  _count: {
+    sessions: number;
+    reviews: number;
+  };
+}
+
+const SPECIALTY_NAMES: Record<string, { en: string; tr: string }> = {
+  coffee: { en: 'Coffee', tr: 'Kahve' },
+  tarot: { en: 'Tarot', tr: 'Tarot' },
+  astrology: { en: 'Astrology', tr: 'Astroloji' },
+  palmistry: { en: 'Palmistry', tr: 'El Falı' },
+  dream: { en: 'Dream', tr: 'Rüya' },
+  numerology: { en: 'Numerology', tr: 'Numeroloji' },
+};
+
+export default function AdminLiveTellersPage() {
+  const { language } = useLanguage();
+  const [tellers, setTellers] = useState<Teller[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTeller, setSelectedTeller] = useState<Teller | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<'view' | 'edit' | 'warning' | 'ban' | 'freeze' | 'bonus' | 'approve' | 'add'>('view');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [expandedTeller, setExpandedTeller] = useState<string | null>(null);
+
+  // Form states
+  const [warningReason, setWarningReason] = useState('');
+  const [banReason, setBanReason] = useState('');
+  const [freezeReason, setFreezeReason] = useState('');
+  const [bonusAmount, setBonusAmount] = useState(0);
+  const [bonusReason, setBonusReason] = useState('');
+  const [approvalNote, setApprovalNote] = useState('');
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    bio: '',
+    specialties: [] as string[],
+    pricePerSession: 100,
+    isVerified: false,
+    isActive: true,
+  });
+
+  useEffect(() => {
+    fetchTellers();
+  }, [filter]);
+
+  const fetchTellers = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filter !== 'all') {
+        if (filter === 'banned') params.set('banned', 'true');
+        else if (filter === 'frozen') params.set('frozen', 'true');
+        else params.set('status', filter);
+      }
+      const res = await fetch(`/api/admin/live-tellers?${params}`);
+      const data = await res.json();
+      setTellers(data.tellers || []);
+    } catch (error) {
+      console.error('Error fetching tellers:', error);
+    }
+    setLoading(false);
+  };
+
+  const openModal = (type: typeof modalType, teller?: Teller) => {
+    setModalType(type);
+    if (teller) {
+      setSelectedTeller(teller);
+      if (type === 'edit') {
+        setEditForm({
+          displayName: teller.displayName,
+          bio: teller.bio || '',
+          specialties: teller.specialties,
+          pricePerSession: teller.pricePerSession,
+          isVerified: teller.isVerified,
+          isActive: teller.isActive,
+        });
+      }
+    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTeller(null);
+    setWarningReason('');
+    setBanReason('');
+    setFreezeReason('');
+    setBonusAmount(0);
+    setBonusReason('');
+    setApprovalNote('');
+  };
+
+  const handleApprove = async (action: 'approve' | 'reject') => {
+    if (!selectedTeller) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, note: approvalNote }),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleBan = async (action: 'ban' | 'unban') => {
+    if (!selectedTeller) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason: banReason }),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleFreeze = async (action: 'freeze' | 'unfreeze') => {
+    if (!selectedTeller) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/freeze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason: freezeReason }),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleWarning = async () => {
+    if (!selectedTeller || !warningReason) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/warning`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: warningReason }),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleBonus = async () => {
+    if (!selectedTeller || bonusAmount <= 0) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/bonus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: bonusAmount, reason: bonusReason }),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleEdit = async () => {
+    if (!selectedTeller) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handleDelete = async (tellerId: string) => {
+    if (!confirm(language === 'tr' ? 'Bu falcıyı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this teller?')) return;
+    try {
+      await fetch(`/api/admin/live-tellers/${tellerId}`, { method: 'DELETE' });
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleRemoveWarning = async (tellerId: string, warningId: string) => {
+    try {
+      await fetch(`/api/admin/live-tellers/${tellerId}/warning?warningId=${warningId}`, { method: 'DELETE' });
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const filteredTellers = tellers.filter(t => 
+    t.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const stats = {
+    total: tellers.length,
+    pending: tellers.filter(t => t.applicationStatus === 'pending').length,
+    approved: tellers.filter(t => t.applicationStatus === 'approved').length,
+    banned: tellers.filter(t => t.isBanned).length,
+    frozen: tellers.filter(t => t.isFrozen).length,
+  };
+
+  const getStatusBadge = (teller: Teller) => {
+    if (teller.isBanned) return { color: 'bg-red-500/20 text-red-400 border-red-500/30', text: language === 'tr' ? 'Yasaklı' : 'Banned' };
+    if (teller.isFrozen) return { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', text: language === 'tr' ? 'Dondurulmuş' : 'Frozen' };
+    if (teller.applicationStatus === 'pending') return { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: language === 'tr' ? 'Beklemede' : 'Pending' };
+    if (teller.applicationStatus === 'rejected') return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: language === 'tr' ? 'Reddedildi' : 'Rejected' };
+    if (teller.isActive) return { color: 'bg-green-500/20 text-green-400 border-green-500/30', text: language === 'tr' ? 'Aktif' : 'Active' };
+    return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: language === 'tr' ? 'Pasif' : 'Inactive' };
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-serif text-gold-400 flex items-center gap-3">
+              <Users className="w-8 h-8" />
+              {language === 'tr' ? 'Canlı Falcı Yönetimi' : 'Live Teller Management'}
+            </h1>
+            <p className="text-gray-400 mt-1">
+              {language === 'tr' ? 'Başvuruları onaylayın, falcıları yönetin' : 'Approve applications, manage tellers'}
+            </p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          {[
+            { label: language === 'tr' ? 'Toplam' : 'Total', value: stats.total, icon: Users, color: 'text-purple-400' },
+            { label: language === 'tr' ? 'Bekleyen' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-400' },
+            { label: language === 'tr' ? 'Onaylı' : 'Approved', value: stats.approved, icon: Check, color: 'text-green-400' },
+            { label: language === 'tr' ? 'Yasaklı' : 'Banned', value: stats.banned, icon: Ban, color: 'text-red-400' },
+            { label: language === 'tr' ? 'Dondurulmuş' : 'Frozen', value: stats.frozen, icon: Snowflake, color: 'text-blue-400' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2">
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                <span className="text-gray-400 text-sm">{stat.label}</span>
+              </div>
+              <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters & Search */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder={language === 'tr' ? 'İsim veya e-posta ile ara...' : 'Search by name or email...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gold-500/50"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { value: 'all', label: language === 'tr' ? 'Tümü' : 'All' },
+              { value: 'pending', label: language === 'tr' ? 'Bekleyen' : 'Pending' },
+              { value: 'approved', label: language === 'tr' ? 'Onaylı' : 'Approved' },
+              { value: 'banned', label: language === 'tr' ? 'Yasaklı' : 'Banned' },
+              { value: 'frozen', label: language === 'tr' ? 'Dondurulmuş' : 'Frozen' },
+            ].map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                  filter === f.value
+                    ? 'bg-gold-500/20 text-gold-400 border border-gold-500/50'
+                    : 'bg-deep-purple-900/50 text-gray-400 border border-deep-purple-700/50 hover:border-gold-500/30'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tellers List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredTellers.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            {language === 'tr' ? 'Falcı bulunamadı' : 'No tellers found'}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTellers.map((teller) => {
+              const statusBadge = getStatusBadge(teller);
+              const isExpanded = expandedTeller === teller.id;
+
+              return (
+                <motion.div
+                  key={teller.id}
+                  layout
+                  className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl overflow-hidden"
+                >
+                  {/* Main Row */}
+                  <div className="p-4 flex flex-col md:flex-row md:items-center gap-4">
+                    {/* Avatar & Info */}
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold-500/20 to-purple-500/20 flex items-center justify-center text-gold-400 font-bold text-xl border border-gold-500/30">
+                        {teller.displayName.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-white">{teller.displayName}</h3>
+                          {teller.isVerified && (
+                            <Shield className="w-4 h-4 text-blue-400" />
+                          )}
+                          <span className={`px-2 py-0.5 text-xs rounded-full border ${statusBadge.color}`}>
+                            {statusBadge.text}
+                          </span>
+                          {teller.warnings.length > 0 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              {teller.warnings.length}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-400 truncate">{teller.user.email}</p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3 h-3 text-yellow-500" />
+                            {teller.rating.toFixed(1)}
+                          </span>
+                          <span>{teller.totalSessions} {language === 'tr' ? 'seans' : 'sessions'}</span>
+                          <span>{teller.totalEarnings} {language === 'tr' ? 'kazanç' : 'earned'}</span>
+                          <span>{teller.bonusCredits} {language === 'tr' ? 'bonus' : 'bonus'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {teller.applicationStatus === 'pending' && (
+                        <button
+                          onClick={() => openModal('approve', teller)}
+                          className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 flex items-center gap-1"
+                        >
+                          <Check className="w-4 h-4" />
+                          {language === 'tr' ? 'Onayla' : 'Approve'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openModal('view', teller)}
+                        className="p-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30"
+                        title={language === 'tr' ? 'Görüntüle' : 'View'}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('edit', teller)}
+                        className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"
+                        title={language === 'tr' ? 'Düzenle' : 'Edit'}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('warning', teller)}
+                        className="p-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30"
+                        title={language === 'tr' ? 'Uyarı Ver' : 'Warn'}
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('bonus', teller)}
+                        className="p-2 bg-gold-500/20 text-gold-400 rounded-lg hover:bg-gold-500/30"
+                        title={language === 'tr' ? 'Ödül Ver' : 'Give Bonus'}
+                      >
+                        <Gift className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('freeze', teller)}
+                        className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30"
+                        title={language === 'tr' ? 'Dondur' : 'Freeze'}
+                      >
+                        <Snowflake className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('ban', teller)}
+                        className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                        title={language === 'tr' ? 'Yasakla' : 'Ban'}
+                      >
+                        <Ban className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(teller.id)}
+                        className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20"
+                        title={language === 'tr' ? 'Sil' : 'Delete'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setExpandedTeller(isExpanded ? null : teller.id)}
+                        className="p-2 bg-deep-purple-700/50 text-gray-400 rounded-lg hover:bg-deep-purple-700"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-deep-purple-700/50"
+                      >
+                        <div className="p-4 grid md:grid-cols-2 gap-4">
+                          {/* Details */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-gold-400">{language === 'tr' ? 'Detaylar' : 'Details'}</h4>
+                            <div className="text-sm space-y-2">
+                              <p><span className="text-gray-400">{language === 'tr' ? 'Biyografi:' : 'Bio:'}</span> <span className="text-white">{teller.bio || '-'}</span></p>
+                              <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s]?.[language] || s).join(', ') || '-'}</span></p>
+                              <p><span className="text-gray-400">{language === 'tr' ? 'Seans Ücreti:' : 'Price/Session:'}</span> <span className="text-gold-400">{teller.pricePerSession} kredi</span></p>
+                              <p><span className="text-gray-400">{language === 'tr' ? 'Kayıt:' : 'Registered:'}</span> <span className="text-white">{new Date(teller.createdAt).toLocaleDateString()}</span></p>
+                            </div>
+                          </div>
+
+                          {/* Warnings */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-orange-400 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4" />
+                              {language === 'tr' ? 'Uyarılar' : 'Warnings'} ({teller.warnings.length})
+                            </h4>
+                            {teller.warnings.length === 0 ? (
+                              <p className="text-sm text-gray-500">{language === 'tr' ? 'Uyarı yok' : 'No warnings'}</p>
+                            ) : (
+                              <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {teller.warnings.map((w) => (
+                                  <div key={w.id} className="flex items-start justify-between gap-2 p-2 bg-orange-500/10 rounded-lg">
+                                    <div>
+                                      <p className="text-sm text-white">{w.reason}</p>
+                                      <p className="text-xs text-gray-500">{new Date(w.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => handleRemoveWarning(teller.id, w.id)}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status Info */}
+                          {(teller.isBanned || teller.isFrozen) && (
+                            <div className="md:col-span-2 p-3 bg-red-500/10 rounded-lg">
+                              {teller.isBanned && (
+                                <p className="text-sm"><span className="text-red-400 font-semibold">{language === 'tr' ? 'Yasaklanma Sebebi:' : 'Ban Reason:'}</span> <span className="text-white">{teller.banReason || '-'}</span></p>
+                              )}
+                              {teller.isFrozen && (
+                                <p className="text-sm mt-1"><span className="text-blue-400 font-semibold">{language === 'tr' ? 'Dondurma Sebebi:' : 'Freeze Reason:'}</span> <span className="text-white">{teller.freezeReason || '-'}</span></p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Modal */}
+        <AnimatePresence>
+          {showModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+              onClick={closeModal}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-deep-purple-900 border border-deep-purple-700 rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* View Modal */}
+                {modalType === 'view' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
+                      <Eye className="w-5 h-5" />
+                      {selectedTeller.displayName}
+                    </h3>
+                    <div className="space-y-3 text-sm">
+                      <p><span className="text-gray-400">Email:</span> <span className="text-white">{selectedTeller.user.email}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Biyografi:' : 'Bio:'}</span> <span className="text-white">{selectedTeller.bio || '-'}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{selectedTeller.specialties.join(', ') || '-'}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Puan:' : 'Rating:'}</span> <span className="text-yellow-400">{selectedTeller.rating.toFixed(1)} ⭐</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Seans:' : 'Total Sessions:'}</span> <span className="text-white">{selectedTeller.totalSessions}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Kazanç:' : 'Total Earnings:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} kredi</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Bonus Kredi:' : 'Bonus Credits:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Durum:' : 'Status:'}</span> <span className="text-white">{selectedTeller.applicationStatus}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Onaylı:' : 'Verified:'}</span> <span className={selectedTeller.isVerified ? 'text-green-400' : 'text-gray-400'}>{selectedTeller.isVerified ? '✓' : '✗'}</span></p>
+                    </div>
+                    <button
+                      onClick={closeModal}
+                      className="mt-6 w-full py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                    >
+                      {language === 'tr' ? 'Kapat' : 'Close'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Edit Modal */}
+                {modalType === 'edit' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
+                      <Edit className="w-5 h-5" />
+                      {language === 'tr' ? 'Düzenle' : 'Edit'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Görünen İsim' : 'Display Name'}</label>
+                        <input
+                          type="text"
+                          value={editForm.displayName}
+                          onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Biyografi' : 'Bio'}</label>
+                        <textarea
+                          value={editForm.bio}
+                          onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                          rows={3}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Seans Ücreti' : 'Price Per Session'}</label>
+                        <input
+                          type="number"
+                          value={editForm.pricePerSession}
+                          onChange={(e) => setEditForm({ ...editForm, pricePerSession: parseInt(e.target.value) || 100 })}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editForm.isVerified}
+                            onChange={(e) => setEditForm({ ...editForm, isVerified: e.target.checked })}
+                            className="w-4 h-4 accent-gold-500"
+                          />
+                          <span className="text-sm text-white">{language === 'tr' ? 'Onaylı' : 'Verified'}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editForm.isActive}
+                            onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                            className="w-4 h-4 accent-gold-500"
+                          />
+                          <span className="text-sm text-white">{language === 'tr' ? 'Aktif' : 'Active'}</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleEdit}
+                        disabled={actionLoading}
+                        className="flex-1 py-2 bg-gold-500 text-deep-purple-900 rounded-lg hover:bg-gold-400 disabled:opacity-50"
+                      >
+                        {actionLoading ? '...' : language === 'tr' ? 'Kaydet' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Approve Modal */}
+                {modalType === 'approve' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
+                      <Check className="w-5 h-5" />
+                      {language === 'tr' ? 'Başvuru Değerlendir' : 'Review Application'}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> {language === 'tr' ? 'başvurusu' : 'application'}
+                    </p>
+                    <div>
+                      <label className="text-sm text-gray-400">{language === 'tr' ? 'Not (opsiyonel)' : 'Note (optional)'}</label>
+                      <textarea
+                        value={approvalNote}
+                        onChange={(e) => setApprovalNote(e.target.value)}
+                        rows={2}
+                        placeholder={language === 'tr' ? 'Onay/Red notu...' : 'Approval/Rejection note...'}
+                        className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
+                      />
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => handleApprove('reject')}
+                        disabled={actionLoading}
+                        className="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 disabled:opacity-50"
+                      >
+                        {language === 'tr' ? 'Reddet' : 'Reject'}
+                      </button>
+                      <button
+                        onClick={() => handleApprove('approve')}
+                        disabled={actionLoading}
+                        className="flex-1 py-2 bg-green-500 text-white rounded-lg hover:bg-green-400 disabled:opacity-50"
+                      >
+                        {actionLoading ? '...' : language === 'tr' ? 'Onayla' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning Modal */}
+                {modalType === 'warning' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-orange-400 mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      {language === 'tr' ? 'Uyarı Ver' : 'Issue Warning'}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({language === 'tr' ? 'mevcut uyarı sayısı' : 'current warnings'}: {selectedTeller.warnings.length})
+                    </p>
+                    <div>
+                      <label className="text-sm text-gray-400">{language === 'tr' ? 'Uyarı Sebebi' : 'Warning Reason'}</label>
+                      <textarea
+                        value={warningReason}
+                        onChange={(e) => setWarningReason(e.target.value)}
+                        rows={3}
+                        placeholder={language === 'tr' ? 'Uyarı sebebini yazın...' : 'Enter warning reason...'}
+                        className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
+                      />
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleWarning}
+                        disabled={actionLoading || !warningReason}
+                        className="flex-1 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-400 disabled:opacity-50"
+                      >
+                        {actionLoading ? '...' : language === 'tr' ? 'Uyarı Ver' : 'Issue Warning'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ban Modal */}
+                {modalType === 'ban' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-red-400 mb-4 flex items-center gap-2">
+                      <Ban className="w-5 h-5" />
+                      {selectedTeller.isBanned ? (language === 'tr' ? 'Yasağı Kaldır' : 'Unban') : (language === 'tr' ? 'Yasakla' : 'Ban')}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span>
+                    </p>
+                    {!selectedTeller.isBanned && (
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Yasaklama Sebebi' : 'Ban Reason'}</label>
+                        <textarea
+                          value={banReason}
+                          onChange={(e) => setBanReason(e.target.value)}
+                          rows={3}
+                          placeholder={language === 'tr' ? 'Yasaklama sebebini yazın...' : 'Enter ban reason...'}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
+                        />
+                      </div>
+                    )}
+                    {selectedTeller.isBanned && (
+                      <p className="text-sm text-gray-400 mb-4">
+                        {language === 'tr' ? 'Mevcut sebep:' : 'Current reason:'} <span className="text-white">{selectedTeller.banReason}</span>
+                      </p>
+                    )}
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={() => handleBan(selectedTeller.isBanned ? 'unban' : 'ban')}
+                        disabled={actionLoading}
+                        className={`flex-1 py-2 rounded-lg disabled:opacity-50 ${selectedTeller.isBanned ? 'bg-green-500 hover:bg-green-400 text-white' : 'bg-red-500 hover:bg-red-400 text-white'}`}
+                      >
+                        {actionLoading ? '...' : selectedTeller.isBanned ? (language === 'tr' ? 'Yasağı Kaldır' : 'Unban') : (language === 'tr' ? 'Yasakla' : 'Ban')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Freeze Modal */}
+                {modalType === 'freeze' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-cyan-400 mb-4 flex items-center gap-2">
+                      <Snowflake className="w-5 h-5" />
+                      {selectedTeller.isFrozen ? (language === 'tr' ? 'Dondurma Kaldır' : 'Unfreeze') : (language === 'tr' ? 'Kazancı Dondur' : 'Freeze Earnings')}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span>
+                    </p>
+                    {!selectedTeller.isFrozen && (
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Dondurma Sebebi' : 'Freeze Reason'}</label>
+                        <textarea
+                          value={freezeReason}
+                          onChange={(e) => setFreezeReason(e.target.value)}
+                          rows={3}
+                          placeholder={language === 'tr' ? 'Dondurma sebebini yazın...' : 'Enter freeze reason...'}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
+                        />
+                      </div>
+                    )}
+                    {selectedTeller.isFrozen && (
+                      <p className="text-sm text-gray-400 mb-4">
+                        {language === 'tr' ? 'Mevcut sebep:' : 'Current reason:'} <span className="text-white">{selectedTeller.freezeReason}</span>
+                      </p>
+                    )}
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={() => handleFreeze(selectedTeller.isFrozen ? 'unfreeze' : 'freeze')}
+                        disabled={actionLoading}
+                        className={`flex-1 py-2 rounded-lg disabled:opacity-50 ${selectedTeller.isFrozen ? 'bg-green-500 hover:bg-green-400 text-white' : 'bg-cyan-500 hover:bg-cyan-400 text-white'}`}
+                      >
+                        {actionLoading ? '...' : selectedTeller.isFrozen ? (language === 'tr' ? 'Dondurma Kaldır' : 'Unfreeze') : (language === 'tr' ? 'Dondur' : 'Freeze')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bonus Modal */}
+                {modalType === 'bonus' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
+                      <Gift className="w-5 h-5" />
+                      {language === 'tr' ? 'Bonus Kredi Ver' : 'Give Bonus Credits'}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({language === 'tr' ? 'mevcut bonus' : 'current bonus'}: {selectedTeller.bonusCredits})
+                    </p>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Miktar' : 'Amount'}</label>
+                        <input
+                          type="number"
+                          value={bonusAmount}
+                          onChange={(e) => setBonusAmount(parseInt(e.target.value) || 0)}
+                          min={1}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Sebep (opsiyonel)' : 'Reason (optional)'}</label>
+                        <input
+                          type="text"
+                          value={bonusReason}
+                          onChange={(e) => setBonusReason(e.target.value)}
+                          placeholder={language === 'tr' ? 'Bonus sebebi...' : 'Bonus reason...'}
+                          className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleBonus}
+                        disabled={actionLoading || bonusAmount <= 0}
+                        className="flex-1 py-2 bg-gold-500 text-deep-purple-900 rounded-lg hover:bg-gold-400 disabled:opacity-50"
+                      >
+                        {actionLoading ? '...' : language === 'tr' ? 'Bonus Ver' : 'Give Bonus'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

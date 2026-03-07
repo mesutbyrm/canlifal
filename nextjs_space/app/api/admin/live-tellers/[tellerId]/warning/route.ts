@@ -1,0 +1,75 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
+import prisma from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+// POST - Add warning
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ tellerId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { tellerId } = await params;
+    const { reason } = await request.json();
+
+    if (!reason) {
+      return NextResponse.json({ error: 'Warning reason required' }, { status: 400 });
+    }
+
+    const warning = await prisma.tellerWarning.create({
+      data: {
+        tellerId,
+        reason,
+        issuedBy: session.user.id,
+      },
+    });
+
+    // Get updated warning count
+    const warningCount = await prisma.tellerWarning.count({
+      where: { tellerId },
+    });
+
+    return NextResponse.json({ warning, warningCount });
+  } catch (error) {
+    console.error('Error adding warning:', error);
+    return NextResponse.json({ error: 'Failed to add warning' }, { status: 500 });
+  }
+}
+
+// DELETE - Remove warning
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ tellerId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const warningId = searchParams.get('warningId');
+
+    if (!warningId) {
+      return NextResponse.json({ error: 'Warning ID required' }, { status: 400 });
+    }
+
+    await prisma.tellerWarning.delete({
+      where: { id: warningId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error removing warning:', error);
+    return NextResponse.json({ error: 'Failed to remove warning' }, { status: 500 });
+  }
+}
