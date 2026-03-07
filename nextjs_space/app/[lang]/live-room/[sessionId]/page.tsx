@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 interface RoomData {
@@ -56,6 +56,8 @@ export default function LiveRoomPage() {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [isChatExpanded, setIsChatExpanded] = useState(true);
   
   // Timer state
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -64,7 +66,6 @@ export default function LiveRoomPage() {
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [showChat, setShowChat] = useState(true);
   
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -443,6 +444,51 @@ export default function LiveRoomPage() {
     }
   };
 
+  // Switch camera (front/back)
+  const switchCamera = async () => {
+    if (!localStreamRef.current || !peerConnectionRef.current) return;
+    
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    
+    try {
+      // Stop current video track
+      const currentVideoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (currentVideoTrack) {
+        currentVideoTrack.stop();
+      }
+      
+      // Get new video stream with different facing mode
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: newFacingMode },
+        audio: false
+      });
+      
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      
+      // Replace track in local stream
+      if (currentVideoTrack) {
+        localStreamRef.current.removeTrack(currentVideoTrack);
+      }
+      localStreamRef.current.addTrack(newVideoTrack);
+      
+      // Update local video element
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+      }
+      
+      // Replace track in peer connection
+      const senders = peerConnectionRef.current.getSenders();
+      const videoSender = senders.find(s => s.track?.kind === 'video');
+      if (videoSender) {
+        await videoSender.replaceTrack(newVideoTrack);
+      }
+      
+      setFacingMode(newFacingMode);
+    } catch (err) {
+      console.error('Error switching camera:', err);
+    }
+  };
+
   // Cleanup function
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -576,147 +622,193 @@ export default function LiveRoomPage() {
   const peerName = roomData.isUser ? roomData.teller.displayName : roomData.user.name;
 
   return (
-    <div className="min-h-screen bg-[#0a0118] flex flex-col">
-      {/* Header with timer */}
-      <header className="bg-deep-purple-900/80 backdrop-blur-sm border-b border-purple-800 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+    <div className="h-screen w-screen bg-[#0a0118] flex flex-col overflow-hidden">
+      {/* Top bar - minimal */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-3 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
+        {/* Peer info */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center border-2 border-white/30">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-white font-semibold text-sm">{peerName}</h1>
+            <p className="text-xs text-gray-300">
+              {isConnected 
+                ? (language === 'tr' ? '● Bağlı' : '● Connected')
+                : (language === 'tr' ? '○ Bağlanıyor...' : '○ Connecting...')
+              }
+            </p>
+          </div>
+        </div>
+
+        {/* Timer & Extend */}
+        <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-mono ${
+            remainingSeconds < 60 ? 'bg-red-600 text-white animate-pulse' : 'bg-white/20 text-white'
+          }`}>
+            <Clock className="w-4 h-4" />
+            {formatTime(remainingSeconds)}
+          </div>
+          
+          {roomData.isUser && (
+            <div className="relative group">
+              <button className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500">
+                <Plus className="w-4 h-4" />
+              </button>
+              <div className="absolute right-0 top-full mt-2 bg-deep-purple-900 rounded-lg shadow-xl border border-purple-700 hidden group-hover:block min-w-[160px]">
+                <button onClick={() => extendSession(5)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
+                  +5 dk ({roomData.creditsPerMinute * 5} kr)
+                </button>
+                <button onClick={() => extendSession(10)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
+                  +10 dk ({roomData.creditsPerMinute * 10} kr)
+                </button>
+                <button onClick={() => extendSession(15)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
+                  +15 dk ({roomData.creditsPerMinute * 15} kr)
+                </button>
+              </div>
             </div>
-            <div>
-              <h1 className="text-white font-semibold">{peerName}</h1>
-              <p className="text-sm text-gray-400">
-                {isConnected 
-                  ? (language === 'tr' ? 'Bağlı' : 'Connected')
-                  : (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...')
-                }
+          )}
+        </div>
+      </div>
+
+      {/* Main video area - fullscreen */}
+      <div className={`flex-1 relative ${isChatExpanded ? 'pb-[200px]' : 'pb-[50px]'}`}>
+        {/* Remote video (full size) */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        {/* Local video (picture-in-picture) - draggable position */}
+        <div className="absolute top-16 right-3 w-28 h-40 sm:w-36 sm:h-48 bg-gray-900 rounded-xl overflow-hidden border-2 border-purple-500 shadow-2xl z-10">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`w-full h-full object-cover ${!isVideoEnabled ? 'hidden' : ''}`}
+          />
+          {!isVideoEnabled && (
+            <div className="w-full h-full flex items-center justify-center bg-gray-800">
+              <VideoOff className="w-8 h-8 text-gray-500" />
+            </div>
+          )}
+          
+          {/* Camera switch button on local video */}
+          <button
+            onClick={switchCamera}
+            className="absolute bottom-2 right-2 p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+            title={language === 'tr' ? 'Kamera Çevir' : 'Switch Camera'}
+          >
+            <SwitchCamera className="w-4 h-4 text-white" />
+          </button>
+        </div>
+
+        {/* Connection status overlay */}
+        {!isConnected && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-5">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gold-500 mx-auto mb-4"></div>
+              <p className="text-white text-lg">
+                {connectionStatus || (language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...')}
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                {language === 'tr' 
+                  ? 'Diğer tarafın odaya girmesini bekliyorsunuz'
+                  : 'Waiting for the other party to join'}
               </p>
             </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-6">
-            {/* Timer */}
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-              remainingSeconds < 60 ? 'bg-red-900/50 text-red-400' : 'bg-purple-800/50 text-white'
-            }`}>
-              <Clock className="w-5 h-5" />
-              <span className="font-mono text-lg">{formatTime(remainingSeconds)}</span>
-            </div>
+        {/* Control buttons - floating in center-bottom of video */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+          <button
+            onClick={toggleVideo}
+            className={`p-3 rounded-full transition-colors shadow-lg ${
+              isVideoEnabled ? 'bg-white/20 hover:bg-white/30' : 'bg-red-600 hover:bg-red-500'
+            }`}
+          >
+            {isVideoEnabled ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+          </button>
 
-            {/* Extend button (only for user) */}
-            {roomData.isUser && (
-              <div className="relative group">
-                <button className="flex items-center gap-2 px-4 py-2 bg-gold-600 text-black rounded-lg hover:bg-gold-500">
-                  <Plus className="w-4 h-4" />
-                  {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
-                </button>
-                <div className="absolute right-0 top-full mt-2 bg-deep-purple-800 rounded-lg shadow-xl border border-purple-700 hidden group-hover:block z-10">
-                  <button
-                    onClick={() => extendSession(5)}
-                    className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700"
-                  >
-                    +5 {language === 'tr' ? 'dk' : 'min'} ({roomData.creditsPerMinute * 5} {language === 'tr' ? 'kredi' : 'credits'})
-                  </button>
-                  <button
-                    onClick={() => extendSession(10)}
-                    className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700"
-                  >
-                    +10 {language === 'tr' ? 'dk' : 'min'} ({roomData.creditsPerMinute * 10} {language === 'tr' ? 'kredi' : 'credits'})
-                  </button>
-                  <button
-                    onClick={() => extendSession(15)}
-                    className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700"
-                  >
-                    +15 {language === 'tr' ? 'dk' : 'min'} ({roomData.creditsPerMinute * 15} {language === 'tr' ? 'kredi' : 'credits'})
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={toggleAudio}
+            className={`p-3 rounded-full transition-colors shadow-lg ${
+              isAudioEnabled ? 'bg-white/20 hover:bg-white/30' : 'bg-red-600 hover:bg-red-500'
+            }`}
+          >
+            {isAudioEnabled ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+          </button>
+
+          <button
+            onClick={switchCamera}
+            className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors shadow-lg"
+            title={language === 'tr' ? 'Kamera Çevir' : 'Switch Camera'}
+          >
+            <SwitchCamera className="w-5 h-5 text-white" />
+          </button>
+
+          <button
+            onClick={endSession}
+            className="p-3 rounded-full bg-red-600 hover:bg-red-500 transition-colors shadow-lg"
+          >
+            <Phone className="w-5 h-5 text-white transform rotate-135" />
+          </button>
         </div>
-      </header>
+      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex">
-        {/* Video area */}
-        <div className={`flex-1 p-4 ${showChat ? 'w-2/3' : 'w-full'}`}>
-          <div className="relative h-full bg-black rounded-xl overflow-hidden">
-            {/* Remote video (full size) */}
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover"
-            />
-
-            {/* Local video (picture-in-picture) */}
-            <div className="absolute bottom-4 right-4 w-48 h-36 bg-gray-900 rounded-lg overflow-hidden border-2 border-purple-500 shadow-lg">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover ${!isVideoEnabled ? 'hidden' : ''}`}
-              />
-              {!isVideoEnabled && (
-                <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                  <VideoOff className="w-8 h-8 text-gray-500" />
-                </div>
-              )}
-            </div>
-
-            {/* Connection status overlay */}
-            {!isConnected && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gold-500 mx-auto mb-4"></div>
-                  <p className="text-white">
-                    {connectionStatus || (language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...')}
-                  </p>
-                  <p className="text-gray-400 text-sm mt-2">
-                    {language === 'tr' 
-                      ? 'Diğer tarafın odaya girmesini bekliyorsunuz'
-                      : 'Waiting for the other party to join'}
-                  </p>
-                </div>
-              </div>
-            )}
+      {/* Chat area - bottom panel */}
+      <div className={`absolute bottom-0 left-0 right-0 bg-deep-purple-900/95 backdrop-blur-sm border-t border-purple-700 transition-all duration-300 ${
+        isChatExpanded ? 'h-[200px]' : 'h-[50px]'
+      }`}>
+        {/* Chat header with toggle */}
+        <button
+          onClick={() => setIsChatExpanded(!isChatExpanded)}
+          className="w-full p-2 flex items-center justify-between text-white hover:bg-purple-800/50"
+        >
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {language === 'tr' ? 'Sohbet' : 'Chat'}
+              {messages.length > 0 && <span className="ml-1 text-gold-400">({messages.length})</span>}
+            </span>
           </div>
-        </div>
+          {isChatExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </button>
 
-        {/* Chat area */}
-        {showChat && (
-          <div className="w-1/3 border-l border-purple-800 flex flex-col bg-deep-purple-900/50">
-            <div className="p-3 border-b border-purple-800">
-              <h2 className="text-white font-semibold flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                {language === 'tr' ? 'Sohbet' : 'Chat'}
-              </h2>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.senderId === session?.user?.id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                    msg.senderId === session?.user?.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-700 text-white'
-                  }`}>
-                    <p>{msg.message}</p>
-                    <p className="text-xs opacity-60 mt-1">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
-                    </p>
+        {/* Chat content */}
+        {isChatExpanded && (
+          <div className="flex flex-col h-[calc(100%-40px)]">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              {messages.length === 0 ? (
+                <p className="text-center text-gray-500 text-sm py-4">
+                  {language === 'tr' ? 'Henüz mesaj yok' : 'No messages yet'}
+                </p>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.senderId === session?.user?.id ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[75%] rounded-lg px-3 py-1.5 text-sm ${
+                      msg.senderId === session?.user?.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-white'
+                    }`}>
+                      <p>{msg.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
               <div ref={chatEndRef} />
             </div>
 
-            <div className="p-3 border-t border-purple-800">
+            {/* Input */}
+            <div className="p-2 border-t border-purple-800">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -724,61 +816,18 @@ export default function LiveRoomPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Type a message...'}
-                  className="flex-1 bg-deep-purple-800 text-white rounded-lg px-4 py-2 border border-purple-700 focus:outline-none focus:border-gold-500"
+                  className="flex-1 bg-deep-purple-800 text-white rounded-full px-4 py-2 text-sm border border-purple-700 focus:outline-none focus:border-gold-500"
                 />
                 <button
                   onClick={sendMessage}
-                  className="p-2 bg-gold-600 text-black rounded-lg hover:bg-gold-500"
+                  className="p-2 bg-gold-600 text-black rounded-full hover:bg-gold-500"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Controls */}
-      <div className="bg-deep-purple-900/80 backdrop-blur-sm border-t border-purple-800 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-4">
-          <button
-            onClick={toggleVideo}
-            className={`p-4 rounded-full transition-colors ${
-              isVideoEnabled ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-500'
-            }`}
-            title={isVideoEnabled ? (language === 'tr' ? 'Kamerayı Kapat' : 'Turn off camera') : (language === 'tr' ? 'Kamerayı Aç' : 'Turn on camera')}
-          >
-            {isVideoEnabled ? <Video className="w-6 h-6 text-white" /> : <VideoOff className="w-6 h-6 text-white" />}
-          </button>
-
-          <button
-            onClick={toggleAudio}
-            className={`p-4 rounded-full transition-colors ${
-              isAudioEnabled ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-500'
-            }`}
-            title={isAudioEnabled ? (language === 'tr' ? 'Mikrofonu Kapat' : 'Mute') : (language === 'tr' ? 'Mikrofonu Aç' : 'Unmute')}
-          >
-            {isAudioEnabled ? <Mic className="w-6 h-6 text-white" /> : <MicOff className="w-6 h-6 text-white" />}
-          </button>
-
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className={`p-4 rounded-full transition-colors ${
-              showChat ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-            title={language === 'tr' ? 'Sohbet' : 'Chat'}
-          >
-            <MessageSquare className="w-6 h-6 text-white" />
-          </button>
-
-          <button
-            onClick={endSession}
-            className="p-4 rounded-full bg-red-600 hover:bg-red-500 transition-colors"
-            title={language === 'tr' ? 'Seansı Bitir' : 'End Session'}
-          >
-            <Phone className="w-6 h-6 text-white transform rotate-135" />
-          </button>
-        </div>
       </div>
     </div>
   );
