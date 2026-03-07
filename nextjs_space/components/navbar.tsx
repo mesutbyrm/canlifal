@@ -8,6 +8,7 @@ import { useLanguage } from '@/lib/language-context'
 import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X, Video, Trophy } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import { LiveVisitorCount } from './live-visitor-count'
+import IncomingCallModal from './incoming-call-modal'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
@@ -291,6 +292,9 @@ export default function Navbar() {
           </div>
         )}
       </div>
+      
+      {/* Incoming Call Modal for Live Sessions */}
+      <IncomingCallModal />
     </nav>
   )
 }

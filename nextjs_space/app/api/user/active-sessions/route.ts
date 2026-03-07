@@ -18,7 +18,15 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         status: 'active'
       },
-      include: {
+      select: {
+        id: true,
+        fortuneType: true,
+        status: true,
+        maxMinutes: true,
+        minutesUsed: true,
+        createdAt: true,
+        startedAt: true,
+        roomId: true,
         teller: {
           select: {
             id: true,
@@ -27,7 +35,7 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { startedAt: 'desc' }
     });
 
     return NextResponse.json(activeSessions);
