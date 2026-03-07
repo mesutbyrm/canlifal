@@ -467,6 +467,13 @@ export default function TellerDashboard() {
 
                       {sess.status === 'active' && (
                         <div className="flex gap-2">
+                          <Link
+                            href={`/${language}/live-room/${sess.id}`}
+                            className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-black rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                          >
+                            <Video className="w-4 h-4" />
+                            {language === 'tr' ? 'Odaya Gir' : 'Enter Room'}
+                          </Link>
                           <button
                             onClick={() => handleSessionAction(sess.id, 'complete')}
                             disabled={actionLoading === sess.id}

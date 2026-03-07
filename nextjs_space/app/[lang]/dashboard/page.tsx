@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Coffee, Star, Moon, Sparkles, Calendar, Droplets } from 'lucide-react'
+import { Coffee, Star, Moon, Sparkles, Calendar, Droplets, Video, Clock, User } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { format } from 'date-fns'
 import WatchAdCredits from '@/components/watch-ad-credits'
+import Link from 'next/link'
 
 interface Fortune {
   id: string
@@ -16,14 +17,28 @@ interface Fortune {
   language: string
 }
 
+interface ActiveSession {
+  id: string
+  fortuneType: string
+  status: string
+  createdAt: string
+  teller: {
+    id: string
+    displayName: string
+    avatar: string | null
+  }
+}
+
 export default function DashboardPage() {
   const { language, t } = useLanguage()
   const [fortunes, setFortunes] = useState<Fortune[]>([])
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedFortune, setSelectedFortune] = useState<Fortune | null>(null)
 
   useEffect(() => {
     fetchFortunes()
+    fetchActiveSessions()
   }, [])
 
   const fetchFortunes = async () => {
@@ -35,6 +50,18 @@ export default function DashboardPage() {
       console.error('Failed to fetch fortunes:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchActiveSessions = async () => {
+    try {
+      const response = await fetch('/api/user/active-sessions')
+      const data = await response.json()
+      if (Array.isArray(data)) {
+        setActiveSessions(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch active sessions:', error)
     }
   }
 
@@ -71,6 +98,58 @@ export default function DashboardPage() {
             <WatchAdCredits />
           </div>
         </motion.div>
+
+        {/* Active Live Sessions Banner */}
+        {activeSessions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="bg-gradient-to-r from-gold-600/20 to-purple-600/20 border border-gold-500/50 rounded-xl p-6">
+              <h2 className="text-xl font-bold text-gold-500 mb-4 flex items-center gap-2">
+                <Video className="w-6 h-6 animate-pulse" />
+                {language === 'tr' ? 'Aktif Canlı Seanslarınız' : 'Your Active Live Sessions'}
+              </h2>
+              <div className="space-y-3">
+                {activeSessions.map((sess) => (
+                  <div
+                    key={sess.id}
+                    className="bg-deep-purple-900/50 rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-purple-700 flex items-center justify-center">
+                        {sess.teller.avatar ? (
+                          <img
+                            src={sess.teller.avatar}
+                            alt={sess.teller.displayName}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-6 h-6 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{sess.teller.displayName}</p>
+                        <p className="text-sm text-purple-300 flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {language === 'tr' ? 'Seans aktif' : 'Session active'}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/${language}/live-room/${sess.id}`}
+                      className="px-6 py-3 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <Video className="w-5 h-5" />
+                      {language === 'tr' ? 'Odaya Gir' : 'Enter Room'}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {isLoading ? (
           <LoadingSpinner message={language === 'tr' ? 'Fallar yükleniyor...' : 'Loading fortunes...'} />

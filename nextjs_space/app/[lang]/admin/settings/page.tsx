@@ -14,7 +14,9 @@ import {
   Gift,
   CreditCard,
   Loader2,
-  Check
+  Check,
+  Clock,
+  Coins
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -22,6 +24,8 @@ interface PlatformSettings {
   min_withdrawal: string
   referral_bonus: string
   welcome_credits: string
+  session_duration_minutes: string
+  credits_per_minute: string
 }
 
 export default function AdminSettingsPage() {
@@ -33,7 +37,9 @@ export default function AdminSettingsPage() {
     commission_rate: '20',
     min_withdrawal: '100',
     referral_bonus: '50',
-    welcome_credits: '10'
+    welcome_credits: '10',
+    session_duration_minutes: '5',
+    credits_per_minute: '10'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -122,6 +128,22 @@ export default function AdminSettingsPage() {
       icon: CreditCard,
       min: 0,
       max: 1000
+    },
+    {
+      key: 'session_duration_minutes',
+      label: language === 'tr' ? 'Canlı Seans Süresi (dk)' : 'Live Session Duration (min)',
+      description: language === 'tr' ? 'Canlı falcı seanslarının varsayılan süresi' : 'Default duration for live fortune teller sessions',
+      icon: Clock,
+      min: 1,
+      max: 60
+    },
+    {
+      key: 'credits_per_minute',
+      label: language === 'tr' ? 'Dakika Başı Kredi' : 'Credits Per Minute',
+      description: language === 'tr' ? 'Süre uzatma için dakika başına alınacak kredi' : 'Credits charged per minute for session extension',
+      icon: Coins,
+      min: 1,
+      max: 100
     }
   ]
 

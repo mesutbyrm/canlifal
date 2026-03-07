@@ -383,6 +383,8 @@ async function main() {
     { key: 'min_withdrawal', value: '100', description: 'Minimum credits for withdrawal' },
     { key: 'referral_bonus', value: '50', description: 'Bonus credits for referrals' },
     { key: 'welcome_credits', value: '10', description: 'Starting credits for new users' },
+    { key: 'session_duration_minutes', value: '5', description: 'Default duration for live sessions (minutes)' },
+    { key: 'credits_per_minute', value: '10', description: 'Credits charged per minute for session extension' },
   ]
 
   for (const setting of settings) {

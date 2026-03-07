@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model User {
@@ -19,6 +19,8 @@ model User {
   preferredLanguage     String               @default("tr")
   credits               Int                  @default(10)
   role                  String               @default("user")
+  membership            String               @default("basic") // basic, premium, gold
+  membershipExpiresAt   DateTime?
   createdAt             DateTime             @default(now())
   referralCode          String?              @unique
   referralCreditsEarned Int                  @default(0)
@@ -134,26 +136,51 @@ model TellerWarning {
 }
 
 model LiveSession {
-  id             String               @id @default(cuid())
-  tellerId       String
-  userId         String
-  fortuneType    String
-  status         String               @default("pending")
-  creditsCharged Int
-  startedAt      DateTime?
-  endedAt        DateTime?
-  notes          String?
-  createdAt      DateTime             @default(now())
-  messages       LiveSessionMessage[]
-  teller         LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
-  user           User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
-  review         LiveTellerReview?
-  chatSession    TellerChatSession?
+  id               String               @id @default(cuid())
+  tellerId         String
+  userId           String
+  fortuneType      String
+  status           String               @default("pending")
+  creditsCharged   Int
+  startedAt        DateTime?
+  endedAt          DateTime?
+  notes            String?
+  createdAt        DateTime             @default(now())
+  // Room and duration tracking
+  roomId           String?              @unique
+  maxMinutes       Int                  @default(5)
+  minutesUsed      Int                  @default(0)
+  creditsPerMinute Int                  @default(0)
+  lastPingAt       DateTime?
+  messages         LiveSessionMessage[]
+  teller           LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  user             User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  review           LiveTellerReview?
+  chatSession      TellerChatSession?
+  roomSignals      RoomSignal[]
 
   @@index([tellerId])
   @@index([userId])
   @@index([status])
+  @@index([roomId])
   @@map("live_sessions")
+}
+
+// WebRTC Signaling for real-time communication
+model RoomSignal {
+  id          String      @id @default(cuid())
+  sessionId   String
+  senderId    String
+  receiverId  String
+  signalType  String      // offer, answer, ice-candidate
+  signalData  String      // JSON string of WebRTC signal data
+  processed   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([receiverId, processed])
+  @@map("room_signals")
 }
 
 model LiveSessionMessage {

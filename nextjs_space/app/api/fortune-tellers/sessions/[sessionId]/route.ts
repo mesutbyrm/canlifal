@@ -49,9 +49,29 @@ export async function PATCH(
         if (liveSession.status !== 'pending') {
           return NextResponse.json({ error: 'Session is not pending' }, { status: 400 });
         }
+        
+        // Get session duration settings
+        const durationSetting = await prisma.platformSettings.findUnique({
+          where: { key: 'session_duration_minutes' }
+        });
+        const defaultDuration = durationSetting ? parseInt(durationSetting.value) : 5;
+        
+        // Get credits per minute
+        const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
+          where: { key: 'credits_per_minute' }
+        });
+        const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+        
+        // Generate unique room ID
+        const roomId = `room_${liveSession.id}_${Date.now()}`;
+        
         updateData = {
           status: 'active',
-          startedAt: new Date()
+          startedAt: new Date(),
+          roomId,
+          maxMinutes: defaultDuration,
+          creditsPerMinute,
+          lastPingAt: new Date()
         };
         
         // Create chat session for this live session
@@ -64,7 +84,7 @@ export async function PATCH(
           }
         });
         
-        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Sohbete başlayabilirsiniz. / ${liveSession.teller.displayName} accepted your session request! You can start chatting.`;
+        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Canlı sohbet odasına girin. / ${liveSession.teller.displayName} accepted your session request! Enter the live chat room.`;
         break;
 
       case 'complete':
