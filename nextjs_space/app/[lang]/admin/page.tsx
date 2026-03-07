@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle } from 'lucide-react'
+import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
+import { LiveVisitorCount } from '@/components/live-visitor-count'
 import { format } from 'date-fns'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -291,8 +292,20 @@ export default function AdminPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="grid md:grid-cols-3 gap-6 mb-12"
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
             >
+              {/* Live Visitor Count - Prominent */}
+              <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-lg p-6 mystical-shadow">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="relative">
+                    <Eye className="w-6 h-6 text-green-400" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
+                  </div>
+                  <h3 className="text-green-300 font-medium">{language === 'tr' ? 'Aktif Ziyaretçi' : 'Active Visitors'}</h3>
+                </div>
+                <LiveVisitorCount variant="admin" />
+              </div>
+
               <div className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow">
                 <div className="flex items-center gap-3 mb-2">
                   <Users className="w-6 h-6 text-gold-500" />

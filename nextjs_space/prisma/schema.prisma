@@ -304,6 +304,19 @@ model AnonymousFortune {
   @@map("anonymous_fortunes")
 }
 
+// Site-wide presence tracking for visitor count
+model SitePresence {
+  id        String   @id @default(cuid())
+  visitorId String   @unique // Session ID or user ID
+  userId    String?  // Optional: logged-in user
+  lastSeen  DateTime @default(now())
+  userAgent String?
+  path      String?  // Current page path
+
+  @@index([lastSeen])
+  @@map("site_presences")
+}
+
 // Notifications for users (likes, comments, etc.)
 model Notification {
   id        String   @id @default(cuid())

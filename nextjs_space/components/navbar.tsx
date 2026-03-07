@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X } from 'lucide-react'
 import NotificationBell from './notification-bell'
+import { LiveVisitorCount } from './live-visitor-count'
 
 export default function Navbar() {
   const { data: session } = useSession() || {}
@@ -53,11 +54,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main navbar row */}
         <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo */}
-          <Link href={`/${language}`} className="flex items-center gap-2 text-gold-600 hover:text-gold-400 transition-colors flex-shrink-0">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="font-serif text-lg sm:text-xl font-bold gold-glow">FALCI</span>
-          </Link>
+          {/* Logo and Visitor Count */}
+          <div className="flex items-center gap-3">
+            <Link href={`/${language}`} className="flex items-center gap-2 text-gold-600 hover:text-gold-400 transition-colors flex-shrink-0">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="font-serif text-lg sm:text-xl font-bold gold-glow">FALCI</span>
+            </Link>
+            <div className="hidden sm:block border-l border-deep-purple-700 h-6 mx-1" />
+            <LiveVisitorCount showLabel className="hidden sm:flex" />
+          </div>
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-4 xl:gap-6">
