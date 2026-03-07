@@ -1,16 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Mail, Lock, User as UserIcon, Sparkles, Globe } from 'lucide-react'
+import { Mail, Lock, User as UserIcon, Sparkles, Globe, Gift } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { language } = useLanguage()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -18,6 +19,25 @@ export default function RegisterPage() {
   const [preferredLanguage, setPreferredLanguage] = useState('tr')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [referralCode, setReferralCode] = useState('')
+  const [referrerName, setReferrerName] = useState('')
+
+  // Check for referral code in URL
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      setReferralCode(ref)
+      // Validate referral code
+      fetch(`/api/referral/validate?code=${ref}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.valid) {
+            setReferrerName(data.referrerName)
+          }
+        })
+        .catch(console.error)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +48,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, preferredLanguage }),
+        body: JSON.stringify({ name, email, password, preferredLanguage, referralCode }),
       })
 
       const data = await response.json()
@@ -71,7 +91,7 @@ export default function RegisterPage() {
       >
         <div className="bg-mystical-card border border-mystical rounded-lg p-8 mystical-shadow">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
               <Sparkles className="w-12 h-12 text-gold-500" />
             </div>
@@ -82,6 +102,29 @@ export default function RegisterPage() {
               {language === 'tr' ? 'Yeni hesap oluşturun' : 'Create a new account'}
             </p>
           </div>
+
+          {/* Referral Bonus Banner */}
+          {referrerName && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 bg-gradient-to-r from-gold-600/20 to-gold-500/10 border border-gold-500/50 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gold-500/20 rounded-full flex items-center justify-center">
+                  <Gift className="w-5 h-5 text-gold-400" />
+                </div>
+                <div>
+                  <p className="text-gold-400 font-medium text-sm">
+                    {language === 'tr' ? `${referrerName} seni davet etti!` : `${referrerName} invited you!`}
+                  </p>
+                  <p className="text-gold-300/80 text-xs">
+                    {language === 'tr' ? 'Kayıt olunca 50 bonus kredi kazanacaksın!' : 'You\'ll get 50 bonus credits when you sign up!'}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

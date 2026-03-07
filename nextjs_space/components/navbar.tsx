@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X } from 'lucide-react'
+import { Sparkles, LogOut, User, Shield, Globe, MessageCircle, Menu, X, Video, Trophy } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import { LiveVisitorCount } from './live-visitor-count'
 
@@ -77,6 +77,14 @@ export default function Navbar() {
                 </Link>
                 <Link href={`/${language}/social`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
                   {language === 'tr' ? 'Sosyal' : 'Social'}
+                </Link>
+                <Link href={`/${language}/live-tellers`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
+                  <Video className="w-4 h-4" />
+                  <span className="hidden xl:inline">{language === 'tr' ? 'Canlı' : 'Live'}</span>
+                </Link>
+                <Link href={`/${language}/leaderboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base flex items-center gap-1">
+                  <Trophy className="w-4 h-4" />
+                  <span className="hidden xl:inline">{language === 'tr' ? 'Sıralama' : 'Rank'}</span>
                 </Link>
                 <Link href={`/${language}/dashboard`} className="text-deep-purple-200 hover:text-gold-400 transition-colors text-sm xl:text-base">
                   {t('nav.dashboard')}
@@ -225,6 +233,18 @@ export default function Navbar() {
                 </Link>
                 <Link href={`/${language}/social`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   {language === 'tr' ? 'Sosyal' : 'Social'}
+                </Link>
+                <Link href={`/${language}/live-tellers`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
+                  <Video className="w-4 h-4" />
+                  {language === 'tr' ? 'Canlı Falcılar' : 'Live Tellers'}
+                </Link>
+                <Link href={`/${language}/leaderboard`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
+                  <Trophy className="w-4 h-4" />
+                  {language === 'tr' ? 'Liderlik Tablosu' : 'Leaderboard'}
+                </Link>
+                <Link href={`/${language}/referral`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 py-2 px-3 text-gold-400 hover:text-gold-300 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
+                  <Sparkles className="w-4 h-4" />
+                  {language === 'tr' ? 'Davet Et & Kazan' : 'Invite & Earn'}
                 </Link>
                 <Link href={`/${language}/dashboard`} onClick={() => setIsMenuOpen(false)} className="block py-2 px-3 text-deep-purple-200 hover:text-gold-400 hover:bg-deep-purple-900/50 rounded-lg transition-colors">
                   {t('nav.dashboard')}

@@ -21,6 +21,14 @@ model User {
   credits           Int       @default(10)
   role              String    @default("user")
   createdAt         DateTime  @default(now())
+  
+  // Referral System
+  referralCode          String?   @unique
+  referredById          String?
+  referredBy            User?     @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals             User[]    @relation("UserReferrals")
+  referralCreditsEarned Int       @default(0)
+  
   fortunes          Fortune[]
   accounts          Account[]
   sessions          Session[]
@@ -35,8 +43,132 @@ model User {
   socialComments    SocialComment[]
   socialLikes       SocialLike[]
   notifications     Notification[]
+  referralHistory   Referral[]  @relation("Referrer")
+  referredHistory   Referral[]  @relation("Referred")
+  passwordResets    PasswordResetToken[]
+  
+  // Live Fortune Teller
+  fortuneTellerProfile  LiveFortuneTeller?
+  liveSessions          LiveSession[]  @relation("SessionUser")
 
+  @@index([referralCode])
+  @@index([referredById])
   @@map("users")
+}
+
+// Referral tracking
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String
+  referredId    String
+  creditsAwarded Int     @default(50)
+  createdAt     DateTime @default(now())
+  
+  referrer      User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred      User     @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredId])
+  @@index([referrerId])
+  @@index([createdAt])
+  @@map("referrals")
+}
+
+// Password Reset Tokens
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// Live Fortune Teller Profile
+model LiveFortuneTeller {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  displayName     String
+  bio             String?  @db.Text
+  specialties     String[] // Array of fortune types they specialize in
+  pricePerSession Int      @default(100) // Credits per session
+  rating          Float    @default(5.0)
+  totalSessions   Int      @default(0)
+  totalReviews    Int      @default(0)
+  isOnline        Boolean  @default(false)
+  isVerified      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  avatar          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions        LiveSession[]
+  reviews         LiveTellerReview[]
+
+  @@index([isOnline])
+  @@index([isVerified])
+  @@index([rating])
+  @@map("live_fortune_tellers")
+}
+
+// Live Session between user and fortune teller
+model LiveSession {
+  id              String   @id @default(cuid())
+  tellerId        String
+  userId          String
+  fortuneType     String
+  status          String   @default("pending") // pending, active, completed, cancelled
+  creditsCharged  Int
+  startedAt       DateTime?
+  endedAt         DateTime?
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  
+  teller          LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  user            User              @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  messages        LiveSessionMessage[]
+  review          LiveTellerReview?
+
+  @@index([tellerId])
+  @@index([userId])
+  @@index([status])
+  @@map("live_sessions")
+}
+
+// Messages within a live session
+model LiveSessionMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  senderId  String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("live_session_messages")
+}
+
+// Reviews for fortune tellers
+model LiveTellerReview {
+  id        String   @id @default(cuid())
+  tellerId  String
+  sessionId String   @unique
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  
+  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  session   LiveSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([tellerId])
+  @@map("live_teller_reviews")
 }
 
 model Fortune {

@@ -105,6 +105,15 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <Link
+                href={`/${language}/forgot-password`}
+                className="text-deep-purple-400 hover:text-gold-400 text-sm transition-colors"
+              >
+                {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password?'}
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
