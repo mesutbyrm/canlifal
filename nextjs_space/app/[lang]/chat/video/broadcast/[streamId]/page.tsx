@@ -10,7 +10,6 @@ import {
   Heart,
   MessageCircle,
   X,
-  Send,
   Eye,
   Video,
   VideoOff,
@@ -18,7 +17,8 @@ import {
   MicOff,
   SwitchCamera,
   Radio,
-  Phone
+  Gift,
+  Share2
 } from 'lucide-react'
 
 interface Comment {
@@ -34,7 +34,10 @@ interface Comment {
 interface FloatingHeart {
   id: number
   x: number
+  color: string
 }
+
+const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 
 export default function BroadcastPage() {
   const { data: session } = useSession() || {}
@@ -65,12 +68,10 @@ export default function BroadcastPage() {
     }
     startBroadcast()
     
-    // Duration timer
     const durationInterval = setInterval(() => {
       setDuration(prev => prev + 1)
     }, 1000)
 
-    // Poll for stats and comments
     const pollInterval = setInterval(() => {
       fetchStats()
       fetchComments()
@@ -95,7 +96,6 @@ export default function BroadcastPage() {
         localVideoRef.current.srcObject = stream
       }
 
-      // Start signaling for viewers
       pollForViewers()
     } catch (error) {
       console.error('Error starting broadcast:', error)
@@ -105,7 +105,6 @@ export default function BroadcastPage() {
   }
 
   const pollForViewers = async () => {
-    // Poll for new viewer connections
     setInterval(async () => {
       try {
         const res = await fetch(`/api/video-streams/${streamId}/signal`)
@@ -143,7 +142,6 @@ export default function BroadcastPage() {
 
     peerConnectionsRef.current.set(viewerId, pc)
 
-    // Add local stream tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current!)
@@ -164,7 +162,6 @@ export default function BroadcastPage() {
       }
     }
 
-    // Create offer
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
 
@@ -234,7 +231,6 @@ export default function BroadcastPage() {
         audio: true
       })
 
-      // Stop old tracks
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop())
       }
@@ -244,7 +240,6 @@ export default function BroadcastPage() {
         localVideoRef.current.srcObject = newStream
       }
 
-      // Update all peer connections
       const videoTrack = newStream.getVideoTracks()[0]
       peerConnectionsRef.current.forEach(pc => {
         const sender = pc.getSenders().find(s => s.track?.kind === 'video')
@@ -258,16 +253,13 @@ export default function BroadcastPage() {
   }
 
   const endStream = async () => {
-    // Stop local stream
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop())
     }
 
-    // Close all peer connections
     peerConnectionsRef.current.forEach(pc => pc.close())
     peerConnectionsRef.current.clear()
 
-    // Update stream status
     try {
       await fetch(`/api/video-streams/${streamId}`, {
         method: 'PATCH',
@@ -290,26 +282,32 @@ export default function BroadcastPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Listen for incoming hearts
+  const formatCount = (count: number) => {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K'
+    return count.toString()
+  }
+
+  // Simulate incoming hearts
   useEffect(() => {
     const interval = setInterval(() => {
-      // Randomly add hearts to simulate likes
-      if (Math.random() > 0.7 && likeCount > floatingHearts.length) {
+      if (Math.random() > 0.6 && likeCount > 0) {
         const newHeart: FloatingHeart = {
           id: heartIdRef.current++,
-          x: Math.random() * 60 + 20
+          x: Math.random() * 40 + 30,
+          color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
         }
         setFloatingHearts(prev => [...prev, newHeart])
         setTimeout(() => {
           setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id))
-        }, 1500)
+        }, 2000)
       }
-    }, 500)
+    }, 800)
     return () => clearInterval(interval)
   }, [likeCount])
 
   return (
-    <div className="h-screen bg-black relative overflow-hidden">
+    <div className="fixed inset-0 bg-black overflow-hidden">
       {/* Video */}
       <video
         ref={localVideoRef}
@@ -320,60 +318,101 @@ export default function BroadcastPage() {
         style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
       />
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+      {/* Gradient overlays */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 p-4 safe-area-inset-top z-10">
+      <div className="absolute top-0 left-0 right-0 pt-12 px-4 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-red-500/80 px-3 py-1.5 rounded-full">
+            {/* Live badge */}
+            <div className="flex items-center gap-1.5 bg-[#fe2c55] px-2.5 py-1 rounded-sm">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              <span className="text-white text-sm font-bold">CANLI</span>
+              <span className="text-white text-xs font-bold">LIVE</span>
             </div>
-            <div className="bg-black/50 px-3 py-1.5 rounded-full text-white text-sm">
-              {formatDuration(duration)}
+            
+            {/* Duration */}
+            <div className="bg-black/50 px-2.5 py-1 rounded-sm">
+              <span className="text-white text-xs font-medium">{formatDuration(duration)}</span>
             </div>
-            <div className="flex items-center gap-1 bg-black/50 px-3 py-1.5 rounded-full">
-              <Eye className="w-4 h-4 text-white" />
-              <span className="text-white text-sm">{viewerCount}</span>
+            
+            {/* Viewers */}
+            <div className="flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-sm">
+              <Eye className="w-3.5 h-3.5 text-white" />
+              <span className="text-white text-xs font-medium">{formatCount(viewerCount)}</span>
             </div>
           </div>
+
+          {/* End button */}
           <button
             onClick={() => setShowEndConfirm(true)}
-            className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1"
+            className="bg-black/50 text-white px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5"
           >
-            <Phone className="w-4 h-4 rotate-[135deg]" />
+            <X className="w-4 h-4" />
             {language === 'tr' ? 'Bitir' : 'End'}
           </button>
         </div>
       </div>
 
-      {/* Floating hearts */}
-      <div className="absolute right-4 bottom-40 z-10">
-        <AnimatePresence>
-          {floatingHearts.map(heart => (
-            <motion.div
-              key={heart.id}
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -150, scale: 1.5 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.5 }}
-              className="absolute bottom-0"
-              style={{ right: `${heart.x}%` }}
-            >
-              <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      {/* Right side stats */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-5 z-10">
+        {/* Floating hearts */}
+        <div className="relative h-20">
+          <AnimatePresence>
+            {floatingHearts.map(heart => (
+              <motion.div
+                key={heart.id}
+                initial={{ opacity: 1, y: 0, scale: 0.5 }}
+                animate={{ 
+                  opacity: 0, 
+                  y: -100, 
+                  scale: 1.2,
+                  x: (Math.random() - 0.5) * 30
+                }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 2 }}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2"
+              >
+                <Heart className="w-7 h-7" fill={heart.color} color={heart.color} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Like count */}
         <div className="flex flex-col items-center">
-          <Heart className="w-10 h-10 text-white" />
-          <span className="text-white text-sm mt-1">{likeCount}</span>
+          <div className="w-11 h-11 flex items-center justify-center">
+            <Heart className="w-8 h-8 text-white" fill="#fe2c55" color="#fe2c55" />
+          </div>
+          <span className="text-white text-xs font-medium">{formatCount(likeCount)}</span>
+        </div>
+
+        {/* Comments */}
+        <div className="flex flex-col items-center">
+          <div className="w-11 h-11 flex items-center justify-center">
+            <MessageCircle className="w-7 h-7 text-white" />
+          </div>
+          <span className="text-white text-xs font-medium">{formatCount(comments.length)}</span>
+        </div>
+
+        {/* Share */}
+        <div className="flex flex-col items-center">
+          <div className="w-11 h-11 flex items-center justify-center">
+            <Share2 className="w-7 h-7 text-white" />
+          </div>
+        </div>
+
+        {/* Gift */}
+        <div className="flex flex-col items-center">
+          <div className="w-11 h-11 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
+            <Gift className="w-6 h-6 text-white" />
+          </div>
         </div>
       </div>
 
-      {/* Comments overlay */}
-      <div className="absolute left-4 bottom-32 right-20 z-10 max-h-48 overflow-hidden">
+      {/* Live comments overlay */}
+      <div className="absolute left-4 bottom-32 right-24 max-h-40 overflow-hidden z-10">
         <div className="space-y-2">
           {comments.slice(0, 5).map(comment => (
             <motion.div
@@ -382,16 +421,16 @@ export default function BroadcastPage() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-start gap-2 bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2"
             >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex-shrink-0 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">
-                  {comment.user.name[0]}
-                </span>
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {comment.user.image ? (
+                  <Image src={comment.user.image} alt="" width={28} height={28} className="object-cover" />
+                ) : (
+                  <span className="text-white text-[10px] font-bold">{comment.user.name[0]}</span>
+                )}
               </div>
-              <div>
-                <span className="text-pink-400 text-xs font-medium">
-                  {comment.user.name}
-                </span>
-                <p className="text-white text-sm">{comment.content}</p>
+              <div className="flex-1 min-w-0">
+                <span className="text-white/70 text-xs font-medium">{comment.user.name}</span>
+                <p className="text-white text-sm truncate">{comment.content}</p>
               </div>
             </motion.div>
           ))}
@@ -399,10 +438,10 @@ export default function BroadcastPage() {
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 z-10">
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 z-10 px-4">
         <button
           onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20' : 'bg-red-500'}`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20 backdrop-blur-sm' : 'bg-[#fe2c55]'}`}
         >
           {isVideoOn ? (
             <Video className="w-6 h-6 text-white" />
@@ -410,9 +449,10 @@ export default function BroadcastPage() {
             <VideoOff className="w-6 h-6 text-white" />
           )}
         </button>
+
         <button
           onClick={toggleAudio}
-          className={`w-14 h-14 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20' : 'bg-red-500'}`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20 backdrop-blur-sm' : 'bg-[#fe2c55]'}`}
         >
           {isAudioOn ? (
             <Mic className="w-6 h-6 text-white" />
@@ -420,9 +460,10 @@ export default function BroadcastPage() {
             <MicOff className="w-6 h-6 text-white" />
           )}
         </button>
+
         <button
           onClick={switchCamera}
-          className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center"
+          className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
         >
           <SwitchCamera className="w-6 h-6 text-white" />
         </button>
@@ -435,32 +476,38 @@ export default function BroadcastPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/80 flex items-center justify-center z-30 p-4"
+            className="absolute inset-0 bg-black/80 flex items-center justify-center z-40 px-8"
           >
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-[#1a0a2e] rounded-2xl p-6 w-full max-w-sm text-center"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a1a1a] rounded-2xl p-6 w-full max-w-sm text-center"
             >
-              <h2 className="text-xl font-bold text-white mb-4">
-                {language === 'tr' ? 'Yayını bitirmek istiyor musunuz?' : 'End the stream?'}
+              <div className="w-16 h-16 rounded-full bg-[#fe2c55]/20 flex items-center justify-center mx-auto mb-4">
+                <Radio className="w-8 h-8 text-[#fe2c55]" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Yayını bitir?' : 'End stream?'}
               </h2>
-              <p className="text-purple-300 mb-6">
+              
+              <p className="text-white/60 text-sm mb-6">
                 {language === 'tr'
-                  ? `Yayın süresi: ${formatDuration(duration)}`
-                  : `Stream duration: ${formatDuration(duration)}`}
+                  ? `Yayın süresi: ${formatDuration(duration)} • ${formatCount(viewerCount)} izleyici`
+                  : `Duration: ${formatDuration(duration)} • ${formatCount(viewerCount)} viewers`}
               </p>
-              <div className="flex gap-4">
+              
+              <div className="flex gap-3">
                 <button
                   onClick={() => setShowEndConfirm(false)}
-                  className="flex-1 bg-purple-900/50 text-white font-bold py-3 rounded-xl"
+                  className="flex-1 bg-white/10 text-white font-semibold py-3 rounded-lg"
                 >
                   {language === 'tr' ? 'Devam Et' : 'Continue'}
                 </button>
                 <button
                   onClick={handleEndStream}
-                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl"
+                  className="flex-1 bg-[#fe2c55] text-white font-semibold py-3 rounded-lg"
                 >
                   {language === 'tr' ? 'Bitir' : 'End'}
                 </button>

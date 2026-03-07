@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, TouchEvent } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -12,21 +12,13 @@ import {
   Share2,
   Volume2,
   VolumeX,
-  Play,
-  Pause,
-  ChevronUp,
-  ChevronDown,
   Send,
   X,
   Radio,
-  Users,
-  Eye,
-  Sparkles,
-  Video,
-  VideoOff,
-  Mic,
-  MicOff,
-  SwitchCamera
+  Plus,
+  Music2,
+  Bookmark,
+  Video
 } from 'lucide-react'
 
 interface VideoStream {
@@ -60,7 +52,10 @@ interface Comment {
 interface FloatingHeart {
   id: number
   x: number
+  color: string
 }
+
+const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 
 export default function VideoStreamPage() {
   const { data: session } = useSession() || {}
@@ -80,9 +75,13 @@ export default function VideoStreamPage() {
   const [isStartingStream, setIsStartingStream] = useState(false)
   const [showStartModal, setShowStartModal] = useState(false)
   const [streamTitle, setStreamTitle] = useState('')
+  const [isFollowing, setIsFollowing] = useState(false)
+  
+  // Touch handling
+  const touchStartY = useRef(0)
+  const touchEndY = useRef(0)
   
   // WebRTC refs
-  const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -151,8 +150,6 @@ export default function VideoStreamPage() {
   const joinStream = async (streamId: string) => {
     const stream = streams.find(s => s.id === streamId)
     if (!stream) return
-
-    // Connect via WebRTC
     await connectToStream(stream.roomId)
   }
 
@@ -194,7 +191,6 @@ export default function VideoStreamPage() {
         }
       }
 
-      // Poll for signals
       const pollSignals = async () => {
         try {
           const res = await fetch(`/api/video-streams/signal?roomId=${roomId}`)
@@ -208,11 +204,7 @@ export default function VideoStreamPage() {
                 await fetch('/api/video-streams/signal', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    roomId,
-                    type: 'answer',
-                    sdp: answer
-                  })
+                  body: JSON.stringify({ roomId, type: 'answer', sdp: answer })
                 })
               } else if (signal.type === 'ice-candidate' && signal.candidate) {
                 await pc.addIceCandidate(new RTCIceCandidate(signal.candidate))
@@ -235,15 +227,20 @@ export default function VideoStreamPage() {
     const currentStream = streams[currentIndex]
     if (!currentStream || !session?.user) return
 
-    // Add floating heart animation
-    const newHeart: FloatingHeart = {
-      id: heartIdRef.current++,
-      x: Math.random() * 60 + 20
+    // Add multiple floating hearts
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        const newHeart: FloatingHeart = {
+          id: heartIdRef.current++,
+          x: Math.random() * 40 + 30,
+          color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
+        }
+        setFloatingHearts(prev => [...prev, newHeart])
+        setTimeout(() => {
+          setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id))
+        }, 2000)
+      }, i * 100)
     }
-    setFloatingHearts(prev => [...prev, newHeart])
-    setTimeout(() => {
-      setFloatingHearts(prev => prev.filter(h => h.id !== newHeart.id))
-    }, 1500)
 
     try {
       const res = await fetch(`/api/video-streams/${currentStream.id}/like`, {
@@ -279,11 +276,23 @@ export default function VideoStreamPage() {
     }
   }
 
-  const handleSwipe = (direction: 'up' | 'down') => {
-    if (direction === 'up' && currentIndex < streams.length - 1) {
-      setCurrentIndex(prev => prev + 1)
-    } else if (direction === 'down' && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1)
+  // Touch handlers for swipe
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = () => {
+    const diff = touchStartY.current - touchEndY.current
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentIndex < streams.length - 1) {
+        setCurrentIndex(prev => prev + 1)
+      } else if (diff < 0 && currentIndex > 0) {
+        setCurrentIndex(prev => prev - 1)
+      }
     }
   }
 
@@ -298,14 +307,12 @@ export default function VideoStreamPage() {
   const startBroadcast = async () => {
     setIsStartingStream(true)
     try {
-      // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 720, height: 1280 },
         audio: true
       })
       localStreamRef.current = stream
 
-      // Create stream in database
       const res = await fetch('/api/video-streams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,116 +331,112 @@ export default function VideoStreamPage() {
     }
   }
 
+  const formatCount = (count: number) => {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K'
+    return count.toString()
+  }
+
   const currentStream = streams[currentIndex]
 
   if (loading) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-black overflow-hidden" ref={containerRef}>
-      {/* Video Feed */}
+    <div 
+      className="fixed inset-0 bg-black overflow-hidden"
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* No streams state */}
       {streams.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center text-white px-8">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mb-6">
-            <Video className="w-12 h-12" />
+        <div className="h-full flex flex-col items-center justify-center px-8">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 flex items-center justify-center mb-6 animate-pulse">
+            <Video className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-center">
+          <h2 className="text-white text-xl font-bold mb-2 text-center">
             {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
           </h2>
-          <p className="text-gray-400 text-center mb-8">
+          <p className="text-white/60 text-center text-sm mb-8">
             {language === 'tr' ? 'İlk yayını sen başlat!' : 'Be the first to go live!'}
           </p>
           <button
             onClick={handleStartStream}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold px-8 py-4 rounded-full flex items-center gap-2"
+            className="bg-[#fe2c55] text-white font-semibold px-8 py-3 rounded-sm flex items-center gap-2"
           >
             <Radio className="w-5 h-5" />
-            {language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live Stream'}
+            {language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live'}
           </button>
         </div>
       ) : (
-        <div className="relative h-full">
-          {/* Main Video */}
+        <>
+          {/* Full Screen Video */}
           <div className="absolute inset-0">
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
               muted={isMuted}
+              loop
               className="w-full h-full object-cover"
+              poster="/api/placeholder/1080/1920"
             />
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+            {/* Subtle gradient at bottom for text readability */}
+            <div className="absolute bottom-0 left-0 right-0 h-72 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
           </div>
 
-          {/* Top bar */}
-          <div className="absolute top-0 left-0 right-0 p-4 safe-area-inset-top z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-white text-sm font-medium">CANLI</span>
-                <span className="text-white/70 text-sm flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {currentStream?.viewerCount || 0}
-                </span>
+          {/* Top bar - minimal */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-12 pb-4 z-10">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-[#fe2c55] px-2 py-1 rounded-sm">
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                <span className="text-white text-xs font-semibold">LIVE</span>
               </div>
-              <button
-                onClick={handleStartStream}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1"
-              >
-                <Radio className="w-4 h-4" />
-                {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
-              </button>
+              <span className="text-white/80 text-xs">{currentStream?.viewerCount || 0}</span>
             </div>
+            <button
+              onClick={handleStartStream}
+              className="bg-[#fe2c55] text-white text-xs font-semibold px-3 py-1.5 rounded-sm flex items-center gap-1"
+            >
+              <Radio className="w-3 h-3" />
+              {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
+            </button>
           </div>
 
-          {/* Swipe indicators */}
-          {currentIndex > 0 && (
-            <button
-              onClick={() => handleSwipe('down')}
-              className="absolute top-20 left-1/2 -translate-x-1/2 text-white/50 animate-bounce"
-            >
-              <ChevronUp className="w-8 h-8" />
-            </button>
-          )}
-          {currentIndex < streams.length - 1 && (
-            <button
-              onClick={() => handleSwipe('up')}
-              className="absolute bottom-32 left-1/2 -translate-x-1/2 text-white/50 animate-bounce"
-            >
-              <ChevronDown className="w-8 h-8" />
-            </button>
-          )}
-
-          {/* Right side actions */}
-          <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 z-10">
-            {/* Profile */}
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
+          {/* Right side actions - TikTok style */}
+          <div className="absolute right-3 bottom-28 flex flex-col items-center gap-5 z-10">
+            {/* Profile with follow button */}
+            <div className="relative mb-2">
+              <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-800">
                 {currentStream?.user?.image ? (
                   <Image
                     src={currentStream.user.image}
                     alt={currentStream.user.name}
                     width={48}
                     height={48}
-                    className="object-cover"
+                    className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-bold">
-                      {currentStream?.user?.name?.[0] || '?'}
+                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {currentStream?.user?.name?.[0]?.toUpperCase() || '?'}
                     </span>
                   </div>
                 )}
               </div>
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">+</span>
-              </div>
+              <button 
+                onClick={() => setIsFollowing(!isFollowing)}
+                className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center ${isFollowing ? 'bg-gray-600' : 'bg-[#fe2c55]'}`}
+              >
+                <Plus className={`w-4 h-4 text-white ${isFollowing ? 'rotate-45' : ''} transition-transform`} />
+              </button>
             </div>
 
             {/* Like */}
@@ -443,71 +446,117 @@ export default function VideoStreamPage() {
                 {floatingHearts.map(heart => (
                   <motion.div
                     key={heart.id}
-                    initial={{ opacity: 1, y: 0, scale: 1 }}
-                    animate={{ opacity: 0, y: -100, scale: 1.5 }}
+                    initial={{ opacity: 1, y: 0, scale: 0.5, x: 0 }}
+                    animate={{ 
+                      opacity: 0, 
+                      y: -120, 
+                      scale: 1.2,
+                      x: (Math.random() - 0.5) * 40
+                    }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.5 }}
-                    className="absolute bottom-0"
-                    style={{ left: `${heart.x}%` }}
+                    transition={{ duration: 2, ease: 'easeOut' }}
+                    className="absolute bottom-8 pointer-events-none"
                   >
-                    <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
+                    <Heart className="w-8 h-8" fill={heart.color} color={heart.color} />
                   </motion.div>
                 ))}
               </AnimatePresence>
-              <button
-                onClick={handleLike}
-                className="flex flex-col items-center"
-              >
-                <Heart
-                  className={`w-8 h-8 ${isLiked ? 'text-pink-500 fill-pink-500' : 'text-white'}`}
-                />
-                <span className="text-white text-xs mt-1">{likeCount}</span>
+              <button onClick={handleLike} className="flex flex-col items-center">
+                <div className="w-11 h-11 flex items-center justify-center">
+                  <Heart
+                    className={`w-8 h-8 transition-all ${isLiked ? 'scale-110' : ''}`}
+                    fill={isLiked ? '#fe2c55' : 'transparent'}
+                    color={isLiked ? '#fe2c55' : 'white'}
+                    strokeWidth={2}
+                  />
+                </div>
+                <span className="text-white text-xs font-medium mt-0.5">{formatCount(likeCount)}</span>
               </button>
             </div>
 
             {/* Comments */}
-            <button
-              onClick={() => setShowComments(true)}
-              className="flex flex-col items-center"
-            >
-              <MessageCircle className="w-8 h-8 text-white" />
-              <span className="text-white text-xs mt-1">{comments.length}</span>
+            <button onClick={() => setShowComments(true)} className="flex flex-col items-center">
+              <div className="w-11 h-11 flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 text-white" strokeWidth={2} />
+              </div>
+              <span className="text-white text-xs font-medium mt-0.5">{formatCount(comments.length)}</span>
+            </button>
+
+            {/* Bookmark */}
+            <button className="flex flex-col items-center">
+              <div className="w-11 h-11 flex items-center justify-center">
+                <Bookmark className="w-7 h-7 text-white" strokeWidth={2} />
+              </div>
+              <span className="text-white text-xs font-medium mt-0.5">
+                {language === 'tr' ? 'Kaydet' : 'Save'}
+              </span>
             </button>
 
             {/* Share */}
             <button className="flex flex-col items-center">
-              <Share2 className="w-8 h-8 text-white" />
-              <span className="text-white text-xs mt-1">
+              <div className="w-11 h-11 flex items-center justify-center">
+                <Share2 className="w-7 h-7 text-white" strokeWidth={2} />
+              </div>
+              <span className="text-white text-xs font-medium mt-0.5">
                 {language === 'tr' ? 'Paylaş' : 'Share'}
               </span>
             </button>
 
-            {/* Mute */}
-            <button onClick={() => setIsMuted(!isMuted)}>
-              {isMuted ? (
-                <VolumeX className="w-8 h-8 text-white" />
-              ) : (
-                <Volume2 className="w-8 h-8 text-white" />
-              )}
+            {/* Mute toggle */}
+            <button onClick={() => setIsMuted(!isMuted)} className="flex flex-col items-center">
+              <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full backdrop-blur-sm">
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </div>
             </button>
+
+            {/* Spinning music disc */}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-black border-4 border-gray-700 flex items-center justify-center animate-[spin_3s_linear_infinite]">
+              <div className="w-3 h-3 rounded-full bg-white/20" />
+            </div>
           </div>
 
           {/* Bottom info */}
-          <div className="absolute bottom-4 left-4 right-20 z-10">
+          <div className="absolute bottom-6 left-4 right-20 z-10">
+            {/* Username */}
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-white font-bold">@{currentStream?.user?.name}</span>
-              <span className="bg-pink-500/80 text-white text-xs px-2 py-0.5 rounded">
+              <span className="text-white font-bold text-base">@{currentStream?.user?.name}</span>
+              <span className="bg-[#fe2c55]/90 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
                 {language === 'tr' ? 'Falcı' : 'Teller'}
               </span>
             </div>
+            
+            {/* Title/Description */}
             {currentStream?.title && (
-              <p className="text-white text-sm mb-2">{currentStream.title}</p>
+              <p className="text-white text-sm mb-2 line-clamp-2">{currentStream.title}</p>
             )}
-            {currentStream?.description && (
-              <p className="text-white/80 text-xs">{currentStream.description}</p>
-            )}
+            
+            {/* Music row */}
+            <div className="flex items-center gap-2">
+              <Music2 className="w-4 h-4 text-white" />
+              <div className="overflow-hidden flex-1">
+                <p className="text-white text-sm whitespace-nowrap animate-marquee">
+                  🔮 Mistik Melodi - Fortune Telling Vibes
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Video indicator dots */}
+          {streams.length > 1 && (
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-10">
+              {streams.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-1 rounded-full transition-all ${idx === currentIndex ? 'h-4 bg-white' : 'h-1 bg-white/40'}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Comments Panel */}
@@ -517,61 +566,70 @@ export default function VideoStreamPage() {
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            className="absolute inset-0 bg-black/90 z-20 flex flex-col"
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute inset-x-0 bottom-0 h-[60%] bg-[#121212] rounded-t-xl z-30"
           >
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h3 className="text-white font-bold">
-                {language === 'tr' ? 'Yorumlar' : 'Comments'} ({comments.length})
+            {/* Handle */}
+            <div className="flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 bg-gray-600 rounded-full" />
+            </div>
+            
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h3 className="text-white font-semibold">
+                {comments.length} {language === 'tr' ? 'yorum' : 'comments'}
               </h3>
               <button onClick={() => setShowComments(false)}>
-                <X className="w-6 h-6 text-white" />
+                <X className="w-6 h-6 text-white/70" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {comments.map(comment => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex-shrink-0 flex items-center justify-center">
-                    {comment.user.image ? (
-                      <Image
-                        src={comment.user.image}
-                        alt={comment.user.name}
-                        width={32}
-                        height={32}
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-white text-xs font-bold">
-                        {comment.user.name[0]}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-pink-400 text-sm font-medium">
-                      {comment.user.name}
-                    </span>
-                    <p className="text-white text-sm">{comment.content}</p>
-                  </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 max-h-[calc(60vh-120px)]">
+              {comments.length === 0 ? (
+                <p className="text-white/50 text-center py-8">
+                  {language === 'tr' ? 'Henüz yorum yok' : 'No comments yet'}
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {comments.map(comment => (
+                    <div key={comment.id} className="flex gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {comment.user.image ? (
+                          <Image src={comment.user.image} alt="" width={36} height={36} className="object-cover" />
+                        ) : (
+                          <span className="text-white text-xs font-bold">{comment.user.name[0]}</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-white/60 text-sm font-medium">{comment.user.name}</span>
+                        <p className="text-white text-sm">{comment.content}</p>
+                      </div>
+                      <button className="text-white/40">
+                        <Heart className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
             {session?.user && (
-              <div className="p-4 border-t border-white/10">
-                <div className="flex gap-2">
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#121212] border-t border-white/10 pb-8">
+                <div className="flex gap-3 items-center">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
                   <input
                     type="text"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder={language === 'tr' ? 'Yorum yaz...' : 'Write a comment...'}
-                    className="flex-1 bg-white/10 text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder={language === 'tr' ? 'Yorum ekle...' : 'Add comment...'}
+                    className="flex-1 bg-transparent text-white text-sm placeholder:text-white/40 focus:outline-none"
                     onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
                   />
                   <button
                     onClick={handleSendComment}
-                    className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center"
+                    disabled={!newComment.trim()}
+                    className="text-[#fe2c55] font-semibold text-sm disabled:opacity-50"
                   >
-                    <Send className="w-5 h-5 text-white" />
+                    {language === 'tr' ? 'Gönder' : 'Post'}
                   </button>
                 </div>
               </div>
@@ -587,40 +645,40 @@ export default function VideoStreamPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/90 z-30 flex items-center justify-center p-4"
+            className="absolute inset-0 bg-black/80 z-40 flex items-end justify-center"
+            onClick={() => setShowStartModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-[#1a0a2e] rounded-2xl p-6 w-full max-w-sm"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="bg-[#121212] rounded-t-2xl p-6 w-full"
+              onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">
-                  {language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live Stream'}
-                </h2>
-                <button onClick={() => setShowStartModal(false)}>
-                  <X className="w-6 h-6 text-gray-400" />
-                </button>
-              </div>
+              <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-6" />
+              
+              <h2 className="text-xl font-bold text-white text-center mb-6">
+                {language === 'tr' ? 'Canlı Yayın Başlat' : 'Go Live'}
+              </h2>
 
               <div className="mb-6">
-                <label className="block text-purple-300 text-sm mb-2">
-                  {language === 'tr' ? 'Yayın Başlığı (Opsiyonel)' : 'Stream Title (Optional)'}
+                <label className="block text-white/60 text-sm mb-2">
+                  {language === 'tr' ? 'Yayın başlığı (opsiyonel)' : 'Stream title (optional)'}
                 </label>
                 <input
                   type="text"
                   value={streamTitle}
                   onChange={(e) => setStreamTitle(e.target.value)}
                   placeholder={language === 'tr' ? 'Kahve falı bakıyorum...' : 'Reading coffee fortunes...'}
-                  className="w-full bg-purple-900/30 border border-purple-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-400"
+                  className="w-full bg-white/10 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe2c55]"
                 />
               </div>
 
               <button
                 onClick={startBroadcast}
                 disabled={isStartingStream}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-[#fe2c55] text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isStartingStream ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -635,6 +693,16 @@ export default function VideoStreamPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 10s linear infinite;
+        }
+      `}</style>
     </div>
   )
 }
