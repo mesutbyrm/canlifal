@@ -25,6 +25,13 @@ model User {
   referralCode          String?              @unique
   referralCreditsEarned Int                  @default(0)
   referredById          String?
+  // Profile fields
+  birthDate             DateTime?
+  birthTime             String?              // HH:mm format for rising sign calculation
+  zodiacSign            String?
+  risingSign            String?
+  favoriteTeam          String?
+  lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
   accounts              Account[]
   bannedOthers          ChatBan[]            @relation("Banner")
   bannedIn              ChatBan[]            @relation("BannedUser")

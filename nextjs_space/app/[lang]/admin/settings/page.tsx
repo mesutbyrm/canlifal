@@ -16,7 +16,8 @@ import {
   Loader2,
   Check,
   Clock,
-  Coins
+  Coins,
+  Tv
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -26,6 +27,7 @@ interface PlatformSettings {
   welcome_credits: string
   session_duration_minutes: string
   credits_per_minute: string
+  ad_duration_seconds: string
 }
 
 export default function AdminSettingsPage() {
@@ -39,7 +41,8 @@ export default function AdminSettingsPage() {
     referral_bonus: '50',
     welcome_credits: '10',
     session_duration_minutes: '5',
-    credits_per_minute: '10'
+    credits_per_minute: '10',
+    ad_duration_seconds: '5'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -144,6 +147,14 @@ export default function AdminSettingsPage() {
       icon: Coins,
       min: 1,
       max: 100
+    },
+    {
+      key: 'ad_duration_seconds',
+      label: language === 'tr' ? 'Reklam Süresi (sn)' : 'Ad Duration (sec)',
+      description: language === 'tr' ? 'Canlı fal öncesi gösterilecek reklam süresi' : 'Ad display duration before live session starts',
+      icon: Tv,
+      min: 0,
+      max: 30
     }
   ]
 

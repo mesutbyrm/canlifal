@@ -1,12 +1,12 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Coins, User, ChevronRight, Star, Video, Sparkles } from 'lucide-react'
+import { Coins, User, ChevronRight, Star, Video, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 
 interface UserCredits {
   credits: number
@@ -19,6 +19,18 @@ interface LiveTeller {
   isOnline: boolean
   rating: number
   specialties: string[]
+}
+
+interface DailyHoroscope {
+  hasZodiac: boolean
+  zodiacSign?: string
+  zodiacName?: string
+  zodiacEmoji?: string
+  risingSign?: string
+  risingName?: string
+  horoscope?: string
+  date?: string
+  message?: string
 }
 
 const FORTUNE_CARDS = [
@@ -115,6 +127,9 @@ export default function HomePage() {
   const [credits, setCredits] = useState<number>(0)
   const [greeting, setGreeting] = useState('')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
+  const [horoscope, setHoroscope] = useState<DailyHoroscope | null>(null)
+  const [horoscopeLoading, setHoroscopeLoading] = useState(false)
+  const [horoscopeExpanded, setHoroscopeExpanded] = useState(false)
 
   useEffect(() => {
     // Set greeting based on time
@@ -134,6 +149,14 @@ export default function HomePage() {
         .then(res => res.json())
         .then(data => setCredits(data.credits || 0))
         .catch(() => {})
+      
+      // Fetch daily horoscope
+      setHoroscopeLoading(true)
+      fetch(`/api/horoscope/daily?lang=${language}`)
+        .then(res => res.json())
+        .then(data => setHoroscope(data))
+        .catch(() => {})
+        .finally(() => setHoroscopeLoading(false))
     }
 
     // Fetch online tellers
@@ -146,7 +169,7 @@ export default function HomePage() {
         }
       })
       .catch(() => {})
-  }, [session])
+  }, [session, language])
 
   const featuredCard = FORTUNE_CARDS.find(c => c.featured)
   const regularCards = FORTUNE_CARDS.filter(c => !c.featured)
@@ -168,6 +191,71 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="px-4 pb-8 space-y-4">
+        {/* Daily Horoscope for logged-in users with zodiac */}
+        {session?.user && horoscope?.hasZodiac && horoscope.horoscope && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-purple-900/50 to-pink-900/30 rounded-2xl border border-purple-500/30 overflow-hidden"
+          >
+            <button
+              onClick={() => setHoroscopeExpanded(!horoscopeExpanded)}
+              className="w-full p-4 flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{horoscope.zodiacEmoji}</span>
+                <div>
+                  <h3 className="text-white font-semibold">
+                    {language === 'tr' ? 'Günlük Burcunuz' : 'Your Daily Horoscope'}
+                  </h3>
+                  <p className="text-purple-300 text-sm">
+                    {horoscope.zodiacName} {horoscope.risingName && `• ${language === 'tr' ? 'Yükselen' : 'Rising'}: ${horoscope.risingName}`}
+                  </p>
+                </div>
+              </div>
+              {horoscopeExpanded ? <ChevronUp className="w-5 h-5 text-purple-300" /> : <ChevronDown className="w-5 h-5 text-purple-300" />}
+            </button>
+            <AnimatePresence>
+              {horoscopeExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="px-4 pb-4"
+                >
+                  <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">
+                    {horoscope.horoscope}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* Prompt to add birth date */}
+        {session?.user && horoscope && !horoscope.hasZodiac && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-gold-600/20 to-purple-600/20 rounded-2xl p-4 border border-gold-500/30"
+          >
+            <div className="flex items-center gap-3">
+              <Calendar className="w-8 h-8 text-gold-400" />
+              <div className="flex-1">
+                <p className="text-white font-medium">
+                  {language === 'tr' ? 'Günlük burç yorumunuzu görün!' : 'See your daily horoscope!'}
+                </p>
+                <p className="text-purple-300 text-sm">
+                  {language === 'tr' ? 'Doğum tarihinizi girin' : 'Add your birth date'}
+                </p>
+              </div>
+              <Link href={`/${language}/settings`} className="px-4 py-2 bg-gold-500 text-black rounded-lg text-sm font-medium hover:bg-gold-400">
+                {language === 'tr' ? 'Ekle' : 'Add'}
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Featured Card - Daily Astrology */}
         {featuredCard && (
           <motion.div

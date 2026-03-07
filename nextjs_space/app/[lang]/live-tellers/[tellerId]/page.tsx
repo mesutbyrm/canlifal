@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ArrowLeft,
   Star,
@@ -20,7 +21,8 @@ import {
   Send,
   Check,
   AlertCircle,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react'
 
 interface Teller {
@@ -78,9 +80,17 @@ export default function TellerDetailPage() {
   const [showBooking, setShowBooking] = useState(false)
   const [selectedFortuneType, setSelectedFortuneType] = useState('general')
   const [bookingLoading, setBookingLoading] = useState(false)
-  const [bookingSuccess, setBookingSuccess] = useState(false)
   const [bookingError, setBookingError] = useState('')
   const [userCredits, setUserCredits] = useState(0)
+  
+  // Waiting state
+  const [isWaiting, setIsWaiting] = useState(false)
+  const [waitingSessionId, setWaitingSessionId] = useState<string | null>(null)
+  const [showAd, setShowAd] = useState(false)
+  const [adCountdown, setAdCountdown] = useState(5)
+  const [adDuration, setAdDuration] = useState(5)
+  const [sessionStatus, setSessionStatus] = useState<string>('pending')
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (tellerId) {
@@ -89,7 +99,69 @@ export default function TellerDetailPage() {
         fetchUserCredits()
       }
     }
+    
+    // Fetch ad duration from settings
+    fetch('/api/admin/settings')
+      .then(res => res.json())
+      .then(data => {
+        const adSetting = data.settings?.find((s: any) => s.key === 'ad_duration_seconds')
+        if (adSetting) {
+          setAdDuration(parseInt(adSetting.value) || 5)
+          setAdCountdown(parseInt(adSetting.value) || 5)
+        }
+      })
+      .catch(() => {})
+    
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    }
   }, [tellerId, session])
+
+  // Poll session status when waiting
+  const checkSessionStatus = useCallback(async () => {
+    if (!waitingSessionId) return
+    
+    try {
+      const res = await fetch(`/api/room/${waitingSessionId}`)
+      if (!res.ok) return
+      
+      const data = await res.json()
+      
+      if (data.status === 'active' && data.roomId) {
+        // Session accepted, redirect to room
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+        router.push(`/${language}/live-room/${waitingSessionId}`)
+      } else if (data.status === 'cancelled') {
+        // Session was cancelled/rejected
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+        setIsWaiting(false)
+        setWaitingSessionId(null)
+        setSessionStatus('cancelled')
+        setBookingError(language === 'tr' ? 'Falcı randevunuzu reddetti' : 'Fortune teller rejected your request')
+      }
+    } catch (error) {
+      console.error('Error checking session status:', error)
+    }
+  }, [waitingSessionId, language, router])
+
+  useEffect(() => {
+    if (isWaiting && waitingSessionId && !showAd) {
+      pollIntervalRef.current = setInterval(checkSessionStatus, 2000)
+      return () => {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      }
+    }
+  }, [isWaiting, waitingSessionId, showAd, checkSessionStatus])
+
+  // Ad countdown effect
+  useEffect(() => {
+    if (showAd && adCountdown > 0) {
+      const timer = setTimeout(() => setAdCountdown(adCountdown - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (showAd && adCountdown === 0) {
+      setShowAd(false)
+    }
+  }, [showAd, adCountdown])
 
   const fetchTeller = async () => {
     try {
@@ -148,17 +220,42 @@ export default function TellerDetailPage() {
         throw new Error(data.error || 'Booking failed')
       }
 
-      setBookingSuccess(true)
+      const data = await res.json()
       setUserCredits(prev => prev - teller.pricePerSession)
       
-      // Refresh teller data
-      fetchTeller()
+      // Show ad first, then waiting screen
+      setWaitingSessionId(data.sessionId)
+      setAdCountdown(adDuration)
+      setShowAd(true)
+      setIsWaiting(true)
+      setSessionStatus('pending')
+      
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setBookingError(errorMessage)
     } finally {
       setBookingLoading(false)
     }
+  }
+
+  // Cancel waiting
+  const handleCancelWaiting = async () => {
+    if (!waitingSessionId) return
+    
+    try {
+      await fetch(`/api/fortune-tellers/sessions/${waitingSessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' })
+      })
+    } catch (error) {
+      console.error('Error cancelling session:', error)
+    }
+    
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    setIsWaiting(false)
+    setWaitingSessionId(null)
+    setShowAd(false)
   }
 
   if (loading) {
@@ -306,27 +403,77 @@ export default function TellerDetailPage() {
               {language === 'tr' ? 'Randevu Al' : 'Book a Session'}
             </h2>
 
-            {bookingSuccess ? (
+            {isWaiting ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-green-500/20 border border-green-500/30 rounded-xl p-6 text-center"
+                className="relative"
               >
-                <Check className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  {language === 'tr' ? 'Randevunuz Oluşturuldu!' : 'Session Booked!'}
-                </h3>
-                <p className="text-purple-200 mb-4">
-                  {language === 'tr'
-                    ? `${teller.displayName} ile randevunuz başarıyla oluşturuldu. Falcı en kısa sürede sizinle iletişime geçecektir.`
-                    : `Your session with ${teller.displayName} has been booked successfully. The fortune teller will contact you soon.`}
-                </p>
-                <button
-                  onClick={() => setBookingSuccess(false)}
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                >
-                  {language === 'tr' ? 'Yeni Randevu Al' : 'Book Another Session'}
-                </button>
+                {/* Ad Overlay */}
+                <AnimatePresence>
+                  {showAd && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 z-10 bg-gradient-to-br from-purple-900 to-pink-900 rounded-xl flex flex-col items-center justify-center p-6"
+                    >
+                      <div className="text-center">
+                        <Sparkles className="w-16 h-16 text-gold-400 mx-auto mb-4 animate-pulse" />
+                        <h3 className="text-xl font-semibold text-white mb-2">
+                          {language === 'tr' ? 'Reklam' : 'Advertisement'}
+                        </h3>
+                        <p className="text-purple-200 mb-4">
+                          {language === 'tr' 
+                            ? 'Canlı fal deneyiminiz birazdan başlayacak!'
+                            : 'Your live fortune experience is about to begin!'}
+                        </p>
+                        <div className="w-full max-w-xs mx-auto h-32 bg-gradient-to-r from-gold-600/20 to-purple-600/20 rounded-lg flex items-center justify-center border border-gold-500/30 mb-4">
+                          <span className="text-gold-400 text-lg font-semibold">
+                            🔮 falcı premium 🔮
+                          </span>
+                        </div>
+                        <div className="text-purple-300 text-sm">
+                          {language === 'tr' ? 'Reklam' : 'Ad'}: {adCountdown}s
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Waiting Screen */}
+                <div className="bg-purple-500/20 border border-purple-500/30 rounded-xl p-6 text-center">
+                  <div className="relative w-20 h-20 mx-auto mb-4">
+                    <div className="absolute inset-0 rounded-full border-4 border-purple-500 border-t-gold-400 animate-spin" />
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                      <Video className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {language === 'tr' ? 'Lütfen Bekleyiniz...' : 'Please Wait...'}
+                  </h3>
+                  <p className="text-purple-200 mb-4">
+                    {language === 'tr'
+                      ? `${teller.displayName} randevunuzu onayladığında otomatik olarak odaya bağlanacaksınız.`
+                      : `You will be automatically connected when ${teller.displayName} accepts your request.`}
+                  </p>
+                  
+                  <div className="flex items-center justify-center gap-2 text-purple-300 mb-6">
+                    <Clock className="w-4 h-4 animate-pulse" />
+                    <span className="text-sm">
+                      {language === 'tr' ? 'Falcı bekleniyor...' : 'Waiting for fortune teller...'}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={handleCancelWaiting}
+                    className="px-6 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <X className="w-4 h-4" />
+                    {language === 'tr' ? 'İptal Et' : 'Cancel'}
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <div className="space-y-4">

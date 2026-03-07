@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Home, Sparkles, LogOut } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import TellerIncomingRequest from '@/components/teller-incoming-request'
 
 // Independent layout for live teller dashboard - no navbar from main site
 export default function LiveTellerDashboardLayout({
@@ -51,6 +52,9 @@ export default function LiveTellerDashboardLayout({
       <main className="pt-14">
         {children}
       </main>
+
+      {/* Incoming request modal for fortune tellers */}
+      <TellerIncomingRequest />
     </div>
   )
 }

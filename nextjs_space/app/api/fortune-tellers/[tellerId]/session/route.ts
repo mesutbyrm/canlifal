@@ -88,7 +88,11 @@ export async function POST(
       }
     });
 
-    return NextResponse.json(liveSession, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      sessionId: liveSession.id,
+      session: liveSession 
+    }, { status: 201 });
   } catch (error) {
     console.error('Create session error:', error);
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
