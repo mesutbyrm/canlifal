@@ -5,12 +5,63 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Sparkles, Star, Moon, MessageCircle, Users, Share2, Heart } from 'lucide-react'
+import { Sparkles, Star, Moon, MessageCircle, Users, Share2, Heart, Coffee, Scroll, Eye, Activity } from 'lucide-react'
 import FortuneCard from '@/components/fortune-card'
+import { useEffect, useState } from 'react'
+
+interface PublicStats {
+  fortunes: {
+    total: number
+    byType: Record<string, number>
+  }
+  chat: {
+    rooms: Array<{
+      id: string
+      slug: string
+      nameEn: string
+      nameTr: string
+      icon: string
+      onlineCount: number
+    }>
+    totalOnline: number
+  }
+  social: {
+    totalPosts: number
+    activeUsers: number
+  }
+  users: {
+    total: number
+  }
+}
+
+const FORTUNE_NAMES: Record<string, { tr: string; en: string; icon: string }> = {
+  coffee: { tr: 'Kahve Falı', en: 'Coffee Reading', icon: '☕' },
+  tarot: { tr: 'Tarot', en: 'Tarot', icon: '🎴' },
+  dream: { tr: 'Rüya Tabiri', en: 'Dream', icon: '🌙' },
+  horoscope: { tr: 'Burç Yorumu', en: 'Horoscope', icon: '⭐' },
+  palm: { tr: 'El Falı', en: 'Palm Reading', icon: '✋' },
+  numerology: { tr: 'Numeroloji', en: 'Numerology', icon: '🔢' },
+  angel: { tr: 'Melek Kartları', en: 'Angel Cards', icon: '👼' },
+  aura: { tr: 'Aura Analizi', en: 'Aura Analysis', icon: '✨' },
+  birthchart: { tr: 'Doğum Haritası', en: 'Birth Chart', icon: '🌟' },
+  istikhara: { tr: 'İstihare', en: 'Istikhara', icon: '🤲' },
+  love: { tr: 'Aşk Falı', en: 'Love Fortune', icon: '❤️' },
+  yesno: { tr: 'Evet/Hayır', en: 'Yes/No', icon: '❓' },
+  katina: { tr: 'Katina Falı', en: 'Katina', icon: '🃏' },
+  kursundokme: { tr: 'Kurşun Dökme', en: 'Lead Pouring', icon: '🫠' },
+}
 
 export default function HomePage() {
   const { language } = useLanguage()
   const { data: session } = useSession() || {}
+  const [stats, setStats] = useState<PublicStats | null>(null)
+
+  useEffect(() => {
+    fetch('/api/public-stats')
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch(console.error)
+  }, [])
 
   return (
     <div className="min-h-screen">
@@ -136,6 +187,179 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Live Stats Section */}
+      <section className="py-10 sm:py-12 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-6 sm:mb-8"
+          >
+            <h2 className="font-serif text-xl sm:text-2xl md:text-3xl text-gold-500 gold-glow mb-2">
+              {language === 'tr' ? '📊 Canlı İstatistikler' : '📊 Live Statistics'}
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            {/* Total Users */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/50 border border-purple-500/30 rounded-xl p-4 text-center"
+            >
+              <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-blue-400">{stats?.users?.total ?? 0}</p>
+              <p className="text-deep-purple-300 text-xs sm:text-sm">{language === 'tr' ? 'Üye' : 'Members'}</p>
+            </motion.div>
+
+            {/* Total Fortunes */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/50 border border-purple-500/30 rounded-xl p-4 text-center"
+            >
+              <Sparkles className="w-6 h-6 text-gold-400 mx-auto mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-gold-400">{stats?.fortunes?.total ?? 0}</p>
+              <p className="text-deep-purple-300 text-xs sm:text-sm">{language === 'tr' ? 'Fal Bakıldı' : 'Fortunes Read'}</p>
+            </motion.div>
+
+            {/* Chat Online */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/50 border border-purple-500/30 rounded-xl p-4 text-center"
+            >
+              <MessageCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-green-400">{stats?.chat?.totalOnline ?? 0}</p>
+              <p className="text-deep-purple-300 text-xs sm:text-sm">{language === 'tr' ? 'Sohbette' : 'In Chat'}</p>
+            </motion.div>
+
+            {/* Social Active */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/50 border border-purple-500/30 rounded-xl p-4 text-center"
+            >
+              <Activity className="w-6 h-6 text-pink-400 mx-auto mb-2" />
+              <p className="text-2xl sm:text-3xl font-bold text-pink-400">{stats?.social?.activeUsers ?? 0}</p>
+              <p className="text-deep-purple-300 text-xs sm:text-sm">{language === 'tr' ? 'Sosyal Aktif' : 'Social Active'}</p>
+            </motion.div>
+          </div>
+
+          {/* Fortune Stats */}
+          {stats?.fortunes?.byType && Object.keys(stats.fortunes.byType).length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/30 border border-purple-500/20 rounded-xl p-4 sm:p-6"
+            >
+              <h3 className="text-gold-400 font-serif text-lg sm:text-xl mb-4 text-center">
+                {language === 'tr' ? '🔮 Fal Türlerine Göre' : '🔮 By Fortune Type'}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+                {Object.entries(stats.fortunes.byType)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, count]) => (
+                    <div key={type} className="bg-deep-purple-950/50 rounded-lg p-3 flex items-center gap-2">
+                      <span className="text-xl">{FORTUNE_NAMES[type]?.icon || '🔮'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-deep-purple-200 text-xs truncate">
+                          {FORTUNE_NAMES[type]?.[language] || type}
+                        </p>
+                        <p className="text-gold-400 font-bold text-sm">{count}</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Chat Rooms & Social Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Chat Rooms */}
+            {stats?.chat?.rooms && stats.chat.rooms.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="bg-deep-purple-900/30 border border-purple-500/20 rounded-xl p-4"
+              >
+                <h3 className="text-purple-300 font-medium text-sm mb-3 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
+                </h3>
+                <div className="space-y-2">
+                  {stats.chat.rooms.map(room => (
+                    <Link 
+                      key={room.id} 
+                      href={`/${language}/chat/${room.slug}`}
+                      className="flex items-center justify-between bg-deep-purple-950/50 rounded-lg p-2 hover:bg-deep-purple-800/50 transition-colors"
+                    >
+                      <span className="text-deep-purple-200 text-sm flex items-center gap-2">
+                        <span>{room.icon}</span>
+                        {language === 'tr' ? room.nameTr : room.nameEn}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${room.onlineCount > 0 ? 'bg-green-500/20 text-green-400' : 'bg-deep-purple-700 text-deep-purple-400'}`}>
+                        {room.onlineCount} {language === 'tr' ? 'kişi' : 'online'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Social Stats */}
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+              className="bg-deep-purple-900/30 border border-purple-500/20 rounded-xl p-4"
+            >
+              <h3 className="text-purple-300 font-medium text-sm mb-3 flex items-center gap-2">
+                <Share2 className="w-4 h-4" />
+                {language === 'tr' ? 'Sosyal Aktivite' : 'Social Activity'}
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-deep-purple-950/50 rounded-lg p-3">
+                  <span className="text-deep-purple-200 text-sm flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                    {language === 'tr' ? 'Toplam Paylaşım' : 'Total Posts'}
+                  </span>
+                  <span className="text-gold-400 font-bold">{stats?.social?.totalPosts ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between bg-deep-purple-950/50 rounded-lg p-3">
+                  <span className="text-deep-purple-200 text-sm flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-green-400" />
+                    {language === 'tr' ? 'Bugün Aktif Kullanıcı' : 'Active Users Today'}
+                  </span>
+                  <span className="text-green-400 font-bold">{stats?.social?.activeUsers ?? 0}</span>
+                </div>
+                <Link 
+                  href={`/${language}/social`}
+                  className="block text-center py-2 bg-gold-600/20 text-gold-400 rounded-lg hover:bg-gold-600/30 transition-colors text-sm font-medium"
+                >
+                  {language === 'tr' ? 'Sosyal Akışı Gör →' : 'View Social Feed →'}
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Chat & Social Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 bg-deep-purple-975">
         <div className="max-w-5xl mx-auto">
@@ -176,8 +400,13 @@ export default function HomePage() {
                       <h3 className="font-serif text-xl sm:text-2xl text-gold-400 group-hover:text-gold-300">
                         {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
                       </h3>
-                      <p className="text-purple-300 text-sm">
+                      <p className="text-purple-300 text-sm flex items-center gap-2">
                         {language === 'tr' ? 'Canlı sohbet' : 'Live chat'}
+                        {stats?.chat?.totalOnline ? (
+                          <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">
+                            {stats.chat.totalOnline} {language === 'tr' ? 'çevrimiçi' : 'online'}
+                          </span>
+                        ) : null}
                       </p>
                     </div>
                   </div>
@@ -218,8 +447,13 @@ export default function HomePage() {
                       <h3 className="font-serif text-xl sm:text-2xl text-gold-400 group-hover:text-gold-300">
                         {language === 'tr' ? 'Sosyal Akış' : 'Social Feed'}
                       </h3>
-                      <p className="text-purple-300 text-sm">
+                      <p className="text-purple-300 text-sm flex items-center gap-2">
                         {language === 'tr' ? 'Paylaş & Keşfet' : 'Share & Discover'}
+                        {stats?.social?.totalPosts ? (
+                          <span className="bg-pink-500/20 text-pink-400 text-xs px-2 py-0.5 rounded-full">
+                            {stats.social.totalPosts} {language === 'tr' ? 'paylaşım' : 'posts'}
+                          </span>
+                        ) : null}
                       </p>
                     </div>
                   </div>
