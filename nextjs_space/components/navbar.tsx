@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
@@ -8,24 +8,33 @@ import { useLanguage } from '@/lib/language-context'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
-  Settings, CreditCard, ChevronDown
+  Settings, CreditCard, ChevronDown, Camera, Loader2
 } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import TellerIncomingRequest from './teller-incoming-request'
 
 export default function Navbar() {
-  const { data: session } = useSession() || {}
+  const { data: session, update: updateSession } = useSession() || {}
   const { language, setLanguage, t } = useLanguage()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [credits, setCredits] = useState<number>(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [profileImage, setProfileImage] = useState<string>('')
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (session?.user) {
       fetch('/api/user/credits')
         .then(res => res.json())
         .then(data => setCredits(data.credits || 0))
+        .catch(() => {})
+      
+      // Fetch profile image
+      fetch('/api/user/profile')
+        .then(res => res.json())
+        .then(data => setProfileImage(data.image || ''))
         .catch(() => {})
     }
   }, [session])
@@ -34,33 +43,114 @@ export default function Navbar() {
     setLanguage(language === 'en' ? 'tr' : 'en')
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+      })
+
+      if (!presignedRes.ok) throw new Error('Failed to get upload URL')
+
+      const { uploadUrl, cloud_storage_path } = await presignedRes.json()
+      const url = new URL(uploadUrl)
+      const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders') || ''
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (signedHeaders.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
+
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
+      if (!uploadRes.ok) throw new Error('Failed to upload file')
+
+      const urlRes = await fetch('/api/upload/get-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_storage_path, isPublic: true })
+      })
+
+      if (urlRes.ok) {
+        const { url: imageUrl } = await urlRes.json()
+        
+        // Save to profile
+        const saveRes = await fetch('/api/user/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imageUrl })
+        })
+
+        if (saveRes.ok) {
+          setProfileImage(imageUrl)
+          // Update session
+          if (updateSession) {
+            await updateSession({ image: imageUrl })
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
+    } finally {
+      setUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   // Profile avatar component
-  const ProfileAvatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+  const ProfileAvatar = ({ size = 'md', showCamera = false }: { size?: 'sm' | 'md' | 'lg' | 'xl', showCamera?: boolean }) => {
     const sizeClasses = {
       sm: 'w-8 h-8',
       md: 'w-9 h-9',
-      lg: 'w-10 h-10'
+      lg: 'w-10 h-10',
+      xl: 'w-16 h-16'
     }
 
-    if (session?.user?.image) {
-      return (
-        <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500 flex-shrink-0`}>
-          <Image
-            src={session.user.image}
-            alt={session.user.name || 'Profil'}
-            width={40}
-            height={40}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )
-    }
+    const currentImage = profileImage || session?.user?.image
 
     return (
-      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center border-2 border-gold-500 flex-shrink-0`}>
-        <span className="text-deep-purple-950 font-bold text-sm">
-          {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
-        </span>
+      <div className="relative">
+        {currentImage ? (
+          <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500 flex-shrink-0`}>
+            <Image
+              src={currentImage}
+              alt={session?.user?.name || 'Profil'}
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center border-2 border-gold-500 flex-shrink-0`}>
+            <span className="text-deep-purple-950 font-bold text-sm">
+              {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+            </span>
+          </div>
+        )}
+        {showCamera && (
+          <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors shadow-lg">
+            {uploadingImage ? (
+              <Loader2 className="w-3 h-3 text-black animate-spin" />
+            ) : (
+              <Camera className="w-3 h-3 text-black" />
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+              disabled={uploadingImage}
+            />
+          </label>
+        )}
       </div>
     )
   }
@@ -115,10 +205,19 @@ export default function Navbar() {
                     
                     {/* Profile dropdown */}
                     {showProfileMenu && (
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
-                        <div className="px-4 py-2 border-b border-purple-700">
-                          <p className="text-white font-medium truncate">{session.user.name}</p>
-                          <p className="text-purple-400 text-sm truncate">{session.user.email}</p>
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
+                        <div className="px-4 py-3 border-b border-purple-700">
+                          <div className="flex items-center gap-3">
+                            <ProfileAvatar size="xl" showCamera />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{session.user.name}</p>
+                              <p className="text-purple-400 text-xs truncate">{session.user.email}</p>
+                              <p className="text-gold-400 text-[10px] mt-1 flex items-center gap-1">
+                                <Camera className="w-3 h-3" />
+                                {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                         
                         <Link
