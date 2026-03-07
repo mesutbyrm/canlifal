@@ -134,6 +134,12 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      return
+    }
+
     setUploadingImage(true)
     try {
       // Get presigned URL
@@ -151,12 +157,23 @@ export default function SettingsPage() {
 
       const { uploadUrl, cloud_storage_path } = await presignedRes.json()
 
+      // Check if Content-Disposition is in signed headers
+      const url = new URL(uploadUrl)
+      const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders') || ''
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      
+      if (signedHeaders.includes('content-disposition')) {
+        headers['Content-Disposition'] = 'attachment'
+      }
+
       // Upload to S3
-      await fetch(uploadUrl, {
+      const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type },
+        headers,
         body: file
       })
+
+      if (!uploadRes.ok) throw new Error('Failed to upload file')
 
       // Get public URL
       const urlRes = await fetch('/api/upload/get-url', {
@@ -171,6 +188,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error('Upload error:', err)
+      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
     } finally {
       setUploadingImage(false)
     }
