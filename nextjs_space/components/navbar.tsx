@@ -23,6 +23,7 @@ export default function Navbar() {
   const [profileImage, setProfileImage] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [hasLiveStreams, setHasLiveStreams] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -39,16 +40,21 @@ export default function Navbar() {
         .catch(() => {})
     }
 
-    // Check for live streams
-    const checkLiveStreams = () => {
+    // Check for live streams and online users
+    const checkStats = () => {
       fetch('/api/video-streams')
         .then(res => res.json())
         .then(data => setHasLiveStreams(Array.isArray(data) && data.length > 0))
         .catch(() => {})
+      
+      fetch('/api/public-stats')
+        .then(res => res.json())
+        .then(data => setOnlineUsers(data.chat?.totalOnline || 0))
+        .catch(() => {})
     }
     
-    checkLiveStreams()
-    const interval = setInterval(checkLiveStreams, 30000) // Check every 30 seconds
+    checkStats()
+    const interval = setInterval(checkStats, 30000) // Check every 30 seconds
     return () => clearInterval(interval)
   }, [session])
 
@@ -173,8 +179,14 @@ export default function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Left - Credits */}
+            {/* Left - Credits and Online Users */}
             <div className="flex items-center gap-2">
+              {/* Online Users Badge */}
+              <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
+              </div>
+              
               {session?.user ? (
                 <Link
                   href={`/${language}/credits`}

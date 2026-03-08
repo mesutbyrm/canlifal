@@ -57,6 +57,44 @@ interface Statistics {
   totalUsers: number
   totalFortunes: number
   fortunesByType: Record<string, number>
+  users?: {
+    total: number
+    newToday: number
+    newThisWeek: number
+    newThisMonth: number
+    premium: number
+    vip: number
+  }
+  fortunes?: {
+    total: number
+    totalViews: number
+    byType: Record<string, number>
+  }
+  social?: {
+    totalPosts: number
+    postsToday: number
+    totalLikes: number
+    totalComments: number
+    totalShares: number
+  }
+  messaging?: {
+    totalMessages: number
+    messagesThisWeek: number
+    totalConversations: number
+  }
+  community?: {
+    totalFollows: number
+  }
+  streams?: {
+    total: number
+    active: number
+    totalGiftsValue: number
+    totalLikes: number
+  }
+  economy?: {
+    creditsInCirculation: number
+    creditsSpent: number
+  }
 }
 
 interface VisitorStats {
@@ -78,7 +116,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [creditAmount, setCreditAmount] = useState(10)
-  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads' | 'visitors'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads' | 'visitors' | 'statistics'>('users')
   
   // Chat management state
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -263,10 +301,20 @@ export default function AdminPage() {
                     <MessageCircle className="w-5 h-5" />
                     {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
                   </>
-                ) : (
+                ) : activeTab === 'ads' ? (
                   <>
                     <Megaphone className="w-5 h-5" />
                     {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
+                  </>
+                ) : activeTab === 'visitors' ? (
+                  <>
+                    <TrendingUp className="w-5 h-5" />
+                    {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="w-5 h-5" />
+                    {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
                   </>
                 )}
                 <ChevronDown className="w-4 h-4" />
@@ -304,6 +352,13 @@ export default function AdminPage() {
                 >
                   <TrendingUp className="w-5 h-5" />
                   {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item 
+                  onClick={() => setActiveTab('statistics')}
+                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'statistics' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
                 <Link href={`/${language}/admin/users`}>
@@ -1069,6 +1124,207 @@ export default function AdminPage() {
             <div className="mt-6 flex justify-center">
               <button
                 onClick={fetchVisitorStats}
+                className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors"
+              >
+                <TrendingUp className="w-5 h-5" />
+                {language === 'tr' ? 'Verileri Yenile' : 'Refresh Data'}
+              </button>
+            </div>
+          </motion.div>
+        ) : activeTab === 'statistics' ? (
+          /* All Statistics Tab */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="mb-8">
+              <h2 className="font-serif text-3xl text-gold-400 mb-2">
+                {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
+              </h2>
+              <p className="text-deep-purple-300">
+                {language === 'tr' ? 'Platform genelindeki tüm istatistikler' : 'All platform-wide statistics'}
+              </p>
+            </div>
+
+            {/* User Statistics */}
+            <div className="mb-8">
+              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                {language === 'tr' ? 'Kullanıcı İstatistikleri' : 'User Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Kullanıcı' : 'Total Users'}</p>
+                  <p className="text-2xl font-bold text-gold-400">{statistics?.users?.total ?? statistics?.totalUsers ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bugün Kayıt' : 'New Today'}</p>
+                  <p className="text-2xl font-bold text-green-400">{statistics?.users?.newToday ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</p>
+                  <p className="text-2xl font-bold text-blue-400">{statistics?.users?.newThisWeek ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Ay' : 'This Month'}</p>
+                  <p className="text-2xl font-bold text-purple-400">{statistics?.users?.newThisMonth ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Premium' : 'Premium'}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{statistics?.users?.premium ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'VIP' : 'VIP'}</p>
+                  <p className="text-2xl font-bold text-pink-400">{statistics?.users?.vip ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Fortune Statistics */}
+            <div className="mb-8">
+              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                {language === 'tr' ? 'Fal İstatistikleri' : 'Fortune Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Fal' : 'Total Fortunes'}</p>
+                  <p className="text-2xl font-bold text-gold-400">{statistics?.fortunes?.total ?? statistics?.totalFortunes ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Görüntülenme' : 'Total Views'}</p>
+                  <p className="text-2xl font-bold text-blue-400">{statistics?.fortunes?.totalViews ?? 0}</p>
+                </div>
+              </div>
+              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4">
+                <p className="text-deep-purple-400 text-sm mb-3">{language === 'tr' ? 'Türlere Göre' : 'By Type'}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {Object.entries(statistics?.fortunes?.byType ?? statistics?.fortunesByType ?? {}).map(([type, count]) => (
+                    <div key={type} className="bg-deep-purple-800/50 rounded-lg p-3 text-center">
+                      <p className="text-deep-purple-300 text-xs truncate">{type}</p>
+                      <p className="text-lg font-bold text-gold-400">{count}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Social Statistics */}
+            <div className="mb-8">
+              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                {language === 'tr' ? 'Sosyal İstatistikler' : 'Social Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Paylaşım' : 'Total Posts'}</p>
+                  <p className="text-2xl font-bold text-gold-400">{statistics?.social?.totalPosts ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bugün Paylaşım' : 'Posts Today'}</p>
+                  <p className="text-2xl font-bold text-green-400">{statistics?.social?.postsToday ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Beğeni' : 'Total Likes'}</p>
+                  <p className="text-2xl font-bold text-red-400">{statistics?.social?.totalLikes ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Yorum' : 'Total Comments'}</p>
+                  <p className="text-2xl font-bold text-blue-400">{statistics?.social?.totalComments ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Paylaşım' : 'Total Shares'}</p>
+                  <p className="text-2xl font-bold text-purple-400">{statistics?.social?.totalShares ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Messaging Statistics */}
+            <div className="mb-8">
+              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                {language === 'tr' ? 'Mesajlaşma İstatistikleri' : 'Messaging Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Mesaj' : 'Total Messages'}</p>
+                  <p className="text-2xl font-bold text-gold-400">{statistics?.messaging?.totalMessages ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</p>
+                  <p className="text-2xl font-bold text-blue-400">{statistics?.messaging?.messagesThisWeek ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Sohbet' : 'Total Conversations'}</p>
+                  <p className="text-2xl font-bold text-green-400">{statistics?.messaging?.totalConversations ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Community & Streams */}
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              {/* Community */}
+              <div>
+                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  {language === 'tr' ? 'Topluluk' : 'Community'}
+                </h3>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Takip' : 'Total Follows'}</p>
+                  <p className="text-2xl font-bold text-pink-400">{statistics?.community?.totalFollows ?? 0}</p>
+                </div>
+              </div>
+
+              {/* Live Streams */}
+              <div>
+                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                  <Video className="w-5 h-5" />
+                  {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Yayın' : 'Total Streams'}</p>
+                    <p className="text-2xl font-bold text-gold-400">{statistics?.streams?.total ?? 0}</p>
+                  </div>
+                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Aktif Yayın' : 'Active Streams'}</p>
+                    <p className="text-2xl font-bold text-green-400">{statistics?.streams?.active ?? 0}</p>
+                  </div>
+                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Hediye Değeri' : 'Gift Value'}</p>
+                    <p className="text-2xl font-bold text-yellow-400">{statistics?.streams?.totalGiftsValue ?? 0}</p>
+                  </div>
+                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Yayın Beğenileri' : 'Stream Likes'}</p>
+                    <p className="text-2xl font-bold text-red-400">{statistics?.streams?.totalLikes ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Economy Statistics */}
+            <div className="mb-8">
+              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                {language === 'tr' ? 'Ekonomi İstatistikleri' : 'Economy Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Dolaşımdaki Kredi' : 'Credits in Circulation'}</p>
+                  <p className="text-2xl font-bold text-gold-400">{statistics?.economy?.creditsInCirculation ?? 0}</p>
+                </div>
+                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
+                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Harcanan Kredi' : 'Credits Spent'}</p>
+                  <p className="text-2xl font-bold text-red-400">{statistics?.economy?.creditsSpent ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Refresh Button */}
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={fetchData}
                 className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors"
               >
                 <TrendingUp className="w-5 h-5" />

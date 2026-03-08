@@ -79,11 +79,12 @@ interface CoBroadcastInvite {
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 
-// Get heart level based on like count (1 for 1k, 2 for 2k, etc)
-const getHeartLevel = (count: number): number => {
-  if (count < 1000) return 0
+// Get formatted heart level string based on like count (1k, 2k, etc up to 100k+)
+const getHeartLevelText = (count: number): string => {
+  if (count < 1000) return ''
   const level = Math.floor(count / 1000)
-  return Math.min(level, 100) // Cap at 100
+  if (level > 100) return '100k+'
+  return `${level}k`
 }
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -120,7 +121,7 @@ export default function VideoStreamPage() {
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [coBroadcastInvite, setCoBroadcastInvite] = useState<CoBroadcastInvite | null>(null)
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
-  const [heartLevel, setHeartLevel] = useState(0)
+  const [heartLevelText, setHeartLevelText] = useState('')
   const [showGuestModal, setShowGuestModal] = useState(false)
   const [guestCountdown, setGuestCountdown] = useState(3)
   // VS Mode state
@@ -415,7 +416,7 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setViewerCount(data.viewerCount || 0)
         setLikeCount(data.likeCount || 0)
-        setHeartLevel(getHeartLevel(data.likeCount || 0))
+        setHeartLevelText(getHeartLevelText(data.likeCount || 0))
       }
     } catch (e) {}
   }
@@ -549,7 +550,7 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setIsLiked(data.isLiked)
         setLikeCount(data.likeCount)
-        setHeartLevel(getHeartLevel(data.likeCount))
+        setHeartLevelText(getHeartLevelText(data.likeCount))
       }
     } catch (e) {}
   }
@@ -587,7 +588,7 @@ export default function VideoStreamPage() {
       if (res.ok) {
         const data = await res.json()
         setLikeCount(data.likeCount)
-        setHeartLevel(getHeartLevel(data.likeCount))
+        setHeartLevelText(getHeartLevelText(data.likeCount))
       }
     } catch (e) {
       console.error('Error liking stream:', e)
@@ -969,11 +970,7 @@ export default function VideoStreamPage() {
             )}
           </AnimatePresence>
 
-          {/* Tap to like overlay */}
-          <div 
-            className="absolute inset-0 z-5" 
-            onClick={handleLike}
-          />
+
 
           {/* Top bar - Broadcaster Profile (like broadcaster view) */}
           <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
@@ -1003,11 +1000,11 @@ export default function VideoStreamPage() {
                   <span className="text-white text-xs">{viewerCount}</span>
                 </div>
                 <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full relative">
-                  <div className="relative">
-                    <Heart className="w-4 h-4 text-[#fe2c55]" fill="#fe2c55" />
-                    {heartLevel > 0 && (
-                      <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
-                        {heartLevel}
+                  <div className="relative flex items-center justify-center" style={{ width: heartLevelText ? '28px' : '16px', height: heartLevelText ? '28px' : '16px' }}>
+                    <Heart className={heartLevelText ? "w-7 h-7" : "w-4 h-4"} fill="#fe2c55" stroke="#fe2c55" />
+                    {heartLevelText && (
+                      <span className="absolute inset-0 flex items-center justify-center text-white text-[7px] font-bold drop-shadow-md">
+                        {heartLevelText}
                       </span>
                     )}
                   </div>
