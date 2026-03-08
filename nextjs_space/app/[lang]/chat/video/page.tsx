@@ -137,6 +137,12 @@ export default function VideoStreamPage() {
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([])
   const lastGiftIdRef = useRef<string>('')
   const commentInputRef = useRef<HTMLInputElement>(null)
+  const sessionRef = useRef(session)
+  
+  // Keep session ref up to date
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
 
   // Set viewerId based on whether user is logged in
   useEffect(() => {
@@ -504,7 +510,8 @@ export default function VideoStreamPage() {
 
   // Handle tap anywhere on screen to like
   const handleScreenTap = async (e: React.MouseEvent | React.TouchEvent) => {
-    if (!currentStream || !session?.user) return
+    const currentSession = sessionRef.current
+    if (!currentStream) return
     
     // Check if tap was on an interactive element
     const target = e.target as HTMLElement
@@ -528,7 +535,7 @@ export default function VideoStreamPage() {
     // Add floating heart at tap position
     addFloatingHeart(tapX)
     
-    // Send like to server
+    // Send like to server (both logged-in users and guests can like)
     try {
       const res = await fetch(`/api/video-streams/${currentStream.id}/like`, { method: 'POST' })
       if (res.ok) {
@@ -536,7 +543,9 @@ export default function VideoStreamPage() {
         setLikeCount(data.likeCount)
         setHeartLevel(getHeartLevel(data.likeCount))
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error liking stream:', e)
+    }
   }
 
   const handleSendComment = async () => {
@@ -607,8 +616,11 @@ export default function VideoStreamPage() {
   }
 
   const checkCoBroadcastInvite = async () => {
+    // Use ref for session to avoid stale closure
+    const currentSession = sessionRef.current
+    
     // Only check for logged-in users - guests can't co-broadcast
-    if (!session?.user?.id) return
+    if (!currentSession?.user?.id) return
     
     // Check the current stream for co-broadcast invitation
     const streamId = currentStreamIdRef.current
@@ -618,8 +630,8 @@ export default function VideoStreamPage() {
       const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
       if (res.ok) {
         const coBroadcasters = await res.json()
-        const myInvite = coBroadcasters.find((cb: any) => cb.userId === session.user.id && cb.status === 'invited')
-        if (myInvite) {
+        const myInvite = coBroadcasters.find((cb: any) => cb.userId === currentSession.user.id && cb.status === 'invited')
+        if (myInvite && !coBroadcastInvite) {
           // Get stream info from current state
           const stream = streams.find(s => s.id === streamId)
           if (stream) {
