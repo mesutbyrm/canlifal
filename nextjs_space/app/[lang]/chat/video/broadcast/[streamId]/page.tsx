@@ -1147,9 +1147,10 @@ export default function BroadcastPage() {
             <button
               onClick={handleSendComment}
               disabled={!newComment.trim()}
-              className="px-3 py-2 text-white/60 hover:text-white disabled:opacity-30"
+              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full mr-1 flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4" />
+              <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
             </button>
           </div>
         </div>
