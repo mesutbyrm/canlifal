@@ -515,11 +515,8 @@ export default function VideoStreamPage() {
   }
 
   const checkIfLiked = async (streamId: string) => {
-    if (!session?.user) return
-    try {
-      const res = await fetch(`/api/video-streams/${streamId}/like`)
-      if (res.ok) setIsLiked((await res.json()).isLiked)
-    } catch (e) {}
+    // No longer tracking individual user likes - just display floating hearts on tap
+    // The likeCount is already fetched with the stream stats
   }
 
   const fetchComments = async (streamId: string) => {
@@ -540,7 +537,7 @@ export default function VideoStreamPage() {
   }
 
   const handleLike = async () => {
-    if (!currentStream || !session?.user) return
+    if (!currentStream) return
     for (let i = 0; i < 3; i++) {
       setTimeout(() => addFloatingHeart(), i * 100)
     }
@@ -548,7 +545,6 @@ export default function VideoStreamPage() {
       const res = await fetch(`/api/video-streams/${currentStream.id}/like`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        setIsLiked(data.isLiked)
         setLikeCount(data.likeCount)
         setHeartLevelText(getHeartLevelText(data.likeCount))
       }

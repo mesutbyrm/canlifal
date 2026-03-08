@@ -181,30 +181,38 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-14">
             {/* Left - Credits and Online Users */}
             <div className="flex items-center gap-2">
-              {/* Online Users Badge */}
-              <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
-              </div>
-              
               {session?.user ? (
-                <Link
-                  href={`/${language}/credits`}
-                  className="flex items-center gap-1.5 bg-gold-500/20 px-3 py-1.5 rounded-full hover:bg-gold-500/30 transition-colors"
-                >
-                  <div className="w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center">
-                    <Coins className="w-3 h-3 text-black" />
+                <>
+                  <Link
+                    href={`/${language}/credits`}
+                    className="flex items-center gap-1.5 bg-gold-500/20 px-3 py-1.5 rounded-full hover:bg-gold-500/30 transition-colors"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center">
+                      <Coins className="w-3 h-3 text-black" />
+                    </div>
+                    <span className="text-gold-400 font-semibold text-sm">{credits}</span>
+                  </Link>
+                  {/* Online Users Badge - right of credits */}
+                  <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
                   </div>
-                  <span className="text-gold-400 font-semibold text-sm">{credits}</span>
-                </Link>
+                </>
               ) : (
-                <button
-                  onClick={toggleLanguage}
-                  className="flex items-center gap-1.5 text-purple-300 hover:text-white text-sm"
-                >
-                  <Globe className="w-4 h-4" />
-                  {language.toUpperCase()}
-                </button>
+                <>
+                  <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-1.5 text-purple-300 hover:text-white text-sm"
+                  >
+                    <Globe className="w-4 h-4" />
+                    {language.toUpperCase()}
+                  </button>
+                  {/* Online Users Badge for non-logged users */}
+                  <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
+                  </div>
+                </>
               )}
             </div>
 
