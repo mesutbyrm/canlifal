@@ -196,8 +196,97 @@ export default function BroadcastPage() {
     }
   }
 
+  // Co-host: Poll for broadcaster signals and send our stream
+  const pollCohostSignals = async () => {
+    if (!localStreamRef.current || isUnmountedRef.current || !isCohost) return
+    
+    try {
+      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=cohost`)
+      if (!res.ok) return
+      const signals = await res.json()
+
+      for (const signal of signals) {
+        if (isUnmountedRef.current) break
+        
+        // Broadcaster is requesting our stream
+        if (signal.type === 'cohost-request-stream' && signal.data?.broadcasterId) {
+          const broadcasterId = signal.data.broadcasterId
+          
+          // Create peer connection to send our stream to broadcaster
+          if (!coBroadcasterPcRef.current) {
+            const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
+            coBroadcasterPcRef.current = pc
+
+            // Add our local stream tracks
+            localStreamRef.current.getTracks().forEach(track => {
+              if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
+            })
+
+            pc.onicecandidate = async (event) => {
+              if (event.candidate && !isUnmountedRef.current) {
+                await fetch('/api/video-streams/signal', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    streamId,
+                    type: 'cohost-ice-candidate',
+                    receiverId: broadcasterId,
+                    data: { candidate: event.candidate.toJSON() }
+                  })
+                }).catch(() => {})
+              }
+            }
+
+            // Create and send offer
+            const offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+
+            await fetch('/api/video-streams/signal', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                streamId,
+                type: 'cohost-offer',
+                receiverId: broadcasterId,
+                data: { offer: pc.localDescription?.toJSON() }
+              })
+            })
+          }
+        } else if (signal.type === 'cohost-answer' && signal.data?.answer && coBroadcasterPcRef.current) {
+          // Broadcaster answered our offer
+          try {
+            if (coBroadcasterPcRef.current.signalingState === 'have-local-offer') {
+              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+              
+              // Add pending candidates
+              for (const candidate of coBroadcasterCandidatesRef.current) {
+                try { await coBroadcasterPcRef.current.addIceCandidate(candidate) } catch (e) {}
+              }
+              coBroadcasterCandidatesRef.current = []
+            }
+          } catch (e) {}
+        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && signal.data?.fromBroadcaster && coBroadcasterPcRef.current) {
+          // ICE candidate from broadcaster
+          try {
+            if (coBroadcasterPcRef.current.remoteDescription) {
+              await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            } else {
+              coBroadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (error) {}
+  }
+
   const pollViewerSignals = async () => {
     if (!localStreamRef.current || isUnmountedRef.current) return
+    
+    // If we are cohost, poll for cohost signals instead
+    if (isCohost) {
+      await pollCohostSignals()
+      return
+    }
     
     try {
       const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=broadcaster`)

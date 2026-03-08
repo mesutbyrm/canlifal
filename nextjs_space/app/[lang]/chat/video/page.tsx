@@ -862,24 +862,47 @@ export default function VideoStreamPage() {
                 </div>
               </div>
 
-              {/* Viewer avatars row */}
-              <div className="absolute bottom-36 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
-                {viewers.slice(0, 8).map((viewer) => (
-                  <div key={viewer.id} className="flex-shrink-0">
-                    {viewer.image ? (
-                      <Image src={viewer.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover border border-white/20" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
-                        <span className="text-white text-[10px] font-bold">{viewer.name[0]}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Comments floating above input - Split Mode */}
+              <div className="absolute left-3 bottom-24 right-3 max-h-24 overflow-hidden z-20 space-y-1">
+                {comments.slice(0, 4).map(c => (
+                  <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
+                    <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
+                    <span className="text-white text-xs">{c.content}</span>
+                  </motion.div>
                 ))}
-                {viewers.length > 8 && (
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
-                    <span className="text-white text-[10px]">+{viewers.length - 8}</span>
-                  </div>
-                )}
+              </div>
+
+              {/* Bottom input and actions - Split Mode */}
+              <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+                {/* Comment input */}
+                <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
+                  <input
+                    ref={commentInputRef}
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSendComment()}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
+                    className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full mr-1 flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
+                  </button>
+                </div>
+                
+                {/* Gift button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
+                  title={language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
+                >
+                  <Gift className="w-5 h-5 text-white" />
+                </button>
               </div>
             </div>
           ) : (
