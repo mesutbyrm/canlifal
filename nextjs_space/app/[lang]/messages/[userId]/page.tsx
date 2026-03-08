@@ -205,9 +205,9 @@ export default function ChatPage() {
   const groupedMessages = groupMessagesByDate(messages)
 
   return (
-    <div className="min-h-screen bg-[#0a0118] flex flex-col">
+    <div className="h-screen bg-[#0a0118] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
+      <div className="flex-shrink-0 bg-[#0a0118] border-b border-purple-900/30 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.push(`/${language}/messages`)} className="p-1">
             <ChevronLeft className="w-6 h-6 text-purple-300" />
@@ -243,7 +243,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
         <div className="max-w-lg mx-auto space-y-4">
           {Object.entries(groupedMessages).map(([date, msgs]) => (
             <div key={date}>
@@ -298,7 +298,7 @@ export default function ChatPage() {
 
       {/* Message Input or Restriction */}
       {!canMessage ? (
-        <div className="sticky bottom-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
+        <div className="flex-shrink-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
           <div className="max-w-lg mx-auto text-center">
             <Lock className="w-8 h-8 text-purple-500 mx-auto mb-2" />
             <p className="text-purple-400">
@@ -307,7 +307,7 @@ export default function ChatPage() {
           </div>
         </div>
       ) : requiresRequest && !requestSent ? (
-        <div className="sticky bottom-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
+        <div className="flex-shrink-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
           <div className="max-w-lg mx-auto text-center">
             <Lock className="w-8 h-8 text-purple-500 mx-auto mb-2" />
             <p className="text-purple-400 mb-3">
@@ -323,7 +323,7 @@ export default function ChatPage() {
           </div>
         </div>
       ) : requestSent ? (
-        <div className="sticky bottom-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
+        <div className="flex-shrink-0 bg-[#0a0118] border-t border-purple-900/30 p-4">
           <div className="max-w-lg mx-auto text-center">
             <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
             <p className="text-purple-400">
@@ -334,7 +334,7 @@ export default function ChatPage() {
       ) : (
         <form
           onSubmit={handleSendMessage}
-          className="sticky bottom-0 bg-[#0a0118] border-t border-purple-900/30 p-4"
+          className="flex-shrink-0 bg-[#0a0118] border-t border-purple-900/30 p-4"
         >
           <div className="max-w-lg mx-auto flex items-center gap-2">
             <div className="flex-1 relative">

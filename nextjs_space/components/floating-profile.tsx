@@ -40,7 +40,7 @@ export default function FloatingProfile() {
   const [unreadMessages, setUnreadMessages] = useState(0)
 
   // Don't show on these pages
-  const hiddenPaths = ['/login', '/register', '/live-room', '/live-tellers/dashboard']
+  const hiddenPaths = ['/login', '/register', '/live-room', '/live-tellers/dashboard', '/messages']
   const shouldHide = hiddenPaths.some(path => pathname.includes(path))
 
   useEffect(() => {
