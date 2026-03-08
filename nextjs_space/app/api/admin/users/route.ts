@@ -1,43 +1,75 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
-export const dynamic = 'force-dynamic'
+// GET - List all users with pagination and filtering
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user || (session.user as any).role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const search = searchParams.get('search') || ''
+    const role = searchParams.get('role')
+    const membership = searchParams.get('membership')
+
+    const where: any = {}
     
-    if (!session?.user?.id || session?.user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+    
+    if (role && role !== 'all') {
+      where.role = role
+    }
+    
+    if (membership && membership !== 'all') {
+      where.membership = membership
     }
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        credits: true,
-        role: true,
-        preferredLanguage: true,
-        createdAt: true,
-        _count: {
-          select: { fortunes: true },
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          image: true,
+          credits: true,
+          role: true,
+          membership: true,
+          createdAt: true,
+          _count: {
+            select: {
+              fortunes: true,
+            }
+          }
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.count({ where })
+    ])
 
-    return NextResponse.json({ users })
+    return NextResponse.json({
+      users,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    })
   } catch (error) {
-    console.error('Fetch users error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+    console.error('Error fetching users:', error)
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
   }
 }

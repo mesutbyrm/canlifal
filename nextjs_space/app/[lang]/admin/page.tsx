@@ -306,6 +306,14 @@ export default function AdminPage() {
                   {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
+                <Link href={`/${language}/admin/users`}>
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
+                  >
+                    <Shield className="w-5 h-5" />
+                    {language === 'tr' ? 'Kullanıcı Yönetimi' : 'User Management'}
+                  </DropdownMenu.Item>
+                </Link>
                 <Link href={`/${language}/admin/live-tellers`}>
                   <DropdownMenu.Item 
                     className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
