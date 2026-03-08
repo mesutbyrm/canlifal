@@ -20,7 +20,9 @@ import {
   Users,
   Loader2,
   RefreshCw,
-  Send
+  Send,
+  UserPlus,
+  Phone
 } from 'lucide-react'
 
 interface VideoStream {
@@ -100,6 +102,8 @@ export default function VideoStreamPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
+  const [coBroadcastInvite, setCoBroadcastInvite] = useState<{ streamId: string; broadcasterName: string; broadcasterImage?: string | null } | null>(null)
+  const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -120,7 +124,16 @@ export default function VideoStreamPage() {
     isUnmountedRef.current = false
     fetchStreams()
     fetchGiftTypes()
-    if (session?.user) fetchCredits()
+    if (session?.user) {
+      fetchCredits()
+      // Poll for co-broadcast invitations
+      const inviteInterval = setInterval(checkCoBroadcastInvite, 3000)
+      return () => {
+        isUnmountedRef.current = true
+        clearInterval(inviteInterval)
+        cleanup()
+      }
+    }
     
     const interval = setInterval(fetchStreams, 10000)
     return () => {
@@ -128,7 +141,7 @@ export default function VideoStreamPage() {
       clearInterval(interval)
       cleanup()
     }
-  }, [])
+  }, [session?.user])
 
   useEffect(() => {
     if (currentStream && currentStream.id !== currentStreamIdRef.current) {
@@ -487,20 +500,60 @@ export default function VideoStreamPage() {
 
   const handleStartStream = () => {
     if (!session?.user) { router.push(`/${language}/login`); return }
-    setShowStartModal(true)
+    // Go to setup page with camera preview and beauty effects
+    router.push(`/${language}/chat/video/setup`)
   }
 
-  const startBroadcast = async () => {
-    setIsStartingStream(true)
+  const checkCoBroadcastInvite = async () => {
+    if (!session?.user?.id) return
     try {
-      const res = await fetch('/api/video-streams', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: streamTitle || null })
-      })
-      if (res.ok) router.push(`/${language}/chat/video/broadcast/${(await res.json()).id}`)
+      // Check all live streams for invitations
+      for (const stream of streams) {
+        const res = await fetch(`/api/video-streams/${stream.id}/co-broadcast`)
+        if (res.ok) {
+          const coBroadcasters = await res.json()
+          const myInvite = coBroadcasters.find((cb: any) => cb.userId === session.user.id && cb.status === 'invited')
+          if (myInvite) {
+            setCoBroadcastInvite({
+              streamId: stream.id,
+              broadcasterName: stream.user.name,
+              broadcasterImage: stream.user.image
+            })
+            return
+          }
+        }
+      }
     } catch (e) {}
-    setIsStartingStream(false)
+  }
+
+  const handleAcceptCoBroadcast = async () => {
+    if (!coBroadcastInvite) return
+    setIsAcceptingInvite(true)
+    try {
+      const res = await fetch(`/api/video-streams/${coBroadcastInvite.streamId}/co-broadcast`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept' })
+      })
+      if (res.ok) {
+        // Navigate to broadcast page as co-broadcaster
+        router.push(`/${language}/chat/video/broadcast/${coBroadcastInvite.streamId}?cohost=true`)
+      }
+    } catch (e) {}
+    setIsAcceptingInvite(false)
+    setCoBroadcastInvite(null)
+  }
+
+  const handleRejectCoBroadcast = async () => {
+    if (!coBroadcastInvite) return
+    try {
+      await fetch(`/api/video-streams/${coBroadcastInvite.streamId}/co-broadcast`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' })
+      })
+    } catch (e) {}
+    setCoBroadcastInvite(null)
   }
 
   const formatCount = (n: number) => n >= 1000000 ? (n/1000000).toFixed(1) + 'M' : n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
@@ -771,6 +824,76 @@ export default function VideoStreamPage() {
                 ))}
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Co-Broadcast Invitation Modal */}
+        {coBroadcastInvite && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <UserPlus className="w-10 h-10 text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Ortak Yayın Daveti!' : 'Co-Broadcast Invite!'}
+              </h2>
+              
+              <div className="flex items-center justify-center gap-3 mb-4">
+                {coBroadcastInvite.broadcasterImage ? (
+                  <Image src={coBroadcastInvite.broadcasterImage} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{coBroadcastInvite.broadcasterName[0]}</span>
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-white font-semibold">{coBroadcastInvite.broadcasterName}</p>
+                  <p className="text-white/60 text-sm">
+                    {language === 'tr' ? 'seni ortak yayına davet ediyor' : 'invites you to co-stream'}
+                  </p>
+                </div>
+              </div>
+              
+              <p className="text-white/70 text-sm mb-6">
+                {language === 'tr' 
+                  ? 'Kabul ederseniz kameranız açılacak ve yayına katılacaksınız.'
+                  : 'If you accept, your camera will turn on and you will join the stream.'}
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRejectCoBroadcast}
+                  className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <X className="w-5 h-5" />
+                  {language === 'tr' ? 'Reddet' : 'Decline'}
+                </button>
+                <button
+                  onClick={handleAcceptCoBroadcast}
+                  disabled={isAcceptingInvite}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isAcceptingInvite ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Phone className="w-5 h-5" />
+                      {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

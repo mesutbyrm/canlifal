@@ -66,18 +66,33 @@ export async function GET(
       totalGiftAmount: item.total
     }))
 
-    // Create regular viewer list (anonymous viewers)
-    const regularViewerList = viewers.map((viewer, idx) => ({
-      id: viewer.viewerId,
-      odUserId: null, // Anonymous viewers don't have user accounts
-      name: viewer.viewerName || `Viewer ${idx + 1}`,
-      image: null,
-      hasGifted: false,
-      totalGiftAmount: 0
-    }))
+    // Get user info for logged-in viewers
+    const viewerUserIds = viewers.map(v => v.viewerId).filter(id => !id.startsWith('guest_') && !id.startsWith('viewer_'))
+    const viewerUsers = viewerUserIds.length > 0 ? await prisma.user.findMany({
+      where: { id: { in: viewerUserIds } },
+      select: { id: true, name: true, image: true }
+    }) : []
+
+    // Create regular viewer list
+    const regularViewerList = viewers.map((viewer, idx) => {
+      const user = viewerUsers.find(u => u.id === viewer.viewerId)
+      const isLoggedIn = !viewer.viewerId.startsWith('guest_') && !viewer.viewerId.startsWith('viewer_')
+      return {
+        id: viewer.viewerId,
+        odUserId: isLoggedIn ? viewer.viewerId : null,
+        name: user?.name || viewer.viewerName || `Viewer ${idx + 1}`,
+        image: user?.image || null,
+        hasGifted: false,
+        totalGiftAmount: 0
+      }
+    })
+
+    // Filter out duplicates (users who are both gifters and viewers)
+    const gifterIds = new Set(gifterList.map(g => g.id))
+    const filteredRegularViewers = regularViewerList.filter(v => !gifterIds.has(v.id))
 
     // Combine and return - gifters first, then regular viewers
-    const allViewers = [...gifterList, ...regularViewerList]
+    const allViewers = [...gifterList, ...filteredRegularViewers]
 
     return NextResponse.json(allViewers)
   } catch (error) {

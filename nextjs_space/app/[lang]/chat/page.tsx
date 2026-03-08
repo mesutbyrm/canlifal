@@ -114,30 +114,13 @@ export default function ChatRoomsPage() {
     }
   }
 
-  const handleStartStream = async () => {
+  const handleStartStream = () => {
     if (!session?.user) {
       router.push(`/${language}/login`)
       return
     }
-    
-    setIsStartingStream(true)
-    try {
-      const res = await fetch('/api/video-streams', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: null })
-      })
-      if (res.ok) {
-        const data = await res.json()
-        router.push(`/${language}/chat/video/broadcast/${data.id}`)
-      } else {
-        console.error('Failed to create stream')
-        setIsStartingStream(false)
-      }
-    } catch (error) {
-      console.error('Error creating stream:', error)
-      setIsStartingStream(false)
-    }
+    // Go to setup page with camera preview and beauty effects
+    router.push(`/${language}/chat/video/setup`)
   }
 
   return (
