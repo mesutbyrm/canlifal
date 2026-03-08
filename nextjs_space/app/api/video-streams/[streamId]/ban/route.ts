@@ -13,14 +13,14 @@ export async function GET(
       where: { streamId: params.streamId }
     })
 
-    const userIds = bans.map(b => b.bannedUserId)
+    const userIds = bans.map((b: any) => b.bannedUserId)
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true, image: true }
     })
 
-    const result = bans.map(b => {
-      const user = users.find(u => u.id === b.bannedUserId)
+    const result = bans.map((b: any) => {
+      const user = users.find((u: any) => u.id === b.bannedUserId)
       return { ...b, user }
     })
 

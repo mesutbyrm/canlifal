@@ -107,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 500 // Limit to most recent 500 posts for sitemap
     })
 
-    socialPostPages = posts.flatMap(post => [
+    socialPostPages = posts.flatMap((post: any) => [
       {
         url: `${baseUrl}/tr/fal/${post.id}`,
         lastModified: post.updatedAt || post.createdAt,

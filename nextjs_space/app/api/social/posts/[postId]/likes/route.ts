@@ -70,7 +70,7 @@ export async function POST(
             fromUserId: session.user.id,
             fromUserName: session.user.name || 'Birisi'
           }
-        }).catch(err => console.error('Notification error:', err))
+        }).catch((err: any) => console.error('Notification error:', err))
       }
 
       return NextResponse.json({ liked: true, likeCount })

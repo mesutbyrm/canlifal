@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
     // Mark as processed immediately
     if (signals.length > 0) {
       await prisma.videoStreamSignal.updateMany({
-        where: { id: { in: signals.map(s => s.id) } },
+        where: { id: { in: signals.map((s: any) => s.id) } },
         data: { processed: true }
       })
     }
 
-    const result = signals.map(s => {
+    const result = signals.map((s: any) => {
       let data = {}
       try {
         data = JSON.parse(s.signalData)

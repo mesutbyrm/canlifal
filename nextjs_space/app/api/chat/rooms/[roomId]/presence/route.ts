@@ -32,7 +32,7 @@ export async function GET(
     })
 
     // Get chat roles for all active users
-    const userIds = presences.map(p => p.userId)
+    const userIds = presences.map((p: any) => p.userId)
     const chatRoles = await prisma.chatUserRole.findMany({
       where: {
         roomId,
@@ -40,7 +40,7 @@ export async function GET(
       }
     })
 
-    const roleMap = new Map(chatRoles.map(r => [r.userId, r.role]))
+    const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
 
     // Get room muted status
     const room = await prisma.chatRoom.findUnique({
@@ -48,10 +48,10 @@ export async function GET(
       select: { isMuted: true }
     })
 
-    const activeUsers = presences.map(p => {
+    const activeUsers = presences.map((p: any) => {
       // Site admin gets founder role in chat
       const chatRole = roleMap.get(p.user.id) || (p.user.role === 'admin' ? 'founder' : null)
-      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const roleLevel = chatRole ? ROLE_HIERARCHY[chatRole as keyof typeof ROLE_HIERARCHY] : 0
 
       return {
@@ -67,7 +67,7 @@ export async function GET(
     })
 
     // Sort by role level (highest first), then alphabetically
-    activeUsers.sort((a, b) => {
+    activeUsers.sort((a: any, b: any) => {
       if (b.roleLevel !== a.roleLevel) return b.roleLevel - a.roleLevel
       return a.name.localeCompare(b.name)
     })
@@ -175,7 +175,7 @@ export async function POST(
     })
 
     // Get chat roles for all active users
-    const userIds = presences.map(p => p.userId)
+    const userIds = presences.map((p: any) => p.userId)
     const chatRoles = await prisma.chatUserRole.findMany({
       where: {
         roomId,
@@ -183,7 +183,7 @@ export async function POST(
       }
     })
 
-    const roleMap = new Map(chatRoles.map(r => [r.userId, r.role]))
+    const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
 
     // Get room muted status
     const room = await prisma.chatRoom.findUnique({
@@ -191,9 +191,9 @@ export async function POST(
       select: { isMuted: true }
     })
 
-    const activeUsers = presences.map(p => {
+    const activeUsers = presences.map((p: any) => {
       const chatRole = roleMap.get(p.user.id) || (p.user.role === 'admin' ? 'founder' : null)
-      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const roleLevel = chatRole ? ROLE_HIERARCHY[chatRole as keyof typeof ROLE_HIERARCHY] : 0
 
       return {
@@ -209,7 +209,7 @@ export async function POST(
     })
 
     // Sort by role level (highest first), then alphabetically by nickname
-    activeUsers.sort((a, b) => {
+    activeUsers.sort((a: any, b: any) => {
       if (b.roleLevel !== a.roleLevel) return b.roleLevel - a.roleLevel
       return (a.nickname || a.name).localeCompare(b.nickname || b.name)
     })

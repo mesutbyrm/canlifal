@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Get total gift earnings for each stream
-    const streamsWithEarnings = await Promise.all(streams.map(async (stream) => {
+    const streamsWithEarnings = await Promise.all(streams.map(async (stream: any) => {
       const giftSum = await prisma.streamGift.aggregate({
         where: { streamId: stream.id },
         _sum: { quantity: true }
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         include: { giftType: true }
       })
       
-      const totalCredits = gifts.reduce((sum, g) => sum + g.giftType.price * g.quantity, 0)
+      const totalCredits = gifts.reduce((sum: number, g: any) => sum + g.giftType.price * g.quantity, 0)
       const broadcasterEarnings = Math.floor(totalCredits * 0.7)
       
       return {

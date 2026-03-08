@@ -144,7 +144,10 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
           className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 rounded-2xl border border-purple-500/20 overflow-hidden"
         >
           {/* Author Info */}
-          <div className="p-4 flex items-center gap-3 border-b border-purple-500/10">
+          <Link 
+            href={`/${lang}/profile/${post.user.id}`}
+            className="p-4 flex items-center gap-3 border-b border-purple-500/10 hover:bg-purple-500/5 transition-colors"
+          >
             {post.user.image ? (
               <Image
                 src={post.user.image}
@@ -158,13 +161,13 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 <span className="text-white font-bold text-lg">{post.user.name[0]}</span>
               </div>
             )}
-            <div>
-              <p className="text-white font-semibold">{post.user.name}</p>
+            <div className="flex-1">
+              <p className="text-white font-semibold hover:text-purple-300 transition-colors">{post.user.name}</p>
               <p className="text-white/50 text-sm">
                 {format(new Date(post.createdAt), 'd MMMM yyyy, HH:mm', { locale: lang === 'tr' ? tr : enUS })}
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Image */}
           {post.imageUrl && (

@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Add unread count
     const sessionsWithUnread = await Promise.all(
-      chatSessions.map(async (cs) => {
+      chatSessions.map(async (cs: any) => {
         const unreadCount = await prisma.tellerChatMessage.count({
           where: {
             chatSessionId: cs.id,

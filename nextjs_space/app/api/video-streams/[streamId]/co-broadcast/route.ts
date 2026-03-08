@@ -18,14 +18,14 @@ export async function GET(
     })
 
     // Get user info for each co-broadcaster
-    const userIds = coBroadcasters.map(cb => cb.userId)
+    const userIds = coBroadcasters.map((cb: any) => cb.userId)
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true, image: true }
     })
 
-    const result = coBroadcasters.map(cb => {
-      const user = users.find(u => u.id === cb.userId)
+    const result = coBroadcasters.map((cb: any) => {
+      const user = users.find((u: any) => u.id === cb.userId)
       return {
         ...cb,
         user: user || { id: cb.userId, name: 'Unknown', image: null }

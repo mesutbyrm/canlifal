@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Add fortune count for auto-shared posts
-    const postsWithStats = await Promise.all(posts.map(async (post) => {
+    const postsWithStats = await Promise.all(posts.map(async (post: any) => {
       if (post.isAuto && post.fortuneType) {
         const fortuneCount = await prisma.fortune.count({
           where: { fortuneType: post.fortuneType }

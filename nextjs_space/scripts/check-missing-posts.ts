@@ -8,7 +8,7 @@ async function main() {
     select: { fortuneId: true }
   })
   
-  const sharedIds = autoSharedFortuneIds.map(p => p.fortuneId).filter(Boolean) as string[]
+  const sharedIds = autoSharedFortuneIds.map((p: any) => p.fortuneId).filter(Boolean) as string[]
   
   // Get fortunes that were NOT auto-shared
   const missingFortunes = await prisma.fortune.findMany({

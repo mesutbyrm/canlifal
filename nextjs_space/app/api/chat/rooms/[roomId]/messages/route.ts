@@ -51,7 +51,7 @@ export async function GET(
     })
 
     // Get user roles and nicknames for all message authors
-    const userIds = [...new Set(messages.map(m => m.userId))]
+    const userIds = [...new Set(messages.map((m: any) => m.userId))]
     const [userRoles, userPresences] = await Promise.all([
       prisma.chatUserRole.findMany({
         where: {
@@ -71,13 +71,13 @@ export async function GET(
       })
     ])
 
-    const roleMap = new Map(userRoles.map(r => [r.userId, r.role]))
-    const nicknameMap = new Map(userPresences.map(p => [p.userId, p.nickname]))
+    const roleMap = new Map(userRoles.map((r: any) => [r.userId, r.role]))
+    const nicknameMap = new Map(userPresences.map((p: any) => [p.userId, p.nickname]))
 
     // Add role symbol and nickname to messages
-    const messagesWithRoles = messages.map(msg => {
+    const messagesWithRoles = messages.map((msg: any) => {
       const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
-      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+      const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const nickname = nicknameMap.get(msg.userId) || msg.user.name
       return {
         ...msg,

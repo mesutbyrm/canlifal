@@ -45,7 +45,7 @@ export async function GET(
 
     // Calculate gift totals per user
     const giftTotals: Record<string, { user: { id: string; name: string | null; image: string | null }; total: number }> = {}
-    gifts.forEach(gift => {
+    gifts.forEach((gift: any) => {
       const total = (gift.giftType.price * gift.quantity)
       if (!giftTotals[gift.senderId]) {
         giftTotals[gift.senderId] = {
@@ -67,15 +67,15 @@ export async function GET(
     }))
 
     // Get user info for logged-in viewers
-    const viewerUserIds = viewers.map(v => v.viewerId).filter(id => !id.startsWith('guest_') && !id.startsWith('viewer_'))
+    const viewerUserIds = viewers.map((v: any) => v.viewerId).filter((id: any) => !id.startsWith('guest_') && !id.startsWith('viewer_'))
     const viewerUsers = viewerUserIds.length > 0 ? await prisma.user.findMany({
       where: { id: { in: viewerUserIds } },
       select: { id: true, name: true, image: true }
     }) : []
 
     // Create regular viewer list
-    const regularViewerList = viewers.map((viewer, idx) => {
-      const user = viewerUsers.find(u => u.id === viewer.viewerId)
+    const regularViewerList = viewers.map((viewer: any, idx: number) => {
+      const user = viewerUsers.find((u: any) => u.id === viewer.viewerId)
       const isLoggedIn = !viewer.viewerId.startsWith('guest_') && !viewer.viewerId.startsWith('viewer_')
       return {
         id: viewer.viewerId,
@@ -89,7 +89,7 @@ export async function GET(
 
     // Filter out duplicates (users who are both gifters and viewers)
     const gifterIds = new Set(gifterList.map(g => g.id))
-    const filteredRegularViewers = regularViewerList.filter(v => !gifterIds.has(v.id))
+    const filteredRegularViewers = regularViewerList.filter((v: any) => !gifterIds.has(v.id))
 
     // Combine and return - gifters first, then regular viewers
     const allViewers = [...gifterList, ...filteredRegularViewers]

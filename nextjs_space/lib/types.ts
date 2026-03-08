@@ -1,4 +1,3 @@
-import { User as PrismaUser } from '@prisma/client'
 import 'next-auth'
 
 declare module 'next-auth' {
@@ -43,7 +42,7 @@ export interface Fortune {
   aiResponse: string
   language: string
   createdAt: Date
-  user?: PrismaUser
+  user?: any
 }
 
 export interface Translation {

@@ -42,7 +42,7 @@ export async function GET() {
         by: ['visitorId'],
         where: { visitedAt: { gte: todayStart } },
         _count: true
-      }).then(r => r.length),
+      }).then((r: any) => r.length),
       
       // Week - Total visits
       prisma.siteVisit.count({
@@ -53,7 +53,7 @@ export async function GET() {
         by: ['visitorId'],
         where: { visitedAt: { gte: weekStart } },
         _count: true
-      }).then(r => r.length),
+      }).then((r: any) => r.length),
       
       // Month - Total visits
       prisma.siteVisit.count({
@@ -64,7 +64,7 @@ export async function GET() {
         by: ['visitorId'],
         where: { visitedAt: { gte: monthStart } },
         _count: true
-      }).then(r => r.length),
+      }).then((r: any) => r.length),
       
       // Year - Total visits
       prisma.siteVisit.count({
@@ -75,7 +75,7 @@ export async function GET() {
         by: ['visitorId'],
         where: { visitedAt: { gte: yearStart } },
         _count: true
-      }).then(r => r.length),
+      }).then((r: any) => r.length),
       
       // Country statistics (last 30 days)
       prisma.siteVisit.groupBy({
@@ -97,12 +97,12 @@ export async function GET() {
     ]);
 
     // Format country and city stats
-    const countries = countryStats.map(c => ({
+    const countries = countryStats.map((c: any) => ({
       country: c.country || 'Bilinmiyor',
       count: c._count.country
     }));
 
-    const cities = cityStats.map(c => ({
+    const cities = cityStats.map((c: any) => ({
       city: c.city || 'Bilinmiyor',
       count: c._count.city
     }));

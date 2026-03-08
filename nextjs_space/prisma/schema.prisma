@@ -60,10 +60,28 @@ model User {
   videoStreamComments   VideoStreamComment[]
   videoStreamLikes      VideoStreamLike[]
   streamGifts           StreamGift[]
+  followers             Follow[]             @relation("Following")
+  following             Follow[]             @relation("Follower")
 
   @@index([referralCode])
   @@index([referredById])
+  @@index([username])
   @@map("users")
+}
+
+// Follow relationship between users
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // The user who is following
+  followingId String   // The user being followed
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
 }
 
 model Referral {

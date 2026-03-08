@@ -242,6 +242,15 @@ export default function Navbar() {
                         </div>
                         
                         <Link
+                          href={`/${language}/profile/${session.user.id}`}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <User className="w-4 h-4" />
+                          {language === 'tr' ? 'Profilim' : 'My Profile'}
+                        </Link>
+                        
+                        <Link
                           href={`/${language}/dashboard`}
                           className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
                           onClick={() => setShowProfileMenu(false)}
