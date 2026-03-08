@@ -109,7 +109,7 @@ export default function VideoStreamPage() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const heartIdRef = useRef(0)
   const pcRef = useRef<RTCPeerConnection | null>(null)
-  const viewerIdRef = useRef<string>(`viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+  const viewerIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentStreamIdRef = useRef<string>('')
   const isUnmountedRef = useRef(false)
@@ -117,6 +117,15 @@ export default function VideoStreamPage() {
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([])
   const lastGiftIdRef = useRef<string>('')
   const commentInputRef = useRef<HTMLInputElement>(null)
+
+  // Set viewerId based on whether user is logged in
+  useEffect(() => {
+    if (session?.user?.id) {
+      viewerIdRef.current = session.user.id
+    } else {
+      viewerIdRef.current = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
+  }, [session?.user?.id])
 
   const currentStream = streams[currentIndex]
 
@@ -144,6 +153,9 @@ export default function VideoStreamPage() {
   }, [session?.user])
 
   useEffect(() => {
+    // Wait until viewerId is set before joining
+    if (!viewerIdRef.current) return
+    
     if (currentStream && currentStream.id !== currentStreamIdRef.current) {
       cleanup()
       currentStreamIdRef.current = currentStream.id
@@ -156,7 +168,7 @@ export default function VideoStreamPage() {
       checkIfLiked(currentStream.id)
       fetchComments(currentStream.id)
     }
-  }, [currentIndex, currentStream?.id])
+  }, [currentIndex, currentStream?.id, session?.user?.id])
 
   const cleanup = () => {
     if (pollIntervalRef.current) {
@@ -318,7 +330,10 @@ export default function VideoStreamPage() {
       hasJoinedRef.current = false
       setConnectionStatus('connecting')
       pendingCandidatesRef.current = []
-      viewerIdRef.current = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      // Keep actual user ID for logged-in users, only regenerate for guests
+      if (!session?.user?.id) {
+        viewerIdRef.current = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
       setTimeout(() => joinStream(currentStream.id), 500)
     }
   }

@@ -51,6 +51,7 @@ export default function StreamSetupPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+  const [isVideoReady, setIsVideoReady] = useState(false)
 
   useEffect(() => {
     if (!session?.user) {
@@ -64,10 +65,18 @@ export default function StreamSetupPage() {
   }, [session])
 
   useEffect(() => {
-    if (streamRef.current && videoRef.current) {
+    if (streamRef.current && videoRef.current && isVideoReady) {
       applyBeautyFilter()
     }
-  }, [beautySettings, isVideoOn])
+  }, [beautySettings, isVideoOn, isVideoReady])
+
+  const handleVideoLoaded = () => {
+    setIsVideoReady(true)
+    if (videoRef.current) {
+      videoRef.current.play().catch(console.error)
+    }
+    applyBeautyFilter()
+  }
 
   const startCamera = async () => {
     try {
@@ -84,8 +93,9 @@ export default function StreamSetupPage() {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        // Listen for video to be ready
+        videoRef.current.onloadedmetadata = handleVideoLoaded
       }
-      applyBeautyFilter()
     } catch (error) {
       console.error('Camera error:', error)
       alert(language === 'tr' ? 'Kamera erişimi sağlanamadı' : 'Could not access camera')
@@ -167,6 +177,7 @@ export default function StreamSetupPage() {
   const switchCamera = async () => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newFacing)
+    setIsVideoReady(false)
     stopCamera()
     
     try {
@@ -182,8 +193,8 @@ export default function StreamSetupPage() {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = handleVideoLoaded
       }
-      applyBeautyFilter()
     } catch (e) {
       console.error('Switch camera error:', e)
     }
