@@ -231,6 +231,7 @@ export default function VideoStreamPage() {
           fetchStreamStats(streamId)
           pollGifts(streamId)
           fetchViewers(streamId)
+          fetchComments(streamId)
         }
       }
 
