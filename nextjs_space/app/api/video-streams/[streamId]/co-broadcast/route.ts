@@ -129,6 +129,29 @@ export async function PATCH(
         where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
         data: { status: 'active', joinedAt: new Date() }
       })
+      
+      // Notify broadcaster that user accepted
+      const stream = await prisma.videoStream.findUnique({
+        where: { id: params.streamId },
+        select: { userId: true }
+      })
+      
+      if (stream) {
+        await prisma.notification.create({
+          data: {
+            userId: stream.userId,
+            type: 'co_broadcast_accepted',
+            title: 'Ortak Yayın Kabul Edildi',
+            message: `${session.user.name || 'Kullanıcı'} ortak yayın davetinizi kabul etti!`,
+            data: JSON.stringify({ 
+              streamId: params.streamId, 
+              userName: session.user.name,
+              userImage: session.user.image
+            })
+          }
+        })
+      }
+      
       return NextResponse.json(coBroadcaster)
     }
 
@@ -137,6 +160,30 @@ export async function PATCH(
         where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
         data: { status: 'ended', leftAt: new Date() }
       })
+      
+      // Notify broadcaster that user rejected
+      const stream = await prisma.videoStream.findUnique({
+        where: { id: params.streamId },
+        select: { userId: true }
+      })
+      
+      if (stream) {
+        await prisma.notification.create({
+          data: {
+            userId: stream.userId,
+            type: 'co_broadcast_rejected',
+            title: 'Ortak Yayın Reddedildi',
+            message: `${session.user.name || 'Kullanıcı'} ortak yayın davetinizi reddetti.`,
+            data: JSON.stringify({ 
+              streamId: params.streamId, 
+              userName: session.user.name,
+              userImage: session.user.image,
+              action: action
+            })
+          }
+        })
+      }
+      
       return NextResponse.json({ success: true })
     }
 

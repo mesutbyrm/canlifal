@@ -66,9 +66,23 @@ interface Viewer {
 interface FloatingHeart {
   id: number
   color: string
+  x: number
+}
+
+interface CoBroadcastInvite {
+  streamId: string
+  broadcasterName: string
+  broadcasterImage?: string | null
 }
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
+
+// Get heart level based on like count (1 for 1k, 2 for 2k, etc)
+const getHeartLevel = (count: number): number => {
+  if (count < 1000) return 0
+  const level = Math.floor(count / 1000)
+  return Math.min(level, 100) // Cap at 100
+}
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -102,8 +116,10 @@ export default function VideoStreamPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
-  const [coBroadcastInvite, setCoBroadcastInvite] = useState<{ streamId: string; broadcasterName: string; broadcasterImage?: string | null } | null>(null)
+  const [coBroadcastInvite, setCoBroadcastInvite] = useState<CoBroadcastInvite | null>(null)
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
+  const [heartLevel, setHeartLevel] = useState(0)
+  const lastTapRef = useRef(0)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -345,6 +361,7 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setViewerCount(data.viewerCount || 0)
         setLikeCount(data.likeCount || 0)
+        setHeartLevel(getHeartLevel(data.likeCount || 0))
       }
     } catch (e) {}
   }
@@ -382,11 +399,7 @@ export default function VideoStreamPage() {
         
         // Add floating hearts
         for (let i = 0; i < 5; i++) {
-          setTimeout(() => {
-            const heart = { id: heartIdRef.current++, color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] }
-            setFloatingHearts(prev => [...prev, heart])
-            setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
-          }, i * 100)
+          setTimeout(() => addFloatingHeart(), i * 100)
         }
       }
     } catch (e) {}
@@ -429,14 +442,20 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  const addFloatingHeart = (x?: number) => {
+    const heart = { 
+      id: heartIdRef.current++, 
+      color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
+      x: x ?? Math.random() * 60 + 20 // Random x position between 20-80%
+    }
+    setFloatingHearts(prev => [...prev, heart])
+    setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
+  }
+
   const handleLike = async () => {
     if (!currentStream || !session?.user) return
     for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        const heart = { id: heartIdRef.current++, color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] }
-        setFloatingHearts(prev => [...prev, heart])
-        setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
-      }, i * 100)
+      setTimeout(() => addFloatingHeart(), i * 100)
     }
     try {
       const res = await fetch(`/api/video-streams/${currentStream.id}/like`, { method: 'POST' })
@@ -444,6 +463,44 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setIsLiked(data.isLiked)
         setLikeCount(data.likeCount)
+        setHeartLevel(getHeartLevel(data.likeCount))
+      }
+    } catch (e) {}
+  }
+
+  // Handle tap anywhere on screen to like
+  const handleScreenTap = async (e: React.MouseEvent | React.TouchEvent) => {
+    if (!currentStream || !session?.user) return
+    
+    // Check if tap was on an interactive element
+    const target = e.target as HTMLElement
+    if (target.closest('button') || target.closest('input') || target.closest('a') || target.closest('[data-no-tap]')) {
+      return
+    }
+    
+    // Debounce - min 100ms between taps
+    const now = Date.now()
+    if (now - lastTapRef.current < 100) return
+    lastTapRef.current = now
+    
+    // Get tap position for heart
+    let tapX = 50
+    if ('clientX' in e) {
+      tapX = (e.clientX / window.innerWidth) * 100
+    } else if (e.touches?.length) {
+      tapX = (e.touches[0].clientX / window.innerWidth) * 100
+    }
+    
+    // Add floating heart at tap position
+    addFloatingHeart(tapX)
+    
+    // Send like to server
+    try {
+      const res = await fetch(`/api/video-streams/${currentStream.id}/like`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setLikeCount(data.likeCount)
+        setHeartLevel(getHeartLevel(data.likeCount))
       }
     } catch (e) {}
   }
@@ -493,11 +550,7 @@ export default function VideoStreamPage() {
         
         // Add floating hearts
         for (let i = 0; i < 5; i++) {
-          setTimeout(() => {
-            const heart = { id: heartIdRef.current++, color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] }
-            setFloatingHearts(prev => [...prev, heart])
-            setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
-          }, i * 100)
+          setTimeout(() => addFloatingHeart(), i * 100)
         }
       }
     } catch (e) {}
@@ -586,7 +639,12 @@ export default function VideoStreamPage() {
   }
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div 
+      className="relative w-full h-full bg-black overflow-hidden" 
+      onTouchStart={handleTouchStart} 
+      onTouchEnd={handleTouchEnd}
+      onClick={handleScreenTap}
+    >
       {streams.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center px-8">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 flex items-center justify-center mb-6 animate-pulse">
@@ -705,8 +763,15 @@ export default function VideoStreamPage() {
                   <Users className="w-3.5 h-3.5 text-white" />
                   <span className="text-white text-xs">{viewerCount}</span>
                 </div>
-                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                  <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full relative">
+                  <div className="relative">
+                    <Heart className="w-4 h-4 text-[#fe2c55]" fill="#fe2c55" />
+                    {heartLevel > 0 && (
+                      <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
+                        {heartLevel}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-white text-xs">{formatCount(likeCount)}</span>
                 </div>
               </div>
@@ -742,12 +807,23 @@ export default function VideoStreamPage() {
             </div>
           )}
 
-          {/* Floating Hearts Animation */}
-          <div className="absolute right-4 top-1/3 z-10">
+          {/* Floating Hearts Animation - All over screen */}
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
             <AnimatePresence>
               {floatingHearts.map(heart => (
-                <motion.div key={heart.id} initial={{ opacity: 1, y: 0, x: 0 }} animate={{ opacity: 0, y: -150, x: Math.random() * 30 - 15 }} transition={{ duration: 2 }}
-                  className="absolute bottom-0 right-0">
+                <motion.div 
+                  key={heart.id} 
+                  initial={{ opacity: 1, y: 0, scale: 0.5 }} 
+                  animate={{ 
+                    opacity: 0, 
+                    y: -200, 
+                    scale: 1.2,
+                    x: Math.random() * 40 - 20
+                  }} 
+                  transition={{ duration: 2, ease: 'easeOut' }}
+                  style={{ left: `${heart.x}%`, bottom: '30%' }}
+                  className="absolute"
+                >
                   <Heart className="w-8 h-8" fill={heart.color} stroke={heart.color} />
                 </motion.div>
               ))}

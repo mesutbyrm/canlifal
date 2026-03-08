@@ -68,6 +68,14 @@ interface FloatingHeart {
   color: string
 }
 
+interface ToastMessage {
+  id: string
+  type: 'success' | 'error' | 'info'
+  message: string
+  userName?: string
+  userImage?: string | null
+}
+
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -101,8 +109,10 @@ export default function BroadcastPage() {
   const [showViewers, setShowViewers] = useState(false)
   const [coBroadcasters, setCoBroadcasters] = useState<CoBroadcaster[]>([])
   const [selectedViewer, setSelectedViewer] = useState<Viewer | null>(null)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
+  const lastNotificationIdRef = useRef<string>('')
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const processedViewersRef = useRef<Set<string>>(new Set())
@@ -133,6 +143,7 @@ export default function BroadcastPage() {
         fetchViewers()
         fetchCoBroadcasters()
         pollViewerSignals()
+        fetchNotifications()
       }
     }, 1000)
 
@@ -308,6 +319,46 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
+  const addToast = (type: 'success' | 'error' | 'info', message: string, userName?: string, userImage?: string | null) => {
+    const id = Date.now().toString()
+    setToasts(prev => [...prev, { id, type, message, userName, userImage }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+  }
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications?limit=5')
+      if (res.ok) {
+        const notifications = await res.json()
+        // Check for co-broadcast accept/reject notifications
+        for (const notif of notifications) {
+          if (notif.id === lastNotificationIdRef.current) break
+          if (!lastNotificationIdRef.current) {
+            lastNotificationIdRef.current = notif.id
+            break
+          }
+          
+          if (notif.type === 'co_broadcast_accepted' || notif.type === 'co_broadcast_rejected') {
+            const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data
+            if (data?.streamId === streamId) {
+              addToast(
+                notif.type === 'co_broadcast_accepted' ? 'success' : 'info',
+                notif.type === 'co_broadcast_accepted' 
+                  ? (language === 'tr' ? 'ortak yayın davetini kabul etti!' : 'accepted co-broadcast invite!')
+                  : (language === 'tr' ? 'ortak yayın davetini reddetti.' : 'declined co-broadcast invite.'),
+                data.userName,
+                data.userImage
+              )
+            }
+          }
+        }
+        if (notifications.length > 0) {
+          lastNotificationIdRef.current = notifications[0].id
+        }
+      }
+    } catch (e) {}
+  }
+
   const fetchGifts = async () => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/gifts`)
@@ -476,6 +527,39 @@ export default function BroadcastPage() {
       {/* Gradients */}
       <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
       <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+
+      {/* Toast Notifications */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 space-y-2 w-72">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl backdrop-blur-md border ${
+                toast.type === 'success' 
+                  ? 'bg-green-500/20 border-green-500/30' 
+                  : toast.type === 'error'
+                  ? 'bg-red-500/20 border-red-500/30'
+                  : 'bg-purple-500/20 border-purple-500/30'
+              }`}
+            >
+              {toast.userImage ? (
+                <Image src={toast.userImage} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+              ) : toast.userName && (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">{toast.userName[0]}</span>
+                </div>
+              )}
+              <p className="text-white text-sm flex-1">
+                <span className="font-semibold">{toast.userName}</span>{' '}
+                {toast.message}
+              </p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Center Gift Animation */}
       <AnimatePresence>
