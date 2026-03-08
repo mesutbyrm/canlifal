@@ -28,6 +28,7 @@ model User {
   referralCreditsEarned Int                  @default(0)
   referredById          String?
   // Profile fields
+  bio                   String?              // User bio/about text
   birthDate             DateTime?
   birthTime             String?              // HH:mm format for rising sign calculation
   zodiacSign            String?

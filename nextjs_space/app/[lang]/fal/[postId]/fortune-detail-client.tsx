@@ -320,22 +320,24 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 bg-white/5 rounded-xl p-3"
               >
-                {comment.user.image ? (
-                  <Image
-                    src={comment.user.image}
-                    alt={comment.user.name}
-                    width={36}
-                    height={36}
-                    className="w-9 h-9 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">{comment.user.name[0]}</span>
-                  </div>
-                )}
+                <Link href={`/${lang}/profile/${comment.user.id}`} className="flex-shrink-0">
+                  {comment.user.image ? (
+                    <Image
+                      src={comment.user.image}
+                      alt={comment.user.name}
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-full object-cover hover:ring-2 hover:ring-gold-400 transition-all"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:ring-2 hover:ring-gold-400 transition-all">
+                      <span className="text-white font-bold text-sm">{comment.user.name[0]}</span>
+                    </div>
+                  )}
+                </Link>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-white font-medium text-sm">{comment.user.name}</p>
+                    <Link href={`/${lang}/profile/${comment.user.id}`} className="text-white font-medium text-sm hover:text-gold-400 transition-colors">{comment.user.name}</Link>
                     <p className="text-white/40 text-xs">
                       {format(new Date(comment.createdAt), 'd MMM, HH:mm', { locale: lang === 'tr' ? tr : enUS })}
                     </p>

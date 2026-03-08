@@ -581,16 +581,16 @@ export default function SocialPage() {
                     {/* Post Header */}
                     <div className="p-4 pb-2">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-gold-500 flex items-center justify-center text-white font-bold">
+                        <Link href={`/${language}/profile/${post.user.id}`} className="flex items-center gap-3 group">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-gold-500 flex items-center justify-center text-white font-bold overflow-hidden group-hover:ring-2 group-hover:ring-gold-400 transition-all">
                             {post.user.image ? (
-                              <Image src={post.user.image} alt="" width={40} height={40} className="rounded-full" />
+                              <Image src={post.user.image} alt="" width={40} height={40} className="rounded-full object-cover" />
                             ) : (
                               post.user.name?.charAt(0).toUpperCase()
                             )}
                           </div>
                           <div>
-                            <p className="text-white font-medium">{post.user.name}</p>
+                            <p className="text-white font-medium group-hover:text-gold-400 transition-colors">{post.user.name}</p>
                             <div className="flex items-center gap-2 text-xs text-purple-400">
                               <span>{formatDate(post.createdAt)}</span>
                               {post.fortuneType && (
@@ -604,7 +604,7 @@ export default function SocialPage() {
                               )}
                             </div>
                           </div>
-                        </div>
+                        </Link>
                         {(session?.user?.id === post.userId || session?.user?.role === 'admin') && (
                           <button
                             onClick={() => handleDeletePost(post.id)}
@@ -716,15 +716,15 @@ export default function SocialPage() {
                             {/* Existing Comments */}
                             {post.comments?.map(comment => (
                               <div key={comment.id} className="flex gap-2">
-                                <div className="w-8 h-8 rounded-full bg-purple-500/30 flex items-center justify-center text-white text-sm flex-shrink-0">
+                                <Link href={`/${language}/profile/${comment.user.id}`} className="w-8 h-8 rounded-full bg-purple-500/30 flex items-center justify-center text-white text-sm flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-gold-400 transition-all">
                                   {comment.user.image ? (
-                                    <Image src={comment.user.image} alt="" width={32} height={32} className="rounded-full" />
+                                    <Image src={comment.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />
                                   ) : (
                                     comment.user.name?.charAt(0).toUpperCase()
                                   )}
-                                </div>
+                                </Link>
                                 <div className="bg-purple-500/10 rounded-lg p-2 flex-1">
-                                  <p className="text-xs text-gold-400 font-medium">{comment.user.name}</p>
+                                  <Link href={`/${language}/profile/${comment.user.id}`} className="text-xs text-gold-400 font-medium hover:text-gold-300">{comment.user.name}</Link>
                                   <p className="text-sm text-purple-100">{comment.content}</p>
                                 </div>
                               </div>

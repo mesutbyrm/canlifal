@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         email: true,
         phone: true,
         image: true,
+        bio: true,
         birthDate: true,
         birthTime: true,
         zodiacSign: true,
@@ -53,12 +54,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, username, email, phone, image, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam } = body;
+    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam } = body;
 
     const updateData: any = {};
     
     if (name !== undefined) updateData.name = name;
     if (image !== undefined) updateData.image = image;
+    if (bio !== undefined) updateData.bio = bio || null;
     if (phone !== undefined) updateData.phone = phone || null;
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
     if (birthTime !== undefined) updateData.birthTime = birthTime;
@@ -123,6 +125,7 @@ export async function PATCH(request: NextRequest) {
         email: true,
         phone: true,
         image: true,
+        bio: true,
         birthDate: true,
         birthTime: true,
         zodiacSign: true,

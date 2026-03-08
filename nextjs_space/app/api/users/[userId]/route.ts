@@ -24,6 +24,7 @@ export async function GET(
         name: true,
         username: true,
         image: true,
+        bio: true,
         createdAt: true,
         zodiacSign: true,
         _count: {
@@ -73,6 +74,7 @@ export async function GET(
       name: user.name,
       username: user.username,
       image: user.image,
+      bio: user.bio,
       createdAt: user.createdAt,
       zodiacSign: user.zodiacSign,
       followerCount,

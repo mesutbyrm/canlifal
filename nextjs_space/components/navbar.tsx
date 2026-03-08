@@ -217,11 +217,28 @@ export default function Navbar() {
                 <>
                   <NotificationBell />
                   <div className="relative">
-                    <button
-                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    <Link
+                      href={`/${language}/profile/${session.user.id}`}
                       className="flex items-center"
+                      onClick={(e) => {
+                        // Right click or long press opens dropdown
+                        if (e.ctrlKey || e.metaKey) {
+                          e.preventDefault()
+                          setShowProfileMenu(!showProfileMenu)
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setShowProfileMenu(!showProfileMenu)
+                      }}
                     >
                       <ProfileAvatar size="md" />
+                    </Link>
+                    <button
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-purple-700 rounded-full flex items-center justify-center border border-purple-500"
+                    >
+                      <ChevronDown className="w-3 h-3 text-white" />
                     </button>
                     
                     {/* Profile dropdown */}

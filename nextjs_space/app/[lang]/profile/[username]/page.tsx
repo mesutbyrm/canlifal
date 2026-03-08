@@ -27,7 +27,9 @@ import {
   Radio,
   Edit3,
   Eye,
-  Pin
+  Pin,
+  Camera,
+  Check
 } from 'lucide-react'
 
 interface UserProfile {
@@ -35,6 +37,7 @@ interface UserProfile {
   name: string
   username: string | null
   image: string | null
+  bio: string | null
   zodiacSign: string | null
   createdAt: string
   followerCount: number
@@ -104,32 +107,21 @@ export default function ProfilePage() {
   const [showFollowing, setShowFollowing] = useState(false)
   const [followers, setFollowers] = useState<FollowUser[]>([])
   const [following, setFollowing] = useState<FollowUser[]>([])
-  const [userCredits, setUserCredits] = useState(0)
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioText, setBioText] = useState('')
+  const [savingBio, setSavingBio] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     fetchProfile()
-    if (session?.user) {
-      fetchCredits()
-    }
-  }, [username, session])
+  }, [username])
 
   useEffect(() => {
     if (profile) {
       fetchPosts()
+      setBioText(profile.bio || '')
     }
   }, [profile, activeTab])
-
-  const fetchCredits = async () => {
-    try {
-      const res = await fetch('/api/user/credits')
-      if (res.ok) {
-        const data = await res.json()
-        setUserCredits(data.credits || 0)
-      }
-    } catch (error) {
-      console.error('Error fetching credits:', error)
-    }
-  }
 
   const fetchProfile = async () => {
     try {
@@ -188,6 +180,79 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSaveBio = async () => {
+    if (!profile?.isOwnProfile) return
+    setSavingBio(true)
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: bioText })
+      })
+      if (res.ok) {
+        setProfile(prev => prev ? { ...prev, bio: bioText } : null)
+        setEditingBio(false)
+      }
+    } catch (error) {
+      console.error('Error saving bio:', error)
+    } finally {
+      setSavingBio(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile?.isOwnProfile) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+      })
+
+      if (!presignedRes.ok) throw new Error('Failed to get upload URL')
+
+      const { uploadUrl, cloud_storage_path } = await presignedRes.json()
+      const url = new URL(uploadUrl)
+      const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders') || ''
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (signedHeaders.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
+
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
+      if (!uploadRes.ok) throw new Error('Failed to upload file')
+
+      const urlRes = await fetch('/api/upload/get-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_storage_path, isPublic: true })
+      })
+
+      if (urlRes.ok) {
+        const { url: imageUrl } = await urlRes.json()
+        const saveRes = await fetch('/api/user/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imageUrl })
+        })
+        if (saveRes.ok) {
+          setProfile(prev => prev ? { ...prev, image: imageUrl } : null)
+        }
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const fetchFollowers = async () => {
     if (!profile) return
     try {
@@ -237,7 +302,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
       </div>
     )
@@ -245,8 +310,8 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">
+      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+        <p className="text-gray-400">
           {language === 'tr' ? 'Kullanıcı bulunamadı' : 'User not found'}
         </p>
       </div>
@@ -254,27 +319,24 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0a0118]">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <div className="sticky top-0 z-40 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => router.back()} className="p-1">
-            <ChevronLeft className="w-6 h-6 text-gray-800" />
+            <ChevronLeft className="w-6 h-6 text-purple-300" />
           </button>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">
-              {language === 'tr' ? 'Aklınızdakiler...' : 'On your mind...'}
-            </span>
-          </div>
+          <h1 className="text-lg font-bold text-white">
+            @{profile.username || 'user'}
+          </h1>
           <div className="flex items-center gap-3">
+            {profile.isOwnProfile && (
+              <Link href={`/${language}/settings`} className="p-1">
+                <Settings className="w-5 h-5 text-purple-300" />
+              </Link>
+            )}
             <button className="p-1">
-              <Bookmark className="w-5 h-5 text-gray-800" />
-            </button>
-            <button className="p-1">
-              <Share2 className="w-5 h-5 text-gray-800" />
-            </button>
-            <button className="p-1">
-              <MoreHorizontal className="w-5 h-5 text-gray-800" />
+              <Share2 className="w-5 h-5 text-purple-300" />
             </button>
           </div>
         </div>
@@ -285,9 +347,9 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="flex flex-col items-center">
           <div className="relative">
-            <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500">
-              <div className="w-full h-full rounded-full overflow-hidden bg-white p-0.5">
-                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100">
+            <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-r from-purple-500 via-pink-500 to-gold-500">
+              <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-0.5">
+                <div className="w-full h-full rounded-full overflow-hidden bg-purple-900/50">
                   {profile.image ? (
                     <Image
                       src={profile.image}
@@ -297,38 +359,87 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl text-gray-400 bg-gradient-to-br from-purple-100 to-pink-100">
+                    <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
                       {profile.name.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            {/* Add photo button */}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 bg-[#20d5ec] rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-              <span className="text-white text-xl font-bold leading-none">+</span>
-            </div>
-          </div>
-
-          {/* Name with dropdown */}
-          <div className="mt-4 flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-800">
-              {profile.name}
-            </h2>
-            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            {/* Edit photo button - only for own profile */}
             {profile.isOwnProfile && (
-              <Link href={`/${language}/settings`} className="p-1 bg-gray-100 rounded-full">
-                <Edit3 className="w-4 h-4 text-gray-500" />
-              </Link>
+              <label className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-[#0a0118] cursor-pointer hover:opacity-80 transition-opacity">
+                {uploadingImage ? (
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4 text-white" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                />
+              </label>
             )}
           </div>
 
+          {/* Name */}
+          <h2 className="mt-4 text-xl font-bold text-white">
+            {profile.name}
+          </h2>
+
           {/* Username */}
-          <p className="text-gray-500 mt-0.5">
+          <p className="text-purple-400 mt-0.5">
             @{profile.username || 'user'}
           </p>
+
+          {/* Bio Section */}
+          <div className="mt-3 w-full max-w-xs text-center">
+            {profile.isOwnProfile && editingBio ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value.slice(0, 150))}
+                  placeholder={language === 'tr' ? 'Kendinizi tanıtın...' : 'Tell us about yourself...'}
+                  className="w-full bg-purple-900/30 border border-purple-700 rounded-lg px-3 py-2 text-white text-sm placeholder-purple-400 focus:outline-none focus:border-purple-500 resize-none"
+                  rows={3}
+                  maxLength={150}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-purple-400">{bioText.length}/150</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }}
+                      className="px-3 py-1 text-purple-300 text-sm hover:text-white"
+                    >
+                      {language === 'tr' ? 'İptal' : 'Cancel'}
+                    </button>
+                    <button
+                      onClick={handleSaveBio}
+                      disabled={savingBio}
+                      className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-500 flex items-center gap-1"
+                    >
+                      {savingBio ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      {language === 'tr' ? 'Kaydet' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => profile.isOwnProfile && setEditingBio(true)}
+                className={`text-sm text-purple-200 ${profile.isOwnProfile ? 'cursor-pointer hover:text-white' : ''}`}
+              >
+                {profile.bio || (profile.isOwnProfile ? (
+                  <span className="text-purple-400 italic">
+                    {language === 'tr' ? '+ Bio ekle' : '+ Add bio'}
+                  </span>
+                ) : null)}
+              </div>
+            )}
+          </div>
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-6 mt-5">
@@ -336,65 +447,60 @@ export default function ProfilePage() {
               onClick={handleShowFollowing}
               className="text-center min-w-[70px]"
             >
-              <p className="text-lg font-bold text-gray-800">
+              <p className="text-lg font-bold text-white">
                 {formatNumber(profile.followingCount)}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-purple-400">
                 {language === 'tr' ? 'Takipte' : 'Following'}
               </p>
             </button>
-            <div className="w-px h-8 bg-gray-200" />
+            <div className="w-px h-8 bg-purple-800" />
             <button
               onClick={handleShowFollowers}
               className="text-center min-w-[70px]"
             >
-              <p className="text-lg font-bold text-gray-800">
+              <p className="text-lg font-bold text-white">
                 {formatNumber(profile.followerCount)}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-purple-400">
                 {language === 'tr' ? 'Takipçi' : 'Followers'}
               </p>
             </button>
-            <div className="w-px h-8 bg-gray-200" />
+            <div className="w-px h-8 bg-purple-800" />
             <div className="text-center min-w-[70px]">
-              <p className="text-lg font-bold text-gray-800">
+              <p className="text-lg font-bold text-white">
                 {formatNumber(profile.totalLikes)}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-purple-400">
                 {language === 'tr' ? 'Beğeniler' : 'Likes'}
               </p>
             </div>
           </div>
 
-          {/* Country flags */}
-          <div className="flex items-center gap-1 mt-3">
-            <span className="text-lg">🇹🇷</span>
-          </div>
-
-          {/* Action Buttons - TikTok Style */}
+          {/* Action Buttons */}
           <div className="flex items-center justify-center gap-2 mt-5 w-full max-w-md">
             {profile.isOwnProfile ? (
               <>
                 <Link
                   href={`/${language}/dashboard`}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-gray-200"
+                  className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <Sparkles className="w-4 h-4 text-gold-400" />
                   {language === 'tr' ? 'Fal Stüdyom' : 'Fortune Studio'}
                 </Link>
                 <Link
                   href={`/${language}/credits`}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-gray-200"
+                  className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
-                  <Wallet className="w-4 h-4 text-amber-500" />
+                  <Wallet className="w-4 h-4 text-gold-400" />
                   {language === 'tr' ? 'Bakiye' : 'Balance'}
                 </Link>
                 <Link
                   href={`/${language}/chat/video/setup`}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-gray-200"
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm"
                 >
-                  <Radio className="w-4 h-4 text-red-500" />
-                  {language === 'tr' ? 'CANLI Yayın' : 'Go LIVE'}
+                  <Radio className="w-4 h-4" />
+                  {language === 'tr' ? 'CANLI' : 'LIVE'}
                 </Link>
               </>
             ) : (
@@ -404,8 +510,8 @@ export default function ProfilePage() {
                   disabled={followLoading}
                   className={`flex-1 py-2.5 px-6 font-medium rounded-lg flex items-center justify-center gap-2 text-sm transition-all ${
                     profile.isFollowing
-                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
-                      : 'bg-[#fe2c55] hover:bg-[#e02850] text-white'
+                      ? 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border border-purple-700'
+                      : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
                   }`}
                 >
                   {followLoading ? (
@@ -422,11 +528,11 @@ export default function ProfilePage() {
                     </>
                   )}
                 </button>
-                <button className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200">
-                  <MessageCircle className="w-5 h-5 text-gray-800" />
+                <button className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700">
+                  <MessageCircle className="w-5 h-5 text-purple-300" />
                 </button>
-                <button className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200">
-                  <Share2 className="w-5 h-5 text-gray-800" />
+                <button className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700">
+                  <Share2 className="w-5 h-5 text-purple-300" />
                 </button>
               </>
             )}
@@ -434,15 +540,15 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Tabs - TikTok Style */}
-      <div className="sticky top-12 z-30 bg-white border-b border-gray-100">
+      {/* Tabs */}
+      <div className="sticky top-12 z-30 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
         <div className="max-w-lg mx-auto flex items-center">
           <button
             onClick={() => setActiveTab('posts')}
             className={`flex-1 py-3 flex items-center justify-center border-b-2 transition-colors ${
               activeTab === 'posts'
-                ? 'border-gray-800 text-gray-800'
-                : 'border-transparent text-gray-400'
+                ? 'border-gold-400 text-gold-400'
+                : 'border-transparent text-purple-400'
             }`}
           >
             <Grid3X3 className="w-5 h-5" />
@@ -451,33 +557,19 @@ export default function ProfilePage() {
             onClick={() => setActiveTab('fortunes')}
             className={`flex-1 py-3 flex items-center justify-center border-b-2 transition-colors ${
               activeTab === 'fortunes'
-                ? 'border-gray-800 text-gray-800'
-                : 'border-transparent text-gray-400'
+                ? 'border-gold-400 text-gold-400'
+                : 'border-transparent text-purple-400'
             }`}
           >
-            <Lock className="w-5 h-5" />
-          </button>
-          <button className="flex-1 py-3 flex items-center justify-center text-gray-400">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 1l4 4-4 4" />
-              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-              <path d="M7 23l-4-4 4-4" />
-              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-            </svg>
-          </button>
-          <button className="flex-1 py-3 flex items-center justify-center text-gray-400">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 2L11 13" />
-              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-            </svg>
+            <Sparkles className="w-5 h-5" />
           </button>
           {profile.isOwnProfile && (
             <button
               onClick={() => setActiveTab('saved')}
               className={`flex-1 py-3 flex items-center justify-center border-b-2 transition-colors ${
                 activeTab === 'saved'
-                  ? 'border-gray-800 text-gray-800'
-                  : 'border-transparent text-gray-400'
+                  ? 'border-gold-400 text-gold-400'
+                  : 'border-transparent text-purple-400'
               }`}
             >
               <Bookmark className="w-5 h-5" />
@@ -486,14 +578,14 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Posts Grid - TikTok Style */}
+      {/* Posts Grid */}
       <div className="max-w-lg mx-auto">
         {posts.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <Sparkles className="w-10 h-10 text-gray-300" />
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
+              <Sparkles className="w-10 h-10 text-purple-500" />
             </div>
-            <p className="text-gray-500 text-lg">
+            <p className="text-purple-400 text-lg">
               {activeTab === 'fortunes'
                 ? (language === 'tr' ? 'Henüz paylaşılan fal yok' : 'No shared fortunes yet')
                 : (language === 'tr' ? 'Henüz paylaşım yok' : 'No posts yet')}
@@ -501,7 +593,7 @@ export default function ProfilePage() {
             {profile.isOwnProfile && (
               <Link
                 href={`/${language}/fortunes`}
-                className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 bg-[#fe2c55] text-white font-medium rounded-full"
+                className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-full"
               >
                 <Sparkles className="w-4 h-4" />
                 {language === 'tr' ? 'Fal Baktır' : 'Get Fortune'}
@@ -509,44 +601,18 @@ export default function ProfilePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-px bg-gray-100">
-            {/* Drafts tile - first position for own profile */}
-            {profile.isOwnProfile && activeTab === 'posts' && (
-              <Link
-                href={`/${language}/dashboard`}
-                className="relative aspect-[3/4] bg-gray-800 group"
-              >
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-white text-sm font-medium">
-                    {language === 'tr' ? 'Taslaklar:' : 'Drafts:'} {posts.length}
-                  </div>
-                </div>
-                <div className="absolute inset-0 bg-black/30" />
-                {posts[0] && getPostThumbnail(posts[0]) && (
-                  <Image
-                    src={getPostThumbnail(posts[0])!}
-                    alt="Draft"
-                    fill
-                    className="object-cover opacity-50"
-                  />
-                )}
-                <div className="absolute top-2 left-2 text-white text-xs font-semibold">
-                  {language === 'tr' ? 'Taslaklar:' : 'Drafts:'} {posts.length}
-                </div>
-              </Link>
-            )}
-
+          <div className="grid grid-cols-3 gap-px bg-purple-900/30">
             {posts.map((post, index) => {
               const thumbnail = getPostThumbnail(post)
               const fortuneIcon = post.fortuneType ? FORTUNE_ICONS[post.fortuneType] : null
-              const isPinned = index < 3 // First 3 are pinned style
+              const isPinned = index < 3
               const viewCount = post.viewCount || (post.likeCount * Math.floor(Math.random() * 50 + 10))
 
               return (
                 <Link
                   key={post.id}
                   href={`/${language}/fal/${post.id}`}
-                  className="relative aspect-[3/4] bg-white group"
+                  className="relative aspect-[3/4] bg-[#0a0118] group"
                 >
                   {thumbnail ? (
                     <Image
@@ -556,7 +622,7 @@ export default function ProfilePage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 via-pink-50 to-purple-100">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 via-pink-900/30 to-purple-900/50">
                       <span className="text-5xl">
                         {fortuneIcon || '🔮'}
                       </span>
@@ -565,19 +631,19 @@ export default function ProfilePage() {
 
                   {/* Pinned badge */}
                   {isPinned && (
-                    <div className="absolute top-1 left-1 bg-[#fe2c55] text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                    <div className="absolute top-1 left-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
                       {language === 'tr' ? 'Sabitlendi' : 'Pinned'}
                     </div>
                   )}
 
-                  {/* View count at bottom left */}
+                  {/* View count */}
                   <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-white text-xs font-medium drop-shadow-lg">
                     <Play className="w-3 h-3" fill="white" />
                     <span>{formatNumber(viewCount)}</span>
                   </div>
 
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                     <div className="flex items-center gap-1 text-white">
                       <Heart className="w-5 h-5" fill="white" />
                       <span className="font-semibold">{formatNumber(post.likeCount)}</span>
@@ -601,27 +667,27 @@ export default function ProfilePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            className="fixed inset-0 bg-black/70 z-50 flex items-end"
             onClick={() => setShowFollowers(false)}
           >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="w-full bg-white rounded-t-3xl max-h-[70vh] overflow-hidden"
+              className="w-full bg-[#0a0118] border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800">
+              <div className="p-4 border-b border-purple-800 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">
                   {language === 'tr' ? 'Takipçiler' : 'Followers'}
                 </h3>
-                <button onClick={() => setShowFollowers(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                  <X className="w-6 h-6 text-gray-500" />
+                <button onClick={() => setShowFollowers(false)} className="p-1 hover:bg-purple-900 rounded-full">
+                  <X className="w-6 h-6 text-purple-400" />
                 </button>
               </div>
               <div className="overflow-y-auto max-h-[60vh] p-4">
                 {followers.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">
+                  <p className="text-center text-purple-400 py-8">
                     {language === 'tr' ? 'Henüz takipçi yok' : 'No followers yet'}
                   </p>
                 ) : (
@@ -630,10 +696,10 @@ export default function ProfilePage() {
                       <Link
                         key={user.id}
                         href={`/${language}/profile/${user.username || user.id}`}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors"
+                        className="flex items-center gap-3 p-2 hover:bg-purple-900/50 rounded-xl transition-colors"
                         onClick={() => setShowFollowers(false)}
                       >
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-purple-900">
                           {user.image ? (
                             <Image
                               src={user.image}
@@ -643,16 +709,16 @@ export default function ProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-lg text-gray-400 bg-gradient-to-br from-purple-100 to-pink-100">
+                            <div className="w-full h-full flex items-center justify-center text-lg text-purple-300 bg-gradient-to-br from-purple-800 to-pink-800">
                               {user.name.charAt(0).toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800">{user.name}</p>
-                          <p className="text-sm text-gray-500">@{user.username || 'user'}</p>
+                          <p className="font-semibold text-white">{user.name}</p>
+                          <p className="text-sm text-purple-400">@{user.username || 'user'}</p>
                         </div>
-                        <button className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg">
+                        <button className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg">
                           {language === 'tr' ? 'Takip Et' : 'Follow'}
                         </button>
                       </Link>
@@ -672,27 +738,27 @@ export default function ProfilePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            className="fixed inset-0 bg-black/70 z-50 flex items-end"
             onClick={() => setShowFollowing(false)}
           >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="w-full bg-white rounded-t-3xl max-h-[70vh] overflow-hidden"
+              className="w-full bg-[#0a0118] border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800">
+              <div className="p-4 border-b border-purple-800 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">
                   {language === 'tr' ? 'Takip Edilenler' : 'Following'}
                 </h3>
-                <button onClick={() => setShowFollowing(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                  <X className="w-6 h-6 text-gray-500" />
+                <button onClick={() => setShowFollowing(false)} className="p-1 hover:bg-purple-900 rounded-full">
+                  <X className="w-6 h-6 text-purple-400" />
                 </button>
               </div>
               <div className="overflow-y-auto max-h-[60vh] p-4">
                 {following.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">
+                  <p className="text-center text-purple-400 py-8">
                     {language === 'tr' ? 'Henüz takip edilen yok' : 'Not following anyone yet'}
                   </p>
                 ) : (
@@ -701,10 +767,10 @@ export default function ProfilePage() {
                       <Link
                         key={user.id}
                         href={`/${language}/profile/${user.username || user.id}`}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors"
+                        className="flex items-center gap-3 p-2 hover:bg-purple-900/50 rounded-xl transition-colors"
                         onClick={() => setShowFollowing(false)}
                       >
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-purple-900">
                           {user.image ? (
                             <Image
                               src={user.image}
@@ -714,16 +780,16 @@ export default function ProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-lg text-gray-400 bg-gradient-to-br from-purple-100 to-pink-100">
+                            <div className="w-full h-full flex items-center justify-center text-lg text-purple-300 bg-gradient-to-br from-purple-800 to-pink-800">
                               {user.name.charAt(0).toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800">{user.name}</p>
-                          <p className="text-sm text-gray-500">@{user.username || 'user'}</p>
+                          <p className="font-semibold text-white">{user.name}</p>
+                          <p className="text-sm text-purple-400">@{user.username || 'user'}</p>
                         </div>
-                        <button className="px-4 py-1.5 bg-[#fe2c55] text-white text-sm font-medium rounded-lg">
+                        <button className="px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg">
                           {language === 'tr' ? 'Takip Ediliyor' : 'Following'}
                         </button>
                       </Link>
