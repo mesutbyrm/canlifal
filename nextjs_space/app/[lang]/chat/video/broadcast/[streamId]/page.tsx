@@ -26,8 +26,7 @@ import {
   Ban,
   MoreVertical,
   Phone,
-  PhoneOff,
-  Swords
+  PhoneOff
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
@@ -104,11 +103,10 @@ export default function BroadcastPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
-  // VS Battle state
-  const [myScore, setMyScore] = useState(0)
-  const [coBroadcasterScore, setCoBroadcasterScore] = useState(0)
-  const [battleTimer, setBattleTimer] = useState(0)
+  // Co-broadcast state (no battle/PK)
   const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<CoBroadcaster | null>(null)
+  // Pending co-broadcast request popup
+  const [pendingCoBroadcastRequest, setPendingCoBroadcastRequest] = useState<CoBroadcaster | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
@@ -135,7 +133,6 @@ export default function BroadcastPage() {
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   const isUnmountedRef = useRef(false)
 
   useEffect(() => {
@@ -168,30 +165,9 @@ export default function BroadcastPage() {
       isUnmountedRef.current = true
       clearInterval(durationInterval)
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
-      if (battleTimerRef.current) clearInterval(battleTimerRef.current)
       cleanup()
     }
   }, [session])
-
-  // Start battle timer when co-broadcaster joins
-  useEffect(() => {
-    if (activeCoBroadcaster && !battleTimerRef.current) {
-      setBattleTimer(0)
-      battleTimerRef.current = setInterval(() => {
-        setBattleTimer(prev => prev + 1)
-      }, 1000)
-    } else if (!activeCoBroadcaster && battleTimerRef.current) {
-      clearInterval(battleTimerRef.current)
-      battleTimerRef.current = null
-      setBattleTimer(0)
-    }
-    return () => {
-      if (battleTimerRef.current) {
-        clearInterval(battleTimerRef.current)
-        battleTimerRef.current = null
-      }
-    }
-  }, [activeCoBroadcaster])
 
   const startBroadcast = async () => {
     try {
@@ -355,7 +331,13 @@ export default function BroadcastPage() {
         const data = await res.json()
         setCoBroadcasters(data)
         
-        // Find active co-broadcaster for VS mode
+        // Check for pending/requested co-broadcast requests and show popup
+        const pending = data.find((cb: CoBroadcaster) => cb.status === 'requested')
+        if (pending && !pendingCoBroadcastRequest) {
+          setPendingCoBroadcastRequest(pending)
+        }
+        
+        // Find active co-broadcaster for split-screen mode
         const active = data.find((cb: CoBroadcaster) => cb.status === 'active')
         if (active && !activeCoBroadcaster) {
           setActiveCoBroadcaster(active)
@@ -367,8 +349,6 @@ export default function BroadcastPage() {
         } else if (!active && activeCoBroadcaster) {
           // Co-broadcaster left
           setActiveCoBroadcaster(null)
-          setCoBroadcasterScore(0)
-          setMyScore(0)
           if (coBroadcasterPcRef.current) {
             coBroadcasterPcRef.current.close()
             coBroadcasterPcRef.current = null
@@ -613,6 +593,34 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
+  // Accept co-broadcast request
+  const handleAcceptCoBroadcastRequest = async () => {
+    if (!pendingCoBroadcastRequest) return
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: pendingCoBroadcastRequest.userId, action: 'accept' })
+      })
+      setPendingCoBroadcastRequest(null)
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
+  // Reject co-broadcast request
+  const handleRejectCoBroadcastRequest = async () => {
+    if (!pendingCoBroadcastRequest) return
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: pendingCoBroadcastRequest.userId, action: 'reject' })
+      })
+      setPendingCoBroadcastRequest(null)
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
   const handleMuteCoBroadcaster = async (userId: string, mute: boolean) => {
     try {
       await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
@@ -670,70 +678,55 @@ export default function BroadcastPage() {
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   const activeCoBroadcasters = coBroadcasters.filter(cb => cb.status === 'active')
 
-  // VS Battle Mode - Split screen when co-broadcaster is active
-  const isVSMode = !!activeCoBroadcaster
+  // Split screen mode when co-broadcaster is active (no PK battle)
+  const isSplitMode = !!activeCoBroadcaster
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {isVSMode ? (
+      {isSplitMode ? (
         <>
-          {/* VS Battle Split Screen Layout */}
+          {/* Split Screen Layout - Co-broadcast (no PK battle) */}
           <div className="absolute inset-0 flex flex-col">
             {/* Top Info Bar */}
             <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-3 px-4">
               {/* Broadcaster info */}
-              <div className="flex items-center gap-2">
-                {session?.user?.image ? (
-                  <Image src={session.user.image} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-pink-500" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-pink-500">
-                    <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-white text-sm font-medium">{session?.user?.name}</span>
-                  <div className="flex items-center gap-1">
-                    <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
-                    <span className="text-white/70 text-xs">{formatCount(likeCount)}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {session?.user?.image ? (
+                    <Image src={session.user.image} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-purple-500" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-purple-500">
+                      <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-white text-sm font-medium">{session?.user?.name}</span>
+                    <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        <span className="text-white font-bold">LIVE</span>
+                      </div>
+                      <span className="text-white/60 text-xs ml-1">{formatDuration(duration)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* VS Battle Progress Bar */}
-            <div className="absolute top-16 left-0 right-0 z-30 px-2">
-              <div className="flex items-center gap-1">
-                <span className="text-pink-400 font-bold text-sm w-14 text-right">{myScore}</span>
-                <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden flex">
-                  <motion.div 
-                    className="bg-gradient-to-r from-pink-500 to-pink-400 h-full"
-                    initial={{ width: '50%' }}
-                    animate={{ width: `${myScore + coBroadcasterScore > 0 ? (myScore / (myScore + coBroadcasterScore)) * 100 : 50}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                  <motion.div 
-                    className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-full"
-                    initial={{ width: '50%' }}
-                    animate={{ width: `${myScore + coBroadcasterScore > 0 ? (coBroadcasterScore / (myScore + coBroadcasterScore)) * 100 : 50}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                    <Users className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white text-xs">{viewerCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                    <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+                    <span className="text-white text-xs">{formatCount(likeCount)}</span>
+                  </div>
                 </div>
-                <span className="text-cyan-400 font-bold text-sm w-14">{coBroadcasterScore}</span>
-              </div>
-            </div>
-
-            {/* VS Timer and Icon */}
-            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
-                <Swords className="w-4 h-4 text-yellow-400" />
-                <span className="text-white font-bold text-sm">{formatDuration(battleTimer)}</span>
               </div>
             </div>
 
             {/* Split Screen Videos */}
-            <div className="flex-1 flex">
+            <div className="flex-1 flex pt-16">
               {/* Left Side - My Video */}
-              <div className="relative w-1/2 h-full border-r border-pink-500/50">
+              <div className="relative w-1/2 h-full border-r border-purple-500/30">
                 <video
                   ref={localVideoRef}
                   autoPlay
@@ -752,16 +745,13 @@ export default function BroadcastPage() {
                         <span className="text-white text-xs font-bold">{session?.user?.name?.[0]}</span>
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-xs font-medium truncate">{session?.user?.name}</p>
-                      <p className="text-pink-400 text-[10px]">{myScore} puan</p>
-                    </div>
+                    <p className="text-white text-xs font-medium truncate flex-1">{session?.user?.name}</p>
                   </div>
                 </div>
               </div>
 
               {/* Right Side - Co-Broadcaster Video */}
-              <div className="relative w-1/2 h-full border-l border-cyan-500/50">
+              <div className="relative w-1/2 h-full border-l border-purple-500/30">
                 <video
                   ref={coBroadcasterVideoRef}
                   autoPlay
@@ -774,20 +764,17 @@ export default function BroadcastPage() {
                     {activeCoBroadcaster.user.image ? (
                       <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                         <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-xs font-medium truncate">{activeCoBroadcaster.user.name}</p>
-                      <p className="text-cyan-400 text-[10px]">{coBroadcasterScore} puan</p>
-                    </div>
+                    <p className="text-white text-xs font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
                     {/* Remove co-broadcaster button */}
                     <button 
                       onClick={() => handleRemoveCoBroadcaster(activeCoBroadcaster.userId)}
-                      className="p-1 bg-red-500/20 rounded-full"
+                      className="p-1.5 bg-red-500/20 rounded-full hover:bg-red-500/40"
                     >
-                      <PhoneOff className="w-3 h-3 text-red-400" />
+                      <PhoneOff className="w-3.5 h-3.5 text-red-400" />
                     </button>
                   </div>
                 </div>
@@ -834,7 +821,7 @@ export default function BroadcastPage() {
       )}
 
       {/* Hidden co-broadcaster video for non-VS mode */}
-      {!isVSMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
+      {!isSplitMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
 
       {/* Toast Notifications */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 space-y-2 w-72">
@@ -901,7 +888,7 @@ export default function BroadcastPage() {
       </AnimatePresence>
 
       {/* Top bar - Broadcaster Profile (only in non-VS mode) */}
-      {!isVSMode && (
+      {!isSplitMode && (
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             {/* Profile */}
@@ -956,7 +943,7 @@ export default function BroadcastPage() {
       )}
 
       {/* VS Mode End Button */}
-      {isVSMode && (
+      {isSplitMode && (
         <div className="absolute top-4 right-4 z-40">
           <button 
             onClick={() => setShowEndConfirm(true)} 
@@ -969,7 +956,7 @@ export default function BroadcastPage() {
       )}
 
       {/* Right Side - Co-Broadcasters & Viewer List (only in non-VS mode) */}
-      {!isVSMode && (
+      {!isSplitMode && (
         <div className="absolute right-3 top-20 z-20 space-y-2">
           {/* Active Co-Broadcasters (as circles, old style) */}
           {activeCoBroadcasters.map(cb => (
@@ -1025,14 +1012,14 @@ export default function BroadcastPage() {
       )}
 
       {/* Floating Hearts Animation */}
-      <div className={`absolute ${isVSMode ? 'inset-0' : 'right-20 top-1/3'} z-10 pointer-events-none`}>
+      <div className={`absolute ${isSplitMode ? 'inset-0' : 'right-20 top-1/3'} z-10 pointer-events-none`}>
         <AnimatePresence>
           {floatingHearts.map(heart => (
             <motion.div
               key={heart.id}
               initial={{ opacity: 1, y: 0, scale: 0.5 }}
               animate={{ opacity: 0, y: -80, scale: 1.2 }}
-              className={`absolute ${isVSMode ? (heart.side === 'right' ? 'right-1/4' : 'left-1/4') : 'bottom-0 right-0'} ${isVSMode ? 'bottom-1/3' : ''}`}
+              className={`absolute ${isSplitMode ? (heart.side === 'right' ? 'right-1/4' : 'left-1/4') : 'bottom-0 right-0'} ${isSplitMode ? 'bottom-1/3' : ''}`}
             >
               <Heart className="w-6 h-6" fill={heart.color} color={heart.color} />
             </motion.div>
@@ -1041,7 +1028,7 @@ export default function BroadcastPage() {
       </div>
 
       {/* Gifters - Small badges below top bar (non-VS mode only) */}
-      {!isVSMode && gifters.length > 0 && (
+      {!isSplitMode && gifters.length > 0 && (
         <div className="absolute top-20 left-4 z-20">
           <div className="flex flex-wrap gap-1 max-w-[200px]">
             {gifters.slice(0, 3).map((viewer) => (
@@ -1180,6 +1167,72 @@ export default function BroadcastPage() {
           </button>
         </div>
       </div>
+
+      {/* Co-Broadcast Request Popup */}
+      <AnimatePresence>
+        {pendingCoBroadcastRequest && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <UserPlus className="w-10 h-10 text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Ortak Yayın Talebi!' : 'Co-Broadcast Request!'}
+              </h2>
+              
+              <div className="flex items-center justify-center gap-3 mb-4">
+                {pendingCoBroadcastRequest.user.image ? (
+                  <Image src={pendingCoBroadcastRequest.user.image} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{pendingCoBroadcastRequest.user.name[0]}</span>
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-white font-semibold">{pendingCoBroadcastRequest.user.name}</p>
+                  <p className="text-white/60 text-sm">
+                    {language === 'tr' ? 'ortak yayın yapmak istiyor' : 'wants to co-stream with you'}
+                  </p>
+                </div>
+              </div>
+              
+              <p className="text-white/70 text-sm mb-6">
+                {language === 'tr' 
+                  ? 'Kabul ederseniz ekran ikiye bölünecek ve birlikte yayın yapacaksınız.'
+                  : 'If you accept, the screen will split and you will stream together.'}
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRejectCoBroadcastRequest}
+                  className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-white/20"
+                >
+                  <X className="w-5 h-5" />
+                  {language === 'tr' ? 'Reddet' : 'Decline'}
+                </button>
+                <button
+                  onClick={handleAcceptCoBroadcastRequest}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-green-400 hover:to-green-500"
+                >
+                  <Phone className="w-5 h-5" />
+                  {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* End Modal */}
       <AnimatePresence>

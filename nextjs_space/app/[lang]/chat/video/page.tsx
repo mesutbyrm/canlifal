@@ -24,7 +24,6 @@ import {
   UserPlus,
   Phone,
   LogIn,
-  Swords,
   Share2
 } from 'lucide-react'
 
@@ -127,18 +126,14 @@ export default function VideoStreamPage() {
   const [guestCountdown, setGuestCountdown] = useState(3)
   const [coBroadcastRequested, setCoBroadcastRequested] = useState(false)
   const [requestingCoBroadcast, setRequestingCoBroadcast] = useState(false)
-  // VS Mode state
+  // Co-broadcast state (no PK battle)
   const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<{
     id: string
     userId: string
     user: { id: string; name: string; image: string | null }
   } | null>(null)
-  const [broadcasterScore, setBroadcasterScore] = useState(0)
-  const [coBroadcasterScore, setCoBroadcasterScore] = useState(0)
-  const [battleTimer, setBattleTimer] = useState(0)
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -433,7 +428,7 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
-  // Fetch co-broadcasters for VS mode
+  // Fetch co-broadcasters for split screen mode
   const fetchCoBroadcasters = async (streamId: string) => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
@@ -443,23 +438,9 @@ export default function VideoStreamPage() {
         
         if (active && !activeCoBroadcaster) {
           setActiveCoBroadcaster(active)
-          // Start battle timer
-          if (!battleTimerRef.current) {
-            setBattleTimer(0)
-            battleTimerRef.current = setInterval(() => {
-              setBattleTimer(prev => prev + 1)
-            }, 1000)
-          }
         } else if (!active && activeCoBroadcaster) {
           // Co-broadcaster left
           setActiveCoBroadcaster(null)
-          setBroadcasterScore(0)
-          setCoBroadcasterScore(0)
-          if (battleTimerRef.current) {
-            clearInterval(battleTimerRef.current)
-            battleTimerRef.current = null
-          }
-          setBattleTimer(0)
         }
       }
     } catch (e) {}
@@ -796,9 +777,8 @@ export default function VideoStreamPage() {
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   const regularViewers = viewers.filter(v => !v.hasGifted)
   
-  // VS Battle Mode - Split screen when co-broadcaster is active
-  const isVSMode = !!activeCoBroadcaster
-  const formatBattleTime = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
+  // Split screen mode when co-broadcaster is active
+  const isSplitMode = !!activeCoBroadcaster
 
   if (loading) {
     return (
@@ -828,43 +808,13 @@ export default function VideoStreamPage() {
         </div>
       ) : (
         <>
-          {/* VS Battle Mode - Split Screen */}
-          {isVSMode ? (
+          {/* Split Screen Mode - Co-broadcast (no PK battle) */}
+          {isSplitMode ? (
             <div className="absolute inset-0 flex flex-col">
-              {/* VS Battle Progress Bar */}
-              <div className="absolute top-14 left-0 right-0 z-30 px-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-pink-400 font-bold text-sm w-14 text-right">{broadcasterScore}</span>
-                  <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden flex">
-                    <motion.div 
-                      className="bg-gradient-to-r from-pink-500 to-pink-400 h-full"
-                      initial={{ width: '50%' }}
-                      animate={{ width: `${broadcasterScore + coBroadcasterScore > 0 ? (broadcasterScore / (broadcasterScore + coBroadcasterScore)) * 100 : 50}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                    <motion.div 
-                      className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-full"
-                      initial={{ width: '50%' }}
-                      animate={{ width: `${broadcasterScore + coBroadcasterScore > 0 ? (coBroadcasterScore / (broadcasterScore + coBroadcasterScore)) * 100 : 50}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  </div>
-                  <span className="text-cyan-400 font-bold text-sm w-14">{coBroadcasterScore}</span>
-                </div>
-              </div>
-
-              {/* VS Timer and Icon */}
-              <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
-                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
-                  <Swords className="w-4 h-4 text-yellow-400" />
-                  <span className="text-white font-bold text-sm">{formatBattleTime(battleTimer)}</span>
-                </div>
-              </div>
-
               {/* Split Screen Videos */}
-              <div className="flex-1 flex">
+              <div className="flex-1 flex pt-14">
                 {/* Left Side - Broadcaster Video */}
-                <div className="relative w-1/2 h-full border-r border-pink-500/50">
+                <div className="relative w-1/2 h-full border-r border-purple-500/30">
                   <video
                     ref={remoteVideoRef}
                     autoPlay
@@ -882,16 +832,13 @@ export default function VideoStreamPage() {
                           <span className="text-white text-xs font-bold">{currentStream?.user?.name?.[0]}</span>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate">{currentStream?.user?.name}</p>
-                        <p className="text-pink-400 text-[10px]">{broadcasterScore} puan</p>
-                      </div>
+                      <p className="text-white text-xs font-medium truncate flex-1">{currentStream?.user?.name}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Right Side - Co-Broadcaster Video */}
-                <div className="relative w-1/2 h-full border-l border-cyan-500/50">
+                <div className="relative w-1/2 h-full border-l border-purple-500/30">
                   <video
                     ref={coBroadcasterVideoRef}
                     autoPlay
@@ -905,14 +852,11 @@ export default function VideoStreamPage() {
                       {activeCoBroadcaster.user.image ? (
                         <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                           <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate">{activeCoBroadcaster.user.name}</p>
-                        <p className="text-cyan-400 text-[10px]">{coBroadcasterScore} puan</p>
-                      </div>
+                      <p className="text-white text-xs font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
                     </div>
                   </div>
                 </div>
@@ -944,7 +888,7 @@ export default function VideoStreamPage() {
           )}
           
           {/* Hidden co-broadcaster video for non-VS mode */}
-          {!isVSMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
+          {!isSplitMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
           
           {/* Connection overlay */}
           {connectionStatus !== 'connected' && (
@@ -973,7 +917,7 @@ export default function VideoStreamPage() {
           )}
 
           {/* Gradients (non-VS mode only) */}
-          {!isVSMode && (
+          {!isSplitMode && (
             <>
               <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
