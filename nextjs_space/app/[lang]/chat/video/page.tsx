@@ -524,9 +524,9 @@ export default function VideoStreamPage() {
             <Video className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-white text-xl font-bold mb-2 text-center">{language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}</h2>
-          <p className="text-white/60 text-center text-sm mb-8">{language === 'tr' ? 'İlk yayını sen başlat!' : 'Be the first to go live!'}</p>
-          <button onClick={handleStartStream} className="bg-[#fe2c55] text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
-            <Radio className="w-5 h-5" /> {language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live'}
+          <p className="text-white/60 text-center text-sm mb-8">{language === 'tr' ? 'Sohbet sayfasından yayınları takip edebilirsin' : 'You can follow streams from the chat page'}</p>
+          <button onClick={() => router.push(`/${language}/chat`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
+            <X className="w-5 h-5" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
           </button>
         </div>
       ) : (
@@ -603,74 +603,78 @@ export default function VideoStreamPage() {
             )}
           </AnimatePresence>
 
-          {/* Top bar */}
+          {/* Tap to like overlay */}
+          <div 
+            className="absolute inset-0 z-5" 
+            onClick={handleLike}
+          />
+
+          {/* Top bar - Broadcaster Profile (like broadcaster view) */}
           <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-[#fe2c55] px-2 py-1 rounded">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                <span className="text-white text-xs font-semibold">LIVE</span>
+            <div className="flex items-center gap-3">
+              {/* Profile */}
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
+                {currentStream?.user?.image ? (
+                  <Image src={currentStream.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{currentStream?.user?.name?.[0]?.toUpperCase()}</span>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-white text-xs font-medium">{currentStream?.user?.name}</span>
+                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded w-fit">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    <span className="text-white text-[10px] font-bold">LIVE</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded">
-                <Users className="w-3 h-3 text-white" />
-                <span className="text-white/80 text-xs">{viewerCount}</span>
+              
+              {/* Stats */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                  <Users className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs">{viewerCount}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                  <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+                  <span className="text-white text-xs">{formatCount(likeCount)}</span>
+                </div>
               </div>
             </div>
-            <button onClick={handleStartStream} className="bg-[#fe2c55] text-white text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1">
-              <Radio className="w-3 h-3" /> {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
+            
+            <button onClick={() => router.push(`/${language}/chat`)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
+              <X className="w-4 h-4" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
             </button>
           </div>
 
-          {/* Gifters - Top Right */}
+          {/* Gifters - Small badges below top bar */}
           {gifters.length > 0 && (
-            <div className="absolute top-16 right-3 z-20">
-              <div className="flex flex-col items-end gap-1">
-                {gifters.slice(0, 5).map((viewer, idx) => (
+            <div className="absolute top-20 left-4 z-20">
+              <div className="flex flex-wrap gap-1 max-w-[200px]">
+                {gifters.slice(0, 3).map((viewer) => (
                   <motion.div
                     key={viewer.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-2 py-1 rounded-full"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full"
                   >
                     {viewer.image ? (
-                      <Image src={viewer.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                      <Image src={viewer.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
                     ) : (
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
                         <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
                       </div>
                     )}
-                    <span className="text-white text-xs font-medium">{viewer.name}</span>
-                    <span className="text-yellow-400 text-[10px]">🎁 {viewer.totalGiftAmount}</span>
+                    <span className="text-yellow-400 text-[10px]">🎁{viewer.totalGiftAmount}</span>
                   </motion.div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Regular Viewers - Bottom Right */}
-          {regularViewers.length > 0 && (
-            <div className="absolute bottom-32 right-3 z-20">
-              <div className="flex flex-col items-end gap-1">
-                {regularViewers.slice(0, 5).map((viewer) => (
-                  <div
-                    key={viewer.id}
-                    className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full"
-                  >
-                    {viewer.image ? (
-                      <Image src={viewer.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
-                        <span className="text-white text-[8px]">{viewer.name[0]}</span>
-                      </div>
-                    )}
-                    <span className="text-white/70 text-[10px]">{viewer.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Floating Hearts */}
-          <div className="absolute bottom-40 right-4 z-10">
+          {/* Floating Hearts Animation */}
+          <div className="absolute right-4 top-1/3 z-10">
             <AnimatePresence>
               {floatingHearts.map(heart => (
                 <motion.div key={heart.id} initial={{ opacity: 1, y: 0, x: 0 }} animate={{ opacity: 0, y: -150, x: Math.random() * 30 - 15 }} transition={{ duration: 2 }}
@@ -681,29 +685,15 @@ export default function VideoStreamPage() {
             </AnimatePresence>
           </div>
 
-          {/* Right side actions */}
-          <div className="absolute right-3 bottom-40 flex flex-col items-center gap-5 z-20">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-1 overflow-hidden border-2 border-white">
-                {currentStream?.user?.image ? (
-                  <Image src={currentStream.user.image} alt="" width={48} height={48} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-white font-bold">{currentStream?.user?.name?.[0]}</span>
-                )}
-              </div>
-              <Plus className="w-5 h-5 bg-[#fe2c55] rounded-full text-white p-0.5 mx-auto -mt-2 relative z-10" />
-            </div>
-            <button onClick={handleLike} className="flex flex-col items-center">
-              <Heart className={`w-9 h-9 ${isLiked ? 'fill-[#fe2c55] text-[#fe2c55]' : 'text-white'}`} />
-              <span className="text-white text-xs mt-0.5">{formatCount(likeCount)}</span>
-            </button>
-            <button onClick={() => setIsMuted(!isMuted)} className="flex flex-col items-center">
-              {isMuted ? <VolumeX className="w-8 h-8 text-white" /> : <Volume2 className="w-8 h-8 text-white" />}
+          {/* Mute button - top right corner below exit */}
+          <div className="absolute top-16 right-4 z-20">
+            <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }} className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
+              {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
             </button>
           </div>
 
           {/* Comments floating above input */}
-          <div className="absolute left-3 bottom-24 right-20 max-h-32 overflow-hidden z-10 space-y-1">
+          <div className="absolute left-3 bottom-24 right-3 max-h-32 overflow-hidden z-10 space-y-1">
             {comments.slice(0, 5).map(c => (
               <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
                 <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
@@ -712,16 +702,10 @@ export default function VideoStreamPage() {
             ))}
           </div>
 
-          {/* Bottom info */}
-          <div className="absolute bottom-20 left-3 right-20 z-20">
-            <p className="text-white font-bold text-base">@{currentStream?.user?.name}</p>
-            {currentStream?.title && <p className="text-white/80 text-sm line-clamp-1 mt-0.5">{currentStream.title}</p>}
-          </div>
-
           {/* Bottom input and gift - Always visible */}
-          <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20">
+          <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
             <button
-              onClick={() => setShowGifts(true)}
+              onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
               className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
             >
               <Gift className="w-5 h-5 text-white" />
@@ -732,11 +716,12 @@ export default function VideoStreamPage() {
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendComment()}
+                onClick={(e) => e.stopPropagation()}
                 placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
                 className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
               />
               <button
-                onClick={handleSendComment}
+                onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
                 disabled={!newComment.trim()}
                 className="px-3 py-2 text-white/60 hover:text-white disabled:opacity-30"
               >
@@ -789,24 +774,6 @@ export default function VideoStreamPage() {
         )}
       </AnimatePresence>
 
-      {/* Start Stream Modal */}
-      <AnimatePresence>
-        {showStartModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/90 z-40 flex items-center justify-center p-6">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-deep-purple-900 rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-white text-xl font-bold mb-4">{language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live Stream'}</h3>
-              <input value={streamTitle} onChange={e => setStreamTitle(e.target.value)} placeholder={language === 'tr' ? 'Yayın başlığı (opsiyonel)' : 'Stream title (optional)'}
-                className="w-full bg-white/10 text-white rounded-xl px-4 py-3 mb-4 placeholder:text-white/40 focus:outline-none" />
-              <div className="flex gap-3">
-                <button onClick={() => setShowStartModal(false)} className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
-                <button onClick={startBroadcast} disabled={isStartingStream} className="flex-1 bg-[#fe2c55] text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
-                  {isStartingStream ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Radio className="w-5 h-5" />{language === 'tr' ? 'Başlat' : 'Start'}</>}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
