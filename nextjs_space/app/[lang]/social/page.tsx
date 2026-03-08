@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import YouTubeSearchModal from '@/components/youtube-search-modal'
@@ -335,11 +335,13 @@ export default function SocialPage() {
   }
 
   const handleShare = (platform: string, post: SocialPost) => {
-    const url = `${window.location.origin}/${language}/social?post=${post.id}`
+    // Use SEO-friendly fortune detail page URL
+    const url = `${window.location.origin}/${language}/fal/${post.id}`
     // TikTok-friendly short text (under 150 chars with hashtags)
+    const fortuneLabel = FORTUNE_LABELS[post.fortuneType || 'text']?.[language] || ''
     const shortText = post.content.substring(0, 80) + (post.content.length > 80 ? '...' : '')
-    const tiktokText = `${shortText} #falci #fal #keşfet #fortune`
-    const text = post.content.substring(0, 100) + (post.content.length > 100 ? '...' : '')
+    const tiktokText = `${fortuneLabel} ${shortText} #falci #fal #keşfet #fortune #tarot #burç`
+    const text = `${fortuneLabel}: ${post.content.substring(0, 100)}` + (post.content.length > 100 ? '...' : '')
 
     switch (platform) {
       case 'twitter':
@@ -666,29 +668,39 @@ export default function SocialPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="px-4 py-3 border-t border-purple-500/10 flex items-center gap-6">
-                      <button
-                        onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-2 transition-colors ${
-                          isLiked(post) ? 'text-red-400' : 'text-purple-400 hover:text-red-400'
-                        }`}
+                    <div className="px-4 py-3 border-t border-purple-500/10 flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <button
+                          onClick={() => handleLike(post.id)}
+                          className={`flex items-center gap-2 transition-colors ${
+                            isLiked(post) ? 'text-red-400' : 'text-purple-400 hover:text-red-400'
+                          }`}
+                        >
+                          <Heart className={`w-5 h-5 ${isLiked(post) ? 'fill-current' : ''}`} />
+                          <span>{post._count.likes}</span>
+                        </button>
+                        <button
+                          onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+                          className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          <span>{post._count.comments}</span>
+                        </button>
+                        <button
+                          onClick={() => setShareModal(post.id)}
+                          className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
+                        >
+                          <Share2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                      {/* View Fortune Link for SEO */}
+                      <Link
+                        href={`/${language}/fal/${post.id}`}
+                        className="flex items-center gap-1 text-xs text-purple-400/70 hover:text-gold-400 transition-colors"
                       >
-                        <Heart className={`w-5 h-5 ${isLiked(post) ? 'fill-current' : ''}`} />
-                        <span>{post._count.likes}</span>
-                      </button>
-                      <button
-                        onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-                        className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        <span>{post._count.comments}</span>
-                      </button>
-                      <button
-                        onClick={() => setShareModal(post.id)}
-                        className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
-                      >
-                        <Share2 className="w-5 h-5" />
-                      </button>
+                        <ExternalLink className="w-3 h-3" />
+                        {language === 'tr' ? 'Detay' : 'Details'}
+                      </Link>
                     </div>
 
                     {/* Comments Section */}
