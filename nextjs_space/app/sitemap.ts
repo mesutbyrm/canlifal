@@ -115,7 +115,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       },
       {
-        url: `${baseUrl}/en/fortune/${post.id}`,
+        url: `${baseUrl}/en/fal/${post.id}`,
         lastModified: post.updatedAt || post.createdAt,
         changeFrequency: 'weekly' as const,
         priority: 0.7,
