@@ -120,7 +120,10 @@ export default function VideoStreamPage() {
   const [coBroadcastInvite, setCoBroadcastInvite] = useState<CoBroadcastInvite | null>(null)
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
   const [heartLevel, setHeartLevel] = useState(0)
+  const [showGuestModal, setShowGuestModal] = useState(false)
+  const [guestCountdown, setGuestCountdown] = useState(3)
   const lastTapRef = useRef(0)
+  const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -182,8 +185,40 @@ export default function VideoStreamPage() {
       setViewerCount(currentStream.viewerCount)
       checkIfLiked(currentStream.id)
       fetchComments(currentStream.id)
+      
+      // Start guest timer if not logged in
+      if (!session?.user) {
+        setGuestCountdown(3)
+        setShowGuestModal(false)
+        
+        // Clear any existing timer
+        if (guestTimerRef.current) {
+          clearInterval(guestTimerRef.current)
+        }
+        
+        // Start countdown
+        guestTimerRef.current = setInterval(() => {
+          setGuestCountdown(prev => {
+            if (prev <= 1) {
+              if (guestTimerRef.current) clearInterval(guestTimerRef.current)
+              setShowGuestModal(true)
+              return 0
+            }
+            return prev - 1
+          })
+        }, 1000)
+      }
     }
   }, [currentIndex, currentStream?.id, session?.user?.id])
+  
+  // Cleanup guest timer on unmount
+  useEffect(() => {
+    return () => {
+      if (guestTimerRef.current) {
+        clearInterval(guestTimerRef.current)
+      }
+    }
+  }, [])
 
   const cleanup = () => {
     if (pollIntervalRef.current) {
@@ -572,28 +607,33 @@ export default function VideoStreamPage() {
   }
 
   const checkCoBroadcastInvite = async () => {
-    // Check for both logged-in users AND guests using viewerId
-    const checkUserId = session?.user?.id || viewerIdRef.current
-    if (!checkUserId) return
+    // Only check for logged-in users - guests can't co-broadcast
+    if (!session?.user?.id) return
+    
+    // Check the current stream for co-broadcast invitation
+    const streamId = currentStreamIdRef.current
+    if (!streamId) return
     
     try {
-      // Check all live streams for invitations
-      for (const stream of streams) {
-        const res = await fetch(`/api/video-streams/${stream.id}/co-broadcast`)
-        if (res.ok) {
-          const coBroadcasters = await res.json()
-          const myInvite = coBroadcasters.find((cb: any) => cb.userId === checkUserId && cb.status === 'invited')
-          if (myInvite) {
+      const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
+      if (res.ok) {
+        const coBroadcasters = await res.json()
+        const myInvite = coBroadcasters.find((cb: any) => cb.userId === session.user.id && cb.status === 'invited')
+        if (myInvite) {
+          // Get stream info from current state
+          const stream = streams.find(s => s.id === streamId)
+          if (stream) {
             setCoBroadcastInvite({
               streamId: stream.id,
               broadcasterName: stream.user.name,
               broadcasterImage: stream.user.image
             })
-            return
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error checking co-broadcast invite:', e)
+    }
   }
 
   const handleAcceptCoBroadcast = async () => {
@@ -692,6 +732,22 @@ export default function VideoStreamPage() {
           {/* Gradients */}
           <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
           <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+
+          {/* Guest countdown badge */}
+          {!session?.user && guestCountdown > 0 && !showGuestModal && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2"
+              >
+                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                  {guestCountdown}
+                </div>
+                <span>{language === 'tr' ? 'Misafir izleme' : 'Guest preview'}</span>
+              </motion.div>
+            </div>
+          )}
 
           {/* Center Gift Animation */}
           <AnimatePresence>
@@ -1017,6 +1073,75 @@ export default function VideoStreamPage() {
                   </div>
                 </>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Guest Registration Modal - shows after 3 seconds for non-logged in users */}
+        {showGuestModal && !session?.user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/95 z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+                <Video className="w-10 h-10 text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'İzlemeye Devam Et!' : 'Continue Watching!'}
+              </h2>
+              
+              <p className="text-white/70 text-sm mb-4">
+                {language === 'tr' 
+                  ? 'Canlı yayınları izlemeye devam etmek, yorum yapmak ve hediye göndermek için üye ol!'
+                  : 'Sign up to continue watching live streams, comment and send gifts!'}
+              </p>
+              
+              <div className="bg-white/10 rounded-xl p-3 mb-6">
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <div className="text-center">
+                    <Gift className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                    <span className="text-white/60">{language === 'tr' ? 'Hediye Gönder' : 'Send Gifts'}</span>
+                  </div>
+                  <div className="text-center">
+                    <MessageCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                    <span className="text-white/60">{language === 'tr' ? 'Yorum Yap' : 'Comment'}</span>
+                  </div>
+                  <div className="text-center">
+                    <Heart className="w-5 h-5 text-red-400 mx-auto mb-1" />
+                    <span className="text-white/60">{language === 'tr' ? 'Beğen' : 'Like'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => router.push(`/${language}/register`)}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-5 h-5" />
+                  {language === 'tr' ? 'Üye Ol' : 'Sign Up'}
+                </button>
+                <button
+                  onClick={() => router.push(`/${language}/login`)}
+                  className="w-full bg-white/10 text-white py-3 rounded-xl font-semibold"
+                >
+                  {language === 'tr' ? 'Zaten üyeyim, giriş yap' : 'Already a member? Sign In'}
+                </button>
+                <button
+                  onClick={() => router.push(`/${language}/chat`)}
+                  className="text-white/50 text-sm hover:text-white/70"
+                >
+                  {language === 'tr' ? 'Daha sonra' : 'Later'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
