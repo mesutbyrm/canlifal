@@ -72,6 +72,7 @@ export default function BroadcastPage() {
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const processedViewersRef = useRef<Set<string>>(new Set())
+  const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -90,6 +91,7 @@ export default function BroadcastPage() {
       if (!isUnmountedRef.current) setDuration(prev => prev + 1)
     }, 1000)
     
+    // Poll more frequently for better responsiveness
     pollIntervalRef.current = setInterval(() => {
       if (!isUnmountedRef.current) {
         fetchStats()
@@ -97,7 +99,7 @@ export default function BroadcastPage() {
         fetchGifts()
         pollViewerSignals()
       }
-    }, 1500)
+    }, 1000)
 
     return () => {
       isUnmountedRef.current = true
@@ -129,7 +131,7 @@ export default function BroadcastPage() {
         localVideoRef.current.srcObject = stream
       }
       
-      console.log('Broadcast started with tracks:', stream.getTracks().map(t => t.kind))
+      console.log('Broadcast started with tracks:', stream.getTracks().map(t => `${t.kind}:${t.enabled}`))
     } catch (error) {
       console.error('Camera error:', error)
       alert(language === 'tr' ? 'Kamera erişimi sağlanamadı' : 'Could not access camera')
@@ -148,26 +150,53 @@ export default function BroadcastPage() {
       for (const signal of signals) {
         if (isUnmountedRef.current) break
         
-        const viewerId = signal.senderId
+        // Extract viewerId from either senderId or data.viewerId
+        const viewerId = signal.data?.viewerId || signal.senderId
+        if (!viewerId) continue
         
         if (signal.type === 'viewer-join') {
           // Only create new connection if we haven't processed this viewer
           if (!processedViewersRef.current.has(viewerId)) {
             processedViewersRef.current.add(viewerId)
-            console.log('New viewer joining:', viewerId)
+            console.log('Broadcaster: New viewer joining:', viewerId)
             await createConnectionForViewer(viewerId)
           }
         } else if (signal.type === 'answer' && signal.data?.answer) {
           const pc = peerConnectionsRef.current.get(viewerId)
-          if (pc && pc.signalingState === 'have-local-offer') {
-            console.log('Setting answer from:', viewerId)
-            await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+          if (pc) {
+            console.log('Broadcaster: Received answer from:', viewerId, 'signalingState:', pc.signalingState)
+            if (pc.signalingState === 'have-local-offer') {
+              try {
+                await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+                console.log('Broadcaster: Set remote description for:', viewerId)
+                
+                // Process any pending ICE candidates
+                const pendingCandidates = pendingCandidatesRef.current.get(viewerId) || []
+                for (const candidate of pendingCandidates) {
+                  try {
+                    await pc.addIceCandidate(candidate)
+                  } catch (e) {
+                    console.log('Pending ICE add error:', e)
+                  }
+                }
+                pendingCandidatesRef.current.delete(viewerId)
+              } catch (e) {
+                console.error('Error setting answer:', e)
+              }
+            }
           }
         } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
           const pc = peerConnectionsRef.current.get(viewerId)
           if (pc) {
             try {
-              await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+              if (pc.remoteDescription) {
+                await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+              } else {
+                // Queue the candidate until we have remote description
+                const pending = pendingCandidatesRef.current.get(viewerId) || []
+                pending.push(new RTCIceCandidate(signal.data.candidate))
+                pendingCandidatesRef.current.set(viewerId, pending)
+              }
             } catch (e) {
               console.log('ICE candidate error:', e)
             }
@@ -182,7 +211,7 @@ export default function BroadcastPage() {
   const createConnectionForViewer = async (viewerId: string) => {
     if (!localStreamRef.current || peerConnectionsRef.current.has(viewerId)) return
 
-    console.log('Creating peer connection for viewer:', viewerId)
+    console.log('Broadcaster: Creating peer connection for viewer:', viewerId)
     
     const pc = new RTCPeerConnection({ 
       iceServers: ICE_SERVERS,
@@ -193,12 +222,13 @@ export default function BroadcastPage() {
 
     // Add all tracks from local stream
     localStreamRef.current.getTracks().forEach(track => {
-      console.log('Adding track to peer:', track.kind)
+      console.log('Broadcaster: Adding track to peer:', track.kind, 'enabled:', track.enabled)
       pc.addTrack(track, localStreamRef.current!)
     })
 
     pc.onicecandidate = async (event) => {
       if (event.candidate && !isUnmountedRef.current) {
+        console.log('Broadcaster: Sending ICE candidate to:', viewerId)
         await fetch('/api/video-streams/signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -213,25 +243,30 @@ export default function BroadcastPage() {
     }
 
     pc.oniceconnectionstatechange = () => {
-      console.log(`Viewer ${viewerId} ICE state:`, pc.iceConnectionState)
-      if (pc.iceConnectionState === 'connected') {
-        setConnectedViewers(prev => prev + 1)
-      } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+      console.log(`Broadcaster: Viewer ${viewerId} ICE state:`, pc.iceConnectionState)
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setConnectedViewers(prev => {
+          const newCount = peerConnectionsRef.current.size
+          return newCount
+        })
+      } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
         peerConnectionsRef.current.delete(viewerId)
         processedViewersRef.current.delete(viewerId)
+        pendingCandidatesRef.current.delete(viewerId)
         setConnectedViewers(prev => Math.max(0, prev - 1))
       }
     }
 
+    pc.onconnectionstatechange = () => {
+      console.log(`Broadcaster: Viewer ${viewerId} connection state:`, pc.connectionState)
+    }
+
     // Create and send offer
     try {
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: false,
-        offerToReceiveVideo: false
-      })
+      const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
       
-      console.log('Sending offer to viewer:', viewerId)
+      console.log('Broadcaster: Sending offer to viewer:', viewerId)
       
       await fetch('/api/video-streams/signal', {
         method: 'POST',
@@ -315,7 +350,7 @@ export default function BroadcastPage() {
       localStreamRef.current = newStream
       if (localVideoRef.current) localVideoRef.current.srcObject = newStream
 
-      // Update all peer connections
+      // Update all peer connections with new tracks
       peerConnectionsRef.current.forEach(async (pc) => {
         const senders = pc.getSenders()
         const videoTrack = newStream.getVideoTracks()[0]
@@ -332,6 +367,7 @@ export default function BroadcastPage() {
     peerConnectionsRef.current.forEach(pc => pc.close())
     peerConnectionsRef.current.clear()
     processedViewersRef.current.clear()
+    pendingCandidatesRef.current.clear()
     localStreamRef.current?.getTracks().forEach(t => t.stop())
     fetch(`/api/video-streams/${streamId}`, {
       method: 'PATCH',
@@ -376,6 +412,11 @@ export default function BroadcastPage() {
             <Users className="w-3.5 h-3.5 text-white" />
             <span className="text-white text-xs">{viewerCount}</span>
           </div>
+          {connectedViewers > 0 && (
+            <div className="bg-green-500/80 px-2 py-1 rounded text-white text-xs">
+              {connectedViewers} {language === 'tr' ? 'bağlı' : 'connected'}
+            </div>
+          )}
         </div>
         <button onClick={() => setShowEndConfirm(true)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
           <X className="w-4 h-4" /> {language === 'tr' ? 'Bitir' : 'End'}

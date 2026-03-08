@@ -19,7 +19,8 @@ import {
   Gift,
   Coins,
   Users,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react'
 
 interface VideoStream {
@@ -100,6 +101,7 @@ export default function VideoStreamPage() {
   const currentStreamIdRef = useRef<string>('')
   const isUnmountedRef = useRef(false)
   const hasJoinedRef = useRef(false)
+  const pendingCandidatesRef = useRef<RTCIceCandidate[]>([])
 
   const currentStream = streams[currentIndex]
 
@@ -122,6 +124,8 @@ export default function VideoStreamPage() {
       cleanup()
       currentStreamIdRef.current = currentStream.id
       hasJoinedRef.current = false
+      setConnectionStatus('connecting')
+      pendingCandidatesRef.current = []
       joinStream(currentStream.id)
       setLikeCount(currentStream.likeCount)
       setViewerCount(currentStream.viewerCount)
@@ -142,7 +146,7 @@ export default function VideoStreamPage() {
     if (currentStreamIdRef.current) {
       fetch(`/api/video-streams/${currentStreamIdRef.current}/join?viewerId=${viewerIdRef.current}`, { method: 'DELETE' }).catch(() => {})
     }
-    setConnectionStatus('connecting')
+    pendingCandidatesRef.current = []
   }
 
   const joinStream = async (streamId: string) => {
@@ -160,20 +164,23 @@ export default function VideoStreamPage() {
       })
       pcRef.current = pc
 
-      // Add transceiver for receiving video/audio
+      // Add transceivers for receiving video/audio
       pc.addTransceiver('video', { direction: 'recvonly' })
       pc.addTransceiver('audio', { direction: 'recvonly' })
 
       pc.ontrack = (event) => {
-        console.log('Received track:', event.track.kind, event.streams.length)
+        console.log('Viewer: Received track:', event.track.kind)
         if (remoteVideoRef.current && event.streams[0]) {
+          console.log('Viewer: Setting video srcObject')
           remoteVideoRef.current.srcObject = event.streams[0]
+          remoteVideoRef.current.play().catch(e => console.log('Autoplay error:', e))
           setConnectionStatus('connected')
         }
       }
 
       pc.onicecandidate = async (event) => {
         if (event.candidate && !isUnmountedRef.current) {
+          console.log('Viewer: Sending ICE candidate')
           await fetch('/api/video-streams/signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -181,22 +188,33 @@ export default function VideoStreamPage() {
               streamId,
               type: 'ice-candidate',
               receiverId: 'broadcaster',
-              data: { candidate: event.candidate.toJSON() }
+              data: { candidate: event.candidate.toJSON(), viewerId: viewerIdRef.current }
             })
           }).catch(() => {})
         }
       }
 
       pc.oniceconnectionstatechange = () => {
-        console.log('ICE state:', pc.iceConnectionState)
+        console.log('Viewer: ICE state:', pc.iceConnectionState)
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           setConnectionStatus('connected')
-        } else if (pc.iceConnectionState === 'failed') {
-          setConnectionStatus('failed')
+        } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+          // Try to reconnect
+          if (pc.iceConnectionState === 'failed') {
+            setConnectionStatus('failed')
+          }
+        }
+      }
+
+      pc.onconnectionstatechange = () => {
+        console.log('Viewer: Connection state:', pc.connectionState)
+        if (pc.connectionState === 'connected') {
+          setConnectionStatus('connected')
         }
       }
 
       // Send join signal
+      console.log('Viewer: Sending viewer-join signal')
       await fetch('/api/video-streams/signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,14 +226,26 @@ export default function VideoStreamPage() {
         })
       })
 
-      // Start polling for signals
-      pollIntervalRef.current = setInterval(() => {
+      // Start polling for signals more frequently initially
+      let pollCount = 0
+      const pollFn = () => {
         if (!isUnmountedRef.current) {
           pollSignals(streamId)
           fetchStreamStats(streamId)
           pollGifts(streamId)
         }
-      }, 1500)
+      }
+
+      // Poll immediately and then every second for first 10 seconds, then every 1.5s
+      pollFn()
+      pollIntervalRef.current = setInterval(() => {
+        pollCount++
+        if (pollCount < 10) {
+          pollFn()
+        } else {
+          pollFn()
+        }
+      }, pollCount < 10 ? 1000 : 1500)
 
     } catch (error) {
       console.error('Join stream error:', error)
@@ -235,29 +265,49 @@ export default function VideoStreamPage() {
         if (isUnmountedRef.current || !pcRef.current) break
         
         if (signal.type === 'offer' && signal.data?.offer) {
-          console.log('Received offer from broadcaster')
+          console.log('Viewer: Received offer from broadcaster')
           try {
-            await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
-            const answer = await pcRef.current.createAnswer()
-            await pcRef.current.setLocalDescription(answer)
-            
-            console.log('Sending answer to broadcaster')
-            await fetch('/api/video-streams/signal', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                streamId,
-                type: 'answer',
-                receiverId: 'broadcaster',
-                data: { answer: pcRef.current.localDescription?.toJSON() }
+            // Only process offer if we're in stable state or haven't received one yet
+            if (pcRef.current.signalingState === 'stable' || pcRef.current.signalingState === 'have-local-pranswer') {
+              await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
+              console.log('Viewer: Set remote description, creating answer')
+              
+              // Add any pending ICE candidates
+              for (const candidate of pendingCandidatesRef.current) {
+                try {
+                  await pcRef.current.addIceCandidate(candidate)
+                } catch (e) {
+                  console.log('Pending ICE add error:', e)
+                }
+              }
+              pendingCandidatesRef.current = []
+              
+              const answer = await pcRef.current.createAnswer()
+              await pcRef.current.setLocalDescription(answer)
+              
+              console.log('Viewer: Sending answer to broadcaster')
+              await fetch('/api/video-streams/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  streamId,
+                  type: 'answer',
+                  receiverId: 'broadcaster',
+                  data: { answer: pcRef.current.localDescription?.toJSON(), viewerId: viewerIdRef.current }
+                })
               })
-            })
+            }
           } catch (e) {
             console.error('Offer handling error:', e)
           }
         } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
           try {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            if (pcRef.current.remoteDescription) {
+              await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            } else {
+              // Queue the candidate until we have remote description
+              pendingCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
+            }
           } catch (e) {
             console.log('ICE add error:', e)
           }
@@ -265,6 +315,18 @@ export default function VideoStreamPage() {
       }
     } catch (error) {
       console.error('Poll signals error:', error)
+    }
+  }
+
+  const retryConnection = () => {
+    if (currentStream) {
+      cleanup()
+      currentStreamIdRef.current = ''
+      hasJoinedRef.current = false
+      setConnectionStatus('connecting')
+      pendingCandidatesRef.current = []
+      viewerIdRef.current = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      setTimeout(() => joinStream(currentStream.id), 500)
     }
   }
 
@@ -445,9 +507,9 @@ export default function VideoStreamPage() {
           {connectionStatus !== 'connected' && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-10">
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 overflow-hidden">
                   {currentStream?.user?.image ? (
-                    <Image src={currentStream.user.image} alt="" width={80} height={80} className="rounded-full" />
+                    <Image src={currentStream.user.image} alt="" width={80} height={80} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl text-white font-bold">{currentStream?.user?.name?.[0]}</span>
                   )}
@@ -457,6 +519,12 @@ export default function VideoStreamPage() {
                   {connectionStatus === 'connecting' ? (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...') : (language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed')}
                 </p>
                 {connectionStatus === 'connecting' && <Loader2 className="w-6 h-6 text-white animate-spin mx-auto mt-4" />}
+                {connectionStatus === 'failed' && (
+                  <button onClick={retryConnection} className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto">
+                    <RefreshCw className="w-4 h-4" />
+                    {language === 'tr' ? 'Tekrar Dene' : 'Retry'}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -498,77 +566,59 @@ export default function VideoStreamPage() {
             </AnimatePresence>
           </div>
 
+          {/* Floating Hearts */}
+          <div className="absolute bottom-32 right-4 z-10">
+            <AnimatePresence>
+              {floatingHearts.map(heart => (
+                <motion.div key={heart.id} initial={{ opacity: 1, y: 0, x: 0 }} animate={{ opacity: 0, y: -150, x: Math.random() * 30 - 15 }} transition={{ duration: 2 }}
+                  className="absolute bottom-0 right-0">
+                  <Heart className="w-8 h-8" fill={heart.color} stroke={heart.color} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
           {/* Right side actions */}
-          <div className="absolute right-3 bottom-36 flex flex-col items-center gap-4 z-20">
-            {/* Profile */}
-            <div className="relative mb-2">
-              <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-800">
+          <div className="absolute right-3 bottom-32 flex flex-col items-center gap-5 z-20">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-1 overflow-hidden border-2 border-white">
                 {currentStream?.user?.image ? (
-                  <Image src={currentStream.user.image} alt="" width={48} height={48} className="object-cover w-full h-full" />
+                  <Image src={currentStream.user.image} alt="" width={48} height={48} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-white font-bold">{currentStream?.user?.name?.[0]?.toUpperCase()}</span>
-                  </div>
+                  <span className="text-white font-bold">{currentStream?.user?.name?.[0]}</span>
                 )}
               </div>
-              <button className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#fe2c55] flex items-center justify-center">
-                <Plus className="w-3 h-3 text-white" />
-              </button>
+              <Plus className="w-5 h-5 bg-[#fe2c55] rounded-full text-white p-0.5 mx-auto -mt-2 relative z-10" />
             </div>
-
-            {/* Like */}
-            <div className="flex flex-col items-center relative">
-              <AnimatePresence>
-                {floatingHearts.map(heart => (
-                  <motion.div key={heart.id} initial={{ opacity: 1, y: 0, scale: 0.5 }} animate={{ opacity: 0, y: -80, scale: 1.2 }}
-                    className="absolute bottom-8 pointer-events-none">
-                    <Heart className="w-7 h-7" fill={heart.color} color={heart.color} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              <button onClick={handleLike} className="flex flex-col items-center">
-                <Heart className={`w-7 h-7 ${isLiked ? 'scale-110' : ''}`} fill={isLiked ? '#fe2c55' : 'transparent'} color={isLiked ? '#fe2c55' : 'white'} />
-                <span className="text-white text-xs mt-0.5">{formatCount(likeCount)}</span>
-              </button>
-            </div>
-
-            {/* Comments */}
+            <button onClick={handleLike} className="flex flex-col items-center">
+              <Heart className={`w-9 h-9 ${isLiked ? 'fill-[#fe2c55] text-[#fe2c55]' : 'text-white'}`} />
+              <span className="text-white text-xs mt-0.5">{formatCount(likeCount)}</span>
+            </button>
             <button onClick={() => setShowComments(true)} className="flex flex-col items-center">
-              <MessageCircle className="w-7 h-7 text-white" />
+              <MessageCircle className="w-9 h-9 text-white" />
               <span className="text-white text-xs mt-0.5">{formatCount(comments.length)}</span>
             </button>
-
-            {/* Gift */}
             <button onClick={() => setShowGifts(true)} className="flex flex-col items-center">
-              <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
-                <Gift className="w-5 h-5 text-white" />
-              </div>
+              <Gift className="w-9 h-9 text-yellow-400" />
               <span className="text-white text-xs mt-0.5">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
             </button>
-
-            {/* Mute */}
-            <button onClick={() => setIsMuted(!isMuted)} className="w-9 h-9 flex items-center justify-center bg-white/10 rounded-full">
-              {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+            <button onClick={() => setIsMuted(!isMuted)} className="flex flex-col items-center">
+              {isMuted ? <VolumeX className="w-8 h-8 text-white" /> : <Volume2 className="w-8 h-8 text-white" />}
             </button>
           </div>
 
           {/* Bottom info */}
-          <div className="absolute bottom-6 left-4 right-20 z-20">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-white font-bold">@{currentStream?.user?.name}</span>
-              <span className="bg-[#fe2c55]/90 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">{language === 'tr' ? 'Falcı' : 'Teller'}</span>
-            </div>
-            {currentStream?.title && <p className="text-white text-sm mb-1 line-clamp-2">{currentStream.title}</p>}
-            <div className="flex items-center gap-2">
-              <Music2 className="w-3.5 h-3.5 text-white" />
-              <p className="text-white text-sm">🔮 Mistik Melodi</p>
-            </div>
+          <div className="absolute bottom-4 left-4 right-20 z-20">
+            <p className="text-white font-bold text-base">@{currentStream?.user?.name}</p>
+            {currentStream?.title && <p className="text-white/80 text-sm line-clamp-2 mt-1">{currentStream.title}</p>}
           </div>
 
-          {/* Stream indicators */}
+          {/* Stream navigation indicators */}
           {streams.length > 1 && (
-            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-20">
-              {streams.map((_, idx) => <div key={idx} className={`w-1 rounded-full ${idx === currentIndex ? 'h-4 bg-white' : 'h-1 bg-white/40'}`} />)}
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-10">
+              {streams.map((_, idx) => (
+                <div key={idx} className={`w-1 rounded-full transition-all ${idx === currentIndex ? 'h-6 bg-white' : 'h-2 bg-white/40'}`} />
+              ))}
             </div>
           )}
         </>
@@ -577,73 +627,60 @@ export default function VideoStreamPage() {
       {/* Comments Panel */}
       <AnimatePresence>
         {showComments && (
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute inset-x-0 bottom-0 h-[55%] bg-[#121212] rounded-t-xl z-30">
-            <div className="flex justify-center pt-2"><div className="w-10 h-1 bg-gray-600 rounded-full" /></div>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h3 className="text-white font-semibold">{comments.length} {language === 'tr' ? 'yorum' : 'comments'}</h3>
-              <button onClick={() => setShowComments(false)}><X className="w-5 h-5 text-white/70" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-3 max-h-[calc(55vh-120px)] space-y-3">
-              {comments.length === 0 ? (
-                <p className="text-white/50 text-center py-8">{language === 'tr' ? 'Henüz yorum yok' : 'No comments yet'}</p>
-              ) : (
-                comments.map(c => (
-                  <div key={c.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute inset-0 bg-black/95 z-30">
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <span className="text-white font-bold">{language === 'tr' ? 'Yorumlar' : 'Comments'}</span>
+                <button onClick={() => setShowComments(false)}><X className="w-6 h-6 text-white" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+                {comments.map(c => (
+                  <div key={c.id} className="flex items-start gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-xs font-bold">{c.user.name[0]}</span>
                     </div>
-                    <div><span className="text-white/60 text-sm font-medium">{c.user.name}</span><p className="text-white text-sm">{c.content}</p></div>
+                    <div><p className="text-white/80 text-sm"><span className="font-bold text-white">{c.user.name}</span> {c.content}</p></div>
                   </div>
-                ))
-              )}
-            </div>
-            {session?.user && (
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#121212] border-t border-white/10 pb-6">
-                <div className="flex gap-3 items-center">
-                  <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)}
-                    placeholder={language === 'tr' ? 'Yorum ekle...' : 'Add comment...'}
-                    className="flex-1 bg-white/10 text-white text-sm rounded-full px-4 py-2 focus:outline-none"
-                    onKeyPress={e => e.key === 'Enter' && handleSendComment()} />
-                  <button onClick={handleSendComment} disabled={!newComment.trim()} className="text-[#fe2c55] font-semibold text-sm disabled:opacity-50">
-                    {language === 'tr' ? 'Gönder' : 'Post'}
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
+              <div className="p-4 border-t border-white/10 flex gap-2">
+                <input value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={language === 'tr' ? 'Yorum yaz...' : 'Write a comment...'}
+                  className="flex-1 bg-white/10 text-white rounded-full px-4 py-2 text-sm placeholder:text-white/40 focus:outline-none" />
+                <button onClick={handleSendComment} className="bg-[#fe2c55] text-white px-4 py-2 rounded-full text-sm font-semibold">{language === 'tr' ? 'Gönder' : 'Send'}</button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Gift Panel */}
+      {/* Gifts Panel */}
       <AnimatePresence>
         {showGifts && (
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute inset-x-0 bottom-0 h-[45%] bg-[#121212] rounded-t-xl z-30">
-            <div className="flex justify-center pt-2"><div className="w-10 h-1 bg-gray-600 rounded-full" /></div>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h3 className="text-white font-semibold flex items-center gap-2"><Gift className="w-5 h-5 text-yellow-400" />{language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}</h3>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-yellow-500/20 px-3 py-1 rounded-full">
-                  <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-400 font-bold text-sm">{userCredits}</span>
+          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/95 to-black/90 z-30 rounded-t-3xl">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-bold">{language === 'tr' ? 'Hediye Gönder' : 'Send a Gift'}</span>
+                  <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                    <Coins className="w-3 h-3 text-yellow-400" />
+                    <span className="text-yellow-400 text-xs font-semibold">{userCredits}</span>
+                  </div>
                 </div>
-                <button onClick={() => setShowGifts(false)}><X className="w-5 h-5 text-white/70" /></button>
+                <button onClick={() => setShowGifts(false)}><X className="w-6 h-6 text-white" /></button>
               </div>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[calc(45vh-70px)]">
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-4 gap-3">
                 {giftTypes.map(gift => (
                   <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userCredits < gift.price}
-                    className={`flex flex-col items-center p-2.5 rounded-xl border-2 transition-all ${userCredits >= gift.price ? 'border-white/20 bg-white/5 active:scale-95' : 'border-white/10 opacity-50'}`}>
-                    <span className="text-2xl mb-1">{gift.icon}</span>
-                    <span className="text-white text-[10px] font-medium">{language === 'tr' ? gift.name : gift.nameEn}</span>
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      <Coins className="w-2.5 h-2.5 text-yellow-400" />
-                      <span className="text-yellow-400 text-[10px] font-bold">{gift.price}</span>
+                    className={`flex flex-col items-center p-3 rounded-xl ${userCredits >= gift.price ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-50'}`}>
+                    <span className="text-3xl mb-1">{gift.icon}</span>
+                    <span className="text-white text-xs font-medium">{language === 'tr' ? gift.name : gift.nameEn}</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Coins className="w-3 h-3 text-yellow-400" />
+                      <span className="text-yellow-400 text-xs">{gift.price}</span>
                     </div>
                   </button>
                 ))}
               </div>
-              {!session?.user && <p className="text-center text-white/50 mt-4 text-sm">{language === 'tr' ? 'Hediye göndermek için giriş yapın' : 'Login to send gifts'}</p>}
             </div>
           </motion.div>
         )}
@@ -652,19 +689,17 @@ export default function VideoStreamPage() {
       {/* Start Stream Modal */}
       <AnimatePresence>
         {showStartModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 z-40 flex items-end" onClick={() => setShowStartModal(false)}>
-            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="bg-[#121212] rounded-t-2xl p-6 w-full" onClick={e => e.stopPropagation()}>
-              <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-6" />
-              <h2 className="text-xl font-bold text-white text-center mb-6">{language === 'tr' ? 'Canlı Yayın Başlat' : 'Go Live'}</h2>
-              <div className="mb-6">
-                <label className="block text-white/60 text-sm mb-2">{language === 'tr' ? 'Yayın başlığı (opsiyonel)' : 'Stream title (optional)'}</label>
-                <input type="text" value={streamTitle} onChange={e => setStreamTitle(e.target.value)}
-                  placeholder={language === 'tr' ? 'Kahve falı bakıyorum...' : 'Reading coffee fortunes...'}
-                  className="w-full bg-white/10 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe2c55]" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/90 z-40 flex items-center justify-center p-6">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-deep-purple-900 rounded-2xl p-6 w-full max-w-sm">
+              <h3 className="text-white text-xl font-bold mb-4">{language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live Stream'}</h3>
+              <input value={streamTitle} onChange={e => setStreamTitle(e.target.value)} placeholder={language === 'tr' ? 'Yayın başlığı (opsiyonel)' : 'Stream title (optional)'}
+                className="w-full bg-white/10 text-white rounded-xl px-4 py-3 mb-4 placeholder:text-white/40 focus:outline-none" />
+              <div className="flex gap-3">
+                <button onClick={() => setShowStartModal(false)} className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                <button onClick={startBroadcast} disabled={isStartingStream} className="flex-1 bg-[#fe2c55] text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+                  {isStartingStream ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Radio className="w-5 h-5" />{language === 'tr' ? 'Başlat' : 'Start'}</>}
+                </button>
               </div>
-              <button onClick={startBroadcast} disabled={isStartingStream} className="w-full bg-[#fe2c55] text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50">
-                {isStartingStream ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Radio className="w-5 h-5" />{language === 'tr' ? 'Yayını Başlat' : 'Go Live'}</>}
-              </button>
             </motion.div>
           </motion.div>
         )}

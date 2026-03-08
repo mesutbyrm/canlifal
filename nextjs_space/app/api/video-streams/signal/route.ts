@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const streamId = request.nextUrl.searchParams.get('streamId')
@@ -12,21 +14,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([])
     }
 
-    // Get unprocessed signals for this recipient
+    // Get unprocessed signals for this recipient - extended to 60 seconds for reliability
     const signals = await prisma.videoStreamSignal.findMany({
       where: {
         streamId,
         receiverId: recipientId,
         processed: false,
         createdAt: {
-          gte: new Date(Date.now() - 30000) // Only signals from last 30 seconds
+          gte: new Date(Date.now() - 60000) // 60 seconds for better reliability
         }
       },
       orderBy: { createdAt: 'asc' },
-      take: 30
+      take: 50
     })
 
-    // Mark as processed
+    // Mark as processed immediately
     if (signals.length > 0) {
       await prisma.videoStreamSignal.updateMany({
         where: { id: { in: signals.map(s => s.id) } },
@@ -34,18 +36,23 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json(signals.map(s => {
+    const result = signals.map(s => {
       let data = {}
       try {
         data = JSON.parse(s.signalData)
-      } catch (e) {}
+      } catch (e) {
+        console.error('Signal parse error:', e)
+      }
       return {
         id: s.id,
         type: s.signalType,
         senderId: s.senderId,
-        data
+        data,
+        createdAt: s.createdAt
       }
-    }))
+    })
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Signal GET error:', error)
     return NextResponse.json([])
