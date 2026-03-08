@@ -387,7 +387,7 @@ export default function BroadcastPage() {
 
   const handleEndStream = () => {
     cleanup()
-    router.push(`/${language}/chat/video`)
+    router.push(`/${language}/chat`)
   }
 
   const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
@@ -452,117 +452,97 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* Top bar */}
+      {/* Top bar - Broadcaster Profile */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-[#fe2c55] px-2.5 py-1 rounded">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            <span className="text-white text-xs font-bold">LIVE</span>
-          </div>
-          <div className="bg-black/60 px-2.5 py-1 rounded text-white text-xs">{formatDuration(duration)}</div>
-          <div className="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded">
-            <Users className="w-3.5 h-3.5 text-white" />
-            <span className="text-white text-xs">{viewerCount}</span>
-          </div>
-          {connectedViewers > 0 && (
-            <div className="bg-green-500/80 px-2 py-1 rounded text-white text-xs">
-              {connectedViewers} {language === 'tr' ? 'bağlı' : 'connected'}
+        <div className="flex items-center gap-3">
+          {/* Profile */}
+          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
+            {session?.user?.image ? (
+              <Image src={session.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
+              </div>
+            )}
+            <div className="flex flex-col">
+              <span className="text-white text-xs font-medium">{session?.user?.name}</span>
+              <div className="flex items-center gap-1.5 text-[10px]">
+                <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  <span className="text-white font-bold">LIVE</span>
+                </div>
+                <span className="text-white/60">{formatDuration(duration)}</span>
+              </div>
             </div>
-          )}
+          </div>
+          
+          {/* Stats */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+              <Users className="w-3.5 h-3.5 text-white" />
+              <span className="text-white text-xs">{viewerCount}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+              <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+              <span className="text-white text-xs">{formatCount(likeCount)}</span>
+            </div>
+            {totalGiftCredits > 0 && (
+              <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
+                <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
+              </div>
+            )}
+          </div>
         </div>
+        
         <button onClick={() => setShowEndConfirm(true)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
           <X className="w-4 h-4" /> {language === 'tr' ? 'Bitir' : 'End'}
         </button>
       </div>
 
-      {/* Earnings */}
-      {totalGiftCredits > 0 && (
-        <div className="absolute top-16 left-4 flex items-center gap-2 bg-yellow-500/30 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-          <Coins className="w-4 h-4 text-yellow-400" />
-          <span className="text-yellow-400 font-bold text-sm">+{totalGiftCredits}</span>
-        </div>
-      )}
+      {/* Floating Hearts Animation */}
+      <div className="absolute right-4 top-1/3 z-10">
+        <AnimatePresence>
+          {floatingHearts.map(heart => (
+            <motion.div
+              key={heart.id}
+              initial={{ opacity: 1, y: 0, scale: 0.5 }}
+              animate={{ opacity: 0, y: -80, scale: 1.2 }}
+              className="absolute bottom-0 right-0"
+            >
+              <Heart className="w-6 h-6" fill={heart.color} color={heart.color} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
-      {/* Gifters - Top Right */}
+      {/* Gifters - Small badges below top bar */}
       {gifters.length > 0 && (
-        <div className="absolute top-16 right-3 z-20">
-          <div className="flex flex-col items-end gap-1">
-            {gifters.slice(0, 5).map((viewer) => (
+        <div className="absolute top-20 left-4 z-20">
+          <div className="flex flex-wrap gap-1 max-w-[200px]">
+            {gifters.slice(0, 3).map((viewer) => (
               <motion.div
                 key={viewer.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-2 py-1 rounded-full"
-              >
-                {viewer.image ? (
-                  <Image src={viewer.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                    <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
-                  </div>
-                )}
-                <span className="text-white text-xs font-medium">{viewer.name}</span>
-                <span className="text-yellow-400 text-[10px]">🎁 {viewer.totalGiftAmount}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Regular Viewers - Bottom Right above controls */}
-      {regularViewers.length > 0 && (
-        <div className="absolute bottom-40 right-3 z-20">
-          <div className="flex flex-col items-end gap-1">
-            {regularViewers.slice(0, 5).map((viewer) => (
-              <div
-                key={viewer.id}
-                className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full"
               >
                 {viewer.image ? (
                   <Image src={viewer.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
                 ) : (
-                  <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
-                    <span className="text-white text-[8px]">{viewer.name[0]}</span>
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                    <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
                   </div>
                 )}
-                <span className="text-white/70 text-[10px]">{viewer.name}</span>
-              </div>
+                <span className="text-yellow-400 text-[10px]">🎁{viewer.totalGiftAmount}</span>
+              </motion.div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Right side stats */}
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-10">
-        <div className="relative h-16">
-          <AnimatePresence>
-            {floatingHearts.map(heart => (
-              <motion.div
-                key={heart.id}
-                initial={{ opacity: 1, y: 0, scale: 0.5 }}
-                animate={{ opacity: 0, y: -80, scale: 1.2 }}
-                className="absolute bottom-0 left-1/2 -translate-x-1/2"
-              >
-                <Heart className="w-6 h-6" fill={heart.color} color={heart.color} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-        <div className="flex flex-col items-center">
-          <Heart className="w-7 h-7" fill="#fe2c55" color="#fe2c55" />
-          <span className="text-white text-xs mt-0.5">{formatCount(likeCount)}</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <MessageCircle className="w-6 h-6 text-white" />
-          <span className="text-white text-xs mt-0.5">{comments.length}</span>
-        </div>
-        <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full">
-          <Gift className="w-5 h-5 text-white" />
-        </div>
-      </div>
-
       {/* Comments floating above input */}
-      <div className="absolute left-3 bottom-28 right-20 max-h-28 overflow-hidden z-10 space-y-1">
+      <div className="absolute left-3 bottom-28 right-3 max-h-32 overflow-hidden z-10 space-y-1">
         {comments.slice(0, 5).map(c => (
           <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
             <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
