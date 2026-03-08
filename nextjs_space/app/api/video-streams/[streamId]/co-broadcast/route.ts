@@ -50,16 +50,57 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is the broadcaster
+    const { userId, action } = await request.json()
+
+    // Get stream info
     const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId }
     })
 
-    if (!stream || stream.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    if (!stream) {
+      return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
     }
 
-    const { userId, action } = await request.json()
+    // Viewer requesting to co-broadcast (doesn't require broadcaster permission)
+    if (action === 'request') {
+      // Check if already requested or active
+      const existing = await prisma.streamCoBroadcaster.findUnique({
+        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } }
+      })
+
+      if (existing && ['active', 'requested'].includes(existing.status)) {
+        return NextResponse.json({ error: 'Already requested or co-broadcasting' }, { status: 400 })
+      }
+
+      const request = await prisma.streamCoBroadcaster.upsert({
+        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
+        create: { streamId: params.streamId, userId: session.user.id, status: 'requested' },
+        update: { status: 'requested', isMuted: false, isVideoOff: false, leftAt: null }
+      })
+
+      // Notify broadcaster
+      await prisma.notification.create({
+        data: {
+          userId: stream.userId,
+          type: 'co_broadcast_request',
+          title: 'Ortak Yayın Talebi',
+          message: `${session.user.name || 'Kullanıcı'} sizinle ortak yayın yapmak istiyor!`,
+          data: JSON.stringify({ 
+            streamId: params.streamId, 
+            requesterId: session.user.id,
+            requesterName: session.user.name,
+            requesterImage: session.user.image
+          })
+        }
+      })
+
+      return NextResponse.json(request)
+    }
+
+    // All other actions require broadcaster permission
+    if (stream.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    }
 
     if (action === 'invite') {
       // Check if already invited

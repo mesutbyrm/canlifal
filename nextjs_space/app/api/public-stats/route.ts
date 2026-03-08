@@ -16,7 +16,8 @@ export async function GET() {
       chatRooms,
       socialPostsCount,
       socialActiveUsers,
-      totalUsers
+      totalUsers,
+      activeVideoStreams
     ] = await Promise.all([
       // Fortune statistics by type
       prisma.fortune.groupBy({
@@ -45,7 +46,15 @@ export async function GET() {
         }
       }).then((r: { userId: string }[]) => r.length),
       // Total registered users
-      prisma.user.count()
+      prisma.user.count(),
+      // Active video streams and their viewer counts
+      prisma.videoStream.findMany({
+        where: { 
+          status: 'live',
+          endedAt: null
+        },
+        select: { viewerCount: true }
+      })
     ]);
 
     // Get chat presence for each room
@@ -67,6 +76,12 @@ export async function GET() {
 
     // Total online in chat
     const totalChatOnline = chatPresences.reduce((sum: number, p: { roomId: string; _count: { roomId: number } }) => sum + p._count.roomId, 0);
+    
+    // Total video stream viewers
+    const totalVideoViewers = activeVideoStreams.reduce((sum: number, s: { viewerCount: number }) => sum + s.viewerCount, 0);
+    
+    // Total online = chat + video viewers (with minimum of 1 for base activity)
+    const totalOnline = Math.max(1, totalChatOnline + totalVideoViewers);
 
     // Format fortune stats
     const fortunesByType: Record<string, number> = {};
@@ -83,21 +98,28 @@ export async function GET() {
         rooms: chatRoomsWithPresence,
         totalOnline: totalChatOnline
       },
+      video: {
+        activeStreams: activeVideoStreams.length,
+        totalViewers: totalVideoViewers
+      },
       social: {
         totalPosts: socialPostsCount,
         activeUsers: socialActiveUsers
       },
       users: {
         total: totalUsers
-      }
+      },
+      totalOnline
     });
   } catch (error) {
     console.error('Public stats error:', error);
     return NextResponse.json({
       fortunes: { total: 0, byType: {} },
       chat: { rooms: [], totalOnline: 0 },
+      video: { activeStreams: 0, totalViewers: 0 },
       social: { totalPosts: 0, activeUsers: 0 },
-      users: { total: 0 }
+      users: { total: 0 },
+      totalOnline: 1
     });
   }
 }

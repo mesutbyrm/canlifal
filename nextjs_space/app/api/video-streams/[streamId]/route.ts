@@ -42,7 +42,7 @@ export async function GET(
     return NextResponse.json({
       ...stream,
       viewerCount: activeViewerCount,
-      likeCount: stream._count.likes,
+      likeCount: stream.likeCount,  // Use direct field, not _count.likes
       commentCount: stream._count.comments
     })
   } catch (error) {

@@ -24,7 +24,8 @@ import {
   UserPlus,
   Phone,
   LogIn,
-  Swords
+  Swords,
+  Share2
 } from 'lucide-react'
 
 interface VideoStream {
@@ -124,6 +125,8 @@ export default function VideoStreamPage() {
   const [heartLevelText, setHeartLevelText] = useState('')
   const [showGuestModal, setShowGuestModal] = useState(false)
   const [guestCountdown, setGuestCountdown] = useState(3)
+  const [coBroadcastRequested, setCoBroadcastRequested] = useState(false)
+  const [requestingCoBroadcast, setRequestingCoBroadcast] = useState(false)
   // VS Mode state
   const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<{
     id: string
@@ -607,6 +610,72 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  // Request co-broadcast with the streamer
+  const handleRequestCoBroadcast = async () => {
+    if (!currentStream || !session?.user) {
+      alert(language === 'tr' ? 'Giriş yapmanız gerekiyor!' : 'You need to log in!')
+      return
+    }
+    
+    // Can't request co-broadcast with yourself
+    if (currentStream.user.id === session.user.id) {
+      return
+    }
+    
+    setRequestingCoBroadcast(true)
+    try {
+      const res = await fetch(`/api/video-streams/${currentStream.id}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request' })
+      })
+      
+      if (res.ok) {
+        setCoBroadcastRequested(true)
+        alert(language === 'tr' ? 'Ortak yayın talebiniz gönderildi!' : 'Your co-broadcast request has been sent!')
+      } else {
+        const data = await res.json()
+        if (data.error === 'Already requested or co-broadcasting') {
+          alert(language === 'tr' ? 'Zaten talep gönderilmiş!' : 'Request already sent!')
+        }
+      }
+    } catch (e) {
+      console.error('Error requesting co-broadcast:', e)
+    } finally {
+      setRequestingCoBroadcast(false)
+    }
+  }
+
+  // Share stream
+  const handleShareStream = async () => {
+    if (!currentStream) return
+    
+    const shareUrl = `${window.location.origin}/${language}/chat/video`
+    const shareText = language === 'tr' 
+      ? `${currentStream.user.name} canlı yayında! Hemen katıl 🔴` 
+      : `${currentStream.user.name} is live! Join now 🔴`
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: currentStream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream'),
+          text: shareText,
+          url: shareUrl
+        })
+      } catch (e) {
+        // User cancelled or share failed
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
+        alert(language === 'tr' ? 'Bağlantı kopyalandı!' : 'Link copied!')
+      } catch (e) {
+        // Clipboard not available
+      }
+    }
+  }
+
   const handleSendGift = async (gift: GiftType) => {
     if (!currentStream || !session?.user || userCredits < gift.price) {
       if (userCredits < gift.price) alert(language === 'tr' ? 'Yetersiz jeton!' : 'Insufficient credits!')
@@ -1079,14 +1148,29 @@ export default function VideoStreamPage() {
             ))}
           </div>
 
-          {/* Bottom input and gift - Always visible */}
+          {/* Bottom input and actions - Layout: [co-broadcast] [input] [gift] [share] */}
           <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
-            >
-              <Gift className="w-5 h-5 text-white" />
-            </button>
+            {/* Co-broadcast request button - Only for viewers (not the broadcaster) */}
+            {session?.user && currentStream?.user?.id !== session.user.id && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRequestCoBroadcast(); }}
+                disabled={requestingCoBroadcast || coBroadcastRequested}
+                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  coBroadcastRequested 
+                    ? 'bg-green-500/50' 
+                    : 'bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400'
+                }`}
+                title={language === 'tr' ? 'Ortak Yayın İste' : 'Request Co-Broadcast'}
+              >
+                {requestingCoBroadcast ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <UserPlus className="w-5 h-5 text-white" />
+                )}
+              </button>
+            )}
+            
+            {/* Comment input */}
             <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
               <input
                 ref={commentInputRef}
@@ -1105,6 +1189,24 @@ export default function VideoStreamPage() {
                 <Send className="w-5 h-5" />
               </button>
             </div>
+            
+            {/* Gift button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
+              title={language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
+            >
+              <Gift className="w-5 h-5 text-white" />
+            </button>
+            
+            {/* Share button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleShareStream(); }}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0"
+              title={language === 'tr' ? 'Paylaş' : 'Share'}
+            >
+              <Share2 className="w-5 h-5 text-white" />
+            </button>
           </div>
 
           {/* Stream navigation indicators */}
