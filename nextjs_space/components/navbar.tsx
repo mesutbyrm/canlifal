@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/language-context'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
-  Settings, CreditCard, ChevronDown, Camera, Loader2
+  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio
 } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
@@ -22,6 +22,7 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [profileImage, setProfileImage] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [hasLiveStreams, setHasLiveStreams] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -37,6 +38,18 @@ export default function Navbar() {
         .then(data => setProfileImage(data.image || ''))
         .catch(() => {})
     }
+
+    // Check for live streams
+    const checkLiveStreams = () => {
+      fetch('/api/video-streams')
+        .then(res => res.json())
+        .then(data => setHasLiveStreams(Array.isArray(data) && data.length > 0))
+        .catch(() => {})
+    }
+    
+    checkLiveStreams()
+    const interval = setInterval(checkLiveStreams, 30000) // Check every 30 seconds
+    return () => clearInterval(interval)
   }, [session])
 
   const toggleLanguage = () => {
@@ -183,12 +196,20 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Center - Logo */}
-            <Link href={`/${language}`} className="absolute left-1/2 -translate-x-1/2">
-              <span className="font-serif text-2xl font-bold text-gold-400 tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                falcı
-              </span>
-            </Link>
+            {/* Center - Logo with Live indicator */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <Link href={`/${language}`}>
+                <span className="font-serif text-2xl font-bold text-gold-400 tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
+                  falcı
+                </span>
+              </Link>
+              {hasLiveStreams && (
+                <Link href={`/${language}/chat/video`} className="flex items-center gap-1 bg-[#fe2c55] px-1.5 py-0.5 rounded">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  <span className="text-white text-[10px] font-bold animate-pulse">CANLI</span>
+                </Link>
+              )}
+            </div>
 
             {/* Right - Profile/Auth */}
             <div className="flex items-center gap-2">

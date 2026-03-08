@@ -14,13 +14,13 @@ import {
   X,
   Radio,
   Plus,
-  Music2,
   Video,
   Gift,
   Coins,
   Users,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Send
 } from 'lucide-react'
 
 interface VideoStream {
@@ -34,7 +34,7 @@ interface VideoStream {
 interface Comment {
   id: string
   content: string
-  user: { name: string }
+  user: { name: string; image?: string | null }
 }
 
 interface GiftType {
@@ -45,11 +45,20 @@ interface GiftType {
   price: number
 }
 
-interface RecentGift {
+interface CenterGift {
   id: string
   senderName: string
+  senderImage?: string | null
   icon: string
   giftName: string
+}
+
+interface Viewer {
+  id: string
+  name: string
+  image?: string | null
+  hasGifted: boolean
+  totalGiftAmount: number
 }
 
 interface FloatingHeart {
@@ -75,12 +84,10 @@ export default function VideoStreamPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(false)
-  const [showComments, setShowComments] = useState(false)
   const [showGifts, setShowGifts] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
-  const [recentGifts, setRecentGifts] = useState<RecentGift[]>([])
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [viewerCount, setViewerCount] = useState(0)
@@ -91,6 +98,8 @@ export default function VideoStreamPage() {
   const [userCredits, setUserCredits] = useState(0)
   const [sendingGift, setSendingGift] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
+  const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
+  const [viewers, setViewers] = useState<Viewer[]>([])
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -102,6 +111,8 @@ export default function VideoStreamPage() {
   const isUnmountedRef = useRef(false)
   const hasJoinedRef = useRef(false)
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([])
+  const lastGiftIdRef = useRef<string>('')
+  const commentInputRef = useRef<HTMLInputElement>(null)
 
   const currentStream = streams[currentIndex]
 
@@ -154,24 +165,19 @@ export default function VideoStreamPage() {
     hasJoinedRef.current = true
     
     try {
-      // Register as viewer
       await fetch(`/api/video-streams/${streamId}/join`, { method: 'POST' })
 
-      // Create peer connection
       const pc = new RTCPeerConnection({ 
         iceServers: ICE_SERVERS,
         iceCandidatePoolSize: 10
       })
       pcRef.current = pc
 
-      // Add transceivers for receiving video/audio
       pc.addTransceiver('video', { direction: 'recvonly' })
       pc.addTransceiver('audio', { direction: 'recvonly' })
 
       pc.ontrack = (event) => {
-        console.log('Viewer: Received track:', event.track.kind)
         if (remoteVideoRef.current && event.streams[0]) {
-          console.log('Viewer: Setting video srcObject')
           remoteVideoRef.current.srcObject = event.streams[0]
           remoteVideoRef.current.play().catch(e => console.log('Autoplay error:', e))
           setConnectionStatus('connected')
@@ -180,7 +186,6 @@ export default function VideoStreamPage() {
 
       pc.onicecandidate = async (event) => {
         if (event.candidate && !isUnmountedRef.current) {
-          console.log('Viewer: Sending ICE candidate')
           await fetch('/api/video-streams/signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -195,26 +200,19 @@ export default function VideoStreamPage() {
       }
 
       pc.oniceconnectionstatechange = () => {
-        console.log('Viewer: ICE state:', pc.iceConnectionState)
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           setConnectionStatus('connected')
-        } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-          // Try to reconnect
-          if (pc.iceConnectionState === 'failed') {
-            setConnectionStatus('failed')
-          }
+        } else if (pc.iceConnectionState === 'failed') {
+          setConnectionStatus('failed')
         }
       }
 
       pc.onconnectionstatechange = () => {
-        console.log('Viewer: Connection state:', pc.connectionState)
         if (pc.connectionState === 'connected') {
           setConnectionStatus('connected')
         }
       }
 
-      // Send join signal
-      console.log('Viewer: Sending viewer-join signal')
       await fetch('/api/video-streams/signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,25 +224,20 @@ export default function VideoStreamPage() {
         })
       })
 
-      // Start polling for signals more frequently initially
       let pollCount = 0
       const pollFn = () => {
         if (!isUnmountedRef.current) {
           pollSignals(streamId)
           fetchStreamStats(streamId)
           pollGifts(streamId)
+          fetchViewers(streamId)
         }
       }
 
-      // Poll immediately and then every second for first 10 seconds, then every 1.5s
       pollFn()
       pollIntervalRef.current = setInterval(() => {
         pollCount++
-        if (pollCount < 10) {
-          pollFn()
-        } else {
-          pollFn()
-        }
+        pollFn()
       }, pollCount < 10 ? 1000 : 1500)
 
     } catch (error) {
@@ -265,27 +258,20 @@ export default function VideoStreamPage() {
         if (isUnmountedRef.current || !pcRef.current) break
         
         if (signal.type === 'offer' && signal.data?.offer) {
-          console.log('Viewer: Received offer from broadcaster')
           try {
-            // Only process offer if we're in stable state or haven't received one yet
             if (pcRef.current.signalingState === 'stable' || pcRef.current.signalingState === 'have-local-pranswer') {
               await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
-              console.log('Viewer: Set remote description, creating answer')
               
-              // Add any pending ICE candidates
               for (const candidate of pendingCandidatesRef.current) {
                 try {
                   await pcRef.current.addIceCandidate(candidate)
-                } catch (e) {
-                  console.log('Pending ICE add error:', e)
-                }
+                } catch (e) {}
               }
               pendingCandidatesRef.current = []
               
               const answer = await pcRef.current.createAnswer()
               await pcRef.current.setLocalDescription(answer)
               
-              console.log('Viewer: Sending answer to broadcaster')
               await fetch('/api/video-streams/signal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -297,25 +283,18 @@ export default function VideoStreamPage() {
                 })
               })
             }
-          } catch (e) {
-            console.error('Offer handling error:', e)
-          }
+          } catch (e) {}
         } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
           try {
             if (pcRef.current.remoteDescription) {
               await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             } else {
-              // Queue the candidate until we have remote description
               pendingCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
             }
-          } catch (e) {
-            console.log('ICE add error:', e)
-          }
+          } catch (e) {}
         }
       }
-    } catch (error) {
-      console.error('Poll signals error:', error)
-    }
+    } catch (error) {}
   }
 
   const retryConnection = () => {
@@ -341,16 +320,46 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  const fetchViewers = async (streamId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/viewers`)
+      if (res.ok) {
+        setViewers(await res.json())
+      }
+    } catch (e) {}
+  }
+
   const pollGifts = async (streamId: string) => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/gifts`)
       if (!res.ok) return
       const gifts = await res.json()
-      const recent = gifts.filter((g: any) => new Date(g.createdAt).getTime() > Date.now() - 10000)
-        .slice(0, 3).map((g: any) => ({
-          id: g.id, senderName: g.sender.name, icon: g.giftType.icon, giftName: g.giftType.name
-        }))
-      setRecentGifts(recent)
+      
+      // Show center gift animation for new gifts
+      if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {
+        const newGift = gifts[0]
+        lastGiftIdRef.current = newGift.id
+        
+        setCenterGift({
+          id: newGift.id,
+          senderName: newGift.sender.name,
+          senderImage: newGift.sender.image,
+          icon: newGift.giftType.icon,
+          giftName: newGift.giftType.name
+        })
+        
+        // Clear after 3 seconds
+        setTimeout(() => setCenterGift(null), 3000)
+        
+        // Add floating hearts
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            const heart = { id: heartIdRef.current++, color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] }
+            setFloatingHearts(prev => [...prev, heart])
+            setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
+          }, i * 100)
+        }
+      }
     } catch (e) {}
   }
 
@@ -442,7 +451,25 @@ export default function VideoStreamPage() {
         const data = await res.json()
         setUserCredits(data.newBalance)
         setShowGifts(false)
-        setRecentGifts(prev => [{ id: Date.now().toString(), senderName: session.user?.name || 'Sen', icon: gift.icon, giftName: gift.name }, ...prev].slice(0, 3))
+        
+        // Show center gift animation
+        setCenterGift({
+          id: Date.now().toString(),
+          senderName: session.user?.name || 'Sen',
+          senderImage: session.user?.image,
+          icon: gift.icon,
+          giftName: gift.name
+        })
+        setTimeout(() => setCenterGift(null), 3000)
+        
+        // Add floating hearts
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            const heart = { id: heartIdRef.current++, color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] }
+            setFloatingHearts(prev => [...prev, heart])
+            setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
+          }, i * 100)
+        }
       }
     } catch (e) {}
     setSendingGift(null)
@@ -476,6 +503,10 @@ export default function VideoStreamPage() {
   }
 
   const formatCount = (n: number) => n >= 1000000 ? (n/1000000).toFixed(1) + 'M' : n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
+
+  // Separate gifters and regular viewers
+  const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
+  const regularViewers = viewers.filter(v => !v.hasGifted)
 
   if (loading) {
     return (
@@ -531,7 +562,46 @@ export default function VideoStreamPage() {
 
           {/* Gradients */}
           <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-          <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+
+          {/* Center Gift Animation */}
+          <AnimatePresence>
+            {centerGift && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+              >
+                <motion.div
+                  initial={{ y: 50 }}
+                  animate={{ y: 0 }}
+                  className="text-center"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: 2, duration: 0.5 }}
+                    className="text-8xl mb-4"
+                  >
+                    {centerGift.icon}
+                  </motion.div>
+                  <div className="flex items-center justify-center gap-3 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full">
+                    {centerGift.senderImage ? (
+                      <Image src={centerGift.senderImage} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <span className="text-white font-bold">{centerGift.senderName[0]}</span>
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
+                      <p className="text-yellow-400 text-sm">{centerGift.giftName} {language === 'tr' ? 'gönderdi' : 'sent'}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Top bar */}
           <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
@@ -550,24 +620,57 @@ export default function VideoStreamPage() {
             </button>
           </div>
 
-          {/* Recent Gifts - Top Right */}
-          <div className="absolute top-16 right-3 z-20 space-y-2">
-            <AnimatePresence>
-              {recentGifts.map(gift => (
-                <motion.div key={gift.id} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <span className="text-xl">{gift.icon}</span>
-                  <div className="text-right">
-                    <p className="text-white text-xs font-bold">{gift.senderName}</p>
-                    <p className="text-yellow-300 text-[10px]">{gift.giftName}</p>
+          {/* Gifters - Top Right */}
+          {gifters.length > 0 && (
+            <div className="absolute top-16 right-3 z-20">
+              <div className="flex flex-col items-end gap-1">
+                {gifters.slice(0, 5).map((viewer, idx) => (
+                  <motion.div
+                    key={viewer.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-2 py-1 rounded-full"
+                  >
+                    {viewer.image ? (
+                      <Image src={viewer.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                        <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
+                      </div>
+                    )}
+                    <span className="text-white text-xs font-medium">{viewer.name}</span>
+                    <span className="text-yellow-400 text-[10px]">🎁 {viewer.totalGiftAmount}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Viewers - Bottom Right */}
+          {regularViewers.length > 0 && (
+            <div className="absolute bottom-32 right-3 z-20">
+              <div className="flex flex-col items-end gap-1">
+                {regularViewers.slice(0, 5).map((viewer) => (
+                  <div
+                    key={viewer.id}
+                    className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full"
+                  >
+                    {viewer.image ? (
+                      <Image src={viewer.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-white text-[8px]">{viewer.name[0]}</span>
+                      </div>
+                    )}
+                    <span className="text-white/70 text-[10px]">{viewer.name}</span>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Floating Hearts */}
-          <div className="absolute bottom-32 right-4 z-10">
+          <div className="absolute bottom-40 right-4 z-10">
             <AnimatePresence>
               {floatingHearts.map(heart => (
                 <motion.div key={heart.id} initial={{ opacity: 1, y: 0, x: 0 }} animate={{ opacity: 0, y: -150, x: Math.random() * 30 - 15 }} transition={{ duration: 2 }}
@@ -579,7 +682,7 @@ export default function VideoStreamPage() {
           </div>
 
           {/* Right side actions */}
-          <div className="absolute right-3 bottom-32 flex flex-col items-center gap-5 z-20">
+          <div className="absolute right-3 bottom-40 flex flex-col items-center gap-5 z-20">
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-1 overflow-hidden border-2 border-white">
                 {currentStream?.user?.image ? (
@@ -594,23 +697,52 @@ export default function VideoStreamPage() {
               <Heart className={`w-9 h-9 ${isLiked ? 'fill-[#fe2c55] text-[#fe2c55]' : 'text-white'}`} />
               <span className="text-white text-xs mt-0.5">{formatCount(likeCount)}</span>
             </button>
-            <button onClick={() => setShowComments(true)} className="flex flex-col items-center">
-              <MessageCircle className="w-9 h-9 text-white" />
-              <span className="text-white text-xs mt-0.5">{formatCount(comments.length)}</span>
-            </button>
-            <button onClick={() => setShowGifts(true)} className="flex flex-col items-center">
-              <Gift className="w-9 h-9 text-yellow-400" />
-              <span className="text-white text-xs mt-0.5">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
-            </button>
             <button onClick={() => setIsMuted(!isMuted)} className="flex flex-col items-center">
               {isMuted ? <VolumeX className="w-8 h-8 text-white" /> : <Volume2 className="w-8 h-8 text-white" />}
             </button>
           </div>
 
+          {/* Comments floating above input */}
+          <div className="absolute left-3 bottom-24 right-20 max-h-32 overflow-hidden z-10 space-y-1">
+            {comments.slice(0, 5).map(c => (
+              <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
+                <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
+                <span className="text-white text-xs">{c.content}</span>
+              </motion.div>
+            ))}
+          </div>
+
           {/* Bottom info */}
-          <div className="absolute bottom-4 left-4 right-20 z-20">
+          <div className="absolute bottom-20 left-3 right-20 z-20">
             <p className="text-white font-bold text-base">@{currentStream?.user?.name}</p>
-            {currentStream?.title && <p className="text-white/80 text-sm line-clamp-2 mt-1">{currentStream.title}</p>}
+            {currentStream?.title && <p className="text-white/80 text-sm line-clamp-1 mt-0.5">{currentStream.title}</p>}
+          </div>
+
+          {/* Bottom input and gift - Always visible */}
+          <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20">
+            <button
+              onClick={() => setShowGifts(true)}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
+            >
+              <Gift className="w-5 h-5 text-white" />
+            </button>
+            <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
+              <input
+                ref={commentInputRef}
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSendComment()}
+                placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
+                className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
+              />
+              <button
+                onClick={handleSendComment}
+                disabled={!newComment.trim()}
+                className="px-3 py-2 text-white/60 hover:text-white disabled:opacity-30"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Stream navigation indicators */}
@@ -624,36 +756,7 @@ export default function VideoStreamPage() {
         </>
       )}
 
-      {/* Comments Panel */}
-      <AnimatePresence>
-        {showComments && (
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute inset-0 bg-black/95 z-30">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                <span className="text-white font-bold">{language === 'tr' ? 'Yorumlar' : 'Comments'}</span>
-                <button onClick={() => setShowComments(false)}><X className="w-6 h-6 text-white" /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
-                {comments.map(c => (
-                  <div key={c.id} className="flex items-start gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-xs font-bold">{c.user.name[0]}</span>
-                    </div>
-                    <div><p className="text-white/80 text-sm"><span className="font-bold text-white">{c.user.name}</span> {c.content}</p></div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-4 border-t border-white/10 flex gap-2">
-                <input value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={language === 'tr' ? 'Yorum yaz...' : 'Write a comment...'}
-                  className="flex-1 bg-white/10 text-white rounded-full px-4 py-2 text-sm placeholder:text-white/40 focus:outline-none" />
-                <button onClick={handleSendComment} className="bg-[#fe2c55] text-white px-4 py-2 rounded-full text-sm font-semibold">{language === 'tr' ? 'Gönder' : 'Send'}</button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Gifts Panel */}
+      {/* Gifts Panel - Slides up from bottom */}
       <AnimatePresence>
         {showGifts && (
           <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/95 to-black/90 z-30 rounded-t-3xl">
