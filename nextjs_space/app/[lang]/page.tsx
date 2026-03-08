@@ -6,10 +6,23 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Coins, ChevronRight, Star, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { Coins, ChevronRight, Star, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2, Radio, Plus, Eye} from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface UserCredits {
   credits: number
+}
+
+interface LiveStream {
+  id: string
+  title: string | null
+  viewerCount: number
+  likeCount: number
+  user: {
+    id: string
+    name: string
+    image: string | null
+  }
 }
 
 interface DailyHoroscope {
@@ -115,11 +128,13 @@ const FORTUNE_CARDS = [
 export default function HomePage() {
   const { language } = useLanguage()
   const { data: session, status } = useSession() || {}
+  const router = useRouter()
   const [credits, setCredits] = useState<number>(0)
   const [greeting, setGreeting] = useState('')
   const [horoscope, setHoroscope] = useState<DailyHoroscope | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(false)
   const [horoscopeExpanded, setHoroscopeExpanded] = useState(false)
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
 
   useEffect(() => {
     // Set greeting based on time
@@ -132,6 +147,33 @@ export default function HomePage() {
       setGreeting(language === 'tr' ? 'İyi akşamlar' : 'Good evening')
     }
   }, [language])
+
+  useEffect(() => {
+    // Fetch live streams
+    const fetchLiveStreams = async () => {
+      try {
+        const res = await fetch('/api/video-streams')
+        if (res.ok) {
+          setLiveStreams(await res.json())
+        }
+      } catch (e) {}
+    }
+    fetchLiveStreams()
+    const interval = setInterval(fetchLiveStreams, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleStartStream = () => {
+    if (!session?.user) {
+      router.push(`/${language}/login`)
+      return
+    }
+    router.push(`/${language}/chat/video/setup`)
+  }
+
+  const handleWatchStream = () => {
+    router.push(`/${language}/chat/video`)
+  }
 
   useEffect(() => {
     if (session?.user) {
@@ -159,8 +201,90 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
+      {/* Live Streams Section - Above Greeting */}
+      <div className="pt-20 px-4 pb-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Radio className="w-5 h-5 text-red-500" />
+            {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
+          </h2>
+          
+          {/* Stories Style Scroll */}
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {/* Start Stream Button */}
+            <button
+              onClick={handleStartStream}
+              className="flex-shrink-0 flex flex-col items-center"
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 p-0.5">
+                <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center">
+                  <Plus className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              <span className="text-white text-xs mt-2 text-center max-w-[80px] truncate">
+                {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
+              </span>
+            </button>
+
+            {/* Live Streamers */}
+            {liveStreams.map((stream) => (
+              <button
+                key={stream.id}
+                onClick={handleWatchStream}
+                className="flex-shrink-0 flex flex-col items-center transition-transform hover:scale-105"
+              >
+                <div className="relative">
+                  {/* Rainbow border animation */}
+                  <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 animate-pulse">
+                    <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        {stream.user.image ? (
+                          <Image
+                            src={stream.user.image}
+                            alt={stream.user.name}
+                            width={72}
+                            height={72}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-white">
+                            {stream.user.name?.[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* CANLI badge */}
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm">
+                    CANLI
+                  </div>
+                </div>
+                <span className="text-white text-xs mt-3 text-center max-w-[80px] truncate">
+                  {stream.user.name}
+                </span>
+                <span className="text-purple-400 text-[10px] flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  {stream.viewerCount}
+                </span>
+              </button>
+            ))}
+
+            {liveStreams.length === 0 && (
+              <div className="flex-1 flex items-center justify-center py-4">
+                <p className="text-purple-400/60 text-sm">
+                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
       {/* Greeting Section */}
-      <div className="pt-20 px-4 pb-4">
+      <div className="px-4 pb-4">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
