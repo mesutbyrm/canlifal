@@ -751,3 +751,34 @@ model VideoStreamSignal {
   @@index([receiverId, processed])
   @@map("video_stream_signals")
 }
+
+// Co-broadcasters in video streams
+model StreamCoBroadcaster {
+  id          String      @id @default(cuid())
+  streamId    String
+  userId      String
+  status      String      @default("invited") // invited, active, ended
+  isMuted     Boolean     @default(false)
+  isVideoOff  Boolean     @default(false)
+  invitedAt   DateTime    @default(now())
+  joinedAt    DateTime?
+  leftAt      DateTime?
+
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@index([userId])
+  @@map("stream_co_broadcasters")
+}
+
+// Banned users from streams
+model StreamBan {
+  id            String   @id @default(cuid())
+  streamId      String
+  bannedUserId  String
+  reason        String?
+  bannedAt      DateTime @default(now())
+
+  @@unique([streamId, bannedUserId])
+  @@index([streamId])
+  @@map("stream_bans")
+}

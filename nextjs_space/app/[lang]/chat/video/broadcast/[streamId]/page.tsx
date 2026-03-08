@@ -19,8 +19,16 @@ import {
   Gift,
   Coins,
   Users,
-  Send
+  Send,
+  UserPlus,
+  VolumeX,
+  Volume2,
+  Ban,
+  MoreVertical,
+  Phone,
+  PhoneOff
 } from 'lucide-react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
 interface Comment {
   id: string
@@ -38,10 +46,21 @@ interface CenterGift {
 
 interface Viewer {
   id: string
+  odUserId?: string
+  odUserName?: string
   name: string
   image?: string | null
   hasGifted: boolean
   totalGiftAmount: number
+}
+
+interface CoBroadcaster {
+  id: string
+  userId: string
+  status: string
+  isMuted: boolean
+  isVideoOff: boolean
+  user: { id: string; name: string; image?: string | null }
 }
 
 interface FloatingHeart {
@@ -79,6 +98,9 @@ export default function BroadcastPage() {
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [newComment, setNewComment] = useState('')
+  const [showViewers, setShowViewers] = useState(false)
+  const [coBroadcasters, setCoBroadcasters] = useState<CoBroadcaster[]>([])
+  const [selectedViewer, setSelectedViewer] = useState<Viewer | null>(null)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -109,6 +131,7 @@ export default function BroadcastPage() {
         fetchComments()
         fetchGifts()
         fetchViewers()
+        fetchCoBroadcasters()
         pollViewerSignals()
       }
     }, 1000)
@@ -123,7 +146,6 @@ export default function BroadcastPage() {
 
   const startBroadcast = async () => {
     try {
-      // Request camera with wider view - lower resolution for more FOV
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode,
@@ -173,12 +195,11 @@ export default function BroadcastPage() {
           if (pc && pc.signalingState === 'have-local-offer') {
             try {
               await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
-              
-              const pendingCandidates = pendingCandidatesRef.current.get(viewerId) || []
-              for (const candidate of pendingCandidates) {
+              const pending = pendingCandidatesRef.current.get(viewerId) || []
+              for (const candidate of pending) {
                 try { await pc.addIceCandidate(candidate) } catch (e) {}
               }
-              pendingCandidatesRef.current.delete(viewerId)
+              pendingCandidatesRef.current.set(viewerId, [])
             } catch (e) {}
           }
         } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
@@ -200,17 +221,13 @@ export default function BroadcastPage() {
   }
 
   const createConnectionForViewer = async (viewerId: string) => {
-    if (!localStreamRef.current || peerConnectionsRef.current.has(viewerId)) return
+    if (!localStreamRef.current || isUnmountedRef.current) return
     
-    const pc = new RTCPeerConnection({ 
-      iceServers: ICE_SERVERS,
-      iceCandidatePoolSize: 10
-    })
-    
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
     peerConnectionsRef.current.set(viewerId, pc)
 
     localStreamRef.current.getTracks().forEach(track => {
-      pc.addTrack(track, localStreamRef.current!)
+      if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
     })
 
     pc.onicecandidate = async (event) => {
@@ -228,13 +245,10 @@ export default function BroadcastPage() {
       }
     }
 
-    pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-        setConnectedViewers(peerConnectionsRef.current.size)
-      } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
-        peerConnectionsRef.current.delete(viewerId)
-        processedViewersRef.current.delete(viewerId)
-        pendingCandidatesRef.current.delete(viewerId)
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'connected') {
+        setConnectedViewers(prev => prev + 1)
+      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
         setConnectedViewers(prev => Math.max(0, prev - 1))
       }
     }
@@ -253,7 +267,7 @@ export default function BroadcastPage() {
           data: { offer: pc.localDescription?.toJSON() }
         })
       })
-    } catch (error) {}
+    } catch (e) {}
   }
 
   const fetchStats = async () => {
@@ -285,6 +299,15 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
+  const fetchCoBroadcasters = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
+      if (res.ok) {
+        setCoBroadcasters(await res.json())
+      }
+    } catch (e) {}
+  }
+
   const fetchGifts = async () => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/gifts`)
@@ -293,7 +316,6 @@ export default function BroadcastPage() {
         const total = gifts.reduce((sum: number, g: any) => sum + Math.floor(g.giftType.price * g.quantity * 0.7), 0)
         setTotalGiftCredits(total)
         
-        // Show center gift animation for new gifts
         if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {
           const newGift = gifts[0]
           lastGiftIdRef.current = newGift.id
@@ -357,7 +379,6 @@ export default function BroadcastPage() {
 
   const handleSendComment = async () => {
     if (!newComment.trim()) return
-    // Broadcaster can also send comments
     try {
       const res = await fetch(`/api/video-streams/${streamId}/comments`, {
         method: 'POST',
@@ -369,6 +390,50 @@ export default function BroadcastPage() {
         setComments(prev => [comment, ...prev].slice(0, 8))
         setNewComment('')
       }
+    } catch (e) {}
+  }
+
+  const handleInviteCoBroadcast = async (userId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: 'invite' })
+      })
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
+  const handleMuteCoBroadcaster = async (userId: string, mute: boolean) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: mute ? 'mute' : 'unmute' })
+      })
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
+  const handleRemoveCoBroadcaster = async (userId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: 'remove' })
+      })
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
+  const handleBanUser = async (userId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, reason: 'Yayıncı tarafından engellendi' })
+      })
+      fetchViewers()
     } catch (e) {}
   }
 
@@ -393,13 +458,12 @@ export default function BroadcastPage() {
   const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
   const formatCount = (n: number) => n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
 
-  // Separate gifters and regular viewers
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
-  const regularViewers = viewers.filter(v => !v.hasGifted)
+  const activeCoBroadcasters = coBroadcasters.filter(cb => cb.status === 'active')
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Video - Portrait orientation with wider view */}
+      {/* Video - Portrait orientation */}
       <video
         ref={localVideoRef}
         autoPlay
@@ -422,16 +486,8 @@ export default function BroadcastPage() {
             exit={{ scale: 0, opacity: 0 }}
             className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
           >
-            <motion.div
-              initial={{ y: 50 }}
-              animate={{ y: 0 }}
-              className="text-center"
-            >
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: 2, duration: 0.5 }}
-                className="text-8xl mb-4"
-              >
+            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="text-center">
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: 2, duration: 0.5 }} className="text-8xl mb-4">
                 {centerGift.icon}
               </motion.div>
               <div className="flex items-center justify-center gap-3 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full">
@@ -478,10 +534,10 @@ export default function BroadcastPage() {
           
           {/* Stats */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+            <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
               <Users className="w-3.5 h-3.5 text-white" />
               <span className="text-white text-xs">{viewerCount}</span>
-            </div>
+            </button>
             <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
               <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
               <span className="text-white text-xs">{formatCount(likeCount)}</span>
@@ -495,13 +551,72 @@ export default function BroadcastPage() {
           </div>
         </div>
         
-        <button onClick={() => setShowEndConfirm(true)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
-          <X className="w-4 h-4" /> {language === 'tr' ? 'Bitir' : 'End'}
+        {/* End Stream Button */}
+        <button 
+          onClick={() => setShowEndConfirm(true)} 
+          className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
+        >
+          <X className="w-4 h-4" /> 
+          {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
         </button>
       </div>
 
+      {/* Right Side - Co-Broadcasters & Viewer List */}
+      <div className="absolute right-3 top-20 z-20 space-y-2">
+        {/* Active Co-Broadcasters */}
+        {activeCoBroadcasters.map(cb => (
+          <motion.div
+            key={cb.id}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-green-500 overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500">
+              {cb.user.image ? (
+                <Image src={cb.user.image} alt="" width={64} height={64} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">{cb.user.name[0]}</span>
+                </div>
+              )}
+            </div>
+            {cb.isMuted && (
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                <VolumeX className="w-3 h-3 text-white" />
+              </div>
+            )}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button className="absolute -top-1 -left-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                  <MoreVertical className="w-3 h-3 text-white" />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[140px] z-50">
+                  <DropdownMenu.Item
+                    onClick={() => handleMuteCoBroadcaster(cb.user.id, !cb.isMuted)}
+                    className="flex items-center gap-2 px-3 py-2 text-white text-sm rounded cursor-pointer hover:bg-white/10"
+                  >
+                    {cb.isMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    {cb.isMuted ? 'Sesi Aç' : 'Sessize Al'}
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleRemoveCoBroadcaster(cb.user.id)}
+                    className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                    Yayından Çıkar
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+            <p className="text-white text-[10px] text-center mt-1 truncate max-w-16">{cb.user.name}</p>
+          </motion.div>
+        ))}
+      </div>
+
       {/* Floating Hearts Animation */}
-      <div className="absolute right-4 top-1/3 z-10">
+      <div className="absolute right-20 top-1/3 z-10">
         <AnimatePresence>
           {floatingHearts.map(heart => (
             <motion.div
@@ -541,8 +656,78 @@ export default function BroadcastPage() {
         </div>
       )}
 
+      {/* Viewers List Modal */}
+      <AnimatePresence>
+        {showViewers && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="absolute right-3 top-36 w-64 max-h-80 bg-black/80 backdrop-blur-md rounded-xl z-30 overflow-hidden"
+          >
+            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <Users className="w-4 h-4" /> {language === 'tr' ? 'İzleyiciler' : 'Viewers'} ({viewers.length})
+              </h3>
+              <button onClick={() => setShowViewers(false)} className="text-white/60 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {viewers.map(viewer => (
+                <div key={viewer.id} className="flex items-center justify-between p-2 hover:bg-white/5">
+                  <div className="flex items-center gap-2">
+                    {viewer.image ? (
+                      <Image src={viewer.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">{viewer.name[0]}</span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white text-xs font-medium">{viewer.name}</p>
+                      {viewer.hasGifted && <p className="text-yellow-400 text-[10px]">🎁 {viewer.totalGiftAmount}</p>}
+                    </div>
+                  </div>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      <button className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[160px] z-50" sideOffset={5}>
+                        <DropdownMenu.Item
+                          onClick={() => viewer.odUserId && handleInviteCoBroadcast(viewer.odUserId)}
+                          className="flex items-center gap-2 px-3 py-2 text-green-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          {language === 'tr' ? 'Ortak Yayına Al' : 'Invite to Co-Stream'}
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          onClick={() => viewer.odUserId && handleBanUser(viewer.odUserId)}
+                          className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                        >
+                          <Ban className="w-4 h-4" />
+                          {language === 'tr' ? 'Engelle' : 'Ban'}
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu.Root>
+                </div>
+              ))}
+              {viewers.length === 0 && (
+                <p className="text-white/40 text-xs text-center py-6">
+                  {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Comments floating above input */}
-      <div className="absolute left-3 bottom-28 right-3 max-h-32 overflow-hidden z-10 space-y-1">
+      <div className="absolute left-3 bottom-28 right-20 max-h-32 overflow-hidden z-10 space-y-1">
         {comments.slice(0, 5).map(c => (
           <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
             <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>

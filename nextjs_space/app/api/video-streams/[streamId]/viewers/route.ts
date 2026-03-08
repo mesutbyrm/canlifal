@@ -59,6 +59,7 @@ export async function GET(
     // Create viewer list from gift senders (these are the people who have gifted)
     const gifterList = Object.values(giftTotals).map(item => ({
       id: item.user.id,
+      odUserId: item.user.id,
       name: item.user.name || 'User',
       image: item.user.image,
       hasGifted: true,
@@ -68,6 +69,7 @@ export async function GET(
     // Create regular viewer list (anonymous viewers)
     const regularViewerList = viewers.map((viewer, idx) => ({
       id: viewer.viewerId,
+      odUserId: null, // Anonymous viewers don't have user accounts
       name: viewer.viewerName || `Viewer ${idx + 1}`,
       image: null,
       hasGifted: false,
