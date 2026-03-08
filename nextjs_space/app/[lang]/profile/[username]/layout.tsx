@@ -24,9 +24,7 @@ async function getUser(username: string) {
         createdAt: true,
         _count: {
           select: {
-            followers: true,
-            following: true,
-            socialPosts: { where: { isPublic: true } }
+            socialPosts: true
           }
         }
       }
@@ -59,8 +57,8 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     : `${user.name} (@${displayUsername}) | Falci`
 
   const description = lang === 'tr'
-    ? `${user.name} - ${user._count.followers} takipçi, ${user._count.socialPosts} paylaşım. Falcı platformunda fallarını keşfet.`
-    : `${user.name} - ${user._count.followers} followers, ${user._count.socialPosts} posts. Discover fortunes on Falci platform.`
+    ? `${user.name} - ${user._count.socialPosts} paylaşım. Falcı platformunda fallarını keşfet.`
+    : `${user.name} - ${user._count.socialPosts} posts. Discover fortunes on Falci platform.`
 
   return {
     title,

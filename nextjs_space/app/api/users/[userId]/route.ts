@@ -28,11 +28,7 @@ export async function GET(
         zodiacSign: true,
         _count: {
           select: {
-            followers: true,
-            following: true,
-            socialPosts: {
-              where: { isPublic: true }
-            }
+            socialPosts: true
           }
         }
       }
@@ -41,6 +37,12 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    // Get follower and following counts
+    const [followerCount, followingCount] = await Promise.all([
+      prisma.follow.count({ where: { followingId: user.id } }),
+      prisma.follow.count({ where: { followerId: user.id } })
+    ])
 
     // Get total likes on user's posts
     const totalLikes = await prisma.socialLike.count({
@@ -73,8 +75,8 @@ export async function GET(
       image: user.image,
       createdAt: user.createdAt,
       zodiacSign: user.zodiacSign,
-      followerCount: user._count.followers,
-      followingCount: user._count.following,
+      followerCount,
+      followingCount,
       postCount: user._count.socialPosts,
       totalLikes,
       isFollowing,
