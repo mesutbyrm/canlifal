@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
-import { MessageCircle, Users, Sparkles, Video, Radio, Play, ChevronRight, Plus, Eye } from 'lucide-react'
+import { MessageCircle, Users, Sparkles, Video, Radio, Play, ChevronRight, Plus, Eye, Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -51,6 +51,7 @@ export default function ChatRoomsPage() {
   const [selectedStream, setSelectedStream] = useState<string | null>(null)
   const [streamViewers, setStreamViewers] = useState<StreamViewer[]>([])
   const [loadingViewers, setLoadingViewers] = useState(false)
+  const [isStartingStream, setIsStartingStream] = useState(false)
 
   useEffect(() => {
     fetchRooms()
@@ -113,12 +114,30 @@ export default function ChatRoomsPage() {
     }
   }
 
-  const handleStartStream = () => {
+  const handleStartStream = async () => {
     if (!session?.user) {
       router.push(`/${language}/login`)
       return
     }
-    router.push(`/${language}/chat/video`)
+    
+    setIsStartingStream(true)
+    try {
+      const res = await fetch('/api/video-streams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: null })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        router.push(`/${language}/chat/video/broadcast/${data.id}`)
+      } else {
+        console.error('Failed to create stream')
+        setIsStartingStream(false)
+      }
+    } catch (error) {
+      console.error('Error creating stream:', error)
+      setIsStartingStream(false)
+    }
   }
 
   return (
@@ -158,15 +177,23 @@ export default function ChatRoomsPage() {
             {/* Start Stream Button */}
             <button
               onClick={handleStartStream}
-              className="flex-shrink-0 flex flex-col items-center"
+              disabled={isStartingStream}
+              className="flex-shrink-0 flex flex-col items-center disabled:opacity-50"
             >
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 p-0.5">
                 <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center">
-                  <Plus className="w-8 h-8 text-white" />
+                  {isStartingStream ? (
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  ) : (
+                    <Plus className="w-8 h-8 text-white" />
+                  )}
                 </div>
               </div>
               <span className="text-white text-xs mt-2 text-center max-w-[80px] truncate">
-                {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
+                {isStartingStream 
+                  ? (language === 'tr' ? 'Başlatılıyor...' : 'Starting...')
+                  : (language === 'tr' ? 'Yayın Başlat' : 'Go Live')
+                }
               </span>
             </button>
 
