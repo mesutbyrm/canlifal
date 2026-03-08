@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink, Eye } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import YouTubeSearchModal from '@/components/youtube-search-modal'
@@ -21,6 +21,7 @@ interface SocialPost {
   isPublic: boolean
   createdAt: string
   fortuneCount?: number
+  viewCount?: number
   user: {
     id: string
     name: string
@@ -669,10 +670,10 @@ export default function SocialPage() {
 
                     {/* Actions */}
                     <div className="px-4 py-3 border-t border-purple-500/10 flex items-center justify-between">
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-5">
                         <button
                           onClick={() => handleLike(post.id)}
-                          className={`flex items-center gap-2 transition-colors ${
+                          className={`flex items-center gap-1.5 transition-colors ${
                             isLiked(post) ? 'text-red-400' : 'text-purple-400 hover:text-red-400'
                           }`}
                         >
@@ -681,14 +682,20 @@ export default function SocialPage() {
                         </button>
                         <button
                           onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-                          className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
+                          className="flex items-center gap-1.5 text-purple-400 hover:text-gold-400 transition-colors"
                         >
                           <MessageCircle className="w-5 h-5" />
                           <span>{post._count.comments}</span>
                         </button>
+                        {(post.postType === 'fortune' || post.fortuneType) && (
+                          <div className="flex items-center gap-1.5 text-purple-400/70">
+                            <Eye className="w-5 h-5" />
+                            <span>{post.viewCount || 0}</span>
+                          </div>
+                        )}
                         <button
                           onClick={() => setShareModal(post.id)}
-                          className="flex items-center gap-2 text-purple-400 hover:text-gold-400 transition-colors"
+                          className="flex items-center gap-1.5 text-purple-400 hover:text-gold-400 transition-colors"
                         >
                           <Share2 className="w-5 h-5" />
                         </button>

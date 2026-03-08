@@ -256,6 +256,7 @@ model Fortune {
   inputData   String
   aiResponse  String
   language    String
+  viewCount   Int          @default(0)
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   socialPosts SocialPost[]

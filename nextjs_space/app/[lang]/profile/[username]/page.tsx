@@ -613,7 +613,7 @@ export default function ProfilePage() {
               const thumbnail = getPostThumbnail(post)
               const fortuneIcon = post.fortuneType ? FORTUNE_ICONS[post.fortuneType] : null
               const isPinned = index < 3
-              const viewCount = post.viewCount || (post.likeCount * Math.floor(Math.random() * 50 + 10))
+              const viewCount = post.viewCount || 0
 
               return (
                 <Link

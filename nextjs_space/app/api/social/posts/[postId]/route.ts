@@ -17,6 +17,9 @@ export async function GET(
         user: {
           select: { id: true, name: true, image: true }
         },
+        fortune: {
+          select: { viewCount: true }
+        },
         comments: {
           include: {
             user: {
@@ -38,7 +41,13 @@ export async function GET(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    return NextResponse.json(post)
+    // Flatten viewCount for easier access
+    const postWithViewCount = {
+      ...post,
+      viewCount: post.fortune?.viewCount || 0
+    }
+
+    return NextResponse.json(postWithViewCount)
   } catch (error) {
     console.error('Social post fetch error:', error)
     return NextResponse.json({ error: 'Failed to fetch post' }, { status: 500 })

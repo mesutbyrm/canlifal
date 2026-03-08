@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
-import { Heart, MessageCircle, Share2, ArrowLeft, Coffee, Moon, Star, Sparkles, Twitter, Facebook, Link2, Check, Send } from 'lucide-react'
+import { Heart, MessageCircle, Share2, ArrowLeft, Coffee, Moon, Star, Sparkles, Twitter, Facebook, Link2, Check, Send, Eye } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -31,6 +31,7 @@ interface Post {
   isAuto?: boolean
   isPublic: boolean
   createdAt: string
+  viewCount?: number
   user: {
     id: string
     name: string
@@ -62,15 +63,32 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
   const { data: session } = useSession() || {}
   const [isLiked, setIsLiked] = useState(post.likes.some(l => l.userId === session?.user?.id))
   const [likeCount, setLikeCount] = useState(post._count.likes)
+  const [viewCount, setViewCount] = useState(post.viewCount || 0)
   const [comments, setComments] = useState(post.comments)
   const [newComment, setNewComment] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const viewTrackedRef = useRef(false)
 
   const FortuneIcon = FORTUNE_ICONS[post.fortuneType || 'default'] || FORTUNE_ICONS.default
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   const shareUrl = `${baseUrl}/${lang}/fal/${post.id}`
+
+  // Track view when page loads (only once)
+  useEffect(() => {
+    if (!viewTrackedRef.current && (post.postType === 'fortune' || post.fortuneType)) {
+      viewTrackedRef.current = true
+      fetch(`/api/social/posts/${post.id}/view`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.viewCount !== undefined) {
+            setViewCount(data.viewCount)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [post.id, post.postType, post.fortuneType])
 
   const handleLike = async () => {
     if (!session?.user) return
@@ -203,7 +221,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
 
           {/* Actions */}
           <div className="px-4 py-3 border-t border-purple-500/10 flex items-center justify-between">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-5">
               <button
                 onClick={handleLike}
                 className={`flex items-center gap-2 transition-colors ${
@@ -217,6 +235,12 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 <MessageCircle className="w-6 h-6" />
                 <span className="text-sm">{comments.length}</span>
               </div>
+              {(post.postType === 'fortune' || post.fortuneType) && (
+                <div className="flex items-center gap-2 text-white/50">
+                  <Eye className="w-6 h-6" />
+                  <span className="text-sm">{viewCount}</span>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setShareOpen(!shareOpen)}

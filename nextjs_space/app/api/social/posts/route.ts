@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
           user: {
             select: { id: true, name: true, image: true }
           },
+          fortune: {
+            select: { viewCount: true }
+          },
           _count: {
             select: { comments: true, likes: true }
           },
@@ -48,15 +51,16 @@ export async function GET(request: NextRequest) {
       prisma.socialPost.count({ where })
     ])
 
-    // Add fortune count for auto-shared posts
+    // Add fortune count for auto-shared posts and flatten viewCount
     const postsWithStats = await Promise.all(posts.map(async (post: any) => {
+      const viewCount = post.fortune?.viewCount || 0
       if (post.isAuto && post.fortuneType) {
         const fortuneCount = await prisma.fortune.count({
           where: { fortuneType: post.fortuneType }
         })
-        return { ...post, fortuneCount }
+        return { ...post, fortuneCount, viewCount }
       }
-      return post
+      return { ...post, viewCount }
     }))
 
     return NextResponse.json({

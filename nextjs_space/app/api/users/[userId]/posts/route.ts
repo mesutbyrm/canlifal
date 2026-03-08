@@ -58,7 +58,8 @@ export async function GET(
             select: {
               id: true,
               fortuneType: true,
-              aiResponse: true
+              aiResponse: true,
+              viewCount: true
             }
           },
           _count: {
@@ -79,7 +80,8 @@ export async function GET(
       posts: posts.map((post: any) => ({
         ...post,
         likeCount: post._count.likes,
-        commentCount: post._count.comments
+        commentCount: post._count.comments,
+        viewCount: post.fortune?.viewCount || 0
       })),
       total,
       hasMore: skip + posts.length < total
