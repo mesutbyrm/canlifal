@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         favoriteTeam: true,
         credits: true,
         membership: true,
+        messagePrivacy: true,
         createdAt: true
       }
     });
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam } = body;
+    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam, messagePrivacy } = body;
 
     const updateData: any = {};
     
@@ -67,6 +68,9 @@ export async function PATCH(request: NextRequest) {
     if (zodiacSign !== undefined) updateData.zodiacSign = zodiacSign;
     if (risingSign !== undefined) updateData.risingSign = risingSign;
     if (favoriteTeam !== undefined) updateData.favoriteTeam = favoriteTeam;
+    if (messagePrivacy !== undefined && ['everyone', 'followers', 'nobody'].includes(messagePrivacy)) {
+      updateData.messagePrivacy = messagePrivacy;
+    }
 
     // Check username uniqueness
     if (username !== undefined) {
@@ -130,7 +134,8 @@ export async function PATCH(request: NextRequest) {
         birthTime: true,
         zodiacSign: true,
         risingSign: true,
-        favoriteTeam: true
+        favoriteTeam: true,
+        messagePrivacy: true
       }
     });
 

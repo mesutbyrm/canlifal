@@ -1,4 +1,5 @@
 import Navbar from '@/components/navbar'
+import FloatingProfile from '@/components/floating-profile'
 
 export default function LangLayout({
   children,
@@ -11,6 +12,7 @@ export default function LangLayout({
       <main className="pt-16">
         {children}
       </main>
+      <FloatingProfile />
     </div>
   )
 }

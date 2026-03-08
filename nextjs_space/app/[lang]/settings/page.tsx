@@ -23,7 +23,11 @@ import {
   Mail,
   Phone,
   AtSign,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  Lock,
+  Users,
+  Globe
 } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
@@ -70,6 +74,7 @@ export default function SettingsPage() {
   const [favoriteTeam, setFavoriteTeam] = useState('')
   const [zodiacSign, setZodiacSign] = useState('')
   const [risingSign, setRisingSign] = useState('')
+  const [messagePrivacy, setMessagePrivacy] = useState('everyone')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -95,6 +100,7 @@ export default function SettingsPage() {
         setFavoriteTeam(data.favoriteTeam || '')
         setZodiacSign(data.zodiacSign || '')
         setRisingSign(data.risingSign || '')
+        setMessagePrivacy(data.messagePrivacy || 'everyone')
       }
     } catch (err) {
       console.error('Fetch profile error:', err)
@@ -194,7 +200,8 @@ export default function SettingsPage() {
           birthTime: birthTime || null,
           favoriteTeam: favoriteTeam || null,
           zodiacSign: zodiacSign || null,
-          risingSign: risingSign || null
+          risingSign: risingSign || null,
+          messagePrivacy
         })
       })
 
@@ -439,6 +446,72 @@ export default function SettingsPage() {
                 <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
                 {FOOTBALL_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
               </select>
+            </div>
+          </div>
+
+          {/* Privacy Settings Section */}
+          <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/30 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-purple-400" />
+              {language === 'tr' ? 'Gizlilik Ayarları' : 'Privacy Settings'}
+            </h3>
+
+            <div>
+              <label className="block text-sm text-purple-300 mb-3">
+                {language === 'tr' ? 'Kimler bana mesaj gönderebilir?' : 'Who can send me messages?'}
+              </label>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setMessagePrivacy('everyone')}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    messagePrivacy === 'everyone'
+                      ? 'bg-purple-600/30 border-purple-500 text-white'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <Globe className="w-5 h-5" />
+                  <div className="flex-1 text-left">
+                    <p className="font-medium">{language === 'tr' ? 'Herkes' : 'Everyone'}</p>
+                    <p className="text-xs opacity-70">{language === 'tr' ? 'Tüm kullanıcılar size mesaj gönderebilir' : 'All users can message you'}</p>
+                  </div>
+                  {messagePrivacy === 'everyone' && <Check className="w-5 h-5 text-green-400" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMessagePrivacy('followers')}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    messagePrivacy === 'followers'
+                      ? 'bg-purple-600/30 border-purple-500 text-white'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <Users className="w-5 h-5" />
+                  <div className="flex-1 text-left">
+                    <p className="font-medium">{language === 'tr' ? 'Takipçilerim' : 'Followers Only'}</p>
+                    <p className="text-xs opacity-70">{language === 'tr' ? 'Sadece sizi takip edenler mesaj gönderebilir' : 'Only your followers can message you'}</p>
+                  </div>
+                  {messagePrivacy === 'followers' && <Check className="w-5 h-5 text-green-400" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMessagePrivacy('nobody')}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    messagePrivacy === 'nobody'
+                      ? 'bg-purple-600/30 border-purple-500 text-white'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <Lock className="w-5 h-5" />
+                  <div className="flex-1 text-left">
+                    <p className="font-medium">{language === 'tr' ? 'Hiç Kimse' : 'Nobody'}</p>
+                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mesaj almayı tamamen kapatın' : 'Disable messaging completely'}</p>
+                  </div>
+                  {messagePrivacy === 'nobody' && <Check className="w-5 h-5 text-green-400" />}
+                </button>
+              </div>
             </div>
           </div>
 

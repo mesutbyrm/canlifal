@@ -489,11 +489,11 @@ export default function ProfilePage() {
                   {language === 'tr' ? 'Fal Stüdyom' : 'Fortune Studio'}
                 </Link>
                 <Link
-                  href={`/${language}/credits`}
+                  href={`/${language}/messages`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
-                  <Wallet className="w-4 h-4 text-gold-400" />
-                  {language === 'tr' ? 'Bakiye' : 'Balance'}
+                  <MessageCircle className="w-4 h-4 text-gold-400" />
+                  {language === 'tr' ? 'Mesajlar' : 'Messages'}
                 </Link>
                 <Link
                   href={`/${language}/chat/video/setup`}
@@ -505,32 +505,39 @@ export default function ProfilePage() {
               </>
             ) : (
               <>
+                {/* Follow/Unfollow Button with Icon */}
                 <button
                   onClick={handleFollow}
                   disabled={followLoading}
-                  className={`flex-1 py-2.5 px-6 font-medium rounded-lg flex items-center justify-center gap-2 text-sm transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-6 font-medium rounded-lg text-sm transition-all ${
                     profile.isFollowing
-                      ? 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border border-purple-700'
-                      : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                      ? 'bg-purple-900/50 hover:bg-red-900/50 text-purple-200 border border-purple-700 hover:border-red-500 hover:text-red-400 group'
+                      : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90'
                   }`}
                 >
                   {followLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : profile.isFollowing ? (
                     <>
-                      <UserMinus className="w-4 h-4" />
-                      {language === 'tr' ? 'Takipten Çık' : 'Unfollow'}
+                      <UserMinus className="w-5 h-5 group-hover:text-red-400" />
+                      <span className="group-hover:hidden">{language === 'tr' ? 'Takip Ediliyor' : 'Following'}</span>
+                      <span className="hidden group-hover:inline">{language === 'tr' ? 'Takibi Bırak' : 'Unfollow'}</span>
                     </>
                   ) : (
                     <>
-                      <UserPlus className="w-4 h-4" />
+                      <UserPlus className="w-5 h-5" />
                       {language === 'tr' ? 'Takip Et' : 'Follow'}
                     </>
                   )}
                 </button>
-                <button className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700">
+                {/* Message Button */}
+                <Link
+                  href={`/${language}/messages/${profile.id}`}
+                  className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700 flex items-center justify-center"
+                >
                   <MessageCircle className="w-5 h-5 text-purple-300" />
-                </button>
+                </Link>
+                {/* Share Button */}
                 <button className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700">
                   <Share2 className="w-5 h-5 text-purple-300" />
                 </button>

@@ -35,6 +35,8 @@ model User {
   risingSign            String?
   favoriteTeam          String?
   lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
+  // Privacy settings
+  messagePrivacy        String               @default("everyone") // everyone, followers, nobody
   accounts              Account[]
   bannedOthers          ChatBan[]            @relation("Banner")
   bannedIn              ChatBan[]            @relation("BannedUser")
@@ -63,6 +65,12 @@ model User {
   streamGifts           StreamGift[]
   followers             Follow[]             @relation("Following")
   following             Follow[]             @relation("Follower")
+  sentMessages          DirectMessage[]      @relation("SentMessages")
+  receivedMessages      DirectMessage[]      @relation("ReceivedMessages")
+  conversationsAsUser1  Conversation[]       @relation("ConversationUser1")
+  conversationsAsUser2  Conversation[]       @relation("ConversationUser2")
+  sentRequests          MessageRequest[]     @relation("SentRequests")
+  receivedRequests      MessageRequest[]     @relation("ReceivedRequests")
 
   @@index([referralCode])
   @@index([referredById])
@@ -800,4 +808,59 @@ model StreamBan {
   @@unique([streamId, bannedUserId])
   @@index([streamId])
   @@map("stream_bans")
+}
+
+// Direct Messages between users
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String   @db.Text
+  imageUrl    String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("direct_messages")
+}
+
+// Conversation threads for DMs
+model Conversation {
+  id              String   @id @default(cuid())
+  user1Id         String
+  user2Id         String
+  lastMessageAt   DateTime @default(now())
+  lastMessageText String?
+  createdAt       DateTime @default(now())
+  user1           User     @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2           User     @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+// Message request (for users with restricted messaging)
+model MessageRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      String   @default("pending") // pending, accepted, rejected
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sender      User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("message_requests")
 }
