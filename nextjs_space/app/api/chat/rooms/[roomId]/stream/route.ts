@@ -63,7 +63,7 @@ export async function GET(
 
           if (newMessages.length > 0) {
             // Get roles and nicknames
-            const userIds = [...new Set(newMessages.map(m => m.userId))]
+            const userIds = [...new Set(newMessages.map((m: { userId: string }) => m.userId))]
             const [userRoles, userPresences] = await Promise.all([
               prisma.chatUserRole.findMany({
                 where: { roomId, userId: { in: userIds } }
@@ -74,12 +74,13 @@ export async function GET(
               })
             ])
 
-            const roleMap = new Map(userRoles.map(r => [r.userId, r.role]))
-            const nicknameMap = new Map(userPresences.map(p => [p.userId, p.nickname]))
+            const roleMap = new Map(userRoles.map((r: { userId: string; role: string }) => [r.userId, r.role]))
+            const nicknameMap = new Map(userPresences.map((p: { userId: string; nickname: string | null }) => [p.userId, p.nickname]))
 
-            const messagesWithRoles = newMessages.map(msg => {
+            const roleSymbols: Record<string, string> = ROLE_SYMBOLS as Record<string, string>
+            const messagesWithRoles = newMessages.map((msg: { userId: string; user: { name: string; role: string } }) => {
               const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
-              const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole] || '' : ''
+              const roleSymbol = chatRole && typeof chatRole === 'string' ? roleSymbols[chatRole] || '' : ''
               const nickname = nicknameMap.get(msg.userId) || msg.user.name
               return {
                 ...msg,
@@ -109,22 +110,24 @@ export async function GET(
             })
 
             // Get roles for active users
-            const activeUserIds = presences.map(p => p.userId)
+            const activeUserIds = presences.map((p: { userId: string }) => p.userId)
             const activeUserRoles = await prisma.chatUserRole.findMany({
               where: { roomId, userId: { in: activeUserIds } }
             })
-            const activeRoleMap = new Map(activeUserRoles.map(r => [r.userId, r.role]))
+            const activeRoleMap = new Map(activeUserRoles.map((r: { userId: string; role: string }) => [r.userId, r.role]))
 
-            const activeUsers = presences.map(p => {
+            const roleLevels: Record<string, number> = { founder: 5, admin: 4, op: 3, voice: 2 }
+            const roleSymbolsActive: Record<string, string> = ROLE_SYMBOLS as Record<string, string>
+            const activeUsers = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; user: { name: string; role: string } }) => {
               const chatRole = activeRoleMap.get(p.userId) || (p.user.role === 'admin' ? 'founder' : null)
-              const roleLevel = chatRole ? { founder: 5, admin: 4, op: 3, voice: 2 }[chatRole] || 0 : 0
+              const roleLevel = chatRole && typeof chatRole === 'string' ? roleLevels[chatRole] || 0 : 0
               return {
                 id: p.userId,
                 name: p.user.name,
                 nickname: p.nickname || p.user.name,
                 lastSeen: p.lastSeen.toISOString(),
                 chatRole,
-                roleSymbol: chatRole ? ROLE_SYMBOLS[chatRole] : null,
+                roleSymbol: chatRole && typeof chatRole === 'string' ? roleSymbolsActive[chatRole] : null,
                 roleLevel,
                 isAdmin: p.user.role === 'admin'
               }
@@ -151,7 +154,7 @@ export async function GET(
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: 'typing', 
-            users: typingUsers.map(u => u.nickname || 'User')
+            users: typingUsers.map((u: { userId: string; nickname: string | null }) => u.nickname || 'User')
           })}\n\n`))
 
         } catch (error) {

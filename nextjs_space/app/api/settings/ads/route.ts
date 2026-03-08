@@ -15,7 +15,7 @@ export async function GET() {
     })
     
     const settingsMap: Record<string, string> = {}
-    adSettings.forEach(s => {
+    adSettings.forEach((s: { key: string; value: string }) => {
       settingsMap[s.key] = s.value
     })
 

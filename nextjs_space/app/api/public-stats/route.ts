@@ -43,7 +43,7 @@ export async function GET() {
         where: {
           createdAt: { gte: oneDayAgo }
         }
-      }).then(r => r.length),
+      }).then((r: { userId: string }[]) => r.length),
       // Total registered users
       prisma.user.count()
     ]);
@@ -58,19 +58,19 @@ export async function GET() {
     });
 
     // Map presence counts to rooms
-    const presenceMap = new Map(chatPresences.map(p => [p.roomId, p._count.roomId]));
+    const presenceMap = new Map(chatPresences.map((p: { roomId: string; _count: { roomId: number } }) => [p.roomId, p._count.roomId]));
     
-    const chatRoomsWithPresence = chatRooms.map(room => ({
+    const chatRoomsWithPresence = chatRooms.map((room: { id: string; slug: string; nameEn: string; nameTr: string; icon: string }) => ({
       ...room,
       onlineCount: presenceMap.get(room.id) || 0
     }));
 
     // Total online in chat
-    const totalChatOnline = chatPresences.reduce((sum, p) => sum + p._count.roomId, 0);
+    const totalChatOnline = chatPresences.reduce((sum: number, p: { roomId: string; _count: { roomId: number } }) => sum + p._count.roomId, 0);
 
     // Format fortune stats
     const fortunesByType: Record<string, number> = {};
-    fortuneStats.forEach(stat => {
+    fortuneStats.forEach((stat: { fortuneType: string; _count: { fortuneType: number } }) => {
       fortunesByType[stat.fortuneType] = stat._count.fortuneType;
     });
 

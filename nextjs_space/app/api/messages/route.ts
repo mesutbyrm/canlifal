@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Get unread counts for each conversation
     const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv) => {
+      conversations.map(async (conv: { id: string; user1Id: string; user2Id: string; user1: { id: string; name: string | null; username: string | null; image: string | null }; user2: { id: string; name: string | null; username: string | null; image: string | null }; lastMessageText: string | null; lastMessageAt: Date | null }) => {
         const otherUser = conv.user1Id === userId ? conv.user2 : conv.user1
         const unreadCount = await prisma.directMessage.count({
           where: {

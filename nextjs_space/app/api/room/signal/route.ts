@@ -83,14 +83,14 @@ export async function GET(request: NextRequest) {
     if (signals.length > 0) {
       await prisma.roomSignal.updateMany({
         where: {
-          id: { in: signals.map(s => s.id) }
+          id: { in: signals.map((s: { id: string }) => s.id) }
         },
         data: { processed: true }
       });
     }
 
     // Parse signal data
-    const parsedSignals = signals.map(s => ({
+    const parsedSignals = signals.map((s: { id: string; signalData: string; signalType: string; senderId: string; receiverId: string }) => ({
       ...s,
       signalData: JSON.parse(s.signalData)
     }));

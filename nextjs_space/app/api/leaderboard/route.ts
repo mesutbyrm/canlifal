@@ -57,19 +57,19 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      topReferrers: topReferrers.map(u => ({
+      topReferrers: topReferrers.map((u: { id: string; name: string | null; image: string | null; _count: { referrals: number } }) => ({
         id: u.id,
         name: u.name,
         image: u.image,
         count: u._count.referrals
       })),
-      topFortuneUsers: topFortuneUsers.map(u => ({
+      topFortuneUsers: topFortuneUsers.map((u: { id: string; name: string | null; image: string | null; _count: { fortunes: number } }) => ({
         id: u.id,
         name: u.name,
         image: u.image,
         count: u._count.fortunes
       })),
-      topSharers: topSharers.map(u => ({
+      topSharers: topSharers.map((u: { id: string; name: string | null; image: string | null; _count: { socialPosts: number } }) => ({
         id: u.id,
         name: u.name,
         image: u.image,

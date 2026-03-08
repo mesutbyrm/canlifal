@@ -23,7 +23,7 @@ export async function GET() {
       orderBy: { createdAt: 'asc' }
     })
 
-    const roomsWithCounts = rooms.map(room => ({
+    const roomsWithCounts = rooms.map((room: { id: string; slug: string; nameEn: string; nameTr: string; descEn: string | null; descTr: string | null; icon: string; _count: { messages: number }; presences: { userId: string }[] }) => ({
       id: room.id,
       slug: room.slug,
       nameEn: room.nameEn,
