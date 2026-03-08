@@ -112,7 +112,7 @@ export default function BroadcastPage() {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const lastNotificationIdRef = useRef<string>('')
+  const shownNotificationIdsRef = useRef<Set<string>>(new Set())
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const processedViewersRef = useRef<Set<string>>(new Set())
@@ -327,17 +327,18 @@ export default function BroadcastPage() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications?limit=5')
+      const res = await fetch('/api/notifications?limit=10')
       if (res.ok) {
         const notifications = await res.json()
         // Check for co-broadcast accept/reject notifications
         for (const notif of notifications) {
-          if (notif.id === lastNotificationIdRef.current) break
-          if (!lastNotificationIdRef.current) {
-            lastNotificationIdRef.current = notif.id
-            break
-          }
+          // Skip if already shown
+          if (shownNotificationIdsRef.current.has(notif.id)) continue
           
+          // Mark as shown
+          shownNotificationIdsRef.current.add(notif.id)
+          
+          // Only show toast for co-broadcast notifications for this stream
           if (notif.type === 'co_broadcast_accepted' || notif.type === 'co_broadcast_rejected') {
             const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data
             if (data?.streamId === streamId) {
@@ -352,8 +353,11 @@ export default function BroadcastPage() {
             }
           }
         }
-        if (notifications.length > 0) {
-          lastNotificationIdRef.current = notifications[0].id
+        
+        // Limit the set size to avoid memory issues (keep only recent 100)
+        if (shownNotificationIdsRef.current.size > 100) {
+          const arr = Array.from(shownNotificationIdsRef.current)
+          shownNotificationIdsRef.current = new Set(arr.slice(-50))
         }
       }
     } catch (e) {}

@@ -22,7 +22,8 @@ import {
   RefreshCw,
   Send,
   UserPlus,
-  Phone
+  Phone,
+  LogIn
 } from 'lucide-react'
 
 interface VideoStream {
@@ -149,21 +150,19 @@ export default function VideoStreamPage() {
     isUnmountedRef.current = false
     fetchStreams()
     fetchGiftTypes()
+    
     if (session?.user) {
       fetchCredits()
-      // Poll for co-broadcast invitations
-      const inviteInterval = setInterval(checkCoBroadcastInvite, 3000)
-      return () => {
-        isUnmountedRef.current = true
-        clearInterval(inviteInterval)
-        cleanup()
-      }
     }
     
-    const interval = setInterval(fetchStreams, 10000)
+    // Poll for co-broadcast invitations (for both guests and logged-in users)
+    const inviteInterval = setInterval(checkCoBroadcastInvite, 3000)
+    const streamInterval = setInterval(fetchStreams, 10000)
+    
     return () => {
       isUnmountedRef.current = true
-      clearInterval(interval)
+      clearInterval(inviteInterval)
+      clearInterval(streamInterval)
       cleanup()
     }
   }, [session?.user])
@@ -573,14 +572,17 @@ export default function VideoStreamPage() {
   }
 
   const checkCoBroadcastInvite = async () => {
-    if (!session?.user?.id) return
+    // Check for both logged-in users AND guests using viewerId
+    const checkUserId = session?.user?.id || viewerIdRef.current
+    if (!checkUserId) return
+    
     try {
       // Check all live streams for invitations
       for (const stream of streams) {
         const res = await fetch(`/api/video-streams/${stream.id}/co-broadcast`)
         if (res.ok) {
           const coBroadcasters = await res.json()
-          const myInvite = coBroadcasters.find((cb: any) => cb.userId === session.user.id && cb.status === 'invited')
+          const myInvite = coBroadcasters.find((cb: any) => cb.userId === checkUserId && cb.status === 'invited')
           if (myInvite) {
             setCoBroadcastInvite({
               streamId: stream.id,
@@ -931,8 +933,10 @@ export default function VideoStreamPage() {
               animate={{ scale: 1, y: 0 }}
               className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
             >
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <UserPlus className="w-10 h-10 text-white" />
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse ${
+                session?.user ? 'bg-gradient-to-br from-green-400 to-green-600' : 'bg-gradient-to-br from-orange-400 to-red-500'
+              }`}>
+                {session?.user ? <UserPlus className="w-10 h-10 text-white" /> : <LogIn className="w-10 h-10 text-white" />}
               </div>
               
               <h2 className="text-xl font-bold text-white mb-2">
@@ -955,35 +959,64 @@ export default function VideoStreamPage() {
                 </div>
               </div>
               
-              <p className="text-white/70 text-sm mb-6">
-                {language === 'tr' 
-                  ? 'Kabul ederseniz kameranız açılacak ve yayına katılacaksınız.'
-                  : 'If you accept, your camera will turn on and you will join the stream.'}
-              </p>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRejectCoBroadcast}
-                  className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
-                >
-                  <X className="w-5 h-5" />
-                  {language === 'tr' ? 'Reddet' : 'Decline'}
-                </button>
-                <button
-                  onClick={handleAcceptCoBroadcast}
-                  disabled={isAcceptingInvite}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isAcceptingInvite ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Phone className="w-5 h-5" />
-                      {language === 'tr' ? 'Kabul Et' : 'Accept'}
-                    </>
-                  )}
-                </button>
-              </div>
+              {session?.user ? (
+                <>
+                  <p className="text-white/70 text-sm mb-6">
+                    {language === 'tr' 
+                      ? 'Kabul ederseniz kameranız açılacak ve yayına katılacaksınız.'
+                      : 'If you accept, your camera will turn on and you will join the stream.'}
+                  </p>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleRejectCoBroadcast}
+                      className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                    >
+                      <X className="w-5 h-5" />
+                      {language === 'tr' ? 'Reddet' : 'Decline'}
+                    </button>
+                    <button
+                      onClick={handleAcceptCoBroadcast}
+                      disabled={isAcceptingInvite}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAcceptingInvite ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Phone className="w-5 h-5" />
+                          {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-white/70 text-sm mb-6">
+                    {language === 'tr' 
+                      ? 'Ortak yayına katılmak için üye olmanız gerekiyor.'
+                      : 'You need to sign up to join co-broadcast.'}
+                  </p>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setCoBroadcastInvite(null)}
+                      className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                    >
+                      <X className="w-5 h-5" />
+                      {language === 'tr' ? 'Kapat' : 'Close'}
+                    </button>
+                    <button
+                      onClick={() => router.push(`/${language}/login`)}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                    >
+                      <LogIn className="w-5 h-5" />
+                      {language === 'tr' ? 'Giriş Yap' : 'Sign In'}
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
