@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
@@ -26,7 +26,8 @@ import {
   Ban,
   MoreVertical,
   Phone,
-  PhoneOff
+  PhoneOff,
+  Swords
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
@@ -42,6 +43,7 @@ interface CenterGift {
   senderImage?: string | null
   icon: string
   giftName: string
+  targetUserId?: string // Who received the gift (broadcaster or co-broadcaster)
 }
 
 interface Viewer {
@@ -61,11 +63,13 @@ interface CoBroadcaster {
   isMuted: boolean
   isVideoOff: boolean
   user: { id: string; name: string; image?: string | null }
+  giftScore?: number
 }
 
 interface FloatingHeart {
   id: number
   color: string
+  side?: 'left' | 'right'
 }
 
 interface ToastMessage {
@@ -89,8 +93,10 @@ export default function BroadcastPage() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const { language } = useLanguage()
   const streamId = params.streamId as string
+  const isCohost = searchParams.get('cohost') === 'true'
 
   const [viewerCount, setViewerCount] = useState(0)
   const [likeCount, setLikeCount] = useState(0)
@@ -98,6 +104,11 @@ export default function BroadcastPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
+  // VS Battle state
+  const [myScore, setMyScore] = useState(0)
+  const [coBroadcasterScore, setCoBroadcasterScore] = useState(0)
+  const [battleTimer, setBattleTimer] = useState(0)
+  const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<CoBroadcaster | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
@@ -112,14 +123,19 @@ export default function BroadcastPage() {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
+  const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
   const shownNotificationIdsRef = useRef<Set<string>>(new Set())
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
+  const coBroadcasterPcRef = useRef<RTCPeerConnection | null>(null)
   const processedViewersRef = useRef<Set<string>>(new Set())
+  const processedCoBroadcastersRef = useRef<Set<string>>(new Set())
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
+  const coBroadcasterCandidatesRef = useRef<RTCIceCandidate[]>([])
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   const isUnmountedRef = useRef(false)
 
   useEffect(() => {
@@ -143,6 +159,7 @@ export default function BroadcastPage() {
         fetchViewers()
         fetchCoBroadcasters()
         pollViewerSignals()
+        pollCoBroadcasterSignals()
         fetchNotifications()
       }
     }, 1000)
@@ -151,9 +168,30 @@ export default function BroadcastPage() {
       isUnmountedRef.current = true
       clearInterval(durationInterval)
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      if (battleTimerRef.current) clearInterval(battleTimerRef.current)
       cleanup()
     }
   }, [session])
+
+  // Start battle timer when co-broadcaster joins
+  useEffect(() => {
+    if (activeCoBroadcaster && !battleTimerRef.current) {
+      setBattleTimer(0)
+      battleTimerRef.current = setInterval(() => {
+        setBattleTimer(prev => prev + 1)
+      }, 1000)
+    } else if (!activeCoBroadcaster && battleTimerRef.current) {
+      clearInterval(battleTimerRef.current)
+      battleTimerRef.current = null
+      setBattleTimer(0)
+    }
+    return () => {
+      if (battleTimerRef.current) {
+        clearInterval(battleTimerRef.current)
+        battleTimerRef.current = null
+      }
+    }
+  }, [activeCoBroadcaster])
 
   const startBroadcast = async () => {
     try {
@@ -314,9 +352,125 @@ export default function BroadcastPage() {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
       if (res.ok) {
-        setCoBroadcasters(await res.json())
+        const data = await res.json()
+        setCoBroadcasters(data)
+        
+        // Find active co-broadcaster for VS mode
+        const active = data.find((cb: CoBroadcaster) => cb.status === 'active')
+        if (active && !activeCoBroadcaster) {
+          setActiveCoBroadcaster(active)
+          // Establish WebRTC connection to receive co-broadcaster's stream
+          if (!processedCoBroadcastersRef.current.has(active.userId)) {
+            processedCoBroadcastersRef.current.add(active.userId)
+            setupCoBroadcasterConnection(active.userId)
+          }
+        } else if (!active && activeCoBroadcaster) {
+          // Co-broadcaster left
+          setActiveCoBroadcaster(null)
+          setCoBroadcasterScore(0)
+          setMyScore(0)
+          if (coBroadcasterPcRef.current) {
+            coBroadcasterPcRef.current.close()
+            coBroadcasterPcRef.current = null
+          }
+          processedCoBroadcastersRef.current.clear()
+        }
       }
     } catch (e) {}
+  }
+
+  // Setup WebRTC connection to receive co-broadcaster's video
+  const setupCoBroadcasterConnection = async (coBroadcasterId: string) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
+    coBroadcasterPcRef.current = pc
+
+    pc.addTransceiver('video', { direction: 'recvonly' })
+    pc.addTransceiver('audio', { direction: 'recvonly' })
+
+    pc.ontrack = (event) => {
+      if (coBroadcasterVideoRef.current && event.streams[0]) {
+        coBroadcasterVideoRef.current.srcObject = event.streams[0]
+        coBroadcasterVideoRef.current.play().catch(e => console.log('Co-broadcaster autoplay error:', e))
+      }
+    }
+
+    pc.onicecandidate = async (event) => {
+      if (event.candidate && !isUnmountedRef.current) {
+        await fetch('/api/video-streams/signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            streamId,
+            type: 'cohost-ice-candidate',
+            receiverId: coBroadcasterId,
+            data: { candidate: event.candidate.toJSON(), fromBroadcaster: true }
+          })
+        }).catch(() => {})
+      }
+    }
+
+    // Send request for co-broadcaster to send their stream
+    await fetch('/api/video-streams/signal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        streamId,
+        type: 'cohost-request-stream',
+        receiverId: coBroadcasterId,
+        data: { broadcasterId: session?.user?.id }
+      })
+    })
+  }
+
+  // Poll for co-broadcaster signals
+  const pollCoBroadcasterSignals = async () => {
+    if (!coBroadcasterPcRef.current || !activeCoBroadcaster || isUnmountedRef.current) return
+    
+    try {
+      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=cohost`)
+      if (!res.ok) return
+      const signals = await res.json()
+
+      for (const signal of signals) {
+        if (isUnmountedRef.current || !coBroadcasterPcRef.current) break
+        
+        if (signal.type === 'cohost-offer' && signal.data?.offer) {
+          try {
+            if (coBroadcasterPcRef.current.signalingState === 'stable') {
+              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
+              
+              // Add pending candidates
+              for (const candidate of coBroadcasterCandidatesRef.current) {
+                try { await coBroadcasterPcRef.current.addIceCandidate(candidate) } catch (e) {}
+              }
+              coBroadcasterCandidatesRef.current = []
+              
+              const answer = await coBroadcasterPcRef.current.createAnswer()
+              await coBroadcasterPcRef.current.setLocalDescription(answer)
+              
+              await fetch('/api/video-streams/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  streamId,
+                  type: 'cohost-answer',
+                  receiverId: activeCoBroadcaster.userId,
+                  data: { answer: coBroadcasterPcRef.current.localDescription?.toJSON() }
+                })
+              })
+            }
+          } catch (e) {}
+        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate) {
+          try {
+            if (coBroadcasterPcRef.current.remoteDescription) {
+              await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            } else {
+              coBroadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (error) {}
   }
 
   const addToast = (type: 'success' | 'error' | 'info', message: string, userName?: string, userImage?: string | null) => {
@@ -516,21 +670,171 @@ export default function BroadcastPage() {
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   const activeCoBroadcasters = coBroadcasters.filter(cb => cb.status === 'active')
 
+  // VS Battle Mode - Split screen when co-broadcaster is active
+  const isVSMode = !!activeCoBroadcaster
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Video - Portrait orientation */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute inset-0 w-full h-full object-contain bg-black"
-        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-      />
+      {isVSMode ? (
+        <>
+          {/* VS Battle Split Screen Layout */}
+          <div className="absolute inset-0 flex flex-col">
+            {/* Top Info Bar */}
+            <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-3 px-4">
+              {/* Broadcaster info */}
+              <div className="flex items-center gap-2">
+                {session?.user?.image ? (
+                  <Image src={session.user.image} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-pink-500" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-pink-500">
+                    <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-white text-sm font-medium">{session?.user?.name}</span>
+                  <div className="flex items-center gap-1">
+                    <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
+                    <span className="text-white/70 text-xs">{formatCount(likeCount)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {/* Gradients */}
-      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+            {/* VS Battle Progress Bar */}
+            <div className="absolute top-16 left-0 right-0 z-30 px-2">
+              <div className="flex items-center gap-1">
+                <span className="text-pink-400 font-bold text-sm w-14 text-right">{myScore}</span>
+                <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden flex">
+                  <motion.div 
+                    className="bg-gradient-to-r from-pink-500 to-pink-400 h-full"
+                    initial={{ width: '50%' }}
+                    animate={{ width: `${myScore + coBroadcasterScore > 0 ? (myScore / (myScore + coBroadcasterScore)) * 100 : 50}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                  <motion.div 
+                    className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-full"
+                    initial={{ width: '50%' }}
+                    animate={{ width: `${myScore + coBroadcasterScore > 0 ? (coBroadcasterScore / (myScore + coBroadcasterScore)) * 100 : 50}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+                <span className="text-cyan-400 font-bold text-sm w-14">{coBroadcasterScore}</span>
+              </div>
+            </div>
+
+            {/* VS Timer and Icon */}
+            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
+                <Swords className="w-4 h-4 text-yellow-400" />
+                <span className="text-white font-bold text-sm">{formatDuration(battleTimer)}</span>
+              </div>
+            </div>
+
+            {/* Split Screen Videos */}
+            <div className="flex-1 flex">
+              {/* Left Side - My Video */}
+              <div className="relative w-1/2 h-full border-r border-pink-500/50">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                />
+                {/* My profile overlay at bottom */}
+                <div className="absolute bottom-20 left-2 right-2 z-20">
+                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
+                    {session?.user?.image ? (
+                      <Image src={session.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">{session?.user?.name?.[0]}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium truncate">{session?.user?.name}</p>
+                      <p className="text-pink-400 text-[10px]">{myScore} puan</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Co-Broadcaster Video */}
+              <div className="relative w-1/2 h-full border-l border-cyan-500/50">
+                <video
+                  ref={coBroadcasterVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover bg-gray-900"
+                />
+                {/* Co-broadcaster profile overlay at bottom */}
+                <div className="absolute bottom-20 left-2 right-2 z-20">
+                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
+                    {activeCoBroadcaster.user.image ? (
+                      <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium truncate">{activeCoBroadcaster.user.name}</p>
+                      <p className="text-cyan-400 text-[10px]">{coBroadcasterScore} puan</p>
+                    </div>
+                    {/* Remove co-broadcaster button */}
+                    <button 
+                      onClick={() => handleRemoveCoBroadcaster(activeCoBroadcaster.userId)}
+                      className="p-1 bg-red-500/20 rounded-full"
+                    >
+                      <PhoneOff className="w-3 h-3 text-red-400" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Viewer avatars row */}
+            <div className="absolute bottom-36 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
+              {viewers.slice(0, 8).map((viewer, idx) => (
+                <div key={viewer.id} className="flex-shrink-0">
+                  {viewer.image ? (
+                    <Image src={viewer.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
+                      <span className="text-white text-[10px] font-bold">{viewer.name[0]}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {viewers.length > 8 && (
+                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
+                  <span className="text-white text-[10px]">+{viewers.length - 8}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Normal Solo Broadcast Mode */}
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-contain bg-black"
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+          />
+
+          {/* Gradients */}
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+        </>
+      )}
+
+      {/* Hidden co-broadcaster video for non-VS mode */}
+      {!isVSMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
 
       {/* Toast Notifications */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 space-y-2 w-72">
@@ -596,122 +900,139 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* Top bar - Broadcaster Profile */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          {/* Profile */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
-            {session?.user?.image ? (
-              <Image src={session.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
-              </div>
-            )}
-            <div className="flex flex-col">
-              <span className="text-white text-xs font-medium">{session?.user?.name}</span>
-              <div className="flex items-center gap-1.5 text-[10px]">
-                <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  <span className="text-white font-bold">LIVE</span>
-                </div>
-                <span className="text-white/60">{formatDuration(duration)}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Stats */}
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-              <Users className="w-3.5 h-3.5 text-white" />
-              <span className="text-white text-xs">{viewerCount}</span>
-            </button>
-            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-              <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
-              <span className="text-white text-xs">{formatCount(likeCount)}</span>
-            </div>
-            {totalGiftCredits > 0 && (
-              <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
-                <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* End Stream Button */}
-        <button 
-          onClick={() => setShowEndConfirm(true)} 
-          className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
-        >
-          <X className="w-4 h-4" /> 
-          {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
-        </button>
-      </div>
-
-      {/* Right Side - Co-Broadcasters & Viewer List */}
-      <div className="absolute right-3 top-20 z-20 space-y-2">
-        {/* Active Co-Broadcasters */}
-        {activeCoBroadcasters.map(cb => (
-          <motion.div
-            key={cb.id}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative"
-          >
-            <div className="w-16 h-16 rounded-full border-2 border-green-500 overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500">
-              {cb.user.image ? (
-                <Image src={cb.user.image} alt="" width={64} height={64} className="w-full h-full object-cover" />
+      {/* Top bar - Broadcaster Profile (only in non-VS mode) */}
+      {!isVSMode && (
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+          <div className="flex items-center gap-3">
+            {/* Profile */}
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
+              {session?.user?.image ? (
+                <Image src={session.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">{cb.user.name[0]}</span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="text-white text-xs font-medium">{session?.user?.name}</span>
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    <span className="text-white font-bold">LIVE</span>
+                  </div>
+                  <span className="text-white/60">{formatDuration(duration)}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stats */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                <Users className="w-3.5 h-3.5 text-white" />
+                <span className="text-white text-xs">{viewerCount}</span>
+              </button>
+              <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+                <span className="text-white text-xs">{formatCount(likeCount)}</span>
+              </div>
+              {totalGiftCredits > 0 && (
+                <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
+                  <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                  <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
                 </div>
               )}
             </div>
-            {cb.isMuted && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                <VolumeX className="w-3 h-3 text-white" />
+          </div>
+          
+          {/* End Stream Button */}
+          <button 
+            onClick={() => setShowEndConfirm(true)} 
+            className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
+          >
+            <X className="w-4 h-4" /> 
+            {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
+          </button>
+        </div>
+      )}
+
+      {/* VS Mode End Button */}
+      {isVSMode && (
+        <div className="absolute top-4 right-4 z-40">
+          <button 
+            onClick={() => setShowEndConfirm(true)} 
+            className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
+          >
+            <X className="w-4 h-4" /> 
+            {language === 'tr' ? 'Bitir' : 'End'}
+          </button>
+        </div>
+      )}
+
+      {/* Right Side - Co-Broadcasters & Viewer List (only in non-VS mode) */}
+      {!isVSMode && (
+        <div className="absolute right-3 top-20 z-20 space-y-2">
+          {/* Active Co-Broadcasters (as circles, old style) */}
+          {activeCoBroadcasters.map(cb => (
+            <motion.div
+              key={cb.id}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative"
+            >
+              <div className="w-16 h-16 rounded-full border-2 border-green-500 overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500">
+                {cb.user.image ? (
+                  <Image src={cb.user.image} alt="" width={64} height={64} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">{cb.user.name[0]}</span>
+                  </div>
+                )}
               </div>
-            )}
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button className="absolute -top-1 -left-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
-                  <MoreVertical className="w-3 h-3 text-white" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[140px] z-50">
-                  <DropdownMenu.Item
-                    onClick={() => handleMuteCoBroadcaster(cb.user.id, !cb.isMuted)}
-                    className="flex items-center gap-2 px-3 py-2 text-white text-sm rounded cursor-pointer hover:bg-white/10"
-                  >
-                    {cb.isMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                    {cb.isMuted ? 'Sesi Aç' : 'Sessize Al'}
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleRemoveCoBroadcaster(cb.user.id)}
-                    className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
-                  >
-                    <PhoneOff className="w-4 h-4" />
-                    Yayından Çıkar
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
-            <p className="text-white text-[10px] text-center mt-1 truncate max-w-16">{cb.user.name}</p>
-          </motion.div>
-        ))}
-      </div>
+              {cb.isMuted && (
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                  <VolumeX className="w-3 h-3 text-white" />
+                </div>
+              )}
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button className="absolute -top-1 -left-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                    <MoreVertical className="w-3 h-3 text-white" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[140px] z-50">
+                    <DropdownMenu.Item
+                      onClick={() => handleMuteCoBroadcaster(cb.user.id, !cb.isMuted)}
+                      className="flex items-center gap-2 px-3 py-2 text-white text-sm rounded cursor-pointer hover:bg-white/10"
+                    >
+                      {cb.isMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                      {cb.isMuted ? 'Sesi Aç' : 'Sessize Al'}
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onClick={() => handleRemoveCoBroadcaster(cb.user.id)}
+                      className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                    >
+                      <PhoneOff className="w-4 h-4" />
+                      Yayından Çıkar
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+              <p className="text-white text-[10px] text-center mt-1 truncate max-w-16">{cb.user.name}</p>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Floating Hearts Animation */}
-      <div className="absolute right-20 top-1/3 z-10">
+      <div className={`absolute ${isVSMode ? 'inset-0' : 'right-20 top-1/3'} z-10 pointer-events-none`}>
         <AnimatePresence>
           {floatingHearts.map(heart => (
             <motion.div
               key={heart.id}
               initial={{ opacity: 1, y: 0, scale: 0.5 }}
               animate={{ opacity: 0, y: -80, scale: 1.2 }}
-              className="absolute bottom-0 right-0"
+              className={`absolute ${isVSMode ? (heart.side === 'right' ? 'right-1/4' : 'left-1/4') : 'bottom-0 right-0'} ${isVSMode ? 'bottom-1/3' : ''}`}
             >
               <Heart className="w-6 h-6" fill={heart.color} color={heart.color} />
             </motion.div>
@@ -719,8 +1040,8 @@ export default function BroadcastPage() {
         </AnimatePresence>
       </div>
 
-      {/* Gifters - Small badges below top bar */}
-      {gifters.length > 0 && (
+      {/* Gifters - Small badges below top bar (non-VS mode only) */}
+      {!isVSMode && gifters.length > 0 && (
         <div className="absolute top-20 left-4 z-20">
           <div className="flex flex-wrap gap-1 max-w-[200px]">
             {gifters.slice(0, 3).map((viewer) => (

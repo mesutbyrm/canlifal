@@ -23,7 +23,8 @@ import {
   Send,
   UserPlus,
   Phone,
-  LogIn
+  LogIn,
+  Swords
 } from 'lucide-react'
 
 interface VideoStream {
@@ -122,13 +123,25 @@ export default function VideoStreamPage() {
   const [heartLevel, setHeartLevel] = useState(0)
   const [showGuestModal, setShowGuestModal] = useState(false)
   const [guestCountdown, setGuestCountdown] = useState(3)
+  // VS Mode state
+  const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<{
+    id: string
+    userId: string
+    user: { id: string; name: string; image: string | null }
+  } | null>(null)
+  const [broadcasterScore, setBroadcasterScore] = useState(0)
+  const [coBroadcasterScore, setCoBroadcasterScore] = useState(0)
+  const [battleTimer, setBattleTimer] = useState(0)
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
   const heartIdRef = useRef(0)
   const pcRef = useRef<RTCPeerConnection | null>(null)
+  const coBroadcasterPcRef = useRef<RTCPeerConnection | null>(null)
   const viewerIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentStreamIdRef = useRef<string>('')
@@ -313,6 +326,7 @@ export default function VideoStreamPage() {
           pollGifts(streamId)
           fetchViewers(streamId)
           fetchComments(streamId)
+          fetchCoBroadcasters(streamId)
         }
       }
 
@@ -411,6 +425,38 @@ export default function VideoStreamPage() {
       const res = await fetch(`/api/video-streams/${streamId}/viewers`)
       if (res.ok) {
         setViewers(await res.json())
+      }
+    } catch (e) {}
+  }
+
+  // Fetch co-broadcasters for VS mode
+  const fetchCoBroadcasters = async (streamId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
+      if (res.ok) {
+        const data = await res.json()
+        const active = data.find((cb: any) => cb.status === 'active')
+        
+        if (active && !activeCoBroadcaster) {
+          setActiveCoBroadcaster(active)
+          // Start battle timer
+          if (!battleTimerRef.current) {
+            setBattleTimer(0)
+            battleTimerRef.current = setInterval(() => {
+              setBattleTimer(prev => prev + 1)
+            }, 1000)
+          }
+        } else if (!active && activeCoBroadcaster) {
+          // Co-broadcaster left
+          setActiveCoBroadcaster(null)
+          setBroadcasterScore(0)
+          setCoBroadcasterScore(0)
+          if (battleTimerRef.current) {
+            clearInterval(battleTimerRef.current)
+            battleTimerRef.current = null
+          }
+          setBattleTimer(0)
+        }
       }
     } catch (e) {}
   }
@@ -683,6 +729,10 @@ export default function VideoStreamPage() {
   // Separate gifters and regular viewers
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   const regularViewers = viewers.filter(v => !v.hasGifted)
+  
+  // VS Battle Mode - Split screen when co-broadcaster is active
+  const isVSMode = !!activeCoBroadcaster
+  const formatBattleTime = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
 
   if (loading) {
     return (
@@ -712,8 +762,123 @@ export default function VideoStreamPage() {
         </div>
       ) : (
         <>
-          {/* Video */}
-          <video ref={remoteVideoRef} autoPlay playsInline muted={isMuted} className="absolute inset-0 w-full h-full object-cover bg-black" />
+          {/* VS Battle Mode - Split Screen */}
+          {isVSMode ? (
+            <div className="absolute inset-0 flex flex-col">
+              {/* VS Battle Progress Bar */}
+              <div className="absolute top-14 left-0 right-0 z-30 px-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-pink-400 font-bold text-sm w-14 text-right">{broadcasterScore}</span>
+                  <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden flex">
+                    <motion.div 
+                      className="bg-gradient-to-r from-pink-500 to-pink-400 h-full"
+                      initial={{ width: '50%' }}
+                      animate={{ width: `${broadcasterScore + coBroadcasterScore > 0 ? (broadcasterScore / (broadcasterScore + coBroadcasterScore)) * 100 : 50}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                    <motion.div 
+                      className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-full"
+                      initial={{ width: '50%' }}
+                      animate={{ width: `${broadcasterScore + coBroadcasterScore > 0 ? (coBroadcasterScore / (broadcasterScore + coBroadcasterScore)) * 100 : 50}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                  <span className="text-cyan-400 font-bold text-sm w-14">{coBroadcasterScore}</span>
+                </div>
+              </div>
+
+              {/* VS Timer and Icon */}
+              <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
+                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
+                  <Swords className="w-4 h-4 text-yellow-400" />
+                  <span className="text-white font-bold text-sm">{formatBattleTime(battleTimer)}</span>
+                </div>
+              </div>
+
+              {/* Split Screen Videos */}
+              <div className="flex-1 flex">
+                {/* Left Side - Broadcaster Video */}
+                <div className="relative w-1/2 h-full border-r border-pink-500/50">
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    muted={isMuted}
+                    className="w-full h-full object-cover bg-black"
+                  />
+                  {/* Broadcaster profile overlay at bottom */}
+                  <div className="absolute bottom-20 left-2 right-2 z-20">
+                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
+                      {currentStream?.user?.image ? (
+                        <Image src={currentStream.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">{currentStream?.user?.name?.[0]}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium truncate">{currentStream?.user?.name}</p>
+                        <p className="text-pink-400 text-[10px]">{broadcasterScore} puan</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side - Co-Broadcaster Video */}
+                <div className="relative w-1/2 h-full border-l border-cyan-500/50">
+                  <video
+                    ref={coBroadcasterVideoRef}
+                    autoPlay
+                    playsInline
+                    muted={isMuted}
+                    className="w-full h-full object-cover bg-gray-900"
+                  />
+                  {/* Co-broadcaster profile overlay at bottom */}
+                  <div className="absolute bottom-20 left-2 right-2 z-20">
+                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
+                      {activeCoBroadcaster.user.image ? (
+                        <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium truncate">{activeCoBroadcaster.user.name}</p>
+                        <p className="text-cyan-400 text-[10px]">{coBroadcasterScore} puan</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Viewer avatars row */}
+              <div className="absolute bottom-36 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
+                {viewers.slice(0, 8).map((viewer) => (
+                  <div key={viewer.id} className="flex-shrink-0">
+                    {viewer.image ? (
+                      <Image src={viewer.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
+                        <span className="text-white text-[10px] font-bold">{viewer.name[0]}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {viewers.length > 8 && (
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
+                    <span className="text-white text-[10px]">+{viewers.length - 8}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Normal Solo Broadcast View */
+            <video ref={remoteVideoRef} autoPlay playsInline muted={isMuted} className="absolute inset-0 w-full h-full object-cover bg-black" />
+          )}
+          
+          {/* Hidden co-broadcaster video for non-VS mode */}
+          {!isVSMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
           
           {/* Connection overlay */}
           {connectionStatus !== 'connected' && (
@@ -741,9 +906,13 @@ export default function VideoStreamPage() {
             </div>
           )}
 
-          {/* Gradients */}
-          <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+          {/* Gradients (non-VS mode only) */}
+          {!isVSMode && (
+            <>
+              <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+            </>
+          )}
 
           {/* Guest countdown badge */}
           {!session?.user && guestCountdown > 0 && !showGuestModal && (
