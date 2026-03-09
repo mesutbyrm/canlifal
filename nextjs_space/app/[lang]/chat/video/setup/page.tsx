@@ -330,90 +330,120 @@ export default function StreamSetupPage() {
           </div>
         )}
 
-        {/* Beauty Effects Panel */}
-        {showEffects && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            className="absolute right-0 top-16 bottom-40 w-72 bg-black/80 backdrop-blur-md rounded-l-2xl p-4 z-30 overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-6">
+
+      </div>
+
+      {/* Beauty Effects Panel - Bottom Scrollable */}
+      {showEffects && (
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          className="absolute bottom-0 inset-x-0 z-30"
+        >
+          {/* Transparent overlay with blur */}
+          <div className="bg-black/40 backdrop-blur-sm rounded-t-3xl overflow-hidden max-h-[60vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
               <h3 className="text-white font-semibold flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-pink-400" />
-                {language === 'tr' ? 'Güzelleştirme' : 'Beauty'}
+                {language === 'tr' ? 'Efektler' : 'Effects'}
               </h3>
-              <button onClick={() => setShowEffects(false)} className="text-white/60">
+              <button onClick={() => setShowEffects(false)} className="text-white/60 p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <SliderControl
-              icon={Droplet}
-              label={language === 'tr' ? 'Pürüzsüzlük' : 'Smoothness'}
-              value={beautySettings.smoothness}
-              min={0}
-              max={100}
-              onChange={(v) => setBeautySettings(prev => ({ ...prev, smoothness: v }))}
-            />
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto max-h-[45vh] p-4">
+              {/* Preset Buttons - Horizontal Scroll */}
+              <div className="mb-6">
+                <p className="text-white/60 text-xs mb-3">
+                  {language === 'tr' ? 'Hazır Ayarlar' : 'Presets'}
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  <button
+                    onClick={() => setBeautySettings({ smoothness: 0, brightness: 0, contrast: 0, saturation: 0 })}
+                    className="flex-shrink-0 px-4 py-2 bg-white/10 text-white text-sm rounded-full hover:bg-white/20 whitespace-nowrap"
+                  >
+                    ✨ {language === 'tr' ? 'Doğal' : 'Natural'}
+                  </button>
+                  <button
+                    onClick={() => setBeautySettings({ smoothness: 40, brightness: 10, contrast: 5, saturation: 10 })}
+                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-purple-500/40 to-pink-500/40 text-white text-sm rounded-full hover:from-purple-500/60 hover:to-pink-500/60 whitespace-nowrap"
+                  >
+                    🌸 {language === 'tr' ? 'Yumuşak' : 'Soft'}
+                  </button>
+                  <button
+                    onClick={() => setBeautySettings({ smoothness: 60, brightness: 15, contrast: 10, saturation: 15 })}
+                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-pink-500/40 to-rose-500/40 text-white text-sm rounded-full hover:from-pink-500/60 hover:to-rose-500/60 whitespace-nowrap"
+                  >
+                    💎 Glamour
+                  </button>
+                  <button
+                    onClick={() => setBeautySettings({ smoothness: 20, brightness: 20, contrast: 15, saturation: 5 })}
+                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 text-white text-sm rounded-full hover:from-yellow-500/60 hover:to-orange-500/60 whitespace-nowrap"
+                  >
+                    ☀️ {language === 'tr' ? 'Parlak' : 'Bright'}
+                  </button>
+                </div>
+              </div>
 
-            <SliderControl
-              icon={Sun}
-              label={language === 'tr' ? 'Parlaklık' : 'Brightness'}
-              value={beautySettings.brightness}
-              min={-50}
-              max={50}
-              onChange={(v) => setBeautySettings(prev => ({ ...prev, brightness: v }))}
-            />
+              {/* Sliders */}
+              <div className="space-y-4">
+                <SliderControl
+                  icon={Droplet}
+                  label={language === 'tr' ? 'Pürüzsüzlük' : 'Smoothness'}
+                  value={beautySettings.smoothness}
+                  min={0}
+                  max={100}
+                  onChange={(v) => setBeautySettings(prev => ({ ...prev, smoothness: v }))}
+                />
 
-            <SliderControl
-              icon={Contrast}
-              label={language === 'tr' ? 'Kontrast' : 'Contrast'}
-              value={beautySettings.contrast}
-              min={-50}
-              max={50}
-              onChange={(v) => setBeautySettings(prev => ({ ...prev, contrast: v }))}
-            />
+                <SliderControl
+                  icon={Sun}
+                  label={language === 'tr' ? 'Parlaklık' : 'Brightness'}
+                  value={beautySettings.brightness}
+                  min={-50}
+                  max={50}
+                  onChange={(v) => setBeautySettings(prev => ({ ...prev, brightness: v }))}
+                />
 
-            <SliderControl
-              icon={Sparkles}
-              label={language === 'tr' ? 'Doygunluk' : 'Saturation'}
-              value={beautySettings.saturation}
-              min={-50}
-              max={50}
-              onChange={(v) => setBeautySettings(prev => ({ ...prev, saturation: v }))}
-            />
+                <SliderControl
+                  icon={Contrast}
+                  label={language === 'tr' ? 'Kontrast' : 'Contrast'}
+                  value={beautySettings.contrast}
+                  min={-50}
+                  max={50}
+                  onChange={(v) => setBeautySettings(prev => ({ ...prev, contrast: v }))}
+                />
 
-            {/* Preset Buttons */}
-            <div className="mt-6 space-y-2">
-              <p className="text-white/60 text-xs mb-2">
-                {language === 'tr' ? 'Hazır Ayarlar' : 'Presets'}
-              </p>
+                <SliderControl
+                  icon={Sparkles}
+                  label={language === 'tr' ? 'Doygunluk' : 'Saturation'}
+                  value={beautySettings.saturation}
+                  min={-50}
+                  max={50}
+                  onChange={(v) => setBeautySettings(prev => ({ ...prev, saturation: v }))}
+                />
+              </div>
+            </div>
+
+            {/* Close button at bottom */}
+            <div className="p-4 border-t border-white/10">
               <button
-                onClick={() => setBeautySettings({ smoothness: 0, brightness: 0, contrast: 0, saturation: 0 })}
-                className="w-full py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20"
+                onClick={() => setShowEffects(false)}
+                className="w-full py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20"
               >
-                {language === 'tr' ? 'Doğal' : 'Natural'}
-              </button>
-              <button
-                onClick={() => setBeautySettings({ smoothness: 40, brightness: 10, contrast: 5, saturation: 10 })}
-                className="w-full py-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white text-sm rounded-lg hover:from-purple-500/50 hover:to-pink-500/50"
-              >
-                {language === 'tr' ? 'Yumuşak' : 'Soft'}
-              </button>
-              <button
-                onClick={() => setBeautySettings({ smoothness: 60, brightness: 15, contrast: 10, saturation: 15 })}
-                className="w-full py-2 bg-gradient-to-r from-pink-500/30 to-rose-500/30 text-white text-sm rounded-lg hover:from-pink-500/50 hover:to-rose-500/50"
-              >
-                {language === 'tr' ? 'Glamour' : 'Glamour'}
+                {language === 'tr' ? 'Tamam' : 'Done'}
               </button>
             </div>
-          </motion.div>
-        )}
-      </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-6 z-20">
+      <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-6 z-20 transition-opacity ${showEffects ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Stream Title Input */}
         <div className="mb-4">
           <input
