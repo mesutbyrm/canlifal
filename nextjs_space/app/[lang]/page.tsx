@@ -163,58 +163,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      {/* Online Users Section - Marquee Scroll Right to Left */}
-      {onlineUsers.length > 0 && (
-        <div className="pt-20 pb-2 overflow-hidden">
-          {/* Marquee Container */}
-          <div className="relative">
-            <div className="flex items-center animate-marquee-rtl">
-              {/* Duplicate content for seamless loop */}
-              {[...onlineUsers.slice(0, 20), ...onlineUsers.slice(0, 20)].map((user, index) => (
-                <Link
-                  key={`${user.id}-${index}`}
-                  href={`/${language}/profile/${user.username || user.id}`}
-                  className="flex-shrink-0 flex items-center gap-2 mx-3"
-                >
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
-                      <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          {user.image ? (
-                            <Image
-                              src={user.image}
-                              alt={user.name || ''}
-                              width={36}
-                              height={36}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-bold text-white">
-                              {user.name?.[0]?.toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Online indicator */}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0a0118]" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-white text-xs font-medium whitespace-nowrap">
-                      {user.name?.split(' ')[0]}
-                    </span>
-                    <span className="text-green-400 text-[10px]">online</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Live Streams Section */}
       {liveStreams.length > 0 && (
-        <div className={`${onlineUsers.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-2`}>
+        <div className="pt-20 px-4 pb-2">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <div className="relative">
@@ -280,7 +231,7 @@ export default function HomePage() {
       )}
 
       {/* Tab Navigation */}
-      <div className={`${(onlineUsers.length > 0 || liveStreams.length > 0) ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
+      <div className={`${liveStreams.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
