@@ -239,61 +239,47 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Horizontal Scroll Live Streams */}
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+          {/* Horizontal Scroll Live Streams - Circular Avatars with Rainbow Border */}
+          <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
             {liveStreams.map((stream) => (
               <Link
                 key={stream.id}
                 href={`/${language}/chat/video?watch=${stream.id}`}
-                className="flex-shrink-0 w-36"
+                className="flex-shrink-0 flex flex-col items-center"
               >
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-red-900/60 to-pink-900/40 p-[2px]">
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-red-500/20 rounded-2xl animate-pulse" />
-                  <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
-                    {/* CANLI Badge */}
-                    <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-                      <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                        CANLI
-                      </span>
-                    </div>
-                    
-                    {/* User Image */}
-                    <div className="aspect-[3/4] relative">
-                      {stream.user.image ? (
-                        <Image
-                          src={stream.user.image}
-                          alt={stream.user.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
-                          <span className="text-3xl font-bold text-white">
-                            {stream.user.name?.[0]?.toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                    </div>
-
-                    {/* Stream Info */}
-                    <div className="p-2 -mt-12 relative z-10">
-                      <h3 className="text-white font-bold text-xs truncate">{stream.user.name}</h3>
-                      <p className="text-purple-300 text-[10px] truncate mt-0.5">{stream.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-0.5">
-                          <Eye className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-400 text-[10px]">{stream.viewerCount}</span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          <Heart className="w-3 h-3 text-red-400" fill="currentColor" />
-                          <span className="text-red-400 text-[10px]">{stream.likeCount}</span>
-                        </div>
+                {/* Circular Avatar with Rainbow Animated Border */}
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full p-[3px] rainbow-border">
+                    <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-[2px]">
+                      <div className="w-full h-full rounded-full overflow-hidden">
+                        {stream.user.image ? (
+                          <Image
+                            src={stream.user.image}
+                            alt={stream.user.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
+                            <span className="text-xl font-bold text-white">
+                              {stream.user.name?.[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
+                  {/* CANLI Badge */}
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                    <span className="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
+                      <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                      CANLI
+                    </span>
+                  </div>
                 </div>
+                {/* Name */}
+                <p className="text-white text-[10px] font-medium mt-2 text-center w-20 truncate">{stream.user.name}</p>
               </Link>
             ))}
           </div>
@@ -331,88 +317,61 @@ export default function HomePage() {
       {activeTab === 'live' ? (
         /* Live Tellers Tab Content */
         <div className="px-4 pb-8">
-          {/* Live Tellers Section */}
+          {/* Live Tellers Section - Circular Avatars */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-gold-400" />
               {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
             </h2>
-            <p className="text-purple-300 text-sm mb-4">
-              {language === 'tr' 
-                ? 'Falcılarla canlı yayına başla, hemen fal baktır!' 
-                : 'Start a live session with fortune tellers!'}
-            </p>
 
-            {/* Horizontal Scroll Teller Cards */}
+            {/* Horizontal Scroll Circular Teller Avatars */}
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
               {onlineTellers.length > 0 ? onlineTellers.map((teller) => (
                 <Link
                   key={teller.id}
                   href={`/${language}/live-tellers/${teller.id}`}
-                  className="flex-shrink-0 w-44"
+                  className="flex-shrink-0 flex flex-col items-center"
                 >
-                  <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/60 to-pink-900/40 p-[2px]">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-purple-500/20 rounded-2xl" />
-                    <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
-                      {/* CANLI Badge */}
-                      <div className="absolute top-3 left-3 z-10">
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
-                          CANLI
-                        </span>
-                      </div>
-                      
-                      {/* Teller Image */}
-                      <div className="aspect-[3/4] relative">
+                  {/* Circular Avatar with Purple Gradient Border */}
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118]">
                         {teller.avatar || teller.user.image ? (
                           <Image
                             src={teller.avatar || teller.user.image || ''}
                             alt={teller.displayName}
-                            fill
-                            className="object-cover"
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                            <span className="text-4xl font-bold text-white">
+                            <span className="text-2xl font-bold text-white">
                               {teller.displayName?.[0]?.toUpperCase()}
                             </span>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      </div>
-
-                      {/* Teller Info */}
-                      <div className="p-3 -mt-12 relative z-10">
-                        <h3 className="text-white font-bold text-sm truncate">{teller.displayName}</h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-3 h-3 text-gold-400 fill-gold-400" />
-                          <span className="text-gold-400 text-xs font-semibold">{teller.rating.toFixed(1)}</span>
-                          <span className="text-purple-400 text-xs">• {teller.totalSessions >= 1000 ? `${(teller.totalSessions / 1000).toFixed(1)}K` : teller.totalSessions}</span>
-                        </div>
-                        
-                        {/* Connect Button */}
-                        <button className="mt-2 w-full py-2 bg-green-500 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 hover:bg-green-400 transition-all">
-                          <Video className="w-3 h-3" />
-                          {language === 'tr' ? 'Bağlan' : 'Connect'}
-                        </button>
-
-                        {/* Gift Icons */}
-                        <div className="flex justify-center gap-1 mt-2">
-                          <span className="text-lg">💝</span>
-                          <span className="text-lg">👑</span>
-                          <span className="text-lg">🎁</span>
-                        </div>
                       </div>
                     </div>
+                    {/* Online indicator */}
+                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0a0118]" />
+                  </div>
+                  {/* Name */}
+                  <p className="text-white text-xs font-medium mt-2 text-center w-20 truncate">{teller.displayName}</p>
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-2.5 h-2.5 text-gold-400 fill-gold-400" />
+                    <span className="text-gold-400 text-[10px]">{teller.rating.toFixed(1)}</span>
                   </div>
                 </Link>
               )) : (
-                <div className="flex-1 py-12 text-center w-full">
-                  <p className="text-purple-400">
+                <div className="flex-1 py-8 text-center w-full">
+                  <p className="text-purple-400 text-sm">
                     {language === 'tr' ? 'Şu an canlı falcı yok' : 'No live tellers right now'}
                   </p>
                   <Link
                     href={`/${language}/live-tellers`}
-                    className="inline-block mt-4 px-6 py-2 bg-purple-600 text-white rounded-full text-sm font-medium"
+                    className="inline-block mt-3 px-4 py-1.5 bg-purple-600 text-white rounded-full text-xs font-medium"
                   >
                     {language === 'tr' ? 'Tüm Falcıları Gör' : 'See All Tellers'}
                   </Link>
@@ -478,7 +437,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Live Streams Grid */}
+          {/* Live Streams - Circular Avatars with Rainbow Border */}
           <div className="mb-6">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Radio className="w-5 h-5 text-red-500" />
@@ -491,60 +450,60 @@ export default function HomePage() {
             </h2>
 
             {liveStreams.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
                 {liveStreams.map((stream, index) => (
                   <motion.div
                     key={stream.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
+                    className="flex-shrink-0 flex flex-col items-center"
                   >
                     <Link href={`/${language}/chat/video?watch=${stream.id}`}>
-                      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-red-900/60 to-pink-900/40 p-[2px]">
-                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-red-500/20 rounded-2xl" />
-                        <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
-                          {/* CANLI Badge */}
-                          <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-                            <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                              CANLI
-                            </span>
-                          </div>
-                          
-                          {/* User Image */}
-                          <div className="aspect-[3/4] relative">
-                            {stream.user.image ? (
-                              <Image
-                                src={stream.user.image}
-                                alt={stream.user.name}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
-                                <span className="text-4xl font-bold text-white">
-                                  {stream.user.name?.[0]?.toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                          </div>
-
-                          {/* Stream Info */}
-                          <div className="p-3 -mt-14 relative z-10">
-                            <h3 className="text-white font-bold text-sm truncate">{stream.user.name}</h3>
-                            <p className="text-purple-300 text-xs truncate mt-0.5">{stream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}</p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <div className="flex items-center gap-1">
-                                <Eye className="w-3 h-3 text-gray-400" />
-                                <span className="text-gray-400 text-xs">{stream.viewerCount}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Heart className="w-3 h-3 text-red-400" fill="currentColor" />
-                                <span className="text-red-400 text-xs">{stream.likeCount}</span>
-                              </div>
+                      {/* Circular Avatar with Rainbow Animated Border */}
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-full p-[4px] rainbow-border">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-[2px]">
+                            <div className="w-full h-full rounded-full overflow-hidden">
+                              {stream.user.image ? (
+                                <Image
+                                  src={stream.user.image}
+                                  alt={stream.user.name}
+                                  width={96}
+                                  height={96}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
+                                  <span className="text-2xl font-bold text-white">
+                                    {stream.user.name?.[0]?.toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
+                        </div>
+                        {/* CANLI Badge */}
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                          <span className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            CANLI
+                          </span>
+                        </div>
+                      </div>
+                      {/* Name */}
+                      <p className="text-white text-xs font-medium mt-3 text-center w-24 truncate">{stream.user.name}</p>
+                      {/* Title */}
+                      <p className="text-purple-400 text-[10px] text-center w-24 truncate">{stream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live')}</p>
+                      {/* Stats */}
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <div className="flex items-center gap-0.5">
+                          <Eye className="w-2.5 h-2.5 text-gray-400" />
+                          <span className="text-gray-400 text-[10px]">{stream.viewerCount}</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <Heart className="w-2.5 h-2.5 text-red-400" fill="currentColor" />
+                          <span className="text-red-400 text-[10px]">{stream.likeCount}</span>
                         </div>
                       </div>
                     </Link>

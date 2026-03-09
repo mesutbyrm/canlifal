@@ -99,6 +99,51 @@
   }
 }
 
+/* Rainbow border animation for live streamers */
+@keyframes rainbow-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.rainbow-border {
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff7f00,
+    #ffff00,
+    #00ff00,
+    #0000ff,
+    #4b0082,
+    #9400d3,
+    #ff0000
+  );
+  background-size: 400% 400%;
+  animation: rainbow-rotate 3s linear infinite;
+}
+
+.rainbow-border-slow {
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff7f00,
+    #ffff00,
+    #00ff00,
+    #0000ff,
+    #4b0082,
+    #9400d3,
+    #ff0000
+  );
+  background-size: 400% 400%;
+  animation: rainbow-rotate 5s linear infinite;
+}
+
 .animate-slideIn {
   animation: slideIn 0.3s ease-out forwards;
 }
