@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { 
@@ -17,6 +18,7 @@ import TellerIncomingRequest from './teller-incoming-request'
 export default function Navbar() {
   const { data: session, update: updateSession } = useSession() || {}
   const { language, setLanguage, t } = useLanguage()
+  const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [credits, setCredits] = useState<number>(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -27,6 +29,9 @@ export default function Navbar() {
   const [onlineUsers, setOnlineUsers] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Hide navbar on mobile for profile and messages pages (footer handles navigation there)
+  const hideOnMobile = pathname?.includes('/profile') || pathname?.includes('/messages')
 
   useEffect(() => {
     if (session?.user) {
@@ -196,7 +201,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
+      <nav className={`fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 ${hideOnMobile ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex justify-between items-center h-16">
             {/* Main Navigation - 5 items */}
