@@ -758,7 +758,7 @@ export default function BroadcastPage() {
 
   const handleEndStream = () => {
     cleanup()
-    router.push(`/${language}/chat`)
+    router.push(`/${language}`)
   }
 
   const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`

@@ -41,6 +41,13 @@ interface StreamViewer {
   totalGiftAmount: number
 }
 
+interface OnlineUser {
+  id: string
+  name: string
+  image: string | null
+  username: string | null
+}
+
 export default function ChatRoomsPage() {
   const { language, t } = useLanguage()
   const { data: session } = useSession() || {}
@@ -52,13 +59,16 @@ export default function ChatRoomsPage() {
   const [streamViewers, setStreamViewers] = useState<StreamViewer[]>([])
   const [loadingViewers, setLoadingViewers] = useState(false)
   const [isStartingStream, setIsStartingStream] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
 
   useEffect(() => {
     fetchRooms()
     fetchLiveStreams()
+    fetchOnlineUsers()
     const interval = setInterval(() => {
       fetchRooms()
       fetchLiveStreams()
+      fetchOnlineUsers()
     }, 10000)
     return () => clearInterval(interval)
   }, [])
@@ -86,6 +96,18 @@ export default function ChatRoomsPage() {
       }
     } catch (error) {
       console.error('Error fetching live streams:', error)
+    }
+  }
+
+  const fetchOnlineUsers = async () => {
+    try {
+      const res = await fetch('/api/users/online')
+      if (res.ok) {
+        const data = await res.json()
+        setOnlineUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching online users:', error)
     }
   }
 
@@ -126,6 +148,64 @@ export default function ChatRoomsPage() {
   return (
     <div className="min-h-screen bg-[#0a0118] py-20 px-4">
       <div className="max-w-5xl mx-auto">
+        {/* Online Users Section */}
+        {onlineUsers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <div className="relative">
+                <Users className="w-5 h-5 text-green-500" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              </div>
+              {language === 'tr' ? 'Çevrimiçi Kullanıcılar' : 'Online Users'}
+              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                {onlineUsers.length}
+              </span>
+            </h2>
+
+            {/* Horizontal Scroll Online Users */}
+            <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+              {onlineUsers.slice(0, 20).map((user) => (
+                <Link
+                  key={user.id}
+                  href={`/${language}/profile/${user.username || user.id}`}
+                  className="flex-shrink-0 flex flex-col items-center"
+                >
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
+                      <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          {user.image ? (
+                            <Image
+                              src={user.image}
+                              alt={user.name || ''}
+                              width={60}
+                              height={60}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xl font-bold text-white">
+                              {user.name?.[0]?.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Online indicator */}
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0a0118]" />
+                  </div>
+                  <span className="text-white text-xs mt-2 text-center max-w-[64px] truncate">
+                    {user.name?.split(' ')[0]}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

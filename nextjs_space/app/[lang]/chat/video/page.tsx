@@ -802,7 +802,7 @@ export default function VideoStreamPage() {
           </div>
           <h2 className="text-white text-xl font-bold mb-2 text-center">{language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}</h2>
           <p className="text-white/60 text-center text-sm mb-8">{language === 'tr' ? 'Sohbet sayfasından yayınları takip edebilirsin' : 'You can follow streams from the chat page'}</p>
-          <button onClick={() => router.push(`/${language}/chat`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
+          <button onClick={() => router.push(`/${language}`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
             <X className="w-5 h-5" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
           </button>
         </div>
@@ -1045,7 +1045,7 @@ export default function VideoStreamPage() {
               </div>
             </div>
             
-            <button onClick={() => router.push(`/${language}/chat`)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
+            <button onClick={() => router.push(`/${language}`)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
               <X className="w-4 h-4" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
             </button>
           </div>
@@ -1380,7 +1380,7 @@ export default function VideoStreamPage() {
                   {language === 'tr' ? 'Zaten üyeyim, giriş yap' : 'Already a member? Sign In'}
                 </button>
                 <button
-                  onClick={() => router.push(`/${language}/chat`)}
+                  onClick={() => router.push(`/${language}`)}
                   className="text-white/50 text-sm hover:text-white/70"
                 >
                   {language === 'tr' ? 'Daha sonra' : 'Later'}

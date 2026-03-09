@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface LiveTeller {
@@ -35,6 +35,13 @@ interface LiveStream {
     name: string
     image: string | null
   }
+}
+
+interface OnlineUser {
+  id: string
+  name: string
+  image: string | null
+  username: string | null
 }
 
 const FORTUNE_CARDS = [
@@ -103,6 +110,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'fortunes' | 'live'>('fortunes')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
 
   useEffect(() => {
     // Fetch live tellers
@@ -126,14 +134,28 @@ export default function HomePage() {
         }
       } catch (e) {}
     }
+
+    // Fetch online users
+    const fetchOnlineUsers = async () => {
+      try {
+        const res = await fetch('/api/users/online')
+        if (res.ok) {
+          const data = await res.json()
+          setOnlineUsers(data.users || [])
+        }
+      } catch (e) {}
+    }
     
     fetchTellers()
     fetchStreams()
+    fetchOnlineUsers()
     const tellerInterval = setInterval(fetchTellers, 30000)
     const streamInterval = setInterval(fetchStreams, 10000)
+    const onlineInterval = setInterval(fetchOnlineUsers, 15000)
     return () => {
       clearInterval(tellerInterval)
       clearInterval(streamInterval)
+      clearInterval(onlineInterval)
     }
   }, [])
 
@@ -141,9 +163,65 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      {/* Live Streams Section - Always on top */}
-      {liveStreams.length > 0 && (
+      {/* Online Users Section - Always on top */}
+      {onlineUsers.length > 0 && (
         <div className="pt-20 px-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="relative">
+                <Users className="w-5 h-5 text-green-500" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              </div>
+              {language === 'tr' ? 'Çevrimiçi' : 'Online'}
+              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                {onlineUsers.length}
+              </span>
+            </h2>
+          </div>
+
+          {/* Horizontal Scroll Online Users */}
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+            {onlineUsers.slice(0, 20).map((user) => (
+              <Link
+                key={user.id}
+                href={`/${language}/profile/${user.username || user.id}`}
+                className="flex-shrink-0 flex flex-col items-center"
+              >
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
+                    <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        {user.image ? (
+                          <Image
+                            src={user.image}
+                            alt={user.name || ''}
+                            width={52}
+                            height={52}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg font-bold text-white">
+                            {user.name?.[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Online indicator */}
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0a0118]" />
+                </div>
+                <span className="text-white text-[10px] mt-1.5 text-center max-w-[56px] truncate">
+                  {user.name?.split(' ')[0]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Live Streams Section */}
+      {liveStreams.length > 0 && (
+        <div className={`${onlineUsers.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-2`}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <div className="relative">
@@ -223,7 +301,7 @@ export default function HomePage() {
       )}
 
       {/* Tab Navigation */}
-      <div className={`${liveStreams.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
+      <div className={`${(onlineUsers.length > 0 || liveStreams.length > 0) ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
