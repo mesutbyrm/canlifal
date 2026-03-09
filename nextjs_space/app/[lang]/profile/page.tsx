@@ -92,94 +92,110 @@ export default function ProfilePage() {
   if (!session?.user) return null
 
   return (
-    <div className="min-h-screen bg-[#0a0118] pb-32 pt-4">
+    <div className="min-h-screen bg-[#0a0118] pb-32 pt-6">
       {/* Profile Info */}
-      <div className="px-4 pt-6">
-        {/* Avatar & Stats Row */}
-        <div className="flex items-center justify-center gap-8">
-          {/* Followers */}
-          <div className="text-center">
-            <p className="text-white text-xl font-bold">{profile?.followingCount || 0}</p>
-            <p className="text-gray-400 text-xs">{language === 'tr' ? 'Takip' : 'Following'}</p>
-          </div>
-          
-          {/* Avatar */}
+      <div className="px-4">
+        {/* Avatar - Centered */}
+        <div className="flex justify-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-500 bg-gradient-to-br from-purple-600 to-pink-600">
-              {profile?.image || session.user.image ? (
-                <Image
-                  src={profile?.image || session.user.image || ''}
-                  alt="Profile"
-                  width={96}
-                  height={96}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-white text-3xl font-bold">
-                    {(profile?.name || session.user.name)?.charAt(0).toUpperCase()}
-                  </span>
+            {/* Rainbow border */}
+            <div 
+              className="w-28 h-28 rounded-full p-1"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #ec4899 25%, #8b5cf6 50%, #3b82f6 75%, #f59e0b 100%)',
+              }}
+            >
+              <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-0.5">
+                <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600">
+                  {profile?.image || session.user.image ? (
+                    <Image
+                      src={profile?.image || session.user.image || ''}
+                      alt="Profile"
+                      width={112}
+                      height={112}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-white text-4xl font-bold">
+                        {(profile?.name || session.user.name)?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
+            {/* Camera button */}
             <Link 
               href={`/${language}/settings`}
-              className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#fe2c55] rounded-full flex items-center justify-center border-2 border-[#0a0118]"
+              className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-[#0a0118]"
             >
-              <Plus className="w-4 h-4 text-white" />
+              <Camera className="w-4 h-4 text-white" />
             </Link>
           </div>
-          
-          {/* Followers */}
+        </div>
+
+        {/* Name */}
+        <h1 className="text-white text-2xl font-bold text-center mt-4">
+          {profile?.name || session.user.name}
+        </h1>
+
+        {/* Username */}
+        <p className="text-purple-400 text-center mt-1">
+          @{(profile?.name || session.user.name)?.toLowerCase().replace(/\s+/g, '')}
+        </p>
+
+        {/* Bio or Add Bio */}
+        <div className="text-center mt-2">
+          {profile?.bio ? (
+            <p className="text-gray-300 text-sm px-8">{profile.bio}</p>
+          ) : (
+            <Link href={`/${language}/settings`} className="text-purple-400 text-sm italic">
+              + {language === 'tr' ? 'Bio ekle' : 'Add bio'}
+            </Link>
+          )}
+        </div>
+
+        {/* Stats Row */}
+        <div className="flex items-center justify-center gap-6 mt-5">
+          <div className="text-center">
+            <p className="text-white text-xl font-bold">{profile?.followingCount || 0}</p>
+            <p className="text-gray-400 text-xs">{language === 'tr' ? 'Takipte' : 'Following'}</p>
+          </div>
+          <div className="w-px h-8 bg-gray-700" />
           <div className="text-center">
             <p className="text-white text-xl font-bold">{profile?.followersCount || 0}</p>
             <p className="text-gray-400 text-xs">{language === 'tr' ? 'Takipçi' : 'Followers'}</p>
           </div>
-        </div>
-
-        {/* Username */}
-        <div className="text-center mt-4">
-          <p className="text-gray-400 text-sm">@{(profile?.name || session.user.name)?.toLowerCase().replace(/\s+/g, '')}</p>
-        </div>
-
-        {/* Likes Count */}
-        <div className="flex items-center justify-center gap-1 mt-2">
-          <Heart className="w-4 h-4 text-gray-400" fill="currentColor" />
-          <span className="text-gray-400 text-sm">{profile?.likesCount || 0}</span>
-        </div>
-
-        {/* Bio */}
-        {profile?.bio && (
-          <p className="text-white text-center mt-3 text-sm px-8">
-            {profile.bio}
-          </p>
-        )}
-
-        {/* Credits Badge */}
-        <div className="flex justify-center mt-4">
-          <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-full px-4 py-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-400 font-semibold">{profile?.credits || session.user.credits || 0}</span>
-            <span className="text-amber-400/70 text-sm">{language === 'tr' ? 'Kredi' : 'Credits'}</span>
+          <div className="w-px h-8 bg-gray-700" />
+          <div className="text-center">
+            <p className="text-white text-xl font-bold">{profile?.likesCount || 0}</p>
+            <p className="text-gray-400 text-xs">{language === 'tr' ? 'Beğeniler' : 'Likes'}</p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-6 px-4">
+        <div className="flex gap-2 mt-6 px-2">
           <Link 
-            href={`/${language}/settings`}
-            className="flex-1 bg-[#2f2f2f] hover:bg-[#3f3f3f] text-white font-semibold py-2.5 rounded-md text-center text-sm transition-colors"
+            href={`/${language}/fortunes`}
+            className="flex-1 bg-purple-600/80 hover:bg-purple-600 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
           >
-            {language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}
+            <Sparkles className="w-4 h-4" />
+            <span className="leading-tight">{language === 'tr' ? 'Fal\nStüdyom' : 'Fortune\nStudio'}</span>
           </Link>
-          <button className="flex-1 bg-[#2f2f2f] hover:bg-[#3f3f3f] text-white font-semibold py-2.5 rounded-md text-sm transition-colors">
-            {language === 'tr' ? 'Profili Paylaş' : 'Share Profile'}
-          </button>
-          <Link
-            href={`/${language}/credits`}
-            className="w-12 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black flex items-center justify-center rounded-md transition-colors"
+          <Link 
+            href={`/${language}/messages`}
+            className="flex-1 border border-purple-500/50 hover:border-purple-400 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <Plus className="w-5 h-5" />
+            <Heart className="w-4 h-4 text-amber-400" />
+            <span>{language === 'tr' ? 'Mesajlar' : 'Messages'}</span>
+          </Link>
+          <Link
+            href={`/${language}/chat/video/setup`}
+            className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            <span className="text-lg">◉</span>
+            <span>{language === 'tr' ? 'CANLI' : 'LIVE'}</span>
           </Link>
         </div>
       </div>
