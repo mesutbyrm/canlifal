@@ -31,7 +31,15 @@ export async function GET(request: NextRequest) {
         credits: true,
         membership: true,
         messagePrivacy: true,
-        createdAt: true
+        createdAt: true,
+        _count: {
+          select: {
+            followers: true,
+            following: true,
+            fortunes: true,
+            socialPosts: true
+          }
+        }
       }
     });
 
@@ -39,7 +47,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Get total likes on user's posts
+    const likesCount = await prisma.socialLike.count({
+      where: {
+        post: {
+          userId: session.user.id
+        }
+      }
+    });
+
+    return NextResponse.json({
+      ...user,
+      followersCount: user._count.followers,
+      followingCount: user._count.following,
+      fortunesCount: user._count.fortunes,
+      postsCount: user._count.socialPosts,
+      likesCount
+    });
   } catch (error) {
     console.error('Get profile error:', error);
     return NextResponse.json({ error: 'Failed to get profile' }, { status: 500 });
