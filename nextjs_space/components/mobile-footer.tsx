@@ -42,9 +42,9 @@ export default function MobileFooter() {
   
   const navItems = [
     {
-      href: session ? `/${language}/profile/${session.user?.name?.toLowerCase().replace(/\s+/g, '')}` : `/${language}/login`,
+      href: session ? `/${language}/profile` : `/${language}/login`,
       icon: User,
-      label: language === 'tr' ? 'Profil' : 'Profile',
+      label: language === 'tr' ? 'Profilim' : 'Profile',
       isCenter: false,
     },
     {
@@ -55,9 +55,9 @@ export default function MobileFooter() {
       badge: unreadCount,
     },
     {
-      href: `/${language}/live-tellers`,
+      href: session ? `/${language}/chat/video/setup` : `/${language}/login`,
       icon: Play,
-      label: language === 'tr' ? 'Canlı' : 'Live',
+      label: language === 'tr' ? 'Yayın' : 'Stream',
       isCenter: true,
     },
     {
