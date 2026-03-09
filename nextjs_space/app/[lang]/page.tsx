@@ -294,16 +294,16 @@ export default function HomePage() {
         </motion.div>
       </div>
 
-      {/* Personalized Greeting Box */}
+      {/* Personalized Greeting Section */}
       <div className="px-4 pb-4">
         {session?.user && horoscope?.hasZodiac && horoscope.stats ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-purple-900/60 via-pink-900/40 to-purple-900/60 rounded-3xl border border-purple-500/40 overflow-hidden shadow-xl"
+            className="space-y-4"
           >
             {/* Greeting Header */}
-            <div className="p-4 pb-3">
+            <div>
               <motion.h1 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -311,13 +311,13 @@ export default function HomePage() {
               >
                 {greeting}, <span className="text-gold-400">{userName}</span> ✨
               </motion.h1>
-              <p className="text-purple-200 text-sm mt-1 leading-relaxed">
+              <p className="text-purple-300 text-sm mt-1 leading-relaxed">
                 {horoscope.personalGreeting}
               </p>
             </div>
 
             {/* Daily Stats Section */}
-            <div className="px-4 pb-3">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-4 h-4 text-gold-400" />
                 <span className="text-gold-400 text-xs font-semibold uppercase tracking-wider">
@@ -328,31 +328,31 @@ export default function HomePage() {
               {/* Stats Grid */}
               <div className="grid grid-cols-5 gap-2">
                 {/* Luck */}
-                <div className="bg-purple-800/30 rounded-xl p-2 text-center">
+                <div className="bg-purple-800/40 rounded-xl p-2 text-center">
                   <div className="text-2xl mb-1">🍀</div>
                   <div className="text-white text-xs font-medium">{language === 'tr' ? 'Şans' : 'Luck'}</div>
                   <div className="text-gold-400 text-sm font-bold">%{horoscope.stats.luck}</div>
                 </div>
                 {/* Love */}
-                <div className="bg-pink-800/30 rounded-xl p-2 text-center">
+                <div className="bg-pink-800/40 rounded-xl p-2 text-center">
                   <div className="text-2xl mb-1">💖</div>
                   <div className="text-white text-xs font-medium">{language === 'tr' ? 'Aşk' : 'Love'}</div>
                   <div className="text-pink-400 text-sm font-bold">%{horoscope.stats.love}</div>
                 </div>
                 {/* Money */}
-                <div className="bg-green-800/30 rounded-xl p-2 text-center">
+                <div className="bg-green-800/40 rounded-xl p-2 text-center">
                   <div className="text-2xl mb-1">💰</div>
                   <div className="text-white text-xs font-medium">{language === 'tr' ? 'Para' : 'Money'}</div>
                   <div className="text-green-400 text-sm font-bold">%{horoscope.stats.money}</div>
                 </div>
                 {/* Career */}
-                <div className="bg-blue-800/30 rounded-xl p-2 text-center">
+                <div className="bg-blue-800/40 rounded-xl p-2 text-center">
                   <div className="text-2xl mb-1">💼</div>
                   <div className="text-white text-xs font-medium">{language === 'tr' ? 'Kariyer' : 'Career'}</div>
                   <div className="text-blue-400 text-sm font-bold">%{horoscope.stats.career}</div>
                 </div>
                 {/* Mood */}
-                <div className="bg-yellow-800/30 rounded-xl p-2 text-center">
+                <div className="bg-yellow-800/40 rounded-xl p-2 text-center">
                   <div className="text-2xl mb-1">{horoscope.stats.mood}</div>
                   <div className="text-white text-xs font-medium">{language === 'tr' ? 'Ruh Hali' : 'Mood'}</div>
                   <div className="text-yellow-400 text-sm font-bold">
@@ -363,7 +363,7 @@ export default function HomePage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="px-4 pb-4 pt-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => setHoroscopeExpanded(!horoscopeExpanded)}
                 className="w-full py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:from-gold-400 hover:to-gold-500 transition-all shadow-lg"
@@ -374,14 +374,14 @@ export default function HomePage() {
               <div className="flex gap-2">
                 <Link
                   href={`/${language}/fortunes/horoscope`}
-                  className="flex-1 py-2.5 bg-purple-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-purple-600/70 transition-all border border-purple-500/30"
+                  className="flex-1 py-2.5 bg-purple-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-purple-600/70 transition-all"
                 >
                   <Sparkles className="w-4 h-4" />
                   {language === 'tr' ? 'Detaylı Astro Yorum' : 'Detailed Astro'}
                 </Link>
                 <Link
                   href={`/${language}/fortunes/tarot`}
-                  className="flex-1 py-2.5 bg-pink-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-pink-600/70 transition-all border border-pink-500/30"
+                  className="flex-1 py-2.5 bg-pink-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-pink-600/70 transition-all"
                 >
                   🃏 {language === 'tr' ? 'Bugünkü Kartını Çek' : 'Draw Today\'s Card'}
                 </Link>
@@ -395,21 +395,19 @@ export default function HomePage() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="px-4 pb-4 border-t border-purple-500/30"
+                  className="bg-purple-900/30 rounded-2xl p-4"
                 >
-                  <div className="pt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{horoscope.zodiacEmoji}</span>
-                      <div>
-                        <h3 className="text-white font-semibold text-sm">
-                          {horoscope.zodiacName} {horoscope.risingName && `• ${language === 'tr' ? 'Yükselen' : 'Rising'}: ${horoscope.risingName}`}
-                        </h3>
-                      </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{horoscope.zodiacEmoji}</span>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">
+                        {horoscope.zodiacName} {horoscope.risingName && `• ${language === 'tr' ? 'Yükselen' : 'Rising'}: ${horoscope.risingName}`}
+                      </h3>
                     </div>
-                    <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">
-                      {horoscope.horoscope}
-                    </p>
                   </div>
+                  <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">
+                    {horoscope.horoscope}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -419,17 +417,17 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-purple-900/60 via-pink-900/40 to-purple-900/60 rounded-3xl border border-purple-500/40 p-4 shadow-xl"
+            className="space-y-4"
           >
             <motion.h1 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-2xl font-bold text-white flex items-center gap-2 mb-3"
+              className="text-2xl font-bold text-white flex items-center gap-2"
             >
               {greeting}, <span className="text-gold-400">{userName}</span> ✨
             </motion.h1>
             
-            <div className="bg-gold-500/10 rounded-2xl p-4 border border-gold-500/30">
+            <div className="bg-gold-500/10 rounded-2xl p-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gold-500/20 flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-gold-400" />
