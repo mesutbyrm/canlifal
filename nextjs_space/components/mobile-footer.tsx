@@ -121,7 +121,7 @@ export default function MobileFooter() {
           />
           
           {/* Navigation Items */}
-          <nav className="relative h-full flex items-center justify-around px-2 pt-2">
+          <nav className="relative h-full flex items-center justify-around px-1 pt-2">
             {navItems.map((item, index) => {
               const isActive = pathname === item.href || (item.href === `/${language}` && pathname === `/${language}/`)
               const Icon = item.icon
@@ -129,43 +129,44 @@ export default function MobileFooter() {
               if (item.isCenter) {
                 // Center play button with special styling
                 return (
-                  <Link
-                    key={index}
-                    href={item.href}
-                    className="relative -mt-8 group"
-                  >
-                    {/* Outer golden glow */}
-                    <div 
-                      className="absolute inset-0 -m-2 rounded-full"
-                      style={{
-                        background: 'radial-gradient(circle, rgba(255, 183, 77, 0.5) 0%, transparent 70%)',
-                        filter: 'blur(8px)',
-                      }}
-                    />
-                    
-                    {/* Golden ring */}
-                    <div 
-                      className="relative w-16 h-16 rounded-full flex items-center justify-center"
-                      style={{
-                        background: 'linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #ffd700 100%)',
-                        boxShadow: '0 0 20px rgba(255, 183, 77, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
-                      }}
+                  <div key={index} className="flex flex-col items-center w-16">
+                    <Link
+                      href={item.href}
+                      className="relative -mt-8 group"
                     >
-                      {/* Inner circle */}
+                      {/* Outer golden glow */}
                       <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        className="absolute inset-0 -m-2 rounded-full"
                         style={{
-                          background: 'linear-gradient(135deg, #2d1b4e 0%, #1a0a2e 100%)',
-                          boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.5)',
+                          background: 'radial-gradient(circle, rgba(255, 183, 77, 0.5) 0%, transparent 70%)',
+                          filter: 'blur(8px)',
+                        }}
+                      />
+                      
+                      {/* Golden ring */}
+                      <div 
+                        className="relative w-14 h-14 rounded-full flex items-center justify-center"
+                        style={{
+                          background: 'linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #ffd700 100%)',
+                          boxShadow: '0 0 20px rgba(255, 183, 77, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
                         }}
                       >
-                        <Icon 
-                          className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" 
-                          fill="currentColor"
-                        />
+                        {/* Inner circle */}
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{
+                            background: 'linear-gradient(135deg, #2d1b4e 0%, #1a0a2e 100%)',
+                            boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.5)',
+                          }}
+                        >
+                          <Icon 
+                            className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" 
+                            fill="currentColor"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 )
               }
               
@@ -173,14 +174,14 @@ export default function MobileFooter() {
                 <Link
                   key={index}
                   href={item.href}
-                  className="relative flex flex-col items-center gap-1 py-2 px-3 group"
+                  className="flex flex-col items-center justify-center w-16 py-2 group"
                 >
-                  <div className="relative">
+                  <div className="relative w-9 h-9 flex items-center justify-center">
                     {/* Icon with special styling based on type */}
                     {index === 0 && (
                       // Profile - golden silhouette
                       <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        className="w-9 h-9 rounded-full flex items-center justify-center"
                         style={{
                           background: isActive 
                             ? 'linear-gradient(135deg, #ffd700 0%, #ff9500 100%)' 
@@ -193,38 +194,30 @@ export default function MobileFooter() {
                     
                     {index === 1 && (
                       // Messages - chat bubble with badge
-                      <div className="relative">
-                        <div 
-                          className="w-10 h-8 flex items-center justify-center"
+                      <>
+                        <MessageCircle 
+                          className={`w-7 h-7 ${isActive ? 'text-amber-400' : 'text-amber-200/70'}`}
+                          fill="currentColor"
                           style={{
                             filter: isActive ? 'drop-shadow(0 0 4px rgba(255, 183, 77, 0.5))' : 'none',
                           }}
-                        >
-                          <MessageCircle 
-                            className={`w-7 h-7 ${isActive ? 'text-amber-400' : 'text-amber-200/70'}`}
-                            fill="currentColor"
-                          />
-                        </div>
+                        />
                         {unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          <span className="absolute -top-1 -right-0 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                             {unreadCount > 9 ? '9+' : unreadCount}
                           </span>
                         )}
-                      </div>
+                      </>
                     )}
                     
                     {index === 3 && (
                       // Gift - wrapped gift box
-                      <div 
-                        className="w-8 h-8 flex items-center justify-center"
+                      <Gift 
+                        className={`w-7 h-7 ${isActive ? 'text-amber-400' : 'text-amber-500/80'}`}
                         style={{
                           filter: isActive ? 'drop-shadow(0 0 4px rgba(255, 183, 77, 0.5))' : 'none',
                         }}
-                      >
-                        <Gift 
-                          className={`w-7 h-7 ${isActive ? 'text-amber-400' : 'text-amber-500/80'}`}
-                        />
-                      </div>
+                      />
                     )}
                     
                     {index === 4 && (
@@ -247,7 +240,7 @@ export default function MobileFooter() {
                     )}
                   </div>
                   
-                  <span className={`text-[10px] font-medium ${isActive ? 'text-amber-400' : 'text-purple-200/60'}`}>
+                  <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-amber-400' : 'text-purple-200/60'}`}>
                     {item.label}
                   </span>
                 </Link>
