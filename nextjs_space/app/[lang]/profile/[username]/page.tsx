@@ -482,25 +482,18 @@ export default function ProfilePage() {
             {profile.isOwnProfile ? (
               <>
                 <Link
-                  href={`/${language}/dashboard`}
+                  href={`/${language}/fortunes`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Sparkles className="w-4 h-4 text-gold-400" />
                   {language === 'tr' ? 'Fal Stüdyom' : 'Fortune Studio'}
                 </Link>
                 <Link
-                  href={`/${language}/messages`}
+                  href={`/${language}/settings`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
-                  <MessageCircle className="w-4 h-4 text-gold-400" />
-                  {language === 'tr' ? 'Mesajlar' : 'Messages'}
-                </Link>
-                <Link
-                  href={`/${language}/chat/video/setup`}
-                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm"
-                >
-                  <Radio className="w-4 h-4" />
-                  {language === 'tr' ? 'CANLI' : 'LIVE'}
+                  <Settings className="w-4 h-4 text-gold-400" />
+                  {language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}
                 </Link>
               </>
             ) : (

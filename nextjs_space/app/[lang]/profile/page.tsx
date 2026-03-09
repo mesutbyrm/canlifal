@@ -184,18 +184,11 @@ export default function ProfilePage() {
             <span className="leading-tight">{language === 'tr' ? 'Fal\nStüdyom' : 'Fortune\nStudio'}</span>
           </Link>
           <Link 
-            href={`/${language}/messages`}
+            href={`/${language}/settings`}
             className="flex-1 border border-purple-500/50 hover:border-purple-400 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <Heart className="w-4 h-4 text-amber-400" />
-            <span>{language === 'tr' ? 'Mesajlar' : 'Messages'}</span>
-          </Link>
-          <Link
-            href={`/${language}/chat/video/setup`}
-            className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            <span className="text-lg">◉</span>
-            <span>{language === 'tr' ? 'CANLI' : 'LIVE'}</span>
+            <Settings className="w-4 h-4" />
+            <span>{language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}</span>
           </Link>
         </div>
       </div>
