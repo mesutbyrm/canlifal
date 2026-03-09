@@ -163,75 +163,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      {/* Live Streams Section */}
-      {liveStreams.length > 0 && (
-        <div className="pt-20 px-4 pb-2">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <div className="relative">
-                <Radio className="w-5 h-5 text-red-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </div>
-              {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                {liveStreams.length}
-              </span>
-            </h2>
-            <Link href={`/${language}/chat/video`} className="text-purple-400 text-sm flex items-center gap-1">
-              {language === 'tr' ? 'Tümü' : 'All'}
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Horizontal Scroll Live Streams - Circular Avatars with Rainbow Border */}
-          <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-            {liveStreams.map((stream) => (
-              <Link
-                key={stream.id}
-                href={`/${language}/chat/video?watch=${stream.id}`}
-                className="flex-shrink-0 flex flex-col items-center"
-              >
-                {/* Circular Avatar with Rainbow Animated Border */}
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full p-[3px] rainbow-border">
-                    <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-[2px]">
-                      <div className="w-full h-full rounded-full overflow-hidden">
-                        {stream.user.image ? (
-                          <Image
-                            src={stream.user.image}
-                            alt={stream.user.name}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
-                            <span className="text-xl font-bold text-white">
-                              {stream.user.name?.[0]?.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {/* CANLI Badge */}
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                    <span className="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
-                      <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
-                      CANLI
-                    </span>
-                  </div>
-                </div>
-                {/* Name */}
-                <p className="text-white text-[10px] font-medium mt-2 text-center w-20 truncate">{stream.user.name}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Tab Navigation */}
-      <div className={`${liveStreams.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
+      <div className="pt-20 px-4 pb-4">
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
