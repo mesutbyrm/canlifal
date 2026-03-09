@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Star, Sparkles, Video, Gift } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface LiveTeller {
@@ -17,6 +17,21 @@ interface LiveTeller {
   totalSessions: number
   isOnline: boolean
   user: {
+    name: string
+    image: string | null
+  }
+}
+
+interface LiveStream {
+  id: string
+  title: string
+  description: string | null
+  category: string
+  status: string
+  viewerCount: number
+  likeCount: number
+  user: {
+    id: string
     name: string
     image: string | null
   }
@@ -87,6 +102,7 @@ export default function HomePage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'fortunes' | 'live'>('fortunes')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
 
   useEffect(() => {
     // Fetch live tellers
@@ -99,17 +115,115 @@ export default function HomePage() {
         }
       } catch (e) {}
     }
+    
+    // Fetch live streams
+    const fetchStreams = async () => {
+      try {
+        const res = await fetch('/api/video-streams')
+        if (res.ok) {
+          const data = await res.json()
+          setLiveStreams(data || [])
+        }
+      } catch (e) {}
+    }
+    
     fetchTellers()
-    const interval = setInterval(fetchTellers, 30000)
-    return () => clearInterval(interval)
+    fetchStreams()
+    const tellerInterval = setInterval(fetchTellers, 30000)
+    const streamInterval = setInterval(fetchStreams, 10000)
+    return () => {
+      clearInterval(tellerInterval)
+      clearInterval(streamInterval)
+    }
   }, [])
 
   const onlineTellers = liveTellers.filter(t => t.isOnline)
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
+      {/* Live Streams Section - Always on top */}
+      {liveStreams.length > 0 && (
+        <div className="pt-20 px-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="relative">
+                <Radio className="w-5 h-5 text-red-500" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              </div>
+              {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                {liveStreams.length}
+              </span>
+            </h2>
+            <Link href={`/${language}/chat/video`} className="text-purple-400 text-sm flex items-center gap-1">
+              {language === 'tr' ? 'Tümü' : 'All'}
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Horizontal Scroll Live Streams */}
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+            {liveStreams.map((stream) => (
+              <Link
+                key={stream.id}
+                href={`/${language}/chat/video?watch=${stream.id}`}
+                className="flex-shrink-0 w-36"
+              >
+                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-red-900/60 to-pink-900/40 p-[2px]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-red-500/20 rounded-2xl animate-pulse" />
+                  <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
+                    {/* CANLI Badge */}
+                    <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                      <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        CANLI
+                      </span>
+                    </div>
+                    
+                    {/* User Image */}
+                    <div className="aspect-[3/4] relative">
+                      {stream.user.image ? (
+                        <Image
+                          src={stream.user.image}
+                          alt={stream.user.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
+                          <span className="text-3xl font-bold text-white">
+                            {stream.user.name?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    </div>
+
+                    {/* Stream Info */}
+                    <div className="p-2 -mt-12 relative z-10">
+                      <h3 className="text-white font-bold text-xs truncate">{stream.user.name}</h3>
+                      <p className="text-purple-300 text-[10px] truncate mt-0.5">{stream.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-0.5">
+                          <Eye className="w-3 h-3 text-gray-400" />
+                          <span className="text-gray-400 text-[10px]">{stream.viewerCount}</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <Heart className="w-3 h-3 text-red-400" fill="currentColor" />
+                          <span className="text-red-400 text-[10px]">{stream.likeCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation */}
-      <div className="pt-20 px-4 pb-4">
+      <div className={`${liveStreams.length > 0 ? 'pt-2' : 'pt-20'} px-4 pb-4`}>
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
