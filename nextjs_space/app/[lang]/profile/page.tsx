@@ -92,20 +92,7 @@ export default function ProfilePage() {
   if (!session?.user) return null
 
   return (
-    <div className="min-h-screen bg-[#0a0118] pb-32">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#0a0118]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="w-10" />
-          <h1 className="text-white font-semibold text-lg">
-            {profile?.name || session.user.name}
-          </h1>
-          <Link href={`/${language}/settings`}>
-            <Settings className="w-6 h-6 text-white" />
-          </Link>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-[#0a0118] pb-32 pt-4">
       {/* Profile Info */}
       <div className="px-4 pt-6">
         {/* Avatar & Stats Row */}
