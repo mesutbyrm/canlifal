@@ -23,6 +23,7 @@ export default function Navbar() {
   const [profileImage, setProfileImage] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [hasLiveStreams, setHasLiveStreams] = useState(false)
+  const [liveStreamCount, setLiveStreamCount] = useState(0)
   const [onlineUsers, setOnlineUsers] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -59,7 +60,11 @@ export default function Navbar() {
     const checkStats = () => {
       fetch('/api/video-streams')
         .then(res => res.json())
-        .then(data => setHasLiveStreams(Array.isArray(data) && data.length > 0))
+        .then(data => {
+          const count = Array.isArray(data) ? data.length : 0
+          setHasLiveStreams(count > 0)
+          setLiveStreamCount(count)
+        })
         .catch(() => {})
       
       fetch('/api/public-stats')
@@ -192,274 +197,200 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center h-14">
-            {/* Left - Credits and Online Users */}
-            <div className="flex items-center gap-2">
-              {session?.user ? (
-                <>
-                  <Link
-                    href={`/${language}/credits`}
-                    className="flex items-center gap-1.5 bg-gold-500/20 px-3 py-1.5 rounded-full hover:bg-gold-500/30 transition-colors"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center">
-                      <Coins className="w-3 h-3 text-black" />
-                    </div>
-                    <span className="text-gold-400 font-semibold text-sm">{credits}</span>
-                  </Link>
-                  {/* Online Users Badge - right of credits */}
-                  <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={toggleLanguage}
-                    className="flex items-center gap-1.5 text-purple-300 hover:text-white text-sm"
-                  >
-                    <Globe className="w-4 h-4" />
-                    {language.toUpperCase()}
-                  </button>
-                  {/* Online Users Badge for non-logged users */}
-                  <div className="flex items-center gap-1 bg-green-500/20 px-2 py-1.5 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-green-400 font-semibold text-xs">{onlineUsers}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Center - Logo with Live indicator */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-              <Link href={`/${language}`}>
-                <span className="font-serif text-2xl font-bold text-gold-400 tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                  falcı
-                </span>
+        <div className="max-w-7xl mx-auto px-2 sm:px-4">
+          <div className="flex justify-between items-center h-16">
+            {/* Main Navigation - 5 items */}
+            <div className="flex-1 flex justify-around items-center">
+              {/* Ana (Home) */}
+              <Link
+                href={`/${language}`}
+                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
+              >
+                <Home className="w-6 h-6" />
+                <span className="text-[11px] font-medium">{language === 'tr' ? 'Ana' : 'Home'}</span>
               </Link>
-              {hasLiveStreams && (
-                <Link href={`/${language}/chat/video`} className="flex items-center gap-1 bg-[#fe2c55] px-1.5 py-0.5 rounded">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  <span className="text-white text-[10px] font-bold animate-pulse">CANLI</span>
-                </Link>
-              )}
-            </div>
-
-            {/* Right - Profile/Auth */}
-            <div className="flex items-center gap-2">
+              
+              {/* Fallar (Fortunes) */}
+              <Link
+                href={`/${language}/fortunes`}
+                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
+              >
+                <Sparkles className="w-6 h-6" />
+                <span className="text-[11px] font-medium">{language === 'tr' ? 'Fallar' : 'Fortunes'}</span>
+              </Link>
+              
+              {/* Canlı (Live) */}
+              <Link
+                href={`/${language}/chat/video`}
+                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
+              >
+                <div className="relative">
+                  <Video className="w-6 h-6" />
+                  {liveStreamCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#fe2c55] rounded-md flex items-center justify-center px-1">
+                      <span className="text-white text-[10px] font-bold">{liveStreamCount}</span>
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-medium">{language === 'tr' ? 'Canlı' : 'Live'}</span>
+              </Link>
+              
+              {/* Sohbet (Chat) */}
+              <Link
+                href={`/${language}/messages`}
+                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
+              >
+                <div className="relative">
+                  <MessageCircle className="w-6 h-6" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#fe2c55] rounded-md flex items-center justify-center px-1">
+                      <span className="text-white text-[10px] font-bold">{unreadMessages > 99 ? '99+' : unreadMessages}</span>
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-medium">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
+              </Link>
+              
+              {/* Profile */}
               {session?.user ? (
-                <>
-                  {/* Inbox / Messages */}
-                  <Link 
-                    href={`/${language}/messages`}
-                    className="relative p-2 text-purple-300 hover:text-white transition-colors"
-                    title={language === 'tr' ? 'Gelen Kutusu' : 'Inbox'}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex flex-col items-center gap-1 px-2"
                   >
-                    <Mail className="w-5 h-5" />
-                    {unreadMessages > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#fe2c55] rounded-full flex items-center justify-center">
-                        <span className="text-white text-[10px] font-bold">{unreadMessages > 9 ? '9+' : unreadMessages}</span>
-                      </span>
-                    )}
-                  </Link>
-                  <NotificationBell />
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowProfileMenu(!showProfileMenu)}
-                      className="flex items-center"
-                    >
-                      <ProfileAvatar size="md" />
-                    </button>
-                    
-                    {/* Profile dropdown */}
-                    {showProfileMenu && (
-                      <div className="absolute right-0 top-full mt-2 w-64 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
-                        <div className="px-4 py-3 border-b border-purple-700">
-                          <div className="flex items-center gap-3">
-                            <ProfileAvatar size="xl" showCamera />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium truncate">{session.user.name}</p>
-                              <p className="text-purple-400 text-xs truncate">{session.user.email}</p>
-                              <p className="text-gold-400 text-[10px] mt-1 flex items-center gap-1">
-                                <Camera className="w-3 h-3" />
-                                {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
-                              </p>
-                            </div>
+                    {/* Golden ornate border for admin */}
+                    <div className={`relative ${session.user.role === 'admin' ? 'p-0.5' : ''}`}>
+                      {session.user.role === 'admin' && (
+                        <div className="absolute inset-0 rounded-full" style={{
+                          background: 'linear-gradient(135deg, #d4af37, #f4e4b5, #d4af37, #967117, #d4af37)',
+                          padding: '2px'
+                        }}>
+                          <div className="w-full h-full rounded-full bg-[#0a0118]" />
+                        </div>
+                      )}
+                      <div className={`relative ${session.user.role === 'admin' ? 'w-10 h-10' : 'w-9 h-9'} rounded-full overflow-hidden border-2 ${session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500/50'}`}>
+                        {profileImage || session.user.image ? (
+                          <Image
+                            src={profileImage || session.user.image || ''}
+                            alt={session.user.name || 'Profil'}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {session.user.name?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {/* Admin badge overlay */}
+                      {session.user.role === 'admin' && (
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[7px] font-bold text-black px-1.5 rounded">
+                          ADMIN
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  
+                  {/* Profile dropdown */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
+                      <div className="px-4 py-3 border-b border-purple-700">
+                        <div className="flex items-center gap-3">
+                          <ProfileAvatar size="xl" showCamera />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">{session.user.name}</p>
+                            <p className="text-purple-400 text-xs truncate">{session.user.email}</p>
+                            <p className="text-gold-400 text-[10px] mt-1 flex items-center gap-1">
+                              <Camera className="w-3 h-3" />
+                              {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
+                            </p>
                           </div>
                         </div>
-                        
-                        <Link
-                          href={`/${language}/profile/${session.user.id}`}
-                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <User className="w-4 h-4" />
-                          {language === 'tr' ? 'Profilim' : 'My Profile'}
-                        </Link>
-                        
-                        <Link
-                          href={`/${language}/dashboard`}
-                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <LayoutGrid className="w-4 h-4" />
-                          {language === 'tr' ? 'Panelim' : 'Dashboard'}
-                        </Link>
-                        
-                        <Link
-                          href={`/${language}/credits`}
-                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          {language === 'tr' ? 'Kredi Satın Al' : 'Buy Credits'}
-                        </Link>
-                        
-                        <Link
-                          href={`/${language}/settings`}
-                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <Settings className="w-4 h-4" />
-                          {language === 'tr' ? 'Ayarlar' : 'Settings'}
-                        </Link>
-
-                        {session?.user?.role === 'admin' && (
-                          <Link
-                            href={`/${language}/admin`}
-                            className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
-                            onClick={() => setShowProfileMenu(false)}
-                          >
-                            <Shield className="w-4 h-4" />
-                            Admin
-                          </Link>
-                        )}
-                        
-                        <button
-                          onClick={toggleLanguage}
-                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white w-full"
-                        >
-                          <Globe className="w-4 h-4" />
-                          {language === 'tr' ? 'English' : 'Türkçe'}
-                        </button>
-                        
-                        <div className="border-t border-purple-700 mt-2 pt-2">
-                          <button
-                            onClick={() => signOut({ callbackUrl: `/${language}` })}
-                            className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 w-full"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            {language === 'tr' ? 'Çıkış Yap' : 'Log Out'}
-                          </button>
-                        </div>
                       </div>
-                    )}
-                  </div>
-                </>
+                      
+                      {/* Credits display */}
+                      <Link
+                        href={`/${language}/credits`}
+                        className="flex items-center justify-between px-4 py-2 text-gold-400 hover:bg-purple-800/50"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Coins className="w-4 h-4" />
+                          {language === 'tr' ? 'Kredilerim' : 'My Credits'}
+                        </div>
+                        <span className="font-bold">{credits}</span>
+                      </Link>
+                      
+                      <Link
+                        href={`/${language}/profile/${session.user.id}`}
+                        className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <User className="w-4 h-4" />
+                        {language === 'tr' ? 'Profilim' : 'My Profile'}
+                      </Link>
+                      
+                      <Link
+                        href={`/${language}/dashboard`}
+                        className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        {language === 'tr' ? 'Panelim' : 'Dashboard'}
+                      </Link>
+                      
+                      <Link
+                        href={`/${language}/settings`}
+                        className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <Settings className="w-4 h-4" />
+                        {language === 'tr' ? 'Ayarlar' : 'Settings'}
+                      </Link>
+
+                      {session?.user?.role === 'admin' && (
+                        <Link
+                          href={`/${language}/admin`}
+                          className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <Shield className="w-4 h-4" />
+                          Admin
+                        </Link>
+                      )}
+                      
+                      <button
+                        onClick={toggleLanguage}
+                        className="flex items-center gap-3 px-4 py-2 text-purple-200 hover:bg-purple-800/50 hover:text-white w-full"
+                      >
+                        <Globe className="w-4 h-4" />
+                        {language === 'tr' ? 'English' : 'Türkçe'}
+                      </button>
+                      
+                      <div className="border-t border-purple-700 mt-2 pt-2">
+                        <button
+                          onClick={() => signOut({ callbackUrl: `/${language}` })}
+                          className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 w-full"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          {language === 'tr' ? 'Çıkış Yap' : 'Log Out'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Link
                   href={`/${language}/login`}
-                  className="flex items-center gap-2 bg-gold-500 text-black px-4 py-1.5 rounded-full font-medium text-sm hover:bg-gold-400 transition-colors"
+                  className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
                 >
-                  <User className="w-4 h-4" />
-                  {language === 'tr' ? 'Giriş' : 'Login'}
+                  <User className="w-6 h-6" />
+                  <span className="text-[11px] font-medium">{language === 'tr' ? 'Giriş' : 'Login'}</span>
                 </Link>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Navigation - Mobile Only */}
-        {session?.user && (
-          <div className="lg:hidden border-t border-purple-900/30">
-            <div className="flex justify-around items-center h-12">
-              <Link
-                href={`/${language}`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
-              >
-                <Home className="w-5 h-5" />
-                <span className="text-[10px]">{language === 'tr' ? 'Ana' : 'Home'}</span>
-              </Link>
-              
-              <Link
-                href={`/${language}/fortunes`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
-              >
-                <Sparkles className="w-5 h-5" />
-                <span className="text-[10px]">{language === 'tr' ? 'Fallar' : 'Fortunes'}</span>
-              </Link>
-              
-              <Link
-                href={`/${language}/live-tellers`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
-              >
-                <Video className="w-5 h-5" />
-                <span className="text-[10px]">{language === 'tr' ? 'Canlı' : 'Live'}</span>
-              </Link>
-              
-              <Link
-                href={`/${language}/chat`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-[10px]">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
-              </Link>
-              
-              <Link
-                href={`/${language}/social`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors"
-              >
-                <Users className="w-5 h-5" />
-                <span className="text-[10px]">{language === 'tr' ? 'Sosyal' : 'Social'}</span>
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Desktop Navigation */}
-        <div className="hidden lg:block border-t border-purple-900/30">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-center items-center gap-8 h-10">
-              <Link
-                href={`/${language}/fortunes`}
-                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
-              >
-                <Sparkles className="w-4 h-4" />
-                {language === 'tr' ? 'Fallar' : 'Fortunes'}
-              </Link>
-              
-              <Link
-                href={`/${language}/live-tellers`}
-                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
-              >
-                <Video className="w-4 h-4" />
-                {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
-              </Link>
-              
-              <Link
-                href={`/${language}/chat`}
-                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
-              >
-                <MessageCircle className="w-4 h-4" />
-                {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
-              </Link>
-              
-              <Link
-                href={`/${language}/social`}
-                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
-              >
-                <Users className="w-4 h-4" />
-                {language === 'tr' ? 'Sosyal' : 'Social'}
-              </Link>
-              
-              <Link
-                href={`/${language}/leaderboard`}
-                className="text-purple-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-1.5"
-              >
-                <Trophy className="w-4 h-4" />
-                {language === 'tr' ? 'Sıralama' : 'Leaderboard'}
-              </Link>
             </div>
           </div>
         </div>
