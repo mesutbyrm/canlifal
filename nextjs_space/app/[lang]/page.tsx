@@ -163,58 +163,51 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      {/* Online Users Section - Always on top */}
+      {/* Online Users Section - Marquee Scroll Right to Left */}
       {onlineUsers.length > 0 && (
-        <div className="pt-20 px-4 pb-2">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <div className="relative">
-                <Users className="w-5 h-5 text-green-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              </div>
-              {language === 'tr' ? 'Çevrimiçi' : 'Online'}
-              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                {onlineUsers.length}
-              </span>
-            </h2>
-          </div>
-
-          {/* Horizontal Scroll Online Users */}
-          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-            {onlineUsers.slice(0, 20).map((user) => (
-              <Link
-                key={user.id}
-                href={`/${language}/profile/${user.username || user.id}`}
-                className="flex-shrink-0 flex flex-col items-center"
-              >
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
-                    <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        {user.image ? (
-                          <Image
-                            src={user.image}
-                            alt={user.name || ''}
-                            width={52}
-                            height={52}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-lg font-bold text-white">
-                            {user.name?.[0]?.toUpperCase()}
-                          </span>
-                        )}
+        <div className="pt-20 pb-2 overflow-hidden">
+          {/* Marquee Container */}
+          <div className="relative">
+            <div className="flex items-center animate-marquee-rtl">
+              {/* Duplicate content for seamless loop */}
+              {[...onlineUsers.slice(0, 20), ...onlineUsers.slice(0, 20)].map((user, index) => (
+                <Link
+                  key={`${user.id}-${index}`}
+                  href={`/${language}/profile/${user.username || user.id}`}
+                  className="flex-shrink-0 flex items-center gap-2 mx-3"
+                >
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
+                      <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          {user.image ? (
+                            <Image
+                              src={user.image}
+                              alt={user.name || ''}
+                              width={36}
+                              height={36}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-bold text-white">
+                              {user.name?.[0]?.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {/* Online indicator */}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0a0118]" />
                   </div>
-                  {/* Online indicator */}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0a0118]" />
-                </div>
-                <span className="text-white text-[10px] mt-1.5 text-center max-w-[56px] truncate">
-                  {user.name?.split(' ')[0]}
-                </span>
-              </Link>
-            ))}
+                  <div className="flex flex-col">
+                    <span className="text-white text-xs font-medium whitespace-nowrap">
+                      {user.name?.split(' ')[0]}
+                    </span>
+                    <span className="text-green-400 text-[10px]">online</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -503,6 +496,38 @@ export default function HomePage() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Fortune Types - Circular Icons */}
+          <div className="mt-6">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              {language === 'tr' ? 'Fallar' : 'Fortunes'}
+            </h2>
+            <div className="grid grid-cols-4 gap-4">
+              {FORTUNE_CARDS.map((fortune) => (
+                <Link
+                  key={fortune.id}
+                  href={`/${language}${fortune.href}`}
+                  className="flex flex-col items-center"
+                >
+                  <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600">
+                    <div className="w-full h-full rounded-full overflow-hidden">
+                      <Image
+                        src={fortune.image}
+                        alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-white text-[10px] font-medium mt-1.5 text-center w-16 leading-tight">
+                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}
