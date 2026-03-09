@@ -307,12 +307,12 @@ export default function HomePage() {
             onClick={() => setActiveTab('fortunes')}
             className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
               activeTab === 'fortunes'
-                ? 'bg-transparent border-2 border-purple-400/50 text-white'
+                ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
                 : 'bg-transparent border-2 border-purple-900/50 text-purple-400'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            {language === 'tr' ? 'Fallar' : 'Fortunes'}
+            <Radio className="w-4 h-4" />
+            {language === 'tr' ? 'Canlı Yayın' : 'Live Streams'}
           </button>
           <button
             onClick={() => setActiveTab('live')}
@@ -459,134 +459,123 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        /* Fortunes Tab Content */
+        /* Live Streams Tab Content */
         <div className="px-4 pb-8">
-          {/* Live Tellers Preview */}
+          {/* Start Stream Button */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-gold-400" />
-                {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
-              </h2>
-              <Link href={`/${language}/live-tellers`} className="text-purple-400 text-sm flex items-center gap-1">
-                {language === 'tr' ? 'Tümünü Gör' : 'See All'}
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {/* Horizontal Scroll Teller Cards */}
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-              {liveTellers.slice(0, 5).map((teller) => (
-                <Link
-                  key={teller.id}
-                  href={`/${language}/live-tellers/${teller.id}`}
-                  className="flex-shrink-0 w-40"
-                >
-                  <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/60 to-pink-900/40 p-[2px]">
-                    <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
-                      {/* Online/Offline Badge */}
-                      {teller.isOnline && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                            CANLI
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Teller Image */}
-                      <div className="aspect-[3/4] relative">
-                        {teller.avatar || teller.user.image ? (
-                          <Image
-                            src={teller.avatar || teller.user.image || ''}
-                            alt={teller.displayName}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                            <span className="text-3xl font-bold text-white">
-                              {teller.displayName?.[0]?.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      </div>
-
-                      {/* Teller Info */}
-                      <div className="p-2 -mt-10 relative z-10">
-                        <h3 className="text-white font-bold text-xs truncate">{teller.displayName}</h3>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="w-2.5 h-2.5 text-gold-400 fill-gold-400" />
-                          <span className="text-gold-400 text-[10px] font-semibold">{teller.rating.toFixed(1)}</span>
-                          <span className="text-purple-400 text-[10px]">• {teller.totalSessions}</span>
-                        </div>
-                        
-                        {/* Connect Button */}
-                        <button className={`mt-1.5 w-full py-1.5 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all ${
-                          teller.isOnline ? 'bg-green-500 hover:bg-green-400' : 'bg-purple-600 hover:bg-purple-500'
-                        }`}>
-                          <Video className="w-2.5 h-2.5" />
-                          {language === 'tr' ? 'Bağlan' : 'Connect'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-
-              {liveTellers.length === 0 && (
-                <div className="flex-1 py-8 text-center w-full">
-                  <p className="text-purple-400 text-sm">
-                    {language === 'tr' ? 'Henüz falcı yok' : 'No tellers yet'}
-                  </p>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => {
+                if (!session?.user) {
+                  router.push(`/${language}/login`)
+                } else {
+                  router.push(`/${language}/chat/video/setup`)
+                }
+              }}
+              className="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:from-red-500 hover:to-pink-500 transition-all"
+            >
+              <Radio className="w-5 h-5" />
+              {language === 'tr' ? 'Canlı Yayın Başlat' : 'Start Live Stream'}
+            </button>
           </div>
 
-          {/* Fortune Categories Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-gold-400" />
-                {language === 'tr' ? 'Fal Kategorileri' : 'Fortune Categories'}
-              </h2>
-              <Link href={`/${language}/fortunes`} className="text-purple-400 text-sm flex items-center gap-1">
-                {language === 'tr' ? 'Tümünü Gör' : 'See All'}
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+          {/* Live Streams Grid */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Radio className="w-5 h-5 text-red-500" />
+              {language === 'tr' ? 'Şu An Yayında' : 'Now Live'}
+              {liveStreams.length > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                  {liveStreams.length}
+                </span>
+              )}
+            </h2>
 
-            {/* Fortune Cards Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {FORTUNE_CARDS.map((card, index) => (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Link href={`/${language}${card.href}`}>
-                    <div className="relative aspect-square rounded-2xl overflow-hidden bg-purple-900/30 group">
-                      <Image
-                        src={card.image}
-                        alt={language === 'tr' ? card.nameTr : card.nameEn}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-white font-semibold text-sm">{language === 'tr' ? card.nameTr : card.nameEn}</h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-3 h-3 text-gold-400 fill-gold-400" />
-                          <span className="text-gold-400 text-xs font-medium">5.0</span>
+            {liveStreams.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {liveStreams.map((stream, index) => (
+                  <motion.div
+                    key={stream.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link href={`/${language}/chat/video?watch=${stream.id}`}>
+                      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-red-900/60 to-pink-900/40 p-[2px]">
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-red-500/20 rounded-2xl" />
+                        <div className="relative bg-[#0a0118]/90 rounded-2xl overflow-hidden">
+                          {/* CANLI Badge */}
+                          <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                            <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              CANLI
+                            </span>
+                          </div>
+                          
+                          {/* User Image */}
+                          <div className="aspect-[3/4] relative">
+                            {stream.user.image ? (
+                              <Image
+                                src={stream.user.image}
+                                alt={stream.user.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
+                                <span className="text-4xl font-bold text-white">
+                                  {stream.user.name?.[0]?.toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                          </div>
+
+                          {/* Stream Info */}
+                          <div className="p-3 -mt-14 relative z-10">
+                            <h3 className="text-white font-bold text-sm truncate">{stream.user.name}</h3>
+                            <p className="text-purple-300 text-xs truncate mt-0.5">{stream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}</p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-3 h-3 text-gray-400" />
+                                <span className="text-gray-400 text-xs">{stream.viewerCount}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Heart className="w-3 h-3 text-red-400" fill="currentColor" />
+                                <span className="text-red-400 text-xs">{stream.likeCount}</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Radio className="w-10 h-10 text-red-400" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">
+                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                </h3>
+                <p className="text-purple-400 text-sm mb-4">
+                  {language === 'tr' ? 'İlk yayıncı sen ol!' : 'Be the first to go live!'}
+                </p>
+                <button
+                  onClick={() => {
+                    if (!session?.user) {
+                      router.push(`/${language}/login`)
+                    } else {
+                      router.push(`/${language}/chat/video/setup`)
+                    }
+                  }}
+                  className="px-6 py-2 bg-red-500 text-white rounded-full text-sm font-medium hover:bg-red-400 transition-all"
+                >
+                  {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
