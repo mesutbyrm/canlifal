@@ -101,6 +101,48 @@ const FORTUNE_CARDS = [
     image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png',
     href: '/fortunes/angel'
   },
+  {
+    id: 'aura',
+    nameTr: 'Aura Okuma',
+    nameEn: 'Aura Reading',
+    image: '/fortunes/aura.jpg',
+    href: '/fortunes/aura'
+  },
+  {
+    id: 'birthchart',
+    nameTr: 'Doğum Haritası',
+    nameEn: 'Birth Chart',
+    image: '/fortunes/birthchart.jpg',
+    href: '/fortunes/birthchart'
+  },
+  {
+    id: 'katina',
+    nameTr: 'Katina Falı',
+    nameEn: 'Katina Cards',
+    image: '/fortunes/katina.jpg',
+    href: '/fortunes/katina'
+  },
+  {
+    id: 'yesno',
+    nameTr: 'Evet/Hayır',
+    nameEn: 'Yes/No Oracle',
+    image: '/fortunes/yesno.jpg',
+    href: '/fortunes/yesno'
+  },
+  {
+    id: 'kursundokme',
+    nameTr: 'Kurşun Dökme',
+    nameEn: 'Lead Pouring',
+    image: '/fortunes/dream.jpg',
+    href: '/fortunes/kursundokme'
+  },
+  {
+    id: 'istikhara',
+    nameTr: 'İstikhare',
+    nameEn: 'Istikhara',
+    image: '/fortunes/angel.jpg',
+    href: '/fortunes/istikhara'
+  },
 ]
 
 export default function HomePage() {

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
-import { User, Gift, Eye, Play, MessageCircle } from 'lucide-react'
+import { User, Gift, Home, Play, MessageCircle } from 'lucide-react'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
@@ -68,8 +68,8 @@ export default function MobileFooter() {
     },
     {
       href: `/${language}`,
-      icon: Eye,
-      label: language === 'tr' ? 'Fallar' : 'Fortunes',
+      icon: Home,
+      label: language === 'tr' ? 'Ana Sayfa' : 'Home',
       isCenter: false,
     },
   ]
@@ -228,7 +228,7 @@ export default function MobileFooter() {
                     )}
                     
                     {index === 4 && (
-                      // Eye/Crystal ball - mystical eye
+                      // Home - Ana Sayfa
                       <div 
                         className="w-9 h-9 rounded-full flex items-center justify-center"
                         style={{
@@ -240,7 +240,7 @@ export default function MobileFooter() {
                           boxShadow: isActive ? '0 0 12px rgba(167, 139, 250, 0.5)' : 'none',
                         }}
                       >
-                        <Eye 
+                        <Home 
                           className={`w-5 h-5 ${isActive ? 'text-purple-200' : 'text-purple-300/80'}`}
                         />
                       </div>

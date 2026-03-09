@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError(language === 'tr' ? 'Geçersiz e-posta veya şifre' : 'Invalid email or password')
       } else {
-        router.push(`/${language}/dashboard`)
+        router.push(`/${language}`)
       }
     } catch (err) {
       setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
