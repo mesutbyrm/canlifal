@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
 
-// GET conversations list
+// GET conversations list or unread count
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -12,6 +12,27 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = session.user.id
+    const { searchParams } = new URL(request.url)
+    
+    // If only unread count is requested
+    if (searchParams.get('unreadCount') === 'true') {
+      const unreadCount = await prisma.directMessage.count({
+        where: {
+          receiverId: userId,
+          isRead: false
+        }
+      })
+      
+      // Also count pending message requests
+      const requestCount = await prisma.messageRequest.count({
+        where: {
+          receiverId: userId,
+          status: 'pending'
+        }
+      })
+      
+      return NextResponse.json({ unreadCount: unreadCount + requestCount })
+    }
 
     // Get all conversations where user is participant
     const conversations = await prisma.conversation.findMany({

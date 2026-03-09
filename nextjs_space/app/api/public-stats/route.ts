@@ -17,7 +17,8 @@ export async function GET() {
       socialPostsCount,
       socialActiveUsers,
       totalUsers,
-      activeVideoStreams
+      activeVideoStreams,
+      sitePresenceCount
     ] = await Promise.all([
       // Fortune statistics by type
       prisma.fortune.groupBy({
@@ -54,6 +55,12 @@ export async function GET() {
           endedAt: null
         },
         select: { viewerCount: true }
+      }),
+      // Site-wide presence count (all visitors)
+      prisma.sitePresence.count({
+        where: {
+          lastSeen: { gte: twoMinutesAgo }
+        }
       })
     ]);
 
@@ -80,8 +87,8 @@ export async function GET() {
     // Total video stream viewers
     const totalVideoViewers = activeVideoStreams.reduce((sum: number, s: { viewerCount: number }) => sum + s.viewerCount, 0);
     
-    // Total online = chat + video viewers (with minimum of 1 for base activity)
-    const totalOnline = Math.max(1, totalChatOnline + totalVideoViewers);
+    // Total online = site presence count (most accurate) or fallback to chat + video
+    const totalOnline = Math.max(1, sitePresenceCount || (totalChatOnline + totalVideoViewers));
 
     // Format fortune stats
     const fortunesByType: Record<string, number> = {};

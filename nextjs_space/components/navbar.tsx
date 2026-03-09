@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/language-context'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
-  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio
+  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail
 } from 'lucide-react'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
@@ -24,6 +24,7 @@ export default function Navbar() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [hasLiveStreams, setHasLiveStreams] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -38,8 +39,22 @@ export default function Navbar() {
         .then(res => res.json())
         .then(data => setProfileImage(data.image || ''))
         .catch(() => {})
+      
+      // Fetch unread messages count
+      const fetchUnreadMessages = () => {
+        fetch('/api/messages?unreadCount=true')
+          .then(res => res.json())
+          .then(data => setUnreadMessages(data.unreadCount || 0))
+          .catch(() => {})
+      }
+      fetchUnreadMessages()
+      const messageInterval = setInterval(fetchUnreadMessages, 15000)
+      
+      return () => clearInterval(messageInterval)
     }
+  }, [session])
 
+  useEffect(() => {
     // Check for live streams and online users
     const checkStats = () => {
       fetch('/api/video-streams')
@@ -56,7 +71,7 @@ export default function Navbar() {
     checkStats()
     const interval = setInterval(checkStats, 30000) // Check every 30 seconds
     return () => clearInterval(interval)
-  }, [session])
+  }, [])
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'tr' : 'en')
@@ -235,6 +250,19 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               {session?.user ? (
                 <>
+                  {/* Inbox / Messages */}
+                  <Link 
+                    href={`/${language}/messages`}
+                    className="relative p-2 text-purple-300 hover:text-white transition-colors"
+                    title={language === 'tr' ? 'Gelen Kutusu' : 'Inbox'}
+                  >
+                    <Mail className="w-5 h-5" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#fe2c55] rounded-full flex items-center justify-center">
+                        <span className="text-white text-[10px] font-bold">{unreadMessages > 9 ? '9+' : unreadMessages}</span>
+                      </span>
+                    )}
+                  </Link>
                   <NotificationBell />
                   <div className="relative">
                     <button
