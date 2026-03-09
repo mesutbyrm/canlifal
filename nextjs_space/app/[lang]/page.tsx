@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Coins, ChevronRight, Star, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2, Radio, Plus, Eye} from 'lucide-react'
+import { Coins, ChevronRight, Star, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2, Radio, Plus, Eye, Heart, Banknote, Briefcase, Smile, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface UserCredits {
@@ -25,6 +25,14 @@ interface LiveStream {
   }
 }
 
+interface DailyStats {
+  luck: number
+  love: number
+  money: number
+  career: number
+  mood: string
+}
+
 interface DailyHoroscope {
   hasZodiac: boolean
   zodiacSign?: string
@@ -35,6 +43,9 @@ interface DailyHoroscope {
   horoscope?: string
   date?: string
   message?: string
+  stats?: DailyStats
+  personalGreeting?: string
+  userName?: string
 }
 
 const FORTUNE_CARDS = [
@@ -283,83 +294,178 @@ export default function HomePage() {
         </motion.div>
       </div>
 
-      {/* Greeting Section */}
+      {/* Personalized Greeting Box */}
       <div className="px-4 pb-4">
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl md:text-3xl font-semibold text-white"
-        >
-          {greeting}, <span className="text-gold-400">{userName}</span>!
-        </motion.h1>
-      </div>
-
-      {/* Main Content */}
-      <div className="px-4 pb-8 space-y-4">
-        {/* Daily Horoscope for logged-in users with zodiac */}
-        {session?.user && horoscope?.hasZodiac && horoscope.horoscope && (
+        {session?.user && horoscope?.hasZodiac && horoscope.stats ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-purple-900/50 to-pink-900/30 rounded-2xl border border-purple-500/30 overflow-hidden"
+            className="bg-gradient-to-br from-purple-900/60 via-pink-900/40 to-purple-900/60 rounded-3xl border border-purple-500/40 overflow-hidden shadow-xl"
           >
-            <button
-              onClick={() => setHoroscopeExpanded(!horoscopeExpanded)}
-              className="w-full p-4 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{horoscope.zodiacEmoji}</span>
-                <div>
-                  <h3 className="text-white font-semibold">
-                    {language === 'tr' ? 'Günlük Burcunuz' : 'Your Daily Horoscope'}
-                  </h3>
-                  <p className="text-purple-300 text-sm">
-                    {horoscope.zodiacName} {horoscope.risingName && `• ${language === 'tr' ? 'Yükselen' : 'Rising'}: ${horoscope.risingName}`}
-                  </p>
+            {/* Greeting Header */}
+            <div className="p-4 pb-3">
+              <motion.h1 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-2xl font-bold text-white flex items-center gap-2"
+              >
+                {greeting}, <span className="text-gold-400">{userName}</span> ✨
+              </motion.h1>
+              <p className="text-purple-200 text-sm mt-1 leading-relaxed">
+                {horoscope.personalGreeting}
+              </p>
+            </div>
+
+            {/* Daily Stats Section */}
+            <div className="px-4 pb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-4 h-4 text-gold-400" />
+                <span className="text-gold-400 text-xs font-semibold uppercase tracking-wider">
+                  {language === 'tr' ? 'Güne Özel Ücretsiz Günlük Fal' : 'Free Daily Fortune'}
+                </span>
+              </div>
+              
+              {/* Stats Grid */}
+              <div className="grid grid-cols-5 gap-2">
+                {/* Luck */}
+                <div className="bg-purple-800/30 rounded-xl p-2 text-center">
+                  <div className="text-2xl mb-1">🍀</div>
+                  <div className="text-white text-xs font-medium">{language === 'tr' ? 'Şans' : 'Luck'}</div>
+                  <div className="text-gold-400 text-sm font-bold">%{horoscope.stats.luck}</div>
+                </div>
+                {/* Love */}
+                <div className="bg-pink-800/30 rounded-xl p-2 text-center">
+                  <div className="text-2xl mb-1">💖</div>
+                  <div className="text-white text-xs font-medium">{language === 'tr' ? 'Aşk' : 'Love'}</div>
+                  <div className="text-pink-400 text-sm font-bold">%{horoscope.stats.love}</div>
+                </div>
+                {/* Money */}
+                <div className="bg-green-800/30 rounded-xl p-2 text-center">
+                  <div className="text-2xl mb-1">💰</div>
+                  <div className="text-white text-xs font-medium">{language === 'tr' ? 'Para' : 'Money'}</div>
+                  <div className="text-green-400 text-sm font-bold">%{horoscope.stats.money}</div>
+                </div>
+                {/* Career */}
+                <div className="bg-blue-800/30 rounded-xl p-2 text-center">
+                  <div className="text-2xl mb-1">💼</div>
+                  <div className="text-white text-xs font-medium">{language === 'tr' ? 'Kariyer' : 'Career'}</div>
+                  <div className="text-blue-400 text-sm font-bold">%{horoscope.stats.career}</div>
+                </div>
+                {/* Mood */}
+                <div className="bg-yellow-800/30 rounded-xl p-2 text-center">
+                  <div className="text-2xl mb-1">{horoscope.stats.mood}</div>
+                  <div className="text-white text-xs font-medium">{language === 'tr' ? 'Ruh Hali' : 'Mood'}</div>
+                  <div className="text-yellow-400 text-sm font-bold">
+                    {horoscope.stats.luck > 80 ? '😊' : horoscope.stats.luck > 60 ? '🙂' : '😌'}
+                  </div>
                 </div>
               </div>
-              {horoscopeExpanded ? <ChevronUp className="w-5 h-5 text-purple-300" /> : <ChevronDown className="w-5 h-5 text-purple-300" />}
-            </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="px-4 pb-4 pt-2 flex flex-col gap-2">
+              <button
+                onClick={() => setHoroscopeExpanded(!horoscopeExpanded)}
+                className="w-full py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:from-gold-400 hover:to-gold-500 transition-all shadow-lg"
+              >
+                <Star className="w-5 h-5" />
+                {language === 'tr' ? 'Günlük Falını Aç' : 'Open Daily Fortune'}
+              </button>
+              <div className="flex gap-2">
+                <Link
+                  href={`/${language}/fortunes/horoscope`}
+                  className="flex-1 py-2.5 bg-purple-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-purple-600/70 transition-all border border-purple-500/30"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {language === 'tr' ? 'Detaylı Astro Yorum' : 'Detailed Astro'}
+                </Link>
+                <Link
+                  href={`/${language}/fortunes/tarot`}
+                  className="flex-1 py-2.5 bg-pink-600/50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-pink-600/70 transition-all border border-pink-500/30"
+                >
+                  🃏 {language === 'tr' ? 'Bugünkü Kartını Çek' : 'Draw Today\'s Card'}
+                </Link>
+              </div>
+            </div>
+
+            {/* Expandable Horoscope Content */}
             <AnimatePresence>
-              {horoscopeExpanded && (
+              {horoscopeExpanded && horoscope.horoscope && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="px-4 pb-4"
+                  className="px-4 pb-4 border-t border-purple-500/30"
                 >
-                  <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">
-                    {horoscope.horoscope}
-                  </p>
+                  <div className="pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">{horoscope.zodiacEmoji}</span>
+                      <div>
+                        <h3 className="text-white font-semibold text-sm">
+                          {horoscope.zodiacName} {horoscope.risingName && `• ${language === 'tr' ? 'Yükselen' : 'Rising'}: ${horoscope.risingName}`}
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">
+                      {horoscope.horoscope}
+                    </p>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
-        )}
-
-        {/* Prompt to add birth date */}
-        {session?.user && horoscope && !horoscope.hasZodiac && (
+        ) : session?.user && horoscope && !horoscope.hasZodiac ? (
+          /* Prompt to add birth date */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-gold-600/20 to-purple-600/20 rounded-2xl p-4 border border-gold-500/30"
+            className="bg-gradient-to-br from-purple-900/60 via-pink-900/40 to-purple-900/60 rounded-3xl border border-purple-500/40 p-4 shadow-xl"
           >
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-gold-400" />
-              <div className="flex-1">
-                <p className="text-white font-medium">
-                  {language === 'tr' ? 'Günlük burç yorumunuzu görün!' : 'See your daily horoscope!'}
-                </p>
-                <p className="text-purple-300 text-sm">
-                  {language === 'tr' ? 'Doğum tarihinizi girin' : 'Add your birth date'}
-                </p>
+            <motion.h1 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-2xl font-bold text-white flex items-center gap-2 mb-3"
+            >
+              {greeting}, <span className="text-gold-400">{userName}</span> ✨
+            </motion.h1>
+            
+            <div className="bg-gold-500/10 rounded-2xl p-4 border border-gold-500/30">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gold-500/20 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-gold-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold">
+                    {language === 'tr' ? 'Kişisel falını görmek ister misin?' : 'Want to see your personal fortune?'}
+                  </p>
+                  <p className="text-purple-300 text-sm">
+                    {language === 'tr' ? 'Doğum tarihini ekle, günlük şans oranlarını gör!' : 'Add your birth date to see daily luck rates!'}
+                  </p>
+                </div>
               </div>
-              <Link href={`/${language}/settings`} className="px-4 py-2 bg-gold-500 text-black rounded-lg text-sm font-medium hover:bg-gold-400">
-                {language === 'tr' ? 'Ekle' : 'Add'}
+              <Link 
+                href={`/${language}/settings`} 
+                className="mt-3 w-full py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:from-gold-400 hover:to-gold-500 transition-all"
+              >
+                <Sparkles className="w-5 h-5" />
+                {language === 'tr' ? 'Doğum Tarihini Ekle' : 'Add Birth Date'}
               </Link>
             </div>
           </motion.div>
+        ) : (
+          /* Non-logged in greeting */
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-2xl md:text-3xl font-semibold text-white"
+          >
+            {greeting}, <span className="text-gold-400">{userName}</span>!
+          </motion.h1>
         )}
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 pb-8 space-y-4">
 
         {/* Featured Card - Daily Astrology */}
         {featuredCard && (

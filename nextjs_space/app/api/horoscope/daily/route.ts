@@ -26,6 +26,32 @@ const ZODIAC_NAMES: Record<string, { tr: string; en: string; emoji: string }> = 
   pisces: { tr: 'Balık', en: 'Pisces', emoji: '♓' }
 };
 
+// Generate daily stats based on zodiac and date (deterministic for same day)
+function generateDailyStats(zodiacSign: string, risingSign: string | null): { luck: number; love: number; money: number; career: number; mood: string } {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const zodiacIndex = Object.keys(ZODIAC_NAMES).indexOf(zodiacSign);
+  const risingIndex = risingSign ? Object.keys(ZODIAC_NAMES).indexOf(risingSign) : 0;
+  
+  // Create pseudo-random but consistent values for the day
+  const baseSeed = seed + zodiacIndex * 100 + risingIndex * 10;
+  const luck = 55 + (((baseSeed * 7) % 40));
+  const love = 50 + (((baseSeed * 13) % 45));
+  const money = 45 + (((baseSeed * 17) % 50));
+  const career = 50 + (((baseSeed * 23) % 45));
+  
+  const moods = ['😊', '🌟', '💫', '✨', '🔮', '💜', '🌙', '⭐'];
+  const moodIndex = ((baseSeed * 31) % moods.length);
+  
+  return {
+    luck: Math.min(95, luck),
+    love: Math.min(95, love),
+    money: Math.min(95, money),
+    career: Math.min(95, career),
+    mood: moods[moodIndex]
+  };
+}
+
 // Get or generate daily horoscope for user
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +102,25 @@ export async function GET(request: NextRequest) {
 
     if (existingHoroscope) {
       const zodiacInfo = ZODIAC_NAMES[user.zodiacSign];
+      const stats = generateDailyStats(user.zodiacSign, user.risingSign);
+      const langKey = lang as 'tr' | 'en';
+      const zodiacDisplayName = zodiacInfo?.[langKey] || user.zodiacSign;
+      const risingDisplayName = user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[langKey] : '';
+      
+      // Generate personalized greeting message
+      const greetingMessages = lang === 'tr' ? [
+        `Bugün ${zodiacDisplayName} yükselenin ve ${risingDisplayName} burcuna göre aşk enerjin güçlü görünüyor.`,
+        `Yıldızlar bugün senin için parlıyor! ${stats.luck > 80 ? 'Şans yanında.' : 'Dikkatli adımlar at.'}`,
+        `Bugün evren sana özel mesajlar gönderiyor. Dinlemeye hazır mısın?`,
+        `${zodiacDisplayName} burcu olarak bugün içsel gücünü keşfedeceksin.`
+      ] : [
+        `Today, based on your ${zodiacDisplayName} rising and ${risingDisplayName} sign, your love energy looks strong.`,
+        `The stars are shining for you today! ${stats.luck > 80 ? 'Luck is on your side.' : 'Take careful steps.'}`,
+        `The universe is sending you special messages today. Are you ready to listen?`,
+        `As a ${zodiacDisplayName}, you will discover your inner strength today.`
+      ];
+      const greetingIndex = ((new Date().getDate() * 7) % greetingMessages.length);
+      
       return NextResponse.json({
         hasZodiac: true,
         zodiacSign: user.zodiacSign,
@@ -84,7 +129,10 @@ export async function GET(request: NextRequest) {
         risingSign: user.risingSign,
         risingName: user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[lang as 'tr' | 'en'] : null,
         horoscope: existingHoroscope.aiResponse,
-        date: existingHoroscope.createdAt
+        date: existingHoroscope.createdAt,
+        stats,
+        personalGreeting: greetingMessages[greetingIndex],
+        userName: user.name?.split(' ')[0] || ''
       });
     }
 
@@ -141,15 +189,37 @@ Use a warm, positive and motivating tone. Write 150-200 words.`;
     });
 
     const zodiacInfo = ZODIAC_NAMES[user.zodiacSign];
+    const stats = generateDailyStats(user.zodiacSign, user.risingSign);
+    const langKey2 = lang as 'tr' | 'en';
+    const zodiacDisplayName2 = zodiacInfo?.[langKey2] || user.zodiacSign;
+    const risingDisplayName2 = user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[langKey2] : '';
+    
+    // Generate personalized greeting message
+    const greetingMessages = lang === 'tr' ? [
+      `Bugün ${zodiacDisplayName2} yükselenin ve ${risingDisplayName2} burcuna göre aşk enerjin güçlü görünüyor.`,
+      `Yıldızlar bugün senin için parlıyor! ${stats.luck > 80 ? 'Şans yanında.' : 'Dikkatli adımlar at.'}`,
+      `Bugün evren sana özel mesajlar gönderiyor. Dinlemeye hazır mısın?`,
+      `${zodiacDisplayName2} burcu olarak bugün içsel gücünü keşfedeceksin.`
+    ] : [
+      `Today, based on your ${zodiacDisplayName2} rising and ${risingDisplayName2} sign, your love energy looks strong.`,
+      `The stars are shining for you today! ${stats.luck > 80 ? 'Luck is on your side.' : 'Take careful steps.'}`,
+      `The universe is sending you special messages today. Are you ready to listen?`,
+      `As a ${zodiacDisplayName2}, you will discover your inner strength today.`
+    ];
+    const greetingIndex = ((new Date().getDate() * 7) % greetingMessages.length);
+    
     return NextResponse.json({
       hasZodiac: true,
       zodiacSign: user.zodiacSign,
-      zodiacName: zodiacInfo?.[lang as 'tr' | 'en'] || user.zodiacSign,
+      zodiacName: zodiacInfo?.[langKey2] || user.zodiacSign,
       zodiacEmoji: zodiacInfo?.emoji || '✨',
       risingSign: user.risingSign,
-      risingName: user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[lang as 'tr' | 'en'] : null,
+      risingName: user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[langKey2] : null,
       horoscope: horoscopeText,
-      date: new Date()
+      date: new Date(),
+      stats,
+      personalGreeting: greetingMessages[greetingIndex],
+      userName: user.name?.split(' ')[0] || ''
     });
   } catch (error) {
     console.error('Daily horoscope error:', error);
