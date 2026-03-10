@@ -37,6 +37,9 @@ model User {
   lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
   // Privacy settings
   messagePrivacy        String               @default("everyone") // everyone, followers, nobody
+  // Statistics
+  totalTimeSpentMinutes Int                  @default(0)
+  lastActiveAt          DateTime?
   accounts              Account[]
   bannedOthers          ChatBan[]            @relation("Banner")
   bannedIn              ChatBan[]            @relation("BannedUser")
@@ -257,6 +260,9 @@ model Fortune {
   aiResponse  String
   language    String
   viewCount   Int          @default(0)
+  isSaved     Boolean      @default(false)
+  isPinned    Boolean      @default(false)
+  pinnedAt    DateTime?
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   socialPosts SocialPost[]
@@ -264,6 +270,7 @@ model Fortune {
   @@index([userId])
   @@index([fortuneType])
   @@index([createdAt])
+  @@index([isPinned])
   @@map("fortunes")
 }
 
