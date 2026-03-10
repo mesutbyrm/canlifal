@@ -128,6 +128,7 @@ export default function BroadcastPage() {
   const [coBroadcasters, setCoBroadcasters] = useState<CoBroadcaster[]>([])
   const [selectedViewer, setSelectedViewer] = useState<Viewer | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
@@ -239,17 +240,40 @@ export default function BroadcastPage() {
             const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
             coBroadcasterPcRef.current = pc
 
-            // Add our local stream tracks (send our video/audio)
-            localStreamRef.current.getTracks().forEach(track => {
-              if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
-            })
+            // Add transceivers for bidirectional audio/video FIRST
+            const videoTrack = localStreamRef.current.getVideoTracks()[0]
+            const audioTrack = localStreamRef.current.getAudioTracks()[0]
+            
+            if (videoTrack) {
+              pc.addTransceiver(videoTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
+            }
+            if (audioTrack) {
+              pc.addTransceiver(audioTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
+            }
             
             // Handle incoming broadcaster stream (receive their video/audio)
             pc.ontrack = (event) => {
-              console.log('Co-host received broadcaster track:', event.track.kind)
+              console.log('Co-host received broadcaster track:', event.track.kind, 'enabled:', event.track.enabled)
               if (broadcasterVideoRef.current && event.streams[0]) {
                 broadcasterVideoRef.current.srcObject = event.streams[0]
-                broadcasterVideoRef.current.play().catch(e => console.log('Broadcaster video autoplay error:', e))
+                // Ensure audio tracks are enabled
+                event.streams[0].getAudioTracks().forEach(track => {
+                  track.enabled = true
+                  console.log('Co-host: Broadcaster audio track enabled:', track.enabled)
+                })
+                // Try to play with audio
+                broadcasterVideoRef.current.muted = false
+                broadcasterVideoRef.current.volume = 1.0
+                broadcasterVideoRef.current.play().then(() => {
+                  setRemoteAudioEnabled(true)
+                }).catch(e => {
+                  console.log('Broadcaster video autoplay error, trying muted:', e)
+                  // If autoplay blocked, try muted first
+                  if (broadcasterVideoRef.current) {
+                    broadcasterVideoRef.current.muted = true
+                    broadcasterVideoRef.current.play().catch(() => {})
+                  }
+                })
               }
             }
 
@@ -486,20 +510,39 @@ export default function BroadcastPage() {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
     coBroadcasterPcRef.current = pc
 
-    // Add our local stream tracks (send our video/audio to co-broadcaster)
-    localStreamRef.current.getTracks().forEach(track => {
-      if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
-    })
+    // Add transceivers for bidirectional audio/video with our tracks
+    const videoTrack = localStreamRef.current.getVideoTracks()[0]
+    const audioTrack = localStreamRef.current.getAudioTracks()[0]
     
-    // Also add transceivers for receiving
-    pc.addTransceiver('video', { direction: 'sendrecv' })
-    pc.addTransceiver('audio', { direction: 'sendrecv' })
+    if (videoTrack) {
+      pc.addTransceiver(videoTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
+    }
+    if (audioTrack) {
+      pc.addTransceiver(audioTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
+    }
 
     pc.ontrack = (event) => {
-      console.log('Broadcaster received co-host track:', event.track.kind)
+      console.log('Broadcaster received co-host track:', event.track.kind, 'enabled:', event.track.enabled)
       if (coBroadcasterVideoRef.current && event.streams[0]) {
         coBroadcasterVideoRef.current.srcObject = event.streams[0]
-        coBroadcasterVideoRef.current.play().catch(e => console.log('Co-broadcaster autoplay error:', e))
+        // Ensure audio tracks are enabled
+        event.streams[0].getAudioTracks().forEach(track => {
+          track.enabled = true
+          console.log('Broadcaster: Co-host audio track enabled:', track.enabled)
+        })
+        // Try to play with audio
+        coBroadcasterVideoRef.current.muted = false
+        coBroadcasterVideoRef.current.volume = 1.0
+        coBroadcasterVideoRef.current.play().then(() => {
+          setRemoteAudioEnabled(true)
+        }).catch(e => {
+          console.log('Co-broadcaster autoplay error, trying muted:', e)
+          // If autoplay blocked, try muted first
+          if (coBroadcasterVideoRef.current) {
+            coBroadcasterVideoRef.current.muted = true
+            coBroadcasterVideoRef.current.play().catch(() => {})
+          }
+        })
       }
     }
 
@@ -668,6 +711,23 @@ export default function BroadcastPage() {
   const toggleAudio = () => {
     const track = localStreamRef.current?.getAudioTracks()[0]
     if (track) { track.enabled = !track.enabled; setIsAudioOn(track.enabled) }
+  }
+
+  // Enable remote audio on user interaction (for browser autoplay policy)
+  const enableRemoteAudio = () => {
+    // Enable co-broadcaster audio for broadcaster
+    if (coBroadcasterVideoRef.current) {
+      coBroadcasterVideoRef.current.muted = false
+      coBroadcasterVideoRef.current.volume = 1.0
+      coBroadcasterVideoRef.current.play().catch(() => {})
+    }
+    // Enable broadcaster audio for co-host
+    if (broadcasterVideoRef.current) {
+      broadcasterVideoRef.current.muted = false
+      broadcasterVideoRef.current.volume = 1.0
+      broadcasterVideoRef.current.play().catch(() => {})
+    }
+    setRemoteAudioEnabled(true)
   }
 
   const switchCamera = async () => {
@@ -1386,6 +1446,16 @@ export default function BroadcastPage() {
           <button onClick={switchCamera} className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
+          {/* Enable remote audio button - shows when co-broadcast is active and audio not enabled */}
+          {(activeCoBroadcaster || isCohost) && !remoteAudioEnabled && (
+            <button 
+              onClick={enableRemoteAudio} 
+              className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center animate-pulse"
+              title={language === 'tr' ? 'Sesi Aç' : 'Enable Audio'}
+            >
+              <Volume2 className="w-5 h-5 text-white" />
+            </button>
+          )}
         </div>
       </div>
 
