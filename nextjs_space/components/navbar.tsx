@@ -32,6 +32,9 @@ export default function Navbar() {
   
   // Hide navbar on mobile for profile and messages pages (footer handles navigation there)
   const hideOnMobile = pathname?.includes('/profile') || pathname?.includes('/messages')
+  
+  // Completely hide navbar on live streaming and live fortune pages
+  const hideCompletely = pathname?.includes('/chat/video') || pathname?.includes('/live-room')
 
   useEffect(() => {
     if (session?.user) {
@@ -197,6 +200,11 @@ export default function Navbar() {
         )}
       </div>
     )
+  }
+
+  // Don't render navbar on live streaming and live fortune pages
+  if (hideCompletely) {
+    return null
   }
 
   return (
