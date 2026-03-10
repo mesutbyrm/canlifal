@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -1012,240 +1012,75 @@ export default function BroadcastPage() {
 
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   
-  // Grid mode when there are active guests
-  const hasActiveGuests = activeGuests.length > 0
-  const isSplitMode = hasActiveGuests // For backward compatibility
-
-  // For grid layout: calculate total participants (host + guests)
-  // 1 person: full screen host
-  // 2 people: side by side
-  // 3-4 people: 2x2 grid
-  // 5 people: special layout (host + 4 guests)
-  const totalParticipants = isCohost 
-    ? 2 // Co-host sees: broadcaster + themselves
-    : hasActiveGuests 
-      ? 1 + activeGuests.length // Broadcaster sees: themselves + all guests
-      : 1
-  
-  // Legacy alias for backward compatibility
+  // Legacy alias for backward compatibility (if needed elsewhere)
   const activeCoBroadcaster = activeGuests[0] || null
   const activeCoBroadcasters = activeGuests
 
+  // Calculate popup positions for guests (positioned in corners/sides)
+  const getGuestPopupStyle = (index: number, total: number): React.CSSProperties => {
+    // Position: top-right, bottom-right, top-left, bottom-left
+    const positions = [
+      { top: '80px', right: '12px' },      // Guest 1: top-right
+      { bottom: '180px', right: '12px' },  // Guest 2: bottom-right (above controls)
+      { top: '80px', left: '12px' },       // Guest 3: top-left
+      { bottom: '180px', left: '12px' },   // Guest 4: bottom-left
+    ]
+    return positions[index] || positions[0]
+  }
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {(isSplitMode || isCohost) && totalParticipants > 1 ? (
+      {/* Main broadcaster video is always fullscreen */}
+      {isCohost ? (
         <>
-          {/* TikTok-style 2x2 Grid Layout */}
-          <div className="absolute inset-0 flex flex-col">
-            {/* Top Info Bar */}
-            <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-2 px-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    <span className="text-white font-bold">LIVE</span>
-                  </div>
-                  <span className="text-white/60 text-xs">{formatDuration(duration)}</span>
-                  {streamCategory && (
-                    <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded`}>
-                      <span className="text-[10px]">{streamCategory.icon}</span>
-                      <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                    <Users className="w-3 h-3 text-white" />
-                    <span className="text-white text-[10px]">{viewerCount}</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                    <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
-                    <span className="text-white text-[10px]">{formatCount(likeCount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic Grid Videos - TikTok style layout */}
-            <div className="flex-1 pt-10 pb-28 px-1">
-              <div className={`h-full grid gap-1 ${
-                totalParticipants === 2 ? 'grid-cols-2 grid-rows-1' :
-                totalParticipants === 3 ? 'grid-cols-2 grid-rows-2' :
-                totalParticipants === 4 ? 'grid-cols-2 grid-rows-2' :
-                totalParticipants === 5 ? 'grid-cols-3 grid-rows-2' :
-                'grid-cols-2 grid-rows-2'
-              }`}>
-                {isCohost ? (
-                  <>
-                    {/* Co-host view: Broadcaster video */}
-                    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${totalParticipants === 5 ? 'col-span-1' : ''}`}>
-                      <video
-                        ref={broadcasterVideoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-1 left-1 right-1 z-10">
-                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                            <span className="text-white text-[8px] font-bold">👑</span>
-                          </div>
-                          <p className="text-white text-[10px] font-medium truncate">{language === 'tr' ? 'Yayıncı' : 'Broadcaster'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Co-host view: My video */}
-                    <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-                      />
-                      <div className="absolute bottom-1 left-1 right-1 z-10">
-                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                          {session?.user?.image ? (
-                            <Image src={session.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                              <span className="text-white text-[8px] font-bold">{session?.user?.name?.[0]}</span>
-                            </div>
-                          )}
-                          <p className="text-white text-[10px] font-medium truncate">{session?.user?.name}</p>
-                          <span className="text-green-400 text-[8px]">●</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+          {/* Co-host mode: Broadcaster video fullscreen */}
+          <video
+            ref={broadcasterVideoRef}
+            autoPlay
+            playsInline
+            className="absolute inset-0 w-full h-full object-contain bg-black"
+          />
+          
+          {/* Co-host's own video as PiP popup */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="absolute top-20 right-3 w-28 h-40 sm:w-32 sm:h-44 bg-gray-900 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-2xl z-20"
+          >
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+              style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+            />
+            {/* My info bar */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+              <div className="flex items-center gap-1.5">
+                {session?.user?.image ? (
+                  <Image src={session.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
                 ) : (
-                  <>
-                    {/* Broadcaster view: My video (always first) */}
-                    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${totalParticipants === 5 ? 'col-span-1' : ''}`}>
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-                      />
-                      <div className="absolute bottom-1 left-1 right-1 z-10">
-                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                          {session?.user?.image ? (
-                            <Image src={session.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                              <span className="text-white text-[8px] font-bold">{session?.user?.name?.[0]}</span>
-                            </div>
-                          )}
-                          <p className="text-white text-[10px] font-medium truncate">{session?.user?.name}</p>
-                          <div className="w-4 h-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                            <span className="text-[8px]">👑</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* All active guests with dynamic video refs */}
-                    {activeGuests.slice(0, MAX_GUESTS).map((guest, index) => {
-                      const connectionState = guestConnectionStates.get(guest.userId)
-                      const isConnecting = connectionState === 'connecting' || connectionState === 'new'
-                      const isDisconnected = connectionState === 'disconnected' || connectionState === 'failed'
-                      
-                      return (
-                        <div key={guest.id} className="relative bg-gray-900 rounded-lg overflow-hidden">
-                          {/* Video element with dynamic ref */}
-                          <video
-                            ref={(el) => {
-                              if (el) {
-                                guestVideoRefs.current.set(guest.userId, el)
-                              }
-                            }}
-                            autoPlay
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                          
-                          {/* Connection status overlay */}
-                          {(isConnecting || isDisconnected) && (
-                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center">
-                              {guest.user.image ? (
-                                <Image src={guest.user.image} alt="" width={60} height={60} className="w-15 h-15 rounded-full object-cover mb-2" />
-                              ) : (
-                                <div className="w-15 h-15 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-2">
-                                  <span className="text-white text-xl font-bold">{guest.user.name[0]}</span>
-                                </div>
-                              )}
-                              <p className="text-white text-xs">
-                                {isDisconnected 
-                                  ? (language === 'tr' ? 'Yeniden bağlanıyor...' : 'Reconnecting...')
-                                  : (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...')
-                                }
-                              </p>
-                              <div className="mt-2 w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            </div>
-                          )}
-                          
-                          {/* Guest info bar */}
-                          <div className="absolute bottom-1 left-1 right-1 z-10">
-                            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                              {guest.user.image ? (
-                                <Image src={guest.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                                  <span className="text-white text-[8px] font-bold">{guest.user.name[0]}</span>
-                                </div>
-                              )}
-                              <p className="text-white text-[10px] font-medium truncate flex-1">{guest.user.name}</p>
-                              {/* Connection status indicator */}
-                              <span className={`text-[8px] ${
-                                connectionState === 'connected' ? 'text-green-400' :
-                                isDisconnected ? 'text-red-400' :
-                                'text-yellow-400'
-                              }`}>●</span>
-                              <button 
-                                onClick={() => handleRemoveCoBroadcaster(guest.userId)}
-                                className="p-1 bg-red-500/30 rounded-full hover:bg-red-500/50 transition-colors"
-                              >
-                                <PhoneOff className="w-3 h-3 text-red-400" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </>
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white text-[8px] font-bold">{session?.user?.name?.[0]}</span>
+                  </div>
                 )}
+                <p className="text-white text-[10px] font-medium truncate">{session?.user?.name}</p>
+                <span className="text-green-400 text-[8px]">●</span>
               </div>
             </div>
-
-            {/* Viewer avatars row */}
-            <div className="absolute bottom-24 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
-              {viewers.slice(0, 6).map((viewer) => (
-                <div key={viewer.id} className="flex-shrink-0">
-                  {viewer.image ? (
-                    <Image src={viewer.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover border border-white/20" />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
-                      <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {viewers.length > 6 && (
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
-                  <span className="text-white text-[8px]">+{viewers.length - 6}</span>
-                </div>
-              )}
-            </div>
-          </div>
+            {/* Camera switch button */}
+            <button
+              onClick={switchCamera}
+              className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+            >
+              <SwitchCamera className="w-3 h-3 text-white" />
+            </button>
+          </motion.div>
         </>
       ) : (
         <>
-          {/* Normal Solo Broadcast Mode */}
+          {/* Broadcaster mode: My video fullscreen */}
           <video
             ref={localVideoRef}
             autoPlay
@@ -1255,14 +1090,153 @@ export default function BroadcastPage() {
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
 
-          {/* Gradients */}
+          {/* Gradients for solo mode */}
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
           <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+
+          {/* Guest video PiP popups - canlı falcı style */}
+          <AnimatePresence>
+            {activeGuests.slice(0, MAX_GUESTS).map((guest, index) => {
+              const connectionState = guestConnectionStates.get(guest.userId)
+              const isConnecting = connectionState === 'connecting' || connectionState === 'new'
+              const isDisconnected = connectionState === 'disconnected' || connectionState === 'failed'
+              const popupStyle = getGuestPopupStyle(index, activeGuests.length)
+              
+              return (
+                <motion.div
+                  key={guest.id}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                  className="absolute w-28 h-40 sm:w-32 sm:h-44 bg-gray-900 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-2xl z-20"
+                  style={popupStyle}
+                >
+                  {/* Guest video */}
+                  <video
+                    ref={(el) => {
+                      if (el) {
+                        guestVideoRefs.current.set(guest.userId, el)
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Connection status overlay */}
+                  {(isConnecting || isDisconnected) && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
+                      {guest.user.image ? (
+                        <Image src={guest.user.image} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover mb-2" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-2">
+                          <span className="text-white text-sm font-bold">{guest.user.name[0]}</span>
+                        </div>
+                      )}
+                      <p className="text-white text-[10px] text-center px-2">
+                        {isDisconnected 
+                          ? (language === 'tr' ? 'Yeniden bağlanıyor...' : 'Reconnecting...')
+                          : (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...')
+                        }
+                      </p>
+                      <div className="mt-1.5 w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    </div>
+                  )}
+                  
+                  {/* Guest info bar */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                    <div className="flex items-center gap-1.5">
+                      {guest.user.image ? (
+                        <Image src={guest.user.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-white text-[6px] font-bold">{guest.user.name[0]}</span>
+                        </div>
+                      )}
+                      <p className="text-white text-[9px] font-medium truncate flex-1">{guest.user.name}</p>
+                      {/* Connection status indicator */}
+                      <span className={`text-[8px] ${
+                        connectionState === 'connected' ? 'text-green-400' :
+                        isDisconnected ? 'text-red-400' :
+                        'text-yellow-400'
+                      }`}>●</span>
+                    </div>
+                  </div>
+
+                  {/* Remove guest button */}
+                  <button 
+                    onClick={() => handleRemoveCoBroadcaster(guest.userId)}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500/70 rounded-full hover:bg-red-500 transition-colors z-10"
+                    title={language === 'tr' ? 'Çıkar' : 'Remove'}
+                  >
+                    <PhoneOff className="w-3 h-3 text-white" />
+                  </button>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </>
       )}
 
       {/* Hidden video for co-host mode (to receive broadcaster stream) */}
       {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
+
+      {/* Top Info Bar - always visible */}
+      <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-2 px-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
+              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              <span className="text-white font-bold">LIVE</span>
+            </div>
+            <span className="text-white/60 text-xs">{formatDuration(duration)}</span>
+            {streamCategory && (
+              <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded`}>
+                <span className="text-[10px]">{streamCategory.icon}</span>
+                <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+              </div>
+            )}
+            {/* Guest count badge */}
+            {activeGuests.length > 0 && (
+              <div className="flex items-center gap-0.5 bg-purple-500/80 px-1.5 py-0.5 rounded">
+                <UserPlus className="w-3 h-3 text-white" />
+                <span className="text-white font-medium text-[9px]">{activeGuests.length}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+              <Users className="w-3 h-3 text-white" />
+              <span className="text-white text-[10px]">{viewerCount}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+              <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
+              <span className="text-white text-[10px]">{formatCount(likeCount)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Viewer avatars row - always at bottom */}
+      <div className="absolute bottom-24 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
+        {viewers.slice(0, 6).map((viewer) => (
+          <div key={viewer.id} className="flex-shrink-0">
+            {viewer.image ? (
+              <Image src={viewer.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover border border-white/20" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
+                <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
+              </div>
+            )}
+          </div>
+        ))}
+        {viewers.length > 6 && (
+          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
+            <span className="text-white text-[8px]">+{viewers.length - 6}</span>
+          </div>
+        )}
+      </div>
 
       {/* Toast Notifications */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 space-y-2 w-72">
@@ -1328,8 +1302,8 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* Top bar - Broadcaster Profile (only in non-VS mode) */}
-      {!isSplitMode && (
+      {/* Top bar - Broadcaster Profile */}
+      {!isCohost && (
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             {/* Profile */}
@@ -1398,8 +1372,8 @@ export default function BroadcastPage() {
         </div>
       )}
 
-      {/* VS Mode End Button */}
-      {isSplitMode && (
+      {/* Co-host End Button */}
+      {isCohost && (
         <div className="absolute top-4 right-4 z-40">
           <button 
             onClick={() => setShowEndConfirm(true)} 
@@ -1411,8 +1385,8 @@ export default function BroadcastPage() {
         </div>
       )}
 
-      {/* Right Side - Co-Broadcasters & Viewer List (only in non-VS mode) */}
-      {!isSplitMode && (
+      {/* Right Side - Co-Broadcasters & Viewer List */}
+      {!isCohost && (
         <div className="absolute right-3 top-20 z-20 space-y-2">
           {/* Active Co-Broadcasters (as circles, old style) */}
           {activeCoBroadcasters.map(cb => (
@@ -1468,14 +1442,14 @@ export default function BroadcastPage() {
       )}
 
       {/* Floating Hearts Animation */}
-      <div className={`absolute ${isSplitMode ? 'inset-0' : 'right-20 top-1/3'} z-10 pointer-events-none`}>
+      <div className="absolute right-20 top-1/3 z-10 pointer-events-none">
         <AnimatePresence>
           {floatingHearts.map(heart => (
             <motion.div
               key={heart.id}
               initial={{ opacity: 1, y: 0, scale: 0.5 }}
               animate={{ opacity: 0, y: -80, scale: 1.2 }}
-              className={`absolute ${isSplitMode ? (heart.side === 'right' ? 'right-1/4' : 'left-1/4') : 'bottom-0 right-0'} ${isSplitMode ? 'bottom-1/3' : ''}`}
+              className="absolute bottom-0 right-0"
             >
               <Heart className="w-6 h-6" fill={heart.color} color={heart.color} />
             </motion.div>
@@ -1483,8 +1457,8 @@ export default function BroadcastPage() {
         </AnimatePresence>
       </div>
 
-      {/* Gifters - Small badges below top bar (non-VS mode only) */}
-      {!isSplitMode && gifters.length > 0 && (
+      {/* Gifters - Small badges below top bar */}
+      {!isCohost && gifters.length > 0 && (
         <div className="absolute top-20 left-4 z-20">
           <div className="flex flex-wrap gap-1 max-w-[200px]">
             {gifters.slice(0, 3).map((viewer) => (
