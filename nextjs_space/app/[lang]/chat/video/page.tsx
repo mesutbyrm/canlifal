@@ -23,8 +23,7 @@ import {
   Send,
   UserPlus,
   Phone,
-  LogIn,
-  Share2
+  LogIn
 } from 'lucide-react'
 
 interface VideoStream {
@@ -1165,15 +1164,6 @@ export default function VideoStreamPage() {
               title={language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
             >
               <Gift className="w-5 h-5 text-white" />
-            </button>
-            
-            {/* Share button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleShareStream(); }}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0"
-              title={language === 'tr' ? 'Paylaş' : 'Share'}
-            >
-              <Share2 className="w-5 h-5 text-white" />
             </button>
           </div>
 

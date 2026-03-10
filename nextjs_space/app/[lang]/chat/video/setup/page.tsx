@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
   Video,
@@ -19,7 +19,16 @@ import {
   Sun,
   Contrast,
   Droplet,
-  Loader2
+  Loader2,
+  Coffee,
+  Moon,
+  Heart,
+  Star,
+  Music,
+  MessageCircle,
+  Users,
+  Flame,
+  Check
 } from 'lucide-react'
 
 interface BeautySettings {
@@ -28,6 +37,31 @@ interface BeautySettings {
   contrast: number    // -50 to 50
   saturation: number  // -50 to 50
 }
+
+interface StreamCategory {
+  id: string
+  name: string
+  nameEn: string
+  icon: string
+  color: string
+}
+
+const FORTUNE_TYPES: StreamCategory[] = [
+  { id: 'coffee', name: 'Kahve Falı', nameEn: 'Coffee Reading', icon: '☕', color: 'from-amber-600 to-yellow-700' },
+  { id: 'tarot', name: 'Tarot Falı', nameEn: 'Tarot Reading', icon: '🎴', color: 'from-purple-600 to-indigo-700' },
+  { id: 'astrology', name: 'Burç Yorumu', nameEn: 'Astrology', icon: '⭐', color: 'from-blue-600 to-cyan-700' },
+  { id: 'palm', name: 'El Falı', nameEn: 'Palm Reading', icon: '🖐️', color: 'from-pink-600 to-rose-700' },
+  { id: 'dream', name: 'Rüya Yorumu', nameEn: 'Dream Reading', icon: '🌙', color: 'from-indigo-600 to-purple-700' },
+  { id: 'love', name: 'Aşk Falı', nameEn: 'Love Fortune', icon: '💕', color: 'from-red-500 to-pink-600' },
+  { id: 'katina', name: 'Katina Falı', nameEn: 'Katina Cards', icon: '🃏', color: 'from-emerald-600 to-teal-700' },
+  { id: 'numerology', name: 'Numeroloji', nameEn: 'Numerology', icon: '🔢', color: 'from-orange-600 to-amber-700' },
+]
+
+const OTHER_CATEGORIES: StreamCategory[] = [
+  { id: 'chat', name: 'Sohbet', nameEn: 'Chat', icon: '💬', color: 'from-green-500 to-emerald-600' },
+  { id: 'music', name: 'Müzik', nameEn: 'Music', icon: '🎵', color: 'from-violet-500 to-purple-600' },
+  { id: 'hangout', name: 'Muhabbet', nameEn: 'Hangout', icon: '🎭', color: 'from-cyan-500 to-blue-600' },
+]
 
 export default function StreamSetupPage() {
   const { data: session } = useSession() || {}
@@ -40,6 +74,8 @@ export default function StreamSetupPage() {
   const [streamTitle, setStreamTitle] = useState('')
   const [isStarting, setIsStarting] = useState(false)
   const [showEffects, setShowEffects] = useState(false)
+  const [showCategorySelector, setShowCategorySelector] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<StreamCategory | null>(null)
   const [beautySettings, setBeautySettings] = useState<BeautySettings>({
     smoothness: 30,
     brightness: 0,
@@ -217,16 +253,25 @@ export default function StreamSetupPage() {
   }
 
   const handleStartStream = async () => {
+    if (!selectedCategory) {
+      setShowCategorySelector(true)
+      return
+    }
+    
     setIsStarting(true)
     
     // Store beauty settings in localStorage for broadcast page
     localStorage.setItem('streamBeautySettings', JSON.stringify(beautySettings))
+    localStorage.setItem('streamCategory', JSON.stringify(selectedCategory))
     
     try {
       const res = await fetch('/api/video-streams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: streamTitle || null })
+        body: JSON.stringify({ 
+          title: streamTitle || null,
+          category: selectedCategory.id
+        })
       })
       
       if (res.ok) {
@@ -444,6 +489,22 @@ export default function StreamSetupPage() {
 
       {/* Bottom Controls */}
       <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-6 z-20 transition-opacity ${showEffects ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        {/* Selected Category Display */}
+        {selectedCategory && (
+          <button
+            onClick={() => setShowCategorySelector(true)}
+            className={`w-full mb-3 px-4 py-3 bg-gradient-to-r ${selectedCategory.color} rounded-xl flex items-center justify-center gap-2`}
+          >
+            <span className="text-2xl">{selectedCategory.icon}</span>
+            <span className="text-white font-semibold">
+              {language === 'tr' ? selectedCategory.name : selectedCategory.nameEn}
+            </span>
+            <span className="text-white/70 text-sm ml-auto">
+              {language === 'tr' ? 'Değiştir' : 'Change'}
+            </span>
+          </button>
+        )}
+        
         {/* Stream Title Input */}
         <div className="mb-4">
           <input
@@ -488,13 +549,18 @@ export default function StreamSetupPage() {
         {/* Start Stream Button */}
         <button
           onClick={handleStartStream}
-          disabled={isStarting}
+          disabled={isStarting || !selectedCategory}
           className="w-full py-4 bg-gradient-to-r from-[#fe2c55] to-[#ff6b6b] text-white font-bold text-lg rounded-xl flex items-center justify-center gap-3 disabled:opacity-50"
         >
           {isStarting ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
               {language === 'tr' ? 'Başlatılıyor...' : 'Starting...'}
+            </>
+          ) : !selectedCategory ? (
+            <>
+              <Sparkles className="w-6 h-6" />
+              {language === 'tr' ? 'Yayın Türü Seçin' : 'Select Stream Type'}
             </>
           ) : (
             <>
@@ -504,6 +570,114 @@ export default function StreamSetupPage() {
           )}
         </button>
       </div>
+
+      {/* Category Selector Modal */}
+      <AnimatePresence>
+        {showCategorySelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/95 z-50 flex flex-col"
+          >
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-white text-xl font-bold">
+                  {language === 'tr' ? 'Yayın Türünü Seçin' : 'Select Stream Type'}
+                </h2>
+                {selectedCategory && (
+                  <button 
+                    onClick={() => setShowCategorySelector(false)}
+                    className="text-white/60 hover:text-white"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                )}
+              </div>
+
+              {/* Fortune Types */}
+              <div className="mb-6">
+                <h3 className="text-purple-400 text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  {language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {FORTUNE_TYPES.map((category) => (
+                    <motion.button
+                      key={category.id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setSelectedCategory(category)
+                        setShowCategorySelector(false)
+                      }}
+                      className={`relative p-4 rounded-2xl bg-gradient-to-br ${category.color} flex flex-col items-center gap-2 transition-all ${
+                        selectedCategory?.id === category.id ? 'ring-2 ring-white' : ''
+                      }`}
+                    >
+                      <span className="text-3xl">{category.icon}</span>
+                      <span className="text-white font-medium text-sm text-center">
+                        {language === 'tr' ? category.name : category.nameEn}
+                      </span>
+                      {selectedCategory?.id === category.id && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-green-600" />
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Other Categories */}
+              <div>
+                <h3 className="text-cyan-400 text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  {language === 'tr' ? 'Diğer Kategoriler' : 'Other Categories'}
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {OTHER_CATEGORIES.map((category) => (
+                    <motion.button
+                      key={category.id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setSelectedCategory(category)
+                        setShowCategorySelector(false)
+                      }}
+                      className={`relative p-4 rounded-2xl bg-gradient-to-br ${category.color} flex flex-col items-center gap-2 transition-all ${
+                        selectedCategory?.id === category.id ? 'ring-2 ring-white' : ''
+                      }`}
+                    >
+                      <span className="text-2xl">{category.icon}</span>
+                      <span className="text-white font-medium text-xs text-center">
+                        {language === 'tr' ? category.name : category.nameEn}
+                      </span>
+                      {selectedCategory?.id === category.id && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-green-600" />
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Continue Button */}
+            {selectedCategory && (
+              <div className="p-6 border-t border-white/10">
+                <button
+                  onClick={() => setShowCategorySelector(false)}
+                  className={`w-full py-4 bg-gradient-to-r ${selectedCategory.color} text-white font-bold text-lg rounded-xl flex items-center justify-center gap-3`}
+                >
+                  <span className="text-2xl">{selectedCategory.icon}</span>
+                  {language === 'tr' ? `${selectedCategory.name} ile Devam Et` : `Continue with ${selectedCategory.nameEn}`}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

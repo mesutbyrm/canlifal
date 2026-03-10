@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Share2
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 interface RoomData {
@@ -705,26 +705,6 @@ export default function LiveRoomPage() {
             <SwitchCamera className="w-4 h-4 text-white" />
           </button>
         </div>
-
-        {/* Share button - right side center */}
-        <button
-          onClick={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: language === 'tr' ? 'Canlı Fal Seansı' : 'Live Fortune Session',
-                text: language === 'tr' ? 'Canlı fal seansını izle!' : 'Watch live fortune session!',
-                url: window.location.href
-              });
-            } else {
-              navigator.clipboard.writeText(window.location.href);
-              alert(language === 'tr' ? 'Link kopyalandı!' : 'Link copied!');
-            }
-          }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg hover:scale-110 transition-transform border-2 border-white/30"
-          title={language === 'tr' ? 'Paylaş' : 'Share'}
-        >
-          <Share2 className="w-5 h-5 text-white" />
-        </button>
 
         {/* Connection status overlay */}
         {!isConnected && (

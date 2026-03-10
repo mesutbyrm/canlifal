@@ -2,6 +2,7 @@ import Navbar from '@/components/navbar'
 import FloatingProfile from '@/components/floating-profile'
 import MobileFooter from '@/components/mobile-footer'
 import StarBackground from '@/components/star-background'
+import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
 
 export default function LangLayout({
   children,
@@ -19,6 +20,7 @@ export default function LangLayout({
       </main>
       <FloatingProfile />
       <MobileFooter />
+      <CoBroadcastInviteModal />
     </div>
   )
 }

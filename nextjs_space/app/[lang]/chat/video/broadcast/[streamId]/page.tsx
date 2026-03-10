@@ -79,6 +79,14 @@ interface ToastMessage {
   userImage?: string | null
 }
 
+interface StreamCategory {
+  id: string
+  name: string
+  nameEn: string
+  icon: string
+  color: string
+}
+
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -103,6 +111,7 @@ export default function BroadcastPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
+  const [streamCategory, setStreamCategory] = useState<StreamCategory | null>(null)
   // Co-broadcast state (no battle/PK)
   const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<CoBroadcaster | null>(null)
   // Pending co-broadcast request popup
@@ -139,6 +148,16 @@ export default function BroadcastPage() {
     if (!session?.user) {
       router.push(`/${language}/login`)
       return
+    }
+    
+    // Load stream category from localStorage
+    try {
+      const savedCategory = localStorage.getItem('streamCategory')
+      if (savedCategory) {
+        setStreamCategory(JSON.parse(savedCategory))
+      }
+    } catch (e) {
+      console.error('Error loading stream category:', e)
     }
     
     isUnmountedRef.current = false
@@ -790,12 +809,19 @@ export default function BroadcastPage() {
                   )}
                   <div>
                     <span className="text-white text-sm font-medium">{session?.user?.name}</span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                         <span className="text-white font-bold">LIVE</span>
                       </div>
                       <span className="text-white/60 text-xs ml-1">{formatDuration(duration)}</span>
+                      {/* Stream Category Badge */}
+                      {streamCategory && (
+                        <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded ml-1`}>
+                          <span className="text-xs">{streamCategory.icon}</span>
+                          <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -997,6 +1023,13 @@ export default function BroadcastPage() {
                     <span className="text-white font-bold">LIVE</span>
                   </div>
                   <span className="text-white/60">{formatDuration(duration)}</span>
+                  {/* Stream Category Badge */}
+                  {streamCategory && (
+                    <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded ml-1`}>
+                      <span className="text-sm">{streamCategory.icon}</span>
+                      <span className="text-white font-medium text-[10px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
