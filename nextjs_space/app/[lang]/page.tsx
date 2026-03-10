@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import HomepageTicker from '@/components/homepage-ticker'
 
 interface LiveTeller {
   id: string
@@ -205,8 +206,13 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
+      {/* Ticker - Scrolling Online/Credits/Gifts */}
+      <div className="pt-20">
+        <HomepageTicker />
+      </div>
+
       {/* Tab Navigation */}
-      <div className="pt-20 px-4 pb-4">
+      <div className="px-4 pb-4 pt-4">
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
