@@ -215,9 +215,9 @@ export default function Navbar() {
                 <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
               </Link>
               
-              {/* Sosyal (Social) - links to home page social feed */}
+              {/* Sosyal (Social) - links to social feed page */}
               <Link
-                href={`/${language}`}
+                href={`/${language}/social`}
                 className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
               >
                 <div className="relative">
