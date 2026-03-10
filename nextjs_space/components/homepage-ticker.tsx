@@ -64,6 +64,9 @@ export default function HomepageTicker() {
     recentPurchasers: [],
     bigGifts: []
   })
+  const [flashGift, setFlashGift] = useState<BigGift | null>(null)
+  const [flashCount, setFlashCount] = useState(0)
+  const lastGiftIdRef = useRef<string | null>(null)
   const tickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,6 +75,18 @@ export default function HomepageTicker() {
         const res = await fetch('/api/homepage-ticker')
         if (res.ok) {
           const json = await res.json()
+          
+          // Check for new gift
+          if (json.bigGifts && json.bigGifts.length > 0) {
+            const latestGift = json.bigGifts[0]
+            if (lastGiftIdRef.current !== latestGift.id) {
+              lastGiftIdRef.current = latestGift.id
+              // Trigger flash effect
+              setFlashGift(latestGift)
+              setFlashCount(0)
+            }
+          }
+          
           setData(json)
         }
       } catch (e) {
@@ -80,9 +95,25 @@ export default function HomepageTicker() {
     }
 
     fetchData()
-    const interval = setInterval(fetchData, 30000) // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 10000) // Refresh every 10 seconds for faster gift detection
     return () => clearInterval(interval)
   }, [])
+
+  // Flash effect - 5 times
+  useEffect(() => {
+    if (flashGift && flashCount < 5) {
+      const timer = setTimeout(() => {
+        setFlashCount(prev => prev + 1)
+      }, 400)
+      return () => clearTimeout(timer)
+    } else if (flashCount >= 5) {
+      // End flash effect
+      setTimeout(() => {
+        setFlashGift(null)
+        setFlashCount(0)
+      }, 500)
+    }
+  }, [flashGift, flashCount])
 
   const hasData = data.onlineUsers.length > 0 || data.recentPurchasers.length > 0 || data.bigGifts.length > 0
 
@@ -194,6 +225,42 @@ export default function HomepageTicker() {
 
   // Duplicate items for seamless loop
   const duplicatedItems = [...tickerItems, ...tickerItems]
+
+  // If flash effect is active, show special gift display
+  if (flashGift) {
+    const isVisible = flashCount % 2 === 0
+    const senderName = flashGift.sender.username || flashGift.sender.name?.split(' ')[0] || 'Kullanıcı'
+    const receiverName = flashGift.stream.user.username || flashGift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
+    
+    return (
+      <div className="w-full overflow-hidden bg-gradient-to-r from-pink-600/50 via-purple-600/50 to-pink-600/50 py-2">
+        <div className="flex items-center justify-center gap-3">
+          {/* Flashing gift sender profile */}
+          <div className={`flex items-center gap-3 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-20'}`}>
+            <Crown className="w-5 h-5 text-yellow-400" />
+            <div className="flex items-center gap-2">
+              {flashGift.sender.image ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-yellow-400 animate-pulse">
+                  <Image src={flashGift.sender.image} alt={senderName} width={32} height={32} className="object-cover" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-yellow-500/50 flex items-center justify-center border-2 border-yellow-400 animate-pulse">
+                  <span className="text-sm text-white font-bold">{senderName[0]}</span>
+                </div>
+              )}
+              <span className="text-white font-bold">{senderName}</span>
+            </div>
+            <span className="text-pink-300">{language === 'tr' ? "→" : "→"}</span>
+            <span className="text-2xl">{flashGift.giftType.icon}</span>
+            <span className="text-yellow-400 font-bold">{flashGift.totalPrice.toLocaleString()}</span>
+            <span className="text-pink-300">{language === 'tr' ? "→" : "→"}</span>
+            <span className="text-white font-semibold">{receiverName}</span>
+            <span className="text-pink-300 text-sm">{language === 'tr' ? ' attı!' : ' sent!'}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full overflow-hidden bg-gradient-to-r from-purple-900/30 via-pink-900/20 to-purple-900/30 py-1.5">

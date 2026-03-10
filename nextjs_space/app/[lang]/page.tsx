@@ -202,7 +202,12 @@ export default function HomePage() {
     }
   }, [])
 
-  const onlineTellers = liveTellers.filter(t => t.isOnline)
+  // Sort tellers: online first, then offline
+  const sortedTellers = [...liveTellers].sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1
+    if (!a.isOnline && b.isOnline) return 1
+    return 0
+  })
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
@@ -211,8 +216,42 @@ export default function HomePage() {
         <HomepageTicker />
       </div>
 
+      {/* Last Online Users - below ticker */}
+      {onlineUsers.length > 0 && (
+        <div className="fixed top-[100px] left-0 right-0 z-30 bg-[#0a0118]/95 border-b border-purple-500/10 py-2 px-4">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <span className="text-[10px] text-purple-400 flex-shrink-0 flex items-center gap-1">
+              <Circle className="w-2 h-2 text-green-400 fill-green-400" />
+              {language === 'tr' ? 'Online:' : 'Online:'}
+            </span>
+            {onlineUsers.slice(0, 10).map((user) => (
+              <Link
+                key={user.id}
+                href={`/${language}/profile/${user.id}`}
+                className="flex-shrink-0 flex items-center gap-1 bg-purple-500/10 rounded-full px-2 py-0.5 hover:bg-purple-500/20 transition-colors"
+              >
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={user.name || ''}
+                    width={16}
+                    height={16}
+                    className="w-4 h-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-purple-500/50 flex items-center justify-center">
+                    <span className="text-[8px] text-white">{user.name?.[0]}</span>
+                  </div>
+                )}
+                <span className="text-[10px] text-white/80">{user.username || user.name?.split(' ')[0]}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation */}
-      <div className="px-4 pb-4 pt-24">
+      <div className="px-4 pb-4 pt-32">
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
@@ -234,7 +273,7 @@ export default function HomePage() {
             }`}
           >
             <Video className="w-4 h-4" />
-            {language === 'tr' ? 'Canlı Fallar' : 'Live Fortunes'}
+            {language === 'tr' ? 'Canlı Falcı' : 'Live Tellers'}
           </button>
         </div>
       </div>
@@ -249,9 +288,9 @@ export default function HomePage() {
               {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
             </h2>
 
-            {/* Horizontal Scroll Circular Teller Avatars */}
+            {/* Horizontal Scroll Circular Teller Avatars - Online first, then Offline */}
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-              {onlineTellers.length > 0 ? onlineTellers.map((teller) => (
+              {sortedTellers.length > 0 ? sortedTellers.map((teller) => (
                 <Link
                   key={teller.id}
                   href={`/${language}/live-tellers/${teller.id}`}
@@ -259,8 +298,8 @@ export default function HomePage() {
                 >
                   {/* Circular Avatar with Purple Gradient Border */}
                   <div className="relative">
-                    <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118]">
+                    <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600' : 'bg-gray-600/50'}`}>
+                      <div className={`w-full h-full rounded-full overflow-hidden bg-[#0a0118] ${!teller.isOnline ? 'opacity-60' : ''}`}>
                         {teller.avatar || teller.user.image ? (
                           <Image
                             src={teller.avatar || teller.user.image || ''}
@@ -278,21 +317,21 @@ export default function HomePage() {
                         )}
                       </div>
                     </div>
-                    {/* Online indicator */}
-                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0a0118]" />
+                    {/* Online/Offline indicator */}
+                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#0a0118] ${teller.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                   </div>
                   {/* Name */}
-                  <p className="text-white text-xs font-medium mt-2 text-center w-20 truncate">{teller.displayName}</p>
+                  <p className={`text-xs font-medium mt-2 text-center w-20 truncate ${teller.isOnline ? 'text-white' : 'text-gray-400'}`}>{teller.displayName}</p>
                   {/* Rating */}
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Star className="w-2.5 h-2.5 text-gold-400 fill-gold-400" />
-                    <span className="text-gold-400 text-[10px]">{teller.rating.toFixed(1)}</span>
+                    <Star className={`w-2.5 h-2.5 ${teller.isOnline ? 'text-gold-400 fill-gold-400' : 'text-gray-500 fill-gray-500'}`} />
+                    <span className={`text-[10px] ${teller.isOnline ? 'text-gold-400' : 'text-gray-500'}`}>{teller.rating.toFixed(1)}</span>
                   </div>
                 </Link>
               )) : (
                 <div className="flex-1 py-8 text-center w-full">
                   <p className="text-purple-400 text-sm">
-                    {language === 'tr' ? 'Şu an canlı falcı yok' : 'No live tellers right now'}
+                    {language === 'tr' ? 'Şu an falcı yok' : 'No tellers right now'}
                   </p>
                   <Link
                     href={`/${language}/live-tellers`}

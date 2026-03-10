@@ -90,7 +90,9 @@ export default function SocialPage() {
   const [selectedYoutubeUrl, setSelectedYoutubeUrl] = useState<string | null>(null)
   const [selectedYoutubeThumbnail, setSelectedYoutubeThumbnail] = useState<string | null>(null)
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
+  const [expandedContent, setExpandedContent] = useState<Record<string, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -390,26 +392,14 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
-        >
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-            <Heart className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
+    <div className="min-h-screen bg-[#0a0118] pt-[72px]">
+      <div className="max-w-2xl mx-auto px-4">
+        {/* Minimal Header */}
+        <div className="py-3 text-center">
+          <h1 className="font-serif text-xl text-gold-400">
             {language === 'tr' ? 'Sosyal Akış' : 'Social Feed'}
           </h1>
-          <p className="text-purple-300">
-            {language === 'tr'
-              ? 'Fal yorumlarını paylaş, yorum yap ve beğen'
-              : 'Share fortunes, comment and like'}
-          </p>
-        </motion.div>
+        </div>
 
         {/* Create Post */}
         {session?.user && (
@@ -540,7 +530,7 @@ export default function SocialPage() {
           </motion.div>
         )}
 
-        {/* Posts Feed */}
+        {/* Posts Feed - Instagram-like snap scroll */}
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
@@ -550,7 +540,10 @@ export default function SocialPage() {
             {language === 'tr' ? 'Henüz paylaşım yok' : 'No posts yet'}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div 
+            ref={containerRef}
+            className="snap-y snap-mandatory overflow-y-auto h-[calc(100vh-180px)] space-y-4 scrollbar-hide"
+          >
             <AnimatePresence>
               {posts.map((post, index) => {
                 const IconComponent = FORTUNE_ICONS[post.fortuneType || 'default'] || FORTUNE_ICONS.default
@@ -573,7 +566,7 @@ export default function SocialPage() {
                       scale: { duration: 1.5, repeat: isHighlighted ? 2 : 0 },
                       boxShadow: { duration: 1.5, repeat: isHighlighted ? 2 : 0 }
                     }}
-                    className={`bg-[#1a0b2e]/80 border rounded-xl overflow-hidden ${
+                    className={`snap-start bg-[#1a0b2e]/80 border rounded-xl overflow-hidden ${
                       isHighlighted 
                         ? 'border-gold-500 ring-2 ring-gold-500/50' 
                         : 'border-purple-500/20'
@@ -619,7 +612,21 @@ export default function SocialPage() {
 
                     {/* Post Content */}
                     <div className="px-4 pb-3">
-                      <p className="text-purple-100 whitespace-pre-wrap">{post.content}</p>
+                      {post.content.length > 500 && !expandedContent[post.id] ? (
+                        <div>
+                          <p className="text-purple-100 whitespace-pre-wrap">
+                            {post.content.substring(0, 500)}...
+                          </p>
+                          <button
+                            onClick={() => setExpandedContent({ ...expandedContent, [post.id]: true })}
+                            className="text-gold-400 text-sm font-medium mt-1 hover:text-gold-300"
+                          >
+                            {language === 'tr' ? 'daha fazla' : 'more'}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-purple-100 whitespace-pre-wrap">{post.content}</p>
+                      )}
                       
                       {/* Post Image */}
                       {post.imageUrl && (

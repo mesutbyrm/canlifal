@@ -234,16 +234,9 @@ export default function Navbar() {
               {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
               <Link
                 href={`/${language}/chat`}
-                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
+                className="flex flex-col items-center gap-0.5 text-white/80 hover:text-white transition-colors px-2"
               >
-                <div className="relative">
-                  <MessageCircle className="w-6 h-6" />
-                  {unreadMessages > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#fe2c55] rounded-md flex items-center justify-center px-1">
-                      <span className="text-white text-[10px] font-bold">{unreadMessages > 99 ? '99+' : unreadMessages}</span>
-                    </span>
-                  )}
-                </div>
+                <MessageCircle className="w-6 h-6" />
                 <span className="text-[10px] font-medium text-center leading-tight">{language === 'tr' ? 'Fal Sohbet' : 'Chat Rooms'}</span>
               </Link>
               
