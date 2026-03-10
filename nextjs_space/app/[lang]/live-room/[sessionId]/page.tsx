@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Share2
 } from 'lucide-react';
 
 interface RoomData {
@@ -672,7 +672,7 @@ export default function LiveRoomPage() {
       </div>
 
       {/* Main video area - fullscreen */}
-      <div className={`flex-1 relative ${isChatExpanded ? 'pb-[200px]' : 'pb-[50px]'}`}>
+      <div className={`flex-1 relative ${isChatExpanded ? 'pb-[140px]' : 'pb-[40px]'}`}>
         {/* Remote video (full size) */}
         <video
           ref={remoteVideoRef}
@@ -705,6 +705,26 @@ export default function LiveRoomPage() {
             <SwitchCamera className="w-4 h-4 text-white" />
           </button>
         </div>
+
+        {/* Share button - right side center */}
+        <button
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: language === 'tr' ? 'Canlı Fal Seansı' : 'Live Fortune Session',
+                text: language === 'tr' ? 'Canlı fal seansını izle!' : 'Watch live fortune session!',
+                url: window.location.href
+              });
+            } else {
+              navigator.clipboard.writeText(window.location.href);
+              alert(language === 'tr' ? 'Link kopyalandı!' : 'Link copied!');
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg hover:scale-110 transition-transform border-2 border-white/30"
+          title={language === 'tr' ? 'Paylaş' : 'Share'}
+        >
+          <Share2 className="w-5 h-5 text-white" />
+        </button>
 
         {/* Connection status overlay */}
         {!isConnected && (
@@ -762,28 +782,28 @@ export default function LiveRoomPage() {
 
       {/* Chat area - bottom panel */}
       <div className={`absolute bottom-0 left-0 right-0 bg-deep-purple-900/95 backdrop-blur-sm border-t border-purple-700 transition-all duration-300 ${
-        isChatExpanded ? 'h-[200px]' : 'h-[50px]'
+        isChatExpanded ? 'h-[140px]' : 'h-[40px]'
       }`}>
         {/* Chat header with toggle */}
         <button
           onClick={() => setIsChatExpanded(!isChatExpanded)}
-          className="w-full p-2 flex items-center justify-between text-white hover:bg-purple-800/50"
+          className="w-full px-3 py-1.5 flex items-center justify-between text-white hover:bg-purple-800/50"
         >
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            <span className="text-sm font-medium">
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">
               {language === 'tr' ? 'Sohbet' : 'Chat'}
               {messages.length > 0 && <span className="ml-1 text-gold-400">({messages.length})</span>}
             </span>
           </div>
-          {isChatExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          {isChatExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
         </button>
 
         {/* Chat content */}
         {isChatExpanded && (
-          <div className="flex flex-col h-[calc(100%-40px)]">
+          <div className="flex flex-col h-[calc(100%-32px)]">
             {/* Input - moved to top */}
-            <div className="p-2 border-b border-purple-800 flex-shrink-0">
+            <div className="px-2 py-1.5 border-b border-purple-800 flex-shrink-0">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -791,21 +811,21 @@ export default function LiveRoomPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Type a message...'}
-                  className="flex-1 bg-deep-purple-800 text-white rounded-full px-4 py-2 text-sm border border-purple-700 focus:outline-none focus:border-gold-500"
+                  className="flex-1 bg-deep-purple-800 text-white rounded-full px-3 py-1.5 text-xs border border-purple-700 focus:outline-none focus:border-gold-500"
                 />
                 <button
                   onClick={sendMessage}
-                  className="p-2 bg-gold-600 text-black rounded-full hover:bg-gold-500"
+                  className="p-1.5 bg-gold-600 text-black rounded-full hover:bg-gold-500"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {/* Messages - flow from top to bottom */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+            <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1 min-h-0">
               {messages.length === 0 ? (
-                <p className="text-center text-gray-500 text-sm py-4">
+                <p className="text-center text-gray-500 text-xs py-2">
                   {language === 'tr' ? 'Henüz mesaj yok' : 'No messages yet'}
                 </p>
               ) : (
@@ -815,7 +835,7 @@ export default function LiveRoomPage() {
                     className={`flex ${msg.senderId === session?.user?.id ? 'justify-end' : 'justify-start'} animate-slideIn`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className={`max-w-[75%] rounded-lg px-3 py-1.5 text-sm ${
+                    <div className={`max-w-[80%] rounded-lg px-2 py-1 text-xs ${
                       msg.senderId === session?.user?.id
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-700 text-white'
