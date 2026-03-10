@@ -129,6 +129,8 @@ export default function BroadcastPage() {
   const [selectedViewer, setSelectedViewer] = useState<Viewer | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
+  const [liveBroadcasters, setLiveBroadcasters] = useState<{id: string; userId: string; title: string | null; category: string | null; user: {id: string; name: string | null; image: string | null}; viewerCount: number}[]>([])
+  const [showLiveBroadcasters, setShowLiveBroadcasters] = useState(false)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
@@ -191,6 +193,13 @@ export default function BroadcastPage() {
       cleanup()
     }
   }, [session])
+
+  // Fetch live broadcasters when modal opens
+  useEffect(() => {
+    if (showLiveBroadcasters) {
+      fetchLiveBroadcasters()
+    }
+  }, [showLiveBroadcasters])
 
   const startBroadcast = async () => {
     try {
@@ -465,6 +474,18 @@ export default function BroadcastPage() {
       const res = await fetch(`/api/video-streams/${streamId}/viewers`)
       if (res.ok) {
         setViewers(await res.json())
+      }
+    } catch (e) {}
+  }
+
+  const fetchLiveBroadcasters = async () => {
+    try {
+      const res = await fetch('/api/video-streams')
+      if (res.ok) {
+        const streams = await res.json()
+        // Filter out current stream and current user's streams
+        const otherStreams = streams.filter((s: any) => s.id !== streamId && s.userId !== session?.user?.id)
+        setLiveBroadcasters(otherStreams)
       }
     } catch (e) {}
   }
@@ -1201,6 +1222,14 @@ export default function BroadcastPage() {
                 <Users className="w-3.5 h-3.5 text-white" />
                 <span className="text-white text-xs">{viewerCount}</span>
               </button>
+              {/* Live Broadcasters button */}
+              <button 
+                onClick={() => setShowLiveBroadcasters(!showLiveBroadcasters)} 
+                className="flex items-center gap-1 bg-gradient-to-r from-pink-500/60 to-purple-500/60 px-2 py-1 rounded-full"
+              >
+                <Radio className="w-3.5 h-3.5 text-white" />
+                <span className="text-white text-xs">{language === 'tr' ? 'Davet' : 'Invite'}</span>
+              </button>
               <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
                 <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
                 <span className="text-white text-xs">{formatCount(likeCount)}</span>
@@ -1399,6 +1428,85 @@ export default function BroadcastPage() {
                 <p className="text-white/40 text-xs text-center py-6">
                   {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
                 </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Live Broadcasters Modal - Invite other streamers */}
+      <AnimatePresence>
+        {showLiveBroadcasters && (
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="absolute right-3 top-36 w-72 max-h-96 bg-black/90 backdrop-blur-md rounded-xl z-30 overflow-hidden border border-pink-500/30"
+          >
+            <div className="p-3 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-pink-500/20 to-purple-500/20">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <Radio className="w-4 h-4 text-pink-400" /> 
+                {language === 'tr' ? 'Canlı Yayıncılar' : 'Live Streamers'}
+              </h3>
+              <button onClick={() => setShowLiveBroadcasters(false)} className="text-white/60 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-2 border-b border-white/5">
+              <p className="text-white/50 text-[10px]">
+                {language === 'tr' 
+                  ? 'Başka bir yayıncıyı ortak yayına davet edin' 
+                  : 'Invite another streamer to co-broadcast'}
+              </p>
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {liveBroadcasters.map(broadcaster => (
+                <div key={broadcaster.id} className="flex items-center justify-between p-3 hover:bg-white/5 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      {broadcaster.user.image ? (
+                        <Image src={broadcaster.user.image} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover ring-2 ring-pink-500" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center ring-2 ring-pink-500">
+                          <span className="text-white text-sm font-bold">{broadcaster.user.name?.[0] || '?'}</span>
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#fe2c55] rounded-full flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{broadcaster.user.name || 'Yayıncı'}</p>
+                      <p className="text-white/50 text-[10px] truncate">{broadcaster.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-white/40 text-[10px] flex items-center gap-0.5">
+                          <Users className="w-3 h-3" /> {broadcaster.viewerCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleInviteCoBroadcast(broadcaster.userId)
+                      setShowLiveBroadcasters(false)
+                      addToast('success', language === 'tr' ? 'Davet gönderildi!' : 'Invite sent!')
+                    }}
+                    className="flex items-center gap-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    {language === 'tr' ? 'Davet Et' : 'Invite'}
+                  </button>
+                </div>
+              ))}
+              {liveBroadcasters.length === 0 && (
+                <div className="text-center py-8 px-4">
+                  <Radio className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/40 text-xs">
+                    {language === 'tr' 
+                      ? 'Şu anda başka canlı yayın yok' 
+                      : 'No other live streams right now'}
+                  </p>
+                </div>
               )}
             </div>
           </motion.div>
