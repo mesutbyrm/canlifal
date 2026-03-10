@@ -86,8 +86,6 @@ export default function HomepageTicker() {
 
   const hasData = data.onlineUsers.length > 0 || data.recentPurchasers.length > 0 || data.bigGifts.length > 0
 
-  if (!hasData) return null
-
   // Build ticker items
   const tickerItems: JSX.Element[] = []
 
@@ -195,6 +193,35 @@ export default function HomepageTicker() {
     )
   })
 
+  // Add placeholder items if no data
+  if (!hasData) {
+    // Add some placeholder items to show the ticker is working
+    const placeholderMessages = language === 'tr' 
+      ? [
+          { icon: '🔮', text: 'Falcı platformuna hoş geldiniz!' },
+          { icon: '✨', text: 'Canlı yayınlara katılın' },
+          { icon: '🌟', text: 'Jeton satın alarak hediye gönderin' },
+          { icon: '💫', text: 'Fallarınızı paylaşın' },
+          { icon: '🎁', text: 'Arkadaşlarınıza hediye gönderin' },
+        ]
+      : [
+          { icon: '🔮', text: 'Welcome to the fortune platform!' },
+          { icon: '✨', text: 'Join live streams' },
+          { icon: '🌟', text: 'Buy credits to send gifts' },
+          { icon: '💫', text: 'Share your fortunes' },
+          { icon: '🎁', text: 'Send gifts to friends' },
+        ]
+
+    placeholderMessages.forEach((msg, index) => {
+      tickerItems.push(
+        <div key={`placeholder-${index}`} className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-500/30 mx-2 whitespace-nowrap">
+          <span className="text-lg">{msg.icon}</span>
+          <span className="text-purple-200 text-xs font-medium">{msg.text}</span>
+        </div>
+      )
+    })
+  }
+
   // Duplicate items for seamless loop
   const duplicatedItems = [...tickerItems, ...tickerItems]
 
@@ -225,7 +252,7 @@ export default function HomepageTicker() {
           }
         }
         .animate-ticker {
-          animation: ticker 60s linear infinite;
+          animation: ticker 30s linear infinite;
         }
         .animate-ticker:hover {
           animation-play-state: paused;
