@@ -215,13 +215,13 @@ export default function Navbar() {
                 <span className="text-[11px] font-medium">{language === 'tr' ? 'Ana' : 'Home'}</span>
               </Link>
               
-              {/* Fallar (Fortunes) */}
+              {/* İstatistikler (Statistics) */}
               <Link
-                href={`/${language}/fortunes`}
+                href={`/${language}/dashboard`}
                 className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
               >
                 <Sparkles className="w-6 h-6" />
-                <span className="text-[11px] font-medium">{language === 'tr' ? 'Fallar' : 'Fortunes'}</span>
+                <span className="text-[11px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
               </Link>
               
               {/* Canlı (Live) */}

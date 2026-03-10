@@ -430,11 +430,11 @@ export default function ProfilePage() {
         {/* Action Buttons */}
         <div className="flex gap-2 mt-6 px-2">
           <Link 
-            href={`/${language}/fortunes`}
+            href={`/${language}/dashboard`}
             className="flex-1 bg-purple-600/80 hover:bg-purple-600 text-white font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
-            <span className="leading-tight">{language === 'tr' ? 'Fal\nStüdyom' : 'Fortune\nStudio'}</span>
+            <span className="leading-tight">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
           </Link>
           <Link 
             href={`/${language}/settings`}

@@ -482,11 +482,11 @@ export default function ProfilePage() {
             {profile.isOwnProfile ? (
               <>
                 <Link
-                  href={`/${language}/fortunes`}
+                  href={`/${language}/dashboard`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Sparkles className="w-4 h-4 text-gold-400" />
-                  {language === 'tr' ? 'Fal Stüdyom' : 'Fortune Studio'}
+                  {language === 'tr' ? 'İstatistikler' : 'Statistics'}
                 </Link>
                 <Link
                   href={`/${language}/settings`}
