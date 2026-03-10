@@ -161,3 +161,44 @@
 .animate-slideIn {
   animation: slideIn 0.3s ease-out forwards;
 }
+
+/* Twinkling star animation */
+@keyframes twinkle {
+  0%, 100% { 
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+/* Shooting star animation */
+@keyframes shooting-star {
+  0% {
+    transform: translate(0, 0) rotate(-45deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-300px, 300px) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+.animate-shooting-star {
+  animation: shooting-star 3s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.animate-shooting-star-2 {
+  animation: shooting-star 4s ease-in-out infinite;
+  animation-delay: 7s;
+}
