@@ -807,73 +807,75 @@ export default function VideoStreamPage() {
         </div>
       ) : (
         <>
-          {/* Split Screen Mode - Co-broadcast (no PK battle) */}
+          {/* TikTok-style 2x2 Grid Mode - Co-broadcast */}
           {isSplitMode ? (
             <div className="absolute inset-0 flex flex-col">
-              {/* Split Screen Videos */}
-              <div className="flex-1 flex pt-14">
-                {/* Left Side - Broadcaster Video */}
-                <div className="relative w-1/2 h-full border-r border-purple-500/30">
-                  <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    playsInline
-                    muted={isMuted}
-                    className="w-full h-full object-cover bg-black"
-                  />
-                  {/* Broadcaster profile overlay at bottom */}
-                  <div className="absolute bottom-20 left-2 right-2 z-20">
-                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
-                      {currentStream?.user?.image ? (
-                        <Image src={currentStream.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{currentStream?.user?.name?.[0]}</span>
+              {/* 2x2 Grid Videos */}
+              <div className="flex-1 pt-14 pb-28 px-1">
+                <div className="h-full grid grid-cols-2 gap-1">
+                  {/* Broadcaster Video (top-left) */}
+                  <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      muted={isMuted}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-1 left-1 right-1 z-10">
+                      <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                        {currentStream?.user?.image ? (
+                          <Image src={currentStream.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <span className="text-white text-[8px] font-bold">{currentStream?.user?.name?.[0]}</span>
+                          </div>
+                        )}
+                        <p className="text-white text-[10px] font-medium truncate">{currentStream?.user?.name}</p>
+                        <div className="w-4 h-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                          <span className="text-[8px]">👑</span>
                         </div>
-                      )}
-                      <p className="text-white text-xs font-medium truncate flex-1">{currentStream?.user?.name}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Right Side - Co-Broadcaster Video */}
-                <div className="relative w-1/2 h-full border-l border-purple-500/30">
-                  <video
-                    ref={coBroadcasterVideoRef}
-                    autoPlay
-                    playsInline
-                    muted={isMuted}
-                    className="w-full h-full object-cover bg-gray-900"
-                  />
-                  {/* Co-broadcaster profile overlay at bottom */}
-                  <div className="absolute bottom-20 left-2 right-2 z-20">
-                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
-                      {activeCoBroadcaster.user.image ? (
-                        <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
-                        </div>
-                      )}
-                      <p className="text-white text-xs font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
+                  {/* Co-Broadcaster Video (top-right) */}
+                  <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                    <video
+                      ref={coBroadcasterVideoRef}
+                      autoPlay
+                      playsInline
+                      muted={isMuted}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-1 left-1 right-1 z-10">
+                      <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                        {activeCoBroadcaster.user.image ? (
+                          <Image src={activeCoBroadcaster.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <span className="text-white text-[8px] font-bold">{activeCoBroadcaster.user.name[0]}</span>
+                          </div>
+                        )}
+                        <p className="text-white text-[10px] font-medium truncate">{activeCoBroadcaster.user.name}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Comments floating above input - Split Mode */}
-              <div className="absolute left-3 bottom-24 right-3 max-h-24 overflow-hidden z-20 space-y-1">
-                {comments.slice(0, 4).map(c => (
-                  <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
-                    <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
-                    <span className="text-white text-xs">{c.content}</span>
+              {/* Comments floating above input - Grid Mode */}
+              <div className="absolute left-3 bottom-24 right-3 max-h-20 overflow-hidden z-20 space-y-0.5">
+                {comments.slice(0, 3).map(c => (
+                  <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2 py-0.5">
+                    <span className="text-white/70 text-[10px] font-medium">{c.user.name}: </span>
+                    <span className="text-white text-[10px]">{c.content}</span>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Bottom input and actions - Split Mode */}
+              {/* Bottom input and actions - Grid Mode */}
               <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-                {/* Comment input */}
                 <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
                   <input
                     ref={commentInputRef}
@@ -882,25 +884,22 @@ export default function VideoStreamPage() {
                     onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                     onClick={(e) => e.stopPropagation()}
                     placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
-                    className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
+                    className="flex-1 bg-transparent text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none"
                   />
                   <button
                     onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
                     disabled={!newComment.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full mr-1 flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
+                    className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-semibold rounded-full mr-1 flex items-center gap-1 disabled:opacity-40"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
+                    <Send className="w-3 h-3" />
                   </button>
                 </div>
                 
-                {/* Gift button */}
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
-                  title={language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
+                  className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
                 >
-                  <Gift className="w-5 h-5 text-white" />
+                  <Gift className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>

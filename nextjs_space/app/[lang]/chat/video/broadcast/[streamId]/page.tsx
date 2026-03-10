@@ -131,14 +131,17 @@ export default function BroadcastPage() {
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
+  const broadcasterVideoRef = useRef<HTMLVideoElement>(null) // For co-host to see broadcaster
   const shownNotificationIdsRef = useRef<Set<string>>(new Set())
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const coBroadcasterPcRef = useRef<RTCPeerConnection | null>(null)
+  const broadcasterPcRef = useRef<RTCPeerConnection | null>(null) // Co-host's connection to broadcaster
   const processedViewersRef = useRef<Set<string>>(new Set())
   const processedCoBroadcastersRef = useRef<Set<string>>(new Set())
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
   const coBroadcasterCandidatesRef = useRef<RTCIceCandidate[]>([])
+  const broadcasterCandidatesRef = useRef<RTCIceCandidate[]>([]) // For co-host
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -215,7 +218,7 @@ export default function BroadcastPage() {
     }
   }
 
-  // Co-host: Poll for broadcaster signals and send our stream
+  // Co-host: Poll for broadcaster signals and send our stream + receive broadcaster's stream
   const pollCohostSignals = async () => {
     if (!localStreamRef.current || isUnmountedRef.current || !isCohost) return
     
@@ -231,15 +234,24 @@ export default function BroadcastPage() {
         if (signal.type === 'cohost-request-stream' && signal.data?.broadcasterId) {
           const broadcasterId = signal.data.broadcasterId
           
-          // Create peer connection to send our stream to broadcaster
+          // Create peer connection to send our stream to broadcaster AND receive broadcaster's stream
           if (!coBroadcasterPcRef.current) {
             const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
             coBroadcasterPcRef.current = pc
 
-            // Add our local stream tracks
+            // Add our local stream tracks (send our video/audio)
             localStreamRef.current.getTracks().forEach(track => {
               if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
             })
+            
+            // Handle incoming broadcaster stream (receive their video/audio)
+            pc.ontrack = (event) => {
+              console.log('Co-host received broadcaster track:', event.track.kind)
+              if (broadcasterVideoRef.current && event.streams[0]) {
+                broadcasterVideoRef.current.srcObject = event.streams[0]
+                broadcasterVideoRef.current.play().catch(e => console.log('Broadcaster video autoplay error:', e))
+              }
+            }
 
             pc.onicecandidate = async (event) => {
               if (event.candidate && !isUnmountedRef.current) {
@@ -467,15 +479,24 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
-  // Setup WebRTC connection to receive co-broadcaster's video
+  // Setup WebRTC connection to exchange streams with co-broadcaster (bidirectional)
   const setupCoBroadcasterConnection = async (coBroadcasterId: string) => {
+    if (!localStreamRef.current) return
+    
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
     coBroadcasterPcRef.current = pc
 
-    pc.addTransceiver('video', { direction: 'recvonly' })
-    pc.addTransceiver('audio', { direction: 'recvonly' })
+    // Add our local stream tracks (send our video/audio to co-broadcaster)
+    localStreamRef.current.getTracks().forEach(track => {
+      if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
+    })
+    
+    // Also add transceivers for receiving
+    pc.addTransceiver('video', { direction: 'sendrecv' })
+    pc.addTransceiver('audio', { direction: 'sendrecv' })
 
     pc.ontrack = (event) => {
+      console.log('Broadcaster received co-host track:', event.track.kind)
       if (coBroadcasterVideoRef.current && event.streams[0]) {
         coBroadcasterVideoRef.current.srcObject = event.streams[0]
         coBroadcasterVideoRef.current.play().catch(e => console.log('Co-broadcaster autoplay error:', e))
@@ -789,129 +810,205 @@ export default function BroadcastPage() {
   // Split screen mode when co-broadcaster is active (no PK battle)
   const isSplitMode = !!activeCoBroadcaster
 
+  // For co-host mode, determine total participants for grid
+  const totalParticipants = isCohost 
+    ? 2 // Co-host sees: broadcaster + themselves
+    : isSplitMode 
+      ? 1 + activeCoBroadcasters.length // Broadcaster sees: themselves + co-broadcasters
+      : 1
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {isSplitMode ? (
+      {(isSplitMode || isCohost) && totalParticipants > 1 ? (
         <>
-          {/* Split Screen Layout - Co-broadcast (no PK battle) */}
+          {/* TikTok-style 2x2 Grid Layout */}
           <div className="absolute inset-0 flex flex-col">
             {/* Top Info Bar */}
-            <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-3 px-4">
-              {/* Broadcaster info */}
+            <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-2 px-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {session?.user?.image ? (
-                    <Image src={session.user.image} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-purple-500" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-purple-500">
-                      <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
+                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    <span className="text-white font-bold">LIVE</span>
+                  </div>
+                  <span className="text-white/60 text-xs">{formatDuration(duration)}</span>
+                  {streamCategory && (
+                    <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded`}>
+                      <span className="text-[10px]">{streamCategory.icon}</span>
+                      <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
                     </div>
                   )}
-                  <div>
-                    <span className="text-white text-sm font-medium">{session?.user?.name}</span>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                        <span className="text-white font-bold">LIVE</span>
-                      </div>
-                      <span className="text-white/60 text-xs ml-1">{formatDuration(duration)}</span>
-                      {/* Stream Category Badge */}
-                      {streamCategory && (
-                        <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded ml-1`}>
-                          <span className="text-xs">{streamCategory.icon}</span>
-                          <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                    <Users className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white text-xs">{viewerCount}</span>
+                    <Users className="w-3 h-3 text-white" />
+                    <span className="text-white text-[10px]">{viewerCount}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                    <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
-                    <span className="text-white text-xs">{formatCount(likeCount)}</span>
+                    <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
+                    <span className="text-white text-[10px]">{formatCount(likeCount)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Split Screen Videos */}
-            <div className="flex-1 flex pt-16">
-              {/* Left Side - My Video */}
-              <div className="relative w-1/2 h-full border-r border-purple-500/30">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-                />
-                {/* My profile overlay at bottom */}
-                <div className="absolute bottom-20 left-2 right-2 z-20">
-                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
-                    {session?.user?.image ? (
-                      <Image src={session.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">{session?.user?.name?.[0]}</span>
+            {/* 2x2 Grid Videos - TikTok style square tiles */}
+            <div className="flex-1 pt-10 pb-28 px-1">
+              <div className={`h-full grid gap-1 ${
+                totalParticipants === 2 ? 'grid-cols-2 grid-rows-1' :
+                totalParticipants === 3 ? 'grid-cols-2 grid-rows-2' :
+                'grid-cols-2 grid-rows-2'
+              }`}>
+                {isCohost ? (
+                  <>
+                    {/* Co-host view: Broadcaster video (top-left) */}
+                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                      <video
+                        ref={broadcasterVideoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-1 left-1 right-1 z-10">
+                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <span className="text-white text-[8px] font-bold">👑</span>
+                          </div>
+                          <p className="text-white text-[10px] font-medium truncate">{language === 'tr' ? 'Yayıncı' : 'Broadcaster'}</p>
+                        </div>
                       </div>
-                    )}
-                    <p className="text-white text-xs font-medium truncate flex-1">{session?.user?.name}</p>
-                  </div>
-                </div>
-              </div>
+                    </div>
 
-              {/* Right Side - Co-Broadcaster Video */}
-              <div className="relative w-1/2 h-full border-l border-purple-500/30">
-                <video
-                  ref={coBroadcasterVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover bg-gray-900"
-                />
-                {/* Co-broadcaster profile overlay at bottom */}
-                <div className="absolute bottom-20 left-2 right-2 z-20">
-                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg">
-                    {activeCoBroadcaster.user.image ? (
-                      <Image src={activeCoBroadcaster.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">{activeCoBroadcaster.user.name[0]}</span>
+                    {/* Co-host view: My video (top-right) */}
+                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                      />
+                      <div className="absolute bottom-1 left-1 right-1 z-10">
+                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                          {session?.user?.image ? (
+                            <Image src={session.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <span className="text-white text-[8px] font-bold">{session?.user?.name?.[0]}</span>
+                            </div>
+                          )}
+                          <p className="text-white text-[10px] font-medium truncate">{session?.user?.name}</p>
+                          <span className="text-green-400 text-[8px]">●</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Broadcaster view: My video (top-left) */}
+                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                      />
+                      <div className="absolute bottom-1 left-1 right-1 z-10">
+                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                          {session?.user?.image ? (
+                            <Image src={session.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <span className="text-white text-[8px] font-bold">{session?.user?.name?.[0]}</span>
+                            </div>
+                          )}
+                          <p className="text-white text-[10px] font-medium truncate">{session?.user?.name}</p>
+                          <div className="w-4 h-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                            <span className="text-[8px]">👑</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Broadcaster view: Co-broadcaster video (top-right) */}
+                    {activeCoBroadcaster && (
+                      <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                        <video
+                          ref={coBroadcasterVideoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-1 left-1 right-1 z-10">
+                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                            {activeCoBroadcaster.user.image ? (
+                              <Image src={activeCoBroadcaster.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <span className="text-white text-[8px] font-bold">{activeCoBroadcaster.user.name[0]}</span>
+                              </div>
+                            )}
+                            <p className="text-white text-[10px] font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
+                            <button 
+                              onClick={() => handleRemoveCoBroadcaster(activeCoBroadcaster.userId)}
+                              className="p-1 bg-red-500/30 rounded-full"
+                            >
+                              <PhoneOff className="w-3 h-3 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
-                    <p className="text-white text-xs font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
-                    {/* Remove co-broadcaster button */}
-                    <button 
-                      onClick={() => handleRemoveCoBroadcaster(activeCoBroadcaster.userId)}
-                      className="p-1.5 bg-red-500/20 rounded-full hover:bg-red-500/40"
-                    >
-                      <PhoneOff className="w-3.5 h-3.5 text-red-400" />
-                    </button>
-                  </div>
-                </div>
+
+                    {/* Additional co-broadcasters (for 3-4 person grid) */}
+                    {activeCoBroadcasters.slice(1, 3).map((cb, index) => (
+                      <div key={cb.id} className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                        <div className="w-full h-full flex items-center justify-center">
+                          {cb.user.image ? (
+                            <Image src={cb.user.image} alt="" width={80} height={80} className="w-20 h-20 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <span className="text-white text-2xl font-bold">{cb.user.name[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute bottom-1 left-1 right-1 z-10">
+                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                            <p className="text-white text-[10px] font-medium truncate flex-1">{cb.user.name}</p>
+                            <button 
+                              onClick={() => handleRemoveCoBroadcaster(cb.userId)}
+                              className="p-1 bg-red-500/30 rounded-full"
+                            >
+                              <PhoneOff className="w-3 h-3 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
 
             {/* Viewer avatars row */}
-            <div className="absolute bottom-36 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
-              {viewers.slice(0, 8).map((viewer, idx) => (
+            <div className="absolute bottom-24 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
+              {viewers.slice(0, 6).map((viewer) => (
                 <div key={viewer.id} className="flex-shrink-0">
                   {viewer.image ? (
-                    <Image src={viewer.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                    <Image src={viewer.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover border border-white/20" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
-                      <span className="text-white text-[10px] font-bold">{viewer.name[0]}</span>
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center border border-white/20">
+                      <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
                     </div>
                   )}
                 </div>
               ))}
-              {viewers.length > 8 && (
-                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
-                  <span className="text-white text-[10px]">+{viewers.length - 8}</span>
+              {viewers.length > 6 && (
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center border border-white/20">
+                  <span className="text-white text-[8px]">+{viewers.length - 6}</span>
                 </div>
               )}
             </div>
@@ -935,8 +1032,9 @@ export default function BroadcastPage() {
         </>
       )}
 
-      {/* Hidden co-broadcaster video for non-VS mode */}
-      {!isSplitMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
+      {/* Hidden videos for non-grid mode */}
+      {!isSplitMode && !isCohost && <video ref={coBroadcasterVideoRef} className="hidden" />}
+      {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
 
       {/* Toast Notifications */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 space-y-2 w-72">
