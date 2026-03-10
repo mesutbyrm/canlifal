@@ -64,6 +64,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Update user's lastActiveAt if logged in
+    if (session?.user?.id) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { lastActiveAt: new Date() },
+      });
+    }
+
     // Record visit if new session (first visit of the day for this visitor)
     if (isNewSession) {
       const today = new Date();
