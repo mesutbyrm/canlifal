@@ -872,3 +872,128 @@ model MessageRequest {
   @@index([status])
   @@map("message_requests")
 }
+
+// User Activity Statistics - tracks login sessions
+model UserLoginSession {
+  id          String   @id @default(cuid())
+  userId      String
+  loginAt     DateTime @default(now())
+  logoutAt    DateTime?
+  duration    Int      @default(0) // in minutes
+  deviceType  String?  // mobile, desktop, tablet
+  browser     String?
+
+  @@index([userId])
+  @@index([loginAt])
+  @@map("user_login_sessions")
+}
+
+// Daily activity tracking
+model UserDailyActivity {
+  id              String   @id @default(cuid())
+  userId          String
+  date            DateTime @db.Date
+  minutesSpent    Int      @default(0)
+  fortunesViewed  Int      @default(0)
+  postsCreated    Int      @default(0)
+  messagesCount   Int      @default(0)
+  streamsWatched  Int      @default(0)
+  creditsSpent    Int      @default(0)
+  creditsEarned   Int      @default(0)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("user_daily_activity")
+}
+
+// Hourly activity pattern tracking
+model UserHourlyActivity {
+  id          String @id @default(cuid())
+  userId      String
+  hour        Int    // 0-23
+  totalMinutes Int   @default(0)
+  loginCount   Int   @default(0)
+
+  @@unique([userId, hour])
+  @@index([userId])
+  @@map("user_hourly_activity")
+}
+
+// Coin/Credit transactions log
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int      // positive for earned, negative for spent
+  type        String   // purchase, gift_sent, gift_received, fortune, stream, reward, referral
+  description String?
+  relatedId   String?  // related fortune/stream/gift id
+  balance     Int      // balance after transaction
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+// Fortune satisfaction/accuracy ratings
+model FortuneRating {
+  id            String   @id @default(cuid())
+  fortuneId     String   @unique
+  userId        String
+  satisfaction  Int?     // 1-5 rating
+  accuracy      Int?     // 1-5 rating (can be updated later)
+  feedback      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([fortuneId])
+  @@map("fortune_ratings")
+}
+
+// User Achievements/Badges
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  progress      Int      @default(0)
+  isCompleted   Boolean  @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+// Achievement definitions
+model Achievement {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  nameTr       String
+  nameEn       String
+  descriptionTr String
+  descriptionEn String
+  icon         String
+  category     String   // fortune, social, stream, coin, activity
+  targetValue  Int      // target to complete
+  rewardCredits Int     @default(0)
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("achievements")
+}
+
+// Profile views tracking
+model ProfileView {
+  id          String   @id @default(cuid())
+  viewedUserId String
+  viewerId     String?
+  viewedAt     DateTime @default(now())
+
+  @@index([viewedUserId])
+  @@index([viewedAt])
+  @@map("profile_views")
+}
