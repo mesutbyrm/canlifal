@@ -220,6 +220,7 @@ export default function BroadcastPage() {
   }
 
   // Co-host: Poll for broadcaster signals and send our stream + receive broadcaster's stream
+  // Co-host receives offer from broadcaster and sends answer
   const pollCohostSignals = async () => {
     if (!localStreamRef.current || isUnmountedRef.current || !isCohost) return
     
@@ -231,44 +232,36 @@ export default function BroadcastPage() {
       for (const signal of signals) {
         if (isUnmountedRef.current) break
         
-        // Broadcaster is requesting our stream
-        if (signal.type === 'cohost-request-stream' && signal.data?.broadcasterId) {
+        // Broadcaster sent us an offer
+        if (signal.type === 'broadcaster-offer' && signal.data?.offer && signal.data?.broadcasterId) {
           const broadcasterId = signal.data.broadcasterId
           
-          // Create peer connection to send our stream to broadcaster AND receive broadcaster's stream
+          // Create peer connection if not exists
           if (!coBroadcasterPcRef.current) {
+            console.log('🎤 Co-host: Creating peer connection for broadcaster', broadcasterId)
+            
             const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
             coBroadcasterPcRef.current = pc
 
-            // Add transceivers for bidirectional audio/video FIRST
-            const videoTrack = localStreamRef.current.getVideoTracks()[0]
-            const audioTrack = localStreamRef.current.getAudioTracks()[0]
+            // Add our local tracks to send video/audio to broadcaster
+            localStreamRef.current.getTracks().forEach(track => {
+              console.log('🎤 Co-host: Adding track to PC:', track.kind)
+              pc.addTrack(track, localStreamRef.current!)
+            })
             
-            if (videoTrack) {
-              pc.addTransceiver(videoTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
-            }
-            if (audioTrack) {
-              pc.addTransceiver(audioTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
-            }
-            
-            // Handle incoming broadcaster stream (receive their video/audio)
+            // Handle incoming broadcaster stream
             pc.ontrack = (event) => {
-              console.log('Co-host received broadcaster track:', event.track.kind, 'enabled:', event.track.enabled)
+              console.log('🎤 Co-host received broadcaster track:', event.track.kind)
               if (broadcasterVideoRef.current && event.streams[0]) {
+                console.log('🎤 Co-host: Setting broadcaster video stream')
                 broadcasterVideoRef.current.srcObject = event.streams[0]
-                // Ensure audio tracks are enabled
-                event.streams[0].getAudioTracks().forEach(track => {
-                  track.enabled = true
-                  console.log('Co-host: Broadcaster audio track enabled:', track.enabled)
-                })
-                // Try to play with audio
                 broadcasterVideoRef.current.muted = false
                 broadcasterVideoRef.current.volume = 1.0
                 broadcasterVideoRef.current.play().then(() => {
+                  console.log('🎤 Co-host: Broadcaster video playing with audio')
                   setRemoteAudioEnabled(true)
                 }).catch(e => {
-                  console.log('Broadcaster video autoplay error, trying muted:', e)
-                  // If autoplay blocked, try muted first
+                  console.log('🎤 Co-host: Autoplay blocked, trying muted first:', e)
                   if (broadcasterVideoRef.current) {
                     broadcasterVideoRef.current.muted = true
                     broadcasterVideoRef.current.play().catch(() => {})
@@ -279,6 +272,7 @@ export default function BroadcastPage() {
 
             pc.onicecandidate = async (event) => {
               if (event.candidate && !isUnmountedRef.current) {
+                console.log('🎤 Co-host: Sending ICE candidate to broadcaster')
                 await fetch('/api/video-streams/signal', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -286,43 +280,50 @@ export default function BroadcastPage() {
                     streamId,
                     type: 'cohost-ice-candidate',
                     receiverId: broadcasterId,
-                    data: { candidate: event.candidate.toJSON() }
+                    data: { candidate: event.candidate.toJSON(), fromCohost: true }
                   })
                 }).catch(() => {})
               }
             }
 
-            // Create and send offer
-            const offer = await pc.createOffer()
-            await pc.setLocalDescription(offer)
+            pc.onconnectionstatechange = () => {
+              console.log('🎤 Co-host: Connection state:', pc.connectionState)
+            }
 
-            await fetch('/api/video-streams/signal', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                streamId,
-                type: 'cohost-offer',
-                receiverId: broadcasterId,
-                data: { offer: pc.localDescription?.toJSON() }
-              })
-            })
-          }
-        } else if (signal.type === 'cohost-answer' && signal.data?.answer && coBroadcasterPcRef.current) {
-          // Broadcaster answered our offer
-          try {
-            if (coBroadcasterPcRef.current.signalingState === 'have-local-offer') {
-              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+            // Set remote description (broadcaster's offer) and create answer
+            try {
+              console.log('🎤 Co-host: Setting remote description (broadcaster offer)')
+              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
               
-              // Add pending candidates
+              // Add any pending ICE candidates
               for (const candidate of coBroadcasterCandidatesRef.current) {
-                try { await coBroadcasterPcRef.current.addIceCandidate(candidate) } catch (e) {}
+                try { await pc.addIceCandidate(candidate) } catch (e) {}
               }
               coBroadcasterCandidatesRef.current = []
+              
+              // Create and send answer
+              const answer = await pc.createAnswer()
+              await pc.setLocalDescription(answer)
+              
+              console.log('🎤 Co-host: Sending answer to broadcaster')
+              await fetch('/api/video-streams/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  streamId,
+                  type: 'cohost-answer',
+                  receiverId: broadcasterId,
+                  data: { answer: pc.localDescription?.toJSON() }
+                })
+              })
+            } catch (e) {
+              console.error('🎤 Co-host: Error handling offer:', e)
             }
-          } catch (e) {}
+          }
         } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && signal.data?.fromBroadcaster && coBroadcasterPcRef.current) {
           // ICE candidate from broadcaster
           try {
+            console.log('🎤 Co-host: Received ICE candidate from broadcaster')
             if (coBroadcasterPcRef.current.remoteDescription) {
               await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             } else {
@@ -504,40 +505,34 @@ export default function BroadcastPage() {
   }
 
   // Setup WebRTC connection to exchange streams with co-broadcaster (bidirectional)
+  // Broadcaster creates offer, co-host answers
   const setupCoBroadcasterConnection = async (coBroadcasterId: string) => {
     if (!localStreamRef.current) return
+    
+    console.log('🎬 Broadcaster: Setting up co-broadcast connection with', coBroadcasterId)
     
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
     coBroadcasterPcRef.current = pc
 
-    // Add transceivers for bidirectional audio/video with our tracks
-    const videoTrack = localStreamRef.current.getVideoTracks()[0]
-    const audioTrack = localStreamRef.current.getAudioTracks()[0]
-    
-    if (videoTrack) {
-      pc.addTransceiver(videoTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
-    }
-    if (audioTrack) {
-      pc.addTransceiver(audioTrack, { direction: 'sendrecv', streams: [localStreamRef.current] })
-    }
+    // Add our local tracks to send video/audio to co-host
+    localStreamRef.current.getTracks().forEach(track => {
+      console.log('🎬 Broadcaster: Adding track to PC:', track.kind)
+      pc.addTrack(track, localStreamRef.current!)
+    })
 
+    // Handle incoming tracks from co-host
     pc.ontrack = (event) => {
-      console.log('Broadcaster received co-host track:', event.track.kind, 'enabled:', event.track.enabled)
+      console.log('🎬 Broadcaster received co-host track:', event.track.kind)
       if (coBroadcasterVideoRef.current && event.streams[0]) {
+        console.log('🎬 Broadcaster: Setting co-host video stream')
         coBroadcasterVideoRef.current.srcObject = event.streams[0]
-        // Ensure audio tracks are enabled
-        event.streams[0].getAudioTracks().forEach(track => {
-          track.enabled = true
-          console.log('Broadcaster: Co-host audio track enabled:', track.enabled)
-        })
-        // Try to play with audio
         coBroadcasterVideoRef.current.muted = false
         coBroadcasterVideoRef.current.volume = 1.0
         coBroadcasterVideoRef.current.play().then(() => {
+          console.log('🎬 Broadcaster: Co-host video playing with audio')
           setRemoteAudioEnabled(true)
         }).catch(e => {
-          console.log('Co-broadcaster autoplay error, trying muted:', e)
-          // If autoplay blocked, try muted first
+          console.log('🎬 Broadcaster: Autoplay blocked, trying muted first:', e)
           if (coBroadcasterVideoRef.current) {
             coBroadcasterVideoRef.current.muted = true
             coBroadcasterVideoRef.current.play().catch(() => {})
@@ -548,6 +543,7 @@ export default function BroadcastPage() {
 
     pc.onicecandidate = async (event) => {
       if (event.candidate && !isUnmountedRef.current) {
+        console.log('🎬 Broadcaster: Sending ICE candidate to co-host')
         await fetch('/api/video-streams/signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -561,22 +557,37 @@ export default function BroadcastPage() {
       }
     }
 
-    // Send request for co-broadcaster to send their stream
-    await fetch('/api/video-streams/signal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        streamId,
-        type: 'cohost-request-stream',
-        receiverId: coBroadcasterId,
-        data: { broadcasterId: session?.user?.id }
+    pc.onconnectionstatechange = () => {
+      console.log('🎬 Broadcaster: Connection state:', pc.connectionState)
+    }
+
+    // Create and send offer to co-host
+    try {
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
       })
-    })
+      await pc.setLocalDescription(offer)
+      
+      console.log('🎬 Broadcaster: Sending offer to co-host')
+      await fetch('/api/video-streams/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          streamId,
+          type: 'broadcaster-offer',
+          receiverId: coBroadcasterId,
+          data: { offer: pc.localDescription?.toJSON(), broadcasterId: session?.user?.id }
+        })
+      })
+    } catch (e) {
+      console.error('🎬 Broadcaster: Error creating offer:', e)
+    }
   }
 
-  // Poll for co-broadcaster signals
+  // Poll for co-broadcaster signals (broadcaster side)
   const pollCoBroadcasterSignals = async () => {
-    if (!coBroadcasterPcRef.current || !activeCoBroadcaster || isUnmountedRef.current) return
+    if (!activeCoBroadcaster || isUnmountedRef.current || isCohost) return
     
     try {
       const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=cohost`)
@@ -584,36 +595,28 @@ export default function BroadcastPage() {
       const signals = await res.json()
 
       for (const signal of signals) {
-        if (isUnmountedRef.current || !coBroadcasterPcRef.current) break
+        if (isUnmountedRef.current) break
         
-        if (signal.type === 'cohost-offer' && signal.data?.offer) {
+        // Co-host answered our offer
+        if (signal.type === 'cohost-answer' && signal.data?.answer && coBroadcasterPcRef.current) {
           try {
-            if (coBroadcasterPcRef.current.signalingState === 'stable') {
-              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
+            console.log('🎬 Broadcaster: Received answer from co-host')
+            if (coBroadcasterPcRef.current.signalingState === 'have-local-offer') {
+              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
               
-              // Add pending candidates
+              // Add pending ICE candidates
               for (const candidate of coBroadcasterCandidatesRef.current) {
                 try { await coBroadcasterPcRef.current.addIceCandidate(candidate) } catch (e) {}
               }
               coBroadcasterCandidatesRef.current = []
-              
-              const answer = await coBroadcasterPcRef.current.createAnswer()
-              await coBroadcasterPcRef.current.setLocalDescription(answer)
-              
-              await fetch('/api/video-streams/signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  streamId,
-                  type: 'cohost-answer',
-                  receiverId: activeCoBroadcaster.userId,
-                  data: { answer: coBroadcasterPcRef.current.localDescription?.toJSON() }
-                })
-              })
             }
-          } catch (e) {}
-        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate) {
+          } catch (e) {
+            console.error('🎬 Broadcaster: Error setting answer:', e)
+          }
+        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && (signal.data?.fromCohost || !signal.data?.fromBroadcaster) && coBroadcasterPcRef.current) {
+          // ICE candidate from co-host (not from broadcaster)
           try {
+            console.log('🎬 Broadcaster: Received ICE candidate from co-host')
             if (coBroadcasterPcRef.current.remoteDescription) {
               await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             } else {
