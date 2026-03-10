@@ -92,14 +92,14 @@ export default function HomepageTicker() {
   // Add online users
   data.onlineUsers.forEach((user, index) => {
     tickerItems.push(
-      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full border border-green-500/30 mx-2 whitespace-nowrap">
+      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
         <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
         <span className="text-green-400 text-xs font-medium">
           {language === 'tr' ? 'Online' : 'Online'}
         </span>
         <div className="flex items-center gap-1.5">
           {user.image ? (
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-green-400/50">
+            <div className="w-5 h-5 rounded-full overflow-hidden">
               <Image src={user.image} alt={user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
@@ -118,14 +118,14 @@ export default function HomepageTicker() {
   // Add recent purchasers
   data.recentPurchasers.forEach((purchase, index) => {
     tickerItems.push(
-      <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-full border border-yellow-500/30 mx-2 whitespace-nowrap">
+      <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
         <Coins className="w-4 h-4 text-yellow-400" />
         <span className="text-yellow-400 text-xs font-medium">
           {language === 'tr' ? 'Yeni Jeton' : 'New Credits'}
         </span>
         <div className="flex items-center gap-1.5">
           {purchase.user.image ? (
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-yellow-400/50">
+            <div className="w-5 h-5 rounded-full overflow-hidden">
               <Image src={purchase.user.image} alt={purchase.user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
@@ -142,53 +142,23 @@ export default function HomepageTicker() {
     )
   })
 
-  // Add big gifts
+  // Add big gifts - format: "hediyeyi atan kişi şu kişiye en büyük hediye olan ... attı"
   data.bigGifts.forEach((gift, index) => {
+    const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullanıcı'
+    const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
+    
     tickerItems.push(
-      <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-pink-500/20 rounded-full border border-pink-500/30 mx-2 whitespace-nowrap animate-pulse">
+      <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
         <Crown className="w-4 h-4 text-pink-400" />
-        <span className="text-pink-400 text-xs font-medium">
-          {language === 'tr' ? 'Mega Hediye!' : 'Mega Gift!'}
+        <span className="text-pink-300 text-xs">
+          <span className="text-white font-semibold">{senderName}</span>
+          {language === 'tr' ? ', ' : ' sent '}
+          <span className="text-white font-semibold">{receiverName}</span>
+          {language === 'tr' ? "'a en büyük hediye olan " : ' the biggest gift '}
+          <span className="text-xl mx-1">{gift.giftType.icon}</span>
+          <span className="text-yellow-300 font-bold">{gift.totalPrice.toLocaleString()}</span>
+          {language === 'tr' ? ' attı!' : '!'}
         </span>
-        <div className="flex items-center gap-1">
-          {/* Sender */}
-          <div className="flex items-center gap-1">
-            {gift.sender.image ? (
-              <div className="w-5 h-5 rounded-full overflow-hidden border border-pink-400/50">
-                <Image src={gift.sender.image} alt={gift.sender.name || ''} width={20} height={20} className="object-cover" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-pink-500/30 flex items-center justify-center">
-                <span className="text-[10px] text-pink-300">{gift.sender.name?.charAt(0) || '?'}</span>
-              </div>
-            )}
-            <span className="text-white text-xs font-semibold">
-              {gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullanıcı'}
-            </span>
-          </div>
-          
-          <span className="text-pink-300 text-lg mx-1">→</span>
-          <span className="text-xl">{gift.giftType.icon}</span>
-          <span className="text-pink-300 text-lg mx-1">→</span>
-          
-          {/* Receiver */}
-          <div className="flex items-center gap-1">
-            {gift.stream.user.image ? (
-              <div className="w-5 h-5 rounded-full overflow-hidden border border-purple-400/50">
-                <Image src={gift.stream.user.image} alt={gift.stream.user.name || ''} width={20} height={20} className="object-cover" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-purple-500/30 flex items-center justify-center">
-                <span className="text-[10px] text-purple-300">{gift.stream.user.name?.charAt(0) || '?'}</span>
-              </div>
-            )}
-            <span className="text-white text-xs font-semibold">
-              {gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'}
-            </span>
-          </div>
-          
-          <span className="text-yellow-300 text-xs font-bold ml-1">{gift.totalPrice.toLocaleString()} 💎</span>
-        </div>
       </div>
     )
   })
@@ -214,7 +184,7 @@ export default function HomepageTicker() {
 
     placeholderMessages.forEach((msg, index) => {
       tickerItems.push(
-        <div key={`placeholder-${index}`} className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-500/30 mx-2 whitespace-nowrap">
+        <div key={`placeholder-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
           <span className="text-lg">{msg.icon}</span>
           <span className="text-purple-200 text-xs font-medium">{msg.text}</span>
         </div>
@@ -226,12 +196,12 @@ export default function HomepageTicker() {
   const duplicatedItems = [...tickerItems, ...tickerItems]
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-purple-900/30 via-pink-900/20 to-purple-900/30 border-y border-purple-500/20 py-2">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-purple-900/30 via-pink-900/20 to-purple-900/30 py-1.5">
       <div className="flex items-center">
         {/* Label */}
-        <div className="flex-shrink-0 px-4 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10">
+        <div className="flex-shrink-0 px-3 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10">
           <Sparkles className="w-3 h-3" />
-          {language === 'tr' ? 'CANLI' : 'LIVE'}
+          {language === 'tr' ? 'SOSYAL' : 'SOCIAL'}
         </div>
         
         {/* Scrolling content */}
@@ -252,7 +222,7 @@ export default function HomepageTicker() {
           }
         }
         .animate-ticker {
-          animation: ticker 30s linear infinite;
+          animation: ticker 10s linear infinite;
         }
         .animate-ticker:hover {
           animation-play-state: paused;

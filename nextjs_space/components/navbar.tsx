@@ -204,45 +204,36 @@ export default function Navbar() {
       <nav className={`fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 ${hideOnMobile ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex justify-between items-center h-16">
-            {/* Main Navigation - 5 items */}
+            {/* Main Navigation - 4 items */}
             <div className="flex-1 flex justify-around items-center">
-              {/* Ana (Home) */}
-              <Link
-                href={`/${language}`}
-                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
-              >
-                <Home className="w-6 h-6" />
-                <span className="text-[11px] font-medium">{language === 'tr' ? 'Ana' : 'Home'}</span>
-              </Link>
-              
               {/* İstatistikler (Statistics) */}
               <Link
                 href={`/${language}/dashboard`}
                 className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2"
               >
                 <Sparkles className="w-6 h-6" />
-                <span className="text-[11px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
+                <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
               </Link>
               
-              {/* Canlı (Live) */}
+              {/* Sosyal (Social) - links to home page social feed */}
               <Link
-                href={`/${language}/chat/video`}
+                href={`/${language}`}
                 className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
               >
                 <div className="relative">
-                  <Video className="w-6 h-6" />
+                  <Users className="w-6 h-6" />
                   {liveStreamCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#fe2c55] rounded-md flex items-center justify-center px-1">
                       <span className="text-white text-[10px] font-bold">{liveStreamCount}</span>
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-medium">{language === 'tr' ? 'Canlı' : 'Live'}</span>
+                <span className="text-[10px] font-medium">{language === 'tr' ? 'Sosyal' : 'Social'}</span>
               </Link>
               
-              {/* Sohbet (Chat) */}
+              {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
               <Link
-                href={`/${language}/messages`}
+                href={`/${language}/chat`}
                 className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors px-2 relative"
               >
                 <div className="relative">
@@ -253,7 +244,7 @@ export default function Navbar() {
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-medium">{language === 'tr' ? 'Sohbet' : 'Chat'}</span>
+                <span className="text-[10px] font-medium text-center leading-tight">{language === 'tr' ? 'Fal Sohbet' : 'Chat Rooms'}</span>
               </Link>
               
               {/* Profile */}
