@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
+const MAX_GUESTS = 4 // Maximum simultaneous co-broadcasters allowed
+
 // GET - Get co-broadcasters for a stream
 export async function GET(
   request: NextRequest,
@@ -103,6 +105,19 @@ export async function POST(
     }
 
     if (action === 'invite') {
+      // Check current active co-broadcasters count
+      const activeCount = await prisma.streamCoBroadcaster.count({
+        where: { streamId: params.streamId, status: 'active' }
+      })
+      
+      if (activeCount >= MAX_GUESTS) {
+        return NextResponse.json({ 
+          error: 'Maximum guests reached', 
+          maxGuests: MAX_GUESTS,
+          currentCount: activeCount
+        }, { status: 400 })
+      }
+
       // Check if already invited
       const existing = await prisma.streamCoBroadcaster.findUnique({
         where: { streamId_userId: { streamId: params.streamId, userId } }
@@ -166,6 +181,19 @@ export async function PATCH(
     const { action } = await request.json()
 
     if (action === 'accept') {
+      // Check current active co-broadcasters count before accepting
+      const activeCount = await prisma.streamCoBroadcaster.count({
+        where: { streamId: params.streamId, status: 'active' }
+      })
+      
+      if (activeCount >= MAX_GUESTS) {
+        return NextResponse.json({ 
+          error: 'Maximum guests reached', 
+          message: 'Sorry, the stream already has the maximum number of guests.',
+          maxGuests: MAX_GUESTS
+        }, { status: 400 })
+      }
+
       const coBroadcaster = await prisma.streamCoBroadcaster.update({
         where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
         data: { status: 'active', joinedAt: new Date() }

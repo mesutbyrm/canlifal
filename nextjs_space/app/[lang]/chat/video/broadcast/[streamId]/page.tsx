@@ -88,6 +88,7 @@ interface StreamCategory {
 }
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
+const MAX_GUESTS = 4 // Maximum co-broadcasters allowed
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -95,6 +96,8 @@ const ICE_SERVERS = [
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' }
 ]
+const RECONNECT_DELAY = 2000 // ms before attempting reconnect
+const MAX_RECONNECT_ATTEMPTS = 5
 
 export default function BroadcastPage() {
   const { data: session } = useSession() || {}
@@ -112,10 +115,12 @@ export default function BroadcastPage() {
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
   const [streamCategory, setStreamCategory] = useState<StreamCategory | null>(null)
-  // Co-broadcast state (no battle/PK)
-  const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<CoBroadcaster | null>(null)
+  // Co-broadcast state - supports up to MAX_GUESTS (4) simultaneous guests
+  const [activeGuests, setActiveGuests] = useState<CoBroadcaster[]>([])
   // Pending co-broadcast request popup
   const [pendingCoBroadcastRequest, setPendingCoBroadcastRequest] = useState<CoBroadcaster | null>(null)
+  // Connection states for reconnection handling
+  const [guestConnectionStates, setGuestConnectionStates] = useState<Map<string, RTCPeerConnectionState>>(new Map())
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
@@ -133,18 +138,21 @@ export default function BroadcastPage() {
   const [showLiveBroadcasters, setShowLiveBroadcasters] = useState(false)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
+  // Video refs for up to 4 guests (dynamically created in render)
+  const guestVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map())
   const broadcasterVideoRef = useRef<HTMLVideoElement>(null) // For co-host to see broadcaster
   const shownNotificationIdsRef = useRef<Set<string>>(new Set())
   const localStreamRef = useRef<MediaStream | null>(null)
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
-  const coBroadcasterPcRef = useRef<RTCPeerConnection | null>(null)
+  // PeerConnections for each guest (Map: guestId -> RTCPeerConnection)
+  const guestPcRefs = useRef<Map<string, RTCPeerConnection>>(new Map())
   const broadcasterPcRef = useRef<RTCPeerConnection | null>(null) // Co-host's connection to broadcaster
   const processedViewersRef = useRef<Set<string>>(new Set())
-  const processedCoBroadcastersRef = useRef<Set<string>>(new Set())
+  const processedGuestsRef = useRef<Set<string>>(new Set())
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
-  const coBroadcasterCandidatesRef = useRef<RTCIceCandidate[]>([])
+  const guestCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
   const broadcasterCandidatesRef = useRef<RTCIceCandidate[]>([]) // For co-host
+  const reconnectAttemptsRef = useRef<Map<string, number>>(new Map())
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -246,11 +254,11 @@ export default function BroadcastPage() {
           const broadcasterId = signal.data.broadcasterId
           
           // Create peer connection if not exists
-          if (!coBroadcasterPcRef.current) {
+          if (!broadcasterPcRef.current) {
             console.log('🎤 Co-host: Creating peer connection for broadcaster', broadcasterId)
             
             const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
-            coBroadcasterPcRef.current = pc
+            broadcasterPcRef.current = pc
 
             // Add our local tracks to send video/audio to broadcaster
             localStreamRef.current.getTracks().forEach(track => {
@@ -305,10 +313,10 @@ export default function BroadcastPage() {
               await pc.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
               
               // Add any pending ICE candidates
-              for (const candidate of coBroadcasterCandidatesRef.current) {
+              for (const candidate of broadcasterCandidatesRef.current) {
                 try { await pc.addIceCandidate(candidate) } catch (e) {}
               }
-              coBroadcasterCandidatesRef.current = []
+              broadcasterCandidatesRef.current = []
               
               // Create and send answer
               const answer = await pc.createAnswer()
@@ -329,14 +337,14 @@ export default function BroadcastPage() {
               console.error('🎤 Co-host: Error handling offer:', e)
             }
           }
-        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && signal.data?.fromBroadcaster && coBroadcasterPcRef.current) {
+        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && signal.data?.fromBroadcaster && broadcasterPcRef.current) {
           // ICE candidate from broadcaster
           try {
             console.log('🎤 Co-host: Received ICE candidate from broadcaster')
-            if (coBroadcasterPcRef.current.remoteDescription) {
-              await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            if (broadcasterPcRef.current.remoteDescription) {
+              await broadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             } else {
-              coBroadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
+              broadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
             }
           } catch (e) {}
         }
@@ -497,92 +505,155 @@ export default function BroadcastPage() {
         const data = await res.json()
         setCoBroadcasters(data)
         
-        // Check for pending/requested co-broadcast requests and show popup
+        // Check for pending/requested co-broadcast requests and show popup (only first one)
         const pending = data.find((cb: CoBroadcaster) => cb.status === 'requested')
         if (pending && !pendingCoBroadcastRequest) {
-          setPendingCoBroadcastRequest(pending)
+          // Only show request if we haven't reached max guests
+          if (activeGuests.length < MAX_GUESTS) {
+            setPendingCoBroadcastRequest(pending)
+          }
         }
         
-        // Find active co-broadcaster for split-screen mode
-        const active = data.find((cb: CoBroadcaster) => cb.status === 'active')
-        if (active && !activeCoBroadcaster) {
-          setActiveCoBroadcaster(active)
-          // Establish WebRTC connection to receive co-broadcaster's stream
-          if (!processedCoBroadcastersRef.current.has(active.userId)) {
-            processedCoBroadcastersRef.current.add(active.userId)
-            setupCoBroadcasterConnection(active.userId)
+        // Find all active guests (up to MAX_GUESTS)
+        const currentActive: CoBroadcaster[] = data
+          .filter((cb: CoBroadcaster) => cb.status === 'active')
+          .slice(0, MAX_GUESTS)
+        
+        // Check for new guests to connect
+        for (const guest of currentActive) {
+          if (!processedGuestsRef.current.has(guest.userId)) {
+            console.log('🎬 New guest joined:', guest.userId)
+            processedGuestsRef.current.add(guest.userId)
+            setupGuestConnection(guest.userId)
           }
-        } else if (!active && activeCoBroadcaster) {
-          // Co-broadcaster left
-          setActiveCoBroadcaster(null)
-          if (coBroadcasterPcRef.current) {
-            coBroadcasterPcRef.current.close()
-            coBroadcasterPcRef.current = null
-          }
-          processedCoBroadcastersRef.current.clear()
         }
+        
+        // Check for guests who left
+        const currentGuestIds = new Set(currentActive.map(g => g.userId))
+        for (const [guestId, pc] of guestPcRefs.current) {
+          if (!currentGuestIds.has(guestId)) {
+            console.log('🎬 Guest left:', guestId)
+            pc.close()
+            guestPcRefs.current.delete(guestId)
+            guestVideoRefs.current.delete(guestId)
+            processedGuestsRef.current.delete(guestId)
+            reconnectAttemptsRef.current.delete(guestId)
+            guestCandidatesRef.current.delete(guestId)
+          }
+        }
+        
+        // Update active guests state
+        setActiveGuests(currentActive)
       }
     } catch (e) {}
   }
 
-  // Setup WebRTC connection to exchange streams with co-broadcaster (bidirectional)
-  // Broadcaster creates offer, co-host answers
-  const setupCoBroadcasterConnection = async (coBroadcasterId: string) => {
+  // Setup WebRTC connection to exchange streams with a guest (bidirectional)
+  // Broadcaster creates offer, guest answers
+  // Supports up to MAX_GUESTS simultaneous connections with reconnection
+  const setupGuestConnection = async (guestId: string, isReconnect: boolean = false) => {
     if (!localStreamRef.current) return
     
-    console.log('🎬 Broadcaster: Setting up co-broadcast connection with', coBroadcasterId)
+    const attempts = reconnectAttemptsRef.current.get(guestId) || 0
+    if (isReconnect && attempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.log('🎬 Broadcaster: Max reconnect attempts reached for guest', guestId)
+      return
+    }
     
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
-    coBroadcasterPcRef.current = pc
+    if (isReconnect) {
+      reconnectAttemptsRef.current.set(guestId, attempts + 1)
+      console.log(`🎬 Broadcaster: Reconnect attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS} for guest`, guestId)
+    } else {
+      reconnectAttemptsRef.current.set(guestId, 0)
+    }
+    
+    // Close existing connection if any
+    const existingPc = guestPcRefs.current.get(guestId)
+    if (existingPc) {
+      existingPc.close()
+      guestPcRefs.current.delete(guestId)
+    }
+    
+    console.log('🎬 Broadcaster: Setting up connection with guest', guestId)
+    
+    const pc = new RTCPeerConnection({ 
+      iceServers: ICE_SERVERS, 
+      iceCandidatePoolSize: 10,
+      iceTransportPolicy: 'all'
+    })
+    guestPcRefs.current.set(guestId, pc)
 
-    // Add our local tracks to send video/audio to co-host
+    // Add our local tracks to send video/audio to guest
     localStreamRef.current.getTracks().forEach(track => {
-      console.log('🎬 Broadcaster: Adding track to PC:', track.kind)
+      console.log('🎬 Broadcaster: Adding track to guest PC:', track.kind)
       pc.addTrack(track, localStreamRef.current!)
     })
 
-    // Handle incoming tracks from co-host
+    // Handle incoming tracks from guest
     pc.ontrack = (event) => {
-      console.log('🎬 Broadcaster received co-host track:', event.track.kind)
-      if (coBroadcasterVideoRef.current && event.streams[0]) {
-        console.log('🎬 Broadcaster: Setting co-host video stream')
-        coBroadcasterVideoRef.current.srcObject = event.streams[0]
-        coBroadcasterVideoRef.current.muted = false
-        coBroadcasterVideoRef.current.volume = 1.0
-        coBroadcasterVideoRef.current.play().then(() => {
-          console.log('🎬 Broadcaster: Co-host video playing with audio')
+      console.log('🎬 Broadcaster received guest track:', event.track.kind, 'from', guestId)
+      const videoEl = guestVideoRefs.current.get(guestId)
+      if (videoEl && event.streams[0]) {
+        console.log('🎬 Broadcaster: Setting guest video stream for', guestId)
+        videoEl.srcObject = event.streams[0]
+        videoEl.muted = false
+        videoEl.volume = 1.0
+        videoEl.play().then(() => {
+          console.log('🎬 Broadcaster: Guest video playing with audio for', guestId)
           setRemoteAudioEnabled(true)
+          reconnectAttemptsRef.current.set(guestId, 0) // Reset on successful connection
         }).catch(e => {
-          console.log('🎬 Broadcaster: Autoplay blocked, trying muted first:', e)
-          if (coBroadcasterVideoRef.current) {
-            coBroadcasterVideoRef.current.muted = true
-            coBroadcasterVideoRef.current.play().catch(() => {})
-          }
+          console.log('🎬 Broadcaster: Autoplay blocked for guest, trying muted first:', e)
+          videoEl.muted = true
+          videoEl.play().catch(() => {})
         })
       }
     }
 
     pc.onicecandidate = async (event) => {
       if (event.candidate && !isUnmountedRef.current) {
-        console.log('🎬 Broadcaster: Sending ICE candidate to co-host')
+        console.log('🎬 Broadcaster: Sending ICE candidate to guest', guestId)
         await fetch('/api/video-streams/signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             streamId,
-            type: 'cohost-ice-candidate',
-            receiverId: coBroadcasterId,
-            data: { candidate: event.candidate.toJSON(), fromBroadcaster: true }
+            type: 'guest-ice-candidate',
+            receiverId: guestId,
+            data: { candidate: event.candidate.toJSON(), fromBroadcaster: true, guestId }
           })
         }).catch(() => {})
       }
     }
 
     pc.onconnectionstatechange = () => {
-      console.log('🎬 Broadcaster: Connection state:', pc.connectionState)
+      const state = pc.connectionState
+      console.log('🎬 Broadcaster: Connection state for guest', guestId, ':', state)
+      setGuestConnectionStates(prev => new Map(prev).set(guestId, state))
+      
+      // Handle reconnection
+      if (state === 'failed' || state === 'disconnected') {
+        console.log('🎬 Broadcaster: Connection lost with guest', guestId, '- attempting reconnect')
+        setTimeout(() => {
+          if (!isUnmountedRef.current && activeGuests.some(g => g.userId === guestId)) {
+            setupGuestConnection(guestId, true)
+          }
+        }, RECONNECT_DELAY)
+      } else if (state === 'connected') {
+        reconnectAttemptsRef.current.set(guestId, 0)
+      }
+    }
+    
+    pc.oniceconnectionstatechange = () => {
+      console.log('🎬 Broadcaster: ICE connection state for guest', guestId, ':', pc.iceConnectionState)
+      // ICE restart if needed
+      if (pc.iceConnectionState === 'failed') {
+        console.log('🎬 Broadcaster: ICE failed, attempting restart for guest', guestId)
+        pc.restartIce()
+      }
     }
 
-    // Create and send offer to co-host
+    // Create and send offer to guest
     try {
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
@@ -590,64 +661,93 @@ export default function BroadcastPage() {
       })
       await pc.setLocalDescription(offer)
       
-      console.log('🎬 Broadcaster: Sending offer to co-host')
+      console.log('🎬 Broadcaster: Sending offer to guest', guestId)
       await fetch('/api/video-streams/signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           streamId,
           type: 'broadcaster-offer',
-          receiverId: coBroadcasterId,
-          data: { offer: pc.localDescription?.toJSON(), broadcasterId: session?.user?.id }
+          receiverId: guestId,
+          data: { offer: pc.localDescription?.toJSON(), broadcasterId: session?.user?.id, guestId }
         })
       })
     } catch (e) {
-      console.error('🎬 Broadcaster: Error creating offer:', e)
+      console.error('🎬 Broadcaster: Error creating offer for guest', guestId, ':', e)
     }
   }
+  
+  // Legacy alias for backward compatibility
+  const setupCoBroadcasterConnection = setupGuestConnection
 
-  // Poll for co-broadcaster signals (broadcaster side)
-  const pollCoBroadcasterSignals = async () => {
-    if (!activeCoBroadcaster || isUnmountedRef.current || isCohost) return
+  // Poll for guest signals (broadcaster side) - supports multiple guests
+  const pollGuestSignals = async () => {
+    if (activeGuests.length === 0 || isUnmountedRef.current || isCohost) return
     
     try {
-      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=cohost`)
+      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=guest`)
       if (!res.ok) return
       const signals = await res.json()
 
       for (const signal of signals) {
         if (isUnmountedRef.current) break
         
-        // Co-host answered our offer
-        if (signal.type === 'cohost-answer' && signal.data?.answer && coBroadcasterPcRef.current) {
+        const guestId = signal.data?.guestId || signal.senderId
+        if (!guestId) continue
+        
+        const pc = guestPcRefs.current.get(guestId)
+        
+        // Guest answered our offer
+        if (signal.type === 'guest-answer' && signal.data?.answer && pc) {
           try {
-            console.log('🎬 Broadcaster: Received answer from co-host')
-            if (coBroadcasterPcRef.current.signalingState === 'have-local-offer') {
-              await coBroadcasterPcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+            console.log('🎬 Broadcaster: Received answer from guest', guestId)
+            if (pc.signalingState === 'have-local-offer') {
+              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
               
-              // Add pending ICE candidates
-              for (const candidate of coBroadcasterCandidatesRef.current) {
-                try { await coBroadcasterPcRef.current.addIceCandidate(candidate) } catch (e) {}
+              // Add pending ICE candidates for this guest
+              const pending = guestCandidatesRef.current.get(guestId) || []
+              for (const candidate of pending) {
+                try { await pc.addIceCandidate(candidate) } catch (e) {}
               }
-              coBroadcasterCandidatesRef.current = []
+              guestCandidatesRef.current.set(guestId, [])
             }
           } catch (e) {
-            console.error('🎬 Broadcaster: Error setting answer:', e)
+            console.error('🎬 Broadcaster: Error setting answer from guest', guestId, ':', e)
           }
-        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && (signal.data?.fromCohost || !signal.data?.fromBroadcaster) && coBroadcasterPcRef.current) {
-          // ICE candidate from co-host (not from broadcaster)
+        } else if (signal.type === 'guest-ice-candidate' && signal.data?.candidate && !signal.data?.fromBroadcaster && pc) {
+          // ICE candidate from guest (not from broadcaster)
           try {
-            console.log('🎬 Broadcaster: Received ICE candidate from co-host')
-            if (coBroadcasterPcRef.current.remoteDescription) {
-              await coBroadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
+            console.log('🎬 Broadcaster: Received ICE candidate from guest', guestId)
+            if (pc.remoteDescription) {
+              await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             } else {
-              coBroadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
+              const pending = guestCandidatesRef.current.get(guestId) || []
+              pending.push(new RTCIceCandidate(signal.data.candidate))
+              guestCandidatesRef.current.set(guestId, pending)
+            }
+          } catch (e) {}
+        }
+        // Also handle legacy cohost signals for backward compatibility
+        else if (signal.type === 'cohost-answer' && signal.data?.answer && pc) {
+          try {
+            console.log('🎬 Broadcaster: Received legacy answer from guest', guestId)
+            if (pc.signalingState === 'have-local-offer') {
+              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
+            }
+          } catch (e) {}
+        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && !signal.data?.fromBroadcaster && pc) {
+          try {
+            if (pc.remoteDescription) {
+              await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
             }
           } catch (e) {}
         }
       }
     } catch (error) {}
   }
+  
+  // Legacy alias
+  const pollCoBroadcasterSignals = pollGuestSignals
 
   const addToast = (type: 'success' | 'error' | 'info', message: string, userName?: string, userImage?: string | null) => {
     const id = Date.now().toString()
@@ -739,12 +839,15 @@ export default function BroadcastPage() {
 
   // Enable remote audio on user interaction (for browser autoplay policy)
   const enableRemoteAudio = () => {
-    // Enable co-broadcaster audio for broadcaster
-    if (coBroadcasterVideoRef.current) {
-      coBroadcasterVideoRef.current.muted = false
-      coBroadcasterVideoRef.current.volume = 1.0
-      coBroadcasterVideoRef.current.play().catch(() => {})
-    }
+    // Enable guest audio for broadcaster
+    activeGuests.forEach(guest => {
+      const videoEl = guestVideoRefs.current.get(guest.userId)
+      if (videoEl) {
+        videoEl.muted = false
+        videoEl.volume = 1.0
+        videoEl.play().catch(() => {})
+      }
+    })
     // Enable broadcaster audio for co-host
     if (broadcasterVideoRef.current) {
       broadcasterVideoRef.current.muted = false
@@ -868,11 +971,30 @@ export default function BroadcastPage() {
   }
 
   const cleanup = () => {
+    // Close viewer connections
     peerConnectionsRef.current.forEach(pc => pc.close())
     peerConnectionsRef.current.clear()
     processedViewersRef.current.clear()
     pendingCandidatesRef.current.clear()
+    
+    // Close all guest connections
+    guestPcRefs.current.forEach(pc => pc.close())
+    guestPcRefs.current.clear()
+    guestVideoRefs.current.clear()
+    processedGuestsRef.current.clear()
+    guestCandidatesRef.current.clear()
+    reconnectAttemptsRef.current.clear()
+    
+    // Close broadcaster connection (for co-host)
+    if (broadcasterPcRef.current) {
+      broadcasterPcRef.current.close()
+      broadcasterPcRef.current = null
+    }
+    
+    // Stop local stream
     localStreamRef.current?.getTracks().forEach(t => t.stop())
+    
+    // Update stream status
     fetch(`/api/video-streams/${streamId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -889,17 +1011,25 @@ export default function BroadcastPage() {
   const formatCount = (n: number) => n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
 
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
-  const activeCoBroadcasters = coBroadcasters.filter(cb => cb.status === 'active')
+  
+  // Grid mode when there are active guests
+  const hasActiveGuests = activeGuests.length > 0
+  const isSplitMode = hasActiveGuests // For backward compatibility
 
-  // Split screen mode when co-broadcaster is active (no PK battle)
-  const isSplitMode = !!activeCoBroadcaster
-
-  // For co-host mode, determine total participants for grid
+  // For grid layout: calculate total participants (host + guests)
+  // 1 person: full screen host
+  // 2 people: side by side
+  // 3-4 people: 2x2 grid
+  // 5 people: special layout (host + 4 guests)
   const totalParticipants = isCohost 
     ? 2 // Co-host sees: broadcaster + themselves
-    : isSplitMode 
-      ? 1 + activeCoBroadcasters.length // Broadcaster sees: themselves + co-broadcasters
+    : hasActiveGuests 
+      ? 1 + activeGuests.length // Broadcaster sees: themselves + all guests
       : 1
+  
+  // Legacy alias for backward compatibility
+  const activeCoBroadcaster = activeGuests[0] || null
+  const activeCoBroadcasters = activeGuests
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
@@ -936,17 +1066,19 @@ export default function BroadcastPage() {
               </div>
             </div>
 
-            {/* 2x2 Grid Videos - TikTok style square tiles */}
+            {/* Dynamic Grid Videos - TikTok style layout */}
             <div className="flex-1 pt-10 pb-28 px-1">
               <div className={`h-full grid gap-1 ${
                 totalParticipants === 2 ? 'grid-cols-2 grid-rows-1' :
                 totalParticipants === 3 ? 'grid-cols-2 grid-rows-2' :
+                totalParticipants === 4 ? 'grid-cols-2 grid-rows-2' :
+                totalParticipants === 5 ? 'grid-cols-3 grid-rows-2' :
                 'grid-cols-2 grid-rows-2'
               }`}>
                 {isCohost ? (
                   <>
-                    {/* Co-host view: Broadcaster video (top-left) */}
-                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                    {/* Co-host view: Broadcaster video */}
+                    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${totalParticipants === 5 ? 'col-span-1' : ''}`}>
                       <video
                         ref={broadcasterVideoRef}
                         autoPlay
@@ -963,8 +1095,8 @@ export default function BroadcastPage() {
                       </div>
                     </div>
 
-                    {/* Co-host view: My video (top-right) */}
-                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                    {/* Co-host view: My video */}
+                    <div className="relative bg-gray-900 rounded-lg overflow-hidden">
                       <video
                         ref={localVideoRef}
                         autoPlay
@@ -990,8 +1122,8 @@ export default function BroadcastPage() {
                   </>
                 ) : (
                   <>
-                    {/* Broadcaster view: My video (top-left) */}
-                    <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
+                    {/* Broadcaster view: My video (always first) */}
+                    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${totalParticipants === 5 ? 'col-span-1' : ''}`}>
                       <video
                         ref={localVideoRef}
                         autoPlay
@@ -1017,61 +1149,74 @@ export default function BroadcastPage() {
                       </div>
                     </div>
 
-                    {/* Broadcaster view: Co-broadcaster video (top-right) */}
-                    {activeCoBroadcaster && (
-                      <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                        <video
-                          ref={coBroadcasterVideoRef}
-                          autoPlay
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-1 left-1 right-1 z-10">
-                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                            {activeCoBroadcaster.user.image ? (
-                              <Image src={activeCoBroadcaster.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                                <span className="text-white text-[8px] font-bold">{activeCoBroadcaster.user.name[0]}</span>
-                              </div>
-                            )}
-                            <p className="text-white text-[10px] font-medium truncate flex-1">{activeCoBroadcaster.user.name}</p>
-                            <button 
-                              onClick={() => handleRemoveCoBroadcaster(activeCoBroadcaster.userId)}
-                              className="p-1 bg-red-500/30 rounded-full"
-                            >
-                              <PhoneOff className="w-3 h-3 text-red-400" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Additional co-broadcasters (for 3-4 person grid) */}
-                    {activeCoBroadcasters.slice(1, 3).map((cb, index) => (
-                      <div key={cb.id} className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                        <div className="w-full h-full flex items-center justify-center">
-                          {cb.user.image ? (
-                            <Image src={cb.user.image} alt="" width={80} height={80} className="w-20 h-20 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                              <span className="text-white text-2xl font-bold">{cb.user.name[0]}</span>
+                    {/* All active guests with dynamic video refs */}
+                    {activeGuests.slice(0, MAX_GUESTS).map((guest, index) => {
+                      const connectionState = guestConnectionStates.get(guest.userId)
+                      const isConnecting = connectionState === 'connecting' || connectionState === 'new'
+                      const isDisconnected = connectionState === 'disconnected' || connectionState === 'failed'
+                      
+                      return (
+                        <div key={guest.id} className="relative bg-gray-900 rounded-lg overflow-hidden">
+                          {/* Video element with dynamic ref */}
+                          <video
+                            ref={(el) => {
+                              if (el) {
+                                guestVideoRefs.current.set(guest.userId, el)
+                              }
+                            }}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* Connection status overlay */}
+                          {(isConnecting || isDisconnected) && (
+                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center">
+                              {guest.user.image ? (
+                                <Image src={guest.user.image} alt="" width={60} height={60} className="w-15 h-15 rounded-full object-cover mb-2" />
+                              ) : (
+                                <div className="w-15 h-15 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-2">
+                                  <span className="text-white text-xl font-bold">{guest.user.name[0]}</span>
+                                </div>
+                              )}
+                              <p className="text-white text-xs">
+                                {isDisconnected 
+                                  ? (language === 'tr' ? 'Yeniden bağlanıyor...' : 'Reconnecting...')
+                                  : (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...')
+                                }
+                              </p>
+                              <div className="mt-2 w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             </div>
                           )}
-                        </div>
-                        <div className="absolute bottom-1 left-1 right-1 z-10">
-                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                            <p className="text-white text-[10px] font-medium truncate flex-1">{cb.user.name}</p>
-                            <button 
-                              onClick={() => handleRemoveCoBroadcaster(cb.userId)}
-                              className="p-1 bg-red-500/30 rounded-full"
-                            >
-                              <PhoneOff className="w-3 h-3 text-red-400" />
-                            </button>
+                          
+                          {/* Guest info bar */}
+                          <div className="absolute bottom-1 left-1 right-1 z-10">
+                            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
+                              {guest.user.image ? (
+                                <Image src={guest.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                  <span className="text-white text-[8px] font-bold">{guest.user.name[0]}</span>
+                                </div>
+                              )}
+                              <p className="text-white text-[10px] font-medium truncate flex-1">{guest.user.name}</p>
+                              {/* Connection status indicator */}
+                              <span className={`text-[8px] ${
+                                connectionState === 'connected' ? 'text-green-400' :
+                                isDisconnected ? 'text-red-400' :
+                                'text-yellow-400'
+                              }`}>●</span>
+                              <button 
+                                onClick={() => handleRemoveCoBroadcaster(guest.userId)}
+                                className="p-1 bg-red-500/30 rounded-full hover:bg-red-500/50 transition-colors"
+                              >
+                                <PhoneOff className="w-3 h-3 text-red-400" />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </div>
@@ -1116,8 +1261,7 @@ export default function BroadcastPage() {
         </>
       )}
 
-      {/* Hidden videos for non-grid mode */}
-      {!isSplitMode && !isCohost && <video ref={coBroadcasterVideoRef} className="hidden" />}
+      {/* Hidden video for co-host mode (to receive broadcaster stream) */}
       {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
 
       {/* Toast Notifications */}
