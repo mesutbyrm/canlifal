@@ -88,17 +88,56 @@ export default function StreamSetupPage() {
   const streamRef = useRef<MediaStream | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
+  const [tellerStatus, setTellerStatus] = useState<'loading' | 'approved' | 'pending' | 'rejected' | 'not_applied' | 'restricted'>('loading')
+
+  // Check if user is an approved live fortune teller
+  useEffect(() => {
+    const checkTellerStatus = async () => {
+      if (!session?.user) return
+      
+      try {
+        const res = await fetch('/api/fortune-tellers/my-profile')
+        if (res.status === 404) {
+          // No teller profile, redirect to apply page
+          setTellerStatus('not_applied')
+          return
+        }
+        if (res.ok) {
+          const teller = await res.json()
+          if (teller.isBanned || teller.isFrozen || !teller.isActive) {
+            setTellerStatus('restricted')
+          } else if (teller.applicationStatus === 'approved') {
+            setTellerStatus('approved')
+          } else if (teller.applicationStatus === 'pending') {
+            setTellerStatus('pending')
+          } else {
+            setTellerStatus('rejected')
+          }
+        }
+      } catch (error) {
+        console.error('Error checking teller status:', error)
+        setTellerStatus('not_applied')
+      }
+    }
+
+    if (session?.user) {
+      checkTellerStatus()
+    }
+  }, [session])
 
   useEffect(() => {
     if (!session?.user) {
       router.push(`/${language}/login`)
       return
     }
-    startCamera()
+    // Only start camera if teller is approved
+    if (tellerStatus === 'approved') {
+      startCamera()
+    }
     return () => {
       stopCamera()
     }
-  }, [session])
+  }, [session, tellerStatus])
 
   useEffect(() => {
     if (streamRef.current && videoRef.current && isVideoReady) {
@@ -327,6 +366,102 @@ export default function StreamSetupPage() {
       />
     </div>
   )
+
+  // Show loading state while checking teller status
+  if (tellerStatus === 'loading') {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0118] to-[#1a0a2e] z-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-white/60">{language === 'tr' ? 'Kontrol ediliyor...' : 'Checking...'}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show message for non-approved users
+  if (tellerStatus !== 'approved') {
+    const getMessage = () => {
+      switch (tellerStatus) {
+        case 'not_applied':
+          return {
+            title: language === 'tr' ? 'Canlı Falcı Ol' : 'Become a Live Fortune Teller',
+            message: language === 'tr' 
+              ? 'Canlı yayın açabilmek için önce canlı falcı başvurusu yapmanız gerekmektedir.'
+              : 'You need to apply as a live fortune teller before you can start streaming.',
+            buttonText: language === 'tr' ? 'Başvuru Yap' : 'Apply Now',
+            buttonLink: `/${language}/live-tellers/apply`,
+            icon: '✨'
+          }
+        case 'pending':
+          return {
+            title: language === 'tr' ? 'Başvurunuz İnceleniyor' : 'Application Under Review',
+            message: language === 'tr' 
+              ? 'Canlı falcı başvurunuz henüz onaylanmadı. Onaylandıktan sonra yayın açabilirsiniz.'
+              : 'Your live fortune teller application is still pending. You can start streaming after approval.',
+            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            buttonLink: `/${language}`,
+            icon: '⏳'
+          }
+        case 'rejected':
+          return {
+            title: language === 'tr' ? 'Başvurunuz Reddedildi' : 'Application Rejected',
+            message: language === 'tr' 
+              ? 'Canlı falcı başvurunuz reddedildi. Yeni bir başvuru yapabilirsiniz.'
+              : 'Your live fortune teller application was rejected. You can submit a new application.',
+            buttonText: language === 'tr' ? 'Tekrar Başvur' : 'Apply Again',
+            buttonLink: `/${language}/live-tellers/apply`,
+            icon: '❌'
+          }
+        case 'restricted':
+          return {
+            title: language === 'tr' ? 'Hesabınız Kısıtlandı' : 'Account Restricted',
+            message: language === 'tr' 
+              ? 'Canlı falcı hesabınız şu anda kısıtlanmış durumda. Destek ile iletişime geçin.'
+              : 'Your live fortune teller account is currently restricted. Please contact support.',
+            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            buttonLink: `/${language}`,
+            icon: '🚫'
+          }
+        default:
+          return {
+            title: language === 'tr' ? 'Hata' : 'Error',
+            message: language === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.',
+            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            buttonLink: `/${language}`,
+            icon: '⚠️'
+          }
+      }
+    }
+
+    const msg = getMessage()
+
+    return (
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0118] to-[#1a0a2e] z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-[#1a0a2e]/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full text-center border border-purple-500/20"
+        >
+          <div className="text-6xl mb-6">{msg.icon}</div>
+          <h2 className="text-2xl font-bold text-white mb-4">{msg.title}</h2>
+          <p className="text-white/70 mb-8 leading-relaxed">{msg.message}</p>
+          <button
+            onClick={() => router.push(msg.buttonLink)}
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+          >
+            {msg.buttonText}
+          </button>
+          <button
+            onClick={() => router.back()}
+            className="mt-4 text-white/50 hover:text-white/80 transition-colors"
+          >
+            {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">

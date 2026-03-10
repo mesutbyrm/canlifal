@@ -56,6 +56,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if user is an approved live fortune teller
+    const teller = await prisma.liveFortuneTeller.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        id: true,
+        applicationStatus: true,
+        isActive: true,
+        isBanned: true,
+        isFrozen: true
+      }
+    })
+
+    // If no teller profile or not approved, deny access
+    if (!teller) {
+      return NextResponse.json({ 
+        error: 'NOT_A_TELLER',
+        message: 'You need to apply as a live fortune teller first'
+      }, { status: 403 })
+    }
+
+    if (teller.applicationStatus !== 'approved') {
+      return NextResponse.json({ 
+        error: 'NOT_APPROVED',
+        message: 'Your live fortune teller application is still pending or was rejected',
+        status: teller.applicationStatus
+      }, { status: 403 })
+    }
+
+    if (!teller.isActive || teller.isBanned || teller.isFrozen) {
+      return NextResponse.json({ 
+        error: 'ACCOUNT_RESTRICTED',
+        message: 'Your live fortune teller account is currently restricted'
+      }, { status: 403 })
+    }
+
     const { title, description, category } = await request.json()
 
     const stream = await prisma.videoStream.create({
