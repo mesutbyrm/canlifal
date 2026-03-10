@@ -11,6 +11,16 @@ export async function GET() {
 
     // 1. Online users (active in last 5 minutes)
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    
+    // Get total count of online users
+    const onlineCount = await prisma.user.count({
+      where: {
+        lastActiveAt: {
+          gte: fiveMinutesAgo
+        }
+      }
+    })
+    
     const onlineUsers = await prisma.user.findMany({
       where: {
         lastActiveAt: {
@@ -123,6 +133,7 @@ export async function GET() {
 
     return NextResponse.json({
       onlineUsers,
+      onlineCount,
       recentPurchasers: recentPurchasersWithInfo,
       bigGifts
     })
@@ -130,6 +141,7 @@ export async function GET() {
     console.error('Homepage ticker error:', error)
     return NextResponse.json({
       onlineUsers: [],
+      onlineCount: 0,
       recentPurchasers: [],
       bigGifts: []
     })

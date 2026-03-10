@@ -45,6 +45,11 @@ interface OnlineUser {
   username: string | null
 }
 
+interface OnlineData {
+  count: number
+  users: OnlineUser[]
+}
+
 const FORTUNE_CARDS = [
   {
     id: 'coffee',
@@ -153,7 +158,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'fortunes' | 'live'>('fortunes')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+  const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
 
   useEffect(() => {
     // Fetch live tellers
@@ -184,7 +189,7 @@ export default function HomePage() {
         const res = await fetch('/api/users/online')
         if (res.ok) {
           const data = await res.json()
-          setOnlineUsers(data.users || [])
+          setOnlineData({ count: data.count || 0, users: data.users || [] })
         }
       } catch (e) {}
     }
@@ -217,33 +222,41 @@ export default function HomePage() {
       </div>
 
       {/* Last Online Users - below ticker */}
-      {onlineUsers.length > 0 && (
-        <div className="fixed top-[100px] left-0 right-0 z-30 bg-[#0a0118]/95 border-b border-purple-500/10 py-2 px-4">
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            <span className="text-[10px] text-purple-400 flex-shrink-0 flex items-center gap-1">
-              <Circle className="w-2 h-2 text-green-400 fill-green-400" />
-              {language === 'tr' ? 'Online:' : 'Online:'}
-            </span>
-            {onlineUsers.slice(0, 10).map((user) => (
+      {onlineData.users.length > 0 && (
+        <div className="fixed top-[100px] left-0 right-0 z-30 bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20 py-2.5 px-4">
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+            {/* Online count badge */}
+            <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-500/20 rounded-full px-3 py-1 border border-green-500/30">
+              <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
+              <span className="text-sm font-bold text-green-300">{onlineData.count}</span>
+              <span className="text-xs text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
+            </div>
+            
+            {/* Separator */}
+            <div className="w-px h-5 bg-purple-500/30 flex-shrink-0" />
+            
+            {/* User list */}
+            {onlineData.users.slice(0, 15).map((user) => (
               <Link
                 key={user.id}
                 href={`/${language}/profile/${user.id}`}
-                className="flex-shrink-0 flex items-center gap-1 bg-purple-500/10 rounded-full px-2 py-0.5 hover:bg-purple-500/20 transition-colors"
+                className="flex-shrink-0 flex items-center gap-1.5 bg-purple-500/15 rounded-full px-2.5 py-1 hover:bg-purple-500/25 transition-colors border border-purple-500/20"
               >
+                <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
                 {user.image ? (
                   <Image
                     src={user.image}
                     alt={user.name || ''}
-                    width={16}
-                    height={16}
-                    className="w-4 h-4 rounded-full object-cover"
+                    width={18}
+                    height={18}
+                    className="w-[18px] h-[18px] rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-4 h-4 rounded-full bg-purple-500/50 flex items-center justify-center">
-                    <span className="text-[8px] text-white">{user.name?.[0]}</span>
+                  <div className="w-[18px] h-[18px] rounded-full bg-purple-500/50 flex items-center justify-center">
+                    <span className="text-[9px] text-white font-medium">{user.name?.[0]}</span>
                   </div>
                 )}
-                <span className="text-[10px] text-white/80">{user.username || user.name?.split(' ')[0]}</span>
+                <span className="text-xs text-white font-medium">{user.username || user.name?.split(' ')[0]}</span>
               </Link>
             ))}
           </div>

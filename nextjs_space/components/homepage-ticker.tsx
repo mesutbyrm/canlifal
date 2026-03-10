@@ -53,6 +53,7 @@ interface BigGift {
 
 interface TickerData {
   onlineUsers: OnlineUser[]
+  onlineCount: number
   recentPurchasers: RecentPurchaser[]
   bigGifts: BigGift[]
 }
@@ -61,6 +62,7 @@ export default function HomepageTicker() {
   const { language } = useLanguage()
   const [data, setData] = useState<TickerData>({
     onlineUsers: [],
+    onlineCount: 0,
     recentPurchasers: [],
     bigGifts: []
   })
@@ -120,13 +122,26 @@ export default function HomepageTicker() {
   // Build ticker items
   const tickerItems: JSX.Element[] = []
 
-  // Add online users
+  // Add online count as first item - prominent scrolling count
+  if (data.onlineCount > 0) {
+    tickerItems.push(
+      <div key="online-count" className="inline-flex items-center gap-2 px-4 py-1.5 mx-2 whitespace-nowrap bg-gradient-to-r from-green-600/30 to-emerald-600/30 rounded-full border border-green-500/40">
+        <Circle className="w-3 h-3 text-green-400 fill-green-400 animate-pulse" />
+        <span className="text-green-300 text-sm font-bold">
+          {data.onlineCount} {language === 'tr' ? 'kişi sitede' : 'people online'}
+        </span>
+        <span className="text-green-400">👥</span>
+      </div>
+    )
+  }
+
+  // Add online users with their names
   data.onlineUsers.forEach((user, index) => {
     tickerItems.push(
       <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
         <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
         <span className="text-green-400 text-xs font-medium">
-          {language === 'tr' ? 'Online' : 'Online'}
+          {language === 'tr' ? 'Giriş yaptı' : 'Logged in'}
         </span>
         <div className="flex items-center gap-1.5">
           {user.image ? (
