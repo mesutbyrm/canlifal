@@ -1191,12 +1191,7 @@ export default function BroadcastPage() {
               <span className="text-white font-bold">LIVE</span>
             </div>
             <span className="text-white/60 text-xs">{formatDuration(duration)}</span>
-            {streamCategory && (
-              <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded`}>
-                <span className="text-[10px]">{streamCategory.icon}</span>
-                <span className="text-white font-medium text-[9px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
-              </div>
-            )}
+
             {/* Guest count badge */}
             {activeGuests.length > 0 && (
               <div className="flex items-center gap-0.5 bg-purple-500/80 px-1.5 py-0.5 rounded">
@@ -1304,71 +1299,74 @@ export default function BroadcastPage() {
 
       {/* Top bar - Broadcaster Profile */}
       {!isCohost && (
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            {/* Profile */}
-            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
-              {session?.user?.image ? (
-                <Image src={session.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="text-white text-xs font-medium">{session?.user?.name}</span>
-                <div className="flex items-center gap-1.5 text-[10px]">
-                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    <span className="text-white font-bold">LIVE</span>
+        <div className="absolute top-4 left-4 right-4 z-10">
+          {/* Top Row - Profile, Stats, End Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Profile */}
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
+                {session?.user?.image ? (
+                  <Image src={session.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{session?.user?.name?.[0]?.toUpperCase()}</span>
                   </div>
-                  <span className="text-white/60">{formatDuration(duration)}</span>
-                  {/* Stream Category Badge */}
-                  {streamCategory && (
-                    <div className={`flex items-center gap-0.5 bg-gradient-to-r ${streamCategory.color} px-1.5 py-0.5 rounded ml-1`}>
-                      <span className="text-sm">{streamCategory.icon}</span>
-                      <span className="text-white font-medium text-[10px]">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-white text-xs font-medium">{session?.user?.name}</span>
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      <span className="text-white font-bold">LIVE</span>
                     </div>
-                  )}
+                    <span className="text-white/60">{formatDuration(duration)}</span>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Stats */}
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                  <Users className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs">{viewerCount}</span>
+                </button>
+                <button 
+                  onClick={() => setShowLiveBroadcasters(!showLiveBroadcasters)} 
+                  className="flex items-center gap-1 bg-gradient-to-r from-pink-500/60 to-purple-500/60 px-2 py-1 rounded-full"
+                >
+                  <Radio className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs">{language === 'tr' ? 'Davet' : 'Invite'}</span>
+                </button>
+                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
+                  <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
+                  <span className="text-white text-xs">{formatCount(likeCount)}</span>
+                </div>
+                {totalGiftCredits > 0 && (
+                  <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
+                    <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                    <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
+                  </div>
+                )}
               </div>
             </div>
             
-            {/* Stats */}
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                <Users className="w-3.5 h-3.5 text-white" />
-                <span className="text-white text-xs">{viewerCount}</span>
-              </button>
-              {/* Live Broadcasters button */}
-              <button 
-                onClick={() => setShowLiveBroadcasters(!showLiveBroadcasters)} 
-                className="flex items-center gap-1 bg-gradient-to-r from-pink-500/60 to-purple-500/60 px-2 py-1 rounded-full"
-              >
-                <Radio className="w-3.5 h-3.5 text-white" />
-                <span className="text-white text-xs">{language === 'tr' ? 'Davet' : 'Invite'}</span>
-              </button>
-              <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
-                <span className="text-white text-xs">{formatCount(likeCount)}</span>
-              </div>
-              {totalGiftCredits > 0 && (
-                <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
-                  <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                  <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
-                </div>
-              )}
-            </div>
+            {/* End Stream Button */}
+            <button 
+              onClick={() => setShowEndConfirm(true)} 
+              className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
+            >
+              <X className="w-4 h-4" /> 
+              {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
+            </button>
           </div>
           
-          {/* End Stream Button */}
-          <button 
-            onClick={() => setShowEndConfirm(true)} 
-            className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
-          >
-            <X className="w-4 h-4" /> 
-            {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
-          </button>
+          {/* Stream Category Badge - Below Profile */}
+          {streamCategory && (
+            <div className={`mt-2 flex items-center gap-1.5 bg-gradient-to-r ${streamCategory.color} px-3 py-1.5 rounded-full w-fit shadow-lg`}>
+              <span className="text-base">{streamCategory.icon}</span>
+              <span className="text-white font-semibold text-xs">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+            </div>
+          )}
         </div>
       )}
 
