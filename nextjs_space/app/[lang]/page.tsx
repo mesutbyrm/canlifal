@@ -10,6 +10,7 @@ import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, 
 import { useRouter } from 'next/navigation'
 import HomepageTicker from '@/components/homepage-ticker'
 import LiveTicker from '@/components/live-ticker'
+import BanaOzelSection from '@/components/bana-ozel-section'
 import { useSiteTheme } from '@/lib/theme-context'
 
 interface LiveTeller {
@@ -551,6 +552,9 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+
+          {/* BANA ÖZEL Section - Only for logged-in users */}
+          {session?.user && <BanaOzelSection />}
         </div>
       </div>
     )
@@ -688,6 +692,9 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+
+          {/* BANA ÖZEL Section - Only for logged-in users */}
+          {session?.user && <BanaOzelSection />}
         </div>
       </div>
     )
@@ -998,6 +1005,13 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* BANA ÖZEL Section - Only for logged-in users */}
+      {session?.user && (
+        <div className="px-4 pb-4">
+          <BanaOzelSection />
         </div>
       )}
       </div>

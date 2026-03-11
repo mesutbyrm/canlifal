@@ -444,6 +444,48 @@ async function main() {
   }
   console.log('Achievements seeded')
 
+  // Seed Bana Özel Items
+  const banaOzelItems = [
+    { slug: 'gunluk-tarot', nameTr: 'Günlük Tarot Kartı', nameEn: 'Daily Tarot Card', icon: '🃏', jetonCost: 5, category: 'tarot', sortOrder: 1 },
+    { slug: 'gunluk-burc', nameTr: 'Günlük Burç Yorumu', nameEn: 'Daily Horoscope', icon: '♈', jetonCost: 3, category: 'astrology', sortOrder: 2 },
+    { slug: 'yildizname', nameTr: 'Yıldızname Yorumu', nameEn: 'Star Chart Reading', icon: '🌟', jetonCost: 7, category: 'astrology', sortOrder: 3 },
+    { slug: 'ask-uyumu', nameTr: 'Aşk Uyumu Analizi', nameEn: 'Love Compatibility', icon: '❤️', jetonCost: 10, category: 'fortune', sortOrder: 4 },
+    { slug: 'para-kariyer', nameTr: 'Para ve Kariyer Falı', nameEn: 'Money & Career Reading', icon: '💰', jetonCost: 6, category: 'fortune', sortOrder: 5 },
+    { slug: 'sansli-sayilar', nameTr: 'Günün Şanslı Sayıları', nameEn: 'Lucky Numbers', icon: '🍀', jetonCost: 2, category: 'fortune', sortOrder: 6 },
+    { slug: 'evren-mesaj', nameTr: 'Evrenin Sana Mesajı', nameEn: 'Universe Message', icon: '✨', jetonCost: 4, category: 'spiritual', sortOrder: 7 },
+    { slug: 'gunluk-kehanet', nameTr: 'Günlük Kehanet', nameEn: 'Daily Prophecy', icon: '🔮', jetonCost: 8, category: 'fortune', sortOrder: 8 },
+    { slug: '3-kart-tarot', nameTr: '3 Kart Tarot Açılımı', nameEn: '3 Card Tarot Spread', icon: '🎴', jetonCost: 7, category: 'tarot', sortOrder: 9 },
+    { slug: '7-kart-tarot', nameTr: '7 Kart Tarot Açılımı', nameEn: '7 Card Tarot Spread', icon: '🎭', jetonCost: 12, category: 'tarot', sortOrder: 10 },
+    { slug: 'kahve-fali', nameTr: 'Kahve Falı Yorumu', nameEn: 'Coffee Reading', icon: '☕', jetonCost: 5, category: 'fortune', sortOrder: 11 },
+    { slug: 'ruya-yorumu', nameTr: 'Rüya Yorumu', nameEn: 'Dream Interpretation', icon: '💭', jetonCost: 6, category: 'fortune', sortOrder: 12 },
+    { slug: 'nazar-analizi', nameTr: 'Nazar Analizi', nameEn: 'Evil Eye Analysis', icon: '🧿', jetonCost: 4, category: 'spiritual', sortOrder: 13 },
+    { slug: 'ask-fali', nameTr: 'Aşk Falı', nameEn: 'Love Fortune', icon: '💕', jetonCost: 8, category: 'fortune', sortOrder: 14 },
+    { slug: 'gelecek-kehaneti', nameTr: 'Gelecek Kehaneti', nameEn: 'Future Prophecy', icon: '🌌', jetonCost: 9, category: 'fortune', sortOrder: 15 },
+    { slug: 'haftalik-burc', nameTr: 'Haftalık Burç Yorumu', nameEn: 'Weekly Horoscope', icon: '📅', jetonCost: 5, category: 'astrology', sortOrder: 16 },
+    { slug: 'ay-burcu', nameTr: 'Ay Burcu Yorumu', nameEn: 'Moon Sign Reading', icon: '🌙', jetonCost: 4, category: 'astrology', sortOrder: 17 },
+    { slug: 'yukselen-burc', nameTr: 'Yükselen Burç Analizi', nameEn: 'Rising Sign Analysis', icon: '⬆️', jetonCost: 6, category: 'astrology', sortOrder: 18 },
+    { slug: 'enerji-analizi', nameTr: 'Günün Enerji Analizi', nameEn: 'Daily Energy Analysis', icon: '⚡', jetonCost: 3, category: 'spiritual', sortOrder: 19 },
+    { slug: 'spiritüel-rehber', nameTr: 'Spiritüel Rehber Mesajı', nameEn: 'Spiritual Guide Message', icon: '👁️', jetonCost: 4, category: 'spiritual', sortOrder: 20 },
+    { slug: 'gizli-mesaj', nameTr: 'Evrenin Gizli Mesajı', nameEn: 'Hidden Universe Message', icon: '🌀', jetonCost: 6, category: 'spiritual', sortOrder: 21 },
+    { slug: 'iliski-gelecegi', nameTr: 'İlişki Geleceği Analizi', nameEn: 'Relationship Future', icon: '💑', jetonCost: 10, category: 'fortune', sortOrder: 22 },
+    { slug: 'ruh-esi', nameTr: 'Ruh Eşi Analizi', nameEn: 'Soulmate Analysis', icon: '🫂', jetonCost: 12, category: 'fortune', sortOrder: 23 },
+    { slug: 'gizli-duygular', nameTr: 'Gizli Duygular Falı', nameEn: 'Hidden Feelings Reading', icon: '🎭', jetonCost: 8, category: 'fortune', sortOrder: 24 },
+    { slug: 'kader-yorumu', nameTr: 'Kader Yorumu', nameEn: 'Destiny Reading', icon: '🌠', jetonCost: 7, category: 'fortune', sortOrder: 25 },
+    { slug: 'sans-kapisi', nameTr: 'Şans Kapısı Falı', nameEn: 'Gate of Fortune', icon: '🚪', jetonCost: 5, category: 'fortune', sortOrder: 26 },
+    { slug: 'astro-tavsiye', nameTr: 'Günün Astro Tavsiyesi', nameEn: 'Daily Astro Advice', icon: '💫', jetonCost: 3, category: 'astrology', sortOrder: 27 },
+    { slug: 'astro-enerji', nameTr: 'Astrolojik Enerji Yorumu', nameEn: 'Astrological Energy', icon: '🪐', jetonCost: 4, category: 'astrology', sortOrder: 28 },
+    { slug: 'karmik-bag', nameTr: 'Karmik Bağ Analizi', nameEn: 'Karmic Bond Analysis', icon: '♾️', jetonCost: 9, category: 'spiritual', sortOrder: 29 },
+    { slug: 'evren-uyari', nameTr: 'Evrenin Bugünkü Uyarısı', nameEn: "Today's Universe Warning", icon: '⚠️', jetonCost: 4, category: 'spiritual', sortOrder: 30 },
+  ]
+  for (const item of banaOzelItems) {
+    await prisma.banaOzelItem.upsert({
+      where: { slug: item.slug },
+      update: { jetonCost: item.jetonCost, icon: item.icon, sortOrder: item.sortOrder },
+      create: item,
+    })
+  }
+  console.log('Bana Özel items seeded')
+
   console.log('Seed completed successfully!')
 }
 

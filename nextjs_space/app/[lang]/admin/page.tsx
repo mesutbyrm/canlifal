@@ -410,6 +410,14 @@ export default function AdminPage() {
                     {language === 'tr' ? 'Tema Yönetimi' : 'Theme Management'}
                   </DropdownMenu.Item>
                 </Link>
+                <Link href={`/${language}/admin/bana-ozel`}>
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {language === 'tr' ? 'Bana Özel Yönetimi' : 'Personalized Content'}
+                  </DropdownMenu.Item>
+                </Link>
                 <Link href={`/${language}/admin/settings`}>
                   <DropdownMenu.Item 
                     className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"

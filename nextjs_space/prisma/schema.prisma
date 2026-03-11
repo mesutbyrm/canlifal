@@ -39,6 +39,8 @@ model User {
   messagePrivacy        String               @default("everyone") // everyone, followers, nobody
   // Theme preference
   theme                 String               @default("mystical") // mystical, facebook
+  // Jeton (token) balance for Bana Özel
+  jetonBalance          Int                  @default(50)
   // Statistics
   totalTimeSpentMinutes Int                  @default(0)
   lastActiveAt          DateTime?
@@ -986,6 +988,89 @@ model Achievement {
   createdAt    DateTime @default(now())
 
   @@map("achievements")
+}
+
+// Bana Özel - Personalized Fortune Content Items
+model BanaOzelItem {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nameTr       String
+  nameEn       String
+  descTr       String?
+  descEn       String?
+  icon         String   // emoji icon
+  jetonCost    Int      @default(5)
+  category     String   @default("fortune") // fortune, tarot, astrology, spiritual
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  contentPool  String?  @db.Text // JSON array of possible content/prompts
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("bana_ozel_items")
+}
+
+// User jeton (token) balance and transactions
+model JetonTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int      // positive for earned, negative for spent
+  type        String   // spend, daily_bonus, streak_bonus, task, purchase, welcome
+  description String?
+  itemSlug    String?  // related BanaOzelItem slug
+  balanceBefore Int
+  balanceAfter  Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("jeton_transactions")
+}
+
+// Daily fortune streak tracking
+model UserFortuneStreak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastFortuneDate DateTime?
+  totalFortunes Int      @default(0)
+
+  @@index([userId])
+  @@map("user_fortune_streaks")
+}
+
+// Daily task completion tracking
+model DailyTask {
+  id          String   @id @default(cuid())
+  userId      String
+  taskType    String   // login, open_fortune, share, watch_stream, profile_complete
+  completedAt DateTime @default(now())
+  jetonEarned Int      @default(0)
+  date        DateTime @db.Date
+
+  @@unique([userId, taskType, date])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_tasks")
+}
+
+// Bana Özel content history (what user opened)
+model BanaOzelHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  itemSlug   String
+  content    String   @db.Text // Generated content
+  jetonSpent Int
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemSlug])
+  @@index([createdAt])
+  @@map("bana_ozel_history")
 }
 
 // Profile views tracking
