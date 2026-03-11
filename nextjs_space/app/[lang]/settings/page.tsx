@@ -60,7 +60,7 @@ export default function SettingsPage() {
   const { data: session, status } = useSession() || {}
   const router = useRouter()
   const { language } = useLanguage()
-  const { theme, setTheme } = useSiteTheme()
+  const { theme, setTheme, enabledThemes } = useSiteTheme()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -465,100 +465,108 @@ export default function SettingsPage() {
                 {language === 'tr' ? 'Tercih ettiğiniz temayı seçin' : 'Choose your preferred theme'}
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setTheme('mystical')}
-                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
-                    theme === 'mystical'
-                      ? 'bg-purple-600/30 border-purple-500 text-white ring-2 ring-purple-400'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-900 to-purple-950 border border-gold-500/50 flex items-center justify-center">
-                    <Wand2 className="w-6 h-6 text-gold-500" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-sm">{language === 'tr' ? 'Mistik' : 'Mystical'}</p>
-                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mor & Altın' : 'Purple & Gold'}</p>
-                  </div>
-                  {theme === 'mystical' && (
-                    <div className="absolute top-2 right-2">
-                      <Check className="w-4 h-4 text-green-400" />
+                {enabledThemes.includes('mystical') && (
+                  <button
+                    type="button"
+                    onClick={() => setTheme('mystical')}
+                    className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                      theme === 'mystical'
+                        ? 'bg-purple-600/30 border-purple-500 text-white ring-2 ring-purple-400'
+                        : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-900 to-purple-950 border border-gold-500/50 flex items-center justify-center">
+                      <Wand2 className="w-6 h-6 text-gold-500" />
                     </div>
-                  )}
-                </button>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">{language === 'tr' ? 'Mistik' : 'Mystical'}</p>
+                      <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mor & Altın' : 'Purple & Gold'}</p>
+                    </div>
+                    {theme === 'mystical' && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setTheme('cosmic')}
-                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
-                    theme === 'cosmic'
-                      ? 'bg-blue-600/30 border-blue-400 text-white ring-2 ring-blue-400'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#0a1628] to-[#1e3a5f] border border-blue-400/50 flex items-center justify-center relative overflow-hidden">
-                    <Sparkles className="w-6 h-6 text-blue-400" />
-                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/60"></div>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-sm">Cosmic</p>
-                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Uzay Mavisi' : 'Space Blue'}</p>
-                  </div>
-                  {theme === 'cosmic' && (
-                    <div className="absolute top-2 right-2">
-                      <Check className="w-4 h-4 text-green-400" />
+                {enabledThemes.includes('cosmic') && (
+                  <button
+                    type="button"
+                    onClick={() => setTheme('cosmic')}
+                    className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                      theme === 'cosmic'
+                        ? 'bg-blue-600/30 border-blue-400 text-white ring-2 ring-blue-400'
+                        : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#0a1628] to-[#1e3a5f] border border-blue-400/50 flex items-center justify-center relative overflow-hidden">
+                      <Sparkles className="w-6 h-6 text-blue-400" />
+                      <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/60"></div>
                     </div>
-                  )}
-                </button>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">Cosmic</p>
+                      <p className="text-[10px] opacity-70">{language === 'tr' ? 'Uzay Mavisi' : 'Space Blue'}</p>
+                    </div>
+                    {theme === 'cosmic' && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setTheme('falci')}
-                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
-                    theme === 'falci'
-                      ? 'bg-indigo-600/30 border-indigo-400 text-white ring-2 ring-indigo-400'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1a0a2e] to-[#2d1b47] border border-indigo-400/50 flex items-center justify-center relative overflow-hidden">
-                    <Star className="w-6 h-6 text-indigo-400" />
-                    <div className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-white/80"></div>
-                    <div className="absolute bottom-1 left-1 w-0.5 h-0.5 rounded-full bg-indigo-300/60"></div>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-sm">Falcı</p>
-                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Premium' : 'Premium'}</p>
-                  </div>
-                  {theme === 'falci' && (
-                    <div className="absolute top-2 right-2">
-                      <Check className="w-4 h-4 text-green-400" />
+                {enabledThemes.includes('falci') && (
+                  <button
+                    type="button"
+                    onClick={() => setTheme('falci')}
+                    className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                      theme === 'falci'
+                        ? 'bg-indigo-600/30 border-indigo-400 text-white ring-2 ring-indigo-400'
+                        : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1a0a2e] to-[#2d1b47] border border-indigo-400/50 flex items-center justify-center relative overflow-hidden">
+                      <Star className="w-6 h-6 text-indigo-400" />
+                      <div className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-white/80"></div>
+                      <div className="absolute bottom-1 left-1 w-0.5 h-0.5 rounded-full bg-indigo-300/60"></div>
                     </div>
-                  )}
-                </button>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">Falcı</p>
+                      <p className="text-[10px] opacity-70">{language === 'tr' ? 'Premium' : 'Premium'}</p>
+                    </div>
+                    {theme === 'falci' && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setTheme('facebook')}
-                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
-                    theme === 'facebook'
-                      ? 'bg-blue-600/30 border-blue-500 text-white ring-2 ring-blue-400'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400/50 flex items-center justify-center">
-                    <Globe className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-sm">Facebook</p>
-                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mavi & Beyaz' : 'Blue & White'}</p>
-                  </div>
-                  {theme === 'facebook' && (
-                    <div className="absolute top-2 right-2">
-                      <Check className="w-4 h-4 text-green-400" />
+                {enabledThemes.includes('facebook') && (
+                  <button
+                    type="button"
+                    onClick={() => setTheme('facebook')}
+                    className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                      theme === 'facebook'
+                        ? 'bg-blue-600/30 border-blue-500 text-white ring-2 ring-blue-400'
+                        : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400/50 flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-white" />
                     </div>
-                  )}
-                </button>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">Facebook</p>
+                      <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mavi & Beyaz' : 'Blue & White'}</p>
+                    </div>
+                    {theme === 'facebook' && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
