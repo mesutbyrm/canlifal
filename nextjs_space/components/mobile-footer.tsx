@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
@@ -15,6 +16,7 @@ export default function MobileFooter() {
   const { theme } = useSiteTheme()
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [profileImage, setProfileImage] = useState<string>('')
   
   // Theme-based styling
   const isFalci = theme === 'falci'
@@ -42,6 +44,13 @@ export default function MobileFooter() {
     
     fetchUnread()
     const interval = setInterval(fetchUnread, 15000)
+    
+    // Fetch profile image
+    fetch('/api/user/profile')
+      .then(res => res.json())
+      .then(data => setProfileImage(data.image || ''))
+      .catch(() => {})
+    
     return () => clearInterval(interval)
   }, [session])
   
@@ -49,9 +58,9 @@ export default function MobileFooter() {
   
   const navItems = [
     {
-      href: session ? `/${language}/profile` : `/${language}/login`,
+      href: `/${language}/social`,
       icon: User,
-      label: language === 'tr' ? 'Profilim' : 'Profile',
+      label: language === 'tr' ? 'Sosyal' : 'Social',
       isCenter: false,
     },
     {
@@ -107,6 +116,46 @@ export default function MobileFooter() {
       {/* Spacer to prevent content from being hidden behind footer */}
       <div className="h-20 md:hidden" />
       
+      {/* Floating Profile Button - above footer */}
+      {session?.user && (
+        <Link
+          href={`/${language}/profile/${session.user.id}`}
+          className="fixed bottom-[72px] right-3 z-50 md:hidden"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className={`w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg ${
+              isFalclub ? 'border-fuchsia-400 shadow-fuchsia-500/30' 
+              : isFalci ? 'border-indigo-400 shadow-indigo-500/30'
+              : isCosmic ? 'border-blue-400 shadow-blue-500/30'
+              : 'border-purple-400 shadow-purple-500/30'
+            }`}
+          >
+            {profileImage || session.user.image ? (
+              <Image
+                src={profileImage || session.user.image || ''}
+                alt={session.user.name || 'Profil'}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className={`w-full h-full flex items-center justify-center ${
+                isFalclub ? 'bg-gradient-to-br from-fuchsia-600 to-pink-600'
+                : isFalci ? 'bg-gradient-to-br from-indigo-600 to-purple-600'
+                : isCosmic ? 'bg-gradient-to-br from-blue-600 to-cyan-600'
+                : 'bg-gradient-to-br from-purple-600 to-pink-600'
+              }`}>
+                <span className="text-white font-bold text-sm">
+                  {session.user.name?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            )}
+          </motion.div>
+        </Link>
+      )}
+
       {/* Footer */}
       <motion.footer
         initial={{ y: 100 }}

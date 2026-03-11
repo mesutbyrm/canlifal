@@ -264,6 +264,12 @@ export default function Navbar() {
                 <span className="text-[10px] font-medium">{language === 'tr' ? 'Sosyal' : 'Social'}</span>
               </Link>
               
+              {/* Bildirimler (Notifications) */}
+              <div className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg ${navHoverBg}`}>
+                <NotificationBell />
+                <span className={`text-[10px] font-medium ${navTextColor.split(' ')[0]}`}>{language === 'tr' ? 'Bildirim' : 'Alerts'}</span>
+              </div>
+
               {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
               <Link
                 href={`/${language}/chat`}

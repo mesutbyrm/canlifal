@@ -212,6 +212,25 @@ export async function POST(req: NextRequest) {
       tarotCard = TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)]
     }
 
+    // Auto-share to social feed
+    try {
+      const shortContent = content.length > 200 ? content.substring(0, 200) + '...' : content
+      const socialContent = `${item.icon} ${item.nameTr}\n\n${shortContent}`
+      await prisma.socialPost.create({
+        data: {
+          userId: session.user.id,
+          content: socialContent,
+          postType: 'fortune',
+          fortuneType: slug,
+          isPublic: true,
+          isAuto: true,
+        },
+      })
+    } catch (socialErr) {
+      console.error('Auto social share error:', socialErr)
+      // Don't fail the main request if social sharing fails
+    }
+
     return NextResponse.json({
       success: true,
       content,
