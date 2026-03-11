@@ -135,6 +135,48 @@
     --cosmic-green: #22c55e;
     --cosmic-red: #ef4444;
   }
+
+  /* Falci Theme - Premium Fortune Telling App Design */
+  [data-theme="falci"] {
+    --background: 270 60% 8%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 270 50% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 50% 20%;
+    --primary: 220 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 40% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 270 30% 20%;
+    --muted-foreground: 270 20% 70%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 270 50% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 70% 50%;
+    --input: 270 40% 20%;
+    --ring: 220 90% 60%;
+    /* Falci Theme colors */
+    --theme-bg: #1a0a2e;
+    --theme-scrollbar-track: #2d1b47;
+    --theme-scrollbar-thumb: #4f46e5;
+    --theme-scrollbar-thumb-hover: #6366f1;
+    --theme-gradient-start: #1a0a2e;
+    --theme-gradient-mid: #2d1b47;
+    --theme-gradient-end: #1a0a2e;
+    /* Falci specific */
+    --falci-purple: #2d1b47;
+    --falci-purple-dark: #1a0a2e;
+    --falci-blue: #4f46e5;
+    --falci-blue-light: #818cf8;
+    --falci-blue-glow: rgba(99, 102, 241, 0.5);
+    --falci-card-bg: rgba(255, 255, 255, 0.95);
+    --falci-card-border: rgba(79, 70, 229, 0.3);
+    --falci-text-dark: #1f2937;
+    --falci-text-muted: #6b7280;
+    --falci-gold: #d4af37;
+  }
 }
 
 @layer base {
@@ -155,6 +197,12 @@
   [data-theme="cosmic"] body {
     color: #f8fafc;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  [data-theme="falci"] body {
+    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, #1a0a2e 0%, #2d1b47 50%, #1a0a2e 100%);
+    background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', 'Inter', serif;
@@ -178,6 +226,15 @@
   [data-theme="cosmic"] h6 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #fbbf24;
+  }
+  [data-theme="falci"] h1,
+  [data-theme="falci"] h2,
+  [data-theme="falci"] h3,
+  [data-theme="falci"] h4,
+  [data-theme="falci"] h5,
+  [data-theme="falci"] h6 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1f2937;
   }
 }
 
@@ -310,6 +367,66 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Falci utility classes */
+  .falci-card {
+    @apply rounded-xl backdrop-blur-sm;
+    background: rgba(255, 255, 255, 0.95);
+    border-left: 4px solid rgba(79, 70, 229, 0.6);
+  }
+  .falci-card-transparent {
+    @apply rounded-xl backdrop-blur-sm;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(79, 70, 229, 0.3);
+  }
+  .falci-btn {
+    @apply font-semibold px-6 py-3 rounded-full transition-all text-white;
+    background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
+    border: 2px solid rgba(129, 140, 248, 0.6);
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+  }
+  .falci-btn:hover {
+    box-shadow: 0 0 30px rgba(79, 70, 229, 0.5);
+  }
+  .falci-btn-outline {
+    @apply font-semibold px-6 py-3 rounded-full transition-all;
+    background: transparent;
+    border: 2px solid rgba(129, 140, 248, 0.6);
+    color: white;
+  }
+  .falci-btn-outline:hover {
+    background: rgba(79, 70, 229, 0.2);
+  }
+  .falci-icon-circle {
+    @apply rounded-full flex items-center justify-center;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(129, 140, 248, 0.1) 100%);
+    border: 2px solid rgba(129, 140, 248, 0.5);
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+  }
+  .falci-fortune-icon {
+    @apply rounded-full overflow-hidden;
+    border: 3px solid rgba(129, 140, 248, 0.6);
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+  }
+  .falci-text {
+    color: #1f2937;
+  }
+  .falci-text-white {
+    color: #ffffff;
+  }
+  .falci-text-muted {
+    color: #6b7280;
+  }
+  .falci-glow {
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.4), 0 0 40px rgba(79, 70, 229, 0.2);
+  }
+  .falci-starry-bg {
+    background: 
+      radial-gradient(ellipse at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 70%),
+      linear-gradient(180deg, #1a0a2e 0%, #2d1b47 50%, #1a0a2e 100%);
   }
 }
 

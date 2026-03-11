@@ -17,6 +17,7 @@ export default function MobileFooter() {
   const [unreadCount, setUnreadCount] = useState(0)
   
   // Theme-based styling
+  const isFalci = theme === 'falci'
   const isCosmic = theme === 'cosmic'
   
   // Hide footer on certain pages
@@ -80,16 +81,20 @@ export default function MobileFooter() {
   ]
   
   // Theme colors with improved visibility
-  const bgGradient = isCosmic 
-    ? 'bg-gradient-to-t from-[#0a1628] via-[#0d1b2a] to-[#0a1628] border-blue-400/40'
-    : 'bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-purple-400/40'
-  const centerBtnGradient = isCosmic
-    ? 'bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/40'
-    : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
-  const accentActiveColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
-  const iconColor = isCosmic ? 'text-blue-300' : 'text-purple-200'
-  const iconBgActive = isCosmic ? 'bg-blue-500/40' : 'bg-purple-500/40'
-  const iconBgInactive = isCosmic ? 'bg-blue-900/60' : 'bg-purple-900/60'
+  const bgGradient = isFalci
+    ? 'bg-gradient-to-t from-[#1a0a2e] via-[#2d1b47] to-[#1a0a2e] border-indigo-400/40'
+    : isCosmic 
+      ? 'bg-gradient-to-t from-[#0a1628] via-[#0d1b2a] to-[#0a1628] border-blue-400/40'
+      : 'bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-purple-400/40'
+  const centerBtnGradient = isFalci
+    ? 'bg-gradient-to-br from-indigo-500 to-purple-500 shadow-indigo-500/40'
+    : isCosmic
+      ? 'bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/40'
+      : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
+  const accentActiveColor = isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const iconColor = isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-200'
+  const iconBgActive = isFalci ? 'bg-indigo-500/40' : isCosmic ? 'bg-blue-500/40' : 'bg-purple-500/40'
+  const iconBgInactive = isFalci ? 'bg-indigo-900/60' : isCosmic ? 'bg-blue-900/60' : 'bg-purple-900/60'
   
   return (
     <>
@@ -135,7 +140,7 @@ export default function MobileFooter() {
                     >
                       {/* Gradient ring */}
                       <div 
-                        className={`relative w-16 h-16 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-lg ring-4 ${isCosmic ? 'ring-[#0a1628]' : 'ring-[#0a0118]'}`}
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-lg ring-4 ${isFalci ? 'ring-[#1a0a2e]' : isCosmic ? 'ring-[#0a1628]' : 'ring-[#0a0118]'}`}
                       >
                         <Icon 
                           className="w-8 h-8 text-white group-hover:scale-110 transition-transform" 

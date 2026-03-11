@@ -75,16 +75,21 @@ export default function HomepageTicker() {
   const tickerRef = useRef<HTMLDivElement>(null)
   
   // Theme-based styling with improved readability
+  const isFalci = theme === 'falci'
   const isCosmic = theme === 'cosmic'
-  const bgGradient = isCosmic 
-    ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-400/40'
-    : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-400/40'
-  const labelGradient = isCosmic
-    ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-    : 'bg-gradient-to-r from-purple-600 to-pink-600'
-  const accentColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
-  const secondaryText = isCosmic ? 'text-slate-100' : 'text-gray-100'
-  const guestColor = isCosmic ? 'text-blue-300' : 'text-purple-200'
+  const bgGradient = isFalci
+    ? 'bg-gradient-to-r from-[#1a0a2e] via-indigo-900/30 to-[#1a0a2e] border-indigo-400/40'
+    : isCosmic 
+      ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-400/40'
+      : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-400/40'
+  const labelGradient = isFalci
+    ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+    : isCosmic
+      ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+      : 'bg-gradient-to-r from-purple-600 to-pink-600'
+  const accentColor = isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const secondaryText = isFalci ? 'text-white' : isCosmic ? 'text-slate-100' : 'text-gray-100'
+  const guestColor = isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-300' : 'text-purple-200'
 
   useEffect(() => {
     const fetchData = async () => {

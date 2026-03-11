@@ -162,9 +162,12 @@ export default function HomePage() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
   
-  // Theme-based colors with improved readability
+  // Theme detection
+  const isFalci = theme === 'falci'
   const isCosmic = theme === 'cosmic'
-  const bgColor = isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  
+  // Theme-based colors with improved readability
+  const bgColor = isFalci ? '' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
   const cardBg = isCosmic ? 'bg-white/15 border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
   const cardBgSolid = isCosmic ? 'bg-[#1e3a5f] border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
   const accentColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
@@ -227,6 +230,143 @@ export default function HomePage() {
     return 0
   })
 
+  // Falci Theme - Premium Design (exact match to provided image)
+  if (isFalci) {
+    return (
+      <div className="min-h-screen falci-starry-bg relative overflow-hidden">
+        {/* Stars background effect */}
+        <div className="fixed inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-0.5 h-0.5 bg-white rounded-full animate-twinkle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                opacity: Math.random() * 0.7 + 0.3,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Ticker */}
+        <div className="fixed top-14 left-0 right-0 z-40">
+          <HomepageTicker />
+        </div>
+
+        {/* Main Content */}
+        <div className="pt-24 pb-28 px-4 space-y-4 relative z-10">
+          {/* Two Main Buttons - Canlı Yayın & Canlı Falcı */}
+          <div className="flex gap-3">
+            <Link
+              href={`/${language}/chat/video`}
+              className="flex-1 flex items-center justify-center gap-3 py-4 rounded-full bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-2 border-indigo-400/60 backdrop-blur-sm transition-all hover:border-indigo-300"
+              style={{ boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)' }}
+            >
+              <Radio className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold text-lg">
+                {language === 'tr' ? 'Canlı Yayın' : 'Live Stream'}
+              </span>
+            </Link>
+            <Link
+              href={`/${language}/live-tellers`}
+              className="flex-1 flex items-center justify-center gap-3 py-4 rounded-full bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-2 border-indigo-400/60 backdrop-blur-sm transition-all hover:border-indigo-300"
+              style={{ boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)' }}
+            >
+              <Sparkles className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold text-lg">
+                {language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}
+              </span>
+            </Link>
+          </div>
+
+          {/* Live Streams Section - White Card */}
+          <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
+            <h2 className="text-gray-800 font-bold text-lg mb-4">Fallar</h2>
+            
+            <div className="flex items-center gap-4">
+              {/* Start Stream Button */}
+              <Link
+                href={session ? `/${language}/chat/video/setup` : `/${language}/login`}
+                className="flex flex-col items-center"
+              >
+                <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-indigo-400/50 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"
+                  style={{ boxShadow: '0 0 15px rgba(99, 102, 241, 0.3)' }}>
+                  <Plus className="w-8 h-8 text-indigo-400" />
+                </div>
+                <span className="text-gray-600 text-xs mt-2 font-medium">
+                  {language === 'tr' ? 'Yayın Başlat' : 'Start Stream'}
+                </span>
+              </Link>
+              
+              {/* Live Streams or Empty State */}
+              {liveStreams.length > 0 ? (
+                <div className="flex gap-3 overflow-x-auto flex-1 scrollbar-hide">
+                  {liveStreams.slice(0, 5).map((stream) => (
+                    <Link
+                      key={stream.id}
+                      href={`/${language}/chat/video?watch=${stream.id}`}
+                      className="flex flex-col items-center flex-shrink-0"
+                    >
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-500 relative">
+                        {stream.user.image ? (
+                          <Image src={stream.user.image} alt={stream.user.name} width={64} height={64} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">{stream.user.name?.[0]}</span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-red-500 px-1.5 py-0.5 rounded text-[8px] text-white font-bold">CANLI</div>
+                      </div>
+                      <span className="text-gray-700 text-xs mt-1 font-medium truncate w-16 text-center">{stream.user.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm flex-1">
+                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Fortune Types Section - White Card */}
+          <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
+            <h2 className="text-gray-800 font-bold text-lg mb-4">Fallar</h2>
+            
+            <div className="grid grid-cols-4 gap-4">
+              {FORTUNE_CARDS.slice(0, 8).map((fortune) => (
+                <Link
+                  key={fortune.id}
+                  href={`/${language}${fortune.href}`}
+                  className="flex flex-col items-center"
+                >
+                  <div 
+                    className="w-[70px] h-[70px] rounded-full overflow-hidden border-3 border-indigo-400/60"
+                    style={{ boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' }}
+                  >
+                    <Image
+                      src={fortune.image}
+                      alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                      width={70}
+                      height={70}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-gray-700 text-[11px] font-medium mt-2 text-center leading-tight">
+                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Original themes (Mystical, Cosmic, Facebook)
   return (
     <div className={`min-h-screen ${bgColor}`}>
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
