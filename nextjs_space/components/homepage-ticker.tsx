@@ -10,6 +10,7 @@ interface OnlineUser {
   name: string
   username: string | null
   image: string | null
+  isGuest?: boolean
 }
 
 interface RecentPurchaser {
@@ -135,26 +136,34 @@ export default function HomepageTicker() {
     )
   }
 
-  // Add online users with their names
+  // Add online users with their names (including guests as "faluser")
   data.onlineUsers.forEach((user, index) => {
+    const isGuest = user.isGuest
+    const displayName = isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullanıcı')
+    
     tickerItems.push(
       <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-        <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
-        <span className="text-green-400 text-xs font-medium">
-          {language === 'tr' ? 'Giriş yaptı' : 'Logged in'}
+        <Circle className={`w-2 h-2 ${isGuest ? 'text-blue-400 fill-blue-400' : 'text-green-400 fill-green-400'} animate-pulse`} />
+        <span className={`${isGuest ? 'text-blue-400' : 'text-green-400'} text-xs font-medium`}>
+          {isGuest 
+            ? (language === 'tr' ? 'Ziyaretçi' : 'Visitor')
+            : (language === 'tr' ? 'Giriş yaptı' : 'Logged in')
+          }
         </span>
         <div className="flex items-center gap-1.5">
-          {user.image ? (
+          {user.image && !isGuest ? (
             <div className="w-5 h-5 rounded-full overflow-hidden">
               <Image src={user.image} alt={user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded-full bg-green-500/30 flex items-center justify-center">
-              <span className="text-[10px] text-green-300">{user.name?.charAt(0) || '?'}</span>
+            <div className={`w-5 h-5 rounded-full ${isGuest ? 'bg-blue-500/30' : 'bg-green-500/30'} flex items-center justify-center`}>
+              <span className={`text-[10px] ${isGuest ? 'text-blue-300' : 'text-green-300'}`}>
+                {isGuest ? '👤' : (user.name?.charAt(0) || '?')}
+              </span>
             </div>
           )}
-          <span className="text-white text-xs font-semibold">
-            {user.username || user.name?.split(' ')[0] || 'Kullanıcı'}
+          <span className={`text-xs font-semibold ${isGuest ? 'text-blue-200' : 'text-white'}`}>
+            {displayName}
           </span>
         </div>
       </div>
@@ -295,7 +304,7 @@ export default function HomepageTicker() {
       </div>
       
       <style jsx>{`
-        @keyframes ticker {
+        @keyframes ticker-rtl {
           0% {
             transform: translateX(0);
           }
@@ -304,7 +313,8 @@ export default function HomepageTicker() {
           }
         }
         .animate-ticker {
-          animation: ticker 10s linear infinite;
+          animation: ticker-rtl 30s linear infinite;
+          will-change: transform;
         }
         .animate-ticker:hover {
           animation-play-state: paused;

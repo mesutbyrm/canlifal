@@ -12,8 +12,8 @@ export async function GET() {
     // 1. Online users (active in last 5 minutes)
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
     
-    // Get total count of online users
-    const onlineCount = await prisma.user.count({
+    // Get total count of online registered users
+    const onlineRegisteredCount = await prisma.user.count({
       where: {
         lastActiveAt: {
           gte: fiveMinutesAgo
@@ -38,6 +38,43 @@ export async function GET() {
         lastActiveAt: 'desc'
       }
     })
+
+    // Get guest visitors (SitePresence without userId, active in last 2 minutes)
+    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000)
+    const guestPresences = await prisma.sitePresence.findMany({
+      where: {
+        userId: null,
+        lastSeen: {
+          gte: twoMinutesAgo
+        }
+      },
+      select: {
+        visitorId: true,
+        lastSeen: true
+      },
+      take: 30,
+      orderBy: {
+        lastSeen: 'desc'
+      }
+    })
+
+    // Create guest user entries as "faluser"
+    const guestUsers = guestPresences.map((guest, index) => ({
+      id: `guest-${guest.visitorId}`,
+      name: `faluser${index + 1}`,
+      username: null,
+      image: null,
+      isGuest: true
+    }))
+
+    // Total online count includes both registered users and guests
+    const onlineCount = onlineRegisteredCount + guestPresences.length
+
+    // Combine registered users and guests for display
+    const allOnlineUsers = [
+      ...onlineUsers.map(u => ({ ...u, isGuest: false })),
+      ...guestUsers
+    ]
 
     // 2. Recent credit purchasers (last 24 hours)
     const recentPurchases = await prisma.creditTransaction.findMany({
@@ -132,7 +169,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      onlineUsers,
+      onlineUsers: allOnlineUsers,
       onlineCount,
       recentPurchasers: recentPurchasersWithInfo,
       bigGifts
