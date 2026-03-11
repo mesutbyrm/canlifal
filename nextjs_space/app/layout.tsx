@@ -3,6 +3,7 @@ import { Inter, Cinzel } from 'next/font/google'
 import './globals.css'
 import SessionProviderWrapper from '@/components/session-provider-wrapper'
 import { LanguageProvider } from '@/lib/language-context'
+import SiteThemeWrapper from '@/components/site-theme-wrapper'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const cinzel = Cinzel({ subsets: ['latin'], variable: '--font-cinzel' })
@@ -167,9 +168,11 @@ export default function RootLayout({
       </head>
       <body>
         <SessionProviderWrapper>
-          <LanguageProvider>
-            {children}
-          </LanguageProvider>
+          <SiteThemeWrapper>
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
+          </SiteThemeWrapper>
         </SessionProviderWrapper>
       </body>
     </html>

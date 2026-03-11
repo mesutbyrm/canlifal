@@ -390,6 +390,7 @@ async function main() {
     { key: 'session_duration_minutes', value: '5', description: 'Default duration for live sessions (minutes)' },
     { key: 'credits_per_minute', value: '10', description: 'Credits charged per minute for session extension' },
     { key: 'ad_duration_seconds', value: '5', description: 'Ad duration before live session (seconds)' },
+    { key: 'default_theme', value: 'mystical', description: 'Default site theme (mystical or facebook)' },
   ]
 
   for (const setting of settings) {

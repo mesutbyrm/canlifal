@@ -37,6 +37,8 @@ model User {
   lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
   // Privacy settings
   messagePrivacy        String               @default("everyone") // everyone, followers, nobody
+  // Theme preference
+  theme                 String               @default("mystical") // mystical, facebook
   // Statistics
   totalTimeSpentMinutes Int                  @default(0)
   lastActiveAt          DateTime?

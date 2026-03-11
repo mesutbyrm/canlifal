@@ -27,8 +27,11 @@ import {
   Shield,
   Lock,
   Users,
-  Globe
+  Globe,
+  Palette,
+  Wand2
 } from 'lucide-react'
+import { useSiteTheme, SiteTheme } from '@/lib/theme-context'
 
 const ZODIAC_SIGNS = [
   { id: 'aries', tr: 'Koç', en: 'Aries', dates: { start: [3, 21], end: [4, 19] }, emoji: '♈' },
@@ -57,6 +60,7 @@ export default function SettingsPage() {
   const { data: session, status } = useSession() || {}
   const router = useRouter()
   const { language } = useLanguage()
+  const { theme, setTheme } = useSiteTheme()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -446,6 +450,67 @@ export default function SettingsPage() {
                 <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
                 {FOOTBALL_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
               </select>
+            </div>
+          </div>
+
+          {/* Theme Settings Section */}
+          <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/30 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Palette className="w-5 h-5 text-purple-400" />
+              {language === 'tr' ? 'Site Teması' : 'Site Theme'}
+            </h3>
+
+            <div>
+              <label className="block text-sm text-purple-300 mb-3">
+                {language === 'tr' ? 'Tercih ettiğiniz temayı seçin' : 'Choose your preferred theme'}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTheme('mystical')}
+                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                    theme === 'mystical'
+                      ? 'bg-purple-600/30 border-purple-500 text-white ring-2 ring-purple-400'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-900 to-purple-950 border border-gold-500/50 flex items-center justify-center">
+                    <Wand2 className="w-8 h-8 text-gold-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">{language === 'tr' ? 'Mistik' : 'Mystical'}</p>
+                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mor ve Altın' : 'Purple & Gold'}</p>
+                  </div>
+                  {theme === 'mystical' && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTheme('facebook')}
+                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                    theme === 'facebook'
+                      ? 'bg-blue-600/30 border-blue-500 text-white ring-2 ring-blue-400'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400/50 flex items-center justify-center">
+                    <Globe className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">Facebook</p>
+                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mavi ve Beyaz' : 'Blue & White'}</p>
+                  </div>
+                  {theme === 'facebook' && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

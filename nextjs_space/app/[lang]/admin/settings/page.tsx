@@ -17,7 +17,8 @@ import {
   Check,
   Clock,
   Coins,
-  Tv
+  Tv,
+  Palette
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -28,6 +29,7 @@ interface PlatformSettings {
   session_duration_minutes: string
   credits_per_minute: string
   ad_duration_seconds: string
+  default_theme: string
 }
 
 export default function AdminSettingsPage() {
@@ -42,7 +44,8 @@ export default function AdminSettingsPage() {
     welcome_credits: '10',
     session_duration_minutes: '5',
     credits_per_minute: '10',
-    ad_duration_seconds: '5'
+    ad_duration_seconds: '5',
+    default_theme: 'mystical'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -155,6 +158,17 @@ export default function AdminSettingsPage() {
       icon: Tv,
       min: 0,
       max: 30
+    },
+    {
+      key: 'default_theme',
+      label: language === 'tr' ? 'Varsayılan Site Teması' : 'Default Site Theme',
+      description: language === 'tr' ? 'Yeni kullanıcılar ve ziyaretçiler için varsayılan tema' : 'Default theme for new users and visitors',
+      icon: Palette,
+      type: 'select',
+      options: [
+        { value: 'mystical', label: language === 'tr' ? 'Mistik (Mor & Altın)' : 'Mystical (Purple & Gold)' },
+        { value: 'facebook', label: 'Facebook (Mavi & Beyaz / Blue & White)' }
+      ]
     }
   ]
 
@@ -201,14 +215,26 @@ export default function AdminSettingsPage() {
                   <p className="text-sm text-purple-400 mb-4">{item.description}</p>
                   
                   <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      min={item.min}
-                      max={item.max}
-                      value={settings[item.key as keyof PlatformSettings]}
-                      onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
-                      className="w-32 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    />
+                    {'type' in item && item.type === 'select' && 'options' in item ? (
+                      <select
+                        value={settings[item.key as keyof PlatformSettings]}
+                        onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                        className="w-64 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                      >
+                        {item.options.map((opt: { value: string; label: string }) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        min={'min' in item ? item.min : undefined}
+                        max={'max' in item ? item.max : undefined}
+                        value={settings[item.key as keyof PlatformSettings]}
+                        onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                        className="w-32 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                      />
+                    )}
                     <button
                       onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])}
                       disabled={saving === item.key}
