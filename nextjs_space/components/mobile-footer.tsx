@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { motion } from 'framer-motion'
-import { User, Gift, Home, Play, MessageCircle } from 'lucide-react'
+import { User, Gift, Home, Camera, MessageCircle } from 'lucide-react'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
@@ -61,7 +61,7 @@ export default function MobileFooter() {
     },
     {
       href: session ? `/${language}/chat/video/setup` : `/${language}/login`,
-      icon: Play,
+      icon: Camera,
       label: language === 'tr' ? 'Yayın' : 'Stream',
       isCenter: true,
     },
@@ -79,17 +79,17 @@ export default function MobileFooter() {
     },
   ]
   
-  // Theme colors
+  // Theme colors with improved visibility
   const bgGradient = isCosmic 
-    ? 'bg-gradient-to-t from-[#0a1628] via-[#0d1b2a] to-[#0a1628] border-blue-500/30'
-    : 'bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-purple-500/30'
+    ? 'bg-gradient-to-t from-[#0a1628] via-[#0d1b2a] to-[#0a1628] border-blue-400/40'
+    : 'bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-purple-400/40'
   const centerBtnGradient = isCosmic
-    ? 'bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/30'
-    : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/30'
-  const accentActiveColor = isCosmic ? 'text-amber-400' : 'text-gold-400'
-  const iconColor = isCosmic ? 'text-blue-400' : 'text-purple-400'
-  const iconBgActive = isCosmic ? 'bg-blue-500/30' : 'bg-purple-500/30'
-  const iconBgInactive = isCosmic ? 'bg-blue-900/50' : 'bg-purple-900/50'
+    ? 'bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/40'
+    : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
+  const accentActiveColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const iconColor = isCosmic ? 'text-blue-300' : 'text-purple-200'
+  const iconBgActive = isCosmic ? 'bg-blue-500/40' : 'bg-purple-500/40'
+  const iconBgInactive = isCosmic ? 'bg-blue-900/60' : 'bg-purple-900/60'
   
   return (
     <>
@@ -126,24 +126,23 @@ export default function MobileFooter() {
               const Icon = item.icon
               
               if (item.isCenter) {
-                // Center play button with special styling
+                // Center camera button with special styling - larger than others
                 return (
-                  <div key={index} className="flex flex-col items-center w-16">
+                  <div key={index} className="flex flex-col items-center w-20">
                     <Link
                       href={item.href}
-                      className="relative -mt-6 group"
+                      className="relative -mt-8 group"
                     >
                       {/* Gradient ring */}
                       <div 
-                        className={`relative w-14 h-14 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-lg`}
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-lg ring-4 ${isCosmic ? 'ring-[#0a1628]' : 'ring-[#0a0118]'}`}
                       >
                         <Icon 
-                          className="w-6 h-6 text-white group-hover:scale-110 transition-transform" 
-                          fill="currentColor"
+                          className="w-8 h-8 text-white group-hover:scale-110 transition-transform" 
                         />
                       </div>
                     </Link>
-                    <span className={`text-[10px] font-medium mt-1 ${accentActiveColor}`}>
+                    <span className={`text-[10px] font-medium mt-2 ${accentActiveColor}`}>
                       {item.label}
                     </span>
                   </div>

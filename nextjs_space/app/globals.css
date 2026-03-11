@@ -35,16 +35,16 @@
     --theme-gradient-end: #0a0118;
     /* Mystical specific */
     --mystical-purple: #8b5cf6;
-    --mystical-purple-light: #a78bfa;
+    --mystical-purple-light: #c4b5fd;
     --mystical-purple-dark: #7c3aed;
-    --mystical-gold: #d4af37;
-    --mystical-gold-light: #ffd700;
-    --mystical-pink: #ec4899;
-    --mystical-text: #f5f5f5;
-    --mystical-text-secondary: #a78bfa;
+    --mystical-gold: #fbbf24;
+    --mystical-gold-light: #fcd34d;
+    --mystical-pink: #f472b6;
+    --mystical-text: #ffffff;
+    --mystical-text-secondary: #d4d4d8;
     --mystical-bg: #0a0118;
     --mystical-card: #1a0b2e;
-    --mystical-border: #4c1d95;
+    --mystical-border: #6d28d9;
   }
 
   /* Facebook Theme - Blue and White */
@@ -123,15 +123,15 @@
     --cosmic-blue-light: #60a5fa;
     --cosmic-blue-dark: #2563eb;
     --cosmic-blue-glow: #93c5fd;
-    --cosmic-gold: #fbbf24;
-    --cosmic-gold-light: #fcd34d;
-    --cosmic-text: #f8fafc;
-    --cosmic-text-secondary: #94a3b8;
+    --cosmic-gold: #fcd34d;
+    --cosmic-gold-light: #fde68a;
+    --cosmic-text: #ffffff;
+    --cosmic-text-secondary: #cbd5e1;
     --cosmic-bg: #0a1628;
     --cosmic-bg-light: #0d1b2a;
-    --cosmic-card: rgba(255, 255, 255, 0.08);
-    --cosmic-card-solid: #162033;
-    --cosmic-border: rgba(59, 130, 246, 0.3);
+    --cosmic-card: rgba(255, 255, 255, 0.12);
+    --cosmic-card-solid: #1e3a5f;
+    --cosmic-border: rgba(59, 130, 246, 0.4);
     --cosmic-green: #22c55e;
     --cosmic-red: #ef4444;
   }
@@ -199,10 +199,10 @@
     @apply bg-gradient-to-r from-yellow-600 to-amber-500 hover:from-yellow-500 hover:to-amber-400 text-black font-semibold px-4 py-2 rounded-full transition-all;
   }
   .mystical-text {
-    color: var(--mystical-text);
+    color: #ffffff;
   }
   .mystical-text-secondary {
-    color: var(--mystical-text-secondary);
+    color: #d4d4d8;
   }
   .mystical-glow {
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.1);
@@ -291,13 +291,13 @@
     background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
   }
   .cosmic-text {
-    color: #f8fafc;
+    color: #ffffff;
   }
   .cosmic-text-secondary {
-    color: #94a3b8;
+    color: #cbd5e1;
   }
   .cosmic-text-gold {
-    color: #fbbf24;
+    color: #fcd34d;
   }
   .cosmic-glow {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1);

@@ -162,15 +162,15 @@ export default function HomePage() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
   
-  // Theme-based colors
+  // Theme-based colors with improved readability
   const isCosmic = theme === 'cosmic'
   const bgColor = isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
-  const cardBg = isCosmic ? 'bg-white/10 border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
-  const cardBgSolid = isCosmic ? 'bg-[#162033] border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
-  const accentColor = isCosmic ? 'text-blue-400' : 'text-gold-400'
-  const accentColorFill = isCosmic ? 'text-blue-400 fill-blue-400' : 'text-gold-400 fill-gold-400'
-  const textSecondary = isCosmic ? 'text-slate-300' : 'text-purple-300'
-  const borderColor = isCosmic ? 'border-blue-500/30' : 'border-purple-500/30'
+  const cardBg = isCosmic ? 'bg-white/15 border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
+  const cardBgSolid = isCosmic ? 'bg-[#1e3a5f] border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
+  const accentColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const accentColorFill = isCosmic ? 'text-amber-300 fill-amber-300' : 'text-amber-300 fill-amber-300'
+  const textSecondary = isCosmic ? 'text-slate-200' : 'text-gray-200'
+  const borderColor = isCosmic ? 'border-blue-400/40' : 'border-purple-400/40'
   const gradientBorder = isCosmic ? 'bg-gradient-to-br from-blue-500 to-cyan-400' : 'bg-gradient-to-br from-purple-500 to-pink-500'
 
   useEffect(() => {
@@ -234,83 +234,77 @@ export default function HomePage() {
         <HomepageTicker />
       </div>
 
-      {/* Last Online Users - below ticker */}
-      {onlineData.users.length > 0 && (
-        <div className={`fixed top-[92px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2.5 px-4`}>
-          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-            {/* Online count badge */}
-            <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-3 py-1 border border-green-500/30">
-              <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
-              <span className="text-sm font-bold text-green-400">{onlineData.count}</span>
-              <span className="text-xs text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
-            </div>
-            
-            {/* Separator */}
-            <div className={`w-px h-5 ${isCosmic ? 'bg-blue-500/30' : 'bg-purple-500/30'} flex-shrink-0`} />
-            
-            {/* User list */}
-            {onlineData.users.slice(0, 15).map((user) => (
-              <Link
-                key={user.id}
-                href={`/${language}/profile/${user.id}`}
-                className={`flex-shrink-0 flex items-center gap-1.5 ${isCosmic ? 'bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50' : 'bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50'} rounded-full px-2.5 py-1 transition-colors border`}
-              >
-                <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt={user.name || ''}
-                    width={18}
-                    height={18}
-                    className="w-[18px] h-[18px] rounded-full object-cover"
-                  />
-                ) : (
-                  <div className={`w-[18px] h-[18px] rounded-full ${isCosmic ? 'bg-blue-500/50' : 'bg-purple-500/50'} flex items-center justify-center`}>
-                    <span className="text-[9px] text-white font-medium">{user.name?.[0]}</span>
-                  </div>
-                )}
-                <span className={`text-xs ${isCosmic ? 'text-blue-200' : 'text-purple-200'} font-medium`}>{user.username || user.name?.split(' ')[0]}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tab Navigation */}
-      <div className="px-4 pb-4 pt-32">
-        <div className="flex justify-center gap-2">
+      {/* Online Users Bar with Tab Buttons - below ticker */}
+      <div className={`fixed top-[92px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2 px-3`}>
+        <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
+          {/* Tab Buttons - First */}
           <button
             onClick={() => setActiveTab('fortunes')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
               activeTab === 'fortunes'
                 ? isCosmic 
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                  : 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-red-500/50 border border-red-400/50 text-white'
                 : isCosmic 
-                  ? 'bg-transparent border-2 border-blue-500/40 text-blue-300 hover:border-blue-400/60'
-                  : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
+                  ? 'bg-blue-900/40 border border-blue-500/30 text-blue-300'
+                  : 'bg-purple-900/40 border border-purple-500/30 text-purple-300'
             }`}
           >
-            <Radio className="w-4 h-4" />
-            {language === 'tr' ? 'Canlı Yayın' : 'Live Streams'}
+            <Radio className="w-3 h-3" />
+            {language === 'tr' ? 'Canlı Yayın' : 'Streams'}
           </button>
           <button
             onClick={() => setActiveTab('live')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
               activeTab === 'live'
                 ? isCosmic 
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                  : 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-red-500/50 border border-red-400/50 text-white'
                 : isCosmic 
-                  ? 'bg-transparent border-2 border-blue-500/40 text-blue-300 hover:border-blue-400/60'
-                  : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
+                  ? 'bg-blue-900/40 border border-blue-500/30 text-blue-300'
+                  : 'bg-purple-900/40 border border-purple-500/30 text-purple-300'
             }`}
           >
-            <Video className="w-4 h-4" />
-            {language === 'tr' ? 'Canlı Falcı' : 'Live Tellers'}
+            <Video className="w-3 h-3" />
+            {language === 'tr' ? 'Canlı Falcı' : 'Tellers'}
           </button>
+          
+          {/* Online count badge */}
+          <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-3 py-1.5 border border-green-500/30 ml-2">
+            <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
+            <span className="text-xs font-bold text-green-400">{onlineData.count}</span>
+            <span className="text-[10px] text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
+          </div>
+          
+          {/* User list */}
+          {onlineData.users.slice(0, 15).map((user) => (
+            <Link
+              key={user.id}
+              href={`/${language}/profile/${user.id}`}
+              className={`flex-shrink-0 flex items-center gap-1 ${isCosmic ? 'bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50' : 'bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50'} rounded-full px-2 py-1 transition-colors border ml-1`}
+            >
+              <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
+              {user.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 rounded-full object-cover"
+                />
+              ) : (
+                <div className={`w-4 h-4 rounded-full ${isCosmic ? 'bg-blue-500/50' : 'bg-purple-500/50'} flex items-center justify-center`}>
+                  <span className="text-[8px] text-white font-medium">{user.name?.[0]}</span>
+                </div>
+              )}
+              <span className={`text-[10px] ${isCosmic ? 'text-blue-100' : 'text-purple-100'} font-medium`}>{user.username || user.name?.split(' ')[0]}</span>
+            </Link>
+          ))}
         </div>
       </div>
+
+      {/* Content area with proper top padding */}
+      <div className="pt-28">
 
       {activeTab === 'live' ? (
         /* Live Tellers Tab Content */
@@ -538,6 +532,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

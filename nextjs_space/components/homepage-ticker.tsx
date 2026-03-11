@@ -74,17 +74,17 @@ export default function HomepageTicker() {
   const lastGiftIdRef = useRef<string | null>(null)
   const tickerRef = useRef<HTMLDivElement>(null)
   
-  // Theme-based styling
+  // Theme-based styling with improved readability
   const isCosmic = theme === 'cosmic'
   const bgGradient = isCosmic 
-    ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-500/30'
-    : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-500/30'
+    ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-400/40'
+    : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-400/40'
   const labelGradient = isCosmic
     ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
     : 'bg-gradient-to-r from-purple-600 to-pink-600'
-  const accentColor = isCosmic ? 'text-blue-400' : 'text-gold-400'
-  const secondaryText = isCosmic ? 'text-blue-200' : 'text-purple-200'
-  const guestColor = isCosmic ? 'text-blue-400' : 'text-purple-400'
+  const accentColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const secondaryText = isCosmic ? 'text-slate-100' : 'text-gray-100'
+  const guestColor = isCosmic ? 'text-blue-300' : 'text-purple-200'
 
   useEffect(() => {
     const fetchData = async () => {
