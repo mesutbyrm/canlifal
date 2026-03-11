@@ -372,95 +372,162 @@ export default function HomePage() {
 
           {/* ONLINE FALCILAR Section */}
           {sortedTellers.filter(t => t.isOnline).length > 0 && (
-            <div className="falclub-card p-4">
-              <h2 className="falclub-section-title mb-4">
+            <div>
+              <h2 className="falclub-section-title mb-3">
                 <Circle className="w-5 h-5 text-green-400 fill-green-400 animate-pulse" />
                 {language === 'tr' ? 'ONLINE FALCILAR' : 'ONLINE TELLERS'}
               </h2>
               
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                 {sortedTellers.filter(t => t.isOnline).map((teller) => (
-                  <Link
+                  <div
                     key={teller.id}
-                    href={`/${language}/live-tellers/${teller.id}`}
-                    className="flex-shrink-0 flex flex-col items-center gap-2 w-20"
+                    className="flex-shrink-0 w-44 rounded-2xl overflow-hidden relative"
+                    style={{
+                      border: '2px solid rgba(168, 85, 247, 0.6)',
+                      boxShadow: '0 0 20px rgba(168, 85, 247, 0.3), inset 0 0 30px rgba(168, 85, 247, 0.1)',
+                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
+                    }}
                   >
-                    <div 
-                      className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-400/80 relative"
-                      style={{ boxShadow: '0 0 12px rgba(74, 222, 128, 0.4)' }}
-                    >
+                    {/* Teller Photo */}
+                    <div className="relative w-full aspect-[3/4] overflow-hidden">
                       {teller.avatar ? (
-                        <Image src={teller.avatar} alt={teller.displayName} width={64} height={64} className="w-full h-full object-cover" />
+                        <Image src={teller.avatar} alt={teller.displayName} fill className="object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">{teller.displayName?.[0]}</span>
+                        <div className="w-full h-full bg-gradient-to-br from-purple-800 via-fuchsia-900 to-purple-900 flex items-center justify-center">
+                          <span className="text-white font-bold text-4xl">{teller.displayName?.[0]}</span>
                         </div>
                       )}
-                      {/* Green online dot */}
-                      <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#1a0a2e] animate-pulse" />
+                      {/* Sparkle overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1a0a2e] via-transparent to-transparent" />
+                      
+                      {/* CANLI Badge */}
+                      <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg"
+                        style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }}>
+                        CANLI
+                      </div>
                     </div>
-                    <span className="text-white text-[11px] font-medium text-center truncate w-full">{teller.displayName}</span>
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-yellow-400 text-[10px] font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                    
+                    {/* Info Section */}
+                    <div className="p-2.5 pt-1">
+                      <p className="text-white font-bold text-sm truncate">{teller.displayName}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                        <span className="text-yellow-400 text-xs font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                        <span className="text-purple-300/60 text-xs">•</span>
+                        <span className="text-purple-300/80 text-xs">{teller.totalSessions > 999 ? `${(teller.totalSessions / 1000).toFixed(1)}K` : teller.totalSessions}</span>
+                      </div>
+                      
+                      {/* Bottom row: Connect button + gift emojis */}
+                      <div className="flex items-center justify-between mt-2">
+                        <Link
+                          href={`/${language}/live-tellers/${teller.id}`}
+                          className="flex items-center gap-1 bg-green-600 hover:bg-green-500 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                          style={{ boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}
+                        >
+                          <Video className="w-3 h-3" />
+                          {language === 'tr' ? 'Bağlan' : 'Connect'}
+                        </Link>
+                        <div className="flex gap-0.5 text-base">
+                          <span>💝</span>
+                          <span>🎁</span>
+                          <span>🎀</span>
+                        </div>
+                      </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
           {/* POPÜLER FALCILAR Section */}
-          <div className="falclub-card p-4">
-            <h2 className="falclub-section-title mb-4">
+          <div>
+            <h2 className="falclub-section-title mb-3">
               <Star className="w-5 h-5" />
               {language === 'tr' ? 'POPÜLER FALCILAR' : 'POPULAR TELLERS'}
             </h2>
             
-            <div className="space-y-3">
-              {sortedTellers.slice(0, 3).map((teller) => (
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+              {sortedTellers.slice(0, 6).map((teller) => (
                 <div
                   key={teller.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-fuchsia-900/20 border border-fuchsia-500/30"
+                  className="flex-shrink-0 w-44 rounded-2xl overflow-hidden relative"
+                  style={{
+                    border: '2px solid rgba(168, 85, 247, 0.6)',
+                    boxShadow: '0 0 20px rgba(168, 85, 247, 0.3), inset 0 0 30px rgba(168, 85, 247, 0.1)',
+                    background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
+                  }}
                 >
-                  <div 
-                    className="w-14 h-14 rounded-full overflow-hidden border-2 border-fuchsia-400/60"
-                    style={{ boxShadow: '0 0 15px rgba(217, 70, 239, 0.4)' }}
-                  >
+                  {/* Teller Photo */}
+                  <div className="relative w-full aspect-[3/4] overflow-hidden">
                     {teller.avatar ? (
-                      <Image src={teller.avatar} alt={teller.displayName} width={56} height={56} className="w-full h-full object-cover" />
+                      <Image src={teller.avatar} alt={teller.displayName} fill className="object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">{teller.displayName?.[0]}</span>
+                      <div className="w-full h-full bg-gradient-to-br from-purple-800 via-fuchsia-900 to-purple-900 flex items-center justify-center">
+                        <span className="text-white font-bold text-4xl">{teller.displayName?.[0]}</span>
+                      </div>
+                    )}
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a0a2e] via-transparent to-transparent" />
+                    
+                    {/* Online/Offline Badge */}
+                    {teller.isOnline ? (
+                      <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg"
+                        style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }}>
+                        CANLI
+                      </div>
+                    ) : (
+                      <div className="absolute top-2 left-2 bg-gray-600/80 text-gray-300 text-[10px] font-bold px-2.5 py-1 rounded-md">
+                        {language === 'tr' ? 'ÇEVRİMDIŞI' : 'OFFLINE'}
                       </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white font-semibold">{teller.displayName}</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-yellow-400 text-sm font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                  
+                  {/* Info Section */}
+                  <div className="p-2.5 pt-1">
+                    <p className="text-white font-bold text-sm truncate">{teller.displayName}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                      <span className="text-yellow-400 text-xs font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                      <span className="text-purple-300/60 text-xs">•</span>
+                      <span className="text-purple-300/80 text-xs">{teller.totalSessions > 999 ? `${(teller.totalSessions / 1000).toFixed(1)}K` : teller.totalSessions}</span>
+                    </div>
+                    
+                    {/* Bottom row: Connect button + gift emojis */}
+                    <div className="flex items-center justify-between mt-2">
+                      <Link
+                        href={`/${language}/live-tellers/${teller.id}`}
+                        className={`flex items-center gap-1 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                          teller.isOnline 
+                            ? 'bg-green-600 hover:bg-green-500' 
+                            : 'bg-purple-700/60 hover:bg-purple-600/60'
+                        }`}
+                        style={teller.isOnline ? { boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)' } : {}}
+                      >
+                        <Video className="w-3 h-3" />
+                        {language === 'tr' ? 'Bağlan' : 'Connect'}
+                      </Link>
+                      <div className="flex gap-0.5 text-base">
+                        <span>💝</span>
+                        <span>🎁</span>
+                        <span>🎀</span>
+                      </div>
                     </div>
                   </div>
-                  <Link
-                    href={`/${language}/live-tellers/${teller.id}`}
-                    className="falclub-btn-gold text-xs"
-                  >
-                    💬 {language === 'tr' ? 'Sohbet Et' : 'Chat'}
-                  </Link>
                 </div>
               ))}
-              
-              {sortedTellers.length === 0 && (
-                <p className="text-fuchsia-300/70 text-sm text-center py-4">
-                  {language === 'tr' ? 'Henüz falcı bulunmuyor' : 'No fortune tellers yet'}
-                </p>
-              )}
             </div>
+            
+            {sortedTellers.length === 0 && (
+              <p className="text-fuchsia-300/70 text-sm text-center py-4">
+                {language === 'tr' ? 'Henüz falcı bulunmuyor' : 'No fortune tellers yet'}
+              </p>
+            )}
             
             <Link
               href={`/${language}/live-tellers`}
-              className="mt-4 block text-center text-fuchsia-300 text-sm font-medium hover:text-fuchsia-200 transition-colors"
+              className="mt-3 block text-center text-fuchsia-300 text-sm font-medium hover:text-fuchsia-200 transition-colors"
             >
               {language === 'tr' ? 'Tüm Falcıları Gör →' : 'See All Tellers →'}
             </Link>
