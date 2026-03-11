@@ -3,62 +3,29 @@
 @tailwind utilities;
 
 @layer base {
-  /* Mystical Theme (Default) - Purple and Gold */
-  :root,
-  [data-theme="mystical"] {
-    --background: 264 91% 10%;
-    --foreground: 48 90% 80%;
-    --card: 264 71% 15%;
-    --card-foreground: 48 90% 80%;
-    --popover: 264 71% 15%;
-    --popover-foreground: 48 90% 80%;
-    --primary: 48 100% 65%;
-    --primary-foreground: 264 91% 10%;
-    --secondary: 264 71% 20%;
-    --secondary-foreground: 48 90% 80%;
-    --muted: 264 51% 20%;
-    --muted-foreground: 48 60% 60%;
-    --accent: 264 71% 25%;
-    --accent-foreground: 48 90% 80%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 264 31% 30%;
-    --input: 264 31% 30%;
-    --ring: 48 100% 65%;
-    --radius: 0.5rem;
-    /* Theme-specific colors */
-    --theme-bg: #0a0118;
-    --theme-scrollbar-track: #1a0b2e;
-    --theme-scrollbar-thumb: #d4af37;
-    --theme-scrollbar-thumb-hover: #ffd700;
-    --theme-gradient-start: #1a0b2e;
-    --theme-gradient-mid: #2d1b4e;
-    --theme-gradient-end: #1a0b2e;
-  }
-
-  /* Facebook Theme - Blue and White */
-  [data-theme="facebook"] {
-    --background: 214 100% 97%;
-    --foreground: 214 32% 18%;
+  /* Facebook Theme (Default) - Blue and White */
+  :root {
+    --background: 220 2% 96%;
+    --foreground: 214 32% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 214 32% 18%;
+    --card-foreground: 214 32% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 214 32% 18%;
+    --popover-foreground: 214 32% 12%;
     --primary: 214 89% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 214 32% 18%;
-    --muted: 214 20% 94%;
-    --muted-foreground: 214 18% 46%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 214 32% 12%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
     --accent: 214 89% 52%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 214 89% 52%;
     --radius: 0.5rem;
-    /* Theme-specific colors */
+    /* Facebook Theme colors */
     --theme-bg: #f0f2f5;
     --theme-scrollbar-track: #e4e6eb;
     --theme-scrollbar-thumb: #1877f2;
@@ -66,6 +33,17 @@
     --theme-gradient-start: #f0f2f5;
     --theme-gradient-mid: #ffffff;
     --theme-gradient-end: #f0f2f5;
+    /* Facebook specific */
+    --fb-blue: #1877f2;
+    --fb-blue-hover: #166fe5;
+    --fb-blue-dark: #1565c0;
+    --fb-text: #1c1e21;
+    --fb-text-secondary: #65676b;
+    --fb-bg: #f0f2f5;
+    --fb-card: #ffffff;
+    --fb-border: #dadde1;
+    --fb-green: #42b72a;
+    --fb-red: #fa3e3e;
   }
 }
 
@@ -75,45 +53,49 @@
   }
   body {
     background-color: var(--theme-bg);
-    @apply text-foreground;
-    font-family: 'Inter', sans-serif;
-    transition: background-color 0.3s ease;
+    color: var(--fb-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cinzel', serif;
-  }
-  /* Facebook theme specific styles */
-  [data-theme="facebook"] h1,
-  [data-theme="facebook"] h2,
-  [data-theme="facebook"] h3,
-  [data-theme="facebook"] h4,
-  [data-theme="facebook"] h5,
-  [data-theme="facebook"] h6 {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 700;
+    color: var(--fb-text);
   }
 }
 
 @layer utilities {
-  .text-gold {
-    @apply text-gold-600;
+  /* Facebook utility classes */
+  .fb-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
   }
-  .text-mystical {
-    @apply text-deep-purple-300;
+  .fb-card-hover {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow;
   }
-  .bg-mystical {
-    @apply bg-deep-purple-975;
+  .fb-btn {
+    @apply bg-[#1877f2] hover:bg-[#166fe5] text-white font-semibold px-4 py-2 rounded-md transition-colors;
   }
-  .bg-mystical-card {
-    @apply bg-deep-purple-950/50 backdrop-blur-sm;
+  .fb-btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-md transition-colors;
   }
-  .border-mystical {
-    @apply border-deep-purple-800/50;
+  .fb-btn-outline {
+    @apply border-2 border-[#1877f2] text-[#1877f2] hover:bg-[#1877f2] hover:text-white font-semibold px-4 py-2 rounded-md transition-colors;
   }
-  .mystical-shadow {
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  .fb-text {
+    color: var(--fb-text);
   }
-  .gold-glow {
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  .fb-text-secondary {
+    color: var(--fb-text-secondary);
+  }
+  .fb-link {
+    @apply text-[#1877f2] hover:underline cursor-pointer;
+  }
+  .fb-shadow {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  .fb-shadow-md {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
   }
 }
 
