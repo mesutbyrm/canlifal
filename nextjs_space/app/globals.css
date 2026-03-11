@@ -614,6 +614,29 @@
   }
 }
 
+/* FalClub Theme - Global Text Readability Fixes */
+[data-theme="falclub"] .text-purple-400 { color: #e9d5ff !important; }
+[data-theme="falclub"] .text-purple-300 { color: #f3e8ff !important; }
+[data-theme="falclub"] .text-purple-500 { color: #d8b4fe !important; }
+[data-theme="falclub"] .text-purple-200 { color: #faf5ff !important; }
+[data-theme="falclub"] .text-gold-400 { color: #fbbf24 !important; }
+[data-theme="falclub"] .text-gold-500 { color: #f59e0b !important; }
+[data-theme="falclub"] .text-gray-400 { color: #e5e7eb !important; }
+[data-theme="falclub"] .text-gray-500 { color: #d1d5db !important; }
+[data-theme="falclub"] .text-gray-600 { color: #e5e7eb !important; }
+[data-theme="falclub"] .text-slate-400 { color: #e2e8f0 !important; }
+[data-theme="falclub"] .text-slate-500 { color: #cbd5e1 !important; }
+[data-theme="falclub"] .placeholder-purple-400::placeholder { color: #d8b4fe !important; }
+[data-theme="falclub"] .placeholder-purple-500::placeholder { color: #d8b4fe !important; }
+[data-theme="falclub"] .text-muted-foreground { color: #e9d5ff !important; }
+
+/* Falci Theme - Text Readability Fixes */
+[data-theme="falci"] .text-purple-400 { color: #e9d5ff !important; }
+[data-theme="falci"] .text-purple-300 { color: #f3e8ff !important; }
+[data-theme="falci"] .text-purple-500 { color: #d8b4fe !important; }
+[data-theme="falci"] .text-gray-400 { color: #e5e7eb !important; }
+[data-theme="falci"] .text-gray-500 { color: #d1d5db !important; }
+
 /* Custom scrollbar - theme aware */
 ::-webkit-scrollbar {
   width: 10px;

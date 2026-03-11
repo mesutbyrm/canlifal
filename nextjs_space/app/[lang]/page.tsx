@@ -261,8 +261,71 @@ export default function HomePage() {
           <LiveTicker />
         </div>
 
+        {/* Online Users Bar - fixed below ticker */}
+        <div className="fixed top-[114px] left-0 right-0 z-30 bg-gradient-to-r from-[#0f0520]/98 via-fuchsia-900/20 to-[#0f0520]/98 border-b border-fuchsia-500/20 py-1.5 px-3">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            {/* Online count badge */}
+            <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-2.5 py-1 border border-green-500/30">
+              <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
+              <span className="text-xs font-bold text-green-400">{onlineData.count}</span>
+              <span className="text-[10px] text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
+            </div>
+            
+            {/* Registered users with names */}
+            {onlineData.users.slice(0, 15).map((user) => (
+              <Link
+                key={user.id}
+                href={`/${language}/profile/${user.id}`}
+                className="flex-shrink-0 flex items-center gap-1 bg-fuchsia-900/30 border-fuchsia-500/30 hover:bg-fuchsia-800/50 rounded-full px-2 py-0.5 transition-colors border"
+              >
+                <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={user.name || ''}
+                    width={16}
+                    height={16}
+                    className="w-4 h-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-fuchsia-500/50 flex items-center justify-center">
+                    <span className="text-[8px] text-white font-medium">{user.name?.[0]}</span>
+                  </div>
+                )}
+                <span className="text-[10px] text-fuchsia-200 font-medium">{user.username || user.name?.split(' ')[0]}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Canlı Yayın & Canlı Falcı Buttons - fixed, flush below online bar */}
+        <div className="fixed top-[146px] left-0 right-0 z-30 bg-[#0f0520]/95 px-3 py-1.5">
+          <div className="flex gap-2">
+            <Link
+              href={`/${language}/chat/video`}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600/30 to-pink-600/30 border border-fuchsia-400/60 backdrop-blur-sm transition-all hover:border-fuchsia-300"
+              style={{ boxShadow: '0 0 15px rgba(217, 70, 239, 0.3)' }}
+            >
+              <Radio className="w-4 h-4 text-fuchsia-300" />
+              <span className="text-white font-bold text-sm">
+                {language === 'tr' ? 'Canlı Yayın' : 'Live Stream'}
+              </span>
+            </Link>
+            <Link
+              href={`/${language}/live-tellers`}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/30 to-fuchsia-600/30 border border-purple-400/60 backdrop-blur-sm transition-all hover:border-purple-300"
+              style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' }}
+            >
+              <Sparkles className="w-4 h-4 text-purple-300" />
+              <span className="text-white font-bold text-sm">
+                {language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}
+              </span>
+            </Link>
+          </div>
+        </div>
+
         {/* Main Content */}
-        <div className="pt-32 pb-28 px-4 space-y-4 relative z-10">
+        <div className="pt-[200px] pb-28 px-4 space-y-4 relative z-10">
           {/* Gift Banner */}
           <Link
             href={`/${language}/gifts`}

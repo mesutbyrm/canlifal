@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useSiteTheme } from '@/lib/theme-context'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
   MessageCircle,
-  ChevronLeft,
   Search,
-  Settings,
   Loader2,
   Mail,
   Check,
@@ -48,12 +47,28 @@ export default function MessagesPage() {
   const { data: session, status } = useSession() || {}
   const router = useRouter()
   const { language } = useLanguage()
+  const { theme } = useSiteTheme()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [requests, setRequests] = useState<MessageRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'messages' | 'requests'>('messages')
   const [searchQuery, setSearchQuery] = useState('')
   const [processingRequest, setProcessingRequest] = useState<string | null>(null)
+
+  const isFalclub = theme === 'falclub'
+  const isFalci = theme === 'falci'
+  const isCosmic = theme === 'cosmic'
+
+  // Theme colors
+  const bgColor = isFalclub ? 'bg-[#0f0520]' : isFalci ? 'bg-[#1a0a2e]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const cardBg = isFalclub ? 'bg-fuchsia-900/20 border-fuchsia-500/30' : isFalci ? 'bg-indigo-900/20 border-indigo-500/30' : isCosmic ? 'bg-blue-900/20 border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
+  const inputBg = isFalclub ? 'bg-fuchsia-900/30 border-fuchsia-700/50' : isFalci ? 'bg-indigo-900/30 border-indigo-700/50' : isCosmic ? 'bg-blue-900/30 border-blue-700/50' : 'bg-purple-900/30 border-purple-800'
+  const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
+  const activeTabBg = isFalclub ? 'border-fuchsia-400 text-fuchsia-300' : isFalci ? 'border-indigo-400 text-indigo-300' : isCosmic ? 'border-blue-400 text-blue-300' : 'border-amber-400 text-amber-300'
+  const inactiveTabColor = isFalclub ? 'text-fuchsia-400/60' : isFalci ? 'text-indigo-400/60' : isCosmic ? 'text-blue-400/60' : 'text-purple-400/60'
+  const hoverBg = isFalclub ? 'hover:bg-fuchsia-900/30' : isFalci ? 'hover:bg-indigo-900/30' : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/20'
+  const avatarGradient = isFalclub ? 'from-fuchsia-800 to-pink-800' : isFalci ? 'from-indigo-800 to-purple-800' : isCosmic ? 'from-blue-800 to-cyan-800' : 'from-purple-800 to-pink-800'
+  const dividerColor = isFalclub ? 'divide-fuchsia-900/30' : isFalci ? 'divide-indigo-900/30' : isCosmic ? 'divide-blue-900/30' : 'divide-purple-900/30'
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -113,52 +128,48 @@ export default function MessagesPage() {
 
   if (loading || status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
+        <Loader2 className={`w-8 h-8 ${accentColor} animate-spin`} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] pt-4">
-      {/* Search */}
-      <div className="max-w-lg mx-auto px-4 py-3">
+    <div className={`min-h-screen ${bgColor} pt-[60px]`}>
+      {/* Search - compact */}
+      <div className="max-w-lg mx-auto px-3 py-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${accentColor}`} />
           <input
             type="text"
             placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-purple-900/30 border border-purple-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-purple-400 focus:outline-none focus:border-purple-600"
+            className={`w-full ${inputBg} border rounded-lg py-2 pl-9 pr-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/50`}
           />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-lg mx-auto px-4">
-        <div className="flex border-b border-purple-900/30">
+      {/* Tabs - compact */}
+      <div className="max-w-lg mx-auto px-3">
+        <div className={`flex border-b ${isFalclub ? 'border-fuchsia-900/30' : isCosmic ? 'border-blue-900/30' : 'border-purple-900/30'}`}>
           <button
             onClick={() => setActiveTab('messages')}
-            className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors ${
-              activeTab === 'messages'
-                ? 'border-gold-400 text-gold-400'
-                : 'border-transparent text-purple-400'
+            className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors text-sm ${
+              activeTab === 'messages' ? activeTabBg : `border-transparent ${inactiveTabColor}`
             }`}
           >
-            <MessageCircle className="w-5 h-5 mx-auto" />
+            <MessageCircle className="w-4 h-4 mx-auto" />
           </button>
           <button
             onClick={() => setActiveTab('requests')}
-            className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors relative ${
-              activeTab === 'requests'
-                ? 'border-gold-400 text-gold-400'
-                : 'border-transparent text-purple-400'
+            className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors relative text-sm ${
+              activeTab === 'requests' ? activeTabBg : `border-transparent ${inactiveTabColor}`
             }`}
           >
-            <UserPlus className="w-5 h-5 mx-auto" />
+            <UserPlus className="w-4 h-4 mx-auto" />
             {requests.length > 0 && (
-              <span className="absolute top-2 right-1/3 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1/3 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {requests.length}
               </span>
             )}
@@ -169,17 +180,17 @@ export default function MessagesPage() {
       {/* Content */}
       <div className="max-w-lg mx-auto">
         {activeTab === 'messages' ? (
-          <div className="divide-y divide-purple-900/30">
+          <div className={`${dividerColor} divide-y`}>
             {filteredConversations.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
-                  <Mail className="w-10 h-10 text-purple-500" />
+              <div className="py-12 text-center">
+                <div className={`w-16 h-16 mx-auto mb-3 rounded-full ${isFalclub ? 'bg-fuchsia-900/30' : 'bg-purple-900/30'} flex items-center justify-center`}>
+                  <Mail className={`w-8 h-8 ${accentColor}`} />
                 </div>
-                <p className="text-purple-400 text-lg">
-                  {language === 'tr' ? 'Henüz mesaj yok' : 'No messages yet'}
+                <p className="text-white text-base">
+                  {language === 'tr' ? 'Hen\u00FCz mesaj yok' : 'No messages yet'}
                 </p>
-                <p className="text-purple-500 text-sm mt-2">
-                  {language === 'tr' ? 'Birini takip edip mesaj gönderebilirsiniz' : 'Follow someone to start a conversation'}
+                <p className="text-white/60 text-sm mt-1">
+                  {language === 'tr' ? 'Birini takip edip mesaj g\u00F6nderebilirsiniz' : 'Follow someone to start a conversation'}
                 </p>
               </div>
             ) : (
@@ -187,41 +198,41 @@ export default function MessagesPage() {
                 <Link
                   key={conv.id}
                   href={`/${language}/messages/${conv.user.id}`}
-                  className="flex items-center gap-3 p-4 hover:bg-purple-900/20 transition-colors"
+                  className={`flex items-center gap-3 p-3 ${hoverBg} transition-colors`}
                 >
                   <div className="relative">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-purple-900">
+                    <div className="w-12 h-12 rounded-full overflow-hidden">
                       {conv.user.image ? (
                         <Image
                           src={conv.user.image}
                           alt={conv.user.name}
-                          width={56}
-                          height={56}
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl text-purple-300 bg-gradient-to-br from-purple-800 to-pink-800">
+                        <div className={`w-full h-full flex items-center justify-center text-lg text-white bg-gradient-to-br ${avatarGradient}`}>
                           {conv.user.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
                     {conv.unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-fuchsia-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                         {conv.unreadCount}
                       </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className={`font-semibold ${conv.unreadCount > 0 ? 'text-white' : 'text-purple-200'}`}>
+                      <p className={`font-semibold text-sm ${conv.unreadCount > 0 ? 'text-white' : 'text-white/80'}`}>
                         {conv.user.name}
                       </p>
-                      <span className="text-xs text-purple-500">
+                      <span className="text-xs text-white/50">
                         {formatTime(conv.lastMessageAt)}
                       </span>
                     </div>
-                    <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'text-purple-200 font-medium' : 'text-purple-400'}`}>
-                      {conv.lastMessage || (language === 'tr' ? 'Mesaj başlat' : 'Start a conversation')}
+                    <p className={`text-xs truncate ${conv.unreadCount > 0 ? 'text-white/90 font-medium' : 'text-white/50'}`}>
+                      {conv.lastMessage || (language === 'tr' ? 'Mesaj ba\u015Flat' : 'Start a conversation')}
                     </p>
                   </div>
                 </Link>
@@ -229,53 +240,53 @@ export default function MessagesPage() {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-purple-900/30">
+          <div className={`${dividerColor} divide-y`}>
             {requests.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-900/30 flex items-center justify-center">
-                  <UserPlus className="w-10 h-10 text-purple-500" />
+              <div className="py-12 text-center">
+                <div className={`w-16 h-16 mx-auto mb-3 rounded-full ${isFalclub ? 'bg-fuchsia-900/30' : 'bg-purple-900/30'} flex items-center justify-center`}>
+                  <UserPlus className={`w-8 h-8 ${accentColor}`} />
                 </div>
-                <p className="text-purple-400 text-lg">
-                  {language === 'tr' ? 'Mesaj isteği yok' : 'No message requests'}
+                <p className="text-white text-base">
+                  {language === 'tr' ? 'Mesaj iste\u011Fi yok' : 'No message requests'}
                 </p>
               </div>
             ) : (
               requests.map((req) => (
                 <div
                   key={req.id}
-                  className="flex items-center gap-3 p-4"
+                  className="flex items-center gap-3 p-3"
                 >
                   <Link
                     href={`/${language}/profile/${req.sender.username || req.sender.id}`}
-                    className="w-14 h-14 rounded-full overflow-hidden bg-purple-900 flex-shrink-0"
+                    className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
                   >
                     {req.sender.image ? (
                       <Image
                         src={req.sender.image}
                         alt={req.sender.name}
-                        width={56}
-                        height={56}
+                        width={48}
+                        height={48}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl text-purple-300 bg-gradient-to-br from-purple-800 to-pink-800">
+                      <div className={`w-full h-full flex items-center justify-center text-lg text-white bg-gradient-to-br ${avatarGradient}`}>
                         {req.sender.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white">
+                    <p className="font-semibold text-white text-sm">
                       {req.sender.name}
                     </p>
-                    <p className="text-sm text-purple-400">
+                    <p className="text-xs text-white/60">
                       @{req.sender.username || 'user'}
                     </p>
                     {req.message && (
-                      <p className="text-sm text-purple-300 mt-1 line-clamp-2">
+                      <p className="text-xs text-white/70 mt-1 line-clamp-2">
                         &quot;{req.message}&quot;
                       </p>
                     )}
-                    <p className="text-xs text-purple-500 mt-1">
+                    <p className="text-[10px] text-white/40 mt-1">
                       {formatTime(req.createdAt)}
                     </p>
                   </div>
@@ -286,9 +297,9 @@ export default function MessagesPage() {
                       className="p-2 bg-green-600 hover:bg-green-500 rounded-full text-white"
                     >
                       {processingRequest === req.id ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4" />
                       )}
                     </button>
                     <button
@@ -296,7 +307,7 @@ export default function MessagesPage() {
                       disabled={processingRequest === req.id}
                       className="p-2 bg-red-600 hover:bg-red-500 rounded-full text-white"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
