@@ -126,12 +126,12 @@ export default function HomepageTicker() {
   // Add online count as first item - prominent scrolling count
   if (data.onlineCount > 0) {
     tickerItems.push(
-      <div key="online-count" className="inline-flex items-center gap-2 px-4 py-1.5 mx-2 whitespace-nowrap bg-green-50 rounded-full border border-green-200">
-        <Circle className="w-3 h-3 text-green-500 fill-green-500 animate-pulse" />
-        <span className="text-green-600 text-sm font-bold">
+      <div key="online-count" className="inline-flex items-center gap-2 px-4 py-1.5 mx-2 whitespace-nowrap bg-green-900/30 rounded-full border border-green-500/30">
+        <Circle className="w-3 h-3 text-green-400 fill-green-400 animate-pulse" />
+        <span className="text-green-400 text-sm font-bold">
           {data.onlineCount} {language === 'tr' ? 'kişi sitede' : 'people online'}
         </span>
-        <span className="text-green-500">👥</span>
+        <span className="text-green-400">👥</span>
       </div>
     )
   }
@@ -143,8 +143,8 @@ export default function HomepageTicker() {
     
     tickerItems.push(
       <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-        <Circle className={`w-2 h-2 ${isGuest ? 'text-[#1877f2] fill-[#1877f2]' : 'text-green-500 fill-green-500'} animate-pulse`} />
-        <span className={`${isGuest ? 'text-[#1877f2]' : 'text-green-600'} text-xs font-medium`}>
+        <Circle className={`w-2 h-2 ${isGuest ? 'text-purple-400 fill-purple-400' : 'text-green-400 fill-green-400'} animate-pulse`} />
+        <span className={`${isGuest ? 'text-purple-400' : 'text-green-400'} text-xs font-medium`}>
           {isGuest 
             ? (language === 'tr' ? 'Ziyaretçi' : 'Visitor')
             : (language === 'tr' ? 'Giriş yaptı' : 'Logged in')
@@ -156,13 +156,13 @@ export default function HomepageTicker() {
               <Image src={user.image} alt={user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
-            <div className={`w-5 h-5 rounded-full ${isGuest ? 'bg-[#e7f3ff]' : 'bg-green-100'} flex items-center justify-center`}>
-              <span className={`text-[10px] ${isGuest ? 'text-[#1877f2]' : 'text-green-600'}`}>
+            <div className={`w-5 h-5 rounded-full ${isGuest ? 'bg-purple-500/30' : 'bg-green-500/30'} flex items-center justify-center`}>
+              <span className={`text-[10px] ${isGuest ? 'text-purple-300' : 'text-green-300'}`}>
                 {isGuest ? '👤' : (user.name?.charAt(0) || '?')}
               </span>
             </div>
           )}
-          <span className={`text-xs font-semibold ${isGuest ? 'text-[#1877f2]' : 'text-gray-700'}`}>
+          <span className={`text-xs font-semibold ${isGuest ? 'text-purple-300' : 'text-purple-200'}`}>
             {displayName}
           </span>
         </div>
@@ -174,8 +174,8 @@ export default function HomepageTicker() {
   data.recentPurchasers.forEach((purchase, index) => {
     tickerItems.push(
       <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-        <Coins className="w-4 h-4 text-[#1877f2]" />
-        <span className="text-[#1877f2] text-xs font-medium">
+        <Coins className="w-4 h-4 text-gold-400" />
+        <span className="text-gold-400 text-xs font-medium">
           {language === 'tr' ? 'Yeni Jeton' : 'New Credits'}
         </span>
         <div className="flex items-center gap-1.5">
@@ -184,14 +184,14 @@ export default function HomepageTicker() {
               <Image src={purchase.user.image} alt={purchase.user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded-full bg-[#e7f3ff] flex items-center justify-center">
-              <span className="text-[10px] text-[#1877f2]">{purchase.user.name?.charAt(0) || '?'}</span>
+            <div className="w-5 h-5 rounded-full bg-gold-500/20 flex items-center justify-center">
+              <span className="text-[10px] text-gold-400">{purchase.user.name?.charAt(0) || '?'}</span>
             </div>
           )}
-          <span className="text-gray-700 text-xs font-semibold">
+          <span className="text-purple-200 text-xs font-semibold">
             {purchase.user.username || purchase.user.name?.split(' ')[0] || 'Kullanıcı'}
           </span>
-          <span className="text-[#1877f2] text-xs font-bold">+{purchase.amount} 💰</span>
+          <span className="text-gold-400 text-xs font-bold">+{purchase.amount} 💰</span>
         </div>
       </div>
     )
@@ -204,14 +204,14 @@ export default function HomepageTicker() {
     
     tickerItems.push(
       <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-        <Crown className="w-4 h-4 text-[#fa3e3e]" />
-        <span className="text-gray-600 text-xs">
-          <span className="text-gray-800 font-semibold">{senderName}</span>
+        <Crown className="w-4 h-4 text-pink-400" />
+        <span className="text-purple-300 text-xs">
+          <span className="text-white font-semibold">{senderName}</span>
           {language === 'tr' ? ', ' : ' sent '}
-          <span className="text-gray-800 font-semibold">{receiverName}</span>
+          <span className="text-white font-semibold">{receiverName}</span>
           {language === 'tr' ? "'a en büyük hediye olan " : ' the biggest gift '}
           <span className="text-xl mx-1">{gift.giftType.icon}</span>
-          <span className="text-[#1877f2] font-bold">{gift.totalPrice.toLocaleString()}</span>
+          <span className="text-gold-400 font-bold">{gift.totalPrice.toLocaleString()}</span>
           {language === 'tr' ? ' attı!' : '!'}
         </span>
       </div>
@@ -241,7 +241,7 @@ export default function HomepageTicker() {
       tickerItems.push(
         <div key={`placeholder-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
           <span className="text-lg">{msg.icon}</span>
-          <span className="text-gray-600 text-xs font-medium">{msg.text}</span>
+          <span className="text-purple-300 text-xs font-medium">{msg.text}</span>
         </div>
       )
     })
@@ -257,29 +257,29 @@ export default function HomepageTicker() {
     const receiverName = flashGift.stream.user.username || flashGift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
     
     return (
-      <div className="w-full overflow-hidden bg-gradient-to-r from-[#e7f3ff] via-white to-[#e7f3ff] py-2 border-b border-gray-200">
+      <div className="w-full overflow-hidden bg-gradient-to-r from-purple-900/50 via-pink-900/30 to-purple-900/50 py-2 border-b border-purple-500/30">
         <div className="flex items-center justify-center gap-3">
           {/* Flashing gift sender profile */}
           <div className={`flex items-center gap-3 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-20'}`}>
-            <Crown className="w-5 h-5 text-[#fa3e3e]" />
+            <Crown className="w-5 h-5 text-gold-400" />
             <div className="flex items-center gap-2">
               {flashGift.sender.image ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#1877f2] animate-pulse">
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gold-500 animate-pulse">
                   <Image src={flashGift.sender.image} alt={senderName} width={32} height={32} className="object-cover" />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-[#e7f3ff] flex items-center justify-center border-2 border-[#1877f2] animate-pulse">
-                  <span className="text-sm text-[#1877f2] font-bold">{senderName[0]}</span>
+                <div className="w-8 h-8 rounded-full bg-purple-500/30 flex items-center justify-center border-2 border-gold-500 animate-pulse">
+                  <span className="text-sm text-gold-400 font-bold">{senderName[0]}</span>
                 </div>
               )}
-              <span className="text-gray-800 font-bold">{senderName}</span>
+              <span className="text-white font-bold">{senderName}</span>
             </div>
-            <span className="text-[#1877f2]">{language === 'tr' ? "→" : "→"}</span>
+            <span className="text-gold-400">{language === 'tr' ? "→" : "→"}</span>
             <span className="text-2xl">{flashGift.giftType.icon}</span>
-            <span className="text-[#1877f2] font-bold">{flashGift.totalPrice.toLocaleString()}</span>
-            <span className="text-[#1877f2]">{language === 'tr' ? "→" : "→"}</span>
-            <span className="text-gray-800 font-semibold">{receiverName}</span>
-            <span className="text-gray-600 text-sm">{language === 'tr' ? ' attı!' : ' sent!'}</span>
+            <span className="text-gold-400 font-bold">{flashGift.totalPrice.toLocaleString()}</span>
+            <span className="text-gold-400">{language === 'tr' ? "→" : "→"}</span>
+            <span className="text-white font-semibold">{receiverName}</span>
+            <span className="text-purple-300 text-sm">{language === 'tr' ? ' attı!' : ' sent!'}</span>
           </div>
         </div>
       </div>
@@ -287,10 +287,10 @@ export default function HomepageTicker() {
   }
 
   return (
-    <div className="w-full overflow-hidden bg-white py-1.5 border-b border-gray-200 shadow-sm">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] py-1.5 border-b border-purple-500/30">
       <div className="flex items-center">
         {/* Label */}
-        <div className="flex-shrink-0 px-3 py-0.5 bg-[#1877f2] text-white text-[10px] font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10">
+        <div className="flex-shrink-0 px-3 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10">
           <Sparkles className="w-3 h-3" />
           {language === 'tr' ? 'SOSYAL' : 'SOCIAL'}
         </div>

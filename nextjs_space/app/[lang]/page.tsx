@@ -215,7 +215,7 @@ export default function HomePage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
+    <div className="min-h-screen bg-[#0a0118]">
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <HomepageTicker />
@@ -223,26 +223,26 @@ export default function HomePage() {
 
       {/* Last Online Users - below ticker */}
       {onlineData.users.length > 0 && (
-        <div className="fixed top-[92px] left-0 right-0 z-30 bg-white/98 border-b border-gray-200 py-2.5 px-4 shadow-sm">
+        <div className="fixed top-[92px] left-0 right-0 z-30 bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20 py-2.5 px-4">
           <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {/* Online count badge */}
-            <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-50 rounded-full px-3 py-1 border border-green-200">
-              <Circle className="w-2.5 h-2.5 text-green-500 fill-green-500 animate-pulse" />
-              <span className="text-sm font-bold text-green-600">{onlineData.count}</span>
-              <span className="text-xs text-green-600/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
+            <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-3 py-1 border border-green-500/30">
+              <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
+              <span className="text-sm font-bold text-green-400">{onlineData.count}</span>
+              <span className="text-xs text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
             </div>
             
             {/* Separator */}
-            <div className="w-px h-5 bg-gray-300 flex-shrink-0" />
+            <div className="w-px h-5 bg-purple-500/30 flex-shrink-0" />
             
             {/* User list */}
             {onlineData.users.slice(0, 15).map((user) => (
               <Link
                 key={user.id}
                 href={`/${language}/profile/${user.id}`}
-                className="flex-shrink-0 flex items-center gap-1.5 bg-gray-100 rounded-full px-2.5 py-1 hover:bg-gray-200 transition-colors border border-gray-200"
+                className="flex-shrink-0 flex items-center gap-1.5 bg-purple-900/30 rounded-full px-2.5 py-1 hover:bg-purple-800/50 transition-colors border border-purple-500/30"
               >
-                <Circle className="w-1.5 h-1.5 text-green-500 fill-green-500" />
+                <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
                 {user.image ? (
                   <Image
                     src={user.image}
@@ -252,11 +252,11 @@ export default function HomePage() {
                     className="w-[18px] h-[18px] rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-[18px] h-[18px] rounded-full bg-[#1877f2] flex items-center justify-center">
+                  <div className="w-[18px] h-[18px] rounded-full bg-purple-500/50 flex items-center justify-center">
                     <span className="text-[9px] text-white font-medium">{user.name?.[0]}</span>
                   </div>
                 )}
-                <span className="text-xs text-gray-700 font-medium">{user.username || user.name?.split(' ')[0]}</span>
+                <span className="text-xs text-purple-200 font-medium">{user.username || user.name?.split(' ')[0]}</span>
               </Link>
             ))}
           </div>
@@ -268,10 +268,10 @@ export default function HomePage() {
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setActiveTab('fortunes')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
               activeTab === 'fortunes'
-                ? 'bg-[#1877f2] text-white shadow-md'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
             }`}
           >
             <Radio className="w-4 h-4" />
@@ -279,10 +279,10 @@ export default function HomePage() {
           </button>
           <button
             onClick={() => setActiveTab('live')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
               activeTab === 'live'
-                ? 'bg-[#1877f2] text-white shadow-md'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
             }`}
           >
             <Video className="w-4 h-4" />
@@ -295,9 +295,9 @@ export default function HomePage() {
         /* Live Tellers Tab Content */
         <div className="px-4 pb-8">
           {/* Live Tellers Section - Circular Avatars */}
-          <div className="mb-8 bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#1877f2]" />
+          <div className="mb-8 bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-gold-400" />
               {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
             </h2>
 
@@ -309,10 +309,10 @@ export default function HomePage() {
                   href={`/${language}/live-tellers/${teller.id}`}
                   className="flex-shrink-0 flex flex-col items-center"
                 >
-                  {/* Circular Avatar with Blue Gradient Border */}
+                  {/* Circular Avatar with Purple/Pink Gradient Border */}
                   <div className="relative">
-                    <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? 'bg-gradient-to-br from-[#1877f2] to-[#166fe5]' : 'bg-gray-300'}`}>
-                      <div className={`w-full h-full rounded-full overflow-hidden bg-white ${!teller.isOnline ? 'opacity-60' : ''}`}>
+                    <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? 'bg-gradient-to-br from-purple-500 to-pink-500' : 'bg-gray-600'}`}>
+                      <div className={`w-full h-full rounded-full overflow-hidden bg-[#0a0118] ${!teller.isOnline ? 'opacity-60' : ''}`}>
                         {teller.avatar || teller.user.image ? (
                           <Image
                             src={teller.avatar || teller.user.image || ''}
@@ -322,7 +322,7 @@ export default function HomePage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[#1877f2] to-[#166fe5] flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                             <span className="text-2xl font-bold text-white">
                               {teller.displayName?.[0]?.toUpperCase()}
                             </span>
@@ -331,24 +331,24 @@ export default function HomePage() {
                       </div>
                     </div>
                     {/* Online/Offline indicator */}
-                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${teller.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#0a0118] ${teller.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                   </div>
                   {/* Name */}
-                  <p className={`text-xs font-medium mt-2 text-center w-20 truncate ${teller.isOnline ? 'text-gray-900' : 'text-gray-500'}`}>{teller.displayName}</p>
+                  <p className={`text-xs font-medium mt-2 text-center w-20 truncate ${teller.isOnline ? 'text-white' : 'text-gray-500'}`}>{teller.displayName}</p>
                   {/* Rating */}
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Star className={`w-2.5 h-2.5 ${teller.isOnline ? 'text-[#1877f2] fill-[#1877f2]' : 'text-gray-400 fill-gray-400'}`} />
-                    <span className={`text-[10px] ${teller.isOnline ? 'text-[#1877f2]' : 'text-gray-400'}`}>{teller.rating.toFixed(1)}</span>
+                    <Star className={`w-2.5 h-2.5 ${teller.isOnline ? 'text-gold-400 fill-gold-400' : 'text-gray-500 fill-gray-500'}`} />
+                    <span className={`text-[10px] ${teller.isOnline ? 'text-gold-400' : 'text-gray-500'}`}>{teller.rating.toFixed(1)}</span>
                   </div>
                 </Link>
               )) : (
                 <div className="flex-1 py-8 text-center w-full">
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-purple-300 text-sm">
                     {language === 'tr' ? 'Şu an falcı yok' : 'No tellers right now'}
                   </p>
                   <Link
                     href={`/${language}/live-tellers`}
-                    className="inline-block mt-3 px-4 py-1.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-lg text-xs font-medium transition-colors"
+                    className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-full text-xs font-medium transition-colors"
                   >
                     {language === 'tr' ? 'Tüm Falcıları Gör' : 'See All Tellers'}
                   </Link>
@@ -358,13 +358,13 @@ export default function HomePage() {
           </div>
 
           {/* Fortune Categories in Live Tab */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#1877f2]" />
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-gold-400" />
                 {language === 'tr' ? 'Fal Kategorileri' : 'Fortune Categories'}
               </h2>
-              <Link href={`/${language}/fortunes`} className="text-[#1877f2] text-sm flex items-center gap-1 hover:underline">
+              <Link href={`/${language}/fortunes`} className="text-gold-400 text-sm flex items-center gap-1 hover:text-gold-300">
                 {language === 'tr' ? 'Tümünü Gör' : 'See All'}
                 <ChevronRight className="w-4 h-4" />
               </Link>
@@ -373,7 +373,7 @@ export default function HomePage() {
             <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
               {FORTUNE_CARDS.slice(0, 4).map((card) => (
                 <Link key={card.id} href={`/${language}${card.href}`} className="flex-shrink-0 w-32">
-                  <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-purple-900/50 border border-purple-500/30 hover:border-purple-400/50 transition-all">
                     <Image
                       src={card.image}
                       alt={language === 'tr' ? card.nameTr : card.nameEn}
@@ -384,8 +384,8 @@ export default function HomePage() {
                     <div className="absolute bottom-2 left-2 right-2">
                       <h3 className="text-white font-medium text-xs">{language === 'tr' ? card.nameTr : card.nameEn}</h3>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                        <span className="text-yellow-400 text-[10px]">5.0</span>
+                        <Star className="w-2.5 h-2.5 text-gold-400 fill-gold-400" />
+                        <span className="text-gold-400 text-[10px]">5.0</span>
                       </div>
                     </div>
                   </div>
@@ -398,9 +398,9 @@ export default function HomePage() {
         /* Live Streams Tab Content */
         <div className="px-4 pb-8">
           {/* Header */}
-          <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Radio className="w-5 h-5 text-[#fa3e3e]" />
+          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm mb-4">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Radio className="w-5 h-5 text-red-400" />
               {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
             </h2>
 
@@ -417,12 +417,12 @@ export default function HomePage() {
                 }}
                 className="flex-shrink-0 flex flex-col items-center"
               >
-                <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-[#1877f2] to-[#166fe5]">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                    <Plus className="w-8 h-8 text-[#1877f2]" />
+                <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-purple-500 to-pink-500">
+                  <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center">
+                    <Plus className="w-8 h-8 text-purple-400" />
                   </div>
                 </div>
-                <p className="text-gray-700 text-xs font-medium mt-2 text-center">
+                <p className="text-purple-300 text-xs font-medium mt-2 text-center">
                   {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
                 </p>
               </button>
@@ -438,10 +438,10 @@ export default function HomePage() {
                     className="flex-shrink-0 flex flex-col items-center"
                   >
                     <Link href={`/${language}/chat/video?watch=${stream.id}`}>
-                      {/* Circular Avatar with Red Animated Border */}
+                      {/* Circular Avatar with Rainbow Animated Border */}
                       <div className="relative">
-                        <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-[#fa3e3e] to-[#ff6b6b] animate-pulse">
-                          <div className="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
+                        <div className="w-20 h-20 rounded-full p-[3px] rainbow-border">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-[2px]">
                             <div className="w-full h-full rounded-full overflow-hidden">
                               {stream.user.image ? (
                                 <Image
@@ -452,7 +452,7 @@ export default function HomePage() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-[#1877f2] to-[#166fe5] flex items-center justify-center">
+                                <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                                   <span className="text-xl font-bold text-white">
                                     {stream.user.name?.[0]?.toUpperCase()}
                                   </span>
@@ -463,20 +463,20 @@ export default function HomePage() {
                         </div>
                         {/* CANLI Badge */}
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                          <span className="bg-[#fa3e3e] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
+                          <span className="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
                             <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
                             CANLI
                           </span>
                         </div>
                       </div>
                       {/* Name */}
-                      <p className="text-gray-700 text-xs font-medium mt-2 text-center w-20 truncate">{stream.user.name}</p>
+                      <p className="text-purple-200 text-xs font-medium mt-2 text-center w-20 truncate">{stream.user.name}</p>
                     </Link>
                   </motion.div>
                 ))
               ) : (
                 <div className="flex items-center pl-4">
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-purple-300 text-sm">
                     {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
                   </p>
                 </div>
@@ -485,9 +485,9 @@ export default function HomePage() {
           </div>
 
           {/* Fortune Types - Circular Icons */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#1877f2]" />
+          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-gold-400" />
               {language === 'tr' ? 'Fallar' : 'Fortunes'}
             </h2>
             <div className="grid grid-cols-4 gap-4">
@@ -497,7 +497,7 @@ export default function HomePage() {
                   href={`/${language}${fortune.href}`}
                   className="flex flex-col items-center"
                 >
-                  <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-[#1877f2] to-[#166fe5] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 transition-all">
                     <div className="w-full h-full rounded-full overflow-hidden">
                       <Image
                         src={fortune.image}
@@ -508,7 +508,7 @@ export default function HomePage() {
                       />
                     </div>
                   </div>
-                  <p className="text-gray-700 text-[10px] font-medium mt-1.5 text-center w-16 leading-tight">
+                  <p className="text-purple-200 text-[10px] font-medium mt-1.5 text-center w-16 leading-tight">
                     {language === 'tr' ? fortune.nameTr : fortune.nameEn}
                   </p>
                 </Link>

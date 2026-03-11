@@ -85,8 +85,23 @@ export default function MobileFooter() {
         animate={{ y: 0 }}
         className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
       >
-        {/* Clean White Background */}
-        <div className="relative h-20 overflow-hidden bg-white border-t border-gray-200 shadow-lg">
+        {/* Mystical Dark Purple Background */}
+        <div className="relative h-20 overflow-hidden bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-t border-purple-500/30">
+          {/* Starry effect */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(10)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-0.5 h-0.5 bg-white rounded-full animate-twinkle"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                }}
+              />
+            ))}
+          </div>
+          
           {/* Navigation Items */}
           <nav className="relative h-full flex items-center justify-around px-1">
             {navItems.map((item, index) => {
@@ -101,9 +116,9 @@ export default function MobileFooter() {
                       href={item.href}
                       className="relative -mt-6 group"
                     >
-                      {/* Blue ring */}
+                      {/* Gradient ring */}
                       <div 
-                        className="relative w-14 h-14 rounded-full flex items-center justify-center bg-[#1877f2] shadow-lg"
+                        className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30"
                       >
                         <Icon 
                           className="w-6 h-6 text-white group-hover:scale-110 transition-transform" 
@@ -111,7 +126,7 @@ export default function MobileFooter() {
                         />
                       </div>
                     </Link>
-                    <span className="text-[10px] font-medium mt-1 text-[#1877f2]">
+                    <span className="text-[10px] font-medium mt-1 text-gold-400">
                       {item.label}
                     </span>
                   </div>
@@ -125,26 +140,26 @@ export default function MobileFooter() {
                   className="flex flex-col items-center justify-center w-16 py-2 group"
                 >
                   <div className="relative w-9 h-9 flex items-center justify-center">
-                    {/* Icon with Facebook styling */}
+                    {/* Icon with mystical styling */}
                     {index === 0 && (
                       // Profile
                       <div 
-                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-[#e7f3ff]' : 'bg-gray-100'}`}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}
                       >
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-[#1877f2]' : 'text-gray-500'}`} />
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
                       </div>
                     )}
                     
                     {index === 1 && (
                       // Messages - chat bubble with badge
                       <>
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-[#e7f3ff]' : 'bg-gray-100'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}>
                           <MessageCircle 
-                            className={`w-5 h-5 ${isActive ? 'text-[#1877f2]' : 'text-gray-500'}`}
+                            className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`}
                           />
                         </div>
                         {unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-0 bg-[#fa3e3e] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                          <span className="absolute -top-1 -right-0 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                             {unreadCount > 9 ? '9+' : unreadCount}
                           </span>
                         )}
@@ -153,22 +168,22 @@ export default function MobileFooter() {
                     
                     {index === 3 && (
                       // Gift - credits
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-[#e7f3ff]' : 'bg-gray-100'}`}>
-                        <Gift className={`w-5 h-5 ${isActive ? 'text-[#1877f2]' : 'text-gray-500'}`} />
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}>
+                        <Gift className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
                       </div>
                     )}
                     
                     {index === 4 && (
                       // Home
                       <div 
-                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-[#e7f3ff]' : 'bg-gray-100'}`}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}
                       >
-                        <Home className={`w-5 h-5 ${isActive ? 'text-[#1877f2]' : 'text-gray-500'}`} />
+                        <Home className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
                       </div>
                     )}
                   </div>
                   
-                  <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-[#1877f2]' : 'text-gray-500'}`}>
+                  <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-gold-400' : 'text-purple-400'}`}>
                     {item.label}
                   </span>
                 </Link>

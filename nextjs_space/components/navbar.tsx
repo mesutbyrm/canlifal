@@ -165,7 +165,7 @@ export default function Navbar() {
     return (
       <div className="relative">
         {currentImage ? (
-          <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-[#1877f2] flex-shrink-0`}>
+          <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500 flex-shrink-0`}>
             <Image
               src={currentImage}
               alt={session?.user?.name || 'Profil'}
@@ -175,18 +175,18 @@ export default function Navbar() {
             />
           </div>
         ) : (
-          <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-[#1877f2] to-[#166fe5] flex items-center justify-center border-2 border-[#1877f2] flex-shrink-0`}>
+          <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-2 border-gold-500 flex-shrink-0`}>
             <span className="text-white font-bold text-sm">
               {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
         )}
         {showCamera && (
-          <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#1877f2] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#166fe5] transition-colors shadow-lg">
+          <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors shadow-lg">
             {uploadingImage ? (
-              <Loader2 className="w-3 h-3 text-white animate-spin" />
+              <Loader2 className="w-3 h-3 text-black animate-spin" />
             ) : (
-              <Camera className="w-3 h-3 text-white" />
+              <Camera className="w-3 h-3 text-black" />
             )}
             <input
               ref={fileInputRef}
@@ -209,7 +209,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-fb border-b border-gray-200 ${hideOnMobile ? 'hidden md:block' : ''}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 ${hideOnMobile ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex justify-between items-center h-14">
             {/* Main Navigation - 4 items */}
@@ -217,7 +217,7 @@ export default function Navbar() {
               {/* İstatistikler (Statistics) */}
               <Link
                 href={`/${language}/dashboard`}
-                className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#1877f2] transition-colors px-3 py-1 rounded-lg hover:bg-gray-100"
+                className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
               >
                 <Sparkles className="w-6 h-6" />
                 <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
@@ -226,12 +226,12 @@ export default function Navbar() {
               {/* Sosyal (Social) - links to social feed page */}
               <Link
                 href={`/${language}/social`}
-                className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#1877f2] transition-colors px-3 py-1 rounded-lg hover:bg-gray-100 relative"
+                className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30 relative"
               >
                 <div className="relative">
                   <Users className="w-6 h-6" />
                   {liveStreamCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#fa3e3e] rounded-full flex items-center justify-center px-1">
+                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center px-1">
                       <span className="text-white text-[10px] font-bold">{liveStreamCount}</span>
                     </span>
                   )}
@@ -242,7 +242,7 @@ export default function Navbar() {
               {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
               <Link
                 href={`/${language}/chat`}
-                className="flex flex-col items-center gap-0.5 text-gray-600 hover:text-[#1877f2] transition-colors px-3 py-1 rounded-lg hover:bg-gray-100"
+                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
               >
                 <MessageCircle className="w-6 h-6" />
                 <span className="text-[10px] font-medium text-center leading-tight">{language === 'tr' ? 'Fal Sohbet' : 'Chat Rooms'}</span>
@@ -253,14 +253,14 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex flex-col items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100"
+                    className="flex flex-col items-center gap-1 px-2 py-1 rounded-lg hover:bg-purple-900/30"
                   >
-                    {/* Blue border for admin */}
+                    {/* Gold border for admin */}
                     <div className={`relative ${session.user.role === 'admin' ? 'p-0.5' : ''}`}>
                       {session.user.role === 'admin' && (
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1877f2] to-[#166fe5]" />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gold-500 to-gold-600" />
                       )}
-                      <div className={`relative ${session.user.role === 'admin' ? 'w-10 h-10' : 'w-9 h-9'} rounded-full overflow-hidden border-2 ${session.user.role === 'admin' ? 'border-[#1877f2]' : 'border-gray-300'}`}>
+                      <div className={`relative ${session.user.role === 'admin' ? 'w-10 h-10' : 'w-9 h-9'} rounded-full overflow-hidden border-2 ${session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}`}>
                         {profileImage || session.user.image ? (
                           <Image
                             src={profileImage || session.user.image || ''}
@@ -270,7 +270,7 @@ export default function Navbar() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[#1877f2] to-[#166fe5] flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                             <span className="text-white font-bold text-sm">
                               {session.user.name?.charAt(0).toUpperCase() || 'U'}
                             </span>
@@ -279,7 +279,7 @@ export default function Navbar() {
                       </div>
                       {/* Admin badge overlay */}
                       {session.user.role === 'admin' && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-[#1877f2] text-[7px] font-bold text-white px-1.5 rounded">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[7px] font-bold text-black px-1.5 rounded">
                           ADMIN
                         </div>
                       )}
@@ -288,14 +288,14 @@ export default function Navbar() {
                   
                   {/* Profile dropdown */}
                   {showProfileMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-fb-lg py-2 z-50">
-                      <div className="px-4 py-3 border-b border-gray-200">
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
+                      <div className="px-4 py-3 border-b border-purple-700">
                         <div className="flex items-center gap-3">
                           <ProfileAvatar size="xl" showCamera />
                           <div className="flex-1 min-w-0">
-                            <p className="text-gray-900 font-semibold truncate">{session.user.name}</p>
-                            <p className="text-gray-500 text-xs truncate">{session.user.email}</p>
-                            <p className="text-[#1877f2] text-[10px] mt-1 flex items-center gap-1">
+                            <p className="text-white font-semibold truncate">{session.user.name}</p>
+                            <p className="text-purple-300 text-xs truncate">{session.user.email}</p>
+                            <p className="text-gold-400 text-[10px] mt-1 flex items-center gap-1">
                               <Camera className="w-3 h-3" />
                               {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
                             </p>
@@ -306,66 +306,66 @@ export default function Navbar() {
                       {/* Credits display */}
                       <Link
                         href={`/${language}/credits`}
-                        className="flex items-center justify-between px-4 py-2.5 text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <div className="flex items-center gap-3">
-                          <Coins className="w-5 h-5 text-[#1877f2]" />
+                          <Coins className="w-5 h-5 text-gold-400" />
                           {language === 'tr' ? 'Kredilerim' : 'My Credits'}
                         </div>
-                        <span className="font-bold text-[#1877f2]">{credits}</span>
+                        <span className="font-bold text-gold-400">{credits}</span>
                       </Link>
                       
                       <Link
                         href={`/${language}/profile/${session.user.id}`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <User className="w-5 h-5 text-gray-500" />
+                        <User className="w-5 h-5 text-purple-400" />
                         {language === 'tr' ? 'Profilim' : 'My Profile'}
                       </Link>
                       
                       <Link
                         href={`/${language}/dashboard`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <LayoutGrid className="w-5 h-5 text-gray-500" />
+                        <LayoutGrid className="w-5 h-5 text-purple-400" />
                         {language === 'tr' ? 'Panelim' : 'Dashboard'}
                       </Link>
                       
                       <Link
                         href={`/${language}/settings`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <Settings className="w-5 h-5 text-gray-500" />
+                        <Settings className="w-5 h-5 text-purple-400" />
                         {language === 'tr' ? 'Ayarlar' : 'Settings'}
                       </Link>
 
                       {session?.user?.role === 'admin' && (
                         <Link
                           href={`/${language}/admin`}
-                          className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100"
+                          className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
                           onClick={() => setShowProfileMenu(false)}
                         >
-                          <Shield className="w-5 h-5 text-[#1877f2]" />
+                          <Shield className="w-5 h-5 text-gold-400" />
                           Admin
                         </Link>
                       )}
                       
                       <button
                         onClick={toggleLanguage}
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 w-full"
+                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50 w-full"
                       >
-                        <Globe className="w-5 h-5 text-gray-500" />
+                        <Globe className="w-5 h-5 text-purple-400" />
                         {language === 'tr' ? 'English' : 'Türkçe'}
                       </button>
                       
-                      <div className="border-t border-gray-200 mt-2 pt-2">
+                      <div className="border-t border-purple-700 mt-2 pt-2">
                         <button
                           onClick={() => signOut({ callbackUrl: `/${language}` })}
-                          className="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 w-full"
+                          className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-900/30 w-full"
                         >
                           <LogOut className="w-5 h-5" />
                           {language === 'tr' ? 'Çıkış Yap' : 'Log Out'}
@@ -377,7 +377,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href={`/${language}/login`}
-                  className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#1877f2] transition-colors px-3 py-1 rounded-lg hover:bg-gray-100"
+                  className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
                 >
                   <User className="w-6 h-6" />
                   <span className="text-[11px] font-medium">{language === 'tr' ? 'Giriş' : 'Login'}</span>
