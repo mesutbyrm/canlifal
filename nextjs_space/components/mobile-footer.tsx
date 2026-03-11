@@ -120,7 +120,7 @@ export default function MobileFooter() {
       {session?.user && (
         <Link
           href={`/${language}/profile/${session.user.id}`}
-          className="fixed bottom-[72px] right-3 z-50 md:hidden"
+          className="fixed bottom-[70px] right-3 z-[51] md:hidden"
         >
           <motion.div
             initial={{ scale: 0 }}
