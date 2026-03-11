@@ -59,7 +59,7 @@ export async function GET() {
     })
 
     // Create guest user entries as "faluser"
-    const guestUsers = guestPresences.map((guest, index) => ({
+    const guestUsers = guestPresences.map((guest: { visitorId: string }, index: number) => ({
       id: `guest-${guest.visitorId}`,
       name: `faluser${index + 1}`,
       username: null,
@@ -72,7 +72,7 @@ export async function GET() {
 
     // Combine registered users and guests for display
     const allOnlineUsers = [
-      ...onlineUsers.map(u => ({ ...u, isGuest: false })),
+      ...onlineUsers.map((u: { id: string; name: string | null; username: string | null; image: string | null }) => ({ ...u, isGuest: false })),
       ...guestUsers
     ]
 
@@ -100,7 +100,7 @@ export async function GET() {
     })
 
     // Get user info for purchasers
-    const purchaserIds = recentPurchases.map(p => p.userId)
+    const purchaserIds = recentPurchases.map((p: { userId: string }) => p.userId)
     const purchasers = await prisma.user.findMany({
       where: {
         id: { in: purchaserIds }
@@ -113,8 +113,8 @@ export async function GET() {
       }
     })
 
-    const purchasersMap = new Map(purchasers.map(p => [p.id, p]))
-    const recentPurchasersWithInfo = recentPurchases.map(p => ({
+    const purchasersMap = new Map(purchasers.map((p: { id: string; name: string | null; username: string | null; image: string | null }) => [p.id, p]))
+    const recentPurchasersWithInfo = recentPurchases.map((p: { id: string; userId: string; amount: number; createdAt: Date }) => ({
       ...p,
       user: purchasersMap.get(p.userId) || { id: p.userId, name: 'Kullanıcı', username: null, image: null }
     }))
