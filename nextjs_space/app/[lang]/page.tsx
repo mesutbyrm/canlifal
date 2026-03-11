@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import HomepageTicker from '@/components/homepage-ticker'
+import LiveTicker from '@/components/live-ticker'
 import { useSiteTheme } from '@/lib/theme-context'
 
 interface LiveTeller {
@@ -256,10 +257,11 @@ export default function HomePage() {
         {/* Ticker */}
         <div className="fixed top-14 left-0 right-0 z-40">
           <HomepageTicker />
+          <LiveTicker />
         </div>
 
         {/* Main Content */}
-        <div className="pt-24 pb-28 px-4 space-y-4 relative z-10">
+        <div className="pt-32 pb-28 px-4 space-y-4 relative z-10">
           {/* Gift Banner */}
           <Link
             href={`/${language}/gifts`}
@@ -368,6 +370,46 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* ONLINE FALCILAR Section */}
+          {sortedTellers.filter(t => t.isOnline).length > 0 && (
+            <div className="falclub-card p-4">
+              <h2 className="falclub-section-title mb-4">
+                <Circle className="w-5 h-5 text-green-400 fill-green-400 animate-pulse" />
+                {language === 'tr' ? 'ONLINE FALCILAR' : 'ONLINE TELLERS'}
+              </h2>
+              
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+                {sortedTellers.filter(t => t.isOnline).map((teller) => (
+                  <Link
+                    key={teller.id}
+                    href={`/${language}/live-tellers/${teller.id}`}
+                    className="flex-shrink-0 flex flex-col items-center gap-2 w-20"
+                  >
+                    <div 
+                      className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-400/80 relative"
+                      style={{ boxShadow: '0 0 12px rgba(74, 222, 128, 0.4)' }}
+                    >
+                      {teller.avatar ? (
+                        <Image src={teller.avatar} alt={teller.displayName} width={64} height={64} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">{teller.displayName?.[0]}</span>
+                        </div>
+                      )}
+                      {/* Green online dot */}
+                      <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#1a0a2e] animate-pulse" />
+                    </div>
+                    <span className="text-white text-[11px] font-medium text-center truncate w-full">{teller.displayName}</span>
+                    <div className="flex items-center gap-0.5">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      <span className="text-yellow-400 text-[10px] font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* POPÜLER FALCILAR Section */}
           <div className="falclub-card p-4">
             <h2 className="falclub-section-title mb-4">
@@ -470,10 +512,11 @@ export default function HomePage() {
         {/* Ticker */}
         <div className="fixed top-14 left-0 right-0 z-40">
           <HomepageTicker />
+          <LiveTicker />
         </div>
 
         {/* Main Content */}
-        <div className="pt-24 pb-28 px-4 space-y-4 relative z-10">
+        <div className="pt-32 pb-28 px-4 space-y-4 relative z-10">
           {/* Two Main Buttons - Canlı Yayın & Canlı Falcı - Separated */}
           <div className="space-y-3">
             <Link
@@ -589,10 +632,11 @@ export default function HomePage() {
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <HomepageTicker />
+        <LiveTicker />
       </div>
 
       {/* Online Users Bar with Tab Buttons - below ticker */}
-      <div className={`fixed top-[92px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2 px-3`}>
+      <div className={`fixed top-[114px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2 px-3`}>
         <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
           {/* Tab Buttons - First */}
           <button
@@ -661,7 +705,7 @@ export default function HomePage() {
       </div>
 
       {/* Content area with proper top padding */}
-      <div className="pt-28">
+      <div className="pt-36">
 
       {activeTab === 'live' ? (
         /* Live Tellers Tab Content */
