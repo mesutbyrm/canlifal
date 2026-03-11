@@ -662,22 +662,6 @@
   }
 }
 
-.rainbow-border {
-  background: linear-gradient(
-    90deg,
-    #ff0000,
-    #ff7f00,
-    #ffff00,
-    #00ff00,
-    #0000ff,
-    #4b0082,
-    #9400d3,
-    #ff0000
-  );
-  background-size: 400% 400%;
-  animation: rainbow-rotate 3s linear infinite;
-}
-
 .rainbow-border-slow {
   background: linear-gradient(
     90deg,
@@ -728,40 +712,9 @@
   animation: twinkle 3s ease-in-out infinite;
 }
 
-@keyframes rainbow-spin {
-  0% { --rainbow-angle: 0deg; }
-  100% { --rainbow-angle: 360deg; }
-}
-
-.rainbow-border {
-  position: relative;
-  z-index: 0;
-}
-.rainbow-border::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--rainbow-angle, 0deg),
-    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
-  );
-  z-index: -1;
-  animation: rainbow-spin 3s linear infinite;
-}
-.rainbow-border::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--rainbow-angle, 0deg),
-    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
-  );
-  z-index: -1;
-  animation: rainbow-spin 3s linear infinite, rainbow-pulse 2s ease-in-out infinite;
-  filter: blur(10px);
-  opacity: 0.7;
+@keyframes rainbow-spin-border {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes rainbow-pulse {
@@ -769,10 +722,29 @@
   50% { opacity: 1; filter: blur(14px); }
 }
 
-@property --rainbow-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
+.rainbow-border {
+  position: relative;
+  z-index: 0;
+  overflow: visible !important;
+}
+
+.rainbow-border::before,
+.rainbow-border::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: conic-gradient(
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
+  );
+  z-index: -1;
+  animation: rainbow-spin-border 3s linear infinite;
+}
+
+.rainbow-border::after {
+  animation: rainbow-spin-border 3s linear infinite, rainbow-pulse 2s ease-in-out infinite;
+  filter: blur(10px);
+  opacity: 0.7;
 }
 
 /* Shooting star animation */

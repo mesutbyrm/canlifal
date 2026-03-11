@@ -384,11 +384,11 @@ export default function HomePage() {
                   <Link
                     key={teller.id}
                     href={`/${language}/live-tellers/${teller.id}`}
-                    className="flex-shrink-0 w-28 rainbow-border rounded-2xl overflow-hidden"
-                    style={{
-                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
-                    }}
+                    className="flex-shrink-0 w-28 rainbow-border rounded-2xl"
                   >
+                    <div className="rounded-2xl overflow-hidden" style={{
+                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
+                    }}>
                     {/* Square Photo */}
                     <div className="relative w-full aspect-square overflow-hidden">
                       {teller.avatar ? (
@@ -411,6 +411,7 @@ export default function HomePage() {
                         <span className="text-yellow-400 text-[10px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
                       </div>
                     </div>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -429,12 +430,12 @@ export default function HomePage() {
                 <Link
                   key={teller.id}
                   href={`/${language}/live-tellers/${teller.id}`}
-                  className={`flex-shrink-0 w-28 rounded-2xl overflow-hidden ${teller.isOnline ? 'rainbow-border' : 'opacity-50'}`}
-                  style={{
+                  className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border' : 'opacity-50'}`}
+                >
+                  <div className="rounded-2xl overflow-hidden" style={{
                     border: teller.isOnline ? 'none' : '2px solid rgba(100, 60, 140, 0.4)',
                     background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
-                  }}
-                >
+                  }}>
                   <div className="relative w-full aspect-square overflow-hidden">
                     {teller.avatar ? (
                       <Image src={teller.avatar} alt={teller.displayName} fill className={`object-cover ${!teller.isOnline ? 'grayscale' : ''}`} />
@@ -461,6 +462,7 @@ export default function HomePage() {
                       <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                       <span className="text-yellow-400 text-[10px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
                     </div>
+                  </div>
                   </div>
                 </Link>
               ))}
