@@ -615,27 +615,99 @@
 }
 
 /* FalClub Theme - Global Text Readability Fixes */
-[data-theme="falclub"] .text-purple-400 { color: #e9d5ff !important; }
-[data-theme="falclub"] .text-purple-300 { color: #f3e8ff !important; }
+[data-theme="falclub"] .text-purple-400,
+[data-theme="falclub"] .text-purple-400\/60,
+[data-theme="falclub"] .text-purple-400\/50 { color: #e9d5ff !important; }
+[data-theme="falclub"] .text-purple-300,
+[data-theme="falclub"] .text-purple-300\/70 { color: #f3e8ff !important; }
 [data-theme="falclub"] .text-purple-500 { color: #d8b4fe !important; }
-[data-theme="falclub"] .text-purple-200 { color: #faf5ff !important; }
+[data-theme="falclub"] .text-purple-200,
+[data-theme="falclub"] .text-purple-200\/70 { color: #faf5ff !important; }
+[data-theme="falclub"] .text-purple-100,
+[data-theme="falclub"] .text-purple-100\/90,
+[data-theme="falclub"] .text-purple-100\/80 { color: #ffffff !important; }
 [data-theme="falclub"] .text-gold-400 { color: #fbbf24 !important; }
 [data-theme="falclub"] .text-gold-500 { color: #f59e0b !important; }
+[data-theme="falclub"] .text-gold-300 { color: #fcd34d !important; }
 [data-theme="falclub"] .text-gray-400 { color: #e5e7eb !important; }
 [data-theme="falclub"] .text-gray-500 { color: #d1d5db !important; }
 [data-theme="falclub"] .text-gray-600 { color: #e5e7eb !important; }
+[data-theme="falclub"] .text-gray-300 { color: #f3f4f6 !important; }
+[data-theme="falclub"] .text-gray-700 { color: #f3f4f6 !important; }
+[data-theme="falclub"] .text-gray-800 { color: #ffffff !important; }
 [data-theme="falclub"] .text-slate-400 { color: #e2e8f0 !important; }
 [data-theme="falclub"] .text-slate-500 { color: #cbd5e1 !important; }
+[data-theme="falclub"] .text-slate-300 { color: #f1f5f9 !important; }
+[data-theme="falclub"] .text-fuchsia-200 { color: #f5d0fe !important; }
+[data-theme="falclub"] .text-fuchsia-300,
+[data-theme="falclub"] .text-fuchsia-300\/70 { color: #f0abfc !important; }
+[data-theme="falclub"] .text-fuchsia-400,
+[data-theme="falclub"] .text-fuchsia-400\/60,
+[data-theme="falclub"] .text-fuchsia-400\/50,
+[data-theme="falclub"] .text-fuchsia-400\/40 { color: #e879f9 !important; }
+[data-theme="falclub"] .text-indigo-300 { color: #c7d2fe !important; }
+[data-theme="falclub"] .text-indigo-400 { color: #a5b4fc !important; }
+[data-theme="falclub"] .text-blue-300 { color: #93c5fd !important; }
+[data-theme="falclub"] .text-blue-400 { color: #60a5fa !important; }
+[data-theme="falclub"] .text-amber-300 { color: #fcd34d !important; }
+[data-theme="falclub"] .text-pink-400 { color: #f472b6 !important; }
+[data-theme="falclub"] .text-cyan-400 { color: #22d3ee !important; }
+[data-theme="falclub"] .text-red-300 { color: #fca5a5 !important; }
+[data-theme="falclub"] .text-orange-400 { color: #fb923c !important; }
 [data-theme="falclub"] .placeholder-purple-400::placeholder { color: #d8b4fe !important; }
 [data-theme="falclub"] .placeholder-purple-500::placeholder { color: #d8b4fe !important; }
 [data-theme="falclub"] .text-muted-foreground { color: #e9d5ff !important; }
+/* Opacity variants with colors */
+[data-theme="falclub"] .text-purple-400\/70,
+[data-theme="falclub"] .text-purple-400\/30 { color: #e9d5ff !important; }
+[data-theme="falclub"] .text-purple-200\/60 { color: #faf5ff !important; }
+[data-theme="falclub"] .text-purple-300\/50 { color: #f3e8ff !important; }
+[data-theme="falclub"] .text-purple-500\/50 { color: #d8b4fe !important; }
+[data-theme="falclub"] .text-fuchsia-300\/50,
+[data-theme="falclub"] .text-fuchsia-300\/60 { color: #f0abfc !important; }
+[data-theme="falclub"] .text-fuchsia-400\/30,
+[data-theme="falclub"] .text-fuchsia-400\/70 { color: #e879f9 !important; }
+[data-theme="falclub"] .text-fuchsia-500\/30,
+[data-theme="falclub"] .text-fuchsia-500\/40 { color: #d946ef !important; }
+[data-theme="falclub"] .text-indigo-400\/60 { color: #a5b4fc !important; }
+[data-theme="falclub"] .text-blue-200\/80 { color: #bfdbfe !important; }
+[data-theme="falclub"] .text-blue-400\/60 { color: #60a5fa !important; }
+[data-theme="falclub"] .text-amber-300\/80 { color: #fcd34d !important; }
+[data-theme="falclub"] .text-gold-300\/80 { color: #fcd34d !important; }
+[data-theme="falclub"] .text-green-400\/60,
+[data-theme="falclub"] .text-green-400\/70,
+[data-theme="falclub"] .text-green-400\/80 { color: #4ade80 !important; }
+/* Ensure all paragraph and span text is readable on dark backgrounds */
+[data-theme="falclub"] .opacity-90 { opacity: 1 !important; }
+[data-theme="falclub"] .opacity-80 { opacity: 0.95 !important; }
+[data-theme="falclub"] .opacity-70 { opacity: 0.9 !important; }
 
 /* Falci Theme - Text Readability Fixes */
-[data-theme="falci"] .text-purple-400 { color: #e9d5ff !important; }
-[data-theme="falci"] .text-purple-300 { color: #f3e8ff !important; }
+[data-theme="falci"] .text-purple-400,
+[data-theme="falci"] .text-purple-400\/60 { color: #e9d5ff !important; }
+[data-theme="falci"] .text-purple-300,
+[data-theme="falci"] .text-purple-300\/70 { color: #f3e8ff !important; }
 [data-theme="falci"] .text-purple-500 { color: #d8b4fe !important; }
+[data-theme="falci"] .text-purple-100,
+[data-theme="falci"] .text-purple-100\/90 { color: #ffffff !important; }
 [data-theme="falci"] .text-gray-400 { color: #e5e7eb !important; }
 [data-theme="falci"] .text-gray-500 { color: #d1d5db !important; }
+[data-theme="falci"] .text-gray-600 { color: #e5e7eb !important; }
+[data-theme="falci"] .text-gray-700 { color: #f3f4f6 !important; }
+[data-theme="falci"] .text-gray-800 { color: #ffffff !important; }
+[data-theme="falci"] .text-fuchsia-300\/70 { color: #f0abfc !important; }
+[data-theme="falci"] .text-fuchsia-400\/60,
+[data-theme="falci"] .text-fuchsia-400\/50 { color: #e879f9 !important; }
+[data-theme="falci"] .text-muted-foreground { color: #e9d5ff !important; }
+[data-theme="falci"] .opacity-90 { opacity: 1 !important; }
+
+/* Cosmic Theme - Text Readability Fixes */
+[data-theme="cosmic"] .text-purple-300 { color: #93c5fd !important; }
+[data-theme="cosmic"] .text-purple-400 { color: #93c5fd !important; }
+[data-theme="cosmic"] .text-gray-400 { color: #e5e7eb !important; }
+[data-theme="cosmic"] .text-gray-500 { color: #d1d5db !important; }
+[data-theme="cosmic"] .text-gray-600 { color: #e5e7eb !important; }
+[data-theme="cosmic"] .text-muted-foreground { color: #cbd5e1 !important; }
 
 /* Custom scrollbar - theme aware */
 ::-webkit-scrollbar {
