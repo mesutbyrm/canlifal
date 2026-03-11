@@ -109,6 +109,23 @@ const THEMES: ThemeConfig[] = [
       text: '#1f2937',
       accent: '#6366f1'
     }
+  },
+  {
+    id: 'falclub',
+    name: 'FalClub',
+    nameTr: 'FalClub',
+    description: 'Premium neon pink mystical theme with glow effects',
+    descriptionTr: 'Premium neon pembe mistik tema, parlama efektleri ile',
+    enabled: true,
+    isDefault: false,
+    icon: <Sparkles className="w-6 h-6" />,
+    previewColors: {
+      primary: '#d946ef',
+      secondary: '#ec4899',
+      background: '#0f0520',
+      text: '#ffffff',
+      accent: '#f0abfc'
+    }
   }
 ]
 
@@ -122,7 +139,7 @@ export default function AdminThemesPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [defaultTheme, setDefaultTheme] = useState('mystical')
-  const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci'])
+  const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci', 'falclub'])
 
   useEffect(() => {
     if (status === 'loading') return

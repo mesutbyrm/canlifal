@@ -3,9 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
-export type SiteTheme = 'mystical' | 'facebook' | 'cosmic' | 'falci';
+export type SiteTheme = 'mystical' | 'facebook' | 'cosmic' | 'falci' | 'falclub';
 
-const ALL_THEMES: SiteTheme[] = ['mystical', 'cosmic', 'facebook', 'falci'];
+const ALL_THEMES: SiteTheme[] = ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'];
 
 interface ThemeContextType {
   theme: SiteTheme;

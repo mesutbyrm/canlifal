@@ -34,6 +34,7 @@ export default function Navbar() {
   
   // Theme-based styling
   const isFalci = theme === 'falci'
+  const isFalclub = theme === 'falclub'
   const isCosmic = theme === 'cosmic'
   
   // Hide navbar on mobile for profile and messages pages (footer handles navigation there)
@@ -214,16 +215,22 @@ export default function Navbar() {
   }
 
   // Theme colors for navbar
-  const navBg = isFalci 
-    ? 'bg-[#1a0a2e]/95 border-indigo-900/30' 
-    : isCosmic ? 'bg-[#0a1628]/95 border-blue-900/30' : 'bg-[#0a0118]/95 border-purple-900/30'
-  const navTextColor = isFalci
-    ? 'text-indigo-300 hover:text-indigo-200'
-    : isCosmic ? 'text-blue-300 hover:text-amber-400' : 'text-purple-300 hover:text-gold-400'
-  const navHoverBg = isFalci
-    ? 'hover:bg-indigo-900/30'
-    : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'
-  const accentColor = isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-400' : 'text-gold-400'
+  const navBg = isFalclub
+    ? 'bg-[#0f0520]/95 border-fuchsia-900/30'
+    : isFalci 
+      ? 'bg-[#1a0a2e]/95 border-indigo-900/30' 
+      : isCosmic ? 'bg-[#0a1628]/95 border-blue-900/30' : 'bg-[#0a0118]/95 border-purple-900/30'
+  const navTextColor = isFalclub
+    ? 'text-fuchsia-300 hover:text-fuchsia-200'
+    : isFalci
+      ? 'text-indigo-300 hover:text-indigo-200'
+      : isCosmic ? 'text-blue-300 hover:text-amber-400' : 'text-purple-300 hover:text-gold-400'
+  const navHoverBg = isFalclub
+    ? 'hover:bg-fuchsia-900/30'
+    : isFalci
+      ? 'hover:bg-indigo-900/30'
+      : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'
+  const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-400' : 'text-gold-400'
   
   return (
     <>

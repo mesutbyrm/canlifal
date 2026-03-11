@@ -567,6 +567,31 @@ export default function SettingsPage() {
                     )}
                   </button>
                 )}
+
+                {enabledThemes.includes('falclub') && (
+                  <button
+                    type="button"
+                    onClick={() => setTheme('falclub')}
+                    className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                      theme === 'falclub'
+                        ? 'bg-fuchsia-600/30 border-fuchsia-500 text-white ring-2 ring-fuchsia-400'
+                        : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-fuchsia-500 to-pink-500 border border-fuchsia-400/50 flex items-center justify-center shadow-[0_0_15px_rgba(217,70,239,0.5)]">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">FalClub</p>
+                      <p className="text-[10px] opacity-70">{language === 'tr' ? 'Neon Pembe' : 'Neon Pink'}</p>
+                    </div>
+                    {theme === 'falclub' && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>

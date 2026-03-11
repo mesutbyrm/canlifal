@@ -16,7 +16,7 @@ export async function GET() {
 
     const result: { default_theme: string; enabled_themes: string[] } = {
       default_theme: 'mystical',
-      enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci']
+      enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub']
     };
 
     settings.forEach((s: { key: string; value: string }) => {
@@ -38,7 +38,7 @@ export async function GET() {
   } catch (error) {
     console.error('Fetch theme settings error:', error);
     return NextResponse.json(
-      { default_theme: 'mystical', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci'] }
+      { default_theme: 'mystical', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'] }
     );
   }
 }

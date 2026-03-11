@@ -177,6 +177,50 @@
     --falci-text-muted: #6b7280;
     --falci-gold: #d4af37;
   }
+
+  /* FalClub Theme - Premium Neon Mystical Design */
+  [data-theme="falclub"] {
+    --background: 270 65% 6%;
+    --foreground: 0 0% 98%;
+    --card: 270 50% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 270 50% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 320 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 45% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 270 35% 18%;
+    --muted-foreground: 270 25% 70%;
+    --accent: 320 85% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 320 70% 45%;
+    --input: 270 45% 18%;
+    --ring: 320 85% 55%;
+    /* FalClub Theme colors */
+    --theme-bg: #0f0520;
+    --theme-scrollbar-track: #1a0a2e;
+    --theme-scrollbar-thumb: #d946ef;
+    --theme-scrollbar-thumb-hover: #e879f9;
+    --theme-gradient-start: #0f0520;
+    --theme-gradient-mid: #1a0a2e;
+    --theme-gradient-end: #0f0520;
+    /* FalClub specific */
+    --falclub-purple-dark: #0f0520;
+    --falclub-purple: #1a0a2e;
+    --falclub-purple-light: #2d1b47;
+    --falclub-pink: #d946ef;
+    --falclub-pink-light: #f0abfc;
+    --falclub-pink-glow: rgba(217, 70, 239, 0.6);
+    --falclub-magenta: #ec4899;
+    --falclub-card-bg: rgba(26, 10, 46, 0.9);
+    --falclub-card-border: rgba(217, 70, 239, 0.5);
+    --falclub-text: #ffffff;
+    --falclub-text-secondary: #e9d5ff;
+    --falclub-gold: #fbbf24;
+  }
 }
 
 @layer base {
@@ -202,6 +246,12 @@
     color: #ffffff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(180deg, #1a0a2e 0%, #2d1b47 50%, #1a0a2e 100%);
+    background-attachment: fixed;
+  }
+  [data-theme="falclub"] body {
+    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, #0f0520 0%, #1a0a2e 40%, #2d1b47 60%, #1a0a2e 80%, #0f0520 100%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -235,6 +285,15 @@
   [data-theme="falci"] h6 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1f2937;
+  }
+  [data-theme="falclub"] h1,
+  [data-theme="falclub"] h2,
+  [data-theme="falclub"] h3,
+  [data-theme="falclub"] h4,
+  [data-theme="falclub"] h5,
+  [data-theme="falclub"] h6 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #f0abfc;
   }
 }
 
@@ -427,6 +486,131 @@
       radial-gradient(ellipse at 80% 70%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
       radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 70%),
       linear-gradient(180deg, #1a0a2e 0%, #2d1b47 50%, #1a0a2e 100%);
+  }
+
+  /* FalClub utility classes - Premium Neon Design */
+  .falclub-card {
+    @apply rounded-2xl backdrop-blur-sm;
+    background: rgba(26, 10, 46, 0.85);
+    border: 2px solid rgba(217, 70, 239, 0.4);
+    box-shadow: 0 0 20px rgba(217, 70, 239, 0.15);
+  }
+  .falclub-card-light {
+    @apply rounded-2xl;
+    background: rgba(45, 27, 71, 0.9);
+    border: 2px solid rgba(217, 70, 239, 0.5);
+  }
+  .falclub-btn {
+    @apply font-bold px-6 py-3 rounded-full transition-all text-white;
+    background: linear-gradient(135deg, #d946ef 0%, #ec4899 100%);
+    border: 2px solid rgba(240, 171, 252, 0.6);
+    box-shadow: 0 0 25px rgba(217, 70, 239, 0.5), 0 0 50px rgba(217, 70, 239, 0.2);
+  }
+  .falclub-btn:hover {
+    box-shadow: 0 0 35px rgba(217, 70, 239, 0.7), 0 0 70px rgba(217, 70, 239, 0.3);
+    transform: translateY(-2px);
+  }
+  .falclub-btn-secondary {
+    @apply font-semibold px-6 py-3 rounded-full transition-all;
+    background: rgba(217, 70, 239, 0.15);
+    border: 2px solid rgba(217, 70, 239, 0.5);
+    color: #f0abfc;
+  }
+  .falclub-btn-secondary:hover {
+    background: rgba(217, 70, 239, 0.25);
+    border-color: rgba(240, 171, 252, 0.7);
+  }
+  .falclub-btn-gold {
+    @apply font-bold px-5 py-2 rounded-full transition-all;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1a0a2e;
+    border: 2px solid rgba(251, 191, 36, 0.6);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+  }
+  .falclub-btn-gold:hover {
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.6);
+  }
+  .falclub-icon-circle {
+    @apply rounded-full flex items-center justify-center overflow-hidden;
+    border: 3px solid rgba(217, 70, 239, 0.7);
+    box-shadow: 0 0 20px rgba(217, 70, 239, 0.5), inset 0 0 20px rgba(217, 70, 239, 0.2);
+    background: linear-gradient(135deg, rgba(217, 70, 239, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
+  }
+  .falclub-icon-circle:hover {
+    border-color: rgba(240, 171, 252, 0.9);
+    box-shadow: 0 0 30px rgba(217, 70, 239, 0.7), inset 0 0 25px rgba(217, 70, 239, 0.3);
+  }
+  .falclub-fortune-icon {
+    @apply rounded-full overflow-hidden;
+    border: 3px solid rgba(217, 70, 239, 0.7);
+    box-shadow: 0 0 25px rgba(217, 70, 239, 0.5);
+  }
+  .falclub-text {
+    color: #ffffff;
+  }
+  .falclub-text-secondary {
+    color: #e9d5ff;
+  }
+  .falclub-text-pink {
+    color: #f0abfc;
+  }
+  .falclub-text-gold {
+    color: #fbbf24;
+  }
+  .falclub-glow {
+    box-shadow: 0 0 25px rgba(217, 70, 239, 0.5), 0 0 50px rgba(217, 70, 239, 0.2);
+  }
+  .falclub-glow-intense {
+    box-shadow: 0 0 30px rgba(217, 70, 239, 0.6), 0 0 60px rgba(217, 70, 239, 0.3), 0 0 90px rgba(217, 70, 239, 0.1);
+  }
+  .falclub-starry-bg {
+    position: relative;
+    background: 
+      radial-gradient(ellipse at 15% 25%, rgba(217, 70, 239, 0.2) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 75%, rgba(236, 72, 153, 0.15) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 60%),
+      radial-gradient(circle at 30% 80%, rgba(217, 70, 239, 0.1) 0%, transparent 30%),
+      radial-gradient(circle at 70% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 30%),
+      linear-gradient(180deg, #0f0520 0%, #1a0a2e 30%, #2d1b47 50%, #1a0a2e 70%, #0f0520 100%);
+  }
+  .falclub-starry-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(2px 2px at 20px 30px, white, transparent),
+      radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1px 1px at 90px 40px, white, transparent),
+      radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 160px 120px, white, transparent),
+      radial-gradient(2px 2px at 200px 50px, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 250px 160px, white, transparent),
+      radial-gradient(2px 2px at 300px 30px, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 350px 100px, white, transparent),
+      radial-gradient(2px 2px at 400px 180px, rgba(255,255,255,0.8), transparent);
+    background-repeat: repeat;
+    background-size: 400px 200px;
+    opacity: 0.4;
+    pointer-events: none;
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.5; }
+  }
+  .falclub-gradient-text {
+    background: linear-gradient(135deg, #f0abfc 0%, #d946ef 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .falclub-section-title {
+    @apply flex items-center gap-2 text-lg font-bold;
+    color: #f0abfc;
+    text-shadow: 0 0 10px rgba(217, 70, 239, 0.5);
   }
 }
 

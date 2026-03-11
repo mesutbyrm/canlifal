@@ -169,7 +169,8 @@ export default function AdminSettingsPage() {
         { value: 'mystical', label: language === 'tr' ? 'Mistik (Mor & Altın)' : 'Mystical (Purple & Gold)' },
         { value: 'cosmic', label: language === 'tr' ? 'Kozmik (Mavi & Amber)' : 'Cosmic (Blue & Amber)' },
         { value: 'facebook', label: 'Facebook (Mavi & Beyaz / Blue & White)' },
-        { value: 'falci', label: language === 'tr' ? 'Falcı (Premium Mor)' : 'Falcı (Premium Purple)' }
+        { value: 'falci', label: language === 'tr' ? 'Falcı (Premium Mor)' : 'Falcı (Premium Purple)' },
+        { value: 'falclub', label: language === 'tr' ? 'FalClub (Neon Pembe)' : 'FalClub (Neon Pink)' }
       ]
     }
   ]

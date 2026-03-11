@@ -16,6 +16,7 @@ interface LiveTeller {
   displayName: string
   avatar: string | null
   rating: number
+  averageRating?: number
   totalSessions: number
   isOnline: boolean
   user: {
@@ -164,6 +165,7 @@ export default function HomePage() {
   
   // Theme detection
   const isFalci = theme === 'falci'
+  const isFalclub = theme === 'falclub'
   const isCosmic = theme === 'cosmic'
   
   // Theme-based colors with improved readability
@@ -229,6 +231,221 @@ export default function HomePage() {
     if (!a.isOnline && b.isOnline) return 1
     return 0
   })
+
+  // FalClub Theme - Premium Neon Pink Design (exact match to provided image)
+  if (isFalclub) {
+    return (
+      <div className="min-h-screen falclub-starry-bg relative overflow-hidden">
+        {/* Animated Stars background */}
+        <div className="fixed inset-0 pointer-events-none">
+          {[...Array(60)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-0.5 h-0.5 bg-white rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 4}s`,
+                opacity: Math.random() * 0.8 + 0.2,
+                animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite alternate`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Ticker */}
+        <div className="fixed top-14 left-0 right-0 z-40">
+          <HomepageTicker />
+        </div>
+
+        {/* Main Content */}
+        <div className="pt-24 pb-28 px-4 space-y-4 relative z-10">
+          {/* Gift Banner */}
+          <Link
+            href={`/${language}/gifts`}
+            className="flex items-center gap-2 text-fuchsia-300 text-sm font-medium hover:text-fuchsia-200 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{language === 'tr' ? '✨ Arkadaşlarına Hediye Gönder' : '✨ Send Gifts to Friends'}</span>
+          </Link>
+
+          {/* CANLI YAYINLAR Section */}
+          <div className="falclub-card p-4 relative overflow-hidden">
+            {/* Mystical Woman Silhouette Background */}
+            <div 
+              className="absolute inset-0 opacity-30 bg-gradient-to-b from-transparent via-fuchsia-900/20 to-transparent"
+              style={{
+                backgroundImage: 'radial-gradient(ellipse at center, rgba(217, 70, 239, 0.2) 0%, transparent 70%)',
+              }}
+            />
+            
+            <h2 className="falclub-section-title mb-4 relative z-10">
+              <Radio className="w-5 h-5" />
+              {language === 'tr' ? 'CANLI YAYINLAR' : 'LIVE STREAMS'}
+            </h2>
+            
+            <div className="flex items-center gap-4 relative z-10">
+              {/* Start Stream Button */}
+              <Link
+                href={session ? `/${language}/chat/video/setup` : `/${language}/login`}
+                className="flex flex-col items-center"
+              >
+                <div 
+                  className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-fuchsia-900/50 to-purple-900/50 border-2 border-fuchsia-400/70"
+                  style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)' }}
+                >
+                  <Plus className="w-10 h-10 text-fuchsia-300" />
+                </div>
+                <span className="text-fuchsia-200 text-xs mt-2 font-semibold">
+                  {language === 'tr' ? 'Yayın Başlat' : 'Start Stream'}
+                </span>
+              </Link>
+              
+              {/* Live Streams */}
+              {liveStreams.length > 0 ? (
+                <div className="flex gap-3 overflow-x-auto flex-1 scrollbar-hide">
+                  {liveStreams.slice(0, 4).map((stream) => (
+                    <Link
+                      key={stream.id}
+                      href={`/${language}/chat/video?watch=${stream.id}`}
+                      className="flex flex-col items-center flex-shrink-0"
+                    >
+                      <div 
+                        className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-500 relative"
+                        style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' }}
+                      >
+                        {stream.user.image ? (
+                          <Image src={stream.user.image} alt={stream.user.name} width={64} height={64} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">{stream.user.name?.[0]}</span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-red-500 px-1.5 py-0.5 rounded text-[8px] text-white font-bold">CANLI</div>
+                      </div>
+                      <span className="text-fuchsia-200 text-xs mt-1 font-medium truncate w-16 text-center">{stream.user.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-fuchsia-300/70 text-sm flex-1 text-center">
+                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* FALLAR Section */}
+          <div className="falclub-card p-4">
+            <h2 className="falclub-section-title mb-4">
+              <Sparkles className="w-5 h-5" />
+              {language === 'tr' ? 'FALLAR' : 'FORTUNES'}
+            </h2>
+            
+            <div className="grid grid-cols-5 gap-3">
+              {FORTUNE_CARDS.slice(0, 10).map((fortune) => (
+                <Link
+                  key={fortune.id}
+                  href={`/${language}${fortune.href}`}
+                  className="flex flex-col items-center group"
+                >
+                  <div 
+                    className="falclub-icon-circle w-14 h-14 transition-all group-hover:scale-110"
+                  >
+                    <Image
+                      src={fortune.image}
+                      alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                      width={56}
+                      height={56}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-fuchsia-200 text-[10px] font-medium mt-1.5 text-center leading-tight">
+                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* POPÜLER FALCILAR Section */}
+          <div className="falclub-card p-4">
+            <h2 className="falclub-section-title mb-4">
+              <Star className="w-5 h-5" />
+              {language === 'tr' ? 'POPÜLER FALCILAR' : 'POPULAR TELLERS'}
+            </h2>
+            
+            <div className="space-y-3">
+              {sortedTellers.slice(0, 3).map((teller) => (
+                <div
+                  key={teller.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-fuchsia-900/20 border border-fuchsia-500/30"
+                >
+                  <div 
+                    className="w-14 h-14 rounded-full overflow-hidden border-2 border-fuchsia-400/60"
+                    style={{ boxShadow: '0 0 15px rgba(217, 70, 239, 0.4)' }}
+                  >
+                    {teller.avatar ? (
+                      <Image src={teller.avatar} alt={teller.displayName} width={56} height={56} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center">
+                        <span className="text-white font-bold text-xl">{teller.displayName?.[0]}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold">{teller.displayName}</p>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      <span className="text-yellow-400 text-sm font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/${language}/live-tellers/${teller.id}`}
+                    className="falclub-btn-gold text-xs"
+                  >
+                    💬 {language === 'tr' ? 'Sohbet Et' : 'Chat'}
+                  </Link>
+                </div>
+              ))}
+              
+              {sortedTellers.length === 0 && (
+                <p className="text-fuchsia-300/70 text-sm text-center py-4">
+                  {language === 'tr' ? 'Henüz falcı bulunmuyor' : 'No fortune tellers yet'}
+                </p>
+              )}
+            </div>
+            
+            <Link
+              href={`/${language}/live-tellers`}
+              className="mt-4 block text-center text-fuchsia-300 text-sm font-medium hover:text-fuchsia-200 transition-colors"
+            >
+              {language === 'tr' ? 'Tüm Falcıları Gör →' : 'See All Tellers →'}
+            </Link>
+          </div>
+
+          {/* GÜNLÜK BURÇ Section */}
+          <div className="falclub-card p-4">
+            <h2 className="falclub-section-title mb-3">
+              <Heart className="w-5 h-5" />
+              {language === 'tr' ? 'GÜNLÜK BURÇ' : 'DAILY HOROSCOPE'}
+            </h2>
+            
+            <div className="text-fuchsia-200 text-sm">
+              <p className="font-semibold text-white mb-1">Koç:</p>
+              <p className="opacity-90">{language === 'tr' ? 'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.' : 'Your energy is high today. New opportunities may arise.'}</p>
+              <Link 
+                href={`/${language}/fortunes/daily-horoscope`}
+                className="inline-block mt-2 text-fuchsia-300 font-medium hover:text-fuchsia-200"
+              >
+                [{language === 'tr' ? 'Detaylı Oku' : 'Read More'}]
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Falci Theme - Premium Design (exact match to provided image)
   if (isFalci) {
