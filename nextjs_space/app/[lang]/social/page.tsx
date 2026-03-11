@@ -612,21 +612,26 @@ export default function SocialPage() {
 
                     {/* Post Content */}
                     <div className="px-4 pb-3">
-                      {post.content.length > 500 && !expandedContent[post.id] ? (
-                        <div>
-                          <p className="text-purple-100 whitespace-pre-wrap">
-                            {post.content.substring(0, 500)}...
-                          </p>
-                          <button
-                            onClick={() => setExpandedContent({ ...expandedContent, [post.id]: true })}
-                            className="text-gold-400 text-sm font-medium mt-1 hover:text-gold-300"
-                          >
-                            {language === 'tr' ? 'daha fazla' : 'more'}
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-purple-100 whitespace-pre-wrap">{post.content}</p>
-                      )}
+                      {(() => {
+                        const charLimit = post.isAuto ? 250 : 500;
+                        const needsTruncate = post.content.length > charLimit && !expandedContent[post.id];
+                        if (needsTruncate) {
+                          return (
+                            <div>
+                              <p className="text-purple-100 whitespace-pre-wrap">
+                                {post.content.substring(0, charLimit)}...
+                              </p>
+                              <button
+                                onClick={() => setExpandedContent({ ...expandedContent, [post.id]: true })}
+                                className="text-gold-400 text-sm font-medium mt-1 hover:text-gold-300"
+                              >
+                                {language === 'tr' ? 'devamını oku' : 'read more'}
+                              </button>
+                            </div>
+                          );
+                        }
+                        return <p className="text-purple-100 whitespace-pre-wrap">{post.content}</p>;
+                      })()}
                       
                       {/* Post Image */}
                       {post.imageUrl && (

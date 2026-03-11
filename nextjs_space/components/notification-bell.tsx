@@ -189,14 +189,13 @@ export default function NotificationBell() {
   }
 
   const bellRef = useRef<HTMLButtonElement>(null)
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+  const [dropdownPos, setDropdownPos] = useState({ top: 0 })
 
   useEffect(() => {
     if (isOpen && bellRef.current) {
       const rect = bellRef.current.getBoundingClientRect()
       setDropdownPos({
         top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
       })
     }
   }, [isOpen])
@@ -229,11 +228,10 @@ export default function NotificationBell() {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="fixed z-[9999] max-h-[70vh] overflow-y-auto bg-[#1a0b2e] border border-purple-500/30 rounded-xl shadow-2xl"
+              className="fixed z-[9999] max-h-[70vh] overflow-y-auto bg-[#1a0b2e] border border-purple-500/30 rounded-xl shadow-2xl left-1/2 -translate-x-1/2"
               style={{
                 top: dropdownPos.top,
-                right: dropdownPos.right,
-                width: 'min(350px, calc(100vw - 16px))',
+                width: 'min(350px, calc(100vw - 32px))',
               }}
             >
               <div className="p-3 border-b border-purple-500/20 flex justify-between items-center sticky top-0 bg-[#1a0b2e] z-10 rounded-t-xl">
