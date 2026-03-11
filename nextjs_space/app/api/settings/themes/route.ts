@@ -15,7 +15,7 @@ export async function GET() {
     });
 
     const result: { default_theme: string; enabled_themes: string[] } = {
-      default_theme: 'mystical',
+      default_theme: 'falclub',
       enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub']
     };
 
@@ -38,7 +38,7 @@ export async function GET() {
   } catch (error) {
     console.error('Fetch theme settings error:', error);
     return NextResponse.json(
-      { default_theme: 'mystical', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'] }
+      { default_theme: 'falclub', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'] }
     );
   }
 }

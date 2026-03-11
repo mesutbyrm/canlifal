@@ -16,7 +16,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function SiteThemeProvider({ children, defaultTheme = 'mystical' }: { children: React.ReactNode; defaultTheme?: SiteTheme }) {
+export function SiteThemeProvider({ children, defaultTheme = 'falclub' }: { children: React.ReactNode; defaultTheme?: SiteTheme }) {
   const { data: session, status } = useSession() || {};
   const [theme, setThemeState] = useState<SiteTheme>(defaultTheme);
   const [isLoading, setIsLoading] = useState(true);

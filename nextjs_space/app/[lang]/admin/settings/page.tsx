@@ -45,7 +45,7 @@ export default function AdminSettingsPage() {
     session_duration_minutes: '5',
     credits_per_minute: '10',
     ad_duration_seconds: '5',
-    default_theme: 'mystical'
+    default_theme: 'falclub'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
