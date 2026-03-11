@@ -728,6 +728,48 @@
   animation: twinkle 3s ease-in-out infinite;
 }
 
+@keyframes rainbow-spin {
+  0% { --rainbow-angle: 0deg; }
+  100% { --rainbow-angle: 360deg; }
+}
+
+.rainbow-border {
+  position: relative;
+  z-index: 0;
+}
+.rainbow-border::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--rainbow-angle, 0deg),
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
+  );
+  z-index: -1;
+  animation: rainbow-spin 3s linear infinite;
+}
+.rainbow-border::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--rainbow-angle, 0deg),
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
+  );
+  z-index: -1;
+  animation: rainbow-spin 3s linear infinite;
+  filter: blur(8px);
+  opacity: 0.6;
+}
+
+@property --rainbow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
 /* Shooting star animation */
 @keyframes shooting-star {
   0% {
