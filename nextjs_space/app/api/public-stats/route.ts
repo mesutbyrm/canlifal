@@ -3,7 +3,18 @@ import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+// Simple in-memory cache to avoid hammering DB on every request
+let cachedResult: any = null;
+let cacheTime = 0;
+const CACHE_TTL = 15000; // 15 seconds
+
 export async function GET() {
+  // Return cached result if fresh
+  const currentMs = Date.now();
+  if (cachedResult && currentMs - cacheTime < CACHE_TTL) {
+    return NextResponse.json(cachedResult);
+  }
+
   try {
     const now = new Date();
     const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
@@ -96,7 +107,7 @@ export async function GET() {
       fortunesByType[stat.fortuneType] = stat._count.fortuneType;
     });
 
-    return NextResponse.json({
+    const result = {
       fortunes: {
         total: totalFortunes,
         byType: fortunesByType
@@ -117,7 +128,13 @@ export async function GET() {
         total: totalUsers
       },
       totalOnline
-    });
+    };
+
+    // Cache the result
+    cachedResult = result;
+    cacheTime = Date.now();
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Public stats error:', error);
     return NextResponse.json({

@@ -117,7 +117,7 @@ export default function HomepageTicker() {
     }
 
     fetchData()
-    const interval = setInterval(fetchData, 10000) // Refresh every 10 seconds for faster gift detection
+    const interval = setInterval(fetchData, 30000) // Refresh every 30 seconds
     return () => clearInterval(interval)
   }, [])
 

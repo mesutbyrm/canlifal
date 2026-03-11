@@ -117,7 +117,7 @@ export default function CoBroadcastInviteModal() {
     if (pathname?.includes('/live-room/')) return
     
     checkPendingInvites()
-    pollIntervalRef.current = setInterval(checkPendingInvites, 3000)
+    pollIntervalRef.current = setInterval(checkPendingInvites, 10000)
     
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)

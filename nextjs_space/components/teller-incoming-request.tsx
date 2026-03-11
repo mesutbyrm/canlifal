@@ -105,7 +105,7 @@ export default function TellerIncomingRequest() {
     if (pathname?.includes('/live-room/')) return // Don't show during active sessions
     
     checkPendingRequests()
-    pollIntervalRef.current = setInterval(checkPendingRequests, 3000)
+    pollIntervalRef.current = setInterval(checkPendingRequests, 10000)
     
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)

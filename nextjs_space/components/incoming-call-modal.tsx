@@ -69,7 +69,7 @@ export default function IncomingCallModal() {
     checkForActiveSessions();
     
     // Poll every 3 seconds
-    pollIntervalRef.current = setInterval(checkForActiveSessions, 3000);
+    pollIntervalRef.current = setInterval(checkForActiveSessions, 10000);
 
     return () => {
       if (pollIntervalRef.current) {
