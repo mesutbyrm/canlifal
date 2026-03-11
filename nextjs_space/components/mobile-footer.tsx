@@ -5,14 +5,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import { useSiteTheme } from '@/lib/theme-context'
 import { motion } from 'framer-motion'
 import { User, Gift, Home, Play, MessageCircle } from 'lucide-react'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
   const { language } = useLanguage()
+  const { theme } = useSiteTheme()
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  
+  // Theme-based styling
+  const isCosmic = theme === 'cosmic'
   
   // Hide footer on certain pages
   const hiddenPaths = ['/live-room', '/chat/video', '/login', '/register']
@@ -74,6 +79,18 @@ export default function MobileFooter() {
     },
   ]
   
+  // Theme colors
+  const bgGradient = isCosmic 
+    ? 'bg-gradient-to-t from-[#0a1628] via-[#0d1b2a] to-[#0a1628] border-blue-500/30'
+    : 'bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-purple-500/30'
+  const centerBtnGradient = isCosmic
+    ? 'bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/30'
+    : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/30'
+  const accentActiveColor = isCosmic ? 'text-amber-400' : 'text-gold-400'
+  const iconColor = isCosmic ? 'text-blue-400' : 'text-purple-400'
+  const iconBgActive = isCosmic ? 'bg-blue-500/30' : 'bg-purple-500/30'
+  const iconBgInactive = isCosmic ? 'bg-blue-900/50' : 'bg-purple-900/50'
+  
   return (
     <>
       {/* Spacer to prevent content from being hidden behind footer */}
@@ -85,8 +102,8 @@ export default function MobileFooter() {
         animate={{ y: 0 }}
         className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
       >
-        {/* Mystical Dark Purple Background */}
-        <div className="relative h-20 overflow-hidden bg-gradient-to-t from-[#0a0118] via-[#1a0b2e] to-[#0a0118] border-t border-purple-500/30">
+        {/* Background */}
+        <div className={`relative h-20 overflow-hidden ${bgGradient} border-t`}>
           {/* Starry effect */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {[...Array(10)].map((_, i) => (
@@ -118,7 +135,7 @@ export default function MobileFooter() {
                     >
                       {/* Gradient ring */}
                       <div 
-                        className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30"
+                        className={`relative w-14 h-14 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-lg`}
                       >
                         <Icon 
                           className="w-6 h-6 text-white group-hover:scale-110 transition-transform" 
@@ -126,7 +143,7 @@ export default function MobileFooter() {
                         />
                       </div>
                     </Link>
-                    <span className="text-[10px] font-medium mt-1 text-gold-400">
+                    <span className={`text-[10px] font-medium mt-1 ${accentActiveColor}`}>
                       {item.label}
                     </span>
                   </div>
@@ -140,22 +157,22 @@ export default function MobileFooter() {
                   className="flex flex-col items-center justify-center w-16 py-2 group"
                 >
                   <div className="relative w-9 h-9 flex items-center justify-center">
-                    {/* Icon with mystical styling */}
+                    {/* Icon with theme styling */}
                     {index === 0 && (
                       // Profile
                       <div 
-                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}
                       >
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
+                        <Icon className={`w-5 h-5 ${isActive ? accentActiveColor : iconColor}`} />
                       </div>
                     )}
                     
                     {index === 1 && (
                       // Messages - chat bubble with badge
                       <>
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}>
                           <MessageCircle 
-                            className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`}
+                            className={`w-5 h-5 ${isActive ? accentActiveColor : iconColor}`}
                           />
                         </div>
                         {unreadCount > 0 && (
@@ -168,22 +185,22 @@ export default function MobileFooter() {
                     
                     {index === 3 && (
                       // Gift - credits
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}>
-                        <Gift className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}>
+                        <Gift className={`w-5 h-5 ${isActive ? accentActiveColor : iconColor}`} />
                       </div>
                     )}
                     
                     {index === 4 && (
                       // Home
                       <div 
-                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? 'bg-purple-500/30' : 'bg-purple-900/50'}`}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}
                       >
-                        <Home className={`w-5 h-5 ${isActive ? 'text-gold-400' : 'text-purple-400'}`} />
+                        <Home className={`w-5 h-5 ${isActive ? accentActiveColor : iconColor}`} />
                       </div>
                     )}
                   </div>
                   
-                  <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-gold-400' : 'text-purple-400'}`}>
+                  <span className={`text-[10px] font-medium mt-1 ${isActive ? accentActiveColor : iconColor}`}>
                     {item.label}
                   </span>
                 </Link>

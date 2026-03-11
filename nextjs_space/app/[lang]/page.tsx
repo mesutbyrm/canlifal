@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import HomepageTicker from '@/components/homepage-ticker'
+import { useSiteTheme } from '@/lib/theme-context'
 
 interface LiveTeller {
   id: string
@@ -155,10 +156,22 @@ export default function HomePage() {
   const { language } = useLanguage()
   const { data: session } = useSession() || {}
   const router = useRouter()
+  const { theme } = useSiteTheme()
   const [activeTab, setActiveTab] = useState<'fortunes' | 'live'>('fortunes')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
+  
+  // Theme-based colors
+  const isCosmic = theme === 'cosmic'
+  const bgColor = isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const cardBg = isCosmic ? 'bg-white/10 border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
+  const cardBgSolid = isCosmic ? 'bg-[#162033] border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
+  const accentColor = isCosmic ? 'text-blue-400' : 'text-gold-400'
+  const accentColorFill = isCosmic ? 'text-blue-400 fill-blue-400' : 'text-gold-400 fill-gold-400'
+  const textSecondary = isCosmic ? 'text-slate-300' : 'text-purple-300'
+  const borderColor = isCosmic ? 'border-blue-500/30' : 'border-purple-500/30'
+  const gradientBorder = isCosmic ? 'bg-gradient-to-br from-blue-500 to-cyan-400' : 'bg-gradient-to-br from-purple-500 to-pink-500'
 
   useEffect(() => {
     // Fetch live tellers
@@ -215,7 +228,7 @@ export default function HomePage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#0a0118]">
+    <div className={`min-h-screen ${bgColor}`}>
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <HomepageTicker />
@@ -223,7 +236,7 @@ export default function HomePage() {
 
       {/* Last Online Users - below ticker */}
       {onlineData.users.length > 0 && (
-        <div className="fixed top-[92px] left-0 right-0 z-30 bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20 py-2.5 px-4">
+        <div className={`fixed top-[92px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2.5 px-4`}>
           <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {/* Online count badge */}
             <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-3 py-1 border border-green-500/30">
@@ -233,14 +246,14 @@ export default function HomePage() {
             </div>
             
             {/* Separator */}
-            <div className="w-px h-5 bg-purple-500/30 flex-shrink-0" />
+            <div className={`w-px h-5 ${isCosmic ? 'bg-blue-500/30' : 'bg-purple-500/30'} flex-shrink-0`} />
             
             {/* User list */}
             {onlineData.users.slice(0, 15).map((user) => (
               <Link
                 key={user.id}
                 href={`/${language}/profile/${user.id}`}
-                className="flex-shrink-0 flex items-center gap-1.5 bg-purple-900/30 rounded-full px-2.5 py-1 hover:bg-purple-800/50 transition-colors border border-purple-500/30"
+                className={`flex-shrink-0 flex items-center gap-1.5 ${isCosmic ? 'bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50' : 'bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50'} rounded-full px-2.5 py-1 transition-colors border`}
               >
                 <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
                 {user.image ? (
@@ -252,11 +265,11 @@ export default function HomePage() {
                     className="w-[18px] h-[18px] rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-[18px] h-[18px] rounded-full bg-purple-500/50 flex items-center justify-center">
+                  <div className={`w-[18px] h-[18px] rounded-full ${isCosmic ? 'bg-blue-500/50' : 'bg-purple-500/50'} flex items-center justify-center`}>
                     <span className="text-[9px] text-white font-medium">{user.name?.[0]}</span>
                   </div>
                 )}
-                <span className="text-xs text-purple-200 font-medium">{user.username || user.name?.split(' ')[0]}</span>
+                <span className={`text-xs ${isCosmic ? 'text-blue-200' : 'text-purple-200'} font-medium`}>{user.username || user.name?.split(' ')[0]}</span>
               </Link>
             ))}
           </div>
@@ -270,8 +283,12 @@ export default function HomePage() {
             onClick={() => setActiveTab('fortunes')}
             className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
               activeTab === 'fortunes'
-                ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
-                : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
+                ? isCosmic 
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                  : 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                : isCosmic 
+                  ? 'bg-transparent border-2 border-blue-500/40 text-blue-300 hover:border-blue-400/60'
+                  : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
             }`}
           >
             <Radio className="w-4 h-4" />
@@ -281,8 +298,12 @@ export default function HomePage() {
             onClick={() => setActiveTab('live')}
             className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
               activeTab === 'live'
-                ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
-                : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
+                ? isCosmic 
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                  : 'bg-gradient-to-r from-red-600/30 to-pink-600/30 border-2 border-red-400/50 text-white'
+                : isCosmic 
+                  ? 'bg-transparent border-2 border-blue-500/40 text-blue-300 hover:border-blue-400/60'
+                  : 'bg-transparent border-2 border-purple-900/50 text-purple-400 hover:border-purple-500/50'
             }`}
           >
             <Video className="w-4 h-4" />
@@ -295,9 +316,9 @@ export default function HomePage() {
         /* Live Tellers Tab Content */
         <div className="px-4 pb-8">
           {/* Live Tellers Section - Circular Avatars */}
-          <div className="mb-8 bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+          <div className={`mb-8 ${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold-400" />
+              <Sparkles className={`w-5 h-5 ${accentColor}`} />
               {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
             </h2>
 
@@ -309,10 +330,10 @@ export default function HomePage() {
                   href={`/${language}/live-tellers/${teller.id}`}
                   className="flex-shrink-0 flex flex-col items-center"
                 >
-                  {/* Circular Avatar with Purple/Pink Gradient Border */}
+                  {/* Circular Avatar with Gradient Border */}
                   <div className="relative">
-                    <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? 'bg-gradient-to-br from-purple-500 to-pink-500' : 'bg-gray-600'}`}>
-                      <div className={`w-full h-full rounded-full overflow-hidden bg-[#0a0118] ${!teller.isOnline ? 'opacity-60' : ''}`}>
+                    <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? gradientBorder : 'bg-gray-600'}`}>
+                      <div className={`w-full h-full rounded-full overflow-hidden ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} ${!teller.isOnline ? 'opacity-60' : ''}`}>
                         {teller.avatar || teller.user.image ? (
                           <Image
                             src={teller.avatar || teller.user.image || ''}
@@ -322,7 +343,7 @@ export default function HomePage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                          <div className={`w-full h-full ${isCosmic ? 'bg-gradient-to-br from-blue-600 to-cyan-500' : 'bg-gradient-to-br from-purple-600 to-pink-600'} flex items-center justify-center`}>
                             <span className="text-2xl font-bold text-white">
                               {teller.displayName?.[0]?.toUpperCase()}
                             </span>
@@ -331,24 +352,24 @@ export default function HomePage() {
                       </div>
                     </div>
                     {/* Online/Offline indicator */}
-                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#0a0118] ${teller.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 ${isCosmic ? 'border-[#0a1628]' : 'border-[#0a0118]'} ${teller.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                   </div>
                   {/* Name */}
                   <p className={`text-xs font-medium mt-2 text-center w-20 truncate ${teller.isOnline ? 'text-white' : 'text-gray-500'}`}>{teller.displayName}</p>
                   {/* Rating */}
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Star className={`w-2.5 h-2.5 ${teller.isOnline ? 'text-gold-400 fill-gold-400' : 'text-gray-500 fill-gray-500'}`} />
-                    <span className={`text-[10px] ${teller.isOnline ? 'text-gold-400' : 'text-gray-500'}`}>{teller.rating.toFixed(1)}</span>
+                    <Star className={`w-2.5 h-2.5 ${teller.isOnline ? accentColorFill : 'text-gray-500 fill-gray-500'}`} />
+                    <span className={`text-[10px] ${teller.isOnline ? accentColor : 'text-gray-500'}`}>{teller.rating.toFixed(1)}</span>
                   </div>
                 </Link>
               )) : (
                 <div className="flex-1 py-8 text-center w-full">
-                  <p className="text-purple-300 text-sm">
+                  <p className={`${textSecondary} text-sm`}>
                     {language === 'tr' ? 'Şu an falcı yok' : 'No tellers right now'}
                   </p>
                   <Link
                     href={`/${language}/live-tellers`}
-                    className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-full text-xs font-medium transition-colors"
+                    className={`inline-block mt-3 px-4 py-1.5 ${isCosmic ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500'} text-white rounded-full text-xs font-medium transition-colors`}
                   >
                     {language === 'tr' ? 'Tüm Falcıları Gör' : 'See All Tellers'}
                   </Link>
@@ -358,13 +379,13 @@ export default function HomePage() {
           </div>
 
           {/* Fortune Categories in Live Tab */}
-          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+          <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-gold-400" />
+                <Sparkles className={`w-4 h-4 ${accentColor}`} />
                 {language === 'tr' ? 'Fal Kategorileri' : 'Fortune Categories'}
               </h2>
-              <Link href={`/${language}/fortunes`} className="text-gold-400 text-sm flex items-center gap-1 hover:text-gold-300">
+              <Link href={`/${language}/fortunes`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
                 {language === 'tr' ? 'Tümünü Gör' : 'See All'}
                 <ChevronRight className="w-4 h-4" />
               </Link>
@@ -373,7 +394,7 @@ export default function HomePage() {
             <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
               {FORTUNE_CARDS.slice(0, 4).map((card) => (
                 <Link key={card.id} href={`/${language}${card.href}`} className="flex-shrink-0 w-32">
-                  <div className="relative aspect-square rounded-xl overflow-hidden bg-purple-900/50 border border-purple-500/30 hover:border-purple-400/50 transition-all">
+                  <div className={`relative aspect-square rounded-xl overflow-hidden ${isCosmic ? 'bg-blue-900/50 border-blue-500/30 hover:border-blue-400/50' : 'bg-purple-900/50 border-purple-500/30 hover:border-purple-400/50'} border transition-all`}>
                     <Image
                       src={card.image}
                       alt={language === 'tr' ? card.nameTr : card.nameEn}
@@ -384,8 +405,8 @@ export default function HomePage() {
                     <div className="absolute bottom-2 left-2 right-2">
                       <h3 className="text-white font-medium text-xs">{language === 'tr' ? card.nameTr : card.nameEn}</h3>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-2.5 h-2.5 text-gold-400 fill-gold-400" />
-                        <span className="text-gold-400 text-[10px]">5.0</span>
+                        <Star className={`w-2.5 h-2.5 ${accentColorFill}`} />
+                        <span className={`${accentColor} text-[10px]`}>5.0</span>
                       </div>
                     </div>
                   </div>
@@ -398,7 +419,7 @@ export default function HomePage() {
         /* Live Streams Tab Content */
         <div className="px-4 pb-8">
           {/* Header */}
-          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm mb-4">
+          <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm mb-4`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Radio className="w-5 h-5 text-red-400" />
               {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
@@ -417,12 +438,12 @@ export default function HomePage() {
                 }}
                 className="flex-shrink-0 flex flex-col items-center"
               >
-                <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-purple-500 to-pink-500">
-                  <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center">
-                    <Plus className="w-8 h-8 text-purple-400" />
+                <div className={`w-20 h-20 rounded-full p-[3px] ${gradientBorder}`}>
+                  <div className={`w-full h-full rounded-full ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} flex items-center justify-center`}>
+                    <Plus className={`w-8 h-8 ${isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
                   </div>
                 </div>
-                <p className="text-purple-300 text-xs font-medium mt-2 text-center">
+                <p className={`${textSecondary} text-xs font-medium mt-2 text-center`}>
                   {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
                 </p>
               </button>
@@ -441,7 +462,7 @@ export default function HomePage() {
                       {/* Circular Avatar with Rainbow Animated Border */}
                       <div className="relative">
                         <div className="w-20 h-20 rounded-full p-[3px] rainbow-border">
-                          <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-[2px]">
+                          <div className={`w-full h-full rounded-full overflow-hidden ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} p-[2px]`}>
                             <div className="w-full h-full rounded-full overflow-hidden">
                               {stream.user.image ? (
                                 <Image
@@ -452,7 +473,7 @@ export default function HomePage() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                                <div className={`w-full h-full ${isCosmic ? 'bg-gradient-to-br from-blue-600 to-cyan-500' : 'bg-gradient-to-br from-purple-600 to-pink-600'} flex items-center justify-center`}>
                                   <span className="text-xl font-bold text-white">
                                     {stream.user.name?.[0]?.toUpperCase()}
                                   </span>
@@ -470,13 +491,13 @@ export default function HomePage() {
                         </div>
                       </div>
                       {/* Name */}
-                      <p className="text-purple-200 text-xs font-medium mt-2 text-center w-20 truncate">{stream.user.name}</p>
+                      <p className={`${isCosmic ? 'text-blue-200' : 'text-purple-200'} text-xs font-medium mt-2 text-center w-20 truncate`}>{stream.user.name}</p>
                     </Link>
                   </motion.div>
                 ))
               ) : (
                 <div className="flex items-center pl-4">
-                  <p className="text-purple-300 text-sm">
+                  <p className={`${textSecondary} text-sm`}>
                     {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
                   </p>
                 </div>
@@ -485,9 +506,9 @@ export default function HomePage() {
           </div>
 
           {/* Fortune Types - Circular Icons */}
-          <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+          <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold-400" />
+              <Sparkles className={`w-5 h-5 ${accentColor}`} />
               {language === 'tr' ? 'Fallar' : 'Fortunes'}
             </h2>
             <div className="grid grid-cols-4 gap-4">
@@ -497,7 +518,7 @@ export default function HomePage() {
                   href={`/${language}${fortune.href}`}
                   className="flex flex-col items-center"
                 >
-                  <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 transition-all">
+                  <div className={`w-16 h-16 rounded-full p-[2px] ${isCosmic ? 'bg-gradient-to-br from-blue-500 to-cyan-400 hover:from-blue-400 hover:to-cyan-300' : 'bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400'} transition-all`}>
                     <div className="w-full h-full rounded-full overflow-hidden">
                       <Image
                         src={fortune.image}
@@ -508,7 +529,7 @@ export default function HomePage() {
                       />
                     </div>
                   </div>
-                  <p className="text-purple-200 text-[10px] font-medium mt-1.5 text-center w-16 leading-tight">
+                  <p className={`${isCosmic ? 'text-blue-200' : 'text-purple-200'} text-[10px] font-medium mt-1.5 text-center w-16 leading-tight`}>
                     {language === 'tr' ? fortune.nameTr : fortune.nameEn}
                   </p>
                 </Link>

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import { useSiteTheme } from '@/lib/theme-context'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
@@ -18,6 +19,7 @@ import TellerIncomingRequest from './teller-incoming-request'
 export default function Navbar() {
   const { data: session, update: updateSession } = useSession() || {}
   const { language, setLanguage, t } = useLanguage()
+  const { theme } = useSiteTheme()
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [credits, setCredits] = useState<number>(0)
@@ -29,6 +31,9 @@ export default function Navbar() {
   const [onlineUsers, setOnlineUsers] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Theme-based styling
+  const isCosmic = theme === 'cosmic'
   
   // Hide navbar on mobile for profile and messages pages (footer handles navigation there)
   const hideOnMobile = pathname?.includes('/profile') || pathname?.includes('/messages')
@@ -207,9 +212,15 @@ export default function Navbar() {
     return null
   }
 
+  // Theme colors for navbar
+  const navBg = isCosmic ? 'bg-[#0a1628]/95 border-blue-900/30' : 'bg-[#0a0118]/95 border-purple-900/30'
+  const navTextColor = isCosmic ? 'text-blue-300 hover:text-amber-400' : 'text-purple-300 hover:text-gold-400'
+  const navHoverBg = isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'
+  const accentColor = isCosmic ? 'text-amber-400' : 'text-gold-400'
+  
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 ${hideOnMobile ? 'hidden md:block' : ''}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 ${navBg} backdrop-blur-md border-b ${hideOnMobile ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex justify-between items-center h-14">
             {/* Main Navigation - 4 items */}
@@ -217,7 +228,7 @@ export default function Navbar() {
               {/* İstatistikler (Statistics) */}
               <Link
                 href={`/${language}/dashboard`}
-                className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
+                className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
               >
                 <Sparkles className="w-6 h-6" />
                 <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
@@ -226,7 +237,7 @@ export default function Navbar() {
               {/* Sosyal (Social) - links to social feed page */}
               <Link
                 href={`/${language}/social`}
-                className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30 relative"
+                className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg} relative`}
               >
                 <div className="relative">
                   <Users className="w-6 h-6" />
@@ -242,7 +253,7 @@ export default function Navbar() {
               {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
               <Link
                 href={`/${language}/chat`}
-                className="flex flex-col items-center gap-0.5 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
+                className={`flex flex-col items-center gap-0.5 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
               >
                 <MessageCircle className="w-6 h-6" />
                 <span className="text-[10px] font-medium text-center leading-tight">{language === 'tr' ? 'Fal Sohbet' : 'Chat Rooms'}</span>

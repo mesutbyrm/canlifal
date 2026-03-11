@@ -88,6 +88,53 @@
     --fb-green: #42b72a;
     --fb-red: #fa3e3e;
   }
+
+  /* Cosmic Theme - Space Blue with Stars */
+  [data-theme="cosmic"] {
+    --background: 220 50% 8%;
+    --foreground: 45 100% 50%;
+    --card: 220 50% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 50% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 40% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 30% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 220 50% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 50% 30%;
+    --input: 220 40% 20%;
+    --ring: 217 91% 60%;
+    /* Cosmic Theme colors */
+    --theme-bg: #0a1628;
+    --theme-scrollbar-track: #0d1b2a;
+    --theme-scrollbar-thumb: #3b82f6;
+    --theme-scrollbar-thumb-hover: #60a5fa;
+    --theme-gradient-start: #0a1628;
+    --theme-gradient-mid: #1e3a5f;
+    --theme-gradient-end: #0a1628;
+    /* Cosmic specific */
+    --cosmic-blue: #3b82f6;
+    --cosmic-blue-light: #60a5fa;
+    --cosmic-blue-dark: #2563eb;
+    --cosmic-blue-glow: #93c5fd;
+    --cosmic-gold: #fbbf24;
+    --cosmic-gold-light: #fcd34d;
+    --cosmic-text: #f8fafc;
+    --cosmic-text-secondary: #94a3b8;
+    --cosmic-bg: #0a1628;
+    --cosmic-bg-light: #0d1b2a;
+    --cosmic-card: rgba(255, 255, 255, 0.08);
+    --cosmic-card-solid: #162033;
+    --cosmic-border: rgba(59, 130, 246, 0.3);
+    --cosmic-green: #22c55e;
+    --cosmic-red: #ef4444;
+  }
 }
 
 @layer base {
@@ -105,6 +152,10 @@
     color: #1c1e21;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
+  [data-theme="cosmic"] body {
+    color: #f8fafc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', 'Inter', serif;
     font-weight: 700;
@@ -118,6 +169,15 @@
   [data-theme="facebook"] h6 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1c1e21;
+  }
+  [data-theme="cosmic"] h1,
+  [data-theme="cosmic"] h2,
+  [data-theme="cosmic"] h3,
+  [data-theme="cosmic"] h4,
+  [data-theme="cosmic"] h5,
+  [data-theme="cosmic"] h6 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #fbbf24;
   }
 }
 
@@ -181,6 +241,75 @@
   }
   .fb-shadow-md {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Cosmic utility classes */
+  .cosmic-card {
+    @apply rounded-xl border backdrop-blur-sm;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  .cosmic-card-hover {
+    @apply rounded-xl border backdrop-blur-sm transition-all;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  .cosmic-card-hover:hover {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .cosmic-card-solid {
+    @apply rounded-xl border backdrop-blur-sm;
+    background: #162033;
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  .cosmic-btn {
+    @apply font-semibold px-6 py-3 rounded-full transition-all text-white;
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  }
+  .cosmic-btn:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    transform: translateY(-1px);
+  }
+  .cosmic-btn-secondary {
+    @apply font-semibold px-6 py-3 rounded-full transition-all;
+    background: rgba(59, 130, 246, 0.15);
+    border: 2px solid rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+  }
+  .cosmic-btn-secondary:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.6);
+  }
+  .cosmic-btn-gold {
+    @apply font-semibold px-4 py-2 rounded-full transition-all text-black;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  }
+  .cosmic-btn-gold:hover {
+    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+  }
+  .cosmic-text {
+    color: #f8fafc;
+  }
+  .cosmic-text-secondary {
+    color: #94a3b8;
+  }
+  .cosmic-text-gold {
+    color: #fbbf24;
+  }
+  .cosmic-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1);
+  }
+  .cosmic-gold-glow {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 0 0 40px rgba(251, 191, 36, 0.1);
+  }
+  .cosmic-gradient-text {
+    background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 

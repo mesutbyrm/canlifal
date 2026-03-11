@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
-export type SiteTheme = 'mystical' | 'facebook';
+export type SiteTheme = 'mystical' | 'facebook' | 'cosmic';
 
 interface ThemeContextType {
   theme: SiteTheme;
@@ -28,7 +28,7 @@ export function SiteThemeProvider({ children, defaultTheme = 'mystical' }: { chi
           const res = await fetch('/api/user/theme');
           if (res.ok) {
             const data = await res.json();
-            if (data.theme === 'mystical' || data.theme === 'facebook') {
+            if (data.theme === 'mystical' || data.theme === 'facebook' || data.theme === 'cosmic') {
               setThemeState(data.theme);
             }
           }
@@ -38,7 +38,7 @@ export function SiteThemeProvider({ children, defaultTheme = 'mystical' }: { chi
       } else {
         // For non-authenticated users, use default or localStorage
         const savedTheme = typeof window !== 'undefined' ? localStorage.getItem('site-theme') as SiteTheme : null;
-        if (savedTheme === 'mystical' || savedTheme === 'facebook') {
+        if (savedTheme === 'mystical' || savedTheme === 'facebook' || savedTheme === 'cosmic') {
           setThemeState(savedTheme);
         } else {
           setThemeState(defaultTheme);

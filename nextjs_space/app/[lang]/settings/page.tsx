@@ -464,7 +464,7 @@ export default function SettingsPage() {
               <label className="block text-sm text-purple-300 mb-3">
                 {language === 'tr' ? 'Tercih ettiğiniz temayı seçin' : 'Choose your preferred theme'}
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setTheme('mystical')}
@@ -474,16 +474,41 @@ export default function SettingsPage() {
                       : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
                   }`}
                 >
-                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-900 to-purple-950 border border-gold-500/50 flex items-center justify-center">
-                    <Wand2 className="w-8 h-8 text-gold-500" />
+                  <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-purple-900 to-purple-950 border border-gold-500/50 flex items-center justify-center">
+                    <Wand2 className="w-7 h-7 text-gold-500" />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium">{language === 'tr' ? 'Mistik' : 'Mystical'}</p>
-                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mor ve Altın' : 'Purple & Gold'}</p>
+                    <p className="font-medium text-sm">{language === 'tr' ? 'Mistik' : 'Mystical'}</p>
+                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mor & Altın' : 'Purple & Gold'}</p>
                   </div>
                   {theme === 'mystical' && (
                     <div className="absolute top-2 right-2">
-                      <Check className="w-5 h-5 text-green-400" />
+                      <Check className="w-4 h-4 text-green-400" />
+                    </div>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTheme('cosmic')}
+                  className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all ${
+                    theme === 'cosmic'
+                      ? 'bg-blue-600/30 border-blue-400 text-white ring-2 ring-blue-400'
+                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
+                  }`}
+                >
+                  <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-[#0a1628] to-[#1e3a5f] border border-blue-400/50 flex items-center justify-center relative overflow-hidden">
+                    <Sparkles className="w-7 h-7 text-blue-400" />
+                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/60"></div>
+                    <div className="absolute bottom-2 left-2 w-1 h-1 rounded-full bg-blue-300/50"></div>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-sm">Cosmic</p>
+                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Uzay Mavisi' : 'Space Blue'}</p>
+                  </div>
+                  {theme === 'cosmic' && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-4 h-4 text-green-400" />
                     </div>
                   )}
                 </button>
@@ -497,16 +522,16 @@ export default function SettingsPage() {
                       : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
                   }`}
                 >
-                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400/50 flex items-center justify-center">
-                    <Globe className="w-8 h-8 text-white" />
+                  <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400/50 flex items-center justify-center">
+                    <Globe className="w-7 h-7 text-white" />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium">Facebook</p>
-                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mavi ve Beyaz' : 'Blue & White'}</p>
+                    <p className="font-medium text-sm">Facebook</p>
+                    <p className="text-[10px] opacity-70">{language === 'tr' ? 'Mavi & Beyaz' : 'Blue & White'}</p>
                   </div>
                   {theme === 'facebook' && (
                     <div className="absolute top-2 right-2">
-                      <Check className="w-5 h-5 text-green-400" />
+                      <Check className="w-4 h-4 text-green-400" />
                     </div>
                   )}
                 </button>

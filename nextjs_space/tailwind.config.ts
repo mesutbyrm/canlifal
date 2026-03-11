@@ -29,6 +29,23 @@ const config: Config = {
           'gray-400': '#bec3c9',
           'gray-500': '#8a8d91',
         },
+        // Cosmic color palette
+        'cosmic': {
+          'blue': '#3b82f6',
+          'blue-light': '#60a5fa',
+          'blue-dark': '#2563eb',
+          'blue-glow': '#93c5fd',
+          'gold': '#fbbf24',
+          'gold-light': '#fcd34d',
+          'text': '#f8fafc',
+          'text-secondary': '#94a3b8',
+          'bg': '#0a1628',
+          'bg-light': '#0d1b2a',
+          'card': '#162033',
+          'border': '#1e3a5f',
+          'green': '#22c55e',
+          'red': '#ef4444',
+        },
         // Keep some legacy colors for compatibility
         'deep-purple': {
           50: '#e7f3ff',
