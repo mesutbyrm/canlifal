@@ -188,13 +188,27 @@ export default function NotificationBell() {
     return `${days} ${language === 'tr' ? 'gün' : 'd'}`
   }
 
+  const bellRef = useRef<HTMLButtonElement>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+
+  useEffect(() => {
+    if (isOpen && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect()
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      })
+    }
+  }, [isOpen])
+
   if (!session?.user) return null
 
   return (
-    <div className="relative">
+    <>
       <button
+        ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-purple-300 hover:text-gold-400 transition-colors"
+        className="relative p-2 text-purple-300 hover:text-yellow-400 transition-colors"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -207,31 +221,38 @@ export default function NotificationBell() {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <div 
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-[9998]"
               onClick={() => setIsOpen(false)}
             />
-            
-            {/* Dropdown */}
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-[#1a0b2e] border border-purple-500/30 rounded-xl shadow-2xl z-50"
+              className="fixed z-[9999] max-h-[70vh] overflow-y-auto bg-[#1a0b2e] border border-purple-500/30 rounded-xl shadow-2xl"
+              style={{
+                top: dropdownPos.top,
+                right: dropdownPos.right,
+                width: 'min(350px, calc(100vw - 16px))',
+              }}
             >
-              <div className="p-3 border-b border-purple-500/20 flex justify-between items-center">
-                <h3 className="text-gold-400 font-semibold">
+              <div className="p-3 border-b border-purple-500/20 flex justify-between items-center sticky top-0 bg-[#1a0b2e] z-10 rounded-t-xl">
+                <h3 className="text-yellow-400 font-semibold">
                   {language === 'tr' ? 'Bildirimler' : 'Notifications'}
                 </h3>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-xs text-purple-400 hover:text-gold-400"
-                  >
-                    {language === 'tr' ? 'Tümünü okundu işaretle' : 'Mark all read'}
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-xs text-purple-400 hover:text-yellow-400"
+                    >
+                      {language === 'tr' ? 'Okundu' : 'Read all'}
+                    </button>
+                  )}
+                  <button onClick={() => setIsOpen(false)} className="text-purple-400 hover:text-white">
+                    <X className="w-4 h-4" />
                   </button>
-                )}
+                </div>
               </div>
 
               {notifications.length === 0 ? (
@@ -249,11 +270,11 @@ export default function NotificationBell() {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-purple-500/20 rounded-full">
+                        <div className="shrink-0 p-2 bg-purple-500/20 rounded-full">
                           {getIcon(notif.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white">
+                          <p className="text-sm text-white break-words">
                             {getNotificationText(notif)}
                           </p>
                           <p className="text-xs text-purple-400 mt-1">
@@ -261,7 +282,7 @@ export default function NotificationBell() {
                           </p>
                         </div>
                         {!notif.isRead && (
-                          <div className="w-2 h-2 bg-gold-400 rounded-full" />
+                          <div className="shrink-0 w-2 h-2 bg-yellow-400 rounded-full mt-1" />
                         )}
                       </div>
                     </div>
@@ -272,6 +293,6 @@ export default function NotificationBell() {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   )
 }

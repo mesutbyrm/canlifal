@@ -405,10 +405,10 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="p-1.5 text-center">
-                      <p className="text-white font-bold text-xs truncate">{teller.displayName}</p>
+                      <p className="text-white text-xs truncate">{teller.displayName}</p>
                       <div className="flex items-center justify-center gap-1 mt-0.5">
                         <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        <span className="text-yellow-400 text-[10px] font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                        <span className="text-yellow-400 text-[10px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
                       </div>
                     </div>
                   </Link>
@@ -429,16 +429,15 @@ export default function HomePage() {
                 <Link
                   key={teller.id}
                   href={`/${language}/live-tellers/${teller.id}`}
-                  className={`flex-shrink-0 w-28 rounded-2xl overflow-hidden ${teller.isOnline ? 'rainbow-border' : ''}`}
+                  className={`flex-shrink-0 w-28 rounded-2xl overflow-hidden ${teller.isOnline ? 'rainbow-border' : 'opacity-50'}`}
                   style={{
-                    border: teller.isOnline ? 'none' : '2px solid rgba(168, 85, 247, 0.5)',
+                    border: teller.isOnline ? 'none' : '2px solid rgba(100, 60, 140, 0.4)',
                     background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
                   }}
                 >
-                  {/* Square Photo */}
                   <div className="relative w-full aspect-square overflow-hidden">
                     {teller.avatar ? (
-                      <Image src={teller.avatar} alt={teller.displayName} fill className="object-cover" />
+                      <Image src={teller.avatar} alt={teller.displayName} fill className={`object-cover ${!teller.isOnline ? 'grayscale' : ''}`} />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-purple-800 via-fuchsia-900 to-purple-900 flex items-center justify-center">
                         <span className="text-white font-bold text-2xl">{teller.displayName?.[0]}</span>
@@ -457,10 +456,10 @@ export default function HomePage() {
                     )}
                   </div>
                   <div className="p-1.5 text-center">
-                    <p className="text-white font-bold text-xs truncate">{teller.displayName}</p>
+                    <p className="text-white text-xs truncate">{teller.displayName}</p>
                     <div className="flex items-center justify-center gap-1 mt-0.5">
                       <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-yellow-400 text-[10px] font-bold">{teller.averageRating?.toFixed(1) || '5.0'}</span>
+                      <span className="text-yellow-400 text-[10px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
                     </div>
                   </div>
                 </Link>

@@ -759,9 +759,14 @@
     #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000
   );
   z-index: -1;
-  animation: rainbow-spin 3s linear infinite;
-  filter: blur(8px);
-  opacity: 0.6;
+  animation: rainbow-spin 3s linear infinite, rainbow-pulse 2s ease-in-out infinite;
+  filter: blur(10px);
+  opacity: 0.7;
+}
+
+@keyframes rainbow-pulse {
+  0%, 100% { opacity: 0.4; filter: blur(6px); }
+  50% { opacity: 1; filter: blur(14px); }
 }
 
 @property --rainbow-angle {

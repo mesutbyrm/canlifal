@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { motion } from 'framer-motion'
-import { User, Gift, Home, Camera, MessageCircle } from 'lucide-react'
+import { Users, Gift, Home, Camera, MessageCircle } from 'lucide-react'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
@@ -59,7 +59,7 @@ export default function MobileFooter() {
   const navItems = [
     {
       href: `/${language}/social`,
-      icon: User,
+      icon: Users,
       label: language === 'tr' ? 'Sosyal' : 'Social',
       isCenter: false,
     },
@@ -214,7 +214,7 @@ export default function MobileFooter() {
                   <div className="relative w-9 h-9 flex items-center justify-center">
                     {/* Icon with theme styling */}
                     {index === 0 && (
-                      // Profile
+                      // Social
                       <div 
                         className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}
                       >
