@@ -1,13 +1,68 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { motion } from 'framer-motion'
-import { User, Gift, Home, Camera, MessageCircle } from 'lucide-react'
+import { User, Gift, Home, Camera, MessageCircle, Circle, Coins, Crown, Sparkles } from 'lucide-react'
+import Image from 'next/image'
+
+interface OnlineUser {
+  id: string
+  name: string
+  username: string | null
+  image: string | null
+  isGuest?: boolean
+}
+
+interface RecentPurchaser {
+  id: string
+  userId: string
+  amount: number
+  createdAt: string
+  user: {
+    id: string
+    name: string
+    username: string | null
+    image: string | null
+  }
+}
+
+interface BigGift {
+  id: string
+  totalPrice: number
+  createdAt: string
+  sender: {
+    id: string
+    name: string
+    username: string | null
+    image: string | null
+  }
+  stream: {
+    id: string
+    title: string
+    user: {
+      id: string
+      name: string
+      username: string | null
+      image: string | null
+    }
+  }
+  giftType: {
+    name: string
+    icon: string
+  }
+}
+
+interface TickerData {
+  onlineUsers: OnlineUser[]
+  onlineCount: number
+  recentPurchasers: RecentPurchaser[]
+  bigGifts: BigGift[]
+}
 
 export default function MobileFooter() {
   const { data: session } = useSession()
@@ -15,6 +70,13 @@ export default function MobileFooter() {
   const { theme } = useSiteTheme()
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [tickerData, setTickerData] = useState<TickerData>({
+    onlineUsers: [],
+    onlineCount: 0,
+    recentPurchasers: [],
+    bigGifts: []
+  })
+  const tickerRef = useRef<HTMLDivElement>(null)
   
   // Theme-based styling
   const isFalci = theme === 'falci'
@@ -24,6 +86,25 @@ export default function MobileFooter() {
   // Hide footer on certain pages
   const hiddenPaths = ['/live-room', '/chat/video', '/login', '/register']
   const shouldHide = hiddenPaths.some(path => pathname?.includes(path))
+  
+  // Fetch ticker data
+  useEffect(() => {
+    const fetchTickerData = async () => {
+      try {
+        const res = await fetch('/api/homepage-ticker')
+        if (res.ok) {
+          const json = await res.json()
+          setTickerData(json)
+        }
+      } catch (e) {
+        console.error('Footer ticker fetch error:', e)
+      }
+    }
+    
+    fetchTickerData()
+    const interval = setInterval(fetchTickerData, 10000)
+    return () => clearInterval(interval)
+  }, [])
   
   useEffect(() => {
     if (!session?.user) return
@@ -64,7 +145,7 @@ export default function MobileFooter() {
     {
       href: session ? `/${language}/chat/video/setup` : `/${language}/login`,
       icon: Camera,
-      label: language === 'tr' ? 'Yayın' : 'Stream',
+      label: '', // No label for center button
       isCenter: true,
     },
     {
@@ -80,6 +161,95 @@ export default function MobileFooter() {
       isCenter: false,
     },
   ]
+  
+  // Theme colors for ticker
+  const tickerBg = isFalclub
+    ? 'bg-gradient-to-r from-[#0f0520] via-fuchsia-900/30 to-[#0f0520]'
+    : isFalci
+      ? 'bg-gradient-to-r from-[#1a0a2e] via-indigo-900/30 to-[#1a0a2e]'
+      : isCosmic
+        ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628]'
+        : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118]'
+  const labelGradient = isFalclub
+    ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500'
+    : isFalci
+      ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+      : isCosmic
+        ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+        : 'bg-gradient-to-r from-purple-600 to-pink-600'
+  const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-amber-300'
+  const secondaryText = isFalclub ? 'text-white' : isFalci ? 'text-white' : isCosmic ? 'text-slate-100' : 'text-gray-100'
+  const guestColor = isFalclub ? 'text-fuchsia-200' : isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-300' : 'text-purple-200'
+  
+  // Build ticker items
+  const buildTickerItems = () => {
+    const items: JSX.Element[] = []
+    
+    // Add online count with blinking "online" text
+    if (tickerData.onlineCount > 0) {
+      items.push(
+        <div key="online-count" className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap bg-green-900/30 rounded-full border border-green-500/30">
+          <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
+          <span className="text-green-400 text-xs font-bold animate-pulse">
+            online
+          </span>
+          <span className="text-green-300 text-xs font-semibold">
+            {tickerData.onlineCount} {language === 'tr' ? 'kişi' : 'people'}
+          </span>
+        </div>
+      )
+    }
+    
+    // Add online users
+    tickerData.onlineUsers.slice(0, 10).forEach((user, index) => {
+      const isGuest = user.isGuest
+      const displayName = isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullanıcı')
+      
+      items.push(
+        <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
+          <Circle className={`w-2 h-2 ${isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400'} animate-pulse`} />
+          <span className={`text-[10px] font-medium ${isGuest ? guestColor : secondaryText}`}>
+            {displayName}
+          </span>
+        </div>
+      )
+    })
+    
+    // Add recent purchasers
+    tickerData.recentPurchasers.slice(0, 5).forEach((purchase, index) => {
+      items.push(
+        <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
+          <Coins className={`w-3 h-3 ${accentColor}`} />
+          <span className={`${secondaryText} text-[10px] font-medium`}>
+            {purchase.user.username || purchase.user.name?.split(' ')[0] || 'Kullanıcı'}
+          </span>
+          <span className={`${accentColor} text-[10px] font-bold`}>+{purchase.amount}💰</span>
+        </div>
+      )
+    })
+    
+    // Add big gifts
+    tickerData.bigGifts.slice(0, 3).forEach((gift, index) => {
+      const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullanıcı'
+      const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
+      
+      items.push(
+        <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
+          <Crown className={`w-3 h-3 ${isFalclub ? 'text-pink-400' : isCosmic ? 'text-cyan-400' : 'text-pink-400'}`} />
+          <span className={`text-[10px] ${guestColor}`}>
+            <span className="text-white font-medium">{senderName}</span>→
+            <span className="text-lg">{gift.giftType.icon}</span>→
+            <span className="text-white font-medium">{receiverName}</span>
+          </span>
+        </div>
+      )
+    })
+    
+    return items
+  }
+  
+  const tickerItems = buildTickerItems()
+  const duplicatedItems = [...tickerItems, ...tickerItems]
   
   // Theme colors with improved visibility
   const bgGradient = isFalclub
@@ -105,7 +275,7 @@ export default function MobileFooter() {
   return (
     <>
       {/* Spacer to prevent content from being hidden behind footer */}
-      <div className="h-24 md:hidden" />
+      <div className="h-32 md:hidden" />
       
       {/* Footer */}
       <motion.footer
@@ -113,6 +283,30 @@ export default function MobileFooter() {
         animate={{ y: 0 }}
         className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
       >
+        {/* Scrolling Ticker */}
+        <div className={`w-full overflow-hidden ${tickerBg} py-1 border-t border-b ${isFalclub ? 'border-fuchsia-500/30' : isFalci ? 'border-indigo-500/30' : isCosmic ? 'border-blue-500/30' : 'border-purple-500/30'}`}>
+          <div className="flex items-center">
+            {/* Label */}
+            <div className={`flex-shrink-0 px-2 py-0.5 ${labelGradient} text-white text-[9px] font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10`}>
+              <Sparkles className="w-2.5 h-2.5" />
+              LIVE
+            </div>
+            
+            {/* Scrolling content */}
+            <div className="flex-1 overflow-hidden" ref={tickerRef}>
+              <div className="footer-ticker inline-flex">
+                {duplicatedItems.length > 0 ? duplicatedItems : (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
+                    <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
+                    <span className="text-green-400 text-xs font-bold animate-pulse">online</span>
+                    <span className="text-green-300 text-xs">0 {language === 'tr' ? 'kişi' : 'people'}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {/* Background */}
         <div className={`relative h-20 overflow-hidden ${bgGradient} border-t`}>
           {/* Starry effect */}
@@ -137,7 +331,7 @@ export default function MobileFooter() {
               const Icon = item.icon
               
               if (item.isCenter) {
-                // Center camera button with special styling - larger than others
+                // Center camera button with special styling - larger than others, no label
                 return (
                   <div key={index} className="flex flex-col items-center w-20">
                     <Link
@@ -153,9 +347,6 @@ export default function MobileFooter() {
                         />
                       </div>
                     </Link>
-                    <span className={`text-[10px] font-medium mt-2 ${accentActiveColor}`}>
-                      {item.label}
-                    </span>
                   </div>
                 )
               }
@@ -218,6 +409,21 @@ export default function MobileFooter() {
             })}
           </nav>
         </div>
+        
+        <style jsx>{`
+          @keyframes footer-ticker-rtl {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+          .footer-ticker {
+            animation: footer-ticker-rtl 25s linear infinite;
+            will-change: transform;
+          }
+        `}</style>
       </motion.footer>
     </>
   )
