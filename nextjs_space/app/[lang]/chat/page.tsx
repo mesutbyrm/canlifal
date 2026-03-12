@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
-import { MessageCircle, Users, Sparkles, Video, Radio, Play, ChevronRight, Plus, Eye, Loader2 } from 'lucide-react'
+import { MessageCircle, Users, Sparkles } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSiteTheme } from '@/lib/theme-context'
 
 interface ChatRoom {
   id: string
@@ -21,55 +20,20 @@ interface ChatRoom {
   onlineCount: number
 }
 
-interface LiveStream {
-  id: string
-  title: string | null
-  viewerCount: number
-  likeCount: number
-  user: {
-    id: string
-    name: string
-    image: string | null
-  }
-}
-
-interface StreamViewer {
-  id: string
-  name: string
-  image: string | null
-  hasGifted: boolean
-  totalGiftAmount: number
-}
-
-interface OnlineUser {
-  id: string
-  name: string
-  image: string | null
-  username: string | null
-}
-
 export default function ChatRoomsPage() {
   const { language, t } = useLanguage()
   const { data: session } = useSession() || {}
-  const router = useRouter()
+  const { theme } = useSiteTheme()
   const [rooms, setRooms] = useState<ChatRoom[]>([])
   const [loading, setLoading] = useState(true)
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
-  const [selectedStream, setSelectedStream] = useState<string | null>(null)
-  const [streamViewers, setStreamViewers] = useState<StreamViewer[]>([])
-  const [loadingViewers, setLoadingViewers] = useState(false)
-  const [isStartingStream, setIsStartingStream] = useState(false)
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+
+  const isFalclub = theme === 'falclub'
+  const isFalci = theme === 'falci'
+  const isCosmic = theme === 'cosmic'
 
   useEffect(() => {
     fetchRooms()
-    fetchLiveStreams()
-    fetchOnlineUsers()
-    const interval = setInterval(() => {
-      fetchRooms()
-      fetchLiveStreams()
-      fetchOnlineUsers()
-    }, 10000)
+    const interval = setInterval(fetchRooms, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -87,354 +51,148 @@ export default function ChatRoomsPage() {
     }
   }
 
-  const fetchLiveStreams = async () => {
-    try {
-      const res = await fetch('/api/video-streams')
-      if (res.ok) {
-        const data = await res.json()
-        setLiveStreams(data)
-      }
-    } catch (error) {
-      console.error('Error fetching live streams:', error)
-    }
-  }
+  // Theme-based colors
+  const bgColor = isFalclub
+    ? 'falclub-starry-bg'
+    : isFalci
+    ? 'falci-starry-bg'
+    : isCosmic
+    ? 'bg-[#0a1628]'
+    : 'bg-[#0a0118]'
 
-  const fetchOnlineUsers = async () => {
-    try {
-      const res = await fetch('/api/users/online')
-      if (res.ok) {
-        const data = await res.json()
-        setOnlineUsers(data.users || [])
-      }
-    } catch (error) {
-      console.error('Error fetching online users:', error)
-    }
-  }
+  const cardBg = isFalclub
+    ? 'bg-gradient-to-br from-[#2d1145]/80 to-[#1a0a2e]/80 border-fuchsia-500/30 hover:border-fuchsia-400/50'
+    : isFalci
+    ? 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-indigo-500/30 hover:border-indigo-400/50'
+    : isCosmic
+    ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/50'
+    : 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-purple-500/30 hover:border-purple-400/50'
 
-  const fetchViewers = async (streamId: string) => {
-    setLoadingViewers(true)
-    try {
-      const res = await fetch(`/api/video-streams/${streamId}/viewers`)
-      if (res.ok) {
-        const data = await res.json()
-        setStreamViewers(data)
-      }
-    } catch (error) {
-      console.error('Error fetching viewers:', error)
-    } finally {
-      setLoadingViewers(false)
-    }
-  }
+  const titleColor = isFalclub
+    ? 'text-fuchsia-200'
+    : isFalci
+    ? 'text-indigo-200'
+    : isCosmic
+    ? 'text-blue-200'
+    : 'text-gold-300'
 
-  const handleStreamClick = (streamId: string) => {
-    if (selectedStream === streamId) {
-      // Navigate to stream
-      router.push(`/${language}/chat/video`)
-    } else {
-      setSelectedStream(streamId)
-      fetchViewers(streamId)
-    }
-  }
+  const accentColor = isFalclub
+    ? 'text-fuchsia-300'
+    : isFalci
+    ? 'text-indigo-300'
+    : isCosmic
+    ? 'text-amber-300'
+    : 'text-gold-400'
 
-  const handleStartStream = () => {
-    if (!session?.user) {
-      router.push(`/${language}/login`)
-      return
-    }
-    // Go to setup page with camera preview and beauty effects
-    router.push(`/${language}/chat/video/setup`)
-  }
+  const descColor = isFalclub
+    ? 'text-fuchsia-200/80'
+    : isFalci
+    ? 'text-indigo-200/80'
+    : isCosmic
+    ? 'text-slate-300'
+    : 'text-purple-200/70'
+
+  const borderAccent = isFalclub
+    ? 'border-fuchsia-500/20'
+    : isFalci
+    ? 'border-indigo-500/20'
+    : isCosmic
+    ? 'border-blue-500/20'
+    : 'border-gold-500/20'
+
+  const spinnerColor = isFalclub
+    ? 'border-fuchsia-400'
+    : isFalci
+    ? 'border-indigo-400'
+    : isCosmic
+    ? 'border-blue-400'
+    : 'border-gold-400'
+
+  const msgCountColor = isFalclub
+    ? 'text-fuchsia-300/70'
+    : isFalci
+    ? 'text-indigo-300/70'
+    : isCosmic
+    ? 'text-slate-400'
+    : 'text-purple-300/70'
+
+  const joinColor = isFalclub
+    ? 'text-fuchsia-300 group-hover:text-fuchsia-200'
+    : isFalci
+    ? 'text-indigo-300 group-hover:text-indigo-200'
+    : isCosmic
+    ? 'text-amber-300 group-hover:text-amber-200'
+    : 'text-gold-400 group-hover:text-gold-300'
+
+  const sectionIconColor = isFalclub
+    ? 'text-fuchsia-400'
+    : isFalci
+    ? 'text-indigo-400'
+    : isCosmic
+    ? 'text-blue-400'
+    : 'text-gold-400'
+
+  const hoverShadow = isFalclub
+    ? 'hover:shadow-fuchsia-500/10'
+    : isFalci
+    ? 'hover:shadow-indigo-500/10'
+    : isCosmic
+    ? 'hover:shadow-blue-500/10'
+    : 'hover:shadow-gold-500/10'
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
+    <div className={`min-h-screen ${bgColor} pt-14 pb-28 px-4`}>
       <div className="max-w-5xl mx-auto">
-        {/* Online Users Section */}
-        {onlineUsers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <div className="relative">
-                <Users className="w-5 h-5 text-green-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              </div>
-              {language === 'tr' ? 'Çevrimiçi Kullanıcılar' : 'Online Users'}
-              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                {onlineUsers.length}
-              </span>
-            </h2>
-
-            {/* Horizontal Scroll Online Users */}
-            <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
-              {onlineUsers.slice(0, 20).map((user) => (
-                <Link
-                  key={user.id}
-                  href={`/${language}/profile/${user.username || user.id}`}
-                  className="flex-shrink-0 flex flex-col items-center"
-                >
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-green-400 to-emerald-600">
-                      <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          {user.image ? (
-                            <Image
-                              src={user.image}
-                              alt={user.name || ''}
-                              width={60}
-                              height={60}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xl font-bold text-white">
-                              {user.name?.[0]?.toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Online indicator */}
-                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0a0118]" />
-                  </div>
-                  <span className="text-white text-xs mt-2 text-center max-w-[64px] truncate">
-                    {user.name?.split(' ')[0]}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Header */}
+        {/* Section Title */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="pt-3 pb-4"
         >
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-            <MessageCircle className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Sohbet' : 'Chat'}
+          <h1 className={`text-xl font-bold text-white flex items-center gap-2`}>
+            <Sparkles className={`w-5 h-5 ${sectionIconColor}`} />
+            {language === 'tr' ? 'Fal Sohbet Odaları' : 'Fortune Chat Rooms'}
           </h1>
-          <p className="text-purple-300">
-            {language === 'tr' ? 'Canlı yayınlar ve sohbet odaları' : 'Live streams and chat rooms'}
+          <p className={`${descColor} text-sm mt-1`}>
+            {language === 'tr' ? 'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun' : 'Join chat rooms and talk with other users'}
           </p>
-        </motion.div>
-
-        {/* Live Streams Stories Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Radio className="w-5 h-5 text-red-500" />
-            {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
-          </h2>
-          
-          {/* Stories Style Scroll */}
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {/* Start Stream Button */}
-            <button
-              onClick={handleStartStream}
-              disabled={isStartingStream}
-              className="flex-shrink-0 flex flex-col items-center disabled:opacity-50"
-            >
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 p-0.5">
-                <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center">
-                  {isStartingStream ? (
-                    <Loader2 className="w-8 h-8 text-white animate-spin" />
-                  ) : (
-                    <Plus className="w-8 h-8 text-white" />
-                  )}
-                </div>
-              </div>
-              <span className="text-white text-xs mt-2 text-center max-w-[80px] truncate">
-                {isStartingStream 
-                  ? (language === 'tr' ? 'Başlatılıyor...' : 'Starting...')
-                  : (language === 'tr' ? 'Yayın Başlat' : 'Go Live')
-                }
-              </span>
-            </button>
-
-            {/* Live Streamers */}
-            {liveStreams.map((stream) => (
-              <button
-                key={stream.id}
-                onClick={() => handleStreamClick(stream.id)}
-                className={`flex-shrink-0 flex flex-col items-center transition-transform ${
-                  selectedStream === stream.id ? 'scale-110' : ''
-                }`}
-              >
-                <div className="relative">
-                  {/* Rainbow border animation */}
-                  <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 animate-pulse">
-                    <div className="w-full h-full rounded-full bg-[#0a0118] p-0.5">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        {stream.user.image ? (
-                          <Image
-                            src={stream.user.image}
-                            alt={stream.user.name}
-                            width={72}
-                            height={72}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-2xl font-bold text-white">
-                            {stream.user.name?.[0]?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {/* CANLI badge */}
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm">
-                    CANLI
-                  </div>
-                </div>
-                <span className="text-white text-xs mt-3 text-center max-w-[80px] truncate">
-                  {stream.user.name}
-                </span>
-                <span className="text-purple-400 text-[10px] flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {stream.viewerCount}
-                </span>
-              </button>
-            ))}
-
-            {liveStreams.length === 0 && (
-              <div className="flex-1 flex items-center justify-center py-4">
-                <p className="text-purple-400/60 text-sm">
-                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Selected Stream Viewers Box */}
-        {selectedStream && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-8"
-          >
-            <div className="bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 rounded-xl p-4 border border-purple-500/30">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-medium flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-400" />
-                  {language === 'tr' ? 'İzleyenler' : 'Viewers'}
-                </h3>
-                <button
-                  onClick={() => router.push(`/${language}/chat/video`)}
-                  className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-1.5 rounded-full flex items-center gap-1.5"
-                >
-                  <Play className="w-3 h-3" />
-                  {language === 'tr' ? 'Yayına Katıl' : 'Join Stream'}
-                </button>
-              </div>
-
-              {loadingViewers ? (
-                <div className="flex justify-center py-4">
-                  <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : streamViewers.length === 0 ? (
-                <p className="text-purple-400/60 text-sm text-center py-4">
-                  {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {streamViewers.map((viewer) => (
-                    <div
-                      key={viewer.id}
-                      className={`flex flex-col items-center p-3 rounded-xl ${
-                        viewer.hasGifted
-                          ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30'
-                          : 'bg-white/5 border border-white/10'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full overflow-hidden mb-2 ${
-                        viewer.hasGifted
-                          ? 'ring-2 ring-yellow-400'
-                          : ''
-                      }`}>
-                        {viewer.image ? (
-                          <Image
-                            src={viewer.image}
-                            alt={viewer.name}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {viewer.name?.[0]?.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-white text-xs text-center truncate max-w-full">
-                        {viewer.name}
-                      </span>
-                      {viewer.hasGifted && (
-                        <span className="text-yellow-400 text-[10px] mt-1">
-                          🎁 {viewer.totalGiftAmount}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Text Chat Rooms Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-gold-400" />
-            {language === 'tr' ? 'Yazılı Sohbet Odaları' : 'Text Chat Rooms'}
-          </h2>
         </motion.div>
 
         {/* Rooms Grid */}
         {loading ? (
-          <div className="flex justify-center">
-            <div className="w-12 h-12 border-4 border-gold-400 border-t-transparent rounded-full animate-spin" />
+          <div className="flex justify-center py-12">
+            <div className={`w-10 h-10 border-4 ${spinnerColor} border-t-transparent rounded-full animate-spin`} />
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageCircle className={`w-12 h-12 ${sectionIconColor} mx-auto mb-3 opacity-50`} />
+            <p className={`${descColor} text-sm`}>
+              {language === 'tr' ? 'Henüz sohbet odası yok' : 'No chat rooms yet'}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {rooms.map((room, index) => (
               <motion.div
                 key={room.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <Link href={`/${language}/chat/${room.slug}`}>
-                  <div className="bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 rounded-xl p-6 border border-gold-500/20 hover:border-gold-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/10 group cursor-pointer h-full">
+                  <div className={`rounded-xl p-5 border ${cardBg} transition-all duration-300 hover:shadow-lg ${hoverShadow} group cursor-pointer h-full`}>
                     {/* Room Icon */}
-                    <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform">
+                    <div className="text-4xl mb-3 transform group-hover:scale-110 transition-transform">
                       {room.icon}
                     </div>
                     
                     {/* Room Name */}
-                    <h2 className="text-xl font-serif text-gold-300 mb-2">
+                    <h2 className={`text-lg font-bold ${titleColor} mb-1.5`}>
                       {language === 'tr' ? room.nameTr : room.nameEn}
                     </h2>
                     
                     {/* Room Description */}
-                    <p className="text-purple-200/70 text-sm mb-4">
+                    <p className={`${descColor} text-sm mb-3`}>
                       {language === 'tr' ? room.descTr : room.descEn}
                     </p>
                     
@@ -444,15 +202,15 @@ export default function ChatRoomsPage() {
                         <Users className="w-4 h-4" />
                         <span>{room.onlineCount} {t('chat.online')}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-purple-300/70">
+                      <div className={`flex items-center gap-1 ${msgCountColor}`}>
                         <MessageCircle className="w-4 h-4" />
                         <span>{room.messageCount}</span>
                       </div>
                     </div>
 
                     {/* Join Button */}
-                    <div className="mt-4 pt-4 border-t border-gold-500/20">
-                      <span className="text-gold-400 group-hover:text-gold-300 flex items-center gap-2">
+                    <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
+                      <span className={`${joinColor} flex items-center gap-2 font-medium text-sm`}>
                         {t('chat.join')}
                         <span className="group-hover:translate-x-1 transition-transform">→</span>
                       </span>
