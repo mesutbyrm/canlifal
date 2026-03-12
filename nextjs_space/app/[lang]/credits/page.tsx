@@ -18,7 +18,8 @@ import {
   MessageCircle,
   Wallet,
   ExternalLink,
-  CreditCard
+  CreditCard,
+  User
 } from 'lucide-react'
 
 interface CreditPackage {
@@ -63,7 +64,8 @@ export default function CreditsPage() {
   const [loading, setLoading] = useState(true)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [userCredits, setUserCredits] = useState(0)
-  const [activePopup, setActivePopup] = useState<string | null>(null) // 'whatsapp', 'papara', 'bank_transfer', etc.
+  const [showPaymentMethodsPopup, setShowPaymentMethodsPopup] = useState(false)
+  const [activePaymentPopup, setActivePaymentPopup] = useState<string | null>(null)
 
   // Theme colors
   const isCosmic = theme === 'cosmic'
@@ -113,9 +115,7 @@ export default function CreditsPage() {
         const waNumber = settings.find((s: { key: string }) => s.key === 'whatsapp_number')?.value || ''
         const waMessage = settings.find((s: { key: string }) => s.key === 'whatsapp_message')?.value || ''
         const waEnabled = settings.find((s: { key: string }) => s.key === 'whatsapp_enabled')?.value === 'true'
-        if (waNumber && waEnabled) {
-          setWhatsappSettings({ number: waNumber, message: waMessage, enabled: waEnabled })
-        }
+        setWhatsappSettings({ number: waNumber, message: waMessage, enabled: waEnabled })
       }
     } catch (err) {
       console.error('Fetch error:', err)
@@ -150,6 +150,7 @@ export default function CreditsPage() {
       return
     }
     setSelectedPackage(pkg)
+    setShowPaymentMethodsPopup(true)
   }
 
   const handleCopy = (text: string, field: string) => {
@@ -168,16 +169,26 @@ export default function CreditsPage() {
     try { return JSON.parse(method.config) } catch { return null }
   }
 
+  const username = (session?.user as { username?: string })?.username || session?.user?.name || ''
+
   const getWhatsAppLink = () => {
-    if (!whatsappSettings) return '#'
-    const username = (session?.user as { username?: string })?.username || (session?.user?.name || '')
-    let message = whatsappSettings.message
+    if (!whatsappSettings || !whatsappSettings.number) return '#'
+    let message = whatsappSettings.message || `Merhaba, jeton satın almak istiyorum.\nKullanıcı adım: ${username}\nPaket: ${selectedPackage ? `${selectedPackage.credits} Jeton - ${formatPrice(selectedPackage.price, selectedPackage.currency)}` : ''}`
+    message = message
       .replace('{username}', username)
       .replace('{package}', selectedPackage ? `${selectedPackage.credits} Jeton - ${formatPrice(selectedPackage.price, selectedPackage.currency)}` : '')
     return `https://wa.me/${whatsappSettings.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`
   }
 
-  const closePopup = () => setActivePopup(null)
+  const closeAllPopups = () => {
+    setShowPaymentMethodsPopup(false)
+    setActivePaymentPopup(null)
+  }
+
+  const openPaymentDetail = (type: string) => {
+    setShowPaymentMethodsPopup(false)
+    setActivePaymentPopup(type)
+  }
 
   if (loading) {
     return (
@@ -187,10 +198,8 @@ export default function CreditsPage() {
     )
   }
 
-  const username = (session?.user as { username?: string })?.username || session?.user?.name || ''
-
   return (
-    <div className={`min-h-screen ${bgColor} pt-16 pb-24 px-3`}>
+    <div className={`min-h-screen ${bgColor} pt-16 pb-20 px-3`}>
       <div className="max-w-md mx-auto">
         {/* Compact Header */}
         <motion.div
@@ -223,9 +232,7 @@ export default function CreditsPage() {
               transition={{ delay: index * 0.05 }}
               onClick={() => handleSelectPackage(pkg)}
               className={`relative cursor-pointer rounded-xl p-3 border-2 transition-all duration-200 active:scale-95 ${
-                selectedPackage?.id === pkg.id
-                  ? (isFacebook ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-500' : isCosmic ? 'bg-blue-500/20 border-blue-400 ring-2 ring-blue-400' : 'bg-fuchsia-500/20 border-fuchsia-400 ring-2 ring-fuchsia-400')
-                  : pkg.isFeatured ? cardBgFeatured : cardBg
+                pkg.isFeatured ? cardBgFeatured : cardBg
               }`}
             >
               {pkg.isFeatured && (
@@ -255,202 +262,280 @@ export default function CreditsPage() {
           ))}
         </div>
 
-        {/* Payment Methods Buttons */}
-        {selectedPackage && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-2"
-          >
-            <div className={`text-center ${textSecondary} text-sm mb-3`}>
-              <span className={goldColor}>{selectedPackage.credits} {language === 'tr' ? 'jeton' : 'credits'}</span>
-              {selectedPackage.bonusCredits > 0 && <span className="text-green-400"> +{selectedPackage.bonusCredits}</span>}
-              <span> = </span>
-              <span className={`${textPrimary} font-bold`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
-            </div>
-
-            <h3 className={`${textPrimary} font-semibold text-sm mb-2`}>
-              {language === 'tr' ? 'Ödeme Yöntemi Seçin' : 'Select Payment Method'}
-            </h3>
-
-            {/* WhatsApp Button */}
-            {whatsappSettings?.enabled && (
-              <button
-                onClick={() => setActivePopup('whatsapp')}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium transition-all active:scale-98 hover:opacity-90"
-              >
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-bold">WhatsApp</div>
-                  <div className="text-xs opacity-80">{language === 'tr' ? 'Hızlı destek' : 'Quick support'}</div>
-                </div>
-                <ExternalLink className="w-4 h-4 opacity-70" />
-              </button>
-            )}
-
-            {/* Other Payment Methods */}
-            {paymentMethods.map((method) => (
-              <button
-                key={method.id}
-                onClick={() => setActivePopup(method.type)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-98 ${cardBg} hover:opacity-80`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${
-                  method.type === 'papara' ? 'bg-gradient-to-br from-purple-500 to-purple-700' : 'bg-gradient-to-br from-blue-500 to-blue-700'
-                }`}>
-                  {getMethodIcon(method.type)}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className={`${textPrimary} font-bold`}>
-                    {language === 'tr' ? method.name : (method.nameEn || method.name)}
-                  </div>
-                  <div className={`${textSecondary} text-xs`}>
-                    {language === 'tr' ? method.description : (method.descriptionEn || method.description)}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </motion.div>
-        )}
-
-        {!selectedPackage && (
-          <div className={`text-center ${textSecondary} text-sm p-4 rounded-xl ${cardBg} border`}>
-            {language === 'tr' ? '👆 Önce bir paket seçin' : '👆 Select a package first'}
-          </div>
-        )}
+        {/* Info Note */}
+        <div className={`text-center ${textSecondary} text-xs p-3 rounded-xl ${cardBg} border`}>
+          {language === 'tr'
+            ? '👆 Bir paket seçerek ödeme yöntemlerini görüntüleyin'
+            : '👆 Select a package to view payment methods'}
+        </div>
       </div>
 
-      {/* WhatsApp Popup */}
+      {/* Payment Methods Selection Popup */}
       <AnimatePresence>
-        {activePopup === 'whatsapp' && (
+        {showPaymentMethodsPopup && selectedPackage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
-            onClick={closePopup}
+            onClick={closeAllPopups}
           >
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto border-t sm:border ${modalBorder}`}
+              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto border-t sm:border ${modalBorder}`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className={`text-lg font-bold ${textPrimary}`}>
+                  {language === 'tr' ? 'Ödeme Yöntemi Seçin' : 'Select Payment Method'}
+                </h2>
+                <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Selected Package Summary */}
+              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${iconBgGold} flex items-center justify-center`}>
+                      <Coins className={`w-5 h-5 ${isFacebook ? 'text-white' : 'text-black'}`} />
+                    </div>
+                    <div>
+                      <div className={`${textPrimary} font-bold`}>
+                        {selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}
+                      </div>
+                      {selectedPackage.bonusCredits > 0 && (
+                        <div className="text-green-400 text-xs">+{selectedPackage.bonusCredits} bonus</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`text-xl font-bold ${goldColor}`}>
+                    {formatPrice(selectedPackage.price, selectedPackage.currency)}
+                  </div>
+                </div>
+              </div>
+
+              {/* User Info */}
+              {session?.user && (
+                <div className={`rounded-xl p-3 mb-4 border ${cardBg}`}>
+                  <div className="flex items-center gap-2">
+                    <User className={`w-4 h-4 ${accentColor}`} />
+                    <span className={textSecondary}>{language === 'tr' ? 'Kullanıcı:' : 'User:'}</span>
+                    <span className={`${textPrimary} font-medium`}>{username}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Methods */}
+              <div className="space-y-3">
+                {/* WhatsApp */}
+                {whatsappSettings?.enabled && whatsappSettings?.number && (
+                  <button
+                    onClick={() => openPaymentDetail('whatsapp')}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium transition-all active:scale-98 hover:opacity-90"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <MessageCircle className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-bold text-lg">WhatsApp</div>
+                      <div className="text-sm opacity-80">{language === 'tr' ? 'Hızlı ve kolay ödeme' : 'Fast and easy payment'}</div>
+                    </div>
+                    <ExternalLink className="w-5 h-5 opacity-70" />
+                  </button>
+                )}
+
+                {/* Other Payment Methods */}
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => openPaymentDetail(method.type)}
+                    className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all active:scale-98 ${cardBg} hover:opacity-80`}
+                  >
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${
+                      method.type === 'papara' ? 'bg-gradient-to-br from-purple-500 to-purple-700' : 'bg-gradient-to-br from-blue-500 to-blue-700'
+                    }`}>
+                      {getMethodIcon(method.type)}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className={`${textPrimary} font-bold text-lg`}>
+                        {language === 'tr' ? method.name : (method.nameEn || method.name)}
+                      </div>
+                      <div className={`${textSecondary} text-sm`}>
+                        {language === 'tr' ? method.description : (method.descriptionEn || method.description)}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* WhatsApp Detail Popup */}
+      <AnimatePresence>
+        {activePaymentPopup === 'whatsapp' && selectedPackage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
+            onClick={closeAllPopups}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto border-t sm:border ${modalBorder}`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white">
                     <MessageCircle className="w-5 h-5" />
                   </div>
-                  <h2 className={`text-lg font-bold ${textPrimary}`}>WhatsApp</h2>
+                  <h2 className={`text-lg font-bold ${textPrimary}`}>WhatsApp {language === 'tr' ? 'ile Ödeme' : 'Payment'}</h2>
                 </div>
-                <button onClick={closePopup} className="text-gray-400 hover:text-white p-1">
+                <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {selectedPackage && (
-                <div className={`rounded-lg p-3 mb-4 border ${cardBg}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Coins className={`w-4 h-4 ${goldColor}`} />
-                      <span className={textPrimary}>{selectedPackage.credits} {language === 'tr' ? 'jeton' : 'credits'}</span>
-                      {selectedPackage.bonusCredits > 0 && <span className="text-green-400 text-sm">+{selectedPackage.bonusCredits}</span>}
+              {/* Order Summary */}
+              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+                <h3 className={`${textSecondary} text-sm mb-3`}>{language === 'tr' ? 'Sipariş Özeti' : 'Order Summary'}</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className={textSecondary}>{language === 'tr' ? 'Jeton Miktarı:' : 'Credits:'}</span>
+                    <span className={`${goldColor} font-bold`}>{selectedPackage.credits}</span>
+                  </div>
+                  {selectedPackage.bonusCredits > 0 && (
+                    <div className="flex justify-between">
+                      <span className={textSecondary}>{language === 'tr' ? 'Bonus:' : 'Bonus:'}</span>
+                      <span className="text-green-400 font-bold">+{selectedPackage.bonusCredits}</span>
                     </div>
-                    <span className={`${goldColor} font-bold`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
+                  )}
+                  <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
+                    <span className={textPrimary}>{language === 'tr' ? 'Toplam:' : 'Total:'}</span>
+                    <span className={`${goldColor} font-bold text-lg`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* User Info */}
+              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+                <h3 className={`${textSecondary} text-sm mb-3`}>{language === 'tr' ? 'Kullanıcı Bilgisi' : 'User Info'}</h3>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${iconBg} flex items-center justify-center`}>
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className={`${textPrimary} font-bold`}>{username || (language === 'tr' ? 'Kullanıcı' : 'User')}</div>
+                    <div className={`${textSecondary} text-xs`}>{session?.user?.email || ''}</div>
+                  </div>
+                </div>
+              </div>
 
               <p className={`${textSecondary} text-sm mb-4`}>
                 {language === 'tr'
-                  ? 'WhatsApp üzerinden bizimle iletişime geçerek jeton satın alabilirsiniz.'
-                  : 'Contact us via WhatsApp to purchase credits.'}
+                  ? 'Aşağıdaki butona tıklayarak WhatsApp üzerinden sipariş verebilirsiniz. Mesajınız otomatik olarak hazırlanacak.'
+                  : 'Click the button below to order via WhatsApp. Your message will be automatically prepared.'}
               </p>
 
               <a
                 href={getWhatsAppLink()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-4 rounded-xl hover:opacity-90 transition-all"
+                className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-all text-lg"
               >
-                <MessageCircle className="w-5 h-5" />
-                <span>{language === 'tr' ? 'WhatsApp\'ı Aç' : 'Open WhatsApp'}</span>
+                <MessageCircle className="w-6 h-6" />
+                <span>{language === 'tr' ? 'WhatsApp\'tan Sipariş Ver' : 'Order via WhatsApp'}</span>
               </a>
+
+              <button
+                onClick={() => {
+                  setActivePaymentPopup(null)
+                  setShowPaymentMethodsPopup(true)
+                }}
+                className={`w-full mt-3 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
+              >
+                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Papara Popup */}
+      {/* Papara Detail Popup */}
       <AnimatePresence>
-        {activePopup === 'papara' && (
+        {activePaymentPopup === 'papara' && selectedPackage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
-            onClick={closePopup}
+            onClick={closeAllPopups}
           >
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto border-t sm:border ${modalBorder}`}
+              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto border-t sm:border ${modalBorder}`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white">
                     <Wallet className="w-5 h-5" />
                   </div>
-                  <h2 className={`text-lg font-bold ${textPrimary}`}>Papara</h2>
+                  <h2 className={`text-lg font-bold ${textPrimary}`}>Papara {language === 'tr' ? 'ile Ödeme' : 'Payment'}</h2>
                 </div>
-                <button onClick={closePopup} className="text-gray-400 hover:text-white p-1">
+                <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {selectedPackage && (
-                <div className={`rounded-lg p-3 mb-4 border ${cardBg}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Coins className={`w-4 h-4 ${goldColor}`} />
-                      <span className={textPrimary}>{selectedPackage.credits} {language === 'tr' ? 'jeton' : 'credits'}</span>
-                      {selectedPackage.bonusCredits > 0 && <span className="text-green-400 text-sm">+{selectedPackage.bonusCredits}</span>}
-                    </div>
-                    <span className={`${goldColor} font-bold`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
+              {/* Order Summary */}
+              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}</div>
+                    {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
+                  <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>
                 </div>
-              )}
+              </div>
 
+              {/* Payment Details */}
               {paymentMethods.filter(m => m.type === 'papara').map((method) => {
                 const details = getPaymentDetails(method)
                 return details && (
-                  <div key={method.id} className="space-y-3">
+                  <div key={method.id} className="space-y-3 mb-4">
                     {details.paparaNo && (
-                      <div className={`rounded-lg p-3 border ${cardBg}`}>
+                      <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary} text-sm`}>Papara No:</span>
+                          <span className={`${textSecondary}`}>Papara No:</span>
                           <div className="flex items-center gap-2">
-                            <span className={`${textPrimary} font-mono font-bold`}>{details.paparaNo}</span>
+                            <span className={`${textPrimary} font-mono font-bold text-lg`}>{details.paparaNo}</span>
                             <button
                               onClick={() => handleCopy(details.paparaNo, 'papara')}
-                              className={`${accentColor} p-1.5 rounded-lg hover:bg-white/10`}
+                              className={`${accentColor} p-2 rounded-lg hover:bg-white/10`}
                             >
-                              {copiedField === 'papara' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                              {copiedField === 'papara' ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
                             </button>
                           </div>
                         </div>
                       </div>
                     )}
                     {details.accountHolder && (
-                      <div className={`rounded-lg p-3 border ${cardBg}`}>
+                      <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Ad Soyad:' : 'Name:'}</span>
-                          <span className={`${textPrimary} font-medium`}>{details.accountHolder}</span>
+                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Alıcı:' : 'Recipient:'}</span>
+                          <span className={`${textPrimary} font-bold`}>{details.accountHolder}</span>
                         </div>
                       </div>
                     )}
@@ -458,37 +543,48 @@ export default function CreditsPage() {
                 )
               })}
 
-              <div className={`mt-4 p-3 rounded-lg ${isFacebook ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-500/10 border-yellow-500/30'} border`}>
-                <p className="text-yellow-500 text-sm flex items-start gap-2">
-                  <span>⚠️</span>
+              {/* Warning */}
+              <div className={`p-4 rounded-xl ${isFacebook ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-500/10 border-yellow-500/30'} border`}>
+                <p className="text-yellow-500 font-medium flex items-start gap-2">
+                  <span className="text-xl">⚠️</span>
                   <span>
                     {language === 'tr'
-                      ? `Açıklama kısmına: ${username || '(Giriş yapın)'}`
-                      : `Description: ${username || '(Login first)'}`}
+                      ? `Açıklama kısmına kullanıcı adınızı yazın: "${username}"`
+                      : `Write your username in description: "${username}"`}
                   </span>
                 </p>
               </div>
+
+              <button
+                onClick={() => {
+                  setActivePaymentPopup(null)
+                  setShowPaymentMethodsPopup(true)
+                }}
+                className={`w-full mt-4 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
+              >
+                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Bank Transfer Popup */}
+      {/* Bank Transfer Detail Popup */}
       <AnimatePresence>
-        {activePopup === 'bank_transfer' && (
+        {activePaymentPopup === 'bank_transfer' && selectedPackage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
-            onClick={closePopup}
+            onClick={closeAllPopups}
           >
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto border-t sm:border ${modalBorder}`}
+              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto border-t sm:border ${modalBorder}`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -497,57 +593,56 @@ export default function CreditsPage() {
                   </div>
                   <h2 className={`text-lg font-bold ${textPrimary}`}>{language === 'tr' ? 'Banka Transferi' : 'Bank Transfer'}</h2>
                 </div>
-                <button onClick={closePopup} className="text-gray-400 hover:text-white p-1">
+                <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {selectedPackage && (
-                <div className={`rounded-lg p-3 mb-4 border ${cardBg}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Coins className={`w-4 h-4 ${goldColor}`} />
-                      <span className={textPrimary}>{selectedPackage.credits} {language === 'tr' ? 'jeton' : 'credits'}</span>
-                      {selectedPackage.bonusCredits > 0 && <span className="text-green-400 text-sm">+{selectedPackage.bonusCredits}</span>}
-                    </div>
-                    <span className={`${goldColor} font-bold`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
+              {/* Order Summary */}
+              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}</div>
+                    {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
+                  <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>
                 </div>
-              )}
+              </div>
 
+              {/* Payment Details */}
               {paymentMethods.filter(m => m.type === 'bank_transfer').map((method) => {
                 const details = getPaymentDetails(method)
                 return details && (
-                  <div key={method.id} className="space-y-3">
+                  <div key={method.id} className="space-y-3 mb-4">
                     {details.bankName && (
-                      <div className={`rounded-lg p-3 border ${cardBg}`}>
+                      <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Banka:' : 'Bank:'}</span>
-                          <span className={`${textPrimary} font-medium`}>{details.bankName}</span>
+                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Banka:' : 'Bank:'}</span>
+                          <span className={`${textPrimary} font-bold`}>{details.bankName}</span>
                         </div>
                       </div>
                     )}
                     {details.accountHolder && (
-                      <div className={`rounded-lg p-3 border ${cardBg}`}>
+                      <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Ad Soyad:' : 'Name:'}</span>
-                          <span className={`${textPrimary} font-medium`}>{details.accountHolder}</span>
+                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Alıcı:' : 'Recipient:'}</span>
+                          <span className={`${textPrimary} font-bold`}>{details.accountHolder}</span>
                         </div>
                       </div>
                     )}
                     {details.iban && (
-                      <div className={`rounded-lg p-3 border ${cardBg}`}>
+                      <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center mb-2">
-                          <span className={`${textSecondary} text-sm`}>IBAN:</span>
+                          <span className={`${textSecondary}`}>IBAN:</span>
                           <button
                             onClick={() => handleCopy(details.iban.replace(/\s/g, ''), 'iban')}
-                            className={`${accentColor} flex items-center gap-1 text-sm`}
+                            className={`${accentColor} flex items-center gap-1 text-sm font-medium`}
                           >
                             {copiedField === 'iban' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                            {copiedField === 'iban' ? (language === 'tr' ? 'Kopyalandı' : 'Copied') : (language === 'tr' ? 'Kopyala' : 'Copy')}
+                            {copiedField === 'iban' ? (language === 'tr' ? 'Kopyalandı!' : 'Copied!') : (language === 'tr' ? 'Kopyala' : 'Copy')}
                           </button>
                         </div>
-                        <div className={`${isFacebook ? 'bg-gray-100' : isCosmic ? 'bg-blue-900/30' : 'bg-purple-900/50'} p-2 rounded ${textPrimary} font-mono text-xs break-all`}>
+                        <div className={`${isFacebook ? 'bg-gray-100' : isCosmic ? 'bg-blue-900/30' : 'bg-purple-900/50'} p-3 rounded-lg ${textPrimary} font-mono text-sm break-all`}>
                           {details.iban}
                         </div>
                       </div>
@@ -556,29 +651,31 @@ export default function CreditsPage() {
                 )
               })}
 
-              <div className={`mt-4 p-3 rounded-lg ${isFacebook ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-500/10 border-yellow-500/30'} border`}>
-                <p className="text-yellow-500 text-sm flex items-start gap-2">
-                  <span>⚠️</span>
+              {/* Warning */}
+              <div className={`p-4 rounded-xl ${isFacebook ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-500/10 border-yellow-500/30'} border`}>
+                <p className="text-yellow-500 font-medium flex items-start gap-2">
+                  <span className="text-xl">⚠️</span>
                   <span>
                     {language === 'tr'
-                      ? `Açıklama kısmına: ${username || '(Giriş yapın)'}`
-                      : `Description: ${username || '(Login first)'}`}
+                      ? `Açıklama kısmına kullanıcı adınızı yazın: "${username}"`
+                      : `Write your username in description: "${username}"`}
                   </span>
                 </p>
               </div>
+
+              <button
+                onClick={() => {
+                  setActivePaymentPopup(null)
+                  setShowPaymentMethodsPopup(true)
+                }}
+                className={`w-full mt-4 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
+              >
+                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Info Note - Fixed at bottom */}
-      <div className="fixed bottom-20 left-0 right-0 px-3">
-        <div className={`max-w-md mx-auto text-center ${textSecondary} text-xs p-2 rounded-lg ${isFacebook ? 'bg-gray-100' : 'bg-black/50'} backdrop-blur-sm`}>
-          {language === 'tr'
-            ? '💡 Ödeme sonrası jetonlar otomatik yüklenir'
-            : '💡 Credits auto-added after payment'}
-        </div>
-      </div>
     </div>
   )
 }
