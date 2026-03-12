@@ -75,11 +75,11 @@ export default function GiftNotificationBanner() {
       return
     }
 
-    // Each pass takes ~5 seconds
+    // Each pass takes ~6 seconds
     if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
     animationTimerRef.current = setTimeout(() => {
       setPassCount(prev => prev + 1)
-    }, 5000)
+    }, 6000)
 
     return () => {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
@@ -101,64 +101,113 @@ export default function GiftNotificationBanner() {
 
   const isJeton = currentNotif.giftType === 'Jeton'
   const displayText = isJeton
-    ? `${currentNotif.giftIcon} ${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.amount} Jeton Hediye! ${currentNotif.giftIcon}`
-    : `${currentNotif.giftIcon} ${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Att\u0131! \u2728`
+    ? `${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.amount.toLocaleString()} Jeton Hediye!`
+    : `${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Att\u0131!`
 
   const bannerBg = isFacebook
-    ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600'
+    ? 'linear-gradient(90deg, #1a3a8a, #1877f2, #4299e1, #1877f2, #1a3a8a)'
     : isCosmic
-    ? 'bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900'
-    : 'bg-gradient-to-r from-purple-900 via-fuchsia-700 to-purple-900'
-
-  const borderColor = isFacebook
-    ? 'border-yellow-400'
-    : isCosmic
-    ? 'border-yellow-400/60'
-    : 'border-yellow-400/60'
+    ? 'linear-gradient(90deg, #0c1445, #1e3a8a, #3b82f6, #1e3a8a, #0c1445)'
+    : 'linear-gradient(90deg, #2d0a4e, #7c3aed, #c026d3, #7c3aed, #2d0a4e)'
 
   return (
     <div
-      className={`w-full ${bannerBg} border-b-2 border-t-2 ${borderColor} overflow-hidden relative`}
-      style={{ height: '52px', zIndex: 9999 }}
+      className="w-full overflow-hidden relative"
+      style={{
+        height: '56px',
+        zIndex: 9999,
+        background: bannerBg,
+        backgroundSize: '200% 100%',
+        animation: 'bannerBgShift 4s linear infinite',
+      }}
     >
-      {/* Gold sparkle shimmer */}
+      {/* Top gold border with glow */}
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
+        background: 'linear-gradient(90deg, transparent, #FFD700, #FFA500, #FFD700, transparent)',
+        boxShadow: '0 0 10px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.3)'
+      }} />
+      {/* Bottom gold border with glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{
+        background: 'linear-gradient(90deg, transparent, #FFD700, #FFA500, #FFD700, transparent)',
+        boxShadow: '0 0 10px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.3)'
+      }} />
+
+      {/* Animated sparkle particles */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {Array.from({ length: 12 }).map((_, i) => {
+          const leftPos = (i * 23 + 5) % 100
+          const delay = (i * 0.4) % 3
+          const dur = 1.5 + (i % 3) * 0.5
+          return (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: `${leftPos}%`,
+                top: '50%',
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#FFD700',
+                boxShadow: '0 0 6px #FFD700, 0 0 12px #FFA500',
+                animation: `sparkleFloat ${dur}s ease-in-out ${delay}s infinite`,
+                opacity: 0,
+              }}
+            />
+          )
+        })}
+      </div>
+
+      {/* Gold shimmer overlay */}
       <div className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.15) 25%, transparent 50%, rgba(255,215,0,0.15) 75%, transparent 100%)',
-          animation: 'shimmer 2s linear infinite',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.08) 20%, rgba(255,255,255,0.12) 50%, rgba(255,215,0,0.08) 80%, transparent 100%)',
+          animation: 'shimmerSweep 2.5s ease-in-out infinite',
           backgroundSize: '200% 100%'
         }}
       />
 
-      {/* Scrolling text */}
+      {/* Scrolling content */}
       <div
         key={`${currentNotif.id}-pass-${passCount}`}
         className="absolute whitespace-nowrap flex items-center h-full"
         style={{
-          animation: 'giftScroll 5s linear forwards',
+          animation: 'giftBannerScroll 6s linear forwards',
         }}
       >
-        <span className="inline-flex items-center gap-3" style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '0.5px' }}>
-          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s', fontSize: '26px' }}>
-            \ud83c\udf89
+        <span className="inline-flex items-center gap-4" style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.5px' }}>
+          {/* Left celebration cluster */}
+          <span className="inline-flex items-center gap-1">
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite' }}>\ud83c\udf89</span>
+            <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s' }}>{currentNotif.giftIcon}</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>\ud83c\udf8a</span>
           </span>
+
+          {/* Main text with gold gradient */}
           <span style={{
             background: 'linear-gradient(90deg, #FFD700, #FFFFFF, #FFD700, #FFA500, #FFD700)',
+            backgroundSize: '200% 100%',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.5))',
+            animation: 'textGoldShift 3s linear infinite',
+            filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            textShadow: 'none',
           }}>
             {displayText}
           </span>
-          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s', animationDelay: '0.3s', fontSize: '26px' }}>
-            \ud83c\udf89
+
+          {/* Right celebration cluster */}
+          <span className="inline-flex items-center gap-1">
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>\u2728</span>
+            <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite' }}>{currentNotif.giftIcon}</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>\ud83c\udf1f</span>
           </span>
         </span>
       </div>
 
       <style jsx>{`
-        @keyframes giftScroll {
+        @keyframes giftBannerScroll {
           0% {
             transform: translateX(100vw);
           }
@@ -166,9 +215,31 @@ export default function GiftNotificationBanner() {
             transform: translateX(-100%);
           }
         }
-        @keyframes shimmer {
+        @keyframes shimmerSweep {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+        @keyframes bannerBgShift {
+          0% { background-position: 0% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes bounceGift {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-6px) scale(1.15); }
+        }
+        @keyframes pulseGift {
+          0%, 100% { transform: scale(1); filter: brightness(1); }
+          50% { transform: scale(1.2); filter: brightness(1.3); }
+        }
+        @keyframes sparkleFloat {
+          0% { opacity: 0; transform: translateY(0) scale(0.5); }
+          30% { opacity: 1; transform: translateY(-12px) scale(1); }
+          70% { opacity: 1; transform: translateY(-20px) scale(0.8); }
+          100% { opacity: 0; transform: translateY(-28px) scale(0.3); }
+        }
+        @keyframes textGoldShift {
+          0% { background-position: 0% 0; }
+          100% { background-position: 200% 0; }
         }
       `}</style>
     </div>

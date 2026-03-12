@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
+import GiftNotificationBanner from '@/components/gift-notification-banner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -1383,6 +1384,11 @@ export default function BroadcastPage() {
               <span className="text-white font-semibold text-xs">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
             </div>
           )}
+
+          {/* Big Gift Banner - Below Category Badge */}
+          <div className="mt-2 w-[90vw] max-w-[400px] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,215,0,0.3)]">
+            <GiftNotificationBanner />
+          </div>
         </div>
       )}
 

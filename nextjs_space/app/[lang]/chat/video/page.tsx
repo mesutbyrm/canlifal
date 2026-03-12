@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, TouchEvent } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
+import GiftNotificationBanner from '@/components/gift-notification-banner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -1046,6 +1047,11 @@ export default function VideoStreamPage() {
             <button onClick={() => router.push(`/${language}`)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
               <X className="w-4 h-4" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
             </button>
+          </div>
+
+          {/* Big Gift Scrolling Banner */}
+          <div className="absolute top-[60px] left-2 right-2 z-30 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,215,0,0.3)]">
+            <GiftNotificationBanner />
           </div>
 
           {/* Gifters - Small badges below top bar */}
