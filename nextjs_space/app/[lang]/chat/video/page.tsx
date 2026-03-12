@@ -177,8 +177,8 @@ export default function VideoStreamPage() {
     }
     
     // Poll for co-broadcast invitations (for both guests and logged-in users)
-    const inviteInterval = setInterval(checkCoBroadcastInvite, 3000)
-    const streamInterval = setInterval(fetchStreams, 10000)
+    const inviteInterval = setInterval(checkCoBroadcastInvite, 10000)
+    const streamInterval = setInterval(fetchStreams, 15000)
     
     return () => {
       isUnmountedRef.current = true

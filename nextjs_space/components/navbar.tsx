@@ -64,7 +64,7 @@ export default function Navbar() {
           .catch(() => {})
       }
       fetchUnreadMessages()
-      const messageInterval = setInterval(fetchUnreadMessages, 15000)
+      const messageInterval = setInterval(fetchUnreadMessages, 30000)
       
       return () => clearInterval(messageInterval)
     }
@@ -89,7 +89,7 @@ export default function Navbar() {
     }
     
     checkStats()
-    const interval = setInterval(checkStats, 30000) // Check every 30 seconds
+    const interval = setInterval(checkStats, 45000) // Check every 45 seconds
     return () => clearInterval(interval)
   }, [])
 

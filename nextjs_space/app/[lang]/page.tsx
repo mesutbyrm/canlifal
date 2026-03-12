@@ -219,9 +219,9 @@ export default function HomePage() {
     fetchTellers()
     fetchStreams()
     fetchOnlineUsers()
-    const tellerInterval = setInterval(fetchTellers, 30000)
-    const streamInterval = setInterval(fetchStreams, 10000)
-    const onlineInterval = setInterval(fetchOnlineUsers, 15000)
+    const tellerInterval = setInterval(fetchTellers, 45000)
+    const streamInterval = setInterval(fetchStreams, 30000)
+    const onlineInterval = setInterval(fetchOnlineUsers, 30000)
     return () => {
       clearInterval(tellerInterval)
       clearInterval(streamInterval)

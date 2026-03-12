@@ -46,7 +46,7 @@ export default function MobileFooter() {
     }
     
     fetchUnread()
-    const interval = setInterval(fetchUnread, 15000)
+    const interval = setInterval(fetchUnread, 30000)
     return () => clearInterval(interval)
   }, [session])
 
