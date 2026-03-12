@@ -18,11 +18,11 @@ export default function LangLayout({
       {/* Silent presence tracker for online users */}
       <PresenceTracker />
       
-      <Navbar />
-      {/* Big gift notification banner - scrolls below navbar */}
-      <div className="fixed top-16 left-0 right-0 z-40">
+      {/* Big gift notification banner - highest z-index, above everything */}
+      <div className="fixed top-0 left-0 right-0" style={{ zIndex: 9999 }}>
         <GiftNotificationBanner />
       </div>
+      <Navbar />
       <main className="pt-16 pb-0 md:pb-0 relative z-10">
         {children}
       </main>

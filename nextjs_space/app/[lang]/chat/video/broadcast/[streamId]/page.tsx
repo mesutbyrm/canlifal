@@ -136,6 +136,8 @@ export default function BroadcastPage() {
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [liveBroadcasters, setLiveBroadcasters] = useState<{id: string; userId: string; title: string | null; category: string | null; user: {id: string; name: string | null; image: string | null}; viewerCount: number}[]>([])
   const [showLiveBroadcasters, setShowLiveBroadcasters] = useState(false)
+  const [bigGiftPopups, setBigGiftPopups] = useState<Array<{id: string; senderName: string; recipientName: string; giftIcon: string; giftType: string; amount: number}>>([])
+  const seenBigGiftIdsRef = useRef<Set<string>>(new Set())
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   // Video refs for up to 4 guests (dynamically created in render)
@@ -208,6 +210,32 @@ export default function BroadcastPage() {
       fetchLiveBroadcasters()
     }
   }, [showLiveBroadcasters])
+
+  // Poll for big gifts (1000+) to show in popup
+  useEffect(() => {
+    const fetchBigGifts = async () => {
+      try {
+        const res = await fetch('/api/gifts/recent-big')
+        if (res.ok) {
+          const data = await res.json()
+          const newOnes = data.filter((g: any) => !seenBigGiftIdsRef.current.has(g.id))
+          if (newOnes.length > 0) {
+            newOnes.forEach((g: any) => seenBigGiftIdsRef.current.add(g.id))
+            setBigGiftPopups(prev => [...prev, ...newOnes])
+            // Auto-remove after 8 seconds
+            newOnes.forEach((g: any) => {
+              setTimeout(() => {
+                setBigGiftPopups(prev => prev.filter(p => p.id !== g.id))
+              }, 8000)
+            })
+          }
+        }
+      } catch {}
+    }
+    fetchBigGifts()
+    const iv = setInterval(fetchBigGifts, 15000)
+    return () => clearInterval(iv)
+  }, [])
 
   const startBroadcast = async () => {
     try {
@@ -1182,36 +1210,31 @@ export default function BroadcastPage() {
       {/* Hidden video for co-host mode (to receive broadcaster stream) */}
       {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
 
-      {/* Top Info Bar - always visible */}
-      <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-2 px-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded text-[10px]">
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-              <span className="text-white font-bold">LIVE</span>
-            </div>
-            <span className="text-white/60 text-xs">{formatDuration(duration)}</span>
-
-            {/* Guest count badge */}
-            {activeGuests.length > 0 && (
-              <div className="flex items-center gap-0.5 bg-purple-500/80 px-1.5 py-0.5 rounded">
-                <UserPlus className="w-3 h-3 text-white" />
-                <span className="text-white font-medium text-[9px]">{activeGuests.length}</span>
+      {/* Big Gift Popup Notifications */}
+      <AnimatePresence>
+        {bigGiftPopups.map((gift, idx) => (
+          <motion.div
+            key={gift.id}
+            initial={{ opacity: 0, y: -30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.9 }}
+            className="absolute z-50 left-1/2 -translate-x-1/2"
+            style={{ top: `${80 + idx * 70}px` }}
+          >
+            <div className="bg-gradient-to-r from-yellow-500/90 via-amber-500/90 to-yellow-500/90 backdrop-blur-md px-5 py-3 rounded-2xl border-2 border-yellow-300/60 shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center gap-3 min-w-[280px]">
+              <span className="text-3xl animate-bounce" style={{ animationDuration: '0.8s' }}>{gift.giftIcon}</span>
+              <div className="flex-1 text-center">
+                <p className="text-black font-extrabold text-sm">{gift.senderName}</p>
+                <p className="text-yellow-900 text-xs font-medium">&#x279C; {gift.recipientName}</p>
+                <p className="text-black font-bold text-xs mt-0.5">
+                  {gift.giftType === 'Jeton' ? `${gift.amount} Jeton` : gift.giftType} {language === 'tr' ? 'Hediye Attı!' : 'Sent Gift!'}
+                </p>
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-              <Users className="w-3 h-3 text-white" />
-              <span className="text-white text-[10px]">{viewerCount}</span>
+              <span className="text-3xl animate-bounce" style={{ animationDuration: '0.8s', animationDelay: '0.4s' }}>{gift.giftIcon}</span>
             </div>
-            <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-              <Heart className="w-3 h-3 text-[#fe2c55]" fill="#fe2c55" />
-              <span className="text-white text-[10px]">{formatCount(likeCount)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {/* Viewer avatars row - always at bottom */}
       <div className="absolute bottom-24 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
@@ -1329,13 +1352,6 @@ export default function BroadcastPage() {
                 <button onClick={() => setShowViewers(!showViewers)} className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
                   <Users className="w-3.5 h-3.5 text-white" />
                   <span className="text-white text-xs">{viewerCount}</span>
-                </button>
-                <button 
-                  onClick={() => setShowLiveBroadcasters(!showLiveBroadcasters)} 
-                  className="flex items-center gap-1 bg-gradient-to-r from-pink-500/60 to-purple-500/60 px-2 py-1 rounded-full"
-                >
-                  <Radio className="w-3.5 h-3.5 text-white" />
-                  <span className="text-white text-xs">{language === 'tr' ? 'Davet' : 'Invite'}</span>
                 </button>
                 <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
                   <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
@@ -1521,13 +1537,7 @@ export default function BroadcastPage() {
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
                       <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[160px] z-50" sideOffset={5}>
-                        <DropdownMenu.Item
-                          onClick={() => viewer.odUserId && handleInviteCoBroadcast(viewer.odUserId)}
-                          className="flex items-center gap-2 px-3 py-2 text-green-400 text-sm rounded cursor-pointer hover:bg-white/10"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          {language === 'tr' ? 'Ortak Yayına Al' : 'Invite to Co-Stream'}
-                        </DropdownMenu.Item>
+
                         <DropdownMenu.Item
                           onClick={() => viewer.odUserId && handleBanUser(viewer.odUserId)}
                           className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
@@ -1550,84 +1560,6 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* Live Broadcasters Modal - Invite other streamers */}
-      <AnimatePresence>
-        {showLiveBroadcasters && (
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            className="absolute right-3 top-36 w-72 max-h-96 bg-black/90 backdrop-blur-md rounded-xl z-30 overflow-hidden border border-pink-500/30"
-          >
-            <div className="p-3 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-pink-500/20 to-purple-500/20">
-              <h3 className="text-white font-medium text-sm flex items-center gap-2">
-                <Radio className="w-4 h-4 text-pink-400" /> 
-                {language === 'tr' ? 'Canlı Yayıncılar' : 'Live Streamers'}
-              </h3>
-              <button onClick={() => setShowLiveBroadcasters(false)} className="text-white/60 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-2 border-b border-white/5">
-              <p className="text-white/50 text-[10px]">
-                {language === 'tr' 
-                  ? 'Başka bir yayıncıyı ortak yayına davet edin' 
-                  : 'Invite another streamer to co-broadcast'}
-              </p>
-            </div>
-            <div className="max-h-72 overflow-y-auto">
-              {liveBroadcasters.map(broadcaster => (
-                <div key={broadcaster.id} className="flex items-center justify-between p-3 hover:bg-white/5 border-b border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      {broadcaster.user.image ? (
-                        <Image src={broadcaster.user.image} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover ring-2 ring-pink-500" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center ring-2 ring-pink-500">
-                          <span className="text-white text-sm font-bold">{broadcaster.user.name?.[0] || '?'}</span>
-                        </div>
-                      )}
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#fe2c55] rounded-full flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{broadcaster.user.name || 'Yayıncı'}</p>
-                      <p className="text-white/50 text-[10px] truncate">{broadcaster.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-white/40 text-[10px] flex items-center gap-0.5">
-                          <Users className="w-3 h-3" /> {broadcaster.viewerCount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      handleInviteCoBroadcast(broadcaster.userId)
-                      setShowLiveBroadcasters(false)
-                      addToast('success', language === 'tr' ? 'Davet gönderildi!' : 'Invite sent!')
-                    }}
-                    className="flex items-center gap-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    {language === 'tr' ? 'Davet Et' : 'Invite'}
-                  </button>
-                </div>
-              ))}
-              {liveBroadcasters.length === 0 && (
-                <div className="text-center py-8 px-4">
-                  <Radio className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                  <p className="text-white/40 text-xs">
-                    {language === 'tr' 
-                      ? 'Şu anda başka canlı yayın yok' 
-                      : 'No other live streams right now'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Comments floating above input */}
       <div className="absolute left-3 bottom-28 right-20 max-h-32 overflow-hidden z-10 space-y-1">

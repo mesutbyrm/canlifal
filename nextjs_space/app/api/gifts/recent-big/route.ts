@@ -34,8 +34,8 @@ export async function GET() {
       try {
         const data = JSON.parse(notif.data as string)
 
-        // Check if it's a big jeton gift (500+)
-        if (data.type === 'jeton' && data.amount >= 500) {
+        // Check if it's a big jeton gift (1000+)
+        if (data.type === 'jeton' && data.amount >= 1000) {
           notifications.push({
             id: notif.id,
             senderName: data.senderName || 'Anonim',

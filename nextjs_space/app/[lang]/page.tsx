@@ -165,7 +165,7 @@ export default function HomePage() {
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
-  const [showGiftModal, setShowGiftModal] = useState(false)
+  
   
   // Theme detection
   const isFalci = theme === 'falci'
@@ -266,13 +266,13 @@ export default function HomePage() {
         {/* Main Content */}
         <div className="pt-[114px] pb-28 px-4 space-y-4 relative z-10">
           {/* Gift Banner */}
-          <button
-            onClick={() => setShowGiftModal(true)}
+          <Link
+            href={session?.user ? `/${language}/gifts` : `/${language}/login`}
             className={`flex items-center gap-2 ${isCosmic ? 'text-amber-300 hover:text-amber-200' : 'text-fuchsia-300 hover:text-fuchsia-200'} text-sm font-medium transition-colors`}
           >
             <Sparkles className="w-4 h-4" />
             <span>{language === 'tr' ? '✨ Arkadaşlarına Hediye Gönder' : '✨ Send Gifts to Friends'}</span>
-          </button>
+          </Link>
 
           {/* CANLI YAYINLAR Section */}
           <div className="falclub-card p-4 relative overflow-hidden">
@@ -972,104 +972,7 @@ export default function HomePage() {
       )}
       </div>
 
-      {/* Gift Options Modal */}
-      <AnimatePresence>
-        {showGiftModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={() => setShowGiftModal(false)}
-          >
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className={`w-full sm:max-w-md ${isCosmic ? 'bg-[#0d1f3c]' : 'bg-[#1a0a2e]'} rounded-t-3xl sm:rounded-2xl p-6 relative`}
-            >
-              {/* Close button */}
-              <button onClick={() => setShowGiftModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1">
-                <X className="w-5 h-5" />
-              </button>
-
-              {/* Modal Header */}
-              <div className="text-center mb-6">
-                <div className={`w-14 h-14 rounded-full ${isCosmic ? 'bg-blue-500/20' : 'bg-fuchsia-500/20'} flex items-center justify-center mx-auto mb-3`}>
-                  <Gift className={`w-7 h-7 ${isCosmic ? 'text-blue-400' : 'text-fuchsia-400'}`} />
-                </div>
-                <h2 className="text-white text-xl font-bold">
-                  {language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
-                </h2>
-                <p className={`${isCosmic ? 'text-blue-300/70' : 'text-purple-300/70'} text-sm mt-1`}>
-                  {language === 'tr' ? 'Arkadaşlarına hediye veya jeton gönder' : 'Send gifts or tokens to friends'}
-                </p>
-              </div>
-
-              {/* Gift Options */}
-              <div className="space-y-3">
-                {/* Send Gift Option */}
-                <Link
-                  href={`/${language}/gifts`}
-                  onClick={() => setShowGiftModal(false)}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all hover:scale-[1.02] ${
-                    isCosmic
-                      ? 'bg-blue-500/10 border-blue-500/30 hover:border-blue-400/60'
-                      : 'bg-fuchsia-500/10 border-fuchsia-500/30 hover:border-fuchsia-400/60'
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    isCosmic ? 'bg-gradient-to-br from-blue-500 to-cyan-500' : 'bg-gradient-to-br from-fuchsia-500 to-purple-600'
-                  }`}>
-                    <Gift className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold">
-                      {language === 'tr' ? '🎁 Hediye Gönder' : '🎁 Send Gift'}
-                    </h3>
-                    <p className={`${isCosmic ? 'text-blue-300/70' : 'text-purple-300/70'} text-xs mt-0.5`}>
-                      {language === 'tr' ? 'Gül, kalp, yıldız ve daha fazlası' : 'Rose, heart, star and more'}
-                    </p>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 ${isCosmic ? 'text-blue-400' : 'text-fuchsia-400'}`} />
-                </Link>
-
-                {/* Send Token Option */}
-                <Link
-                  href={`/${language}/gifts?tab=tokens`}
-                  onClick={() => setShowGiftModal(false)}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all hover:scale-[1.02] ${
-                    isCosmic
-                      ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400/60'
-                      : 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400/60'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600">
-                    <Coins className="w-6 h-6 text-black" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold">
-                      {language === 'tr' ? '🪙 Jeton Hediye Et' : '🪙 Gift Tokens'}
-                    </h3>
-                    <p className={`${isCosmic ? 'text-blue-300/70' : 'text-purple-300/70'} text-xs mt-0.5`}>
-                      {language === 'tr' ? 'Arkadaşına jeton hediye et' : 'Gift tokens to your friend'}
-                    </p>
-                  </div>
-                  <ChevronRight className={`w-5 h-5 text-amber-400`} />
-                </Link>
-              </div>
-
-              {/* Divider line for drag indicator on mobile */}
-              <div className="mt-4 flex justify-center sm:hidden">
-                <div className="w-10 h-1 rounded-full bg-gray-600" />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
     </div>
   )
 }

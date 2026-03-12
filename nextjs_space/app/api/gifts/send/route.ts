@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      const isBigJetonGift = amount >= 500
+      const isBigJetonGift = amount >= 1000
       return NextResponse.json({
         success: true,
         message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,

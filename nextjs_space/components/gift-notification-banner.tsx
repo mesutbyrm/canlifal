@@ -15,13 +15,13 @@ interface BigGiftNotification {
 
 export default function GiftNotificationBanner() {
   const { theme } = useSiteTheme()
-  const [notifications, setNotifications] = useState<BigGiftNotification[]>([])
   const [currentNotif, setCurrentNotif] = useState<BigGiftNotification | null>(null)
   const [passCount, setPassCount] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const seenIdsRef = useRef<Set<string>>(new Set())
   const queueRef = useRef<BigGiftNotification[]>([])
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const [newNotifTrigger, setNewNotifTrigger] = useState(0)
 
   const isCosmic = theme === 'cosmic'
   const isFacebook = theme === 'facebook'
@@ -36,7 +36,7 @@ export default function GiftNotificationBanner() {
         if (newNotifs.length > 0) {
           queueRef.current = [...queueRef.current, ...newNotifs]
           newNotifs.forEach(n => seenIdsRef.current.add(n.id))
-          setNotifications(prev => [...prev, ...newNotifs])
+          setNewNotifTrigger(prev => prev + 1)
         }
       }
     } catch (e) {
@@ -50,7 +50,7 @@ export default function GiftNotificationBanner() {
     return () => clearInterval(interval)
   }, [fetchBigGifts])
 
-  // Process queue - show notifications one by one, each passing 2 times
+  // Process queue
   useEffect(() => {
     if (isAnimating) return
     if (queueRef.current.length === 0) return
@@ -59,14 +59,13 @@ export default function GiftNotificationBanner() {
     setCurrentNotif(next)
     setPassCount(0)
     setIsAnimating(true)
-  }, [notifications, isAnimating])
+  }, [newNotifTrigger, isAnimating])
 
-  // Handle animation passes
+  // Handle animation passes - 2 passes
   useEffect(() => {
     if (!isAnimating || !currentNotif) return
 
     if (passCount >= 2) {
-      // Done with this notification, move to next
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
       animationTimerRef.current = setTimeout(() => {
         queueRef.current = queueRef.current.filter(n => n.id !== currentNotif.id)
@@ -76,18 +75,18 @@ export default function GiftNotificationBanner() {
       return
     }
 
-    // Each pass takes ~4 seconds
+    // Each pass takes ~5 seconds
     if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
     animationTimerRef.current = setTimeout(() => {
       setPassCount(prev => prev + 1)
-    }, 4000)
+    }, 5000)
 
     return () => {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
     }
   }, [isAnimating, currentNotif, passCount])
 
-  // Cleanup old seen IDs periodically
+  // Cleanup old seen IDs
   useEffect(() => {
     const cleanup = setInterval(() => {
       if (seenIdsRef.current.size > 100) {
@@ -102,74 +101,58 @@ export default function GiftNotificationBanner() {
 
   const isJeton = currentNotif.giftType === 'Jeton'
   const displayText = isJeton
-    ? `${currentNotif.giftIcon} ${currentNotif.senderName} \u2192 ${currentNotif.recipientName} \u2022 ${currentNotif.amount} Jeton Hediye! ${currentNotif.giftIcon}`
-    : `${currentNotif.giftIcon} ${currentNotif.senderName} \u2192 ${currentNotif.recipientName} \u2022 ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Att\u0131! \u2728`
+    ? `${currentNotif.giftIcon} ${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.amount} Jeton Hediye! ${currentNotif.giftIcon}`
+    : `${currentNotif.giftIcon} ${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Att\u0131! \u2728`
 
-  // Theme-based colors
   const bannerBg = isFacebook
     ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600'
     : isCosmic
-    ? 'bg-gradient-to-r from-blue-900/90 via-indigo-800/90 to-blue-900/90'
-    : 'bg-gradient-to-r from-purple-900/90 via-fuchsia-800/90 to-purple-900/90'
-
-  const textColor = 'text-white'
-  const glowColor = isFacebook
-    ? 'drop-shadow-[0_0_10px_rgba(24,119,242,0.8)]'
-    : isCosmic
-    ? 'drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]'
-    : 'drop-shadow-[0_0_10px_rgba(217,70,239,0.8)]'
+    ? 'bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900'
+    : 'bg-gradient-to-r from-purple-900 via-fuchsia-700 to-purple-900'
 
   const borderColor = isFacebook
-    ? 'border-blue-400/50'
+    ? 'border-yellow-400'
     : isCosmic
-    ? 'border-blue-400/40'
-    : 'border-fuchsia-400/40'
+    ? 'border-yellow-400/60'
+    : 'border-yellow-400/60'
 
   return (
     <div
-      className={`w-full ${bannerBg} border-b ${borderColor} overflow-hidden relative z-40`}
-      style={{ height: '44px' }}
+      className={`w-full ${bannerBg} border-b-2 border-t-2 ${borderColor} overflow-hidden relative`}
+      style={{ height: '52px', zIndex: 9999 }}
     >
-      {/* Sparkle overlay */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <span
-            key={i}
-            className="absolute text-yellow-300 animate-pulse"
-            style={{
-              left: `${15 + i * 15}%`,
-              top: `${i % 2 === 0 ? 20 : 60}%`,
-              fontSize: '10px',
-              animationDelay: `${i * 0.3}s`,
-              opacity: 0.7
-            }}
-          >
-            \u2728
-          </span>
-        ))}
-      </div>
+      {/* Gold sparkle shimmer */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.15) 25%, transparent 50%, rgba(255,215,0,0.15) 75%, transparent 100%)',
+          animation: 'shimmer 2s linear infinite',
+          backgroundSize: '200% 100%'
+        }}
+      />
 
       {/* Scrolling text */}
       <div
         key={`${currentNotif.id}-pass-${passCount}`}
-        className={`absolute whitespace-nowrap flex items-center h-full ${textColor} ${glowColor}`}
+        className="absolute whitespace-nowrap flex items-center h-full"
         style={{
-          animation: 'giftScroll 4s linear forwards',
-          fontSize: '18px',
-          fontWeight: 700,
-          letterSpacing: '0.5px'
+          animation: 'giftScroll 5s linear forwards',
         }}
       >
-        <span className="inline-flex items-center gap-2">
-          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s' }}>
-            🎉
+        <span className="inline-flex items-center gap-3" style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '0.5px' }}>
+          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s', fontSize: '26px' }}>
+            \ud83c\udf89
           </span>
-          <span className="bg-gradient-to-r from-yellow-200 via-white to-yellow-200 bg-clip-text text-transparent"
-            style={{ textShadow: 'none', filter: `drop-shadow(0 0 8px rgba(255,215,0,0.6))` }}>
+          <span style={{
+            background: 'linear-gradient(90deg, #FFD700, #FFFFFF, #FFD700, #FFA500, #FFD700)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.5))',
+          }}>
             {displayText}
           </span>
-          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s', animationDelay: '0.3s' }}>
-            🎉
+          <span className="animate-bounce inline-block" style={{ animationDuration: '0.6s', animationDelay: '0.3s', fontSize: '26px' }}>
+            \ud83c\udf89
           </span>
         </span>
       </div>
@@ -182,6 +165,10 @@ export default function GiftNotificationBanner() {
           100% {
             transform: translateX(-100%);
           }
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
       `}</style>
     </div>
