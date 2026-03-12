@@ -46,6 +46,13 @@ export default function GiftsPage() {
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [showBlockPopup, setShowBlockPopup] = useState(false)
+  const [bigGiftPopup, setBigGiftPopup] = useState<{
+    senderName: string
+    recipientName: string
+    giftIcon: string
+    giftType: string
+    amount: number
+  } | null>(null)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -124,6 +131,10 @@ export default function GiftsPage() {
         setJetonAmount('')
         setSelectedUser(null)
         setSearchQuery('')
+        // Show big gift celebration popup
+        if (data.bigGift) {
+          setBigGiftPopup(data.bigGift)
+        }
       } else if (data.error === 'reciprocal_blocked') {
         // Show the fun block popup
         setShowBlockPopup(true)
@@ -380,10 +391,149 @@ export default function GiftsPage() {
         )}
       </AnimatePresence>
 
+      {/* Big Gift Celebration Popup */}
+      <AnimatePresence>
+        {bigGiftPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center px-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
+            onClick={() => setBigGiftPopup(null)}
+          >
+            {/* Floating emojis background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {Array.from({ length: 20 }).map((_, i) => {
+                const seed = (i * 37 + 13) % 100
+                const seed2 = (i * 53 + 7) % 100
+                const emojis = ['🎉', '🎊', '✨', '💎', '🌟', '🔥', '💫', '🪙', bigGiftPopup.giftIcon]
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ y: '110vh', opacity: 0.8, scale: 0.5 + (seed / 100) }}
+                    animate={{ y: '-10vh', opacity: 0 }}
+                    transition={{ duration: 3 + (seed2 / 33), delay: (seed / 50), repeat: Infinity, repeatDelay: (seed2 / 50) }}
+                    className="absolute text-2xl md:text-4xl"
+                    style={{ left: `${seed}%` }}
+                  >
+                    {emojis[i % emojis.length]}
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            <motion.div
+              initial={{ scale: 0.3, opacity: 0, rotateZ: -10 }}
+              animate={{ scale: 1, opacity: 1, rotateZ: 0 }}
+              exit={{ scale: 0.3, opacity: 0 }}
+              transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+              className={`relative max-w-sm w-full rounded-3xl p-8 text-center border-2 overflow-hidden ${
+                isCosmic
+                  ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 border-yellow-400/60'
+                  : isFacebook
+                  ? 'bg-gradient-to-br from-white to-blue-50 border-yellow-400'
+                  : 'bg-gradient-to-br from-purple-900 via-fuchsia-900 to-purple-950 border-yellow-400/60'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Shimmer overlay */}
+              <div className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, transparent 30%, rgba(255,215,0,0.12) 50%, transparent 70%)',
+                  animation: 'popupShimmer 2s linear infinite',
+                  backgroundSize: '200% 200%'
+                }}
+              />
+
+              {/* Gift icon with pulse */}
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="text-7xl mb-3"
+              >
+                {bigGiftPopup.giftIcon}
+              </motion.div>
+
+              {/* Title */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <p className="text-lg font-bold mb-1" style={{
+                  background: 'linear-gradient(90deg, #FFD700, #FFA500, #FFD700)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  🎉 {language === 'tr' ? 'BÜYÜK HEDİYE!' : 'BIG GIFT!'} 🎉
+                </p>
+              </motion.div>
+
+              {/* Sender → Recipient */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="my-4"
+              >
+                <p className={`text-xl font-extrabold ${isFacebook ? 'text-gray-900' : 'text-white'}`}>
+                  {bigGiftPopup.senderName}
+                </p>
+                <p className={`text-3xl my-2 ${isFacebook ? 'text-blue-500' : isCosmic ? 'text-yellow-400' : 'text-yellow-400'}`}>
+                  ➜
+                </p>
+                <p className={`text-xl font-extrabold ${isFacebook ? 'text-gray-900' : 'text-white'}`}>
+                  {bigGiftPopup.recipientName}
+                </p>
+              </motion.div>
+
+              {/* Gift details */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className={`rounded-2xl py-3 px-4 mb-5 ${
+                  isFacebook ? 'bg-yellow-50 border border-yellow-200' : 'bg-yellow-500/10 border border-yellow-500/30'
+                }`}
+              >
+                <p className="text-3xl mb-1">{bigGiftPopup.giftIcon}</p>
+                <p className={`font-bold text-lg ${isFacebook ? 'text-gray-800' : 'text-yellow-300'}`}>
+                  {bigGiftPopup.giftType === 'Jeton'
+                    ? `${bigGiftPopup.amount.toLocaleString()} Jeton`
+                    : bigGiftPopup.giftType}
+                </p>
+                {bigGiftPopup.giftType !== 'Jeton' && (
+                  <p className={`text-sm ${isFacebook ? 'text-gray-500' : 'text-yellow-400/70'}`}>
+                    {bigGiftPopup.amount.toLocaleString()} ₺
+                  </p>
+                )}
+              </motion.div>
+
+              {/* Close button */}
+              <motion.button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.65 }}
+                onClick={() => setBigGiftPopup(null)}
+                className={`w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r ${btnGradient} hover:opacity-90 transition-all`}
+              >
+                {language === 'tr' ? 'Harika! ✨' : 'Awesome! ✨'}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style jsx>{`
         @keyframes shrinkBar {
           from { width: 100%; }
           to { width: 0%; }
+        }
+        @keyframes popupShimmer {
+          0% { background-position: 200% 200%; }
+          100% { background-position: -200% -200%; }
         }
       `}</style>
     </div>
