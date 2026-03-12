@@ -486,6 +486,68 @@ async function main() {
   }
   console.log('Bana Özel items seeded')
 
+  // Payment Methods - Papara and Bank Transfer
+  const paymentMethods = [
+    {
+      type: 'papara',
+      name: 'Papara',
+      nameEn: 'Papara',
+      description: 'Papara ile ödeme',
+      descriptionEn: 'Payment with Papara',
+      isActive: true,
+      config: JSON.stringify({
+        paparaNo: '1234567890',
+        accountHolder: 'Mesut Bayram'
+      }),
+      sortOrder: 1
+    },
+    {
+      type: 'bank_transfer',
+      name: 'Havale / IBAN',
+      nameEn: 'Bank Transfer / IBAN',
+      description: 'Banka havalesi ile ödeme',
+      descriptionEn: 'Payment via bank transfer',
+      isActive: true,
+      config: JSON.stringify({
+        bankName: 'Garanti Bankası',
+        accountHolder: 'Mesut Bayram',
+        iban: 'TR94 0006 2000 0010 0006 8126 92'
+      }),
+      sortOrder: 2
+    }
+  ]
+  for (const method of paymentMethods) {
+    await prisma.paymentMethod.upsert({
+      where: { type: method.type },
+      update: { 
+        config: method.config,
+        isActive: method.isActive,
+        sortOrder: method.sortOrder
+      },
+      create: method,
+    })
+  }
+  console.log('Payment methods seeded')
+
+  // WhatsApp Settings
+  const whatsappSettings = [
+    { key: 'whatsapp_number', value: '+905327170173', description: 'WhatsApp destek numarası' },
+    { key: 'whatsapp_enabled', value: 'true', description: 'WhatsApp desteği aktif' },
+    { key: 'whatsapp_message', value: `Merhaba
+500 TL jeton almak istiyorum
+Kullanıcı adım: {username}
+
+Not: Papara veya IBAN ile ödeme yapabilirsiniz.`, description: 'WhatsApp otomatik mesaj şablonu' }
+  ]
+  for (const setting of whatsappSettings) {
+    await prisma.platformSettings.upsert({
+      where: { key: setting.key },
+      update: { value: setting.value },
+      create: setting,
+    })
+  }
+  console.log('WhatsApp settings seeded')
+
   console.log('Seed completed successfully!')
 }
 
