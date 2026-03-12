@@ -28,7 +28,7 @@ import {
   MessageCircle,
   Users,
   Flame,
-  Check
+  Check,
 } from 'lucide-react'
 
 interface BeautySettings {
@@ -628,13 +628,26 @@ export default function StreamSetupPage() {
         {selectedCategory && (
           <button
             onClick={() => setShowCategorySelector(true)}
-            className={`w-full mb-3 px-4 py-3 bg-gradient-to-r ${selectedCategory.color} rounded-xl flex items-center justify-center gap-2`}
+            className="w-full mb-3 px-4 py-3 rounded-2xl flex items-center gap-3"
+            style={{
+              background: 'linear-gradient(135deg, rgba(217, 70, 239, 0.3) 0%, rgba(236, 72, 153, 0.2) 100%)',
+              border: '2px solid rgba(217, 70, 239, 0.5)',
+              boxShadow: '0 0 20px rgba(217, 70, 239, 0.3)',
+            }}
           >
-            <span className="text-2xl">{selectedCategory.icon}</span>
-            <span className="text-white font-semibold">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                border: '2px solid rgba(240, 171, 252, 0.7)',
+                background: 'linear-gradient(135deg, rgba(217, 70, 239, 0.3) 0%, rgba(236, 72, 153, 0.2) 100%)',
+                boxShadow: '0 0 15px rgba(217, 70, 239, 0.4)',
+              }}
+            >
+              <span className="text-xl">{selectedCategory.icon}</span>
+            </div>
+            <span className="text-white font-semibold flex-1 text-left">
               {language === 'tr' ? selectedCategory.name : selectedCategory.nameEn}
             </span>
-            <span className="text-white/70 text-sm ml-auto">
+            <span className="text-fuchsia-300 text-xs">
               {language === 'tr' ? 'Değiştir' : 'Change'}
             </span>
           </button>
@@ -646,7 +659,7 @@ export default function StreamSetupPage() {
             value={streamTitle}
             onChange={(e) => setStreamTitle(e.target.value)}
             placeholder={language === 'tr' ? 'Yayın başlığı (isteğe bağlı)' : 'Stream title (optional)'}
-            className="w-full bg-white/10 text-white placeholder:text-white/40 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full bg-white/10 text-white placeholder:text-white/40 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500 border border-fuchsia-500/20"
           />
         </div>
 
@@ -685,7 +698,13 @@ export default function StreamSetupPage() {
         <button
           onClick={handleStartStream}
           disabled={isStarting || !selectedCategory}
-          className="w-full py-4 bg-gradient-to-r from-[#fe2c55] to-[#ff6b6b] text-white font-bold text-lg rounded-xl flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full py-4 text-white font-bold text-lg rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50"
+          style={{
+            background: selectedCategory 
+              ? 'linear-gradient(135deg, #d946ef 0%, #ec4899 50%, #f43f5e 100%)'
+              : 'rgba(255,255,255,0.1)',
+            boxShadow: selectedCategory ? '0 0 25px rgba(217, 70, 239, 0.5)' : 'none',
+          }}
         >
           {isStarting ? (
             <>
@@ -706,104 +725,159 @@ export default function StreamSetupPage() {
         </button>
       </div>
 
-      {/* Category Selector Modal */}
+      {/* Category Selector Modal - FalClub themed */}
       <AnimatePresence>
         {showCategorySelector && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/95 z-50 flex flex-col"
+            className="absolute inset-0 z-50 flex flex-col"
+            style={{ background: 'linear-gradient(180deg, #0a0118 0%, #1a0a2e 40%, #0d0520 100%)' }}
           >
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-white text-xl font-bold">
-                  {language === 'tr' ? 'Yayın Türünü Seçin' : 'Select Stream Type'}
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-5 pt-6 pb-3">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-white text-lg font-bold flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-fuchsia-400" />
+                  {language === 'tr' ? 'Yayın Türü Seçin' : 'Select Stream Type'}
                 </h2>
                 {selectedCategory && (
                   <button 
                     onClick={() => setShowCategorySelector(false)}
-                    className="text-white/60 hover:text-white"
+                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4 text-white/70" />
                   </button>
                 )}
               </div>
+              <p className="text-fuchsia-300/60 text-xs">
+                {language === 'tr' ? 'Hangi tür yayın yapacaksınız?' : 'What type of stream will you do?'}
+              </p>
+            </div>
 
-              {/* Fortune Types */}
-              <div className="mb-6">
-                <h3 className="text-purple-400 text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-5 pb-4">
+              {/* Fortune Types Section */}
+              <div className="mb-5">
+                <h3 className="text-fuchsia-300 text-xs font-bold mb-3 flex items-center gap-2 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
                   {language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-4 gap-x-3 gap-y-4">
                   {FORTUNE_TYPES.map((category) => (
                     <motion.button
                       key={category.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => {
                         setSelectedCategory(category)
                         setShowCategorySelector(false)
                       }}
-                      className={`relative p-4 rounded-2xl bg-gradient-to-br ${category.color} flex flex-col items-center gap-2 transition-all ${
-                        selectedCategory?.id === category.id ? 'ring-2 ring-white' : ''
-                      }`}
+                      className="flex flex-col items-center group"
                     >
-                      <span className="text-3xl">{category.icon}</span>
-                      <span className="text-white font-medium text-sm text-center">
+                      <div 
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          selectedCategory?.id === category.id 
+                            ? 'scale-110' 
+                            : 'group-hover:scale-105'
+                        }`}
+                        style={{
+                          border: selectedCategory?.id === category.id 
+                            ? '3px solid rgba(240, 171, 252, 0.9)' 
+                            : '3px solid rgba(217, 70, 239, 0.7)',
+                          boxShadow: selectedCategory?.id === category.id
+                            ? '0 0 30px rgba(217, 70, 239, 0.8), inset 0 0 25px rgba(217, 70, 239, 0.3)'
+                            : '0 0 20px rgba(217, 70, 239, 0.5), inset 0 0 20px rgba(217, 70, 239, 0.2)',
+                          background: selectedCategory?.id === category.id
+                            ? 'linear-gradient(135deg, rgba(217, 70, 239, 0.4) 0%, rgba(236, 72, 153, 0.3) 100%)'
+                            : 'linear-gradient(135deg, rgba(217, 70, 239, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%)',
+                        }}
+                      >
+                        <span className="text-3xl">{category.icon}</span>
+                        {selectedCategory?.id === category.id && (
+                          <div className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-fuchsia-500 rounded-full flex items-center justify-center border-2 border-[#0a0118]">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-medium mt-1.5 text-center leading-tight transition-colors ${
+                        selectedCategory?.id === category.id ? 'text-fuchsia-200' : 'text-fuchsia-300/80'
+                      }`}>
                         {language === 'tr' ? category.name : category.nameEn}
                       </span>
-                      {selectedCategory?.id === category.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-green-600" />
-                        </div>
-                      )}
                     </motion.button>
                   ))}
                 </div>
               </div>
 
-              {/* Other Categories */}
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-fuchsia-500/30 to-transparent" />
+              </div>
+
+              {/* Other Categories Section */}
               <div>
-                <h3 className="text-cyan-400 text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+                <h3 className="text-fuchsia-300 text-xs font-bold mb-3 flex items-center gap-2 uppercase tracking-wider">
+                  <Users className="w-3.5 h-3.5" />
                   {language === 'tr' ? 'Diğer Kategoriler' : 'Other Categories'}
                 </h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-x-4 gap-y-4">
                   {OTHER_CATEGORIES.map((category) => (
                     <motion.button
                       key={category.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => {
                         setSelectedCategory(category)
                         setShowCategorySelector(false)
                       }}
-                      className={`relative p-4 rounded-2xl bg-gradient-to-br ${category.color} flex flex-col items-center gap-2 transition-all ${
-                        selectedCategory?.id === category.id ? 'ring-2 ring-white' : ''
-                      }`}
+                      className="flex flex-col items-center group"
                     >
-                      <span className="text-2xl">{category.icon}</span>
-                      <span className="text-white font-medium text-xs text-center">
+                      <div 
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          selectedCategory?.id === category.id 
+                            ? 'scale-110' 
+                            : 'group-hover:scale-105'
+                        }`}
+                        style={{
+                          border: selectedCategory?.id === category.id 
+                            ? '3px solid rgba(240, 171, 252, 0.9)' 
+                            : '3px solid rgba(217, 70, 239, 0.7)',
+                          boxShadow: selectedCategory?.id === category.id
+                            ? '0 0 30px rgba(217, 70, 239, 0.8), inset 0 0 25px rgba(217, 70, 239, 0.3)'
+                            : '0 0 20px rgba(217, 70, 239, 0.5), inset 0 0 20px rgba(217, 70, 239, 0.2)',
+                          background: selectedCategory?.id === category.id
+                            ? 'linear-gradient(135deg, rgba(217, 70, 239, 0.4) 0%, rgba(236, 72, 153, 0.3) 100%)'
+                            : 'linear-gradient(135deg, rgba(217, 70, 239, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%)',
+                        }}
+                      >
+                        <span className="text-3xl">{category.icon}</span>
+                        {selectedCategory?.id === category.id && (
+                          <div className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-fuchsia-500 rounded-full flex items-center justify-center border-2 border-[#0a0118]">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-medium mt-1.5 text-center leading-tight transition-colors ${
+                        selectedCategory?.id === category.id ? 'text-fuchsia-200' : 'text-fuchsia-300/80'
+                      }`}>
                         {language === 'tr' ? category.name : category.nameEn}
                       </span>
-                      {selectedCategory?.id === category.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-green-600" />
-                        </div>
-                      )}
                     </motion.button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Continue Button */}
+            {/* Bottom Continue Button */}
             {selectedCategory && (
-              <div className="p-6 border-t border-white/10">
+              <div className="flex-shrink-0 p-5" style={{ borderTop: '1px solid rgba(217, 70, 239, 0.2)' }}>
                 <button
                   onClick={() => setShowCategorySelector(false)}
-                  className={`w-full py-4 bg-gradient-to-r ${selectedCategory.color} text-white font-bold text-lg rounded-xl flex items-center justify-center gap-3`}
+                  className="w-full py-4 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3"
+                  style={{
+                    background: 'linear-gradient(135deg, #d946ef 0%, #ec4899 50%, #f43f5e 100%)',
+                    boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)',
+                  }}
                 >
                   <span className="text-2xl">{selectedCategory.icon}</span>
                   {language === 'tr' ? `${selectedCategory.name} ile Devam Et` : `Continue with ${selectedCategory.nameEn}`}
