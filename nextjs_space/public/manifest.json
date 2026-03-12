@@ -1,7 +1,7 @@
 {
-  "name": "FALCI - Yapay Zeka Fal Platformu",
-  "short_name": "FALCI",
-  "description": "Yapay zeka destekli fal platformu ile geleceğinizi keşfedin",
+  "name": "Canlifal - Canlı Fal Platformu",
+  "short_name": "Canlifal",
+  "description": "Canlı falcılarla birebir görüşme ve yapay zeka destekli fal platformu",
   "start_url": "/tr",
   "display": "standalone",
   "background_color": "#0a0118",
