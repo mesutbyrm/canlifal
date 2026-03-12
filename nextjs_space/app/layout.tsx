@@ -101,7 +101,7 @@ export default function RootLayout({
   return (
     <html lang="tr" className={`${inter.variable} ${cinzel.variable}`}>
       <head>
-        <meta name="theme-color" content="#d4af37" />
+        <meta name="theme-color" content="#1a0a2e" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
