@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle, Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical, X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video, CreditCard, Radio, Palette } from 'lucide-react'
+import { useSiteTheme } from '@/lib/theme-context'
+import {
+  Users, Sparkles, TrendingUp, Coffee, Star, Moon, Plus, MessageCircle,
+  Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical,
+  X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
+  CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
+  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers
+} from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { LiveVisitorCount } from '@/components/live-visitor-count'
@@ -19,9 +26,7 @@ interface User {
   role: string
   preferredLanguage: string
   createdAt: string
-  _count: {
-    fortunes: number
-  }
+  _count: { fortunes: number }
 }
 
 interface ChatRoom {
@@ -58,43 +63,14 @@ interface Statistics {
   totalFortunes: number
   fortunesByType: Record<string, number>
   users?: {
-    total: number
-    newToday: number
-    newThisWeek: number
-    newThisMonth: number
-    premium: number
-    vip: number
+    total: number; newToday: number; newThisWeek: number; newThisMonth: number; premium: number; vip: number
   }
-  fortunes?: {
-    total: number
-    totalViews: number
-    byType: Record<string, number>
-  }
-  social?: {
-    totalPosts: number
-    postsToday: number
-    totalLikes: number
-    totalComments: number
-    totalShares: number
-  }
-  messaging?: {
-    totalMessages: number
-    messagesThisWeek: number
-    totalConversations: number
-  }
-  community?: {
-    totalFollows: number
-  }
-  streams?: {
-    total: number
-    active: number
-    totalGiftsValue: number
-    totalLikes: number
-  }
-  economy?: {
-    creditsInCirculation: number
-    creditsSpent: number
-  }
+  fortunes?: { total: number; totalViews: number; byType: Record<string, number> }
+  social?: { totalPosts: number; postsToday: number; totalLikes: number; totalComments: number; totalShares: number }
+  messaging?: { totalMessages: number; messagesThisWeek: number; totalConversations: number }
+  community?: { totalFollows: number }
+  streams?: { total: number; active: number; totalGiftsValue: number; totalLikes: number }
+  economy?: { creditsInCirculation: number; creditsSpent: number }
 }
 
 interface VisitorStats {
@@ -108,24 +84,45 @@ interface VisitorStats {
   }
 }
 
+type AdminTab = 'dashboard' | 'users' | 'chat' | 'ads' | 'visitors' | 'statistics'
+
+const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; enLabel: string }[] = [
+  { id: 'dashboard', icon: LayoutDashboard, trLabel: 'Gösterge Paneli', enLabel: 'Dashboard' },
+  { id: 'users', icon: Users, trLabel: 'Kullanıcılar', enLabel: 'Users' },
+  { id: 'chat', icon: MessageCircle, trLabel: 'Sohbet Yönetimi', enLabel: 'Chat Management' },
+  { id: 'ads', icon: Megaphone, trLabel: 'Reklam Yönetimi', enLabel: 'Ad Management' },
+  { id: 'visitors', icon: Globe, trLabel: 'Ziyaretçi İstatistikleri', enLabel: 'Visitor Stats' },
+  { id: 'statistics', icon: BarChart3, trLabel: 'Tüm İstatistikler', enLabel: 'All Statistics' },
+]
+
+const MANAGEMENT_LINKS = (lang: string) => [
+  { href: `/${lang}/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
+  { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
+  { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
+  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'Kredi Paketleri', enLabel: 'Credit Packages' },
+  { href: `/${lang}/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
+  { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
+  { href: `/${lang}/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
+  { href: `/${lang}/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
+]
+
 export default function AdminPage() {
   const { language, t } = useLanguage()
+  const { theme } = useSiteTheme()
   const [users, setUsers] = useState<User[]>([])
   const [statistics, setStatistics] = useState<Statistics | null>(null)
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [creditAmount, setCreditAmount] = useState(10)
-  const [activeTab, setActiveTab] = useState<'users' | 'chat' | 'ads' | 'visitors' | 'statistics'>('users')
-  
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   // Chat management state
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null)
   const [roomModData, setRoomModData] = useState<{
-    roomMuted: boolean
-    roles: ChatUserRole[]
-    mutes: ChatMute[]
-    bans: ChatBan[]
+    roomMuted: boolean; roles: ChatUserRole[]; mutes: ChatMute[]; bans: ChatBan[]
   } | null>(null)
   const [roleUserId, setRoleUserId] = useState('')
   const [roleType, setRoleType] = useState('op')
@@ -134,56 +131,58 @@ export default function AdminPage() {
   const [adSettings, setAdSettings] = useState<Record<string, string>>({})
   const [adSaveStatus, setAdSaveStatus] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchData()
-    fetchAdSettings()
-    fetchVisitorStats()
-  }, [])
+  // Theme colors
+  const isFalclub = theme === 'falclub' || theme === 'falci'
+  const isCosmic = theme === 'cosmic'
+  const isFacebook = theme === 'facebook'
+
+  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0f0520]'
+  const sidebarBg = isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-[#0d1f3c] border-blue-900/30' : 'bg-[#1a0a2e]/95 border-fuchsia-900/30'
+  const textPrimary = isFacebook ? 'text-gray-900' : 'text-white'
+  const textSecondary = isFacebook ? 'text-gray-500' : isCosmic ? 'text-blue-300' : 'text-purple-300'
+  const textMuted = isFacebook ? 'text-gray-400' : isCosmic ? 'text-blue-400/60' : 'text-purple-400/60'
+  const accentColor = isFacebook ? 'text-blue-600' : isCosmic ? 'text-blue-400' : 'text-fuchsia-400'
+  const accentBg = isFacebook ? 'bg-blue-50 text-blue-600' : isCosmic ? 'bg-blue-500/10 text-blue-400' : 'bg-fuchsia-500/10 text-fuchsia-400'
+  const cardBg = isFacebook ? 'bg-white border border-gray-200' : isCosmic ? 'bg-white/5 border border-blue-500/20' : 'bg-[#1a0a2e]/80 border border-fuchsia-500/20'
+  const btnPrimary = isFacebook ? 'bg-blue-500 hover:bg-blue-600 text-white' : isCosmic ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white'
+  const btnSecondary = isFacebook ? 'bg-gray-100 hover:bg-gray-200 text-gray-800' : isCosmic ? 'bg-blue-900/50 hover:bg-blue-800/50 text-blue-200' : 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200'
+  const inputBg = isFacebook ? 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400' : isCosmic ? 'bg-blue-900/30 border-blue-700/50 text-blue-100 placeholder-blue-400/50' : 'bg-purple-900/30 border-fuchsia-700/30 text-purple-100 placeholder-purple-400/50'
+  const tableBorder = isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'
+  const hoverRow = isFacebook ? 'hover:bg-gray-50' : isCosmic ? 'hover:bg-blue-900/20' : 'hover:bg-purple-900/20'
+  const statCardBg = isFacebook ? 'bg-white border border-gray-200' : isCosmic ? 'bg-white/5 border border-blue-500/15' : 'bg-[#1a0a2e]/60 border border-fuchsia-500/15'
+  const goldColor = isFacebook ? 'text-blue-600' : isCosmic ? 'text-amber-400' : 'text-amber-400'
+  const modalBg = isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-[#0d1f3c] border-blue-500/30' : 'bg-[#1a0a2e] border-fuchsia-500/30'
+
+  useEffect(() => { fetchData(); fetchAdSettings(); fetchVisitorStats() }, [])
 
   const fetchData = async () => {
     try {
       const [usersRes, statsRes, roomsRes] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/statistics'),
-        fetch('/api/chat/rooms'),
+        fetch('/api/admin/users'), fetch('/api/admin/statistics'), fetch('/api/chat/rooms'),
       ])
-      
       const usersData = await usersRes.json()
       const statsData = await statsRes.json()
       const roomsData = await roomsRes.json()
-      
       setUsers(usersData?.users || usersData || [])
       setStatistics(statsData)
       setChatRooms(roomsData || [])
     } catch (error) {
       console.error('Failed to fetch admin data:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    } finally { setIsLoading(false) }
   }
 
   const fetchVisitorStats = async () => {
     try {
       const res = await fetch('/api/admin/visitor-stats')
-      if (res.ok) {
-        const data = await res.json()
-        setVisitorStats(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch visitor stats:', error)
-    }
+      if (res.ok) setVisitorStats(await res.json())
+    } catch (error) { console.error('Failed to fetch visitor stats:', error) }
   }
 
   const fetchRoomModeration = async (roomId: string) => {
     try {
       const res = await fetch(`/api/chat/rooms/${roomId}/moderation`)
-      if (res.ok) {
-        const data = await res.json()
-        setRoomModData(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch room moderation:', error)
-    }
+      if (res.ok) setRoomModData(await res.json())
+    } catch (error) { console.error('Failed to fetch room moderation:', error) }
   }
 
   const selectRoom = async (room: ChatRoom) => {
@@ -193,24 +192,16 @@ export default function AdminPage() {
 
   const performModAction = async (action: string, targetUserId: string, extra?: Record<string, unknown>) => {
     if (!selectedRoom) return
-    
     try {
       const res = await fetch(`/api/chat/rooms/${selectedRoom.id}/moderation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, targetUserId, ...extra })
       })
-      
       if (res.ok) {
         await fetchRoomModeration(selectedRoom.id)
         alert(language === 'tr' ? 'İşlem başarılı!' : 'Action successful!')
-      } else {
-        const errorData = await res.json()
-        alert(errorData.error)
-      }
-    } catch (error) {
-      console.error('Mod action error:', error)
-    }
+      } else { const errorData = await res.json(); alert(errorData.error) }
+    } catch (error) { console.error('Mod action error:', error) }
   }
 
   const grantRole = async () => {
@@ -222,19 +213,13 @@ export default function AdminPage() {
   const addCredits = async (userId: string, amount: number) => {
     try {
       const response = await fetch('/api/admin/credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, amount }),
       })
-
       if (response?.ok) {
-        // Refresh data
-        await fetchData()
-        setSelectedUser(null)
+        await fetchData(); setSelectedUser(null)
         alert(language === 'tr' ? 'Kredi eklendi!' : 'Credits added!')
-      } else {
-        alert(language === 'tr' ? 'Kredi eklenemedi!' : 'Failed to add credits!')
-      }
+      } else { alert(language === 'tr' ? 'Kredi eklenemedi!' : 'Failed to add credits!') }
     } catch (error) {
       console.error('Failed to add credits:', error)
       alert(language === 'tr' ? 'Hata oluştu!' : 'Error occurred!')
@@ -244,1167 +229,652 @@ export default function AdminPage() {
   const fetchAdSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings')
-      if (res.ok) {
-        const data = await res.json()
-        setAdSettings(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch ad settings:', error)
-    }
+      if (res.ok) setAdSettings(await res.json())
+    } catch (error) { console.error('Failed to fetch ad settings:', error) }
   }
 
   const saveAdSetting = async (key: string, value: string) => {
     try {
       const res = await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value })
       })
-
       if (res.ok) {
         setAdSettings(prev => ({ ...prev, [key]: value }))
         setAdSaveStatus(key)
         setTimeout(() => setAdSaveStatus(null), 2000)
       }
-    } catch (error) {
-      console.error('Failed to save ad setting:', error)
-    }
+    } catch (error) { console.error('Failed to save ad setting:', error) }
   }
 
-  return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h1 className="font-serif text-4xl md:text-6xl text-gold-500 gold-glow mb-4">
-            {t('nav.admin')}
-          </h1>
-        </motion.div>
+  const SidebarItem = ({ item, isActive, onClick }: { item: typeof SIDEBAR_ITEMS[0]; isActive: boolean; onClick: () => void }) => {
+    const Icon = item.icon
+    return (
+      <button
+        onClick={onClick}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+          isActive ? `${accentBg} font-semibold` : `${textSecondary} ${hoverRow} hover:opacity-80`
+        }`}
+      >
+        <Icon className="w-5 h-5 flex-shrink-0" />
+        <span className="truncate">{language === 'tr' ? item.trLabel : item.enLabel}</span>
+      </button>
+    )
+  }
 
-        {/* Tab Navigation with Dropdown */}
-        <div className="flex gap-4 mb-8 items-center">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors">
-                {activeTab === 'users' ? (
-                  <>
-                    <Users className="w-5 h-5" />
-                    {language === 'tr' ? 'Kullanıcılar' : 'Users'}
-                  </>
-                ) : activeTab === 'chat' ? (
-                  <>
-                    <MessageCircle className="w-5 h-5" />
-                    {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
-                  </>
-                ) : activeTab === 'ads' ? (
-                  <>
-                    <Megaphone className="w-5 h-5" />
-                    {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
-                  </>
-                ) : activeTab === 'visitors' ? (
-                  <>
-                    <TrendingUp className="w-5 h-5" />
-                    {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
-                  </>
-                ) : (
-                  <>
-                    <TrendingUp className="w-5 h-5" />
-                    {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
-                  </>
-                )}
-                <ChevronDown className="w-4 h-4" />
+  const StatCard = ({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string | number; color: string }) => (
+    <div className={`${statCardBg} rounded-xl p-5`}>
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`w-10 h-10 rounded-lg ${isFacebook ? 'bg-gray-100' : isCosmic ? 'bg-white/5' : 'bg-white/5'} flex items-center justify-center`}>
+          <Icon className={`w-5 h-5 ${color}`} />
+        </div>
+        <span className={`${textSecondary} text-sm`}>{label}</span>
+      </div>
+      <p className={`text-3xl font-bold ${textPrimary}`}>{value}</p>
+    </div>
+  )
+
+  const renderDashboard = () => (
+    <div className="space-y-6">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`${statCardBg} rounded-xl p-5`}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className={`w-10 h-10 rounded-lg ${isFacebook ? 'bg-green-50' : 'bg-green-500/10'} flex items-center justify-center`}>
+              <Eye className="w-5 h-5 text-green-500" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{ position: 'relative', top: -8, right: -2 }} />
+            </div>
+            <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Aktif Ziyaretçi' : 'Active Visitors'}</span>
+          </div>
+          <LiveVisitorCount variant="admin" />
+        </div>
+        <StatCard icon={Users} label={t('admin.total_users')} value={statistics?.totalUsers ?? 0} color={accentColor} />
+        <StatCard icon={Sparkles} label={t('admin.total_fortunes')} value={statistics?.totalFortunes ?? 0} color={goldColor} />
+        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki Kredi' : 'Credits'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+      </div>
+
+      {/* Quick Actions Grid */}
+      <div>
+        <h3 className={`${textPrimary} text-lg font-semibold mb-4`}>{language === 'tr' ? 'Hızlı Erişim' : 'Quick Access'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {MANAGEMENT_LINKS(language).map((link) => {
+            const Icon = link.icon
+            return (
+              <Link key={link.href} href={link.href}
+                className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105`}>
+                <div className={`w-12 h-12 rounded-full ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
+                  <Icon className={`w-6 h-6 ${accentColor}`} />
+                </div>
+                <span className={`${textPrimary} text-xs font-medium leading-tight`}>
+                  {language === 'tr' ? link.trLabel : link.enLabel}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Fortune Types */}
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 flex items-center gap-2`}>
+            <Sparkles className={`w-5 h-5 ${accentColor}`} />
+            {language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}
+          </h3>
+          <div className="space-y-3">
+            {[{icon: Coffee, name: language === 'tr' ? 'Kahve Falı' : 'Coffee', key: 'coffee'},
+              {icon: Star, name: language === 'tr' ? 'Tarot' : 'Tarot', key: 'tarot'},
+              {icon: Moon, name: language === 'tr' ? 'Rüya Tabiri' : 'Dream', key: 'dream'}].map(item => (
+              <div key={item.key} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <item.icon className={`w-4 h-4 ${accentColor}`} />
+                  <span className={textSecondary}>{item.name}</span>
+                </div>
+                <span className={`${textPrimary} font-semibold`}>{statistics?.fortunesByType?.[item.key] ?? 0}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Platform Summary */}
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 flex items-center gap-2`}>
+            <BarChart3 className={`w-5 h-5 ${accentColor}`} />
+            {language === 'tr' ? 'Platform Özeti' : 'Platform Summary'}
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className={textSecondary}>{language === 'tr' ? 'Aktif Yayınlar' : 'Active Streams'}</span>
+              <span className="text-green-500 font-semibold">{statistics?.streams?.active ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={textSecondary}>{language === 'tr' ? 'Toplam Paylaşım' : 'Total Posts'}</span>
+              <span className={`${textPrimary} font-semibold`}>{statistics?.social?.totalPosts ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={textSecondary}>{language === 'tr' ? 'Toplam Mesaj' : 'Total Messages'}</span>
+              <span className={`${textPrimary} font-semibold`}>{statistics?.messaging?.totalMessages ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={textSecondary}>{language === 'tr' ? 'Toplam Takip' : 'Total Follows'}</span>
+              <span className={`${textPrimary} font-semibold`}>{statistics?.community?.totalFollows ?? 0}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderUsers = () => (
+    <div className="space-y-6">
+      <div className={`${cardBg} rounded-xl p-5 overflow-x-auto`}>
+        <h2 className={`${textPrimary} text-xl font-bold mb-6`}>{t('admin.users')}</h2>
+        <table className="w-full">
+          <thead>
+            <tr className={`border-b ${tableBorder}`}>
+              <th className={`text-left py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('form.name')}</th>
+              <th className={`text-left py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('form.email')}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('nav.credits')}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Fal' : 'Fortunes'}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Kayıt' : 'Joined'}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'İşlem' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users?.map((user) => (
+              <tr key={user?.id} className={`border-b ${tableBorder} ${hoverRow} transition-colors`}>
+                <td className={`py-3 px-4 ${textPrimary}`}>{user?.name}</td>
+                <td className={`py-3 px-4 ${textSecondary}`}>{user?.email}</td>
+                <td className="py-3 px-4 text-center">
+                  <span className={`inline-flex items-center gap-1 ${goldColor} font-medium`}>
+                    <Sparkles className="w-3 h-3" /> {user?.credits}
+                  </span>
+                </td>
+                <td className={`py-3 px-4 text-center ${textPrimary}`}>{user?._count?.fortunes ?? 0}</td>
+                <td className={`py-3 px-4 text-center ${textMuted} text-sm`}>{format(new Date(user?.createdAt), 'MMM dd')}</td>
+                <td className="py-3 px-4 text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <button onClick={() => setSelectedUser(user)}
+                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'Kredi Ekle' : 'Add Credits'}>
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+
+  const renderChat = () => (
+    <div className="grid lg:grid-cols-3 gap-6">
+      {/* Chat Rooms List */}
+      <div className={`${cardBg} rounded-xl p-5`}>
+        <h2 className={`${textPrimary} text-lg font-bold mb-4`}>{language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}</h2>
+        <div className="space-y-2">
+          {chatRooms.map((room) => (
+            <div key={room.id} onClick={() => selectRoom(room)}
+              className={`p-3 rounded-xl cursor-pointer transition-all ${selectedRoom?.id === room.id ? accentBg : `${hoverRow}`}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{room.icon}</span>
+                <div>
+                  <h3 className={`${textPrimary} font-medium text-sm`}>{language === 'tr' ? room.nameTr : room.nameEn}</h3>
+                  <p className={`${textMuted} text-xs`}>{room.onlineCount} {language === 'tr' ? 'çevrimiçi' : 'online'} • {room.messageCount} {language === 'tr' ? 'mesaj' : 'msg'}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Room Management */}
+      <div className={`lg:col-span-2 ${cardBg} rounded-xl p-5`}>
+        {selectedRoom && roomModData ? (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`${textPrimary} text-lg font-bold flex items-center gap-2`}>
+                <span>{selectedRoom.icon}</span>
+                {language === 'tr' ? selectedRoom.nameTr : selectedRoom.nameEn}
+                {roomModData.roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
+              </h2>
+              <button onClick={() => performModAction(roomModData.roomMuted ? 'unmute_room' : 'mute_room', '')}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm ${roomModData.roomMuted ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                {roomModData.roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                {roomModData.roomMuted ? (language === 'tr' ? 'Sessizi Aç' : 'Unmute') : (language === 'tr' ? 'Sessize Al' : 'Mute')}
               </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content 
-                className="min-w-[200px] bg-deep-purple-900 border border-deep-purple-700 rounded-lg shadow-xl p-1 z-50"
-                sideOffset={5}
-              >
-                <DropdownMenu.Item 
-                  onClick={() => setActiveTab('users')}
-                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'users' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
-                >
-                  <Users className="w-5 h-5" />
-                  {language === 'tr' ? 'Kullanıcılar' : 'Users'}
-                </DropdownMenu.Item>
-                <DropdownMenu.Item 
-                  onClick={() => setActiveTab('chat')}
-                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'chat' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
-                </DropdownMenu.Item>
-                <DropdownMenu.Item 
-                  onClick={() => setActiveTab('ads')}
-                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'ads' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
-                >
-                  <Megaphone className="w-5 h-5" />
-                  {language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management'}
-                </DropdownMenu.Item>
-                <DropdownMenu.Item 
-                  onClick={() => setActiveTab('visitors')}
-                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'visitors' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
-                >
-                  <TrendingUp className="w-5 h-5" />
-                  {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
-                </DropdownMenu.Item>
-                <DropdownMenu.Item 
-                  onClick={() => setActiveTab('statistics')}
-                  className={`flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none ${activeTab === 'statistics' ? 'bg-gold-600/20 text-gold-400' : 'text-deep-purple-200 hover:bg-deep-purple-800'}`}
-                >
-                  <TrendingUp className="w-5 h-5" />
-                  {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
-                <Link href={`/${language}/admin/users`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Shield className="w-5 h-5" />
-                    {language === 'tr' ? 'Kullanıcı Yönetimi' : 'User Management'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/live-tellers`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Video className="w-5 h-5" />
-                    {language === 'tr' ? 'Canlı Falcı Yönetimi' : 'Live Teller Management'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/video-streams`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Radio className="w-5 h-5" />
-                    {language === 'tr' ? 'Canlı Yayın Yönetimi' : 'Live Stream Management'}
-                  </DropdownMenu.Item>
-                </Link>
-                <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
-                <Link href={`/${language}/admin/credit-packages`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    {language === 'tr' ? 'Kredi Paketleri' : 'Credit Packages'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/payment-methods`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    {language === 'tr' ? 'Ödeme Yöntemleri' : 'Payment Methods'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/themes`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    {language === 'tr' ? 'Tema Yönetimi' : 'Theme Management'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/bana-ozel`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    {language === 'tr' ? 'Bana Özel Yönetimi' : 'Personalized Content'}
-                  </DropdownMenu.Item>
-                </Link>
-                <Link href={`/${language}/admin/settings`}>
-                  <DropdownMenu.Item 
-                    className="flex items-center gap-2 px-4 py-3 rounded cursor-pointer outline-none text-deep-purple-200 hover:bg-deep-purple-800"
-                  >
-                    <Settings className="w-5 h-5" />
-                    {language === 'tr' ? 'Platform Ayarları' : 'Platform Settings'}
-                  </DropdownMenu.Item>
-                </Link>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-          
-          <div className="flex-1" />
-          
-          <p className="text-deep-purple-400 text-sm">
-            FALCI {language === 'tr' ? 'Yönetim Paneli' : 'Admin Panel'}
+            </div>
+
+            {/* Grant Role */}
+            <div className={`mb-6 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
+              <h3 className={`${textPrimary} font-medium mb-3 text-sm`}>{language === 'tr' ? 'Yetki Ver' : 'Grant Role'}</h3>
+              <div className="flex gap-2 items-end flex-wrap">
+                <select value={roleUserId} onChange={(e) => setRoleUserId(e.target.value)}
+                  className={`flex-1 min-w-[150px] px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
+                  <option value="">{language === 'tr' ? 'Kullanıcı Seç' : 'Select User'}</option>
+                  {users.map((user) => (<option key={user.id} value={user.id}>{user.name}</option>))}
+                </select>
+                <select value={roleType} onChange={(e) => setRoleType(e.target.value)}
+                  className={`px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
+                  <option value="voice">+ Voice</option>
+                  <option value="op">@ Op</option>
+                  <option value="admin">& Admin</option>
+                  <option value="founder">~ Founder</option>
+                </select>
+                <button onClick={grantRole} className={`px-4 py-2 rounded-lg text-sm font-medium ${btnPrimary}`}>
+                  {language === 'tr' ? 'Ver' : 'Grant'}
+                </button>
+              </div>
+            </div>
+
+            {/* Roles */}
+            <div className="mb-4">
+              <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
+                <Crown className={`w-4 h-4 ${goldColor}`} /> {language === 'tr' ? 'Yetkili Kullanıcılar' : 'Users with Roles'}
+              </h3>
+              {roomModData.roles.length > 0 ? (
+                <div className="space-y-1">
+                  {roomModData.roles.map((role) => (
+                    <div key={role.id} className={`flex items-center justify-between p-2 rounded-lg ${hoverRow}`}>
+                      <div className="flex items-center gap-2">
+                        {role.role === 'founder' && <Crown className="w-4 h-4 text-red-400" />}
+                        {role.role === 'admin' && <Shield className="w-4 h-4 text-orange-400" />}
+                        {role.role === 'op' && <Star className="w-4 h-4 text-green-400" />}
+                        {role.role === 'voice' && <Mic className="w-4 h-4 text-blue-400" />}
+                        <span className={`${textPrimary} text-sm`}>{role.user.name}</span>
+                        <span className={`${textMuted} text-xs`}>({role.role})</span>
+                      </div>
+                      <button onClick={() => performModAction('remove_role', role.userId)}
+                        className="text-red-400 hover:text-red-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Remove'}</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Yetkili yok' : 'No users'}</p>)}
+            </div>
+
+            {/* Muted */}
+            <div className="mb-4">
+              <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
+                <VolumeX className="w-4 h-4 text-orange-400" /> {language === 'tr' ? 'Susturulanlar' : 'Muted'}
+              </h3>
+              {roomModData.mutes.length > 0 ? (
+                <div className="space-y-1">
+                  {roomModData.mutes.map((mute) => (
+                    <div key={mute.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-500/5">
+                      <span className={`${textPrimary} text-sm`}>{mute.user.name}</span>
+                      <button onClick={() => performModAction('unmute_user', mute.userId)}
+                        className="text-green-400 hover:text-green-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Unmute'}</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Susturulan yok' : 'None'}</p>)}
+            </div>
+
+            {/* Banned */}
+            <div>
+              <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
+                <Ban className="w-4 h-4 text-red-400" /> {language === 'tr' ? 'Engellenenler' : 'Banned'}
+              </h3>
+              {roomModData.bans.length > 0 ? (
+                <div className="space-y-1">
+                  {roomModData.bans.map((ban) => (
+                    <div key={ban.id} className="flex items-center justify-between p-2 rounded-lg bg-red-500/5">
+                      <span className={`${textPrimary} text-sm`}>{ban.user.name}</span>
+                      <button onClick={() => performModAction('unban_user', ban.userId)}
+                        className="text-green-400 hover:text-green-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Unban'}</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Engellenen yok' : 'None'}</p>)}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <MessageCircle className={`w-12 h-12 ${textMuted} mx-auto mb-4`} />
+            <p className={textMuted}>{language === 'tr' ? 'Yönetmek için bir oda seçin' : 'Select a room to manage'}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  const AdSlot = ({ slotKey, title, desc }: { slotKey: string; title: string; desc: string }) => (
+    <div className={`${cardBg} rounded-xl p-5`}>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className={`${textPrimary} font-medium text-sm`}>{title}</h3>
+          <p className={`${textMuted} text-xs`}>{desc}</p>
+        </div>
+        {adSaveStatus === slotKey && (
+          <span className="flex items-center gap-1 text-green-500 text-xs"><CheckCircle className="w-3 h-3" /> {language === 'tr' ? 'Kaydedildi' : 'Saved'}</span>
+        )}
+      </div>
+      <textarea
+        value={adSettings[slotKey] || ''}
+        onChange={(e) => setAdSettings(prev => ({ ...prev, [slotKey]: e.target.value }))}
+        placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste code here...'}
+        className={`w-full h-24 px-3 py-2 rounded-lg border text-xs font-mono ${inputBg} focus:outline-none`}
+      />
+      <button onClick={() => saveAdSetting(slotKey, adSettings[slotKey] || '')}
+        className={`mt-2 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
+        <Save className="w-4 h-4" /> {language === 'tr' ? 'Kaydet' : 'Save'}
+      </button>
+    </div>
+  )
+
+  const renderAds = () => (
+    <div className="space-y-4">
+      <div className={`${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'} rounded-xl p-4`}>
+        <h3 className={`${accentColor} font-medium text-sm mb-1`}>{language === 'tr' ? 'Google Ads Entegrasyonu' : 'Google Ads Integration'}</h3>
+        <p className={`${textSecondary} text-xs`}>
+          {language === 'tr' ? 'Google AdSense kodlarınızı aşağıdaki alanlara yapıştırın.' : 'Paste your Google AdSense codes in the fields below.'}
+        </p>
+      </div>
+      <div className="grid gap-4">
+        <AdSlot slotKey="ads_script" title={language === 'tr' ? 'AdSense Script' : 'AdSense Script'} desc={language === 'tr' ? 'Ana script kodu (head bölümü)' : 'Main script code (head section)'} />
+        <AdSlot slotKey="ads_header" title={language === 'tr' ? 'Üst Banner' : 'Header Banner'} desc={language === 'tr' ? 'Sayfa üstünde' : 'Top of pages'} />
+        <AdSlot slotKey="ads_sidebar" title={language === 'tr' ? 'Kenar Çubuğu' : 'Sidebar'} desc={language === 'tr' ? 'Sayfa kenarında' : 'Page sidebar'} />
+        <AdSlot slotKey="ads_inline" title={language === 'tr' ? 'İçerik Arası' : 'Inline Content'} desc={language === 'tr' ? 'İçerik arasında' : 'Between content'} />
+        <AdSlot slotKey="ads_footer" title={language === 'tr' ? 'Alt Banner' : 'Footer Banner'} desc={language === 'tr' ? 'Sayfa altında' : 'Bottom of pages'} />
+        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 kredi kazanma, günlük 10 limit' : 'Earn 5 credits, 10/day limit'} />
+      </div>
+    </div>
+  )
+
+  const VisitorCard = ({ label, unique, total, color, icon: Icon }: { label: string; unique: number; total: number; color: string; icon: React.ElementType }) => (
+    <div className={`${statCardBg} rounded-xl p-5`}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-9 h-9 rounded-lg ${isFacebook ? 'bg-gray-100' : 'bg-white/5'} flex items-center justify-center`}>
+          <Icon className={`w-5 h-5 ${color}`} />
+        </div>
+        <span className={`${textSecondary} text-sm font-medium`}>{label}</span>
+      </div>
+      <div className="space-y-1">
+        <div><p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tekil' : 'Unique'}</p><p className={`text-2xl font-bold ${color}`}>{unique}</p></div>
+        <div><p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Toplam' : 'Total'}</p><p className={`text-lg ${textSecondary}`}>{total}</p></div>
+      </div>
+    </div>
+  )
+
+  const renderVisitors = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <VisitorCard label={language === 'tr' ? 'Bugün' : 'Today'} unique={visitorStats?.today?.unique ?? 0} total={visitorStats?.today?.total ?? 0} color="text-blue-500" icon={Eye} />
+        <VisitorCard label={language === 'tr' ? 'Bu Hafta' : 'This Week'} unique={visitorStats?.week?.unique ?? 0} total={visitorStats?.week?.total ?? 0} color="text-green-500" icon={TrendingUp} />
+        <VisitorCard label={language === 'tr' ? 'Bu Ay' : 'This Month'} unique={visitorStats?.month?.unique ?? 0} total={visitorStats?.month?.total ?? 0} color="text-yellow-500" icon={Star} />
+        <VisitorCard label={language === 'tr' ? 'Bu Yıl' : 'This Year'} unique={visitorStats?.year?.unique ?? 0} total={visitorStats?.year?.total ?? 0} color={accentColor} icon={Sparkles} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🌍 {language === 'tr' ? 'Ülkelere Göre (Son 30 Gün)' : 'By Country (Last 30 Days)'}</h3>
+          <div className="space-y-2">
+            {visitorStats?.geo?.countries?.length ? visitorStats.geo.countries.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className={`${textSecondary} text-sm`}>{item.country}</span>
+                <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
+              </div>
+            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+          </div>
+        </div>
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🏙️ {language === 'tr' ? 'Şehirlere Göre (Son 30 Gün)' : 'By City (Last 30 Days)'}</h3>
+          <div className="space-y-2">
+            {visitorStats?.geo?.cities?.length ? visitorStats.geo.cities.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className={`${textSecondary} text-sm`}>{item.city}</span>
+                <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
+              </div>
+            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button onClick={fetchVisitorStats} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
+          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+        </button>
+      </div>
+    </div>
+  )
+
+  const MiniStatCard = ({ label, value, color }: { label: string; value: number | string; color: string }) => (
+    <div className={`${statCardBg} rounded-xl p-4 text-center`}>
+      <p className={`${textMuted} text-xs mb-1`}>{label}</p>
+      <p className={`text-xl font-bold ${color}`}>{value}</p>
+    </div>
+  )
+
+  const renderStatistics = () => (
+    <div className="space-y-6">
+      {/* Users */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Kullanıcılar' : 'Users'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <MiniStatCard label={language === 'tr' ? 'Toplam' : 'Total'} value={statistics?.users?.total ?? statistics?.totalUsers ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Bugün' : 'Today'} value={statistics?.users?.newToday ?? 0} color="text-green-500" />
+          <MiniStatCard label={language === 'tr' ? 'Haftalık' : 'Weekly'} value={statistics?.users?.newThisWeek ?? 0} color="text-blue-500" />
+          <MiniStatCard label={language === 'tr' ? 'Aylık' : 'Monthly'} value={statistics?.users?.newThisMonth ?? 0} color={accentColor} />
+          <MiniStatCard label="Premium" value={statistics?.users?.premium ?? 0} color="text-yellow-500" />
+          <MiniStatCard label="VIP" value={statistics?.users?.vip ?? 0} color="text-pink-500" />
+        </div>
+      </div>
+
+      {/* Fortunes */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Sparkles className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Fallar' : 'Fortunes'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <MiniStatCard label={language === 'tr' ? 'Toplam Fal' : 'Total'} value={statistics?.fortunes?.total ?? statistics?.totalFortunes ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Görüntülenme' : 'Views'} value={statistics?.fortunes?.totalViews ?? 0} color="text-blue-500" />
+        </div>
+        <div className={`${cardBg} rounded-xl p-4`}>
+          <p className={`${textMuted} text-xs mb-3`}>{language === 'tr' ? 'Türlere Göre' : 'By Type'}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {Object.entries(statistics?.fortunes?.byType ?? statistics?.fortunesByType ?? {}).map(([type, count]) => (
+              <div key={type} className={`${statCardBg} rounded-lg p-2 text-center`}>
+                <p className={`${textMuted} text-xs truncate`}>{type}</p>
+                <p className={`text-lg font-bold ${textPrimary}`}>{count}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Social */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Sosyal' : 'Social'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <MiniStatCard label={language === 'tr' ? 'Paylaşım' : 'Posts'} value={statistics?.social?.totalPosts ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Bugün' : 'Today'} value={statistics?.social?.postsToday ?? 0} color="text-green-500" />
+          <MiniStatCard label={language === 'tr' ? 'Beğeni' : 'Likes'} value={statistics?.social?.totalLikes ?? 0} color="text-red-500" />
+          <MiniStatCard label={language === 'tr' ? 'Yorum' : 'Comments'} value={statistics?.social?.totalComments ?? 0} color="text-blue-500" />
+          <MiniStatCard label={language === 'tr' ? 'Paylaşım' : 'Shares'} value={statistics?.social?.totalShares ?? 0} color={accentColor} />
+        </div>
+      </div>
+
+      {/* Messaging & Community */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Mesajlaşma' : 'Messaging'}</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <MiniStatCard label={language === 'tr' ? 'Mesaj' : 'Messages'} value={statistics?.messaging?.totalMessages ?? 0} color={textPrimary} />
+            <MiniStatCard label={language === 'tr' ? 'Haftalık' : 'Weekly'} value={statistics?.messaging?.messagesThisWeek ?? 0} color="text-blue-500" />
+            <MiniStatCard label={language === 'tr' ? 'Sohbet' : 'Chats'} value={statistics?.messaging?.totalConversations ?? 0} color="text-green-500" />
+          </div>
+        </div>
+        <div>
+          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Video className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Yayınlar' : 'Streams'}</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <MiniStatCard label={language === 'tr' ? 'Toplam' : 'Total'} value={statistics?.streams?.total ?? 0} color={textPrimary} />
+            <MiniStatCard label={language === 'tr' ? 'Aktif' : 'Active'} value={statistics?.streams?.active ?? 0} color="text-green-500" />
+            <MiniStatCard label={language === 'tr' ? 'Hediye' : 'Gifts'} value={statistics?.streams?.totalGiftsValue ?? 0} color="text-yellow-500" />
+            <MiniStatCard label={language === 'tr' ? 'Beğeni' : 'Likes'} value={statistics?.streams?.totalLikes ?? 0} color="text-red-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* Economy */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi' : 'Economy'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki Kredi' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Harcanan' : 'Spent'} value={statistics?.economy?.creditsSpent ?? 0} color="text-red-500" />
+          <MiniStatCard label={language === 'tr' ? 'Takip' : 'Follows'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button onClick={fetchData} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
+          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className={`min-h-screen ${bgColor} flex`}>
+      {/* Mobile sidebar toggle */}
+      <button onClick={() => setSidebarOpen(!sidebarOpen)}
+        className={`fixed top-20 left-3 z-40 lg:hidden p-2 rounded-lg ${btnSecondary}`}>
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Sidebar Overlay for mobile */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-0 h-full w-64 ${sidebarBg} border-r z-40 pt-20 pb-6 flex flex-col transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+        <div className="px-4 mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <div className={`w-8 h-8 rounded-lg ${isFacebook ? 'bg-blue-500' : isCosmic ? 'bg-blue-600' : 'bg-fuchsia-600'} flex items-center justify-center`}>
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className={`${textPrimary} font-bold text-sm`}>{language === 'tr' ? 'Yönetim Paneli' : 'Admin Panel'}</h2>
+              <p className={`${textMuted} text-[10px]`}>FalClub</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="px-3 space-y-1 flex-1 overflow-y-auto">
+          <p className={`${textMuted} text-[10px] font-semibold uppercase tracking-wider px-4 mb-2`}>
+            {language === 'tr' ? 'Genel' : 'General'}
+          </p>
+          {SIDEBAR_ITEMS.map(item => (
+            <SidebarItem key={item.id} item={item} isActive={activeTab === item.id}
+              onClick={() => { setActiveTab(item.id); setSidebarOpen(false) }} />
+          ))}
+
+          <div className={`my-4 h-px ${isFacebook ? 'bg-gray-200' : isCosmic ? 'bg-blue-800/30' : 'bg-purple-800/30'}`} />
+
+          <p className={`${textMuted} text-[10px] font-semibold uppercase tracking-wider px-4 mb-2`}>
+            {language === 'tr' ? 'Yönetim' : 'Management'}
+          </p>
+          {MANAGEMENT_LINKS(language).map(link => {
+            const Icon = link.icon
+            return (
+              <Link key={link.href} href={link.href}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${textSecondary} ${hoverRow} transition-colors`}
+                onClick={() => setSidebarOpen(false)}>
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{language === 'tr' ? link.trLabel : link.enLabel}</span>
+                <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Back to site */}
+        <div className="px-3 mt-4">
+          <Link href={`/${language}`}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${textSecondary} ${hoverRow} transition-colors`}>
+            <Home className="w-4 h-4" />
+            <span>{language === 'tr' ? 'Siteye Dön' : 'Back to Site'}</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 lg:ml-64 pt-20 px-4 lg:px-8 pb-32">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className={`${textPrimary} text-2xl font-bold`}>
+            {activeTab === 'dashboard' ? (language === 'tr' ? 'Gösterge Paneli' : 'Dashboard') :
+             activeTab === 'users' ? (language === 'tr' ? 'Kullanıcılar' : 'Users') :
+             activeTab === 'chat' ? (language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management') :
+             activeTab === 'ads' ? (language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management') :
+             activeTab === 'visitors' ? (language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics') :
+             (language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics')}
+          </h1>
+          <p className={`${textMuted} text-sm mt-1`}>
+            {language === 'tr' ? 'Platform yönetimi ve kontrol merkezi' : 'Platform management and control center'}
           </p>
         </div>
 
         {isLoading ? (
-          <LoadingSpinner message={language === 'tr' ? 'Veriler yükleniyor...' : 'Loading data...'} />
-        ) : activeTab === 'users' ? (
-          <>
-            {/* Statistics */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
-            >
-              {/* Live Visitor Count - Prominent */}
-              <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-lg p-6 mystical-shadow">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="relative">
-                    <Eye className="w-6 h-6 text-green-400" />
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
-                  </div>
-                  <h3 className="text-green-300 font-medium">{language === 'tr' ? 'Aktif Ziyaretçi' : 'Active Visitors'}</h3>
-                </div>
-                <LiveVisitorCount variant="admin" />
-              </div>
-
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow">
-                <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-6 h-6 text-gold-500" />
-                  <h3 className="text-deep-purple-200 font-medium">{t('admin.total_users')}</h3>
-                </div>
-                <p className="text-4xl font-serif text-gold-400">{statistics?.totalUsers ?? 0}</p>
-              </div>
-
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow">
-                <div className="flex items-center gap-3 mb-2">
-                  <TrendingUp className="w-6 h-6 text-gold-500" />
-                  <h3 className="text-deep-purple-200 font-medium">{t('admin.total_fortunes')}</h3>
-                </div>
-                <p className="text-4xl font-serif text-gold-400">{statistics?.totalFortunes ?? 0}</p>
-              </div>
-
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow">
-                <h3 className="text-deep-purple-200 font-medium mb-3">{language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Coffee className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{language === 'tr' ? 'Kahve Falı' : 'Coffee Fortune'}</span>
-                    </div>
-                    <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.coffee ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{language === 'tr' ? 'Tarot Falı' : 'Tarot Reading'}</span>
-                    </div>
-                    <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.tarot ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Moon className="w-4 h-4 text-gold-500" />
-                      <span className="text-deep-purple-200">{language === 'tr' ? 'Rüya Tabiri' : 'Dream Interpretation'}</span>
-                    </div>
-                    <span className="text-gold-400 font-medium">{statistics?.fortunesByType?.dream ?? 0}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Users Table */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-mystical-card border border-mystical rounded-lg p-6 mystical-shadow overflow-x-auto"
-            >
-              <h2 className="font-serif text-2xl text-gold-400 mb-6">{t('admin.users')}</h2>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-deep-purple-800">
-                    <th className="text-left py-3 px-4 text-deep-purple-300 font-medium">{t('form.name')}</th>
-                    <th className="text-left py-3 px-4 text-deep-purple-300 font-medium">{t('form.email')}</th>
-                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{t('nav.credits')}</th>
-                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'Fal Sayısı' : 'Fortunes'}</th>
-                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'Kayıt' : 'Joined'}</th>
-                    <th className="text-center py-3 px-4 text-deep-purple-300 font-medium">{language === 'tr' ? 'İşlemler' : 'Actions'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users?.map((user) => (
-                    <tr key={user?.id} className="border-b border-deep-purple-900/50 hover:bg-deep-purple-900/20">
-                      <td className="py-3 px-4 text-deep-purple-100">{user?.name}</td>
-                      <td className="py-3 px-4 text-deep-purple-100">{user?.email}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-gold-400 font-medium">
-                          <Sparkles className="w-4 h-4" />
-                          {user?.credits}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center text-deep-purple-100">{user?._count?.fortunes ?? 0}</td>
-                      <td className="py-3 px-4 text-center text-deep-purple-300 text-sm">
-                        {format(new Date(user?.createdAt), 'MMM dd')}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <DropdownMenu.Root>
-                          <DropdownMenu.Trigger asChild>
-                            <button className="p-2 hover:bg-deep-purple-800 rounded-lg transition-colors">
-                              <MoreVertical className="w-5 h-5 text-deep-purple-300" />
-                            </button>
-                          </DropdownMenu.Trigger>
-                          <DropdownMenu.Portal>
-                            <DropdownMenu.Content 
-                              className="min-w-[180px] bg-deep-purple-900 border border-deep-purple-700 rounded-lg shadow-xl p-1 z-50"
-                              sideOffset={5}
-                            >
-                              <DropdownMenu.Item 
-                                onClick={() => setSelectedUser(user)}
-                                className="flex items-center gap-2 px-3 py-2 text-gold-400 hover:bg-deep-purple-800 rounded cursor-pointer outline-none"
-                              >
-                                <Plus className="w-4 h-4" />
-                                {language === 'tr' ? 'Kredi Ekle' : 'Add Credits'}
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Item 
-                                className="flex items-center gap-2 px-3 py-2 text-deep-purple-200 hover:bg-deep-purple-800 rounded cursor-pointer outline-none"
-                              >
-                                <Settings className="w-4 h-4" />
-                                {language === 'tr' ? 'Düzenle' : 'Edit'}
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Separator className="h-px bg-deep-purple-700 my-1" />
-                              <DropdownMenu.Item 
-                                className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-900/30 rounded cursor-pointer outline-none"
-                              >
-                                <Ban className="w-4 h-4" />
-                                {language === 'tr' ? 'Engelle' : 'Ban'}
-                              </DropdownMenu.Item>
-                            </DropdownMenu.Content>
-                          </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </motion.div>
-          </>
-        ) : activeTab === 'chat' ? (
-          /* Chat Management Tab */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid lg:grid-cols-3 gap-6"
-          >
-            {/* Chat Rooms List */}
-            <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-              <h2 className="font-serif text-xl text-gold-400 mb-4">
-                {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
-              </h2>
-              <div className="space-y-3">
-                {chatRooms.map((room) => (
-                  <div
-                    key={room.id}
-                    onClick={() => selectRoom(room)}
-                    className={`p-4 rounded-lg cursor-pointer transition-all ${selectedRoom?.id === room.id ? 'bg-gold-600/20 border border-gold-500/50' : 'bg-deep-purple-900/50 hover:bg-deep-purple-800/50'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{room.icon}</span>
-                      <div>
-                        <h3 className="text-deep-purple-100 font-medium">
-                          {language === 'tr' ? room.nameTr : room.nameEn}
-                        </h3>
-                        <p className="text-deep-purple-400 text-sm">
-                          {room.onlineCount} {language === 'tr' ? 'çevrimiçi' : 'online'} • {room.messageCount} {language === 'tr' ? 'mesaj' : 'messages'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Room Management */}
-            <div className="lg:col-span-2 bg-mystical-card border border-mystical rounded-lg p-6">
-              {selectedRoom && roomModData ? (
-                <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-serif text-xl text-gold-400 flex items-center gap-2">
-                      <span>{selectedRoom.icon}</span>
-                      {language === 'tr' ? selectedRoom.nameTr : selectedRoom.nameEn}
-                      {roomModData.roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
-                    </h2>
-                    <button
-                      onClick={() => performModAction(roomModData.roomMuted ? 'unmute_room' : 'mute_room', '')}
-                      className={`px-4 py-2 rounded-lg flex items-center gap-2 ${roomModData.roomMuted ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'}`}
-                    >
-                      {roomModData.roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                      {roomModData.roomMuted ? (language === 'tr' ? 'Sessizi Aç' : 'Unmute Room') : (language === 'tr' ? 'Odayı Sessize Al' : 'Mute Room')}
-                    </button>
-                  </div>
-
-                  {/* Grant Role Section */}
-                  <div className="mb-6 p-4 bg-deep-purple-900/50 rounded-lg">
-                    <h3 className="text-deep-purple-200 font-medium mb-3">
-                      {language === 'tr' ? 'Yetki Ver' : 'Grant Role'}
-                    </h3>
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1">
-                        <label className="text-deep-purple-400 text-sm mb-1 block">
-                          {language === 'tr' ? 'Kullanıcı ID' : 'User ID'}
-                        </label>
-                        <select
-                          value={roleUserId}
-                          onChange={(e) => setRoleUserId(e.target.value)}
-                          className="w-full px-3 py-2 bg-deep-purple-800 border border-deep-purple-700 rounded-lg text-deep-purple-100"
-                        >
-                          <option value="">{language === 'tr' ? 'Kullanıcı Seç' : 'Select User'}</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-deep-purple-400 text-sm mb-1 block">
-                          {language === 'tr' ? 'Yetki' : 'Role'}
-                        </label>
-                        <select
-                          value={roleType}
-                          onChange={(e) => setRoleType(e.target.value)}
-                          className="px-3 py-2 bg-deep-purple-800 border border-deep-purple-700 rounded-lg text-deep-purple-100"
-                        >
-                          <option value="voice">+ Voice</option>
-                          <option value="op">@ Op</option>
-                          <option value="admin">& Admin</option>
-                          <option value="founder">~ Founder</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={grantRole}
-                        className="px-4 py-2 bg-gold-600 text-black rounded-lg hover:bg-gold-500"
-                      >
-                        {language === 'tr' ? 'Ver' : 'Grant'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Current Roles */}
-                  <div className="mb-6">
-                    <h3 className="text-deep-purple-200 font-medium mb-3 flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-gold-400" />
-                      {language === 'tr' ? 'Yetkili Kullanıcılar' : 'Users with Roles'}
-                    </h3>
-                    {roomModData.roles.length > 0 ? (
-                      <div className="space-y-2">
-                        {roomModData.roles.map((role) => (
-                          <div key={role.id} className="flex items-center justify-between p-3 bg-deep-purple-900/50 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              {role.role === 'founder' && <Crown className="w-4 h-4 text-red-400" />}
-                              {role.role === 'admin' && <Shield className="w-4 h-4 text-orange-400" />}
-                              {role.role === 'op' && <Star className="w-4 h-4 text-green-400" />}
-                              {role.role === 'voice' && <Mic className="w-4 h-4 text-blue-400" />}
-                              <span className="text-deep-purple-100">{role.user.name}</span>
-                              <span className="text-deep-purple-400 text-sm">({role.role})</span>
-                            </div>
-                            <button
-                              onClick={() => performModAction('remove_role', role.userId)}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              {language === 'tr' ? 'Kaldır' : 'Remove'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Yetkili kullanıcı yok' : 'No users with roles'}</p>
-                    )}
-                  </div>
-
-                  {/* Muted Users */}
-                  <div className="mb-6">
-                    <h3 className="text-deep-purple-200 font-medium mb-3 flex items-center gap-2">
-                      <VolumeX className="w-4 h-4 text-orange-400" />
-                      {language === 'tr' ? 'Susturulanlar' : 'Muted Users'}
-                    </h3>
-                    {roomModData.mutes.length > 0 ? (
-                      <div className="space-y-2">
-                        {roomModData.mutes.map((mute) => (
-                          <div key={mute.id} className="flex items-center justify-between p-3 bg-orange-900/20 rounded-lg">
-                            <span className="text-deep-purple-100">{mute.user.name}</span>
-                            <button
-                              onClick={() => performModAction('unmute_user', mute.userId)}
-                              className="text-green-400 hover:text-green-300 text-sm"
-                            >
-                              {language === 'tr' ? 'Susturmayı Kaldır' : 'Unmute'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Susturulan yok' : 'No muted users'}</p>
-                    )}
-                  </div>
-
-                  {/* Banned Users */}
-                  <div>
-                    <h3 className="text-deep-purple-200 font-medium mb-3 flex items-center gap-2">
-                      <Ban className="w-4 h-4 text-red-400" />
-                      {language === 'tr' ? 'Engellenenler' : 'Banned Users'}
-                    </h3>
-                    {roomModData.bans.length > 0 ? (
-                      <div className="space-y-2">
-                        {roomModData.bans.map((ban) => (
-                          <div key={ban.id} className="flex items-center justify-between p-3 bg-red-900/20 rounded-lg">
-                            <span className="text-deep-purple-100">{ban.user.name}</span>
-                            <button
-                              onClick={() => performModAction('unban_user', ban.userId)}
-                              className="text-green-400 hover:text-green-300 text-sm"
-                            >
-                              {language === 'tr' ? 'Engeli Kaldır' : 'Unban'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Engellenen yok' : 'No banned users'}</p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <MessageCircle className="w-12 h-12 text-deep-purple-400 mx-auto mb-4" />
-                  <p className="text-deep-purple-400">
-                    {language === 'tr' ? 'Yönetmek için bir oda seçin' : 'Select a room to manage'}
-                  </p>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center justify-center py-20">
+            <div className={`w-8 h-8 border-2 ${isFacebook ? 'border-blue-500' : isCosmic ? 'border-blue-400' : 'border-fuchsia-500'} border-t-transparent rounded-full animate-spin`} />
+          </div>
+        ) : (
+          <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+            {activeTab === 'dashboard' && renderDashboard()}
+            {activeTab === 'users' && renderUsers()}
+            {activeTab === 'chat' && renderChat()}
+            {activeTab === 'ads' && renderAds()}
+            {activeTab === 'visitors' && renderVisitors()}
+            {activeTab === 'statistics' && renderStatistics()}
           </motion.div>
-        ) : activeTab === 'ads' ? (
-          /* Ads Management Tab */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            {/* Info Banner */}
-            <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
-              <h3 className="text-blue-300 font-medium mb-2">
-                {language === 'tr' ? 'Google Ads Entegrasyonu' : 'Google Ads Integration'}
-              </h3>
-              <p className="text-blue-200 text-sm">
-                {language === 'tr' 
-                  ? 'Google AdSense kodlarınızı aşağıdaki alanlara yapıştırın. Her alan farklı bir konumda görüntülenecektir.'
-                  : 'Paste your Google AdSense codes in the fields below. Each field will display in a different location.'}
-              </p>
-            </div>
+        )}
+      </main>
 
-            {/* Ad Slots */}
-            <div className="grid gap-6">
-              {/* Header Ad */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium">
-                      {language === 'tr' ? 'Üst Banner Reklamı' : 'Header Banner Ad'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' ? 'Sayfanın üst kısmında görünür' : 'Appears at the top of pages'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_header' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_header'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_header: e.target.value }))}
-                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
-                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_header', adSettings['ads_header'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
+      {/* Add Credits Modal */}
+      <Dialog.Root open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+          <Dialog.Content className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${modalBg} border rounded-2xl p-6 max-w-md w-full z-50 shadow-2xl`}>
+            <Dialog.Title className={`${textPrimary} text-xl font-bold mb-6 flex items-center justify-between`}>
+              {t('admin.add_credits')}
+              <Dialog.Close asChild>
+                <button className={`p-1 rounded-lg ${btnSecondary}`}><X className="w-5 h-5" /></button>
+              </Dialog.Close>
+            </Dialog.Title>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <p className={`${textMuted} text-sm mb-1`}>{t('form.name')}</p>
+                <p className={`${textPrimary} font-medium`}>{selectedUser?.name}</p>
               </div>
-
-              {/* Sidebar Ad */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium">
-                      {language === 'tr' ? 'Kenar Çubuğu Reklamı' : 'Sidebar Ad'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' ? 'Sayfa kenarında görünür' : 'Appears in the sidebar'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_sidebar' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_sidebar'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_sidebar: e.target.value }))}
-                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
-                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_sidebar', adSettings['ads_sidebar'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
+              <div>
+                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut Kredi' : 'Current Credits'}</p>
+                <p className={`${goldColor} font-bold text-xl`}>{selectedUser?.credits}</p>
               </div>
-
-              {/* Inline Ad (between content) */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium">
-                      {language === 'tr' ? 'İçerik Arası Reklam' : 'Inline Content Ad'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' ? 'İçerik arasında görünür' : 'Appears between content sections'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_inline' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_inline'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_inline: e.target.value }))}
-                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
-                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_inline', adSettings['ads_inline'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
-              </div>
-
-              {/* Footer Ad */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium">
-                      {language === 'tr' ? 'Alt Banner Reklamı' : 'Footer Banner Ad'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' ? 'Sayfanın alt kısmında görünür' : 'Appears at the bottom of pages'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_footer' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_footer'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_footer: e.target.value }))}
-                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
-                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_footer', adSettings['ads_footer'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
-              </div>
-
-              {/* Rewarded Ad (Watch to earn credits) */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium flex items-center gap-2">
-                      <Sparkles className="w-5 h-5" />
-                      {language === 'tr' ? 'Ödüllü Reklam (Kredi Kazanma)' : 'Rewarded Ad (Earn Credits)'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' 
-                        ? 'Kullanıcılar bu reklamı izleyerek 5 kredi kazanır. Günlük limit: 10 reklam.'
-                        : 'Users earn 5 credits by watching this ad. Daily limit: 10 ads.'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_rewarded' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_rewarded'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_rewarded: e.target.value }))}
-                  placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste Google AdSense code here...'}
-                  className="w-full h-32 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_rewarded', adSettings['ads_rewarded'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
-              </div>
-
-              {/* Google AdSense Client ID */}
-              <div className="bg-mystical-card border border-mystical rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-gold-400 font-medium">
-                      {language === 'tr' ? 'Google AdSense Script' : 'Google AdSense Script'}
-                    </h3>
-                    <p className="text-deep-purple-400 text-sm">
-                      {language === 'tr' 
-                        ? 'Google AdSense ana script kodunu buraya yapıştırın (head bölümüne eklenecek)'
-                        : 'Paste your Google AdSense main script code here (will be added to head)'}
-                    </p>
-                  </div>
-                  {adSaveStatus === 'ads_script' && (
-                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      {language === 'tr' ? 'Kaydedildi' : 'Saved'}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={adSettings['ads_script'] || ''}
-                  onChange={(e) => setAdSettings(prev => ({ ...prev, ads_script: e.target.value }))}
-                  placeholder='<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXX" crossorigin="anonymous"></script>'
-                  className="w-full h-24 px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-600 font-mono text-sm"
-                />
-                <button
-                  onClick={() => saveAdSetting('ads_script', adSettings['ads_script'] || '')}
-                  className="mt-3 px-4 py-2 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500"
-                >
-                  <Save className="w-4 h-4" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ) : activeTab === 'visitors' ? (
-          /* Visitor Statistics Tab */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="mb-8">
-              <h2 className="font-serif text-3xl text-gold-400 mb-2">
-                {language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics'}
-              </h2>
-              <p className="text-deep-purple-300">
-                {language === 'tr' ? 'Tekil ve toplam ziyaretçi sayıları ile coğrafi dağılım' : 'Unique and total visitor counts with geographic distribution'}
-              </p>
-            </div>
-
-            {/* Time-based Statistics */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {/* Today */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bugün' : 'Today'}</span>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
-                    <p className="text-2xl font-bold text-blue-400">{visitorStats?.today?.unique ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
-                    <p className="text-lg text-blue-300">{visitorStats?.today?.total ?? 0}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Week */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-400" />
-                  </div>
-                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</span>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
-                    <p className="text-2xl font-bold text-green-400">{visitorStats?.week?.unique ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
-                    <p className="text-lg text-green-300">{visitorStats?.week?.total ?? 0}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Month */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                    <Star className="w-5 h-5 text-yellow-400" />
-                  </div>
-                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Ay' : 'This Month'}</span>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
-                    <p className="text-2xl font-bold text-yellow-400">{visitorStats?.month?.unique ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
-                    <p className="text-lg text-yellow-300">{visitorStats?.month?.total ?? 0}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Year */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <span className="text-deep-purple-200 font-medium">{language === 'tr' ? 'Bu Yıl' : 'This Year'}</span>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Tekil' : 'Unique'}</p>
-                    <p className="text-2xl font-bold text-purple-400">{visitorStats?.year?.unique ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-deep-purple-400 text-xs">{language === 'tr' ? 'Toplam' : 'Total'}</p>
-                    <p className="text-lg text-purple-300">{visitorStats?.year?.total ?? 0}</p>
-                  </div>
-                </div>
+              <div>
+                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek Kredi' : 'Credits to Add'}</label>
+                <input type="number" value={creditAmount}
+                  onChange={(e) => setCreditAmount(parseInt(e?.target?.value ?? '0'))}
+                  min="1" className={`w-full px-4 py-3 rounded-xl border ${inputBg} focus:outline-none`} />
               </div>
             </div>
 
-            {/* Geographic Statistics */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Countries */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                  🌍 {language === 'tr' ? 'Ülkelere Göre (Son 30 Gün)' : 'By Country (Last 30 Days)'}
-                </h3>
-                <div className="space-y-3">
-                  {visitorStats?.geo?.countries?.length ? (
-                    visitorStats.geo.countries.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-deep-purple-200">{item.country}</span>
-                        <span className="text-gold-400 font-semibold">{item.count}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Cities */}
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-6">
-                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                  🏙️ {language === 'tr' ? 'Şehirlere Göre (Son 30 Gün)' : 'By City (Last 30 Days)'}
-                </h3>
-                <div className="space-y-3">
-                  {visitorStats?.geo?.cities?.length ? (
-                    visitorStats.geo.cities.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-deep-purple-200">{item.city}</span>
-                        <span className="text-gold-400 font-semibold">{item.count}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-deep-purple-400 text-sm">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Refresh Button */}
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={fetchVisitorStats}
-                className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors"
-              >
-                <TrendingUp className="w-5 h-5" />
-                {language === 'tr' ? 'Verileri Yenile' : 'Refresh Data'}
+            <div className="flex gap-3">
+              <Dialog.Close asChild>
+                <button className={`flex-1 py-3 rounded-xl font-medium ${btnSecondary}`}>{t('form.cancel')}</button>
+              </Dialog.Close>
+              <button onClick={() => addCredits(selectedUser?.id ?? '', creditAmount)}
+                className={`flex-1 py-3 rounded-xl font-semibold ${btnPrimary}`}>
+                {language === 'tr' ? 'Ekle' : 'Add'}
               </button>
             </div>
-          </motion.div>
-        ) : activeTab === 'statistics' ? (
-          /* All Statistics Tab */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="mb-8">
-              <h2 className="font-serif text-3xl text-gold-400 mb-2">
-                {language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics'}
-              </h2>
-              <p className="text-deep-purple-300">
-                {language === 'tr' ? 'Platform genelindeki tüm istatistikler' : 'All platform-wide statistics'}
-              </p>
-            </div>
-
-            {/* User Statistics */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                {language === 'tr' ? 'Kullanıcı İstatistikleri' : 'User Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Kullanıcı' : 'Total Users'}</p>
-                  <p className="text-2xl font-bold text-gold-400">{statistics?.users?.total ?? statistics?.totalUsers ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bugün Kayıt' : 'New Today'}</p>
-                  <p className="text-2xl font-bold text-green-400">{statistics?.users?.newToday ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</p>
-                  <p className="text-2xl font-bold text-blue-400">{statistics?.users?.newThisWeek ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Ay' : 'This Month'}</p>
-                  <p className="text-2xl font-bold text-purple-400">{statistics?.users?.newThisMonth ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Premium' : 'Premium'}</p>
-                  <p className="text-2xl font-bold text-yellow-400">{statistics?.users?.premium ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'VIP' : 'VIP'}</p>
-                  <p className="text-2xl font-bold text-pink-400">{statistics?.users?.vip ?? 0}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Fortune Statistics */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                {language === 'tr' ? 'Fal İstatistikleri' : 'Fortune Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Fal' : 'Total Fortunes'}</p>
-                  <p className="text-2xl font-bold text-gold-400">{statistics?.fortunes?.total ?? statistics?.totalFortunes ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Görüntülenme' : 'Total Views'}</p>
-                  <p className="text-2xl font-bold text-blue-400">{statistics?.fortunes?.totalViews ?? 0}</p>
-                </div>
-              </div>
-              <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4">
-                <p className="text-deep-purple-400 text-sm mb-3">{language === 'tr' ? 'Türlere Göre' : 'By Type'}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {Object.entries(statistics?.fortunes?.byType ?? statistics?.fortunesByType ?? {}).map(([type, count]) => (
-                    <div key={type} className="bg-deep-purple-800/50 rounded-lg p-3 text-center">
-                      <p className="text-deep-purple-300 text-xs truncate">{type}</p>
-                      <p className="text-lg font-bold text-gold-400">{count}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Social Statistics */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                {language === 'tr' ? 'Sosyal İstatistikler' : 'Social Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Paylaşım' : 'Total Posts'}</p>
-                  <p className="text-2xl font-bold text-gold-400">{statistics?.social?.totalPosts ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bugün Paylaşım' : 'Posts Today'}</p>
-                  <p className="text-2xl font-bold text-green-400">{statistics?.social?.postsToday ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Beğeni' : 'Total Likes'}</p>
-                  <p className="text-2xl font-bold text-red-400">{statistics?.social?.totalLikes ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Yorum' : 'Total Comments'}</p>
-                  <p className="text-2xl font-bold text-blue-400">{statistics?.social?.totalComments ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Paylaşım' : 'Total Shares'}</p>
-                  <p className="text-2xl font-bold text-purple-400">{statistics?.social?.totalShares ?? 0}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Messaging Statistics */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                {language === 'tr' ? 'Mesajlaşma İstatistikleri' : 'Messaging Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Mesaj' : 'Total Messages'}</p>
-                  <p className="text-2xl font-bold text-gold-400">{statistics?.messaging?.totalMessages ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Bu Hafta' : 'This Week'}</p>
-                  <p className="text-2xl font-bold text-blue-400">{statistics?.messaging?.messagesThisWeek ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Sohbet' : 'Total Conversations'}</p>
-                  <p className="text-2xl font-bold text-green-400">{statistics?.messaging?.totalConversations ?? 0}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Community & Streams */}
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              {/* Community */}
-              <div>
-                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  {language === 'tr' ? 'Topluluk' : 'Community'}
-                </h3>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Takip' : 'Total Follows'}</p>
-                  <p className="text-2xl font-bold text-pink-400">{statistics?.community?.totalFollows ?? 0}</p>
-                </div>
-              </div>
-
-              {/* Live Streams */}
-              <div>
-                <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                  <Video className="w-5 h-5" />
-                  {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Toplam Yayın' : 'Total Streams'}</p>
-                    <p className="text-2xl font-bold text-gold-400">{statistics?.streams?.total ?? 0}</p>
-                  </div>
-                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Aktif Yayın' : 'Active Streams'}</p>
-                    <p className="text-2xl font-bold text-green-400">{statistics?.streams?.active ?? 0}</p>
-                  </div>
-                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Hediye Değeri' : 'Gift Value'}</p>
-                    <p className="text-2xl font-bold text-yellow-400">{statistics?.streams?.totalGiftsValue ?? 0}</p>
-                  </div>
-                  <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                    <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Yayın Beğenileri' : 'Stream Likes'}</p>
-                    <p className="text-2xl font-bold text-red-400">{statistics?.streams?.totalLikes ?? 0}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Economy Statistics */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                {language === 'tr' ? 'Ekonomi İstatistikleri' : 'Economy Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Dolaşımdaki Kredi' : 'Credits in Circulation'}</p>
-                  <p className="text-2xl font-bold text-gold-400">{statistics?.economy?.creditsInCirculation ?? 0}</p>
-                </div>
-                <div className="bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl p-4 text-center">
-                  <p className="text-deep-purple-400 text-xs mb-1">{language === 'tr' ? 'Harcanan Kredi' : 'Credits Spent'}</p>
-                  <p className="text-2xl font-bold text-red-400">{statistics?.economy?.creditsSpent ?? 0}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Refresh Button */}
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={fetchData}
-                className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gold-500 transition-colors"
-              >
-                <TrendingUp className="w-5 h-5" />
-                {language === 'tr' ? 'Verileri Yenile' : 'Refresh Data'}
-              </button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {/* Add Credits Modal */}
-        <Dialog.Root open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
-            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-deep-purple-950 border border-deep-purple-700 rounded-lg p-8 max-w-md w-full z-50 shadow-2xl">
-              <Dialog.Title className="font-serif text-2xl text-gold-400 mb-6 flex items-center justify-between">
-                {t('admin.add_credits')}
-                <Dialog.Close asChild>
-                  <button className="p-1 hover:bg-deep-purple-800 rounded-lg transition-colors">
-                    <X className="w-5 h-5 text-deep-purple-400" />
-                  </button>
-                </Dialog.Close>
-              </Dialog.Title>
-
-              <div className="space-y-4 mb-6">
-                <div>
-                  <p className="text-deep-purple-300 text-sm mb-1">{t('form.name')}</p>
-                  <p className="text-deep-purple-100 font-medium">{selectedUser?.name}</p>
-                </div>
-                <div>
-                  <p className="text-deep-purple-300 text-sm mb-1">{language === 'tr' ? 'Mevcut Kredi' : 'Current Credits'}</p>
-                  <p className="text-gold-400 font-semibold text-xl">{selectedUser?.credits}</p>
-                </div>
-
-                <div>
-                  <label className="text-deep-purple-300 text-sm mb-2 block">
-                    {language === 'tr' ? 'Eklenecek Kredi' : 'Credits to Add'}
-                  </label>
-                  <input
-                    type="number"
-                    value={creditAmount}
-                    onChange={(e) => setCreditAmount(parseInt(e?.target?.value ?? '0'))}
-                    min="1"
-                    className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Dialog.Close asChild>
-                  <button className="flex-1 py-3 bg-deep-purple-800 text-deep-purple-200 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium">
-                    {t('form.cancel')}
-                  </button>
-                </Dialog.Close>
-                <button
-                  onClick={() => addCredits(selectedUser?.id ?? '', creditAmount)}
-                  className="flex-1 py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold mystical-shadow"
-                >
-                  {language === 'tr' ? 'Ekle' : 'Add'}
-                </button>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
-      </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
