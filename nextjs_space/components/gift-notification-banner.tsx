@@ -101,8 +101,8 @@ export default function GiftNotificationBanner() {
 
   const isJeton = currentNotif.giftType === 'Jeton'
   const displayText = isJeton
-    ? `${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.amount.toLocaleString()} Jeton Hediye!`
-    : `${currentNotif.senderName} \u279C ${currentNotif.recipientName} \u2022 ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Att\u0131!`
+    ? `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.amount.toLocaleString()} Jeton Hediye!`
+    : `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Attı!`
 
   const bannerBg = isFacebook
     ? 'linear-gradient(90deg, #1a3a8a, #1877f2, #4299e1, #1877f2, #1a3a8a)'
@@ -178,9 +178,9 @@ export default function GiftNotificationBanner() {
         <span className="inline-flex items-center gap-4" style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.5px' }}>
           {/* Left celebration cluster */}
           <span className="inline-flex items-center gap-1">
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite' }}>\ud83c\udf89</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite' }}>🎉</span>
             <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s' }}>{currentNotif.giftIcon}</span>
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>\ud83c\udf8a</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>🎊</span>
           </span>
 
           {/* Main text with gold gradient */}
@@ -199,9 +199,9 @@ export default function GiftNotificationBanner() {
 
           {/* Right celebration cluster */}
           <span className="inline-flex items-center gap-1">
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>\u2728</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>✨</span>
             <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite' }}>{currentNotif.giftIcon}</span>
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>\ud83c\udf1f</span>
+            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>🌟</span>
           </span>
         </span>
       </div>
