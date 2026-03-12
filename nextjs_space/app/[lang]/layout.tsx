@@ -3,6 +3,7 @@ import MobileFooter from '@/components/mobile-footer'
 import StarBackground from '@/components/star-background'
 import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
 import PresenceTracker from '@/components/presence-tracker'
+import GiftNotificationBanner from '@/components/gift-notification-banner'
 
 export default function LangLayout({
   children,
@@ -18,6 +19,10 @@ export default function LangLayout({
       <PresenceTracker />
       
       <Navbar />
+      {/* Big gift notification banner - scrolls below navbar */}
+      <div className="fixed top-16 left-0 right-0 z-40">
+        <GiftNotificationBanner />
+      </div>
       <main className="pt-16 pb-0 md:pb-0 relative z-10">
         {children}
       </main>

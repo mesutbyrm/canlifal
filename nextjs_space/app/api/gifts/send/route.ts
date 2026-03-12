@@ -36,6 +36,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot send gift to yourself' }, { status: 400 })
     }
 
+    // Check reciprocal gift block: if recipient gifted sender today, block it
+    const todayStart = new Date()
+    todayStart.setUTCHours(0, 0, 0, 0)
+    const reciprocalGift = await prisma.notification.findFirst({
+      where: {
+        userId: session.user.id,
+        type: 'gift_received',
+        fromUserId: recipient.id,
+        createdAt: { gte: todayStart }
+      }
+    })
+    if (reciprocalGift) {
+      return NextResponse.json({ 
+        error: 'reciprocal_blocked',
+        message: 'Kurnazlık yapma biz geleceği görürüz 😜'
+      }, { status: 403 })
+    }
+
     const sender = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, name: true, username: true, credits: true, jetonBalance: true }
@@ -92,9 +110,17 @@ export async function POST(req: NextRequest) {
         }
       })
 
+      const isBigGift = giftType.price >= 1000
       return NextResponse.json({
         success: true,
-        message: `${giftType.icon} ${giftType.name} hediyesi ${recipient.name} kişisine gönderildi!`
+        message: `${giftType.icon} ${giftType.name} hediyesi ${recipient.name} kişisine gönderildi!`,
+        bigGift: isBigGift ? {
+          senderName: sender.name,
+          recipientName: recipient.name,
+          giftIcon: giftType.icon,
+          giftType: giftType.name,
+          amount: giftType.price
+        } : null
       })
 
     } else if (type === 'jeton' && jetonAmount) {
@@ -161,9 +187,17 @@ export async function POST(req: NextRequest) {
         }
       })
 
+      const isBigJetonGift = amount >= 500
       return NextResponse.json({
         success: true,
-        message: `${amount} jeton ${recipient.name} kişisine gönderildi!`
+        message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,
+        bigGift: isBigJetonGift ? {
+          senderName: sender.name,
+          recipientName: recipient.name,
+          giftIcon: '🪙',
+          giftType: 'Jeton',
+          amount
+        } : null
       })
     }
 

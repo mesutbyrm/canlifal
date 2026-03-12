@@ -45,6 +45,7 @@ export default function GiftsPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
+  const [showBlockPopup, setShowBlockPopup] = useState(false)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -123,6 +124,10 @@ export default function GiftsPage() {
         setJetonAmount('')
         setSelectedUser(null)
         setSearchQuery('')
+      } else if (data.error === 'reciprocal_blocked') {
+        // Show the fun block popup
+        setShowBlockPopup(true)
+        setTimeout(() => setShowBlockPopup(false), 5000)
       } else {
         setErrorMsg(data.error || 'An error occurred')
       }
@@ -322,6 +327,65 @@ export default function GiftsPage() {
           </button>
         </motion.div>
       </div>
+
+      {/* Reciprocal Block Popup */}
+      <AnimatePresence>
+        {showBlockPopup && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+            onClick={() => setShowBlockPopup(false)}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 15 }}
+              className={`max-w-sm w-full rounded-3xl p-8 text-center border-2 ${
+                isCosmic
+                  ? 'bg-gradient-to-br from-blue-900 to-indigo-900 border-blue-400/40'
+                  : isFacebook
+                  ? 'bg-white border-blue-300'
+                  : 'bg-gradient-to-br from-purple-900 to-fuchsia-900 border-fuchsia-400/40'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-6xl mb-4">🔮</div>
+              <p className={`text-xl font-bold mb-2 ${isFacebook ? 'text-gray-900' : 'text-white'}`}>
+                Kurnazlık yapma
+              </p>
+              <p className={`text-2xl font-bold mb-4 ${isFacebook ? 'text-blue-600' : isCosmic ? 'text-blue-300' : 'text-fuchsia-300'}`}>
+                biz geleceği görürüz 😜
+              </p>
+              <div className={`text-sm ${isFacebook ? 'text-gray-500' : 'text-white/50'}`}>
+                {language === 'tr' ? '5 saniye sonra kapanacak...' : 'Closing in 5 seconds...'}
+              </div>
+              {/* Progress bar */}
+              <div className={`mt-4 h-1 rounded-full overflow-hidden ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`}>
+                <div
+                  className={`h-full rounded-full ${
+                    isFacebook ? 'bg-blue-500' : isCosmic ? 'bg-blue-400' : 'bg-fuchsia-400'
+                  }`}
+                  style={{
+                    animation: 'shrinkBar 5s linear forwards',
+                    width: '100%'
+                  }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes shrinkBar {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+      `}</style>
     </div>
   )
 }
