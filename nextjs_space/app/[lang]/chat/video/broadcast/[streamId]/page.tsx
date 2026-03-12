@@ -137,8 +137,7 @@ export default function BroadcastPage() {
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [liveBroadcasters, setLiveBroadcasters] = useState<{id: string; userId: string; title: string | null; category: string | null; user: {id: string; name: string | null; image: string | null}; viewerCount: number}[]>([])
   const [showLiveBroadcasters, setShowLiveBroadcasters] = useState(false)
-  const [bigGiftPopups, setBigGiftPopups] = useState<Array<{id: string; senderName: string; recipientName: string; giftIcon: string; giftType: string; amount: number}>>([])
-  const seenBigGiftIdsRef = useRef<Set<string>>(new Set())
+
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   // Video refs for up to 4 guests (dynamically created in render)
@@ -212,31 +211,7 @@ export default function BroadcastPage() {
     }
   }, [showLiveBroadcasters])
 
-  // Poll for big gifts (1000+) to show in popup
-  useEffect(() => {
-    const fetchBigGifts = async () => {
-      try {
-        const res = await fetch('/api/gifts/recent-big')
-        if (res.ok) {
-          const data = await res.json()
-          const newOnes = data.filter((g: any) => !seenBigGiftIdsRef.current.has(g.id))
-          if (newOnes.length > 0) {
-            newOnes.forEach((g: any) => seenBigGiftIdsRef.current.add(g.id))
-            setBigGiftPopups(prev => [...prev, ...newOnes])
-            // Auto-remove after 8 seconds
-            newOnes.forEach((g: any) => {
-              setTimeout(() => {
-                setBigGiftPopups(prev => prev.filter(p => p.id !== g.id))
-              }, 8000)
-            })
-          }
-        }
-      } catch {}
-    }
-    fetchBigGifts()
-    const iv = setInterval(fetchBigGifts, 15000)
-    return () => clearInterval(iv)
-  }, [])
+
 
   const startBroadcast = async () => {
     try {
@@ -1211,31 +1186,7 @@ export default function BroadcastPage() {
       {/* Hidden video for co-host mode (to receive broadcaster stream) */}
       {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
 
-      {/* Big Gift Popup Notifications */}
-      <AnimatePresence>
-        {bigGiftPopups.map((gift, idx) => (
-          <motion.div
-            key={gift.id}
-            initial={{ opacity: 0, y: -30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.9 }}
-            className="absolute z-50 left-1/2 -translate-x-1/2"
-            style={{ top: `${80 + idx * 70}px` }}
-          >
-            <div className="bg-gradient-to-r from-yellow-500/90 via-amber-500/90 to-yellow-500/90 backdrop-blur-md px-5 py-3 rounded-2xl border-2 border-yellow-300/60 shadow-[0_0_30px_rgba(255,215,0,0.4)] flex items-center gap-3 min-w-[280px]">
-              <span className="text-3xl animate-bounce" style={{ animationDuration: '0.8s' }}>{gift.giftIcon}</span>
-              <div className="flex-1 text-center">
-                <p className="text-black font-extrabold text-sm">{gift.senderName}</p>
-                <p className="text-yellow-900 text-xs font-medium">&#x279C; {gift.recipientName}</p>
-                <p className="text-black font-bold text-xs mt-0.5">
-                  {gift.giftType === 'Jeton' ? `${gift.amount} Jeton` : gift.giftType} {language === 'tr' ? 'Hediye Attı!' : 'Sent Gift!'}
-                </p>
-              </div>
-              <span className="text-3xl animate-bounce" style={{ animationDuration: '0.8s', animationDelay: '0.4s' }}>{gift.giftIcon}</span>
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+
 
       {/* Viewer avatars row - always at bottom */}
       <div className="absolute bottom-24 left-2 right-2 z-20 flex items-center gap-1 overflow-x-auto">
