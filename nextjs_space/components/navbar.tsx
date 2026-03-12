@@ -319,14 +319,21 @@ export default function Navbar() {
                   
                   {/* Profile dropdown */}
                   {showProfileMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-deep-purple-900 border border-purple-700 rounded-xl shadow-xl py-2 z-50">
-                      <div className="px-4 py-3 border-b border-purple-700">
+                    <div className={`absolute right-0 top-full mt-2 w-64 rounded-xl shadow-xl py-2 z-50 ${
+                      isFalclub ? 'bg-[#1a0a2e] border border-fuchsia-700/50' :
+                      isFalci ? 'bg-[#1a0b2e] border border-indigo-700/50' :
+                      isCosmic ? 'bg-[#0d1f3c] border border-blue-700/50' :
+                      'bg-deep-purple-900 border border-purple-700'
+                    }`}>
+                      <div className={`px-4 py-3 border-b ${
+                        isFalclub ? 'border-fuchsia-700/40' : isFalci ? 'border-indigo-700/40' : isCosmic ? 'border-blue-700/40' : 'border-purple-700'
+                      }`}>
                         <div className="flex items-center gap-3">
                           <ProfileAvatar size="xl" showCamera />
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-semibold truncate">{session.user.name}</p>
-                            <p className="text-purple-300 text-xs truncate">{session.user.email}</p>
-                            <p className="text-gold-400 text-[10px] mt-1 flex items-center gap-1">
+                            <p className={`text-xs truncate ${isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'}`}>{session.user.email}</p>
+                            <p className={`text-[10px] mt-1 flex items-center gap-1 ${isCosmic ? 'text-amber-400' : 'text-gold-400'}`}>
                               <Camera className="w-3 h-3" />
                               {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
                             </p>
@@ -337,63 +344,77 @@ export default function Navbar() {
                       {/* Credits display */}
                       <Link
                         href={`/${language}/credits`}
-                        className="flex items-center justify-between px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
+                        className={`flex items-center justify-between px-4 py-2.5 ${
+                          isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                        }`}
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <div className="flex items-center gap-3">
-                          <Coins className="w-5 h-5 text-gold-400" />
+                          <Coins className={`w-5 h-5 ${isCosmic ? 'text-amber-400' : 'text-gold-400'}`} />
                           {language === 'tr' ? 'Kredilerim' : 'My Credits'}
                         </div>
-                        <span className="font-bold text-gold-400">{credits}</span>
+                        <span className={`font-bold ${isCosmic ? 'text-amber-400' : 'text-gold-400'}`}>{credits}</span>
                       </Link>
                       
                       <Link
                         href={`/${language}/profile/${session.user.id}`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${
+                          isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                        }`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <User className="w-5 h-5 text-purple-400" />
+                        <User className={`w-5 h-5 ${isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
                         {language === 'tr' ? 'Profilim' : 'My Profile'}
                       </Link>
                       
                       <Link
                         href={`/${language}/dashboard`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${
+                          isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                        }`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <LayoutGrid className="w-5 h-5 text-purple-400" />
-                        {language === 'tr' ? 'Panelim' : 'Dashboard'}
+                        <LayoutGrid className={`w-5 h-5 ${isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
+                        {language === 'tr' ? 'İstatistiklerim' : 'My Statistics'}
                       </Link>
                       
                       <Link
                         href={`/${language}/settings`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${
+                          isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                        }`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <Settings className="w-5 h-5 text-purple-400" />
+                        <Settings className={`w-5 h-5 ${isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
                         {language === 'tr' ? 'Ayarlar' : 'Settings'}
                       </Link>
 
                       {session?.user?.role === 'admin' && (
                         <Link
                           href={`/${language}/admin`}
-                          className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50"
+                          className={`flex items-center gap-3 px-4 py-2.5 ${
+                            isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                          }`}
                           onClick={() => setShowProfileMenu(false)}
                         >
-                          <Shield className="w-5 h-5 text-gold-400" />
+                          <Shield className={`w-5 h-5 ${isCosmic ? 'text-amber-400' : 'text-gold-400'}`} />
                           Admin
                         </Link>
                       )}
                       
                       <button
                         onClick={toggleLanguage}
-                        className="flex items-center gap-3 px-4 py-2.5 text-purple-200 hover:bg-purple-800/50 w-full"
+                        className={`flex items-center gap-3 px-4 py-2.5 w-full ${
+                          isFalclub ? 'text-fuchsia-200 hover:bg-fuchsia-800/30' : isFalci ? 'text-indigo-200 hover:bg-indigo-800/30' : isCosmic ? 'text-blue-200 hover:bg-blue-800/30' : 'text-purple-200 hover:bg-purple-800/50'
+                        }`}
                       >
-                        <Globe className="w-5 h-5 text-purple-400" />
-                        {language === 'tr' ? 'English' : 'Türkçe'}
+                        <Globe className={`w-5 h-5 ${isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
+                        {language === 'tr' ? 'Dil' : 'Language'}
                       </button>
                       
-                      <div className="border-t border-purple-700 mt-2 pt-2">
+                      <div className={`border-t mt-2 pt-2 ${
+                        isFalclub ? 'border-fuchsia-700/40' : isFalci ? 'border-indigo-700/40' : isCosmic ? 'border-blue-700/40' : 'border-purple-700'
+                      }`}>
                         <button
                           onClick={() => signOut({ callbackUrl: `/${language}` })}
                           className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-900/30 w-full"

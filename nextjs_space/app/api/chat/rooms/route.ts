@@ -14,16 +14,30 @@ export async function GET() {
         presences: {
           where: {
             lastSeen: {
-              gte: new Date(Date.now() - 60000) // Active in last 60 seconds
+              gte: new Date(Date.now() - 60000)
             }
           },
-          select: { userId: true }
+          select: {
+            userId: true,
+            lastSeen: true,
+            user: {
+              select: { id: true, name: true, image: true }
+            }
+          },
+          orderBy: { lastSeen: 'desc' },
+          take: 5
         }
       },
       orderBy: { createdAt: 'asc' }
     })
 
-    const roomsWithCounts = rooms.map((room: { id: string; slug: string; nameEn: string; nameTr: string; descEn: string | null; descTr: string | null; icon: string; _count: { messages: number }; presences: { userId: string }[] }) => ({
+    interface PresenceUser {
+      userId: string
+      lastSeen: Date
+      user: { id: string; name: string | null; image: string | null }
+    }
+
+    const roomsWithCounts = rooms.map((room: { id: string; slug: string; nameEn: string; nameTr: string; descEn: string | null; descTr: string | null; icon: string; _count: { messages: number }; presences: PresenceUser[] }) => ({
       id: room.id,
       slug: room.slug,
       nameEn: room.nameEn,
@@ -32,7 +46,12 @@ export async function GET() {
       descTr: room.descTr,
       icon: room.icon,
       messageCount: room._count.messages,
-      onlineCount: room.presences.length
+      onlineCount: room.presences.length,
+      recentUsers: room.presences.map((p: PresenceUser) => ({
+        id: p.user.id,
+        name: p.user.name,
+        image: p.user.image
+      }))
     }))
 
     return NextResponse.json(roomsWithCounts)

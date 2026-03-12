@@ -3,10 +3,17 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
 import { MessageCircle, Users, Sparkles } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useSiteTheme } from '@/lib/theme-context'
+
+interface RecentUser {
+  id: string
+  name: string | null
+  image: string | null
+}
 
 interface ChatRoom {
   id: string
@@ -18,6 +25,7 @@ interface ChatRoom {
   icon: string
   messageCount: number
   onlineCount: number
+  recentUsers: RecentUser[]
 }
 
 export default function ChatRoomsPage() {
@@ -51,112 +59,57 @@ export default function ChatRoomsPage() {
     }
   }
 
-  // Theme-based colors
-  const bgColor = isFalclub
-    ? 'falclub-starry-bg'
-    : isFalci
-    ? 'falci-starry-bg'
-    : isCosmic
-    ? 'bg-[#0a1628]'
-    : 'bg-[#0a0118]'
+  // Total online across all rooms
+  const totalOnline = rooms.reduce((sum, r) => sum + r.onlineCount, 0)
 
-  const cardBg = isFalclub
-    ? 'bg-gradient-to-br from-[#2d1145]/80 to-[#1a0a2e]/80 border-fuchsia-500/30 hover:border-fuchsia-400/50'
-    : isFalci
-    ? 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-indigo-500/30 hover:border-indigo-400/50'
-    : isCosmic
-    ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/50'
+  // Theme colors
+  const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/80 to-[#1a0a2e]/80 border-fuchsia-500/30 hover:border-fuchsia-400/50'
+    : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-indigo-500/30 hover:border-indigo-400/50'
+    : isCosmic ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/50'
     : 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-purple-500/30 hover:border-purple-400/50'
-
-  const titleColor = isFalclub
-    ? 'text-fuchsia-200'
-    : isFalci
-    ? 'text-indigo-200'
-    : isCosmic
-    ? 'text-blue-200'
-    : 'text-gold-300'
-
-  const accentColor = isFalclub
-    ? 'text-fuchsia-300'
-    : isFalci
-    ? 'text-indigo-300'
-    : isCosmic
-    ? 'text-amber-300'
-    : 'text-gold-400'
-
-  const descColor = isFalclub
-    ? 'text-fuchsia-200/80'
-    : isFalci
-    ? 'text-indigo-200/80'
-    : isCosmic
-    ? 'text-slate-300'
-    : 'text-purple-200/70'
-
-  const borderAccent = isFalclub
-    ? 'border-fuchsia-500/20'
-    : isFalci
-    ? 'border-indigo-500/20'
-    : isCosmic
-    ? 'border-blue-500/20'
-    : 'border-gold-500/20'
-
-  const spinnerColor = isFalclub
-    ? 'border-fuchsia-400'
-    : isFalci
-    ? 'border-indigo-400'
-    : isCosmic
-    ? 'border-blue-400'
-    : 'border-gold-400'
-
-  const msgCountColor = isFalclub
-    ? 'text-fuchsia-300/70'
-    : isFalci
-    ? 'text-indigo-300/70'
-    : isCosmic
-    ? 'text-slate-400'
-    : 'text-purple-300/70'
-
-  const joinColor = isFalclub
-    ? 'text-fuchsia-300 group-hover:text-fuchsia-200'
-    : isFalci
-    ? 'text-indigo-300 group-hover:text-indigo-200'
-    : isCosmic
-    ? 'text-amber-300 group-hover:text-amber-200'
-    : 'text-gold-400 group-hover:text-gold-300'
-
-  const sectionIconColor = isFalclub
-    ? 'text-fuchsia-400'
-    : isFalci
-    ? 'text-indigo-400'
-    : isCosmic
-    ? 'text-blue-400'
-    : 'text-gold-400'
-
-  const hoverShadow = isFalclub
-    ? 'hover:shadow-fuchsia-500/10'
-    : isFalci
-    ? 'hover:shadow-indigo-500/10'
-    : isCosmic
-    ? 'hover:shadow-blue-500/10'
-    : 'hover:shadow-gold-500/10'
+  const titleColor = isFalclub ? 'text-fuchsia-200' : isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-200' : 'text-gold-300'
+  const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-gold-400'
+  const descColor = isFalclub ? 'text-fuchsia-200/80' : isFalci ? 'text-indigo-200/80' : isCosmic ? 'text-slate-300' : 'text-purple-200/70'
+  const borderAccent = isFalclub ? 'border-fuchsia-500/20' : isFalci ? 'border-indigo-500/20' : isCosmic ? 'border-blue-500/20' : 'border-gold-500/20'
+  const spinnerColor = isFalclub ? 'border-fuchsia-400' : isFalci ? 'border-indigo-400' : isCosmic ? 'border-blue-400' : 'border-gold-400'
+  const msgCountColor = isFalclub ? 'text-fuchsia-300/70' : isFalci ? 'text-indigo-300/70' : isCosmic ? 'text-slate-400' : 'text-purple-300/70'
+  const joinColor = isFalclub ? 'text-fuchsia-300 group-hover:text-fuchsia-200' : isFalci ? 'text-indigo-300 group-hover:text-indigo-200' : isCosmic ? 'text-amber-300 group-hover:text-amber-200' : 'text-gold-400 group-hover:text-gold-300'
+  const sectionIconColor = isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-gold-400'
+  const hoverShadow = isFalclub ? 'hover:shadow-fuchsia-500/10' : isFalci ? 'hover:shadow-indigo-500/10' : isCosmic ? 'hover:shadow-blue-500/10' : 'hover:shadow-gold-500/10'
+  const onlineBadgeBg = isFalclub ? 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/30'
+    : isFalci ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30'
+    : isCosmic ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
+    : 'bg-purple-500/20 text-purple-200 border-purple-500/30'
 
   return (
     <div className={`min-h-screen ${bgColor} pt-14 pb-28 px-4`}>
       <div className="max-w-5xl mx-auto">
         {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="pt-3 pb-4"
-        >
-          <h1 className={`text-xl font-bold text-white flex items-center gap-2`}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-3 pb-2">
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Sparkles className={`w-5 h-5 ${sectionIconColor}`} />
-            {language === 'tr' ? 'Fal Sohbet Odaları' : 'Fortune Chat Rooms'}
+            {language === 'tr' ? 'Fal Sohbet Odalar\u0131' : 'Fortune Chat Rooms'}
           </h1>
           <p className={`${descColor} text-sm mt-1`}>
-            {language === 'tr' ? 'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun' : 'Join chat rooms and talk with other users'}
+            {language === 'tr' ? 'Sohbet odalar\u0131na kat\u0131l\u0131n ve di\u011fer kullan\u0131c\u0131larla konu\u015fun' : 'Join chat rooms and talk with other users'}
           </p>
         </motion.div>
+
+        {/* Total Online Users Banner */}
+        {totalOnline > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${onlineBadgeBg} text-sm font-medium`}>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+              </span>
+              {language === 'tr'
+                ? `Fal ve sohbette \u015fuan ${totalOnline} \u00e7evrimi\u00e7i kullan\u0131c\u0131`
+                : `${totalOnline} users online in fortune & chat`}
+            </div>
+          </motion.div>
+        )}
 
         {/* Rooms Grid */}
         {loading ? (
@@ -167,7 +120,7 @@ export default function ChatRoomsPage() {
           <div className="text-center py-12">
             <MessageCircle className={`w-12 h-12 ${sectionIconColor} mx-auto mb-3 opacity-50`} />
             <p className={`${descColor} text-sm`}>
-              {language === 'tr' ? 'Henüz sohbet odası yok' : 'No chat rooms yet'}
+              {language === 'tr' ? 'Hen\u00fcz sohbet odas\u0131 yok' : 'No chat rooms yet'}
             </p>
           </div>
         ) : (
@@ -181,22 +134,15 @@ export default function ChatRoomsPage() {
               >
                 <Link href={`/${language}/chat/${room.slug}`}>
                   <div className={`rounded-xl p-5 border ${cardBg} transition-all duration-300 hover:shadow-lg ${hoverShadow} group cursor-pointer h-full`}>
-                    {/* Room Icon */}
                     <div className="text-4xl mb-3 transform group-hover:scale-110 transition-transform">
                       {room.icon}
                     </div>
-                    
-                    {/* Room Name */}
                     <h2 className={`text-lg font-bold ${titleColor} mb-1.5`}>
                       {language === 'tr' ? room.nameTr : room.nameEn}
                     </h2>
-                    
-                    {/* Room Description */}
                     <p className={`${descColor} text-sm mb-3`}>
                       {language === 'tr' ? room.descTr : room.descEn}
                     </p>
-                    
-                    {/* Stats */}
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1 text-green-400">
                         <Users className="w-4 h-4" />
@@ -208,13 +154,40 @@ export default function ChatRoomsPage() {
                       </div>
                     </div>
 
-                    {/* Join Button */}
-                    <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
-                      <span className={`${joinColor} flex items-center gap-2 font-medium text-sm`}>
-                        {t('chat.join')}
-                        <span className="group-hover:translate-x-1 transition-transform">→</span>
-                      </span>
-                    </div>
+                    {/* Recent Users */}
+                    {room.recentUsers && room.recentUsers.length > 0 && (
+                      <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
+                        <p className={`${msgCountColor} text-xs mb-2`}>
+                          {language === 'tr' ? 'Son girenler:' : 'Recently joined:'}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {room.recentUsers.map((user) => (
+                            <div key={user.id} className="flex items-center gap-1.5 bg-white/5 rounded-full pl-1 pr-2.5 py-0.5">
+                              <div className="w-5 h-5 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+                                {user.image ? (
+                                  <Image src={user.image} alt={user.name || ''} width={20} height={20} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-[9px] font-bold text-white">{user.name?.[0]?.toUpperCase()}</span>
+                                )}
+                              </div>
+                              <span className="text-white/80 text-[11px] truncate max-w-[60px]">
+                                {user.name?.split(' ')[0]}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Join if no recent users */}
+                    {(!room.recentUsers || room.recentUsers.length === 0) && (
+                      <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
+                        <span className={`${joinColor} flex items-center gap-2 font-medium text-sm`}>
+                          {t('chat.join')}
+                          <span className="group-hover:translate-x-1 transition-transform">\u2192</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </Link>
               </motion.div>

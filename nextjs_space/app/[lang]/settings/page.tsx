@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
+import { useSiteTheme } from '@/lib/theme-context'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import {
-  ArrowLeft,
   User,
   Calendar,
   Clock,
@@ -57,6 +56,12 @@ export default function SettingsPage() {
   const { data: session, status } = useSession() || {}
   const router = useRouter()
   const { language } = useLanguage()
+  const { theme } = useSiteTheme()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const isFalclub = theme === 'falclub'
+  const isFalci = theme === 'falci'
+  const isCosmic = theme === 'cosmic'
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -114,11 +119,9 @@ export default function SettingsPage() {
     const date = new Date(dateStr)
     const month = date.getMonth() + 1
     const day = date.getDate()
-
     for (const sign of ZODIAC_SIGNS) {
       const [startMonth, startDay] = sign.dates.start
       const [endMonth, endDay] = sign.dates.end
-
       if (startMonth === endMonth) {
         if (month === startMonth && day >= startDay && day <= endDay) return sign.id
       } else if (startMonth > endMonth) {
@@ -140,12 +143,10 @@ export default function SettingsPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     if (file.size > 5 * 1024 * 1024) {
       alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
       return
     }
-
     setUploadingImage(true)
     try {
       const presignedRes = await fetch('/api/upload/presigned', {
@@ -153,24 +154,19 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
       })
-
       if (!presignedRes.ok) throw new Error('Failed to get upload URL')
-
       const { uploadUrl, cloud_storage_path } = await presignedRes.json()
       const url = new URL(uploadUrl)
       const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders') || ''
       const headers: Record<string, string> = { 'Content-Type': file.type }
       if (signedHeaders.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
-
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
       if (!uploadRes.ok) throw new Error('Failed to upload file')
-
       const urlRes = await fetch('/api/upload/get-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cloud_storage_path, isPublic: true })
       })
-
       if (urlRes.ok) {
         const { url } = await urlRes.json()
         setImage(url)
@@ -204,10 +200,11 @@ export default function SettingsPage() {
           messagePrivacy
         })
       })
-
       if (res.ok) {
         setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        setTimeout(() => {
+          router.back()
+        }, 600)
       } else {
         const data = await res.json()
         if (data.error === 'username_taken') {
@@ -230,10 +227,52 @@ export default function SettingsPage() {
     }
   }
 
+  // Theme colors
+  const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/60 to-[#1a0a2e]/60 border-fuchsia-500/20'
+    : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/60 to-[#1a0b2e]/60 border-indigo-500/20'
+    : isCosmic ? 'bg-white/5 border-blue-500/20'
+    : 'bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 border-purple-500/20'
+  const labelColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
+  const inputBg = isFalclub ? 'bg-[#1a0a2e]/60 border-fuchsia-500/30 focus:border-fuchsia-400'
+    : isFalci ? 'bg-[#1a0b2e]/60 border-indigo-500/30 focus:border-indigo-400'
+    : isCosmic ? 'bg-[#0d1f3c]/60 border-blue-500/30 focus:border-blue-400'
+    : 'bg-deep-purple-900/50 border-purple-500/30 focus:border-gold-500'
+  const accentIcon = isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'
+  const goldAccent = isCosmic ? 'text-amber-500' : 'text-gold-500'
+  const btnGradient = isFalclub ? 'from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700'
+    : isFalci ? 'from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+    : isCosmic ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
+    : 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+  const zodiacBg = isFalclub ? 'from-fuchsia-600/20 to-pink-600/20 border-fuchsia-500/30'
+    : isFalci ? 'from-indigo-600/20 to-purple-600/20 border-indigo-500/30'
+    : isCosmic ? 'from-blue-600/20 to-cyan-600/20 border-blue-500/30'
+    : 'from-purple-600/20 to-pink-600/20 border-purple-500/30'
+  const privacyCardBg = isFalclub ? 'bg-gradient-to-br from-fuchsia-900/40 to-pink-900/30 border-fuchsia-500/30'
+    : isFalci ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/30'
+    : isCosmic ? 'bg-gradient-to-br from-blue-900/40 to-cyan-900/30 border-blue-500/30'
+    : 'bg-gradient-to-br from-purple-900/40 to-pink-900/30 border-purple-500/30'
+  const privacyActive = isFalclub ? 'bg-fuchsia-600/30 border-fuchsia-500'
+    : isFalci ? 'bg-indigo-600/30 border-indigo-500'
+    : isCosmic ? 'bg-blue-600/30 border-blue-500'
+    : 'bg-purple-600/30 border-purple-500'
+  const privacyInactive = isFalclub ? 'bg-fuchsia-900/20 border-fuchsia-800 hover:border-fuchsia-600'
+    : isFalci ? 'bg-indigo-900/20 border-indigo-800 hover:border-indigo-600'
+    : isCosmic ? 'bg-blue-900/20 border-blue-800 hover:border-blue-600'
+    : 'bg-purple-900/20 border-purple-800 hover:border-purple-600'
+
+  // Click outside form area to go back
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only trigger if clicking directly on the outermost container (not on any child)
+    if (e.target === e.currentTarget) {
+      router.back()
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
+        <Loader2 className={`w-8 h-8 ${accentIcon} animate-spin`} />
       </div>
     )
   }
@@ -241,39 +280,41 @@ export default function SettingsPage() {
   const currentZodiac = ZODIAC_SIGNS.find(z => z.id === zodiacSign)
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Link href={`/${language}/dashboard`} className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6">
-          <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Panelim' : 'Dashboard'}
-        </Link>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+    <div className={`min-h-screen ${bgColor} pt-16 pb-28 px-4`} onClick={handleBackgroundClick}>
+      <div className="max-w-2xl mx-auto" ref={containerRef}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-            <User className="w-8 h-8 text-purple-400" />
+            <User className={`w-8 h-8 ${accentIcon}`} />
             {language === 'tr' ? 'Profil Ayarları' : 'Profile Settings'}
           </h1>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-2xl border border-purple-500/20 p-6 space-y-6">
+          className={`rounded-2xl border p-6 space-y-6 ${cardBg}`}>
           
           {/* Profile Picture */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden border-4 border-purple-500/30">
+              <div className={`w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-4 ${
+                isFalclub ? 'border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-600 to-pink-600'
+                : isFalci ? 'border-indigo-500/30 bg-gradient-to-br from-indigo-600 to-purple-600'
+                : isCosmic ? 'border-blue-500/30 bg-gradient-to-br from-blue-600 to-cyan-600'
+                : 'border-purple-500/30 bg-gradient-to-br from-purple-600 to-pink-600'
+              }`}>
                 {image ? (
                   <img src={image} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-10 h-10 text-white/70" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors">
+              <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                isCosmic ? 'bg-amber-500 hover:bg-amber-400' : 'bg-gold-500 hover:bg-gold-400'
+              }`}>
                 {uploadingImage ? <Loader2 className="w-4 h-4 text-black animate-spin" /> : <Camera className="w-4 h-4 text-black" />}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
             </div>
-            <p className="text-purple-300 text-sm">{language === 'tr' ? 'Profil resmini değiştir' : 'Change profile picture'}</p>
+            <p className={`${labelColor} text-sm`}>{language === 'tr' ? 'Profil resmini değiştir' : 'Change profile picture'}</p>
           </div>
 
           {/* Error Message */}
@@ -286,59 +327,59 @@ export default function SettingsPage() {
 
           {/* Name */}
           <div>
-            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+            <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <User className="w-4 h-4" />
               {language === 'tr' ? 'Ad Soyad' : 'Full Name'}
             </label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
+              className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
           </div>
 
           {/* Username */}
           <div>
-            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+            <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <AtSign className="w-4 h-4" />
               {language === 'tr' ? 'Kullanıcı Adı' : 'Username'}
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">@</span>
+              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${labelColor}`}>@</span>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 placeholder={language === 'tr' ? 'kullanici_adi' : 'your_username'}
-                className="w-full bg-deep-purple-900/50 text-white rounded-lg pl-8 pr-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
+                className={`w-full text-white rounded-lg pl-8 pr-4 py-3 border focus:outline-none ${inputBg}`} />
             </div>
-            <p className="text-purple-400/60 text-xs mt-1">{language === 'tr' ? '3-20 karakter, harf, rakam ve alt çizgi' : '3-20 chars, letters, numbers, underscore'}</p>
+            <p className={`${labelColor} opacity-60 text-xs mt-1`}>{language === 'tr' ? '3-20 karakter, harf, rakam ve alt çizgi' : '3-20 chars, letters, numbers, underscore'}</p>
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+            <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <Mail className="w-4 h-4" />
               {language === 'tr' ? 'Email Adresi' : 'Email Address'}
             </label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
+              className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+            <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <Phone className="w-4 h-4" />
               {language === 'tr' ? 'Telefon Numarası (opsiyonel)' : 'Phone Number (optional)'}
             </label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               placeholder="+90 5XX XXX XX XX"
-              className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none" />
+              className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
           </div>
 
-          <div className="border-t border-purple-500/20 pt-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold-500" />
+          <div className={`border-t pt-6 ${isFalclub ? 'border-fuchsia-500/20' : isFalci ? 'border-indigo-500/20' : isCosmic ? 'border-blue-500/20' : 'border-purple-500/20'}`}>
+            <h3 className={`text-lg font-semibold text-white mb-4 flex items-center gap-2`}>
+              <Sparkles className={`w-5 h-5 ${goldAccent}`} />
               {language === 'tr' ? 'Fal Bilgileri' : 'Fortune Details'}
             </h3>
 
             {/* Birth Date */}
             <div className="mb-4">
-              <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+              <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Calendar className="w-4 h-4" />
                 {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}
               </label>
@@ -351,7 +392,7 @@ export default function SettingsPage() {
                     currentDate.setDate(parseInt(day))
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
-                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
                   <option value="">{language === 'tr' ? 'Gün' : 'Day'}</option>
                   {Array.from({length: 31}, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -363,7 +404,7 @@ export default function SettingsPage() {
                     currentDate.setMonth(parseInt(month))
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
-                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
                   <option value="">{language === 'tr' ? 'Ay' : 'Month'}</option>
                   {(language === 'tr' 
                     ? ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
@@ -378,7 +419,7 @@ export default function SettingsPage() {
                     currentDate.setFullYear(parseInt(year))
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
-                  className="bg-deep-purple-900/50 text-white rounded-lg px-3 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none text-center">
+                  className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
                   <option value="">{language === 'tr' ? 'Yıl' : 'Year'}</option>
                   {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
@@ -387,12 +428,12 @@ export default function SettingsPage() {
 
             {/* Birth Time */}
             <div className="mb-4">
-              <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+              <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Clock className="w-4 h-4" />
                 {language === 'tr' ? 'Doğum Saati (opsiyonel)' : 'Birth Time (optional)'}
               </label>
               <select value={birthTime} onChange={(e) => setBirthTime(e.target.value)}
-                className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
                 <option value="">{language === 'tr' ? 'Bilmiyorum' : "Don't know"}</option>
                 {Array.from({length: 24}, (_, i) => {
                   const hour = i.toString().padStart(2, '0')
@@ -403,14 +444,14 @@ export default function SettingsPage() {
 
             {/* Zodiac Sign (auto-calculated) */}
             {zodiacSign && currentZodiac && (
-              <div className="p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl border border-purple-500/30 mb-4">
+              <div className={`p-4 bg-gradient-to-r ${zodiacBg} rounded-xl border mb-4`}>
                 <div className="flex items-center gap-3">
                   <span className="text-4xl">{currentZodiac.emoji}</span>
                   <div>
                     <p className="text-white font-semibold">
                       {language === 'tr' ? 'Burçunuz' : 'Your Zodiac'}: {currentZodiac[language as 'tr' | 'en']}
                     </p>
-                    <p className="text-purple-300 text-sm">
+                    <p className={`${labelColor} text-sm`}>
                       {language === 'tr' ? 'Doğum tarihinize göre otomatik hesaplandı' : 'Auto-calculated from your birth date'}
                     </p>
                   </div>
@@ -421,12 +462,12 @@ export default function SettingsPage() {
             {/* Rising Sign (manual) */}
             {birthTime && (
               <div className="mb-4">
-                <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+                <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                   <Moon className="w-4 h-4" />
                   {language === 'tr' ? 'Yükselen Burç' : 'Rising Sign'}
                 </label>
                 <select value={risingSign} onChange={(e) => setRisingSign(e.target.value)}
-                  className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                  className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
                   <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
                   {ZODIAC_SIGNS.map(sign => (
                     <option key={sign.id} value={sign.id}>{sign.emoji} {sign[language as 'tr' | 'en']}</option>
@@ -437,12 +478,12 @@ export default function SettingsPage() {
 
             {/* Favorite Team */}
             <div>
-              <label className="block text-sm text-purple-300 mb-2 flex items-center gap-2">
+              <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Heart className="w-4 h-4" />
                 {language === 'tr' ? 'Tuttuğunuz Takım' : 'Favorite Team'}
               </label>
               <select value={favoriteTeam} onChange={(e) => setFavoriteTeam(e.target.value)}
-                className="w-full bg-deep-purple-900/50 text-white rounded-lg px-4 py-3 border border-purple-500/30 focus:border-gold-500 focus:outline-none">
+                className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
                 <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
                 {FOOTBALL_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
               </select>
@@ -450,26 +491,21 @@ export default function SettingsPage() {
           </div>
 
           {/* Privacy Settings Section */}
-          <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/30 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+          <div className={`rounded-2xl p-6 space-y-4 border ${privacyCardBg}`}>
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-400" />
+              <Shield className={`w-5 h-5 ${accentIcon}`} />
               {language === 'tr' ? 'Gizlilik Ayarları' : 'Privacy Settings'}
             </h3>
 
             <div>
-              <label className="block text-sm text-purple-300 mb-3">
+              <label className={`block text-sm ${labelColor} mb-3`}>
                 {language === 'tr' ? 'Kimler bana mesaj gönderebilir?' : 'Who can send me messages?'}
               </label>
               <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setMessagePrivacy('everyone')}
+                <button type="button" onClick={() => setMessagePrivacy('everyone')}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                    messagePrivacy === 'everyone'
-                      ? 'bg-purple-600/30 border-purple-500 text-white'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
+                    messagePrivacy === 'everyone' ? `${privacyActive} text-white` : `${privacyInactive} ${labelColor}`
+                  }`}>
                   <Globe className="w-5 h-5" />
                   <div className="flex-1 text-left">
                     <p className="font-medium">{language === 'tr' ? 'Herkes' : 'Everyone'}</p>
@@ -478,15 +514,10 @@ export default function SettingsPage() {
                   {messagePrivacy === 'everyone' && <Check className="w-5 h-5 text-green-400" />}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setMessagePrivacy('followers')}
+                <button type="button" onClick={() => setMessagePrivacy('followers')}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                    messagePrivacy === 'followers'
-                      ? 'bg-purple-600/30 border-purple-500 text-white'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
+                    messagePrivacy === 'followers' ? `${privacyActive} text-white` : `${privacyInactive} ${labelColor}`
+                  }`}>
                   <Users className="w-5 h-5" />
                   <div className="flex-1 text-left">
                     <p className="font-medium">{language === 'tr' ? 'Takipçilerim' : 'Followers Only'}</p>
@@ -495,15 +526,10 @@ export default function SettingsPage() {
                   {messagePrivacy === 'followers' && <Check className="w-5 h-5 text-green-400" />}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setMessagePrivacy('nobody')}
+                <button type="button" onClick={() => setMessagePrivacy('nobody')}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                    messagePrivacy === 'nobody'
-                      ? 'bg-purple-600/30 border-purple-500 text-white'
-                      : 'bg-purple-900/20 border-purple-800 text-purple-300 hover:border-purple-600'
-                  }`}
-                >
+                    messagePrivacy === 'nobody' ? `${privacyActive} text-white` : `${privacyInactive} ${labelColor}`
+                  }`}>
                   <Lock className="w-5 h-5" />
                   <div className="flex-1 text-left">
                     <p className="font-medium">{language === 'tr' ? 'Hiç Kimse' : 'Nobody'}</p>
@@ -517,7 +543,7 @@ export default function SettingsPage() {
 
           {/* Save Button */}
           <button onClick={handleSave} disabled={saving}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+            className={`w-full py-3 bg-gradient-to-r ${btnGradient} text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50`}>
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : saved ? (
