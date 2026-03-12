@@ -15,19 +15,10 @@ import {
   UserPlus,
   UserMinus,
   Settings,
-  Share2,
-  MoreHorizontal,
-  ChevronLeft,
   Sparkles,
   Play,
-  Lock,
   X,
   Loader2,
-  Wallet,
-  Radio,
-  Edit3,
-  Eye,
-  Pin,
   Camera,
   Check
 } from 'lucide-react'
@@ -320,27 +311,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <button onClick={() => router.back()} className="p-1">
-            <ChevronLeft className="w-6 h-6 text-purple-300" />
-          </button>
-          <h1 className="text-lg font-bold text-white">
-            @{profile.username || 'user'}
-          </h1>
-          <div className="flex items-center gap-3">
-            {profile.isOwnProfile && (
-              <Link href={`/${language}/settings`} className="p-1">
-                <Settings className="w-5 h-5 text-purple-300" />
-              </Link>
-            )}
-            <button className="p-1">
-              <Share2 className="w-5 h-5 text-purple-300" />
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Header spacer */}
+      <div className="h-2" />
 
       {/* Profile Section */}
       <div className="max-w-lg mx-auto px-4 py-6">
@@ -530,10 +502,7 @@ export default function ProfilePage() {
                 >
                   <MessageCircle className="w-5 h-5 text-purple-300" />
                 </Link>
-                {/* Share Button */}
-                <button className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700">
-                  <Share2 className="w-5 h-5 text-purple-300" />
-                </button>
+
               </>
             )}
           </div>
