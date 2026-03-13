@@ -157,6 +157,31 @@ export default function ChatRoomPage() {
     }
   }, [soundEnabled])
 
+  // Handle mobile viewport height (keyboard open/close)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01
+      document.documentElement.style.setProperty('--vh', `${vh}px`)
+    }
+    
+    setVH()
+    window.addEventListener('resize', setVH)
+    
+    // Also handle visual viewport for mobile keyboard
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setVH)
+    }
+    
+    return () => {
+      window.removeEventListener('resize', setVH)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', setVH)
+      }
+    }
+  }, [])
+
   // Fetch all rooms with user counts
   const fetchAllRooms = useCallback(async () => {
     try {
@@ -598,17 +623,35 @@ export default function ChatRoomPage() {
     }
   }, [room, voiceEnabled, createPeerConnection, sendVoiceSignal])
 
+  // Voice connecting state
+  const [voiceConnecting, setVoiceConnecting] = useState(false)
+
   // Voice chat functions
   const startVoiceChat = async () => {
+    if (voiceConnecting) return
+    setVoiceConnecting(true)
+    
     try {
+      console.log('Starting voice chat...')
+      
       // First get microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      })
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        })
+        console.log('Microphone access granted')
+      } catch (micError) {
+        console.error('Microphone error:', micError)
+        setVoiceConnecting(false)
+        alert(language === 'tr' ? 'Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.' : 'Microphone access denied. Please allow microphone access in browser settings.')
+        return
+      }
+      
       mediaStreamRef.current = stream
       
       // Now check if we have voice permission by trying to join
@@ -623,6 +666,7 @@ export default function ChatRoomPage() {
           // Stop microphone if permission denied
           stream.getTracks().forEach(track => track.stop())
           mediaStreamRef.current = null
+          setVoiceConnecting(false)
           
           const errData = await joinRes.json().catch(() => ({}))
           if (joinRes.status === 403) {
@@ -631,6 +675,7 @@ export default function ChatRoomPage() {
           }
           throw new Error(errData.error || 'Failed to join voice')
         }
+        console.log('Voice permission granted')
       }
       
       audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
@@ -665,6 +710,8 @@ export default function ChatRoomPage() {
       }, 100)
       
       setVoiceEnabled(true)
+      setVoiceConnecting(false)
+      console.log('Voice chat started successfully')
       
       // Start polling for signals
       lastSignalTimeRef.current = Date.now()
@@ -677,6 +724,7 @@ export default function ChatRoomPage() {
             const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=0`)
             if (res.ok) {
               const { voiceUsers: existingUsers } = await res.json()
+              console.log('Found existing voice users:', existingUsers.length)
               // Create offers to all existing voice users
               for (const user of existingUsers) {
                 if (user.id !== session?.user?.id && !peerConnectionsRef.current.has(user.id)) {
@@ -698,6 +746,7 @@ export default function ChatRoomPage() {
       
     } catch (error: unknown) {
       console.error('Error starting voice chat:', error)
+      setVoiceConnecting(false)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
         alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
@@ -1001,8 +1050,15 @@ export default function ChatRoomPage() {
     myPermissions.isGlobalAdmin
   )
 
+  // Handle mobile keyboard - scroll input into view
+  const handleInputFocus = useCallback(() => {
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 300)
+  }, [])
+
   return (
-    <div className="h-full w-full flex flex-col relative" style={{ height: '100dvh' }}>
+    <div className="h-full w-full flex flex-col relative" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -1351,15 +1407,28 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Odalar' : 'Rooms'}
               </button>
               
-              {/* Voice Chat Button - Only Microphone Emoji */}
+              {/* Voice Chat Button */}
               {canUseVoice() ? (
                 // User has voice permission - can speak
                 <button
                   onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                  className={`relative flex items-center justify-center w-12 h-8 rounded-full text-xs font-bold transition-all ${voiceEnabled ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'}`}
+                  disabled={voiceConnecting}
+                  className={`relative flex items-center justify-center min-w-[52px] h-8 px-2 rounded-full text-xs font-bold transition-all ${
+                    voiceConnecting 
+                      ? 'bg-yellow-500 text-white animate-pulse cursor-wait' 
+                      : voiceEnabled 
+                        ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' 
+                        : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'
+                  }`}
                   title={voiceEnabled ? (language === 'tr' ? 'Sesi Kapat' : 'Mute') : (language === 'tr' ? 'Sesi Aç' : 'Unmute')}
                 >
-                  {voiceEnabled ? (language === 'tr' ? 'AÇIK' : 'ON') : (language === 'tr' ? 'KAPALI' : 'OFF')}
+                  {voiceConnecting 
+                    ? '...' 
+                    : voiceEnabled 
+                      ? (language === 'tr' ? 'SES' : 'ON') 
+                      : (language === 'tr' ? 'SES' : 'OFF')
+                  }
+                  {voiceEnabled && <span className="ml-1 w-2 h-2 bg-white rounded-full animate-pulse"></span>}
                   {voiceUsers.length > 0 && (
                     <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {voiceUsers.length}
@@ -1370,10 +1439,10 @@ export default function ChatRoomPage() {
                 // User doesn't have voice permission - can only listen
                 <button
                   onClick={() => isListening ? stopListening() : startListening()}
-                  className={`relative flex items-center justify-center w-12 h-8 rounded-full text-xs font-bold transition-all ${isListening ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'}`}
+                  className={`relative flex items-center justify-center min-w-[52px] h-8 px-2 rounded-full text-xs font-bold transition-all ${isListening ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-gray-500 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30'}`}
                   title={language === 'tr' ? 'Sadece dinleyebilirsiniz' : 'Listen only mode'}
                 >
-                  {isListening ? (language === 'tr' ? 'DİNLE' : 'HEAR') : (language === 'tr' ? 'KAPALI' : 'OFF')}
+                  {isListening ? '👂' : '🔇'}
                   {voiceUsers.length > 0 && !isListening && (
                     <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {voiceUsers.length}
@@ -1538,6 +1607,7 @@ export default function ChatRoomPage() {
                     setNewMessage(e.target.value)
                     handleTyping()
                   }}
+                  onFocus={handleInputFocus}
                   placeholder={t('chat.placeholder')}
                   maxLength={500}
                   className="flex-1 bg-[#0d0520] border border-purple-500/30 rounded px-3 py-2 text-sm text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
