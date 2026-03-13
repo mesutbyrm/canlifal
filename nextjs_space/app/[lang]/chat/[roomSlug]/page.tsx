@@ -331,12 +331,32 @@ export default function ChatRoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // WebRTC Configuration
+  // WebRTC Configuration with TURN servers for NAT traversal
   const rtcConfig: RTCConfiguration = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      // Free TURN servers for NAT traversal
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10
   }
 
   // Create peer connection for a user
@@ -493,7 +513,17 @@ export default function ChatRoomPage() {
   // Voice chat functions
   const startVoiceChat = async () => {
     try {
-      // First check if we have voice permission by trying to join
+      // First get microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      })
+      mediaStreamRef.current = stream
+      
+      // Now check if we have voice permission by trying to join
       if (room) {
         const joinRes = await fetch(`/api/chat/rooms/${room.id}/voice`, {
           method: 'POST',
@@ -502,6 +532,10 @@ export default function ChatRoomPage() {
         })
         
         if (!joinRes.ok) {
+          // Stop microphone if permission denied
+          stream.getTracks().forEach(track => track.stop())
+          mediaStreamRef.current = null
+          
           const errData = await joinRes.json().catch(() => ({}))
           if (joinRes.status === 403) {
             alert(language === 'tr' ? 'Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.' : 'You don\'t have voice permission. Room owner or admin must give you "+" (voice) role.')
@@ -510,9 +544,6 @@ export default function ChatRoomPage() {
           throw new Error(errData.error || 'Failed to join voice')
         }
       }
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaStreamRef.current = stream
       
       audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       const source = audioContextRef.current.createMediaStreamSource(stream)
@@ -547,9 +578,36 @@ export default function ChatRoomPage() {
       
       setVoiceEnabled(true)
       
-      // Start polling for signals (join signal already sent above)
+      // Start polling for signals
       lastSignalTimeRef.current = Date.now()
       voicePollRef.current = setInterval(pollVoiceSignals, 500)
+      
+      // Connect to existing voice users after a short delay
+      setTimeout(async () => {
+        if (room && mediaStreamRef.current) {
+          try {
+            const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=0`)
+            if (res.ok) {
+              const { voiceUsers: existingUsers } = await res.json()
+              // Create offers to all existing voice users
+              for (const user of existingUsers) {
+                if (user.id !== session?.user?.id && !peerConnectionsRef.current.has(user.id)) {
+                  console.log('Creating connection to existing user:', user.name)
+                  const pc = createPeerConnection(user.id, true)
+                  if (pc) {
+                    const offer = await pc.createOffer()
+                    await pc.setLocalDescription(offer)
+                    await sendVoiceSignal('offer', JSON.stringify(offer), user.id)
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error connecting to existing users:', error)
+          }
+        }
+      }, 1000)
+      
     } catch (error: unknown) {
       console.error('Error starting voice chat:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
