@@ -121,10 +121,19 @@ export default function LiveRoomPage() {
     try {
       setConnectionStatus(language === 'tr' ? 'Kamera/mikrofon erişimi isteniyor...' : 'Requesting camera/microphone access...');
       
-      // Get local media stream
+      // Get local media stream with better resolution
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
+        video: {
+          facingMode,
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 1280, max: 1920 },
+          aspectRatio: { ideal: 9/16 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
       localStreamRef.current = stream;
       
@@ -459,7 +468,12 @@ export default function LiveRoomPage() {
       
       // Get new video stream with different facing mode
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacingMode },
+        video: { 
+          facingMode: newFacingMode,
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 1280, max: 1920 },
+          aspectRatio: { ideal: 9/16 }
+        },
         audio: false
       });
       
@@ -678,7 +692,7 @@ export default function LiveRoomPage() {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain bg-black"
         />
 
         {/* Local video (picture-in-picture) - draggable position */}
@@ -688,7 +702,7 @@ export default function LiveRoomPage() {
             autoPlay
             playsInline
             muted
-            className={`w-full h-full object-cover ${!isVideoEnabled ? 'hidden' : ''}`}
+            className={`w-full h-full object-contain bg-black ${!isVideoEnabled ? 'hidden' : ''}`}
           />
           {!isVideoEnabled && (
             <div className="w-full h-full flex items-center justify-center bg-gray-800">

@@ -218,8 +218,8 @@ export default function BroadcastPage() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode,
-          width: { ideal: 480, max: 640 },
-          height: { ideal: 640, max: 960 },
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 1280, max: 1920 },
           aspectRatio: { ideal: 9/16 }
         },
         audio: {
@@ -866,7 +866,7 @@ export default function BroadcastPage() {
     setFacingMode(newFacing)
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: { ideal: 480 }, height: { ideal: 640 } },
+        video: { facingMode: newFacing, width: { ideal: 720, max: 1280 }, height: { ideal: 1280, max: 1920 }, aspectRatio: { ideal: 9/16 } },
         audio: { echoCancellation: true, noiseSuppression: true }
       })
       
@@ -1056,7 +1056,7 @@ export default function BroadcastPage() {
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             {/* My info bar */}
@@ -1125,7 +1125,7 @@ export default function BroadcastPage() {
                     }}
                     autoPlay
                     playsInline
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-black"
                   />
                   
                   {/* Connection status overlay */}
