@@ -43,17 +43,7 @@ interface LiveStream {
   }
 }
 
-interface OnlineUser {
-  id: string
-  name: string
-  image: string | null
-  username: string | null
-}
 
-interface OnlineData {
-  count: number
-  users: OnlineUser[]
-}
 
 const FORTUNE_CARDS = [
   {
@@ -161,10 +151,8 @@ export default function HomePage() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const { theme } = useSiteTheme()
-  const [activeTab, setActiveTab] = useState<'fortunes' | 'live'>('fortunes')
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
-  const [onlineData, setOnlineData] = useState<OnlineData>({ count: 0, users: [] })
   
   
   // Theme detection
@@ -205,27 +193,13 @@ export default function HomePage() {
       } catch (e) {}
     }
 
-    // Fetch online users
-    const fetchOnlineUsers = async () => {
-      try {
-        const res = await fetch('/api/users/online')
-        if (res.ok) {
-          const data = await res.json()
-          setOnlineData({ count: data.count || 0, users: data.users || [] })
-        }
-      } catch (e) {}
-    }
-    
     fetchTellers()
     fetchStreams()
-    fetchOnlineUsers()
     const tellerInterval = setInterval(fetchTellers, 45000)
     const streamInterval = setInterval(fetchStreams, 30000)
-    const onlineInterval = setInterval(fetchOnlineUsers, 30000)
     return () => {
       clearInterval(tellerInterval)
       clearInterval(streamInterval)
-      clearInterval(onlineInterval)
     }
   }, [])
 
@@ -685,81 +659,11 @@ export default function HomePage() {
         <LiveTicker />
       </div>
 
-      {/* Online Users Bar with Tab Buttons - below ticker */}
-      <div className={`fixed top-[114px] left-0 right-0 z-30 ${isCosmic ? 'bg-gradient-to-r from-[#0a1628]/98 via-blue-900/20 to-[#0a1628]/98 border-b border-blue-500/20' : 'bg-gradient-to-r from-[#0a0118]/98 via-purple-900/20 to-[#0a0118]/98 border-b border-purple-500/20'} py-2 px-3`}>
-        <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
-          {/* Tab Buttons - First */}
-          <button
-            onClick={() => setActiveTab('fortunes')}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'fortunes'
-                ? isCosmic 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-red-500/50 border border-red-400/50 text-white'
-                : isCosmic 
-                  ? 'bg-blue-900/40 border border-blue-500/30 text-blue-300'
-                  : 'bg-purple-900/40 border border-purple-500/30 text-purple-300'
-            }`}
-          >
-            <Radio className="w-3 h-3" />
-            {language === 'tr' ? 'Canlı Yayın' : 'Streams'}
-          </button>
-          <button
-            onClick={() => setActiveTab('live')}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'live'
-                ? isCosmic 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-red-500/50 border border-red-400/50 text-white'
-                : isCosmic 
-                  ? 'bg-blue-900/40 border border-blue-500/30 text-blue-300'
-                  : 'bg-purple-900/40 border border-purple-500/30 text-purple-300'
-            }`}
-          >
-            <Video className="w-3 h-3" />
-            {language === 'tr' ? 'Canlı Falcı' : 'Tellers'}
-          </button>
-          
-          {/* Online count badge */}
-          <div className="flex-shrink-0 flex items-center gap-1.5 bg-green-900/30 rounded-full px-3 py-1.5 border border-green-500/30 ml-2">
-            <Circle className="w-2 h-2 text-green-400 fill-green-400 animate-pulse" />
-            <span className="text-xs font-bold text-green-400">{onlineData.count}</span>
-            <span className="text-[10px] text-green-400/80">{language === 'tr' ? 'çevrimiçi' : 'online'}</span>
-          </div>
-          
-          {/* User list */}
-          {onlineData.users.slice(0, 15).map((user) => (
-            <Link
-              key={user.id}
-              href={`/${language}/profile/${user.id}`}
-              className={`flex-shrink-0 flex items-center gap-1 ${isCosmic ? 'bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50' : 'bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50'} rounded-full px-2 py-1 transition-colors border ml-1`}
-            >
-              <Circle className="w-1.5 h-1.5 text-green-400 fill-green-400" />
-              {user.image ? (
-                <Image
-                  src={user.image}
-                  alt={user.name || ''}
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 rounded-full object-cover"
-                />
-              ) : (
-                <div className={`w-4 h-4 rounded-full ${isCosmic ? 'bg-blue-500/50' : 'bg-purple-500/50'} flex items-center justify-center`}>
-                  <span className="text-[8px] text-white font-medium">{user.name?.[0]}</span>
-                </div>
-              )}
-              <span className={`text-[10px] ${isCosmic ? 'text-blue-100' : 'text-purple-100'} font-medium`}>{user.username || user.name?.split(' ')[0]}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
       {/* Content area with proper top padding */}
-      <div className="pt-36">
+      <div className="pt-28">
 
-      {activeTab === 'live' ? (
-        /* Live Tellers Tab Content */
-        <div className="px-4 pb-8">
+        {/* Live Tellers Section */}
+        <div className="px-4 pb-4">
           {/* Live Tellers Section - Circular Avatars */}
           <div className={`mb-8 ${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -860,97 +764,9 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Live Streams Tab Content */
-        <div className="px-4 pb-8">
-          {/* Header */}
-          <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm mb-4`}>
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Radio className="w-5 h-5 text-red-400" />
-              {language === 'tr' ? 'Canlı Yayınlar' : 'Live Streams'}
-            </h2>
 
-            {/* Live Streams Row - Start Button + Streams */}
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-              {/* Start Stream Button - Circular */}
-              <button
-                onClick={() => {
-                  if (!session?.user) {
-                    router.push(`/${language}/login`)
-                  } else {
-                    router.push(`/${language}/chat/video/setup`)
-                  }
-                }}
-                className="flex-shrink-0 flex flex-col items-center"
-              >
-                <div className={`w-20 h-20 rounded-full p-[3px] ${gradientBorder}`}>
-                  <div className={`w-full h-full rounded-full ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} flex items-center justify-center`}>
-                    <Plus className={`w-8 h-8 ${isCosmic ? 'text-blue-400' : 'text-purple-400'}`} />
-                  </div>
-                </div>
-                <p className={`${textSecondary} text-xs font-medium mt-2 text-center`}>
-                  {language === 'tr' ? 'Yayın Başlat' : 'Go Live'}
-                </p>
-              </button>
-
-              {/* Live Streams - Circular Avatars with Red Border */}
-              {liveStreams.length > 0 ? (
-                liveStreams.map((stream, index) => (
-                  <motion.div
-                    key={stream.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex-shrink-0 flex flex-col items-center"
-                  >
-                    <Link href={`/${language}/chat/video?watch=${stream.id}`}>
-                      {/* Circular Avatar with Rainbow Animated Border */}
-                      <div className="relative">
-                        <div className="w-20 h-20 rounded-full p-[3px] rainbow-border">
-                          <div className={`w-full h-full rounded-full overflow-hidden ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} p-[2px]`}>
-                            <div className="w-full h-full rounded-full overflow-hidden">
-                              {stream.user.image ? (
-                                <Image
-                                  src={stream.user.image}
-                                  alt={stream.user.name}
-                                  width={80}
-                                  height={80}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className={`w-full h-full ${isCosmic ? 'bg-gradient-to-br from-blue-600 to-cyan-500' : 'bg-gradient-to-br from-purple-600 to-pink-600'} flex items-center justify-center`}>
-                                  <span className="text-xl font-bold text-white">
-                                    {stream.user.name?.[0]?.toUpperCase()}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {/* CANLI Badge */}
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                          <span className="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
-                            <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
-                            CANLI
-                          </span>
-                        </div>
-                      </div>
-                      {/* Name */}
-                      <p className={`${isCosmic ? 'text-blue-200' : 'text-purple-200'} text-xs font-medium mt-2 text-center w-20 truncate`}>{stream.user.name}</p>
-                    </Link>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="flex items-center pl-4">
-                  <p className={`${textSecondary} text-sm`}>
-                    {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fortune Types - Circular Icons */}
+        {/* Fortune Types Section */}
+        <div className="px-4 pb-4">
           <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Sparkles className={`w-5 h-5 ${accentColor}`} />
@@ -982,7 +798,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      )}
 
       {/* BANA ÖZEL Section - Only for logged-in users */}
       {session?.user && (

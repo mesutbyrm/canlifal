@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Get user details for all purchases
-    const userIds = [...new Set(purchases.map(p => p.userId))]
+    const userIds = [...new Set(purchases.map((p: { userId: string }) => p.userId))]
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: {
@@ -54,9 +54,9 @@ export async function GET(req: NextRequest) {
         membershipExpiresAt: true
       }
     })
-    const userMap = Object.fromEntries(users.map(u => [u.id, u]))
+    const userMap = Object.fromEntries(users.map((u: { id: string }) => [u.id, u]))
 
-    const purchasesWithUsers = purchases.map(p => ({
+    const purchasesWithUsers = purchases.map((p: { userId: string }) => ({
       ...p,
       user: userMap[p.userId] || null
     }))
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       purchases: purchasesWithUsers,
       stats: {
-        byStatus: Object.fromEntries(stats.map(s => [s.status, s._count.id])),
+        byStatus: Object.fromEntries(stats.map((s: { status: string; _count: { id: number } }) => [s.status, s._count.id])),
         totalMoneyRevenue: totalRevenue._sum.pricePaid || 0,
         totalJetonSpent: jetonRevenue._sum.pricePaid || 0
       }
