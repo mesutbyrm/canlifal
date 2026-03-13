@@ -1,17 +1,18 @@
 // PostgreSQL database connection with connection pooling
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined
 }
 
-// Create Prisma client with connection pool limits
+// Create Prisma client with strict connection pool limits
 const createPrismaClient = () => {
-  // Add connection pool parameters to the DATABASE_URL
   const baseUrl = process.env.DATABASE_URL || ''
-  const pooledUrl = baseUrl.includes('?') 
-    ? `${baseUrl}&connection_limit=5&pool_timeout=10`
-    : `${baseUrl}?connection_limit=5&pool_timeout=10`
+  
+  // Remove any existing connection parameters and add our strict ones
+  const cleanUrl = baseUrl.split('?')[0]
+  const pooledUrl = `${cleanUrl}?connection_limit=2&pool_timeout=5&connect_timeout=5&statement_timeout=5000`
   
   return new PrismaClient({
     datasources: {
@@ -23,13 +24,10 @@ const createPrismaClient = () => {
   })
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+// Use global variable to ensure single instance across hot reloads and serverless functions
+export const prisma = global.__prisma ?? createPrismaClient()
 
-// Always cache in globalThis to prevent creating new clients per request
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-} else {
-  globalForPrisma.prisma = prisma
-}
+// Always cache globally - critical for serverless/edge environments
+global.__prisma = prisma
 
 export default prisma
