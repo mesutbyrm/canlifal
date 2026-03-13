@@ -22,6 +22,7 @@ import {
   Camera,
   Check
 } from 'lucide-react'
+import { TierAvatarWrapper, TierNameBadge, TierBadge, type MembershipTier } from '@/components/tier-badge'
 
 interface UserProfile {
   id: string
@@ -31,6 +32,8 @@ interface UserProfile {
   bio: string | null
   zodiacSign: string | null
   createdAt: string
+  membership: string
+  membershipExpiresAt: string | null
   followerCount: number
   followingCount: number
   postCount: number
@@ -316,31 +319,27 @@ export default function ProfilePage() {
 
       {/* Profile Section */}
       <div className="max-w-lg mx-auto px-4 py-6">
-        {/* Avatar */}
+        {/* Avatar with Tier Effects */}
         <div className="flex flex-col items-center">
           <div className="relative">
-            <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-r from-purple-500 via-pink-500 to-gold-500">
-              <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-0.5">
-                <div className="w-full h-full rounded-full overflow-hidden bg-purple-900/50">
-                  {profile.image ? (
-                    <Image
-                      src={profile.image}
-                      alt={profile.name}
-                      width={112}
-                      height={112}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
-                      {profile.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+            <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
+              {profile.image ? (
+                <Image
+                  src={profile.image}
+                  alt={profile.name}
+                  width={112}
+                  height={112}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
+                  {profile.name.charAt(0).toUpperCase()}
                 </div>
-              </div>
-            </div>
+              )}
+            </TierAvatarWrapper>
             {/* Edit photo button - only for own profile */}
             {profile.isOwnProfile && (
-              <label className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-[#0a0118] cursor-pointer hover:opacity-80 transition-opacity">
+              <label className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-[#0a0118] cursor-pointer hover:opacity-80 transition-opacity z-30">
                 {uploadingImage ? (
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 ) : (
@@ -357,15 +356,29 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Name */}
-          <h2 className="mt-4 text-xl font-bold text-white">
-            {profile.name}
+          {/* Name with Tier Effect */}
+          <h2 className="mt-4 text-xl font-bold">
+            <TierNameBadge 
+              tier={(profile.membership || 'faluser') as MembershipTier} 
+              name={profile.name} 
+            />
           </h2>
 
           {/* Username */}
           <p className="text-purple-400 mt-0.5">
             @{profile.username || 'user'}
           </p>
+
+          {/* Membership Badge */}
+          {profile.membership && profile.membership !== 'faluser' && (
+            <div className="mt-2">
+              <TierBadge 
+                tier={(profile.membership || 'faluser') as MembershipTier} 
+                size="sm" 
+                showLabel 
+              />
+            </div>
+          )}
 
           {/* Bio Section */}
           <div className="mt-3 w-full max-w-xs text-center">

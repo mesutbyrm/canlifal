@@ -27,6 +27,8 @@ export async function GET(
         bio: true,
         createdAt: true,
         zodiacSign: true,
+        membership: true,
+        membershipExpiresAt: true,
         _count: {
           select: {
             socialPosts: true
@@ -69,6 +71,10 @@ export async function GET(
       isFollowing = !!follow
     }
 
+    // Check if membership is active
+    const membershipActive = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) > new Date() : false
+    const effectiveMembership = membershipActive ? user.membership : 'faluser'
+
     return NextResponse.json({
       id: user.id,
       name: user.name,
@@ -77,6 +83,8 @@ export async function GET(
       bio: user.bio,
       createdAt: user.createdAt,
       zodiacSign: user.zodiacSign,
+      membership: effectiveMembership,
+      membershipExpiresAt: user.membershipExpiresAt,
       followerCount,
       followingCount,
       postCount: user._count.socialPosts,
