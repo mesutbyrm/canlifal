@@ -79,6 +79,8 @@ export default function TellerDetailPage() {
   // Booking state
   const [showBooking, setShowBooking] = useState(false)
   const [selectedFortuneType, setSelectedFortuneType] = useState('general')
+  const [selectedDuration, setSelectedDuration] = useState(10) // Default 10 minutes
+  const [creditsPerMinute, setCreditsPerMinute] = useState(10) // Default 10 credits/min
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState('')
   const [userCredits, setUserCredits] = useState(0)
@@ -100,7 +102,7 @@ export default function TellerDetailPage() {
       }
     }
     
-    // Fetch ad duration from settings
+    // Fetch settings
     fetch('/api/admin/settings')
       .then(res => res.json())
       .then(data => {
@@ -108,6 +110,10 @@ export default function TellerDetailPage() {
         if (adSetting) {
           setAdDuration(parseInt(adSetting.value) || 5)
           setAdCountdown(parseInt(adSetting.value) || 5)
+        }
+        const creditsSetting = data.settings?.find((s: any) => s.key === 'credits_per_minute')
+        if (creditsSetting) {
+          setCreditsPerMinute(parseInt(creditsSetting.value) || 10)
         }
       })
       .catch(() => {})
@@ -192,6 +198,9 @@ export default function TellerDetailPage() {
     }
   }
 
+  // Calculate total cost based on selected duration
+  const totalCost = selectedDuration * creditsPerMinute
+
   const handleBookSession = async () => {
     if (!session?.user) {
       router.push(`/${language}/login`)
@@ -200,7 +209,7 @@ export default function TellerDetailPage() {
 
     if (!teller) return
 
-    if (userCredits < teller.pricePerSession) {
+    if (userCredits < totalCost) {
       setBookingError(language === 'tr' ? 'Yetersiz kredi' : 'Insufficient credits')
       return
     }
@@ -212,7 +221,10 @@ export default function TellerDetailPage() {
       const res = await fetch(`/api/fortune-tellers/${tellerId}/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fortuneType: selectedFortuneType })
+        body: JSON.stringify({ 
+          fortuneType: selectedFortuneType,
+          duration: selectedDuration 
+        })
       })
 
       if (!res.ok) {
@@ -221,7 +233,7 @@ export default function TellerDetailPage() {
       }
 
       const data = await res.json()
-      setUserCredits(prev => prev - teller.pricePerSession)
+      setUserCredits(prev => prev - totalCost)
       
       // Show ad first, then waiting screen
       setWaitingSessionId(data.sessionId)
@@ -499,6 +511,42 @@ export default function TellerDetailPage() {
                   </div>
                 </div>
 
+                {/* Duration Selection */}
+                <div>
+                  <label className="block text-sm text-purple-300 mb-2">
+                    {language === 'tr' ? 'Süre Seçin' : 'Select Duration'}
+                  </label>
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                    {[5, 10, 15, 20, 30].map(mins => {
+                      const cost = mins * creditsPerMinute
+                      const canAfford = !session?.user || userCredits >= cost
+                      return (
+                        <button
+                          key={mins}
+                          onClick={() => setSelectedDuration(mins)}
+                          disabled={!canAfford}
+                          className={`px-3 py-3 rounded-lg border transition-all text-center ${
+                            selectedDuration === mins
+                              ? 'bg-gradient-to-r from-purple-600 to-pink-600 border-purple-500 text-white'
+                              : canAfford
+                                ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:border-purple-500/50'
+                                : 'bg-gray-800/50 border-gray-700/30 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="text-lg font-bold">{mins}</div>
+                          <div className="text-[10px] opacity-75">{language === 'tr' ? 'dakika' : 'min'}</div>
+                          <div className="text-xs mt-1 text-yellow-400">{cost}₺</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-purple-400 mt-2 text-center">
+                    {language === 'tr' 
+                      ? `${creditsPerMinute} kredi/dakika • Toplam: ${totalCost} kredi`
+                      : `${creditsPerMinute} credits/min • Total: ${totalCost} credits`}
+                  </p>
+                </div>
+
                 {/* Credits Info */}
                 {session?.user && (
                   <div className="flex items-center justify-between p-4 bg-deep-purple-900/50 rounded-lg">
@@ -506,7 +554,7 @@ export default function TellerDetailPage() {
                       {language === 'tr' ? 'Mevcut Krediniz:' : 'Your Credits:'}
                     </span>
                     <span className={`font-semibold ${
-                      userCredits >= teller.pricePerSession ? 'text-green-400' : 'text-red-400'
+                      userCredits >= totalCost ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {userCredits} {language === 'tr' ? 'kredi' : 'credits'}
                     </span>
@@ -522,7 +570,7 @@ export default function TellerDetailPage() {
                 {/* Book Button */}
                 <button
                   onClick={handleBookSession}
-                  disabled={bookingLoading || !teller.isOnline || (session?.user && userCredits < teller.pricePerSession)}
+                  disabled={bookingLoading || !teller.isOnline || (session?.user && userCredits < totalCost)}
                   className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   {bookingLoading ? (
@@ -534,9 +582,9 @@ export default function TellerDetailPage() {
                         ? (language === 'tr' ? 'Giriş Yap & Randevu Al' : 'Login & Book Session')
                         : !teller.isOnline
                           ? (language === 'tr' ? 'Falcı Çevrimdışı' : 'Teller is Offline')
-                          : userCredits < teller.pricePerSession
+                          : userCredits < totalCost
                             ? (language === 'tr' ? 'Yetersiz Kredi' : 'Insufficient Credits')
-                            : (language === 'tr' ? `Randevu Al (${teller.pricePerSession} Kredi)` : `Book Session (${teller.pricePerSession} Credits)`)}
+                            : (language === 'tr' ? `Randevu Al (${totalCost} Kredi - ${selectedDuration} dk)` : `Book Session (${totalCost} Credits - ${selectedDuration} min)`)}
                     </>
                   )}
                 </button>

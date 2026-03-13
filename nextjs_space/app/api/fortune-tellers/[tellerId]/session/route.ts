@@ -17,7 +17,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { fortuneType } = body;
+    const { fortuneType, duration = 10 } = body; // Default 10 minutes
 
     // Get teller
     const teller = await prisma.liveFortuneTeller.findUnique({
@@ -28,13 +28,22 @@ export async function POST(
       return NextResponse.json({ error: 'Teller not available' }, { status: 400 });
     }
 
+    // Get credits per minute from platform settings
+    const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
+      where: { key: 'credits_per_minute' }
+    });
+    const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+    
+    // Calculate total cost based on duration
+    const totalCost = duration * creditsPerMinute;
+
     // Check user credits
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { credits: true }
     });
 
-    if (!user || user.credits < teller.pricePerSession) {
+    if (!user || user.credits < totalCost) {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
     }
 
@@ -44,20 +53,22 @@ export async function POST(
       select: { name: true, email: true }
     });
 
-    // Create session and deduct credits
+    // Create session with duration and deduct credits
     const [liveSession] = await prisma.$transaction([
       prisma.liveSession.create({
         data: {
           tellerId: teller.id,
           userId: session.user.id,
           fortuneType: fortuneType || 'general',
-          creditsCharged: teller.pricePerSession,
+          creditsCharged: totalCost,
+          maxMinutes: duration,
+          creditsPerMinute: creditsPerMinute,
           status: 'pending'
         }
       }),
       prisma.user.update({
         where: { id: session.user.id },
-        data: { credits: { decrement: teller.pricePerSession } }
+        data: { credits: { decrement: totalCost } }
       })
     ]);
 
@@ -78,12 +89,13 @@ export async function POST(
         userId: teller.userId,
         type: 'session_request',
         title: 'Yeni Randevu Talebi / New Session Request',
-        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName.tr} için randevu talep etti. / ${fullUser?.name || 'A user'} requested a ${ftName.en} session with you.`,
+        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName.tr} için ${duration} dakikalık randevu talep etti. / ${fullUser?.name || 'A user'} requested a ${duration} minute ${ftName.en} session with you.`,
         data: JSON.stringify({
           sessionId: liveSession.id,
           fortuneType: fortuneType || 'general',
           userName: fullUser?.name,
-          creditsCharged: teller.pricePerSession
+          creditsCharged: totalCost,
+          duration: duration
         })
       }
     });
