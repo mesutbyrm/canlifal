@@ -97,6 +97,7 @@ const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; e
 
 const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
+  { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
   { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
   { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
   { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'Kredi Paketleri', enLabel: 'Credit Packages' },
