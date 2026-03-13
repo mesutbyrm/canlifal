@@ -607,24 +607,31 @@ export default function ChatRoomPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Area (Left/Main) */}
         <div className="flex-1 flex flex-col border-r border-purple-500/30">
-          {/* Chat Header - Yönet Button */}
+          {/* Chat Header - Room Name and Yönet Button */}
           <div className="h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
-            <button
-              onClick={() => {
-                if (hasManagePermission) {
-                  setShowChatManagePanel(!showChatManagePanel)
-                }
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                hasManagePermission 
-                  ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
-                  : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              {language === 'tr' ? 'Yönet' : 'Manage'}
-              {hasManagePermission && (showChatManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (hasManagePermission) {
+                    setShowChatManagePanel(!showChatManagePanel)
+                  }
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                  hasManagePermission 
+                    ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
+                    : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                {language === 'tr' ? 'Yönet' : 'Manage'}
+                {hasManagePermission && (showChatManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+              </button>
+              
+              {/* Room Name */}
+              <span className="text-gold-400 font-medium text-sm">
+                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
+              </span>
+            </div>
             
             {/* Room Muted Indicator */}
             {roomMuted && (
@@ -699,9 +706,6 @@ export default function ChatRoomPage() {
                       key={msg.id}
                       className={`px-2 py-0.5 ${isMentioned ? 'bg-gold-500/20' : ''}`}
                     >
-                      <span className="text-purple-500/60 text-xs mr-2">
-                        [{formatTime(msg.createdAt)}]
-                      </span>
                       {msg.user.chatRole && (
                         <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-1`}>
                           {msg.user.roleSymbol}
