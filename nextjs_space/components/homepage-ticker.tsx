@@ -71,22 +71,12 @@ export default function HomepageTicker() {
   })
   const tickerRef = useRef<HTMLDivElement>(null)
   
-  // Theme-based styling with improved readability
-  const isFalci = theme === 'falci'
-  const isCosmic = theme === 'cosmic'
-  const bgGradient = isFalci
-    ? 'bg-gradient-to-r from-[#1a0a2e] via-indigo-900/30 to-[#1a0a2e] border-indigo-400/40'
-    : isCosmic 
-      ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-400/40'
-      : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-400/40'
-  const labelGradient = isFalci
-    ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
-    : isCosmic
-      ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-      : 'bg-gradient-to-r from-purple-600 to-pink-600'
-  const accentColor = isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-amber-300'
-  const secondaryText = isFalci ? 'text-white' : isCosmic ? 'text-slate-100' : 'text-gray-100'
-  const guestColor = isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-300' : 'text-purple-200'
+  // FalClub theme styling
+  const bgGradient = 'bg-gradient-to-r from-[#1a0a2e] via-fuchsia-900/30 to-[#1a0a2e] border-fuchsia-400/40'
+  const labelGradient = 'bg-gradient-to-r from-fuchsia-500 to-pink-500'
+  const accentColor = 'text-fuchsia-300'
+  const secondaryText = 'text-white'
+  const guestColor = 'text-fuchsia-200'
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,13 +134,13 @@ export default function HomepageTicker() {
               <Image src={user.image} alt={user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
-            <div className={`w-5 h-5 rounded-full ${isGuest ? (isCosmic ? 'bg-blue-500/30' : 'bg-purple-500/30') : 'bg-green-500/30'} flex items-center justify-center`}>
-              <span className={`text-[10px] ${isGuest ? (isCosmic ? 'text-blue-300' : 'text-purple-300') : 'text-green-300'}`}>
+            <div className={`w-5 h-5 rounded-full ${isGuest ? 'bg-fuchsia-500/30' : 'bg-green-500/30'} flex items-center justify-center`}>
+              <span className={`text-[10px] ${isGuest ? 'text-fuchsia-300' : 'text-green-300'}`}>
                 {isGuest ? '👤' : (user.name?.charAt(0) || '?')}
               </span>
             </div>
           )}
-          <span className={`text-xs font-semibold ${isGuest ? (isCosmic ? 'text-blue-300' : 'text-purple-300') : secondaryText}`}>
+          <span className={`text-xs font-semibold ${isGuest ? 'text-fuchsia-300' : secondaryText}`}>
             {displayName}
           </span>
         </div>
@@ -172,7 +162,7 @@ export default function HomepageTicker() {
               <Image src={purchase.user.image} alt={purchase.user.name || ''} width={20} height={20} className="object-cover" />
             </div>
           ) : (
-            <div className={`w-5 h-5 rounded-full ${isCosmic ? 'bg-blue-500/20' : 'bg-gold-500/20'} flex items-center justify-center`}>
+            <div className="w-5 h-5 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
               <span className={`text-[10px] ${accentColor}`}>{purchase.user.name?.charAt(0) || '?'}</span>
             </div>
           )}
@@ -192,8 +182,8 @@ export default function HomepageTicker() {
     
     tickerItems.push(
       <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-        <Crown className={`w-4 h-4 ${isCosmic ? 'text-cyan-400' : 'text-pink-400'}`} />
-        <span className={`${isCosmic ? 'text-blue-300' : 'text-purple-300'} text-xs`}>
+        <Crown className="w-4 h-4 text-pink-400" />
+        <span className="text-fuchsia-300 text-xs">
           <span className="text-white font-semibold">{senderName}</span>
           {language === 'tr' ? ', ' : ' sent '}
           <span className="text-white font-semibold">{receiverName}</span>
@@ -229,7 +219,7 @@ export default function HomepageTicker() {
       tickerItems.push(
         <div key={`placeholder-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
           <span className="text-lg">{msg.icon}</span>
-          <span className={`${isCosmic ? 'text-blue-300' : 'text-purple-300'} text-xs font-medium`}>{msg.text}</span>
+          <span className="text-fuchsia-300 text-xs font-medium">{msg.text}</span>
         </div>
       )
     })

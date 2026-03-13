@@ -17,8 +17,7 @@ import {
   Check,
   Clock,
   Coins,
-  Tv,
-  Palette
+  Tv
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -29,7 +28,6 @@ interface PlatformSettings {
   session_duration_minutes: string
   credits_per_minute: string
   ad_duration_seconds: string
-  default_theme: string
 }
 
 export default function AdminSettingsPage() {
@@ -44,8 +42,7 @@ export default function AdminSettingsPage() {
     welcome_credits: '10',
     session_duration_minutes: '5',
     credits_per_minute: '10',
-    ad_duration_seconds: '5',
-    default_theme: 'falclub'
+    ad_duration_seconds: '5'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -159,20 +156,7 @@ export default function AdminSettingsPage() {
       min: 0,
       max: 30
     },
-    {
-      key: 'default_theme',
-      label: language === 'tr' ? 'Varsayılan Site Teması' : 'Default Site Theme',
-      description: language === 'tr' ? 'Yeni kullanıcılar ve ziyaretçiler için varsayılan tema' : 'Default theme for new users and visitors',
-      icon: Palette,
-      type: 'select',
-      options: [
-        { value: 'mystical', label: language === 'tr' ? 'Mistik (Mor & Altın)' : 'Mystical (Purple & Gold)' },
-        { value: 'cosmic', label: language === 'tr' ? 'Kozmik (Mavi & Amber)' : 'Cosmic (Blue & Amber)' },
-        { value: 'facebook', label: 'Facebook (Mavi & Beyaz / Blue & White)' },
-        { value: 'falci', label: language === 'tr' ? 'Falcı (Premium Mor)' : 'Falcı (Premium Purple)' },
-        { value: 'falclub', label: language === 'tr' ? 'FalClub (Neon Pembe)' : 'FalClub (Neon Pink)' }
-      ]
-    }
+
   ]
 
   return (

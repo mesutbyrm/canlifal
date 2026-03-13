@@ -23,8 +23,8 @@ export default function GiftNotificationBanner() {
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [newNotifTrigger, setNewNotifTrigger] = useState(0)
 
-  const isCosmic = theme === 'cosmic'
-  const isFacebook = theme === 'facebook'
+  const isFalclub = true
+  
 
   // Poll for new big gifts every 15 seconds
   const fetchBigGifts = useCallback(async () => {
@@ -104,11 +104,8 @@ export default function GiftNotificationBanner() {
     ? `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.amount.toLocaleString()} Jeton Hediye!`
     : `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Attı!`
 
-  const bannerBg = isFacebook
-    ? 'linear-gradient(90deg, #1a3a8a, #1877f2, #4299e1, #1877f2, #1a3a8a)'
-    : isCosmic
-    ? 'linear-gradient(90deg, #0c1445, #1e3a8a, #3b82f6, #1e3a8a, #0c1445)'
-    : 'linear-gradient(90deg, #2d0a4e, #7c3aed, #c026d3, #7c3aed, #2d0a4e)'
+  // FalClub theme gradient
+  const bannerBg = 'linear-gradient(90deg, #2d0a4e, #d946ef, #ec4899, #d946ef, #2d0a4e)'
 
   return (
     <div

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
-import { useSiteTheme } from '@/lib/theme-context'
+
 import { motion } from 'framer-motion'
 import {
   User,
@@ -56,12 +56,7 @@ export default function SettingsPage() {
   const { data: session, status } = useSession() || {}
   const router = useRouter()
   const { language } = useLanguage()
-  const { theme } = useSiteTheme()
   const containerRef = useRef<HTMLDivElement>(null)
-
-  const isFalclub = theme === 'falclub'
-  const isFalci = theme === 'falci'
-  const isCosmic = theme === 'cosmic'
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -227,39 +222,18 @@ export default function SettingsPage() {
     }
   }
 
-  // Theme colors
-  const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
-  const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/60 to-[#1a0a2e]/60 border-fuchsia-500/20'
-    : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/60 to-[#1a0b2e]/60 border-indigo-500/20'
-    : isCosmic ? 'bg-white/5 border-blue-500/20'
-    : 'bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 border-purple-500/20'
-  const labelColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
-  const inputBg = isFalclub ? 'bg-[#1a0a2e]/60 border-fuchsia-500/30 focus:border-fuchsia-400'
-    : isFalci ? 'bg-[#1a0b2e]/60 border-indigo-500/30 focus:border-indigo-400'
-    : isCosmic ? 'bg-[#0d1f3c]/60 border-blue-500/30 focus:border-blue-400'
-    : 'bg-deep-purple-900/50 border-purple-500/30 focus:border-gold-500'
-  const accentIcon = isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-purple-400'
-  const goldAccent = isCosmic ? 'text-amber-500' : 'text-gold-500'
-  const btnGradient = isFalclub ? 'from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700'
-    : isFalci ? 'from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-    : isCosmic ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
-    : 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-  const zodiacBg = isFalclub ? 'from-fuchsia-600/20 to-pink-600/20 border-fuchsia-500/30'
-    : isFalci ? 'from-indigo-600/20 to-purple-600/20 border-indigo-500/30'
-    : isCosmic ? 'from-blue-600/20 to-cyan-600/20 border-blue-500/30'
-    : 'from-purple-600/20 to-pink-600/20 border-purple-500/30'
-  const privacyCardBg = isFalclub ? 'bg-gradient-to-br from-fuchsia-900/40 to-pink-900/30 border-fuchsia-500/30'
-    : isFalci ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/30'
-    : isCosmic ? 'bg-gradient-to-br from-blue-900/40 to-cyan-900/30 border-blue-500/30'
-    : 'bg-gradient-to-br from-purple-900/40 to-pink-900/30 border-purple-500/30'
-  const privacyActive = isFalclub ? 'bg-fuchsia-600/30 border-fuchsia-500'
-    : isFalci ? 'bg-indigo-600/30 border-indigo-500'
-    : isCosmic ? 'bg-blue-600/30 border-blue-500'
-    : 'bg-purple-600/30 border-purple-500'
-  const privacyInactive = isFalclub ? 'bg-fuchsia-900/20 border-fuchsia-800 hover:border-fuchsia-600'
-    : isFalci ? 'bg-indigo-900/20 border-indigo-800 hover:border-indigo-600'
-    : isCosmic ? 'bg-blue-900/20 border-blue-800 hover:border-blue-600'
-    : 'bg-purple-900/20 border-purple-800 hover:border-purple-600'
+  // FalClub theme colors
+  const bgColor = 'falclub-starry-bg'
+  const cardBg = 'bg-gradient-to-br from-[#2d1145]/60 to-[#1a0a2e]/60 border-fuchsia-500/20'
+  const labelColor = 'text-fuchsia-300'
+  const inputBg = 'bg-[#1a0a2e]/60 border-fuchsia-500/30 focus:border-fuchsia-400'
+  const accentIcon = 'text-fuchsia-400'
+  const goldAccent = 'text-gold-500'
+  const btnGradient = 'from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700'
+  const zodiacBg = 'from-fuchsia-600/20 to-pink-600/20 border-fuchsia-500/30'
+  const privacyCardBg = 'bg-gradient-to-br from-fuchsia-900/40 to-pink-900/30 border-fuchsia-500/30'
+  const privacyActive = 'bg-fuchsia-600/30 border-fuchsia-500'
+  const privacyInactive = 'bg-fuchsia-900/20 border-fuchsia-800 hover:border-fuchsia-600'
 
   // Click outside form area to go back
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -295,21 +269,14 @@ export default function SettingsPage() {
           {/* Profile Picture */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-4 ${
-                isFalclub ? 'border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-600 to-pink-600'
-                : isFalci ? 'border-indigo-500/30 bg-gradient-to-br from-indigo-600 to-purple-600'
-                : isCosmic ? 'border-blue-500/30 bg-gradient-to-br from-blue-600 to-cyan-600'
-                : 'border-purple-500/30 bg-gradient-to-br from-purple-600 to-pink-600'
-              }`}>
+              <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-4 border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-600 to-pink-600">
                 {image ? (
                   <img src={image} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-10 h-10 text-white/70" />
                 )}
               </div>
-              <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                isCosmic ? 'bg-amber-500 hover:bg-amber-400' : 'bg-gold-500 hover:bg-gold-400'
-              }`}>
+              <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors bg-gold-500 hover:bg-gold-400">
                 {uploadingImage ? <Loader2 className="w-4 h-4 text-black animate-spin" /> : <Camera className="w-4 h-4 text-black" />}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
@@ -371,7 +338,7 @@ export default function SettingsPage() {
               className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
           </div>
 
-          <div className={`border-t pt-6 ${isFalclub ? 'border-fuchsia-500/20' : isFalci ? 'border-indigo-500/20' : isCosmic ? 'border-blue-500/20' : 'border-purple-500/20'}`}>
+          <div className="border-t pt-6 border-fuchsia-500/20">
             <h3 className={`text-lg font-semibold text-white mb-4 flex items-center gap-2`}>
               <Sparkles className={`w-5 h-5 ${goldAccent}`} />
               {language === 'tr' ? 'Fal Bilgileri' : 'Fortune Details'}

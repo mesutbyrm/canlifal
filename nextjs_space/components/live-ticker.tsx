@@ -70,27 +70,12 @@ export default function LiveTicker() {
   })
   const tickerRef = useRef<HTMLDivElement>(null)
   
-  const isFalci = theme === 'falci'
-  const isFalclub = theme === 'falclub'
-  const isCosmic = theme === 'cosmic'
-
-  const bgGradient = isFalclub
-    ? 'bg-gradient-to-r from-[#0f0520] via-fuchsia-900/30 to-[#0f0520] border-fuchsia-500/30'
-    : isFalci
-      ? 'bg-gradient-to-r from-[#1a0a2e] via-indigo-900/30 to-[#1a0a2e] border-indigo-500/30'
-      : isCosmic
-        ? 'bg-gradient-to-r from-[#0a1628] via-blue-900/30 to-[#0a1628] border-blue-500/30'
-        : 'bg-gradient-to-r from-[#0a0118] via-purple-900/30 to-[#0a0118] border-purple-500/30'
-  const labelGradient = isFalclub
-    ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500'
-    : isFalci
-      ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
-      : isCosmic
-        ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-        : 'bg-gradient-to-r from-purple-600 to-pink-600'
-  const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-amber-300' : 'text-amber-300'
-  const secondaryText = isFalclub ? 'text-white' : isFalci ? 'text-white' : isCosmic ? 'text-slate-100' : 'text-gray-100'
-  const guestColor = isFalclub ? 'text-fuchsia-200' : isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-300' : 'text-purple-200'
+  // FalClub theme styling
+  const bgGradient = 'bg-gradient-to-r from-[#0f0520] via-fuchsia-900/30 to-[#0f0520] border-fuchsia-500/30'
+  const labelGradient = 'bg-gradient-to-r from-fuchsia-500 to-pink-500'
+  const accentColor = 'text-fuchsia-300'
+  const secondaryText = 'text-white'
+  const guestColor = 'text-fuchsia-200'
 
   useEffect(() => {
     const fetchData = async () => {
@@ -156,7 +141,7 @@ export default function LiveTicker() {
     const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
     tickerItems.push(
       <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
-        <Crown className={`w-3 h-3 ${isFalclub ? 'text-pink-400' : isCosmic ? 'text-cyan-400' : 'text-pink-400'}`} />
+        <Crown className={`w-3 h-3 ${'text-pink-400'}`} />
         <span className={`text-[10px] ${guestColor}`}>
           <span className="text-white font-medium">{senderName}</span>→
           <span className="text-lg">{gift.giftType.icon}</span>→
