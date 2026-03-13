@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins } from 'lucide-react'
+import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins, BellRing, BellOff } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { usePushNotifications } from './push-notification-provider'
 
 interface Notification {
   id: string
@@ -23,6 +24,7 @@ export default function NotificationBell() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
   const router = useRouter()
+  const { isSupported, permission, requestPermission, unreadCount: pushUnreadCount } = usePushNotifications()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
@@ -47,6 +49,10 @@ export default function NotificationBell() {
       console.log('Audio not supported')
     }
   }, [])
+
+  const handleEnableNotifications = async () => {
+    await requestPermission()
+  }
 
   const fetchNotifications = useCallback(async () => {
     if (!session?.user) return
@@ -241,6 +247,35 @@ export default function NotificationBell() {
                   </button>
                 </div>
               </div>
+              
+              {/* Browser Notification Toggle */}
+              {isSupported && (
+                <div className="px-4 py-3 border-b border-fuchsia-500/20 bg-fuchsia-900/20">
+                  {permission === 'granted' ? (
+                    <div className="flex items-center gap-2 text-green-400">
+                      <BellRing className="w-4 h-4" />
+                      <span className="text-sm">
+                        {language === 'tr' ? '🔔 Tarayıcı bildirimleri açık' : '🔔 Browser notifications enabled'}
+                      </span>
+                    </div>
+                  ) : permission === 'denied' ? (
+                    <div className="flex items-center gap-2 text-red-400">
+                      <BellOff className="w-4 h-4" />
+                      <span className="text-sm">
+                        {language === 'tr' ? '🔕 Bildirimler tarayıcı ayarlarından kapatıldı' : '🔕 Notifications blocked in browser'}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleEnableNotifications}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-sm font-medium transition-all"
+                    >
+                      <BellRing className="w-4 h-4" />
+                      {language === 'tr' ? 'Tarayıcı Bildirimlerini Aç' : 'Enable Browser Notifications'}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Notifications List */}
               <div className="flex-1 overflow-y-auto">
