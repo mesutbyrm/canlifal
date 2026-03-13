@@ -92,7 +92,7 @@ export default function AdminCreditsPage() {
   }
 
   const searchUsers = useCallback(async (query: string) => {
-    if (query.length < 2) {
+    if (query.length < 1) {
       setSearchResults([])
       return
     }
@@ -141,6 +141,35 @@ export default function AdminCreditsPage() {
       }
     } catch (err) {
       console.error('Process error:', err)
+      alert('Bir hata oluştu')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // Direct reject without opening modal
+  const handleReject = async (notif: PaymentNotification) => {
+    if (!confirm('Bu ödeme bildirimini reddetmek istediğinize emin misiniz?')) return
+    
+    setProcessing(true)
+    try {
+      const res = await fetch('/api/admin/payments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notificationId: notif.id,
+          action: 'reject'
+        })
+      })
+
+      if (res.ok) {
+        fetchNotifications()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Bir hata oluştu')
+      }
+    } catch (err) {
+      console.error('Reject error:', err)
       alert('Bir hata oluştu')
     } finally {
       setProcessing(false)
@@ -371,8 +400,9 @@ export default function AdminCreditsPage() {
                         Onayla
                       </button>
                       <button
-                        onClick={() => { setProcessModal(notif); handleProcess('reject'); }}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                        onClick={() => handleReject(notif)}
+                        disabled={processing}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
                       >
                         <X className="w-4 h-4" />
                         Reddet

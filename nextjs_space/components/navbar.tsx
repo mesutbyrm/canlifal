@@ -381,14 +381,25 @@ export default function Navbar() {
                         <span className="font-bold text-gold-400">{credits}</span>
                       </Link>
                       
-                      {/* Payment Notification Button */}
-                      <button
-                        onClick={() => { setShowProfileMenu(false); setShowPaymentModal(true); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
-                      >
-                        <Send className="w-5 h-5 text-green-400" />
-                        {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
-                      </button>
+                      {/* Payment Notification / Admin Payment Orders */}
+                      {session?.user?.role === 'admin' ? (
+                        <Link
+                          href={`/${language}/admin/credits`}
+                          className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <CreditCard className="w-5 h-5 text-gold-400" />
+                          {language === 'tr' ? 'Ödeme Emri' : 'Payment Orders'}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => { setShowProfileMenu(false); setShowPaymentModal(true); }}
+                          className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
+                        >
+                          <Send className="w-5 h-5 text-green-400" />
+                          {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
+                        </button>
+                      )}
                       
                       <Link
                         href={`/${language}/profile/${session.user.id}`}

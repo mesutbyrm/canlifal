@@ -13,35 +13,33 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const q = searchParams.get('q')?.trim()
 
-    if (!q || q.length < 2) {
-      return NextResponse.json([])
+    if (!q || q.length < 1) {
+      return NextResponse.json({ users: [] })
     }
 
     const users = await prisma.user.findMany({
       where: {
-        AND: [
-          { id: { not: session.user.id } },
-          {
-            OR: [
-              { name: { contains: q, mode: 'insensitive' } },
-              { username: { contains: q, mode: 'insensitive' } }
-            ]
-          }
+        OR: [
+          { name: { startsWith: q, mode: 'insensitive' } },
+          { username: { startsWith: q, mode: 'insensitive' } },
+          { email: { startsWith: q, mode: 'insensitive' } }
         ]
       },
       select: {
         id: true,
         name: true,
         username: true,
-        image: true
+        email: true,
+        image: true,
+        jetonBalance: true
       },
-      take: 10,
+      take: 15,
       orderBy: { name: 'asc' }
     })
 
-    return NextResponse.json(users)
+    return NextResponse.json({ users })
   } catch (error) {
     console.error('User search error:', error)
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json({ users: [] }, { status: 500 })
   }
 }

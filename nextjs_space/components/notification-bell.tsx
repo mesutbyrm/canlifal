@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle } from 'lucide-react'
+import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
@@ -112,7 +112,15 @@ export default function NotificationBell() {
     if (notif.data) {
       try { parsedData = JSON.parse(notif.data) } catch (e) {}
     }
-    if (notif.type === 'session_update' || notif.type === 'session_request') {
+    // Payment notifications - navigate to admin credits page
+    if (notif.type === 'payment_notification' || notif.type === 'payment_approved' || notif.type === 'payment_rejected') {
+      // Admin goes to credits management, user goes to memberships
+      if (session?.user?.role === 'admin') {
+        router.push(`/${language}/admin/credits`)
+      } else {
+        router.push(`/${language}/memberships`)
+      }
+    } else if (notif.type === 'session_update' || notif.type === 'session_request') {
       if (parsedData?.action === 'accept' && parsedData?.sessionId) {
         router.push(`/${language}/live-room/${parsedData.sessionId}`)
       } else if (parsedData?.sessionId) {
@@ -134,6 +142,9 @@ export default function NotificationBell() {
       case 'share': return <Share2 className="w-4 h-4 text-green-400" />
       case 'session_update': return <Video className="w-4 h-4 text-fuchsia-400" />
       case 'session_request': return <Video className="w-4 h-4 text-green-400" />
+      case 'payment_notification': return <CreditCard className="w-4 h-4 text-yellow-400" />
+      case 'payment_approved': return <Coins className="w-4 h-4 text-green-400" />
+      case 'payment_rejected': return <CreditCard className="w-4 h-4 text-red-400" />
       default: return <Bell className="w-4 h-4 text-fuchsia-300" />
     }
   }
