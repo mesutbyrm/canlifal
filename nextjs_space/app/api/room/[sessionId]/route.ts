@@ -81,7 +81,9 @@ export async function GET(
       creditsPerMinute,
       isUser,
       isTeller,
-      peerId: isUser ? liveSession.teller.userId : liveSession.userId
+      peerId: isUser ? liveSession.teller.userId : liveSession.userId,
+      timerStarted: liveSession.timerStarted,
+      timerStartedAt: liveSession.timerStartedAt
     });
   } catch (error) {
     console.error('Get room error:', error);
@@ -121,9 +123,14 @@ export async function PATCH(
 
     switch (action) {
       case 'ping': {
+        // Only count time if timer has been started by teller
+        if (!liveSession.timerStarted) {
+          return NextResponse.json({ minutesUsed: 0, timerStarted: false });
+        }
+
         // Update last ping and increment minutes used every minute
         const now = new Date();
-        const lastPing = liveSession.lastPingAt;
+        const lastPing = liveSession.lastPingAt || liveSession.timerStartedAt;
         let newMinutesUsed = liveSession.minutesUsed;
         
         if (lastPing) {
@@ -142,7 +149,74 @@ export async function PATCH(
           }
         });
 
-        return NextResponse.json({ minutesUsed: newMinutesUsed });
+        return NextResponse.json({ minutesUsed: newMinutesUsed, timerStarted: true });
+      }
+
+      case 'start_timer': {
+        // Only teller can start the timer
+        if (!isTeller) {
+          return NextResponse.json({ error: 'Only teller can start timer' }, { status: 403 });
+        }
+
+        const now = new Date();
+        await prisma.liveSession.update({
+          where: { id: params.sessionId },
+          data: {
+            timerStarted: true,
+            timerStartedAt: now,
+            lastPingAt: now
+          }
+        });
+
+        return NextResponse.json({ timerStarted: true, timerStartedAt: now });
+      }
+
+      case 'teller_add_time': {
+        // Teller adds time - deduct from user's credits
+        if (!isTeller) {
+          return NextResponse.json({ error: 'Only teller can add time' }, { status: 403 });
+        }
+
+        const addMinutes = minutes || 5;
+        
+        // Get credits per minute
+        const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
+          where: { key: 'credits_per_minute' }
+        });
+        const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+        const creditsNeeded = addMinutes * creditsPerMinute;
+
+        // Check user credits
+        const currentUser = await prisma.user.findUnique({
+          where: { id: liveSession.userId },
+          select: { credits: true }
+        });
+
+        if (!currentUser || currentUser.credits < creditsNeeded) {
+          return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok / User has insufficient credits' }, { status: 400 });
+        }
+
+        // Deduct credits and add time
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: liveSession.userId },
+            data: { credits: { decrement: creditsNeeded } }
+          }),
+          prisma.liveSession.update({
+            where: { id: params.sessionId },
+            data: {
+              maxMinutes: { increment: addMinutes },
+              creditsCharged: { increment: creditsNeeded }
+            }
+          })
+        ]);
+
+        return NextResponse.json({ 
+          added: addMinutes, 
+          creditsUsed: creditsNeeded,
+          newMaxMinutes: liveSession.maxMinutes + addMinutes,
+          userCreditsRemaining: currentUser.credits - creditsNeeded
+        });
       }
 
       case 'extend': {

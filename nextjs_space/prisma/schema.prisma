@@ -199,6 +199,8 @@ model LiveSession {
   minutesUsed      Int                  @default(0)
   creditsPerMinute Int                  @default(0)
   lastPingAt       DateTime?
+  timerStarted     Boolean              @default(false)
+  timerStartedAt   DateTime?
   messages         LiveSessionMessage[]
   teller           LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
   user             User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)

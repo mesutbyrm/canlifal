@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer
 } from 'lucide-react';
 
 interface RoomData {
@@ -18,6 +18,8 @@ interface RoomData {
   isUser: boolean;
   isTeller: boolean;
   peerId: string;
+  timerStarted: boolean;
+  timerStartedAt: string | null;
   teller: {
     displayName: string;
     avatar?: string;
@@ -62,6 +64,10 @@ export default function LiveRoomPage() {
   // Timer state
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [timerStarted, setTimerStarted] = useState(false);
+  const [showStartTimerPopup, setShowStartTimerPopup] = useState(false);
+  const [userCredits, setUserCredits] = useState(0);
+  const [showAddTimePopup, setShowAddTimePopup] = useState(false);
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -407,6 +413,56 @@ export default function LiveRoomPage() {
     }
   };
 
+  // Start timer (only teller can do this)
+  const startTimer = async () => {
+    try {
+      const res = await fetch(`/api/room/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start_timer' })
+      });
+
+      if (res.ok) {
+        setTimerStarted(true);
+        setShowStartTimerPopup(false);
+        // Reset timer when starting
+        setElapsedSeconds(0);
+        setRemainingSeconds(maxSecondsRef.current);
+      } else {
+        const err = await res.json();
+        alert(err.error);
+      }
+    } catch (err) {
+      console.error('Start timer error:', err);
+    }
+  };
+
+  // Teller adds time (deducts from user's credits)
+  const tellerAddTime = async (minutes: number) => {
+    try {
+      const res = await fetch(`/api/room/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'teller_add_time', minutes })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Update max seconds ref
+        maxSecondsRef.current += minutes * 60;
+        setRemainingSeconds(prev => prev + minutes * 60);
+        setUserCredits(data.userCreditsRemaining);
+        setShowAddTimePopup(false);
+        fetchRoomData();
+      } else {
+        const err = await res.json();
+        alert(err.error);
+      }
+    } catch (err) {
+      console.error('Teller add time error:', err);
+    }
+  };
+
   // End session
   const endSession = async () => {
     const confirm = window.confirm(
@@ -539,20 +595,32 @@ export default function LiveRoomPage() {
         maxSecondsRef.current = maxSeconds;
         setRemainingSeconds(maxSeconds - usedSeconds);
         setElapsedSeconds(usedSeconds);
+        setTimerStarted(roomInfo.timerStarted);
+        setUserCredits(roomInfo.user.credits);
         
-        // Timer for countdown
+        // If teller and timer not started, show popup
+        if (roomInfo.isTeller && !roomInfo.timerStarted) {
+          setShowStartTimerPopup(true);
+        }
+        
+        // Timer for countdown - only counts if timerStarted is true
         timerRef.current = setInterval(() => {
-          setElapsedSeconds(prev => {
-            const newElapsed = prev + 1;
-            const remaining = maxSecondsRef.current - newElapsed;
-            setRemainingSeconds(remaining);
+          setTimerStarted(started => {
+            if (!started) return started; // Don't count if not started
             
-            // Auto-end if time is up
-            if (remaining <= 0) {
-              cleanup();
-              router.push(`/${language}/dashboard`);
-            }
-            return newElapsed;
+            setElapsedSeconds(prev => {
+              const newElapsed = prev + 1;
+              const remaining = maxSecondsRef.current - newElapsed;
+              setRemainingSeconds(remaining);
+              
+              // Auto-end if time is up
+              if (remaining <= 0) {
+                cleanup();
+                router.push(`/${language}/dashboard`);
+              }
+              return newElapsed;
+            });
+            return started;
           });
         }, 1000);
         
@@ -657,14 +725,23 @@ export default function LiveRoomPage() {
 
         {/* Timer & Extend */}
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-mono ${
-            remainingSeconds < 60 ? 'bg-red-600 text-white animate-pulse' : 'bg-white/20 text-white'
-          }`}>
-            <Clock className="w-4 h-4" />
-            {formatTime(remainingSeconds)}
-          </div>
+          {/* Timer display - shows different status based on timerStarted */}
+          {timerStarted ? (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-mono ${
+              remainingSeconds < 60 ? 'bg-red-600 text-white animate-pulse' : 'bg-white/20 text-white'
+            }`}>
+              <Clock className="w-4 h-4" />
+              {formatTime(remainingSeconds)}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-yellow-600/80 text-white">
+              <Timer className="w-4 h-4" />
+              {language === 'tr' ? 'Bekleniyor' : 'Waiting'}
+            </div>
+          )}
           
-          {roomData.isUser && (
+          {/* User can extend session */}
+          {roomData.isUser && timerStarted && (
             <div className="relative group">
               <button className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500">
                 <Plus className="w-4 h-4" />
@@ -681,6 +758,17 @@ export default function LiveRoomPage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Teller can add time (deducts from user) */}
+          {roomData.isTeller && timerStarted && (
+            <button 
+              onClick={() => setShowAddTimePopup(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-semibold hover:bg-green-500"
+            >
+              <Plus className="w-4 h-4" />
+              {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+            </button>
           )}
         </div>
       </div>
@@ -844,6 +932,134 @@ export default function LiveRoomPage() {
           </div>
         )}
       </div>
+
+      {/* Start Timer Popup - Only for Teller */}
+      {showStartTimerPopup && roomData.isTeller && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-purple-900 to-deep-purple-900 rounded-2xl p-6 max-w-sm mx-4 border border-purple-600 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Play className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Seansı Başlat' : 'Start Session'}
+              </h3>
+              <p className="text-gray-300 text-sm">
+                {language === 'tr' 
+                  ? `${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`
+                  : `${roomData.user.name} is connected. Click below to start the timer or select duration first.`
+                }
+              </p>
+              <p className="text-gold-400 text-sm mt-2">
+                {language === 'tr' 
+                  ? `Kullanıcının jetonu: ${userCredits}`
+                  : `User credits: ${userCredits}`
+                }
+              </p>
+            </div>
+
+            {/* Quick start - uses existing maxMinutes */}
+            <button
+              onClick={startTimer}
+              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl mb-4 hover:from-green-600 hover:to-emerald-600 transition-all flex items-center justify-center gap-2"
+            >
+              <Play className="w-5 h-5" />
+              {language === 'tr' ? 'Şimdi Başlat' : 'Start Now'}
+            </button>
+
+            {/* Or select duration and add time first */}
+            <div className="border-t border-purple-700 pt-4">
+              <p className="text-gray-400 text-xs mb-3 text-center">
+                {language === 'tr' ? 'veya önce süre ekleyin:' : 'or add time first:'}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[5, 10, 15].map((mins) => {
+                  const cost = mins * roomData.creditsPerMinute;
+                  const canAfford = userCredits >= cost;
+                  return (
+                    <button
+                      key={mins}
+                      onClick={async () => {
+                        if (canAfford) {
+                          await tellerAddTime(mins);
+                          await startTimer();
+                        }
+                      }}
+                      disabled={!canAfford}
+                      className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                        canAfford 
+                          ? 'bg-purple-700 text-white hover:bg-purple-600' 
+                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <div>{mins} dk</div>
+                      <div className="text-xs text-gray-400">{cost} jeton</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Time Popup - Only for Teller */}
+      {showAddTimePopup && roomData.isTeller && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-purple-900 to-deep-purple-900 rounded-2xl p-6 max-w-sm mx-4 border border-purple-600 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+              </h3>
+              <p className="text-gray-300 text-sm">
+                {language === 'tr' 
+                  ? 'Kullanıcının jetonundan düşülecek'
+                  : 'Will be deducted from user credits'
+                }
+              </p>
+              <p className="text-gold-400 text-sm mt-2">
+                {language === 'tr' 
+                  ? `Kullanıcının jetonu: ${userCredits}`
+                  : `User credits: ${userCredits}`
+                }
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[5, 10, 15, 20, 30, 60].map((mins) => {
+                const cost = mins * roomData.creditsPerMinute;
+                const canAfford = userCredits >= cost;
+                return (
+                  <button
+                    key={mins}
+                    onClick={() => canAfford && tellerAddTime(mins)}
+                    disabled={!canAfford}
+                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${
+                      canAfford 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600' 
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="text-lg font-bold">{mins}</div>
+                    <div className="text-xs opacity-80">{language === 'tr' ? 'dakika' : 'min'}</div>
+                    <div className="text-xs mt-1 opacity-70">{cost} j</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowAddTimePopup(false)}
+              className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
+            >
+              {language === 'tr' ? 'İptal' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
