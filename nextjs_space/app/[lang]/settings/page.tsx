@@ -26,7 +26,12 @@ import {
   Shield,
   Lock,
   Users,
-  Globe
+  Globe,
+  Ban,
+  UserX,
+  Trash2,
+  MessageCircle,
+  Video
 } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
@@ -75,6 +80,27 @@ export default function SettingsPage() {
   const [zodiacSign, setZodiacSign] = useState('')
   const [risingSign, setRisingSign] = useState('')
   const [messagePrivacy, setMessagePrivacy] = useState('everyone')
+  
+  // Blocked users
+  interface BlockedUser {
+    id: string
+    roomId?: string
+    roomName?: string
+    roomSlug?: string
+    streamId?: string
+    streamTitle?: string
+    userId: string
+    userName: string | null
+    userUsername: string | null
+    userImage: string | null
+    reason?: string | null
+    createdAt?: string
+    bannedAt?: string
+    expiresAt?: string | null
+  }
+  const [blockedUsers, setBlockedUsers] = useState<{chatBans: BlockedUser[], streamBans: BlockedUser[]}>({ chatBans: [], streamBans: [] })
+  const [loadingBlocked, setLoadingBlocked] = useState(false)
+  const [unblocking, setUnblocking] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -83,7 +109,42 @@ export default function SettingsPage() {
       return
     }
     fetchProfile()
+    fetchBlockedUsers()
   }, [session, status, language])
+
+  const fetchBlockedUsers = async () => {
+    setLoadingBlocked(true)
+    try {
+      const res = await fetch('/api/user/blocked')
+      if (res.ok) {
+        const data = await res.json()
+        setBlockedUsers(data)
+      }
+    } catch (err) {
+      console.error('Fetch blocked users error:', err)
+    } finally {
+      setLoadingBlocked(false)
+    }
+  }
+
+  const handleUnblock = async (type: 'chat' | 'stream', id: string) => {
+    setUnblocking(id)
+    try {
+      const res = await fetch('/api/user/blocked', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id })
+      })
+      if (res.ok) {
+        // Refresh the blocked users list
+        fetchBlockedUsers()
+      }
+    } catch (err) {
+      console.error('Unblock error:', err)
+    } finally {
+      setUnblocking(null)
+    }
+  }
 
   const fetchProfile = async () => {
     try {
@@ -506,6 +567,116 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Blocked Users Section */}
+          <div className={`rounded-2xl p-6 space-y-4 border ${privacyCardBg}`}>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Ban className={`w-5 h-5 ${accentIcon}`} />
+              {language === 'tr' ? 'Engellenen Kullanıcılar' : 'Blocked Users'}
+            </h3>
+
+            {loadingBlocked ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
+              </div>
+            ) : (blockedUsers.chatBans.length === 0 && blockedUsers.streamBans.length === 0) ? (
+              <p className={`text-sm ${labelColor}`}>
+                {language === 'tr' ? 'Henüz kimseyi engellemediniz.' : 'You haven\'t blocked anyone yet.'}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {/* Chat Room Bans */}
+                {blockedUsers.chatBans.length > 0 && (
+                  <div>
+                    <p className={`text-xs ${labelColor} mb-2 flex items-center gap-1`}>
+                      <MessageCircle className="w-3 h-3" />
+                      {language === 'tr' ? 'Sohbet Odalarından' : 'From Chat Rooms'}
+                    </p>
+                    {blockedUsers.chatBans.map(ban => (
+                      <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
+                        <div className="flex items-center gap-3">
+                          {ban.userImage ? (
+                            <img src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
+                              <UserX className="w-5 h-5 text-fuchsia-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white font-medium text-sm">
+                              {ban.userName || ban.userUsername || 'Kullanıcı'}
+                            </p>
+                            <p className={`text-xs ${labelColor}`}>
+                              {language === 'tr' ? 'Oda' : 'Room'}: {ban.roomName}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleUnblock('chat', ban.id)}
+                          disabled={unblocking === ban.id}
+                          className="px-3 py-1.5 bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-white rounded-lg text-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                        >
+                          {unblocking === ban.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              {language === 'tr' ? 'Kaldır' : 'Remove'}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stream Bans */}
+                {blockedUsers.streamBans.length > 0 && (
+                  <div>
+                    <p className={`text-xs ${labelColor} mb-2 flex items-center gap-1`}>
+                      <Video className="w-3 h-3" />
+                      {language === 'tr' ? 'Canlı Yayınlardan' : 'From Live Streams'}
+                    </p>
+                    {blockedUsers.streamBans.map(ban => (
+                      <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
+                        <div className="flex items-center gap-3">
+                          {ban.userImage ? (
+                            <img src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
+                              <UserX className="w-5 h-5 text-fuchsia-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white font-medium text-sm">
+                              {ban.userName || ban.userUsername || 'Kullanıcı'}
+                            </p>
+                            <p className={`text-xs ${labelColor}`}>
+                              {language === 'tr' ? 'Yayın' : 'Stream'}: {ban.streamTitle}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleUnblock('stream', ban.id)}
+                          disabled={unblocking === ban.id}
+                          className="px-3 py-1.5 bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-white rounded-lg text-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                        >
+                          {unblocking === ban.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              {language === 'tr' ? 'Kaldır' : 'Remove'}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Save Button */}
