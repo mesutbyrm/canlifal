@@ -562,7 +562,7 @@ export default function ChatRoomPage() {
   )
 
   return (
-    <div className="h-screen bg-[#0a0118] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#0a0118] flex flex-col" style={{ height: '100dvh' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -650,12 +650,12 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* mIRC Style Layout - Full Screen */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* mIRC Style Layout - Full Screen - No Scroll */}
+      <div className="flex-1 flex min-h-0">
         {/* Chat Area (Left/Main) */}
-        <div className="flex-1 flex flex-col border-r border-purple-500/30">
-          {/* Chat Header - Room Name and Yönet Button */}
-          <div className="h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
+        <div className="flex-1 flex flex-col min-h-0 border-r border-purple-500/30">
+          {/* Chat Header - Room Name and Yönet Button - FIXED */}
+          <div className="flex-shrink-0 h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
@@ -744,8 +744,8 @@ export default function ChatRoomPage() {
             )}
           </AnimatePresence>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto bg-[#0d0520] p-2">
+          {/* Messages Area - SCROLLABLE */}
+          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
                 <Sparkles className="w-10 h-10 mb-3" />
@@ -827,9 +827,9 @@ export default function ChatRoomPage() {
             </div>
           )}
 
-          {/* Message Input */}
+          {/* Message Input - FIXED AT BOTTOM */}
           {session?.user ? (
-            <form onSubmit={handleSendMessage} className="bg-[#1a0b2e] border-t border-purple-500/30 p-2">
+            <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
               <div className="flex gap-2">
                 <input
                   ref={inputRef}
@@ -853,7 +853,7 @@ export default function ChatRoomPage() {
               </div>
             </form>
           ) : (
-            <div className="bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
+            <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
               <Link
                 href={`/${language}/login`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500"
@@ -866,9 +866,9 @@ export default function ChatRoomPage() {
         </div>
 
         {/* Users Panel (Right) - mIRC Style */}
-        <div className="w-52 md:w-60 flex flex-col bg-[#1a0b2e]">
-          {/* Users Header - Yönet Button */}
-          <div className="h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
+        <div className="w-48 md:w-56 flex flex-col min-h-0 bg-[#1a0b2e]">
+          {/* Users Header - Yönet Button - FIXED */}
+          <div className="flex-shrink-0 h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
             <button
               onClick={() => {
                 if (hasManagePermission) {
@@ -990,8 +990,8 @@ export default function ChatRoomPage() {
             )}
           </AnimatePresence>
 
-          {/* Users List - mIRC Style */}
-          <div className="flex-1 overflow-y-auto bg-[#0d0520]">
+          {/* Users List - mIRC Style - SCROLLABLE */}
+          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520]">
             {activeUsers.length === 0 ? (
               <p className="text-purple-400/50 text-xs p-2 text-center">
                 {language === 'tr' ? 'Kimse yok' : 'No one here'}

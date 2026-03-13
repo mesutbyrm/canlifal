@@ -22,17 +22,20 @@ export async function POST(
     const { action, targetUserId, role, reason, duration } = await request.json()
 
     const permissions = await getUserPermissions(roomId, session.user.id)
-
-    // Get target user's role for hierarchy check
-    const targetRole = await prisma.chatUserRole.findUnique({
-      where: { roomId_userId: { roomId, userId: targetUserId } }
-    })
-    const targetRoleLevel = ROLE_HIERARCHY[(targetRole?.role as ChatRole) || 'none']
     const actorRoleLevel = ROLE_HIERARCHY[permissions.role]
 
-    // Cannot act on users with same or higher role (except global admin)
-    if (targetUserId && targetRoleLevel >= actorRoleLevel && !permissions.isGlobalAdmin) {
-      return NextResponse.json({ error: 'Cannot moderate users with same or higher role' }, { status: 403 })
+    // Get target user's role for hierarchy check (only if targetUserId is provided)
+    let targetRoleLevel = 0
+    if (targetUserId) {
+      const targetRole = await prisma.chatUserRole.findUnique({
+        where: { roomId_userId: { roomId, userId: targetUserId } }
+      })
+      targetRoleLevel = ROLE_HIERARCHY[(targetRole?.role as ChatRole) || 'none']
+
+      // Cannot act on users with same or higher role (except global admin)
+      if (targetRoleLevel >= actorRoleLevel && !permissions.isGlobalAdmin) {
+        return NextResponse.json({ error: 'Cannot moderate users with same or higher role' }, { status: 403 })
+      }
     }
 
     switch (action) {
