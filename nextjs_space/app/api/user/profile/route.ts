@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
         risingSign: true,
         favoriteTeam: true,
         credits: true,
+        jetonBalance: true,
         membership: true,
+        membershipExpiresAt: true,
         messagePrivacy: true,
         createdAt: true,
         _count: {
