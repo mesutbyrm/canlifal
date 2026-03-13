@@ -109,14 +109,21 @@ export default function ChatRoomPage() {
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
   
-  // Voice Chat
+  // Voice Chat with WebRTC
   const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [isListening, setIsListening] = useState(false) // For listen-only mode
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
+  const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
   const audioContextRef = useRef<AudioContext | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
+  const remoteAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map())
+  const voicePollRef = useRef<NodeJS.Timeout | null>(null)
+  const lastSignalTimeRef = useRef<number>(0)
+  const voiceUsersPollRef = useRef<NodeJS.Timeout | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -252,6 +259,20 @@ export default function ChatRoomPage() {
     }
   }, [room, session?.user])
 
+  // Fetch voice users (for everyone to see who's in voice chat)
+  const fetchVoiceUsers = useCallback(async () => {
+    if (!room) return
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=0`)
+      if (res.ok) {
+        const { voiceUsers: users } = await res.json()
+        setVoiceUsers(users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching voice users:', error)
+    }
+  }, [room])
+
   // Initialize
   useEffect(() => {
     fetchAllRooms()
@@ -262,12 +283,14 @@ export default function ChatRoomPage() {
       fetchMessages()
       fetchActiveUsers()
       checkBan()
+      fetchVoiceUsers()
       setLoading(false)
 
       const messageInterval = setInterval(fetchMessages, 2000)
       const userInterval = setInterval(fetchActiveUsers, 5000)
       const presenceInterval = setInterval(updatePresence, 10000)
       const roomsInterval = setInterval(fetchAllRooms, 30000)
+      const voiceUsersInterval = setInterval(fetchVoiceUsers, 3000)
 
       updatePresence()
 
@@ -276,14 +299,174 @@ export default function ChatRoomPage() {
         clearInterval(userInterval)
         clearInterval(presenceInterval)
         clearInterval(roomsInterval)
+        clearInterval(voiceUsersInterval)
       }
     }
-  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms])
+  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers])
 
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // WebRTC Configuration
+  const rtcConfig: RTCConfiguration = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  }
+
+  // Create peer connection for a user
+  const createPeerConnection = useCallback((userId: string, isInitiator: boolean) => {
+    if (!room || !mediaStreamRef.current) return null
+    
+    const pc = new RTCPeerConnection(rtcConfig)
+    peerConnectionsRef.current.set(userId, pc)
+    
+    // Add local audio tracks
+    mediaStreamRef.current.getAudioTracks().forEach(track => {
+      pc.addTrack(track, mediaStreamRef.current!)
+    })
+    
+    // Handle incoming audio
+    pc.ontrack = (event) => {
+      const remoteAudio = new Audio()
+      remoteAudio.srcObject = event.streams[0]
+      remoteAudio.autoplay = true
+      remoteAudio.play().catch(console.error)
+      remoteAudioRef.current.set(userId, remoteAudio)
+      
+      // Update speaking users based on audio activity
+      const audioContext = new AudioContext()
+      const source = audioContext.createMediaStreamSource(event.streams[0])
+      const analyser = audioContext.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+      
+      const dataArray = new Uint8Array(analyser.frequencyBinCount)
+      const checkSpeaking = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray)
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+        setSpeakingUsers(prev => {
+          const next = new Set(prev)
+          if (avg > 20) next.add(userId)
+          else next.delete(userId)
+          return next
+        })
+      }, 100)
+      
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+          clearInterval(checkSpeaking)
+        }
+      }
+    }
+    
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate && room) {
+        fetch(`/api/chat/rooms/${room.id}/voice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'ice-candidate',
+            toUserId: userId,
+            data: JSON.stringify(event.candidate)
+          })
+        }).catch(console.error)
+      }
+    }
+    
+    return pc
+  }, [room])
+
+  // Send voice signal
+  const sendVoiceSignal = useCallback(async (type: string, data?: string, toUserId?: string) => {
+    if (!room) return
+    try {
+      await fetch(`/api/chat/rooms/${room.id}/voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, data, toUserId })
+      })
+    } catch (error) {
+      console.error('Error sending voice signal:', error)
+    }
+  }, [room])
+
+  // Poll for voice signals
+  const pollVoiceSignals = useCallback(async () => {
+    if (!room || !voiceEnabled) return
+    
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=${lastSignalTimeRef.current}`)
+      if (!res.ok) return
+      
+      const { signals, voiceUsers: users, timestamp } = await res.json()
+      lastSignalTimeRef.current = timestamp
+      setVoiceUsers(users)
+      
+      for (const signal of signals) {
+        const { fromUserId, fromUserName, type, data } = signal
+        
+        if (type === 'join') {
+          // New user joined, create offer
+          if (!peerConnectionsRef.current.has(fromUserId) && mediaStreamRef.current) {
+            const pc = createPeerConnection(fromUserId, true)
+            if (pc) {
+              const offer = await pc.createOffer()
+              await pc.setLocalDescription(offer)
+              sendVoiceSignal('offer', JSON.stringify(offer), fromUserId)
+            }
+          }
+        } else if (type === 'leave') {
+          // User left, cleanup
+          const pc = peerConnectionsRef.current.get(fromUserId)
+          if (pc) {
+            pc.close()
+            peerConnectionsRef.current.delete(fromUserId)
+          }
+          const audio = remoteAudioRef.current.get(fromUserId)
+          if (audio) {
+            audio.pause()
+            remoteAudioRef.current.delete(fromUserId)
+          }
+          setSpeakingUsers(prev => {
+            const next = new Set(prev)
+            next.delete(fromUserId)
+            return next
+          })
+        } else if (type === 'offer') {
+          // Received offer, create answer
+          let pc: RTCPeerConnection | null | undefined = peerConnectionsRef.current.get(fromUserId)
+          if (!pc) {
+            pc = createPeerConnection(fromUserId, false)
+          }
+          if (pc) {
+            await pc.setRemoteDescription(JSON.parse(data))
+            const answer = await pc.createAnswer()
+            await pc.setLocalDescription(answer)
+            sendVoiceSignal('answer', JSON.stringify(answer), fromUserId)
+          }
+        } else if (type === 'answer') {
+          // Received answer
+          const pc = peerConnectionsRef.current.get(fromUserId)
+          if (pc) {
+            await pc.setRemoteDescription(JSON.parse(data))
+          }
+        } else if (type === 'ice-candidate') {
+          // Received ICE candidate
+          const pc = peerConnectionsRef.current.get(fromUserId)
+          if (pc) {
+            await pc.addIceCandidate(JSON.parse(data))
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error polling voice signals:', error)
+    }
+  }, [room, voiceEnabled, createPeerConnection, sendVoiceSignal])
 
   // Voice chat functions
   const startVoiceChat = async () => {
@@ -297,7 +480,7 @@ export default function ChatRoomPage() {
       analyserRef.current.fftSize = 256
       source.connect(analyserRef.current)
       
-      // Check for voice activity
+      // Check for voice activity (local speaking indicator)
       const bufferLength = analyserRef.current.frequencyBinCount
       const dataArray = new Uint8Array(bufferLength)
       
@@ -305,7 +488,7 @@ export default function ChatRoomPage() {
         if (analyserRef.current) {
           analyserRef.current.getByteFrequencyData(dataArray)
           const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength
-          const isTalking = average > 30 // Threshold for voice detection
+          const isTalking = average > 30
           setIsSpeaking(isTalking)
           
           // Update speaking status on server
@@ -323,13 +506,45 @@ export default function ChatRoomPage() {
       }, 100)
       
       setVoiceEnabled(true)
+      
+      // Send join signal
+      if (room) {
+        await sendVoiceSignal('join')
+        
+        // Start polling for signals
+        lastSignalTimeRef.current = Date.now()
+        voicePollRef.current = setInterval(pollVoiceSignals, 500)
+      }
     } catch (error) {
       console.error('Error starting voice chat:', error)
       alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
     }
   }
 
-  const stopVoiceChat = () => {
+  const stopVoiceChat = useCallback(() => {
+    // Send leave signal
+    if (room && voiceEnabled) {
+      sendVoiceSignal('leave')
+    }
+    
+    // Stop polling
+    if (voicePollRef.current) {
+      clearInterval(voicePollRef.current)
+      voicePollRef.current = null
+    }
+    
+    // Close all peer connections
+    peerConnectionsRef.current.forEach(pc => pc.close())
+    peerConnectionsRef.current.clear()
+    
+    // Stop all remote audio
+    remoteAudioRef.current.forEach(audio => {
+      audio.pause()
+      audio.srcObject = null
+    })
+    remoteAudioRef.current.clear()
+    
+    // Stop local stream
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop())
       mediaStreamRef.current = null
@@ -342,16 +557,71 @@ export default function ChatRoomPage() {
       clearInterval(voiceIntervalRef.current)
       voiceIntervalRef.current = null
     }
+    
     setVoiceEnabled(false)
+    setIsListening(false)
     setIsSpeaking(false)
+    setSpeakingUsers(new Set())
+  }, [room, voiceEnabled, sendVoiceSignal])
+
+  // Listen-only mode (for users without voice permission)
+  const startListening = async () => {
+    if (!room) return
+    
+    try {
+      // Create a silent audio stream (required for WebRTC)
+      const silentContext = new AudioContext()
+      const oscillator = silentContext.createOscillator()
+      const destination = silentContext.createMediaStreamDestination()
+      oscillator.connect(destination)
+      oscillator.start()
+      // Immediately stop to create silent stream
+      oscillator.frequency.value = 0
+      
+      mediaStreamRef.current = destination.stream
+      setIsListening(true)
+      
+      // Start polling for signals to receive audio
+      lastSignalTimeRef.current = Date.now()
+      voicePollRef.current = setInterval(pollVoiceSignals, 500)
+    } catch (error) {
+      console.error('Error starting listen mode:', error)
+    }
   }
+
+  const stopListening = useCallback(() => {
+    // Stop polling
+    if (voicePollRef.current) {
+      clearInterval(voicePollRef.current)
+      voicePollRef.current = null
+    }
+    
+    // Close all peer connections
+    peerConnectionsRef.current.forEach(pc => pc.close())
+    peerConnectionsRef.current.clear()
+    
+    // Stop all remote audio
+    remoteAudioRef.current.forEach(audio => {
+      audio.pause()
+      audio.srcObject = null
+    })
+    remoteAudioRef.current.clear()
+    
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop())
+      mediaStreamRef.current = null
+    }
+    
+    setIsListening(false)
+    setSpeakingUsers(new Set())
+  }, [])
 
   // Cleanup voice on unmount
   useEffect(() => {
     return () => {
       stopVoiceChat()
     }
-  }, [])
+  }, [stopVoiceChat])
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -884,26 +1154,58 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Odalar' : 'Rooms'}
               </button>
               
-              {/* Voice Chat Button - Only show if user has voice permission */}
+              {/* Voice Chat Button */}
               {canUseVoice() ? (
+                // User has voice permission - can speak
                 <button
                   onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${voiceEnabled ? 'bg-green-600/50 text-green-200 hover:bg-green-600/70' : 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50'}`}
                 >
                   {voiceEnabled ? (
-                    <><PhoneOff className="w-4 h-4" />{language === 'tr' ? 'Sesli Kapat' : 'End Voice'}</>
+                    <>
+                      <PhoneOff className="w-4 h-4" />
+                      {language === 'tr' ? 'Sesli Kapat' : 'End Voice'}
+                      {voiceUsers.length > 0 && (
+                        <span className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {voiceUsers.length}
+                        </span>
+                      )}
+                    </>
                   ) : (
-                    <><Phone className="w-4 h-4" />{language === 'tr' ? 'Sesli' : 'Voice'}</>
+                    <>
+                      <Phone className="w-4 h-4" />
+                      {language === 'tr' ? 'Sesli' : 'Voice'}
+                      {voiceUsers.length > 0 && (
+                        <span className="ml-1 bg-green-500/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {voiceUsers.length}
+                        </span>
+                      )}
+                    </>
                   )}
                 </button>
               ) : (
+                // User doesn't have voice permission - can only listen
                 <button
-                  disabled
-                  className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium bg-gray-600/30 text-gray-400 cursor-not-allowed"
-                  title={language === 'tr' ? 'Ses yetkisi gerekli' : 'Voice permission required'}
+                  onClick={() => isListening ? stopListening() : startListening()}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${isListening ? 'bg-purple-600/50 text-purple-200 hover:bg-purple-600/70' : 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50'}`}
+                  title={language === 'tr' ? 'Sadece dinleyebilirsiniz' : 'Listen only mode'}
                 >
-                  <MicOff className="w-4 h-4" />
-                  {language === 'tr' ? 'Ses Yok' : 'No Voice'}
+                  {isListening ? (
+                    <>
+                      <VolumeX className="w-4 h-4" />
+                      {language === 'tr' ? 'Dinlemeyi Kapat' : 'Stop Listening'}
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-4 h-4" />
+                      {language === 'tr' ? 'Dinle' : 'Listen'}
+                      {voiceUsers.length > 0 && (
+                        <span className="ml-1 bg-green-500/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {voiceUsers.length}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -931,6 +1233,27 @@ export default function ChatRoomPage() {
               <span className="text-yellow-200 text-sm font-bold">
                 {room.owner.username || room.owner.name}
               </span>
+            </div>
+          )}
+
+          {/* Voice Users Bar */}
+          {voiceUsers.length > 0 && (
+            <div className="flex-shrink-0 bg-green-600/30 px-3 py-2 flex items-center gap-2 border-b border-green-500/30">
+              <Phone className="w-4 h-4 text-green-400" />
+              <span className="text-green-200 text-sm">
+                {language === 'tr' ? 'Sesli Sohbette:' : 'In Voice:'}
+              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {voiceUsers.map(user => (
+                  <span 
+                    key={user.id} 
+                    className={`text-sm px-2 py-0.5 rounded ${speakingUsers.has(user.id) ? 'bg-green-500/50 text-white' : 'bg-green-900/50 text-green-200'}`}
+                  >
+                    {speakingUsers.has(user.id) && <span className="mr-1">🎤</span>}
+                    {user.name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
