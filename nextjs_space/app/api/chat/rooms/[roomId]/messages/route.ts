@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { canUserSpeak, getUserRole, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
+import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,7 +93,30 @@ export async function GET(
     // If not polling (initial load), reverse to show oldest first
     const orderedMessages = after ? messagesWithRoles : messagesWithRoles.reverse()
 
-    return NextResponse.json(orderedMessages)
+    // Get room muted status and user permissions
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: { isMuted: true }
+    })
+
+    // Get user permissions if logged in
+    let myPermissions = null
+    let myNickname = null
+    if (session?.user?.id) {
+      myPermissions = await getUserPermissions(roomId, session.user.id)
+      const presence = await prisma.chatPresence.findUnique({
+        where: { roomId_userId: { roomId, userId: session.user.id } },
+        select: { nickname: true }
+      })
+      myNickname = presence?.nickname || session.user.name
+    }
+
+    return NextResponse.json({
+      messages: orderedMessages,
+      roomMuted: room?.isMuted || false,
+      myPermissions,
+      myNickname
+    })
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json(

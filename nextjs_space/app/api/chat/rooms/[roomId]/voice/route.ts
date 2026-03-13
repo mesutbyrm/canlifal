@@ -27,36 +27,43 @@ function cleanupOldSignals(roomId: string) {
   voiceSignals.set(roomId, filtered)
 }
 
-// GET - Get pending signals for current user
+// GET - Get pending signals for current user and voice users list
 export async function GET(request: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
     const since = parseInt(searchParams.get('since') || '0')
 
     cleanupOldSignals(roomId)
 
-    const signals = voiceSignals.get(roomId) || []
-    
-    // Get signals for this user (either targeted to them or broadcast)
-    const userSignals = signals.filter(s => 
-      s.fromUserId !== session.user!.id && 
-      s.createdAt > since &&
-      (s.toUserId === null || s.toUserId === session.user!.id)
-    )
-
-    // Get active voice users
+    // Get active voice users (available to everyone)
     const roomVoiceUsers = activeVoiceUsers.get(roomId) || new Map()
     const voiceUsers = Array.from(roomVoiceUsers.entries()).map(([id, data]) => ({
       id,
       name: data.name,
       joinedAt: data.joinedAt
     }))
+
+    // If user is logged in, also return their signals
+    let userSignals: Array<{
+      id: string
+      fromUserId: string
+      fromUserName: string
+      toUserId: string | null
+      type: string
+      data: string
+      createdAt: number
+    }> = []
+    if (session?.user?.id) {
+      const signals = voiceSignals.get(roomId) || []
+      // Get signals for this user (either targeted to them or broadcast)
+      userSignals = signals.filter(s => 
+        s.fromUserId !== session.user!.id && 
+        s.createdAt > since &&
+        (s.toUserId === null || s.toUserId === session.user!.id)
+      )
+    }
 
     return NextResponse.json({
       signals: userSignals,
