@@ -11,7 +11,7 @@ import {
   User, Mail, Phone, AtSign, Crown, Shield, Coins, Calendar, Camera,
   Key, Ban, Video, Radio, Eye, EyeOff, Trash2, Edit, MoreVertical,
   Check, AlertCircle, Gift, MessageCircle, Star, Lock, Unlock, Clock,
-  UserX, UserCheck, RefreshCw, Upload
+  UserX, UserCheck, RefreshCw, Upload, Award, Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -51,6 +51,8 @@ interface UserDetail {
   referralCreditsEarned: number
   isStreamBanned: boolean
   streamBanReason: string | null
+  specialBadges: string | null
+  profileEffect: string | null
   _count: {
     fortunes: number
     liveSessions: number
@@ -65,6 +67,25 @@ interface UserDetail {
     approvedAt: string | null
   } | null
   videoStreams: { id: string; title: string; viewerCount: number }[]
+}
+
+type BadgeType = 'basic' | 'premium' | 'gold' | 'diamond'
+type EffectType = 'sparkles' | 'pulse' | 'rainbow' | 'fire' | 'glow' | 'none'
+
+const BADGE_CONFIG: Record<BadgeType, { label: string; color: string; bgColor: string }> = {
+  basic: { label: 'Basic', color: '#9ca3af', bgColor: 'bg-gray-500/20' },
+  premium: { label: 'Premium', color: '#a855f7', bgColor: 'bg-purple-500/20' },
+  gold: { label: 'Gold', color: '#fbbf24', bgColor: 'bg-yellow-500/20' },
+  diamond: { label: 'Diamond', color: '#38bdf8', bgColor: 'bg-cyan-500/20' }
+}
+
+const EFFECT_CONFIG: Record<EffectType, { label: string; labelTr: string }> = {
+  none: { label: 'None', labelTr: 'Yok' },
+  sparkles: { label: 'Sparkles', labelTr: 'Parıltı' },
+  pulse: { label: 'Pulse', labelTr: 'Nabız' },
+  rainbow: { label: 'Rainbow', labelTr: 'Gökkuşağı' },
+  fire: { label: 'Fire', labelTr: 'Ateş' },
+  glow: { label: 'Glow', labelTr: 'Işıltı' }
 }
 
 export default function AdminUsersPage() {
@@ -107,6 +128,11 @@ export default function AdminUsersPage() {
   
   // Image upload
   const [uploadingImage, setUploadingImage] = useState(false)
+  
+  // Badge management
+  const [showBadgeModal, setShowBadgeModal] = useState(false)
+  const [selectedBadges, setSelectedBadges] = useState<BadgeType[]>([])
+  const [selectedEffect, setSelectedEffect] = useState<EffectType>('none')
 
   useEffect(() => {
     if ((session?.user as any)?.role !== 'admin') {
@@ -370,6 +396,63 @@ export default function AdminUsersPage() {
     }
   }
 
+  // Badge management functions
+  const parseBadges = (badgesString: string | null): BadgeType[] => {
+    if (!badgesString) return []
+    try {
+      const parsed = JSON.parse(badgesString)
+      return Array.isArray(parsed) ? parsed.filter((b: string) => 
+        ['basic', 'premium', 'gold', 'diamond'].includes(b)
+      ) as BadgeType[] : []
+    } catch {
+      return []
+    }
+  }
+
+  const openBadgeModal = () => {
+    if (selectedUser) {
+      setSelectedBadges(parseBadges(selectedUser.specialBadges))
+      setSelectedEffect((selectedUser.profileEffect as EffectType) || 'none')
+      setShowBadgeModal(true)
+    }
+  }
+
+  const toggleBadge = (badge: BadgeType) => {
+    setSelectedBadges(prev => 
+      prev.includes(badge) 
+        ? prev.filter(b => b !== badge)
+        : [...prev, badge]
+    )
+  }
+
+  const handleSaveBadges = async () => {
+    if (!selectedUser) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          specialBadges: JSON.stringify(selectedBadges),
+          profileEffect: selectedEffect === 'none' ? null : selectedEffect
+        })
+      })
+      if (res.ok) {
+        setMessage({ type: 'success', text: language === 'tr' ? 'Rozet ve efektler güncellendi' : 'Badges and effects updated' })
+        setSelectedUser({ 
+          ...selectedUser, 
+          specialBadges: JSON.stringify(selectedBadges),
+          profileEffect: selectedEffect === 'none' ? null : selectedEffect
+        })
+        setShowBadgeModal(false)
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0118] py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -609,7 +692,7 @@ export default function AdminUsersPage() {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
                     <button
                       onClick={() => setShowCreditModal(true)}
                       className="p-3 bg-yellow-500/20 rounded-xl text-center hover:bg-yellow-500/30 transition-colors"
@@ -623,6 +706,13 @@ export default function AdminUsersPage() {
                     >
                       <Key className="w-5 h-5 text-blue-400 mx-auto mb-1" />
                       <span className="text-blue-400 text-sm">Şifre</span>
+                    </button>
+                    <button
+                      onClick={openBadgeModal}
+                      className="p-3 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-xl text-center hover:from-purple-500/30 hover:to-cyan-500/30 transition-colors"
+                    >
+                      <Award className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
+                      <span className="text-cyan-400 text-sm">Rozet/Efekt</span>
                     </button>
                     <button
                       onClick={() => selectedUser.isStreamBanned ? handleStreamBan(false) : setShowStreamBanModal(true)}
@@ -957,6 +1047,134 @@ export default function AdminUsersPage() {
                 </button>
                 <Dialog.Close className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20">
                   İptal
+                </Dialog.Close>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
+        {/* Badge & Effect Modal */}
+        <Dialog.Root open={showBadgeModal} onOpenChange={setShowBadgeModal}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/80 z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-[#1a0b2e] rounded-2xl z-50 p-6">
+              <Dialog.Title className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Award className="w-6 h-6 text-cyan-400" />
+                {language === 'tr' ? 'Rozet ve Efekt Yönetimi' : 'Badge & Effect Management'}
+              </Dialog.Title>
+              
+              {/* Badge Selection */}
+              <div className="mb-6">
+                <label className="text-purple-300 text-sm mb-3 block font-medium">
+                  {language === 'tr' ? 'Rozetler (Birden fazla seçilebilir)' : 'Badges (Multiple selection)'}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(Object.keys(BADGE_CONFIG) as BadgeType[]).map((badge) => (
+                    <button
+                      key={badge}
+                      onClick={() => toggleBadge(badge)}
+                      className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                        selectedBadges.includes(badge)
+                          ? 'border-cyan-500 bg-cyan-500/20'
+                          : 'border-purple-500/30 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <div 
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${BADGE_CONFIG[badge].color}40, ${BADGE_CONFIG[badge].color}20)`,
+                          boxShadow: selectedBadges.includes(badge) ? `0 0 15px ${BADGE_CONFIG[badge].color}60` : 'none'
+                        }}
+                      >
+                        <Award className="w-6 h-6" style={{ color: BADGE_CONFIG[badge].color }} />
+                      </div>
+                      <span className="text-white font-medium">{BADGE_CONFIG[badge].label}</span>
+                      {selectedBadges.includes(badge) && (
+                        <Check className="w-4 h-4 text-cyan-400 absolute top-2 right-2" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Effect Selection */}
+              <div className="mb-6">
+                <label className="text-purple-300 text-sm mb-3 block font-medium">
+                  {language === 'tr' ? 'Profil Efekti' : 'Profile Effect'}
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.keys(EFFECT_CONFIG) as EffectType[]).map((effect) => (
+                    <button
+                      key={effect}
+                      onClick={() => setSelectedEffect(effect)}
+                      className={`p-3 rounded-xl border transition-all text-center ${
+                        selectedEffect === effect
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : 'border-purple-500/30 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        {effect !== 'none' && <Sparkles className="w-4 h-4 text-purple-400" />}
+                        <span className="text-white text-sm">
+                          {language === 'tr' ? EFFECT_CONFIG[effect].labelTr : EFFECT_CONFIG[effect].label}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Preview */}
+              <div className="mb-6 p-4 bg-white/5 rounded-xl">
+                <p className="text-purple-300 text-sm mb-3">{language === 'tr' ? 'Önizleme' : 'Preview'}</p>
+                <div className="flex items-center gap-3">
+                  <div 
+                    className={`w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center ${
+                      selectedEffect !== 'none' ? `animate-${selectedEffect === 'sparkles' ? 'sparkle' : selectedEffect === 'pulse' ? 'pulse-glow' : selectedEffect === 'rainbow' ? 'rainbow' : selectedEffect === 'fire' ? 'fire-glow' : 'soft-glow'}-border` : ''
+                    }`}
+                    style={{
+                      boxShadow: selectedEffect !== 'none' ? '0 0 15px rgba(168, 85, 247, 0.5)' : 'none'
+                    }}
+                  >
+                    <span className="text-white text-xl font-bold">
+                      {selectedUser?.name?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">{selectedUser?.name}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      {selectedBadges.map((badge) => (
+                        <div 
+                          key={badge}
+                          className="w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${BADGE_CONFIG[badge].color}, ${BADGE_CONFIG[badge].color}80)`,
+                            boxShadow: `0 0 6px ${BADGE_CONFIG[badge].color}60`
+                          }}
+                        >
+                          <Award className="w-3 h-3 text-white" />
+                        </div>
+                      ))}
+                      {selectedBadges.length === 0 && (
+                        <span className="text-purple-400 text-xs">{language === 'tr' ? 'Rozet yok' : 'No badges'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSaveBadges}
+                  disabled={saving}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white py-2.5 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                </button>
+                <Dialog.Close className="px-6 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20">
+                  {language === 'tr' ? 'İptal' : 'Cancel'}
                 </Dialog.Close>
               </div>
             </Dialog.Content>

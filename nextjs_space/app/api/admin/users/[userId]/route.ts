@@ -36,6 +36,8 @@ export async function GET(
         risingSign: true,
         referralCode: true,
         referralCreditsEarned: true,
+        specialBadges: true,
+        profileEffect: true,
         _count: {
           select: {
             fortunes: true,
@@ -114,6 +116,8 @@ export async function PATCH(
       newPassword,
       banReason,
       streamBanReason,
+      specialBadges,
+      profileEffect,
     } = body
 
     // Handle specific actions
@@ -209,6 +213,8 @@ export async function PATCH(
     if (membershipExpiresAt !== undefined) {
       updateData.membershipExpiresAt = membershipExpiresAt ? new Date(membershipExpiresAt) : null
     }
+    if (specialBadges !== undefined) updateData.specialBadges = specialBadges
+    if (profileEffect !== undefined) updateData.profileEffect = profileEffect || null
 
     const updatedUser = await prisma.user.update({
       where: { id: params.userId },
