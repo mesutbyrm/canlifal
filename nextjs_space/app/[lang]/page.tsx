@@ -406,7 +406,7 @@ export default function HomePage() {
                   <Link
                     key={teller.id}
                     href={`/${language}/live-tellers/${teller.id}`}
-                    className="flex-shrink-0 w-28 rainbow-border rounded-2xl"
+                    className="flex-shrink-0 w-28 rainbow-border rainbow-border-live rounded-2xl"
                   >
                     <div className="rounded-2xl overflow-hidden" style={{
                       background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
@@ -452,7 +452,7 @@ export default function HomePage() {
                 <Link
                   key={teller.id}
                   href={`/${language}/live-tellers/${teller.id}`}
-                  className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border' : 'opacity-50'}`}
+                  className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border rainbow-border-live' : 'opacity-50'}`}
                 >
                   <div className="rounded-2xl overflow-hidden" style={{
                     border: teller.isOnline ? 'none' : '2px solid rgba(100, 60, 140, 0.4)',

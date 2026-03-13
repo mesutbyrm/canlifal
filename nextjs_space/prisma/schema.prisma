@@ -1097,3 +1097,55 @@ model ProfileView {
   @@index([viewedAt])
   @@map("profile_views")
 }
+
+// Gold Membership Plans
+model MembershipPlan {
+  id              String   @id @default(cuid())
+  name            String   // Plan name (e.g., "Gold 1 Aylık")
+  nameEn          String?  // English name
+  description     String?  @db.Text
+  descriptionEn   String?  @db.Text
+  tier            String   // basic, premium, gold, diamond
+  durationDays    Int      // Duration in days
+  priceType       String   // jeton, money
+  price           Int      // Price in jetons or currency minor units (kuruş)
+  currency        String   @default("TRY") // For money payments
+  features        String?  @db.Text // JSON array of features
+  bonusJetons     Int      @default(0) // Bonus jetons on purchase
+  discountPercent Int      @default(0) // Discount on fortune readings
+  prioritySupport Boolean  @default(false)
+  exclusiveBadge  String?  // Badge icon/text
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchases       MembershipPurchase[]
+  
+  @@index([tier])
+  @@index([priceType])
+  @@index([isActive])
+  @@map("membership_plans")
+}
+
+// Membership Purchase History
+model MembershipPurchase {
+  id              String   @id @default(cuid())
+  userId          String
+  planId          String
+  plan            MembershipPlan @relation(fields: [planId], references: [id])
+  priceType       String   // jeton, money
+  pricePaid       Int      // Amount paid
+  currency        String   @default("TRY")
+  startsAt        DateTime @default(now())
+  expiresAt       DateTime
+  status          String   @default("active") // active, expired, cancelled
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("membership_purchases")
+}

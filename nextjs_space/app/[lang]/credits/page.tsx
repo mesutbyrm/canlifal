@@ -19,7 +19,8 @@ import {
   Wallet,
   ExternalLink,
   CreditCard,
-  User
+  User,
+  Crown
 } from 'lucide-react'
 
 interface CreditPackage {
@@ -220,6 +221,31 @@ export default function CreditsPage() {
               <span className={`${goldColor} font-bold`}>{userCredits}</span>
             </div>
           )}
+        </motion.div>
+
+        {/* Gold Membership Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-4"
+        >
+          <button
+            onClick={() => router.push(`/${language}/memberships`)}
+            className={`w-full py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-3 transition-all active:scale-98 ${
+              isFacebook 
+                ? 'bg-amber-50 border-amber-400 hover:bg-amber-100' 
+                : isCosmic 
+                ? 'bg-amber-500/10 border-amber-400/50 hover:bg-amber-500/20' 
+                : 'bg-gradient-to-r from-amber-500/10 to-amber-600/10 border-amber-500/40 hover:from-amber-500/20 hover:to-amber-600/20'
+            }`}
+          >
+            <Crown className={`w-5 h-5 ${goldColor}`} />
+            <span className={`${goldColor} font-bold`}>
+              {language === 'tr' ? 'Gold Üyelikler' : 'Gold Memberships'}
+            </span>
+            <Star className={`w-4 h-4 ${goldColor}`} />
+          </button>
         </motion.div>
 
         {/* Credit Packages - Compact Grid */}
