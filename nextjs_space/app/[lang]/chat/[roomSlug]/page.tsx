@@ -56,6 +56,7 @@ interface MyPermissions {
   canGiveAdmin: boolean
   canGiveFounder: boolean
   isGlobalAdmin: boolean
+  isRoomOwner: boolean
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -801,7 +802,9 @@ export default function ChatRoomPage() {
     )
   }
 
+  // Check if user has any management permission
   const hasManagePermission = myPermissions && (
+    myPermissions.isRoomOwner ||
     myPermissions.canMuteUsers || 
     myPermissions.canKickUsers || 
     myPermissions.canBanUsers || 
@@ -917,6 +920,7 @@ export default function ChatRoomPage() {
               <div className="p-4 max-h-[50vh] overflow-y-auto">
                 {manageTab === 'chat' ? (
                   <div className="space-y-3">
+                    {/* Room owner and global admin always see room mute option */}
                     {myPermissions?.canMuteRoom && (
                       <button
                         onClick={() => { toggleRoomMute(); setShowManagePopup(false); }}
@@ -933,7 +937,8 @@ export default function ChatRoomPage() {
                       {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                       {soundEnabled ? (language === 'tr' ? 'Bildirim Sesi Açık' : 'Notification Sound On') : (language === 'tr' ? 'Bildirim Sesi Kapalı' : 'Notification Sound Off')}
                     </button>
-                    {(myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
+                    {/* Room owner, founder, op and global admin see clear messages option */}
+                    {(myPermissions?.isRoomOwner || myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
                       <button
                         onClick={() => { clearAllMessages(); setShowManagePopup(false); }}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-600/30 text-red-300 hover:bg-red-600/50"
@@ -966,6 +971,7 @@ export default function ChatRoomPage() {
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-1">
+                            {/* Mute users */}
                             {myPermissions?.canMuteUsers && (
                               <button
                                 onClick={() => performModAction('mute_user', user.id, { duration: 30 })}
@@ -974,6 +980,7 @@ export default function ChatRoomPage() {
                                 <MicOff className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Sustur' : 'Mute'}
                               </button>
                             )}
+                            {/* Kick users */}
                             {myPermissions?.canKickUsers && (
                               <button
                                 onClick={() => performModAction('kick_user', user.id)}
@@ -982,6 +989,7 @@ export default function ChatRoomPage() {
                                 <UserMinus className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'At' : 'Kick'}
                               </button>
                             )}
+                            {/* Ban users */}
                             {myPermissions?.canBanUsers && (
                               <button
                                 onClick={() => performModAction('ban_user', user.id)}
@@ -990,6 +998,7 @@ export default function ChatRoomPage() {
                                 <Ban className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Engelle' : 'Ban'}
                               </button>
                             )}
+                            {/* Give voice */}
                             {myPermissions?.canGiveVoice && !user.chatRole && (
                               <button
                                 onClick={() => performModAction('set_role', user.id, { role: 'voice' })}
@@ -999,6 +1008,7 @@ export default function ChatRoomPage() {
                                 <Mic className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Ses Ver' : '+Voice'}
                               </button>
                             )}
+                            {/* Give op */}
                             {myPermissions?.canGiveOp && (
                               <button
                                 onClick={() => performModAction('set_role', user.id, { role: 'op' })}
@@ -1007,6 +1017,7 @@ export default function ChatRoomPage() {
                                 @o
                               </button>
                             )}
+                            {/* Give admin */}
                             {myPermissions?.canGiveAdmin && (
                               <button
                                 onClick={() => performModAction('set_role', user.id, { role: 'admin' })}
@@ -1015,7 +1026,8 @@ export default function ChatRoomPage() {
                                 &a
                               </button>
                             )}
-                            {user.chatRole && (
+                            {/* Remove roles */}
+                            {user.chatRole && (myPermissions?.canGiveVoice || myPermissions?.canGiveOp || myPermissions?.canGiveAdmin) && (
                               <button
                                 onClick={() => performModAction('remove_role', user.id)}
                                 className="px-2 py-1 bg-gray-600/30 text-gray-300 rounded text-xs hover:bg-gray-600/50"
@@ -1154,67 +1166,40 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Odalar' : 'Rooms'}
               </button>
               
-              {/* Voice Chat Button */}
+              {/* Voice Chat Button - Only Microphone Emoji */}
               {canUseVoice() ? (
                 // User has voice permission - can speak
                 <button
                   onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${voiceEnabled ? 'bg-green-600/50 text-green-200 hover:bg-green-600/70' : 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50'}`}
+                  className={`relative flex items-center justify-center w-10 h-10 rounded-full text-xl transition-colors ${voiceEnabled ? 'bg-green-600/50 hover:bg-green-600/70' : 'bg-blue-600/30 hover:bg-blue-600/50'}`}
+                  title={voiceEnabled ? (language === 'tr' ? 'Sesli Kapat' : 'End Voice') : (language === 'tr' ? 'Sesli Başlat' : 'Start Voice')}
                 >
-                  {voiceEnabled ? (
-                    <>
-                      <PhoneOff className="w-4 h-4" />
-                      {language === 'tr' ? 'Sesli Kapat' : 'End Voice'}
-                      {voiceUsers.length > 0 && (
-                        <span className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                          {voiceUsers.length}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Phone className="w-4 h-4" />
-                      {language === 'tr' ? 'Sesli' : 'Voice'}
-                      {voiceUsers.length > 0 && (
-                        <span className="ml-1 bg-green-500/50 text-white text-xs px-1.5 py-0.5 rounded-full">
-                          {voiceUsers.length}
-                        </span>
-                      )}
-                    </>
+                  {voiceEnabled ? '🎙️' : '🎤'}
+                  {voiceUsers.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                      {voiceUsers.length}
+                    </span>
                   )}
                 </button>
               ) : (
                 // User doesn't have voice permission - can only listen
                 <button
                   onClick={() => isListening ? stopListening() : startListening()}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${isListening ? 'bg-purple-600/50 text-purple-200 hover:bg-purple-600/70' : 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50'}`}
+                  className={`relative flex items-center justify-center w-10 h-10 rounded-full text-xl transition-colors ${isListening ? 'bg-purple-600/50 hover:bg-purple-600/70' : 'bg-purple-600/30 hover:bg-purple-600/50'}`}
                   title={language === 'tr' ? 'Sadece dinleyebilirsiniz' : 'Listen only mode'}
                 >
-                  {isListening ? (
-                    <>
-                      <VolumeX className="w-4 h-4" />
-                      {language === 'tr' ? 'Dinlemeyi Kapat' : 'Stop Listening'}
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-4 h-4" />
-                      {language === 'tr' ? 'Dinle' : 'Listen'}
-                      {voiceUsers.length > 0 && (
-                        <span className="ml-1 bg-green-500/50 text-white text-xs px-1.5 py-0.5 rounded-full">
-                          {voiceUsers.length}
-                        </span>
-                      )}
-                    </>
+                  {isListening ? '🔇' : '👂'}
+                  {voiceUsers.length > 0 && !isListening && (
+                    <span className="absolute -top-1 -right-1 bg-green-500/50 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                      {voiceUsers.length}
+                    </span>
                   )}
                 </button>
               )}
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Room Name */}
-              <span className="text-gold-400 font-medium text-sm">
-                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
-              </span>
+              {/* Room muted indicator only */}
               {roomMuted && (
                 <span className="flex items-center gap-1 text-red-400 text-xs">
                   <VolumeX className="w-4 h-4" />
@@ -1258,14 +1243,21 @@ export default function ChatRoomPage() {
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2">
+          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative">
+            {/* Watermark Room Name */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+              <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/5 whitespace-nowrap select-none">
+                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
+              </span>
+            </div>
+            
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
+              <div className="flex flex-col items-center justify-center h-full text-purple-300/50 relative z-10">
                 <Sparkles className="w-10 h-10 mb-3" />
                 <p className="text-sm">{t('chat.no_messages')}</p>
               </div>
             ) : (
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 relative z-10">
                 {messages.map((msg) => {
                   const displayName = getDisplayName(msg.user)
                   const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)

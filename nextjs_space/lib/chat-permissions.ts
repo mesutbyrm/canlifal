@@ -30,6 +30,7 @@ export interface UserPermissions {
   canGiveFounder: boolean
   canSpeakInMutedRoom: boolean
   isGlobalAdmin: boolean
+  isRoomOwner: boolean
 }
 
 export async function getUserRole(roomId: string, userId: string): Promise<ChatRole> {
@@ -41,6 +42,16 @@ export async function getUserRole(roomId: string, userId: string): Promise<ChatR
 
   if (user?.role === 'admin') {
     return 'founder' // Site admin has founder rights in all rooms
+  }
+
+  // Check if user is room owner - room owners have founder rights
+  const room = await prisma.chatRoom.findUnique({
+    where: { id: roomId },
+    select: { ownerId: true }
+  })
+
+  if (room?.ownerId === userId) {
+    return 'founder' // Room owner has founder rights in their room
   }
 
   const userRole = await prisma.chatUserRole.findUnique({
@@ -59,30 +70,39 @@ export async function getUserPermissions(roomId: string, userId: string): Promis
   })
 
   const isGlobalAdmin = user?.role === 'admin'
+  
+  // Check if user is room owner
+  const room = await prisma.chatRoom.findUnique({
+    where: { id: roomId },
+    select: { ownerId: true }
+  })
+  const isRoomOwner = room?.ownerId === userId
+  
   const role = await getUserRole(roomId, userId)
   const roleLevel = ROLE_HIERARCHY[role]
 
   return {
     role,
     isGlobalAdmin,
-    // @ and above can mute users
-    canMuteUsers: roleLevel >= ROLE_HIERARCHY.op,
-    // ~ can kick users
-    canKickUsers: roleLevel >= ROLE_HIERARCHY.founder,
-    // & and above can ban users
-    canBanUsers: roleLevel >= ROLE_HIERARCHY.admin,
-    // & and above can mute the room
-    canMuteRoom: roleLevel >= ROLE_HIERARCHY.admin,
-    // ~ can give voice when room is muted
-    canGiveVoice: roleLevel >= ROLE_HIERARCHY.founder,
-    // ~ can give op
-    canGiveOp: roleLevel >= ROLE_HIERARCHY.founder,
-    // ~ can give admin
-    canGiveAdmin: roleLevel >= ROLE_HIERARCHY.founder,
+    isRoomOwner,
+    // @ and above can mute users (room owner always can)
+    canMuteUsers: isRoomOwner || roleLevel >= ROLE_HIERARCHY.op,
+    // ~ can kick users (room owner always can)
+    canKickUsers: isRoomOwner || roleLevel >= ROLE_HIERARCHY.founder,
+    // & and above can ban users (room owner always can)
+    canBanUsers: isRoomOwner || roleLevel >= ROLE_HIERARCHY.admin,
+    // & and above can mute the room (room owner always can)
+    canMuteRoom: isRoomOwner || roleLevel >= ROLE_HIERARCHY.admin,
+    // ~ can give voice when room is muted (room owner always can)
+    canGiveVoice: isRoomOwner || roleLevel >= ROLE_HIERARCHY.founder,
+    // ~ can give op (room owner always can)
+    canGiveOp: isRoomOwner || roleLevel >= ROLE_HIERARCHY.founder,
+    // ~ can give admin (room owner always can)
+    canGiveAdmin: isRoomOwner || roleLevel >= ROLE_HIERARCHY.founder,
     // Only global admin can give founder
     canGiveFounder: isGlobalAdmin,
-    // + and above can speak in muted room
-    canSpeakInMutedRoom: roleLevel >= ROLE_HIERARCHY.voice
+    // + and above can speak in muted room (room owner always can)
+    canSpeakInMutedRoom: isRoomOwner || roleLevel >= ROLE_HIERARCHY.voice
   }
 }
 
