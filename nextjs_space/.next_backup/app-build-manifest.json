@@ -1,0 +1,125 @@
+{
+  "pages": {
+    "/[lang]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/page.js"
+    ],
+    "/[lang]/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/layout.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/[lang]/social/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/social/page.js"
+    ],
+    "/[lang]/chat/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/chat/page.js"
+    ],
+    "/[lang]/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/login/page.js"
+    ],
+    "/[lang]/fortunes/coffee/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/coffee/page.js"
+    ],
+    "/[lang]/fortunes/tarot/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/tarot/page.js"
+    ],
+    "/[lang]/fortunes/palm/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/palm/page.js"
+    ],
+    "/[lang]/fortunes/love/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/love/page.js"
+    ],
+    "/[lang]/fortunes/numerology/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/numerology/page.js"
+    ],
+    "/[lang]/fortunes/dream/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/dream/page.js"
+    ],
+    "/[lang]/fortunes/horoscope/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/horoscope/page.js"
+    ],
+    "/[lang]/fortunes/angel/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/angel/page.js"
+    ],
+    "/[lang]/fortunes/aura/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/aura/page.js"
+    ],
+    "/[lang]/fortunes/birthchart/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/fortunes/birthchart/page.js"
+    ],
+    "/[lang]/live-tellers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/live-tellers/page.js"
+    ],
+    "/[lang]/messages/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/messages/page.js"
+    ],
+    "/[lang]/live-tellers/[tellerId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/live-tellers/[tellerId]/page.js"
+    ],
+    "/[lang]/credits/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/credits/page.js"
+    ],
+    "/[lang]/forgot-password/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/forgot-password/page.js"
+    ],
+    "/[lang]/register/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/register/page.js"
+    ],
+    "/[lang]/chat/[roomSlug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/chat/[roomSlug]/page.js"
+    ],
+    "/[lang]/chat/[roomSlug]/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[lang]/chat/[roomSlug]/layout.js"
+    ]
+  }
+}

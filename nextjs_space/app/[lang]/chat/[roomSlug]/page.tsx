@@ -94,6 +94,7 @@ export default function ChatRoomPage() {
   const [isConnected, setIsConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [voiceConnecting, setVoiceConnecting] = useState(false)
   
   // Nickname system
   const [nickname, setNickname] = useState('')
@@ -132,6 +133,14 @@ export default function ChatRoomPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousMessagesCount = useRef(0)
+  const iceCandidatesBuffer = useRef<Map<string, RTCIceCandidate[]>>(new Map())
+
+  // Handle mobile keyboard - scroll input into view
+  const handleInputFocus = useCallback(() => {
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 300)
+  }, [])
 
   // Initialize audio
   useEffect(() => {
@@ -384,9 +393,6 @@ export default function ChatRoomPage() {
     iceCandidatePoolSize: 10
   }
 
-  // ICE candidates buffer for each peer
-  const iceCandidatesBuffer = useRef<Map<string, RTCIceCandidate[]>>(new Map())
-
   // Create peer connection for a user
   const createPeerConnection = useCallback((userId: string, isInitiator: boolean) => {
     if (!room || !mediaStreamRef.current) {
@@ -622,9 +628,6 @@ export default function ChatRoomPage() {
       console.error('Error polling voice signals:', error)
     }
   }, [room, voiceEnabled, createPeerConnection, sendVoiceSignal])
-
-  // Voice connecting state
-  const [voiceConnecting, setVoiceConnecting] = useState(false)
 
   // Voice chat functions
   const startVoiceChat = async () => {
@@ -1049,13 +1052,6 @@ export default function ChatRoomPage() {
     myPermissions.canGiveFounder ||
     myPermissions.isGlobalAdmin
   )
-
-  // Handle mobile keyboard - scroll input into view
-  const handleInputFocus = useCallback(() => {
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }, 300)
-  }, [])
 
   return (
     <div className="h-full w-full flex flex-col relative" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
