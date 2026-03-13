@@ -198,6 +198,19 @@ export async function POST(
         return NextResponse.json({ success: true, message: 'Role removed' })
       }
 
+      case 'clear_messages': {
+        // Only founder and op can clear messages
+        if (ROLE_HIERARCHY[permissions.role] < ROLE_HIERARCHY.op && !permissions.isGlobalAdmin) {
+          return NextResponse.json({ error: 'No permission to clear messages' }, { status: 403 })
+        }
+
+        await prisma.chatMessage.deleteMany({
+          where: { roomId }
+        })
+
+        return NextResponse.json({ success: true, message: 'Messages cleared' })
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

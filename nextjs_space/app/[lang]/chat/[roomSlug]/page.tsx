@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface Message {
@@ -337,6 +337,7 @@ export default function ChatRoomPage() {
       fetchMessages()
       connectSSE()
       if (session?.user) {
+        // Immediately update presence so user appears online right away
         updatePresence()
         fetchMyPermissions()
       }
@@ -348,6 +349,30 @@ export default function ChatRoomPage() {
       }
     }
   }, [room, fetchMessages, connectSSE, session, updatePresence, fetchMyPermissions])
+
+  // Fetch active users immediately and more frequently at first
+  useEffect(() => {
+    if (!room) return
+    
+    // Fetch users immediately
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`/api/chat/rooms/${room.id}/presence`)
+        if (res.ok) {
+          const data = await res.json()
+          setActiveUsers(data.users)
+        }
+      } catch (e) {
+        console.error('Error fetching users:', e)
+      }
+    }
+    
+    fetchUsers()
+    // Also fetch again after 2 seconds for quick updates
+    const quickUpdate = setTimeout(fetchUsers, 2000)
+    
+    return () => clearTimeout(quickUpdate)
+  }, [room])
 
   // Update presence periodically
   useEffect(() => {
@@ -465,6 +490,28 @@ export default function ChatRoomPage() {
     if (!room) return
     await performModAction(roomMuted ? 'unmute_room' : 'mute_room', '')
     setRoomMuted(!roomMuted)
+  }
+
+  const clearAllMessages = async () => {
+    if (!room) return
+    if (!confirm(language === 'tr' ? 'Tüm mesajları silmek istediğinize emin misiniz?' : 'Are you sure you want to clear all messages?')) {
+      return
+    }
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_messages' })
+      })
+      if (res.ok) {
+        setMessages([])
+      } else {
+        const errorData = await res.json()
+        alert(errorData.error)
+      }
+    } catch (error) {
+      console.error('Clear messages error:', error)
+    }
   }
 
   const formatTime = (dateStr: string) => {
@@ -682,6 +729,16 @@ export default function ChatRoomPage() {
                       : (language === 'tr' ? 'Ses Kapalı' : 'Sound Off')
                     }
                   </button>
+                  {/* Clear Messages - only for founder and op */}
+                  {(myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
+                    <button
+                      onClick={clearAllMessages}
+                      className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors bg-red-600/30 text-red-300 hover:bg-red-600/50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {language === 'tr' ? 'Mesajları Temizle' : 'Clear Messages'}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
