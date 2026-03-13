@@ -1356,12 +1356,12 @@ export default function ChatRoomPage() {
                 // User has voice permission - can speak
                 <button
                   onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                  className={`relative flex items-center justify-center w-10 h-10 rounded-full text-xl transition-colors ${voiceEnabled ? 'bg-green-600/50 hover:bg-green-600/70' : 'bg-blue-600/30 hover:bg-blue-600/50'}`}
-                  title={voiceEnabled ? (language === 'tr' ? 'Sesli Kapat' : 'End Voice') : (language === 'tr' ? 'Sesli Başlat' : 'Start Voice')}
+                  className={`relative flex items-center justify-center w-12 h-8 rounded-full text-xs font-bold transition-all ${voiceEnabled ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'}`}
+                  title={voiceEnabled ? (language === 'tr' ? 'Sesi Kapat' : 'Mute') : (language === 'tr' ? 'Sesi Aç' : 'Unmute')}
                 >
-                  {voiceEnabled ? '🎙️' : '🎤'}
+                  {voiceEnabled ? (language === 'tr' ? 'AÇIK' : 'ON') : (language === 'tr' ? 'KAPALI' : 'OFF')}
                   {voiceUsers.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {voiceUsers.length}
                     </span>
                   )}
@@ -1370,12 +1370,12 @@ export default function ChatRoomPage() {
                 // User doesn't have voice permission - can only listen
                 <button
                   onClick={() => isListening ? stopListening() : startListening()}
-                  className={`relative flex items-center justify-center w-10 h-10 rounded-full text-xl transition-colors ${isListening ? 'bg-purple-600/50 hover:bg-purple-600/70' : 'bg-purple-600/30 hover:bg-purple-600/50'}`}
+                  className={`relative flex items-center justify-center w-12 h-8 rounded-full text-xs font-bold transition-all ${isListening ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'}`}
                   title={language === 'tr' ? 'Sadece dinleyebilirsiniz' : 'Listen only mode'}
                 >
-                  {isListening ? '🔇' : '👂'}
+                  {isListening ? (language === 'tr' ? 'DİNLE' : 'HEAR') : (language === 'tr' ? 'KAPALI' : 'OFF')}
                   {voiceUsers.length > 0 && !isListening && (
-                    <span className="absolute -top-1 -right-1 bg-green-500/50 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {voiceUsers.length}
                     </span>
                   )}
@@ -1419,7 +1419,7 @@ export default function ChatRoomPage() {
                     key={user.id} 
                     className={`text-sm px-2 py-0.5 rounded ${speakingUsers.has(user.id) ? 'bg-green-500/50 text-white' : 'bg-green-900/50 text-green-200'}`}
                   >
-                    {speakingUsers.has(user.id) && <span className="mr-1">🎤</span>}
+                    {speakingUsers.has(user.id) && <span className="mr-1 text-green-400">●</span>}
                     {user.name}
                   </span>
                 ))}
@@ -1457,7 +1457,7 @@ export default function ChatRoomPage() {
                     >
                       {/* Speaking Indicator */}
                       {isSpeakingUser && (
-                        <span className="text-green-400 mr-1">🎤</span>
+                        <span className="text-green-400 mr-1 animate-pulse">●</span>
                       )}
                       {msg.user.chatRole && (
                         <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-1`}>
@@ -1619,7 +1619,7 @@ export default function ChatRoomPage() {
                     >
                       {/* Speaking Indicator */}
                       {userIsSpeaking ? (
-                        <span className="text-green-400 w-4 text-center">🎤</span>
+                        <span className="text-green-400 w-4 text-center animate-pulse">●</span>
                       ) : user.chatRole ? (
                         <span className={`${ROLE_COLORS[user.chatRole]} text-xs font-bold w-4 text-center`}>
                           {user.roleSymbol}
