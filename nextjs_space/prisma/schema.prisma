@@ -157,6 +157,17 @@ model LiveFortuneTeller {
   isFrozen          Boolean            @default(false)
   rejectedAt        DateTime?
   totalEarnings     Int                @default(0)
+  // Teller permissions (admin controlled)
+  canGoOnline       Boolean            @default(true)
+  canChat           Boolean            @default(true)
+  canStartSession   Boolean            @default(true)
+  canSetPrice       Boolean            @default(false)
+  canEditProfile    Boolean            @default(true)
+  canViewEarnings   Boolean            @default(true)
+  canWithdraw       Boolean            @default(false)
+  maxSessionsPerDay Int                @default(10)
+  commissionRate    Int                @default(20)
+  adminNotes        String?
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions          LiveSession[]
   reviews           LiveTellerReview[]

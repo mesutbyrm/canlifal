@@ -54,6 +54,16 @@ interface TellerProfile {
   isActive: boolean
   applicationStatus: string
   totalEarnings: number
+  // Permissions
+  canGoOnline: boolean
+  canChat: boolean
+  canStartSession: boolean
+  canSetPrice: boolean
+  canEditProfile: boolean
+  canViewEarnings: boolean
+  canWithdraw: boolean
+  maxSessionsPerDay: number
+  commissionRate: number
 }
 
 const FORTUNE_TYPE_NAMES: Record<string, { tr: string; en: string }> = {
@@ -256,29 +266,35 @@ export default function TellerDashboard() {
             </div>
 
             {/* Online Toggle */}
-            <button
-              onClick={toggleOnline}
-              disabled={togglingOnline || teller.applicationStatus !== 'approved'}
-              className={`w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-                isOnline
-                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {togglingOnline ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : isOnline ? (
-                <>
-                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                  {language === 'tr' ? 'Çevrimiçi' : 'Online'}
-                </>
-              ) : (
-                <>
-                  <span className="w-3 h-3 bg-gray-500 rounded-full" />
-                  {language === 'tr' ? 'Çevrimdışı' : 'Offline'}
-                </>
-              )}
-            </button>
+            {teller.canGoOnline !== false ? (
+              <button
+                onClick={toggleOnline}
+                disabled={togglingOnline || teller.applicationStatus !== 'approved'}
+                className={`w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  isOnline
+                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {togglingOnline ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : isOnline ? (
+                  <>
+                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                    {language === 'tr' ? 'Çevrimiçi' : 'Online'}
+                  </>
+                ) : (
+                  <>
+                    <span className="w-3 h-3 bg-gray-500 rounded-full" />
+                    {language === 'tr' ? 'Çevrimdışı' : 'Offline'}
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="w-full py-3 rounded-lg bg-red-500/10 text-red-400 text-sm text-center border border-red-500/20">
+                {language === 'tr' ? '⚠️ Online olma yetkiniz kısıtlandı' : '⚠️ Online access restricted'}
+              </div>
+            )}
           </motion.div>
 
           {/* Stats Card */}
@@ -297,14 +313,22 @@ export default function TellerDashboard() {
                 <span className="text-purple-300">{language === 'tr' ? 'Toplam Seans' : 'Total Sessions'}</span>
                 <span className="text-white font-semibold">{teller.totalSessions}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-purple-300">{language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}</span>
-                <span className="text-gold-400 font-semibold">{teller.totalEarnings} kredi</span>
-              </div>
+              {teller.canViewEarnings !== false && (
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-300">{language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}</span>
+                  <span className="text-gold-400 font-semibold">{teller.totalEarnings} kredi</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-purple-300">{language === 'tr' ? 'Seans Ücreti' : 'Session Price'}</span>
                 <span className="text-white font-semibold">{teller.pricePerSession} kredi</span>
               </div>
+              {teller.commissionRate && (
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-300">{language === 'tr' ? 'Komisyon Oranı' : 'Commission Rate'}</span>
+                  <span className="text-orange-400 font-semibold">%{teller.commissionRate}</span>
+                </div>
+              )}
             </div>
           </motion.div>
 

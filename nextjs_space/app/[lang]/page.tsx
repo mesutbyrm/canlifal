@@ -265,14 +265,34 @@ export default function HomePage() {
 
         {/* Main Content */}
         <div className="pt-[114px] pb-28 px-4 space-y-4 relative z-10">
-          {/* Gift Banner */}
-          <Link
-            href={session?.user ? `/${language}/gifts` : `/${language}/login`}
-            className={`flex items-center gap-2 ${isCosmic ? 'text-amber-300 hover:text-amber-200' : 'text-fuchsia-300 hover:text-fuchsia-200'} text-sm font-medium transition-colors`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>{language === 'tr' ? '✨ Arkadaşlarına Hediye Gönder' : '✨ Send Gifts to Friends'}</span>
-          </Link>
+          {/* Action Buttons Row */}
+          <div className="flex flex-wrap gap-3">
+            {/* Gift Button */}
+            <Link
+              href={session?.user ? `/${language}/gifts` : `/${language}/login`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
+                isCosmic 
+                  ? 'bg-gradient-to-r from-amber-900/40 to-orange-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400'
+                  : 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400'
+              }`}
+            >
+              <Gift className="w-4 h-4" />
+              <span className="text-sm font-medium">{language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}</span>
+            </Link>
+
+            {/* Become Live Teller Button */}
+            <Link
+              href={session?.user ? `/${language}/become-teller` : `/${language}/login`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
+                isCosmic 
+                  ? 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
+                  : 'bg-gradient-to-r from-emerald-900/40 to-green-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
+              }`}
+            >
+              <Video className="w-4 h-4" />
+              <span className="text-sm font-medium">{language === 'tr' ? 'Canlı Falcı Ol' : 'Become Live Teller'}</span>
+            </Link>
+          </div>
 
           {/* CANLI YAYINLAR Section */}
           <div className="falclub-card p-4 relative overflow-hidden">

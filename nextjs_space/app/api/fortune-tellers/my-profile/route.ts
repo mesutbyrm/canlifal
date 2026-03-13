@@ -32,7 +32,17 @@ export async function GET(request: NextRequest) {
         bonusCredits: true,
         isBanned: true,
         isFrozen: true,
-        createdAt: true
+        createdAt: true,
+        // Permissions (admin controlled)
+        canGoOnline: true,
+        canChat: true,
+        canStartSession: true,
+        canSetPrice: true,
+        canEditProfile: true,
+        canViewEarnings: true,
+        canWithdraw: true,
+        maxSessionsPerDay: true,
+        commissionRate: true
       }
     });
 

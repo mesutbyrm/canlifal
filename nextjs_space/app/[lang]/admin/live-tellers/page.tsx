@@ -22,6 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  Settings,
+  Lock,
 } from 'lucide-react';
 
 interface Teller {
@@ -51,6 +53,17 @@ interface Teller {
   frozenAt: string | null;
   bonusCredits: number;
   createdAt: string;
+  // Permissions
+  canGoOnline: boolean;
+  canChat: boolean;
+  canStartSession: boolean;
+  canSetPrice: boolean;
+  canEditProfile: boolean;
+  canViewEarnings: boolean;
+  canWithdraw: boolean;
+  maxSessionsPerDay: number;
+  commissionRate: number;
+  adminNotes: string | null;
   user: {
     id: string;
     email: string;
@@ -86,7 +99,7 @@ export default function AdminLiveTellersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeller, setSelectedTeller] = useState<Teller | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'view' | 'edit' | 'warning' | 'ban' | 'freeze' | 'bonus' | 'approve' | 'add'>('view');
+  const [modalType, setModalType] = useState<'view' | 'edit' | 'warning' | 'ban' | 'freeze' | 'bonus' | 'approve' | 'add' | 'permissions'>('view');
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedTeller, setExpandedTeller] = useState<string | null>(null);
 
@@ -104,6 +117,18 @@ export default function AdminLiveTellersPage() {
     pricePerSession: 100,
     isVerified: false,
     isActive: true,
+  });
+  const [permissionsForm, setPermissionsForm] = useState({
+    canGoOnline: true,
+    canChat: true,
+    canStartSession: true,
+    canSetPrice: false,
+    canEditProfile: true,
+    canViewEarnings: true,
+    canWithdraw: false,
+    maxSessionsPerDay: 10,
+    commissionRate: 20,
+    adminNotes: '',
   });
 
   useEffect(() => {
@@ -140,6 +165,20 @@ export default function AdminLiveTellersPage() {
           pricePerSession: teller.pricePerSession,
           isVerified: teller.isVerified,
           isActive: teller.isActive,
+        });
+      }
+      if (type === 'permissions') {
+        setPermissionsForm({
+          canGoOnline: teller.canGoOnline ?? true,
+          canChat: teller.canChat ?? true,
+          canStartSession: teller.canStartSession ?? true,
+          canSetPrice: teller.canSetPrice ?? false,
+          canEditProfile: teller.canEditProfile ?? true,
+          canViewEarnings: teller.canViewEarnings ?? true,
+          canWithdraw: teller.canWithdraw ?? false,
+          maxSessionsPerDay: teller.maxSessionsPerDay ?? 10,
+          commissionRate: teller.commissionRate ?? 20,
+          adminNotes: teller.adminNotes || '',
         });
       }
     }
@@ -250,6 +289,23 @@ export default function AdminLiveTellersPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
+      });
+      closeModal();
+      fetchTellers();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setActionLoading(false);
+  };
+
+  const handlePermissions = async () => {
+    if (!selectedTeller) return;
+    setActionLoading(true);
+    try {
+      await fetch(`/api/admin/live-tellers/${selectedTeller.id}/permissions`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(permissionsForm),
       });
       closeModal();
       fetchTellers();
@@ -451,6 +507,13 @@ export default function AdminLiveTellersPage() {
                         title={language === 'tr' ? 'Düzenle' : 'Edit'}
                       >
                         <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openModal('permissions', teller)}
+                        className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30"
+                        title={language === 'tr' ? 'Yetkiler' : 'Permissions'}
+                      >
+                        <Settings className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('warning', teller)}
@@ -896,6 +959,104 @@ export default function AdminLiveTellersPage() {
                         className="flex-1 py-2 bg-gold-500 text-deep-purple-900 rounded-lg hover:bg-gold-400 disabled:opacity-50"
                       >
                         {actionLoading ? '...' : language === 'tr' ? 'Bonus Ver' : 'Give Bonus'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Permissions Modal */}
+                {modalType === 'permissions' && selectedTeller && (
+                  <div>
+                    <h3 className="text-xl font-serif text-emerald-400 mb-4 flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      {language === 'tr' ? 'Falcı Yetkileri' : 'Teller Permissions'}
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span>
+                    </p>
+                    
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                      {/* Boolean Permissions */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { key: 'canGoOnline', tr: 'Online Olabilir', en: 'Can Go Online' },
+                          { key: 'canChat', tr: 'Sohbet Edebilir', en: 'Can Chat' },
+                          { key: 'canStartSession', tr: 'Seans Başlatabilir', en: 'Can Start Session' },
+                          { key: 'canSetPrice', tr: 'Fiyat Belirleyebilir', en: 'Can Set Price' },
+                          { key: 'canEditProfile', tr: 'Profil Düzenleyebilir', en: 'Can Edit Profile' },
+                          { key: 'canViewEarnings', tr: 'Kazançları Görebilir', en: 'Can View Earnings' },
+                          { key: 'canWithdraw', tr: 'Para Çekebilir', en: 'Can Withdraw' },
+                        ].map((perm) => (
+                          <label key={perm.key} className="flex items-center gap-2 p-2 bg-deep-purple-800/50 rounded-lg cursor-pointer hover:bg-deep-purple-800">
+                            <input
+                              type="checkbox"
+                              checked={permissionsForm[perm.key as keyof typeof permissionsForm] as boolean}
+                              onChange={(e) => setPermissionsForm(prev => ({ ...prev, [perm.key]: e.target.checked }))}
+                              className="w-4 h-4 rounded border-purple-500 text-emerald-500 focus:ring-emerald-500 bg-deep-purple-900"
+                            />
+                            <span className="text-sm text-gray-300">{language === 'tr' ? perm.tr : perm.en}</span>
+                          </label>
+                        ))}
+                      </div>
+
+                      {/* Numeric Settings */}
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">
+                            {language === 'tr' ? 'Günlük Max Seans' : 'Max Sessions/Day'}
+                          </label>
+                          <input
+                            type="number"
+                            value={permissionsForm.maxSessionsPerDay}
+                            onChange={(e) => setPermissionsForm(prev => ({ ...prev, maxSessionsPerDay: parseInt(e.target.value) || 10 }))}
+                            min={1}
+                            max={100}
+                            className="w-full px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">
+                            {language === 'tr' ? 'Komisyon Oranı (%)' : 'Commission Rate (%)'}
+                          </label>
+                          <input
+                            type="number"
+                            value={permissionsForm.commissionRate}
+                            onChange={(e) => setPermissionsForm(prev => ({ ...prev, commissionRate: parseInt(e.target.value) || 20 }))}
+                            min={0}
+                            max={100}
+                            className="w-full px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Admin Notes */}
+                      <div className="mt-4">
+                        <label className="text-sm text-gray-400 block mb-1">
+                          {language === 'tr' ? 'Admin Notları (Falcı göremez)' : 'Admin Notes (Hidden from teller)'}
+                        </label>
+                        <textarea
+                          value={permissionsForm.adminNotes}
+                          onChange={(e) => setPermissionsForm(prev => ({ ...prev, adminNotes: e.target.value }))}
+                          rows={2}
+                          placeholder={language === 'tr' ? 'Özel notlar...' : 'Private notes...'}
+                          className="w-full px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500 resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={closeModal}
+                        className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
+                      >
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handlePermissions}
+                        disabled={actionLoading}
+                        className="flex-1 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-400 disabled:opacity-50"
+                      >
+                        {actionLoading ? '...' : language === 'tr' ? 'Kaydet' : 'Save'}
                       </button>
                     </div>
                   </div>
