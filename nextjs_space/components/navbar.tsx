@@ -10,8 +10,9 @@ import { useSiteTheme } from '@/lib/theme-context'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
-  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail
+  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail, Send, AlertCircle
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import TellerIncomingRequest from './teller-incoming-request'
@@ -30,6 +31,17 @@ export default function Navbar() {
   const [liveStreamCount, setLiveStreamCount] = useState(0)
   const [onlineUsers, setOnlineUsers] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState<Array<{id: string, name: string, type: string}>>([])
+  const [paymentForm, setPaymentForm] = useState({
+    paymentMethod: '',
+    amount: '',
+    transactionId: '',
+    senderName: '',
+    notes: ''
+  })
+  const [submittingPayment, setSubmittingPayment] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // FalClub theme styling
@@ -93,6 +105,42 @@ export default function Navbar() {
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'tr' : 'en')
+  }
+
+  // Fetch payment methods when modal opens
+  useEffect(() => {
+    if (showPaymentModal) {
+      fetch('/api/payment-methods')
+        .then(res => res.json())
+        .then(data => setPaymentMethods(data || []))
+        .catch(() => {})
+    }
+  }, [showPaymentModal])
+
+  const handlePaymentSubmit = async () => {
+    if (!paymentForm.paymentMethod || !paymentForm.amount) {
+      return
+    }
+    setSubmittingPayment(true)
+    try {
+      const res = await fetch('/api/payments/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentForm)
+      })
+      if (res.ok) {
+        setPaymentSuccess(true)
+        setPaymentForm({ paymentMethod: '', amount: '', transactionId: '', senderName: '', notes: '' })
+        setTimeout(() => {
+          setShowPaymentModal(false)
+          setPaymentSuccess(false)
+        }, 2000)
+      }
+    } catch (err) {
+      console.error('Payment notification error:', err)
+    } finally {
+      setSubmittingPayment(false)
+    }
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,6 +381,15 @@ export default function Navbar() {
                         <span className="font-bold text-gold-400">{credits}</span>
                       </Link>
                       
+                      {/* Payment Notification Button */}
+                      <button
+                        onClick={() => { setShowProfileMenu(false); setShowPaymentModal(true); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
+                      >
+                        <Send className="w-5 h-5 text-green-400" />
+                        {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
+                      </button>
+                      
                       <Link
                         href={`/${language}/profile/${session.user.id}`}
                         className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
@@ -418,6 +475,161 @@ export default function Navbar() {
       
       {/* Teller Incoming Request - shows popup for fortune tellers anywhere on the site */}
       <TellerIncomingRequest />
+
+      {/* Payment Notification Modal */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+            onClick={() => !submittingPayment && setShowPaymentModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+            >
+              {paymentSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Send className="w-8 h-8 text-green-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-green-400 mb-2">
+                    {language === 'tr' ? 'Ödeme Bildirimi Gönderildi!' : 'Payment Notification Sent!'}
+                  </h3>
+                  <p className="text-purple-300 text-sm">
+                    {language === 'tr' ? 'Admin onayı bekleniyor.' : 'Waiting for admin approval.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-fuchsia-400 flex items-center gap-2">
+                      <Send className="w-6 h-6" />
+                      {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
+                    </h3>
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      className="p-2 hover:bg-fuchsia-800/50 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5 text-purple-400" />
+                    </button>
+                  </div>
+                  
+                  <div className="bg-fuchsia-900/30 border border-fuchsia-500/20 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-purple-300">
+                        {language === 'tr' 
+                          ? 'Ödeme yaptıktan sonra bu formu doldurun. Admin onayladığında jetonlarınız hesabınıza yüklenecektir.'
+                          : 'Fill this form after making payment. Your jetons will be loaded when admin approves.'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Payment Method */}
+                    <div>
+                      <label className="block text-sm text-purple-300 mb-2">
+                        {language === 'tr' ? 'Ödeme Yöntemi *' : 'Payment Method *'}
+                      </label>
+                      <select
+                        value={paymentForm.paymentMethod}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+                        className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
+                      >
+                        <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                        {paymentMethods.map((method) => (
+                          <option key={method.id} value={method.type}>
+                            {method.name}
+                          </option>
+                        ))}
+                        <option value="papara">Papara</option>
+                        <option value="bank_transfer">{language === 'tr' ? 'Banka Havalesi' : 'Bank Transfer'}</option>
+                      </select>
+                    </div>
+                    
+                    {/* Amount */}
+                    <div>
+                      <label className="block text-sm text-purple-300 mb-2">
+                        {language === 'tr' ? 'Ödenen Tutar (TL) *' : 'Amount Paid (TL) *'}
+                      </label>
+                      <input
+                        type="number"
+                        value={paymentForm.amount}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                        className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
+                        placeholder="100"
+                      />
+                    </div>
+                    
+                    {/* Transaction ID */}
+                    <div>
+                      <label className="block text-sm text-purple-300 mb-2">
+                        {language === 'tr' ? 'İşlem No / Referans' : 'Transaction ID / Reference'}
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentForm.transactionId}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, transactionId: e.target.value })}
+                        className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
+                        placeholder={language === 'tr' ? 'Varsa işlem numarası' : 'Transaction number if available'}
+                      />
+                    </div>
+                    
+                    {/* Sender Name (for bank transfers) */}
+                    {paymentForm.paymentMethod === 'bank_transfer' && (
+                      <div>
+                        <label className="block text-sm text-purple-300 mb-2">
+                          {language === 'tr' ? 'Gönderen Ad Soyad' : 'Sender Name'}
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentForm.senderName}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, senderName: e.target.value })}
+                          className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
+                          placeholder={language === 'tr' ? 'Havaleyi yapan kişinin adı' : 'Name of the person who made the transfer'}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm text-purple-300 mb-2">
+                        {language === 'tr' ? 'Not (Opsiyonel)' : 'Note (Optional)'}
+                      </label>
+                      <textarea
+                        value={paymentForm.notes}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                        className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500 resize-none"
+                        placeholder={language === 'tr' ? 'Ek bilgi...' : 'Additional info...'}
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <button
+                      onClick={handlePaymentSubmit}
+                      disabled={submittingPayment || !paymentForm.paymentMethod || !paymentForm.amount}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-medium flex items-center justify-center gap-2 transition-opacity disabled:opacity-50 mt-4"
+                    >
+                      {submittingPayment ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Send className="w-5 h-5" />
+                      )}
+                      {language === 'tr' ? 'Bildirimi Gönder' : 'Send Notification'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

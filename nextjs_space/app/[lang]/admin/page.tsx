@@ -9,7 +9,7 @@ import {
   Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical,
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
-  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers
+  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -97,6 +97,7 @@ const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; e
 
 const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
+  { href: `/${lang}/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
   { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
   { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
   { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },

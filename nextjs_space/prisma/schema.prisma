@@ -1152,3 +1152,26 @@ model MembershipPurchase {
   @@index([expiresAt])
   @@map("membership_purchases")
 }
+
+// Payment Notifications (user notifies admin about payment)
+model PaymentNotification {
+  id              String   @id @default(cuid())
+  userId          String
+  username        String   // User's username at time of submission
+  paymentMethod   String   // papara, bank_transfer, etc.
+  amount          Float    // Amount paid in TRY
+  transactionId   String?  // Transaction/Reference ID
+  senderName      String?  // Name of sender (for bank transfers)
+  notes           String?  @db.Text // Additional notes
+  status          String   @default("pending") // pending, approved, rejected
+  jetonLoaded     Int?     // Jeton amount loaded by admin
+  processedBy     String?  // Admin who processed
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_notifications")
+}
+
