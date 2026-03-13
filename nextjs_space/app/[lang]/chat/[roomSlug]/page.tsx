@@ -359,64 +359,127 @@ export default function ChatRoomPage() {
     iceCandidatePoolSize: 10
   }
 
+  // ICE candidates buffer for each peer
+  const iceCandidatesBuffer = useRef<Map<string, RTCIceCandidate[]>>(new Map())
+
   // Create peer connection for a user
   const createPeerConnection = useCallback((userId: string, isInitiator: boolean) => {
-    if (!room || !mediaStreamRef.current) return null
+    if (!room || !mediaStreamRef.current) {
+      console.log('Cannot create peer connection: room or mediaStream missing')
+      return null
+    }
     
+    // Close existing connection if any
+    const existingPc = peerConnectionsRef.current.get(userId)
+    if (existingPc) {
+      existingPc.close()
+      peerConnectionsRef.current.delete(userId)
+    }
+    
+    console.log(`Creating peer connection for ${userId}, isInitiator: ${isInitiator}`)
     const pc = new RTCPeerConnection(rtcConfig)
     peerConnectionsRef.current.set(userId, pc)
+    iceCandidatesBuffer.current.set(userId, [])
     
     // Add local audio tracks
     mediaStreamRef.current.getAudioTracks().forEach(track => {
+      console.log('Adding local audio track:', track.label)
       pc.addTrack(track, mediaStreamRef.current!)
     })
     
     // Handle incoming audio
     pc.ontrack = (event) => {
+      console.log('Received remote track from', userId)
       const remoteAudio = new Audio()
       remoteAudio.srcObject = event.streams[0]
       remoteAudio.autoplay = true
-      remoteAudio.play().catch(console.error)
+      remoteAudio.volume = 1.0
+      
+      // Try to play with user gesture fallback
+      const playAudio = () => {
+        remoteAudio.play().then(() => {
+          console.log('Remote audio playing for', userId)
+        }).catch(err => {
+          console.log('Audio play failed, will retry:', err)
+          // Retry on user interaction
+          document.addEventListener('click', () => remoteAudio.play(), { once: true })
+        })
+      }
+      playAudio()
       remoteAudioRef.current.set(userId, remoteAudio)
       
       // Update speaking users based on audio activity
-      const audioContext = new AudioContext()
-      const source = audioContext.createMediaStreamSource(event.streams[0])
-      const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-      
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-      const checkSpeaking = setInterval(() => {
-        analyser.getByteFrequencyData(dataArray)
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-        setSpeakingUsers(prev => {
-          const next = new Set(prev)
-          if (avg > 20) next.add(userId)
-          else next.delete(userId)
-          return next
-        })
-      }, 100)
-      
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
-          clearInterval(checkSpeaking)
+      try {
+        const audioContext = new AudioContext()
+        const source = audioContext.createMediaStreamSource(event.streams[0])
+        const analyser = audioContext.createAnalyser()
+        analyser.fftSize = 256
+        source.connect(analyser)
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount)
+        const checkSpeaking = setInterval(() => {
+          if (audioContext.state === 'closed') {
+            clearInterval(checkSpeaking)
+            return
+          }
+          analyser.getByteFrequencyData(dataArray)
+          const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+          setSpeakingUsers(prev => {
+            const next = new Set(prev)
+            if (avg > 20) next.add(userId)
+            else next.delete(userId)
+            return next
+          })
+        }, 100)
+        
+        pc.onconnectionstatechange = () => {
+          console.log(`Connection state for ${userId}:`, pc.connectionState)
+          if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
+            clearInterval(checkSpeaking)
+            audioContext.close().catch(() => {})
+          }
+        }
+      } catch (err) {
+        console.error('Error setting up audio analyser:', err)
+      }
+    }
+    
+    // Handle ICE candidates - buffer them
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('ICE candidate generated for', userId)
+        const buffer = iceCandidatesBuffer.current.get(userId) || []
+        buffer.push(event.candidate)
+        iceCandidatesBuffer.current.set(userId, buffer)
+      }
+    }
+    
+    // When ICE gathering is complete, send all candidates
+    pc.onicegatheringstatechange = () => {
+      console.log(`ICE gathering state for ${userId}:`, pc.iceGatheringState)
+      if (pc.iceGatheringState === 'complete' && room) {
+        const candidates = iceCandidatesBuffer.current.get(userId) || []
+        if (candidates.length > 0) {
+          console.log(`Sending ${candidates.length} ICE candidates to ${userId}`)
+          fetch(`/api/chat/rooms/${room.id}/voice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'ice-candidates',
+              toUserId: userId,
+              data: JSON.stringify(candidates)
+            })
+          }).catch(console.error)
         }
       }
     }
     
-    // Handle ICE candidates
-    pc.onicecandidate = (event) => {
-      if (event.candidate && room) {
-        fetch(`/api/chat/rooms/${room.id}/voice`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'ice-candidate',
-            toUserId: userId,
-            data: JSON.stringify(event.candidate)
-          })
-        }).catch(console.error)
+    // Connection state change handler
+    pc.onconnectionstatechange = () => {
+      console.log(`Peer ${userId} connection state:`, pc.connectionState)
+      if (pc.connectionState === 'failed') {
+        console.log('Connection failed, will retry...')
+        // Could implement retry logic here
       }
     }
     
@@ -450,59 +513,84 @@ export default function ChatRoomPage() {
       setVoiceUsers(users)
       
       for (const signal of signals) {
-        const { fromUserId, fromUserName, type, data } = signal
+        const { fromUserId, type, data } = signal
         
-        if (type === 'join') {
-          // New user joined, create offer
-          if (!peerConnectionsRef.current.has(fromUserId) && mediaStreamRef.current) {
-            const pc = createPeerConnection(fromUserId, true)
+        try {
+          if (type === 'join') {
+            // New user joined, create offer
+            console.log('User joined voice:', fromUserId)
+            if (!peerConnectionsRef.current.has(fromUserId) && mediaStreamRef.current) {
+              const pc = createPeerConnection(fromUserId, true)
+              if (pc) {
+                const offer = await pc.createOffer()
+                await pc.setLocalDescription(offer)
+                console.log('Sending offer to', fromUserId)
+                await sendVoiceSignal('offer', JSON.stringify(offer), fromUserId)
+              }
+            }
+          } else if (type === 'leave') {
+            // User left, cleanup
+            console.log('User left voice:', fromUserId)
+            const pc = peerConnectionsRef.current.get(fromUserId)
             if (pc) {
-              const offer = await pc.createOffer()
-              await pc.setLocalDescription(offer)
-              sendVoiceSignal('offer', JSON.stringify(offer), fromUserId)
+              pc.close()
+              peerConnectionsRef.current.delete(fromUserId)
+            }
+            const audio = remoteAudioRef.current.get(fromUserId)
+            if (audio) {
+              audio.pause()
+              audio.srcObject = null
+              remoteAudioRef.current.delete(fromUserId)
+            }
+            setSpeakingUsers(prev => {
+              const next = new Set(prev)
+              next.delete(fromUserId)
+              return next
+            })
+          } else if (type === 'offer' && data) {
+            // Received offer, create answer
+            console.log('Received offer from', fromUserId)
+            let pc: RTCPeerConnection | null | undefined = peerConnectionsRef.current.get(fromUserId)
+            if (!pc) {
+              pc = createPeerConnection(fromUserId, false)
+            }
+            if (pc) {
+              await pc.setRemoteDescription(JSON.parse(data))
+              const answer = await pc.createAnswer()
+              await pc.setLocalDescription(answer)
+              console.log('Sending answer to', fromUserId)
+              await sendVoiceSignal('answer', JSON.stringify(answer), fromUserId)
+            }
+          } else if (type === 'answer' && data) {
+            // Received answer
+            console.log('Received answer from', fromUserId)
+            const pc = peerConnectionsRef.current.get(fromUserId)
+            if (pc && pc.signalingState !== 'stable') {
+              await pc.setRemoteDescription(JSON.parse(data))
+            }
+          } else if (type === 'ice-candidate' && data) {
+            // Received single ICE candidate (legacy)
+            const pc = peerConnectionsRef.current.get(fromUserId)
+            if (pc && pc.remoteDescription) {
+              await pc.addIceCandidate(JSON.parse(data))
+            }
+          } else if (type === 'ice-candidates' && data) {
+            // Received batch of ICE candidates
+            console.log('Received ICE candidates from', fromUserId)
+            const pc = peerConnectionsRef.current.get(fromUserId)
+            if (pc && pc.remoteDescription) {
+              const candidates = JSON.parse(data) as RTCIceCandidate[]
+              for (const candidate of candidates) {
+                try {
+                  await pc.addIceCandidate(candidate)
+                } catch (err) {
+                  console.warn('Failed to add ICE candidate:', err)
+                }
+              }
             }
           }
-        } else if (type === 'leave') {
-          // User left, cleanup
-          const pc = peerConnectionsRef.current.get(fromUserId)
-          if (pc) {
-            pc.close()
-            peerConnectionsRef.current.delete(fromUserId)
-          }
-          const audio = remoteAudioRef.current.get(fromUserId)
-          if (audio) {
-            audio.pause()
-            remoteAudioRef.current.delete(fromUserId)
-          }
-          setSpeakingUsers(prev => {
-            const next = new Set(prev)
-            next.delete(fromUserId)
-            return next
-          })
-        } else if (type === 'offer' && data) {
-          // Received offer, create answer
-          let pc: RTCPeerConnection | null | undefined = peerConnectionsRef.current.get(fromUserId)
-          if (!pc) {
-            pc = createPeerConnection(fromUserId, false)
-          }
-          if (pc) {
-            await pc.setRemoteDescription(JSON.parse(data))
-            const answer = await pc.createAnswer()
-            await pc.setLocalDescription(answer)
-            sendVoiceSignal('answer', JSON.stringify(answer), fromUserId)
-          }
-        } else if (type === 'answer' && data) {
-          // Received answer
-          const pc = peerConnectionsRef.current.get(fromUserId)
-          if (pc) {
-            await pc.setRemoteDescription(JSON.parse(data))
-          }
-        } else if (type === 'ice-candidate' && data) {
-          // Received ICE candidate
-          const pc = peerConnectionsRef.current.get(fromUserId)
-          if (pc) {
-            await pc.addIceCandidate(JSON.parse(data))
-          }
+        } catch (signalError) {
+          console.error('Error processing signal:', type, signalError)
         }
       }
     } catch (error) {
@@ -580,7 +668,7 @@ export default function ChatRoomPage() {
       
       // Start polling for signals
       lastSignalTimeRef.current = Date.now()
-      voicePollRef.current = setInterval(pollVoiceSignals, 500)
+      voicePollRef.current = setInterval(pollVoiceSignals, 300)
       
       // Connect to existing voice users after a short delay
       setTimeout(async () => {
@@ -681,7 +769,7 @@ export default function ChatRoomPage() {
       
       // Start polling for signals to receive audio
       lastSignalTimeRef.current = Date.now()
-      voicePollRef.current = setInterval(pollVoiceSignals, 500)
+      voicePollRef.current = setInterval(pollVoiceSignals, 300)
     } catch (error) {
       console.error('Error starting listen mode:', error)
     }
