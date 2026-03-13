@@ -214,6 +214,48 @@ export async function POST(
         return NextResponse.json({ success: true, message: 'Messages cleared' })
       }
 
+      case 'set_owner': {
+        // Only global admin can set room owner
+        if (!permissions.isGlobalAdmin) {
+          return NextResponse.json({ error: 'Only site admin can set room owner' }, { status: 403 })
+        }
+
+        await prisma.chatRoom.update({
+          where: { id: roomId },
+          data: { ownerId: targetUserId || null }
+        })
+
+        // If owner is set, also give them founder role in this room
+        if (targetUserId) {
+          await prisma.chatUserRole.upsert({
+            where: { roomId_userId: { roomId, userId: targetUserId } },
+            update: { role: 'founder', grantedBy: session.user.id },
+            create: {
+              roomId,
+              userId: targetUserId,
+              role: 'founder',
+              grantedBy: session.user.id
+            }
+          })
+        }
+
+        return NextResponse.json({ success: true, message: 'Room owner set' })
+      }
+
+      case 'remove_owner': {
+        // Only global admin can remove room owner
+        if (!permissions.isGlobalAdmin) {
+          return NextResponse.json({ error: 'Only site admin can remove room owner' }, { status: 403 })
+        }
+
+        await prisma.chatRoom.update({
+          where: { id: roomId },
+          data: { ownerId: null }
+        })
+
+        return NextResponse.json({ success: true, message: 'Room owner removed' })
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
@@ -246,7 +288,11 @@ export async function GET(
     const [room, mutes, bans, roles] = await Promise.all([
       prisma.chatRoom.findUnique({
         where: { id: roomId },
-        select: { isMuted: true }
+        select: { 
+          isMuted: true,
+          ownerId: true,
+          owner: { select: { id: true, name: true, username: true } }
+        }
       }),
       prisma.chatMute.findMany({
         where: { roomId },
@@ -264,6 +310,8 @@ export async function GET(
 
     return NextResponse.json({
       roomMuted: room?.isMuted || false,
+      ownerId: room?.ownerId || null,
+      owner: room?.owner || null,
       mutes,
       bans,
       roles,

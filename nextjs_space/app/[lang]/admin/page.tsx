@@ -124,10 +124,12 @@ export default function AdminPage() {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null)
   const [roomModData, setRoomModData] = useState<{
-    roomMuted: boolean; roles: ChatUserRole[]; mutes: ChatMute[]; bans: ChatBan[]
+    roomMuted: boolean; roles: ChatUserRole[]; mutes: ChatMute[]; bans: ChatBan[];
+    ownerId?: string | null; owner?: { id: string; name: string; username?: string | null } | null
   } | null>(null)
   const [roleUserId, setRoleUserId] = useState('')
   const [roleType, setRoleType] = useState('op')
+  const [ownerUserId, setOwnerUserId] = useState('')
 
   // Ads management state
   const [adSettings, setAdSettings] = useState<Record<string, string>>({})
@@ -210,6 +212,17 @@ export default function AdminPage() {
     if (!roleUserId || !selectedRoom) return
     await performModAction('set_role', roleUserId, { role: roleType })
     setRoleUserId('')
+  }
+
+  const setRoomOwner = async () => {
+    if (!ownerUserId || !selectedRoom) return
+    await performModAction('set_owner', ownerUserId)
+    setOwnerUserId('')
+  }
+
+  const removeRoomOwner = async () => {
+    if (!selectedRoom) return
+    await performModAction('remove_owner', '')
   }
 
   const addCredits = async (userId: string, amount: number) => {
@@ -447,6 +460,38 @@ export default function AdminPage() {
                 {roomModData.roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 {roomModData.roomMuted ? (language === 'tr' ? 'Sessizi Aç' : 'Unmute') : (language === 'tr' ? 'Sessize Al' : 'Mute')}
               </button>
+            </div>
+
+            {/* Room Owner */}
+            <div className={`mb-6 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
+              <h3 className={`${textPrimary} font-medium mb-3 text-sm flex items-center gap-2`}>
+                <Crown className={`w-4 h-4 ${goldColor}`} />
+                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+              </h3>
+              {roomModData?.owner ? (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`${textPrimary} font-medium`}>{roomModData.owner.name}</span>
+                    {roomModData.owner.username && <span className={`${textMuted} text-sm`}>@{roomModData.owner.username}</span>}
+                  </div>
+                  <button onClick={removeRoomOwner}
+                    className="px-3 py-1 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20">
+                    {language === 'tr' ? 'Sahibi Kaldır' : 'Remove Owner'}
+                  </button>
+                </div>
+              ) : (
+                <p className={`${textMuted} text-sm mb-3`}>{language === 'tr' ? 'Bu odanın sahibi yok' : 'No owner for this room'}</p>
+              )}
+              <div className="flex gap-2 items-end flex-wrap">
+                <select value={ownerUserId} onChange={(e) => setOwnerUserId(e.target.value)}
+                  className={`flex-1 min-w-[150px] px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
+                  <option value="">{language === 'tr' ? 'Yeni Sahip Seç' : 'Select New Owner'}</option>
+                  {users.map((user) => (<option key={user.id} value={user.id}>{user.name}</option>))}
+                </select>
+                <button onClick={setRoomOwner} className={`px-4 py-2 rounded-lg text-sm font-medium ${btnPrimary}`}>
+                  {language === 'tr' ? 'Sahip Ata' : 'Set Owner'}
+                </button>
+              </div>
             </div>
 
             {/* Grant Role */}

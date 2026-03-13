@@ -497,6 +497,18 @@ export default function ChatRoomPage() {
     return room?.ownerId === userId
   }
 
+  // Check if current user can use voice (has voice permission, higher role, or is room owner)
+  const canUseVoice = () => {
+    if (!session?.user?.id) return false
+    // Room owner can always use voice
+    if (room?.ownerId === session.user.id) return true
+    // Global admin can always use voice
+    if (myPermissions?.isGlobalAdmin) return true
+    // Users with voice role or higher can use voice
+    const allowedRoles = ['voice', 'op', 'admin', 'founder']
+    return myPermissions?.role && allowedRoles.includes(myPermissions.role)
+  }
+
   if (error && error.includes('banned')) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] flex items-center justify-center">
@@ -708,12 +720,13 @@ export default function ChatRoomPage() {
                                 <Ban className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Engelle' : 'Ban'}
                               </button>
                             )}
-                            {myPermissions?.canGiveVoice && (
+                            {myPermissions?.canGiveVoice && !user.chatRole && (
                               <button
                                 onClick={() => performModAction('set_role', user.id, { role: 'voice' })}
                                 className="px-2 py-1 bg-blue-600/30 text-blue-300 rounded text-xs hover:bg-blue-600/50"
+                                title={language === 'tr' ? 'Ses yetkisi ver' : 'Give voice permission'}
                               >
-                                +v
+                                <Mic className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Ses Ver' : '+Voice'}
                               </button>
                             )}
                             {myPermissions?.canGiveOp && (
@@ -871,17 +884,28 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Odalar' : 'Rooms'}
               </button>
               
-              {/* Voice Chat Button */}
-              <button
-                onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${voiceEnabled ? 'bg-green-600/50 text-green-200 hover:bg-green-600/70' : 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50'}`}
-              >
-                {voiceEnabled ? (
-                  <><PhoneOff className="w-4 h-4" />{language === 'tr' ? 'Sesli Kapat' : 'End Voice'}</>
-                ) : (
-                  <><Phone className="w-4 h-4" />{language === 'tr' ? 'Sesli' : 'Voice'}</>
-                )}
-              </button>
+              {/* Voice Chat Button - Only show if user has voice permission */}
+              {canUseVoice() ? (
+                <button
+                  onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${voiceEnabled ? 'bg-green-600/50 text-green-200 hover:bg-green-600/70' : 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50'}`}
+                >
+                  {voiceEnabled ? (
+                    <><PhoneOff className="w-4 h-4" />{language === 'tr' ? 'Sesli Kapat' : 'End Voice'}</>
+                  ) : (
+                    <><Phone className="w-4 h-4" />{language === 'tr' ? 'Sesli' : 'Voice'}</>
+                  )}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium bg-gray-600/30 text-gray-400 cursor-not-allowed"
+                  title={language === 'tr' ? 'Ses yetkisi gerekli' : 'Voice permission required'}
+                >
+                  <MicOff className="w-4 h-4" />
+                  {language === 'tr' ? 'Ses Yok' : 'No Voice'}
+                </button>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
