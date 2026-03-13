@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
-import { useParams } from 'next/navigation'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
 
 interface Message {
   id: string
@@ -40,6 +40,9 @@ interface ChatRoom {
   descEn: string
   descTr: string
   icon: string
+  ownerId?: string | null
+  owner?: { id: string; name: string; username?: string | null } | null
+  userCount?: number
 }
 
 interface MyPermissions {
@@ -71,11 +74,13 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
 
 export default function ChatRoomPage() {
   const params = useParams()
+  const router = useRouter()
   const roomSlug = params.roomSlug as string
   const { data: session } = useSession() || {}
   const { language, t } = useLanguage()
   
   const [room, setRoom] = useState<ChatRoom | null>(null)
+  const [allRooms, setAllRooms] = useState<ChatRoom[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -97,9 +102,21 @@ export default function ChatRoomPage() {
   // Mention notifications
   const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
   
-  // Management panels
-  const [showChatManagePanel, setShowChatManagePanel] = useState(false)
-  const [showUsersManagePanel, setShowUsersManagePanel] = useState(false)
+  // Combined Management Popup
+  const [showManagePopup, setShowManagePopup] = useState(false)
+  const [manageTab, setManageTab] = useState<'chat' | 'users'>('chat')
+  
+  // Rooms Popup
+  const [showRoomsPopup, setShowRoomsPopup] = useState(false)
+  
+  // Voice Chat
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -112,7 +129,6 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + 'A'.repeat(100))
-      // Create a simple notification sound
       const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       audioRef.current = {
         play: () => {
@@ -133,6 +149,23 @@ export default function ChatRoomPage() {
     }
   }, [soundEnabled])
 
+  // Fetch all rooms with user counts
+  const fetchAllRooms = useCallback(async () => {
+    try {
+      const res = await fetch('/api/chat/rooms?withCounts=true')
+      if (res.ok) {
+        const rooms = await res.json()
+        setAllRooms(rooms)
+        const currentRoom = rooms.find((r: ChatRoom) => r.slug === roomSlug)
+        if (currentRoom) {
+          setRoom(currentRoom)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching rooms:', error)
+    }
+  }, [roomSlug])
+
   // Fetch room info
   const fetchRoom = useCallback(async () => {
     try {
@@ -149,313 +182,202 @@ export default function ChatRoomPage() {
     }
   }, [roomSlug])
 
-  // Fetch initial messages
+  // Fetch messages
   const fetchMessages = useCallback(async () => {
     if (!room) return
-    
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (res.ok) {
         const data = await res.json()
-        setMessages(data)
-        setError(null)
-      } else if (res.status === 403) {
-        const errorData = await res.json()
-        setError(errorData.error)
+        setMessages(data.messages || [])
+        setRoomMuted(data.roomMuted || false)
+        setMyPermissions(data.myPermissions || null)
+        if (data.myNickname) {
+          setNickname(data.myNickname)
+        }
+        if (data.messages && data.messages.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
+          const lastMsg = data.messages[data.messages.length - 1]
+          if (lastMsg.user.id !== session?.user?.id) {
+            audioRef.current?.play()
+          }
+        }
+        previousMessagesCount.current = data.messages?.length || 0
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
-    } finally {
-      setLoading(false)
+    }
+  }, [room, session?.user?.id])
+
+  // Fetch active users
+  const fetchActiveUsers = useCallback(async () => {
+    if (!room) return
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/presence`)
+      if (res.ok) {
+        const data = await res.json()
+        setActiveUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
     }
   }, [room])
-
-  // Connect to SSE stream
-  const connectSSE = useCallback(() => {
-    if (!room) return
-
-    // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close()
-    }
-
-    const eventSource = new EventSource(`/api/chat/rooms/${room.id}/stream`)
-    eventSourceRef.current = eventSource
-
-    eventSource.onopen = () => {
-      setIsConnected(true)
-    }
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-
-        switch (data.type) {
-          case 'connected':
-            setIsConnected(true)
-            break
-
-          case 'messages':
-            if (data.messages && data.messages.length > 0) {
-              setMessages(prev => {
-                const existingIds = new Set(prev.map(m => m.id))
-                const newMsgs = data.messages.filter((m: Message) => !existingIds.has(m.id))
-                if (newMsgs.length > 0) {
-                  // Play sound for new messages from others
-                  const hasNewFromOthers = newMsgs.some((m: Message) => m.user.id !== session?.user?.id)
-                  if (hasNewFromOthers && soundEnabled) {
-                    audioRef.current?.play().catch(() => {})
-                  }
-                  return [...prev, ...newMsgs]
-                }
-                return prev
-              })
-            }
-            break
-
-          case 'presence':
-            if (data.users) {
-              setActiveUsers(data.users)
-            }
-            break
-
-          case 'typing':
-            if (data.users) {
-              setTypingUsers(data.users)
-            }
-            break
-        }
-      } catch (err) {
-        console.error('SSE parse error:', err)
-      }
-    }
-
-    eventSource.onerror = () => {
-      setIsConnected(false)
-      // Reconnect after 3 seconds
-      setTimeout(() => {
-        if (room) connectSSE()
-      }, 3000)
-    }
-
-    return () => {
-      eventSource.close()
-    }
-  }, [room, session?.user?.id, soundEnabled])
-
-  // Load saved nickname from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && session?.user) {
-      const savedNickname = localStorage.getItem(`chat_nickname_${session.user.id}`)
-      if (savedNickname) {
-        setNickname(savedNickname)
-      } else {
-        setShowNicknameModal(true)
-      }
-    }
-  }, [session])
-
-  // Save nickname
-  const saveNickname = () => {
-    if (nicknameInput.trim() && session?.user) {
-      const name = nicknameInput.trim().slice(0, 20)
-      setNickname(name)
-      localStorage.setItem(`chat_nickname_${session.user.id}`, name)
-      setShowNicknameModal(false)
-    }
-  }
 
   // Update presence
   const updatePresence = useCallback(async () => {
     if (!room || !session?.user) return
-    
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/presence`, {
+      await fetch(`/api/chat/rooms/${room.id}/presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nickname: nickname || session.user.name })
       })
-      if (res.ok) {
-        const data = await res.json()
-        setRoomMuted(data.roomMuted || false)
-      }
     } catch (error) {
       console.error('Error updating presence:', error)
     }
-  }, [room, session, nickname])
+  }, [room, session?.user, nickname])
 
-  // Fetch my permissions
-  const fetchMyPermissions = useCallback(async () => {
+  // Check for bans
+  const checkBan = useCallback(async () => {
     if (!room || !session?.user) return
-    
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/moderation`)
-      if (res.ok) {
+      const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
+      if (!res.ok) {
         const data = await res.json()
-        setMyPermissions(data.myPermissions)
+        if (data.error === 'banned') {
+          setError('banned')
+        }
       }
     } catch (error) {
-      console.error('Error fetching permissions:', error)
+      console.error('Error checking ban:', error)
     }
-  }, [room, session])
+  }, [room, session?.user])
 
-  // Handle typing indicator
-  const handleTyping = useCallback(async () => {
-    if (!room || !session?.user) return
-
-    try {
-      await fetch(`/api/chat/rooms/${room.id}/typing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isTyping: true })
-      })
-
-      // Clear typing after 3 seconds
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-      typingTimeoutRef.current = setTimeout(async () => {
-        await fetch(`/api/chat/rooms/${room.id}/typing`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isTyping: false })
-        })
-      }, 3000)
-    } catch (error) {
-      console.error('Error updating typing:', error)
-    }
-  }, [room, session])
-
-  // Initial load
+  // Initialize
   useEffect(() => {
-    fetchRoom()
-  }, [fetchRoom])
+    fetchAllRooms()
+  }, [fetchAllRooms])
 
-  // Load messages and connect SSE when room is available
   useEffect(() => {
     if (room) {
       fetchMessages()
-      connectSSE()
-      if (session?.user) {
-        // Immediately update presence so user appears online right away
-        updatePresence()
-        fetchMyPermissions()
+      fetchActiveUsers()
+      checkBan()
+      setLoading(false)
+
+      const messageInterval = setInterval(fetchMessages, 2000)
+      const userInterval = setInterval(fetchActiveUsers, 5000)
+      const presenceInterval = setInterval(updatePresence, 10000)
+      const roomsInterval = setInterval(fetchAllRooms, 30000)
+
+      updatePresence()
+
+      return () => {
+        clearInterval(messageInterval)
+        clearInterval(userInterval)
+        clearInterval(presenceInterval)
+        clearInterval(roomsInterval)
       }
     }
+  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms])
 
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-    }
-  }, [room, fetchMessages, connectSSE, session, updatePresence, fetchMyPermissions])
-
-  // Fetch active users immediately and more frequently at first
-  useEffect(() => {
-    if (!room) return
-    
-    // Fetch users immediately
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`/api/chat/rooms/${room.id}/presence`)
-        if (res.ok) {
-          const data = await res.json()
-          setActiveUsers(data.users)
-        }
-      } catch (e) {
-        console.error('Error fetching users:', e)
-      }
-    }
-    
-    fetchUsers()
-    // Also fetch again after 2 seconds for quick updates
-    const quickUpdate = setTimeout(fetchUsers, 2000)
-    
-    return () => clearTimeout(quickUpdate)
-  }, [room])
-
-  // Update presence periodically
-  useEffect(() => {
-    if (!room || !session?.user) return
-    
-    const presenceInterval = setInterval(updatePresence, 30000)
-    return () => clearInterval(presenceInterval)
-  }, [room, session, updatePresence])
-
-  // Auto scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Check for mentions in new messages
-  useEffect(() => {
-    if (!session?.user || !nickname) return
-    
-    if (messages.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
-      const newMsgs = messages.slice(previousMessagesCount.current)
-      const myNickname = nickname.toLowerCase()
+  // Voice chat functions
+  const startVoiceChat = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
       
-      for (const msg of newMsgs) {
-        if (msg.user.id === session.user.id) continue
-        
-        const mentionPattern = new RegExp(`@${myNickname}\\b`, 'i')
-        if (mentionPattern.test(msg.content)) {
-          setMentionNotification({
-            from: msg.user.nickname || msg.user.name,
-            content: msg.content.slice(0, 50) + (msg.content.length > 50 ? '...' : '')
-          })
+      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+      const source = audioContextRef.current.createMediaStreamSource(stream)
+      analyserRef.current = audioContextRef.current.createAnalyser()
+      analyserRef.current.fftSize = 256
+      source.connect(analyserRef.current)
+      
+      // Check for voice activity
+      const bufferLength = analyserRef.current.frequencyBinCount
+      const dataArray = new Uint8Array(bufferLength)
+      
+      voiceIntervalRef.current = setInterval(() => {
+        if (analyserRef.current) {
+          analyserRef.current.getByteFrequencyData(dataArray)
+          const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength
+          const isTalking = average > 30 // Threshold for voice detection
+          setIsSpeaking(isTalking)
           
-          setTimeout(() => setMentionNotification(null), 5000)
-          break
+          // Update speaking status on server
+          if (room && session?.user?.id) {
+            fetch(`/api/chat/rooms/${room.id}/presence`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                nickname: nickname || session.user.name,
+                isSpeaking: isTalking
+              })
+            }).catch(() => {})
+          }
         }
-      }
+      }, 100)
+      
+      setVoiceEnabled(true)
+    } catch (error) {
+      console.error('Error starting voice chat:', error)
+      alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
     }
-    previousMessagesCount.current = messages.length
-  }, [messages, session, nickname])
-
-  // Add @mention to input
-  const addMention = (userName: string) => {
-    const mention = `@${userName} `
-    setNewMessage(prev => prev + mention)
-    inputRef.current?.focus()
   }
+
+  const stopVoiceChat = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop())
+      mediaStreamRef.current = null
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close()
+      audioContextRef.current = null
+    }
+    if (voiceIntervalRef.current) {
+      clearInterval(voiceIntervalRef.current)
+      voiceIntervalRef.current = null
+    }
+    setVoiceEnabled(false)
+    setIsSpeaking(false)
+  }
+
+  // Cleanup voice on unmount
+  useEffect(() => {
+    return () => {
+      stopVoiceChat()
+    }
+  }, [])
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!newMessage.trim() || !room || !session?.user || sending) return
-    
-    setSending(true)
-    
-    // Clear typing
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
-    await fetch(`/api/chat/rooms/${room.id}/typing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isTyping: false })
-    }).catch(() => {})
 
+    setSending(true)
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content: newMessage.trim(),
-          nickname: nickname || session.user.name
-        })
+        body: JSON.stringify({ content: newMessage })
       })
-      
+
       if (res.ok) {
-        const message = await res.json()
-        setMessages(prev => [...prev, message])
         setNewMessage('')
-        setError(null)
+        fetchMessages()
       } else {
-        const errorData = await res.json()
-        setError(errorData.error)
+        const data = await res.json()
+        if (data.error === 'muted') {
+          setError(language === 'tr' ? 'Bu odada susturuldunuz' : 'You are muted in this room')
+        } else if (data.error === 'banned') {
+          setError('banned')
+        } else if (data.error === 'room_muted') {
+          setError(language === 'tr' ? 'Oda şu anda sessiz modda' : 'Room is currently muted')
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -464,19 +386,67 @@ export default function ChatRoomPage() {
     }
   }
 
+  // Typing indicator
+  const handleTyping = useCallback(() => {
+    if (!room || !session?.user) return
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    fetch(`/api/chat/rooms/${room.id}/typing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isTyping: true })
+    }).catch(() => {})
+
+    typingTimeoutRef.current = setTimeout(() => {
+      fetch(`/api/chat/rooms/${room.id}/typing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTyping: false })
+      }).catch(() => {})
+    }, 3000)
+  }, [room, session?.user])
+
+  // Nickname modal
+  const saveNickname = async () => {
+    const nameToSave = nicknameInput.trim() || session?.user?.name || ''
+    setNickname(nameToSave)
+    setShowNicknameModal(false)
+    await updatePresence()
+  }
+
+  // Mentions
+  const addMention = (name: string) => {
+    setNewMessage(prev => prev + `@${name} `)
+    inputRef.current?.focus()
+  }
+
+  // Check for mentions
+  useEffect(() => {
+    if (!nickname || messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.user.id !== session?.user?.id && lastMsg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)) {
+      setMentionNotification({ from: lastMsg.user.nickname || lastMsg.user.name, content: lastMsg.content })
+      audioRef.current?.play()
+      setTimeout(() => setMentionNotification(null), 5000)
+    }
+  }, [messages, nickname, session?.user?.id])
+
   // Moderation actions
-  const performModAction = async (action: string, targetUserId: string, extra?: Record<string, unknown>) => {
+  const performModAction = async (action: string, targetUserId: string, options: Record<string, unknown> = {}) => {
     if (!room) return
-    
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/moderation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, targetUserId, ...extra })
+        body: JSON.stringify({ action, targetUserId, ...options })
       })
-      
       if (res.ok) {
+        fetchActiveUsers()
         setSelectedUser(null)
+        if (action === 'mute_room' || action === 'unmute_room') {
+          fetchMessages()
+        }
       } else {
         const errorData = await res.json()
         alert(errorData.error)
@@ -486,17 +456,13 @@ export default function ChatRoomPage() {
     }
   }
 
-  const toggleRoomMute = async () => {
-    if (!room) return
-    await performModAction(roomMuted ? 'unmute_room' : 'mute_room', '')
-    setRoomMuted(!roomMuted)
+  const toggleRoomMute = () => {
+    performModAction(roomMuted ? 'unmute_room' : 'mute_room', '')
   }
 
   const clearAllMessages = async () => {
     if (!room) return
-    if (!confirm(language === 'tr' ? 'Tüm mesajları silmek istediğinize emin misiniz?' : 'Are you sure you want to clear all messages?')) {
-      return
-    }
+    if (!confirm(language === 'tr' ? 'Tüm mesajları silmek istediğinize emin misiniz?' : 'Are you sure you want to clear all messages?')) return
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/moderation`, {
         method: 'POST',
@@ -526,6 +492,11 @@ export default function ChatRoomPage() {
     return user.nickname || user.name
   }
 
+  // Check if user is room owner
+  const isRoomOwner = (userId: string) => {
+    return room?.ownerId === userId
+  }
+
   if (error && error.includes('banned')) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] flex items-center justify-center">
@@ -548,7 +519,6 @@ export default function ChatRoomPage() {
     )
   }
 
-  // Check if user has management permissions
   const hasManagePermission = myPermissions && (
     myPermissions.canMuteUsers || 
     myPermissions.canKickUsers || 
@@ -562,7 +532,7 @@ export default function ChatRoomPage() {
   )
 
   return (
-    <div className="h-full w-full flex flex-col" style={{ height: '100dvh' }}>
+    <div className="h-full w-full flex flex-col relative" style={{ height: '100dvh' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -583,9 +553,7 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Takma Adınızı Seçin' : 'Choose Your Nickname'}
               </h3>
               <p className="text-purple-200/70 text-sm mb-4">
-                {language === 'tr' 
-                  ? 'Bu isim sohbette görünecek' 
-                  : 'This name will be shown in chat'}
+                {language === 'tr' ? 'Bu isim sohbette görünecek' : 'This name will be shown in chat'}
               </p>
               <input
                 type="text"
@@ -619,6 +587,237 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
+      {/* Manage Popup */}
+      <AnimatePresence>
+        {showManagePopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setShowManagePopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-md w-full max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Popup Header */}
+              <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
+                <h3 className="text-lg font-semibold text-gold-400 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  {language === 'tr' ? 'Yönetim Paneli' : 'Management Panel'}
+                </h3>
+                <button onClick={() => setShowManagePopup(false)} className="text-purple-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Tabs */}
+              <div className="flex border-b border-purple-500/30">
+                <button
+                  onClick={() => setManageTab('chat')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'chat' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
+                >
+                  {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                </button>
+                <button
+                  onClick={() => setManageTab('users')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'users' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
+                >
+                  {language === 'tr' ? 'Kullanıcı Yönetimi' : 'User Management'}
+                </button>
+              </div>
+              
+              {/* Tab Content */}
+              <div className="p-4 max-h-[50vh] overflow-y-auto">
+                {manageTab === 'chat' ? (
+                  <div className="space-y-3">
+                    {myPermissions?.canMuteRoom && (
+                      <button
+                        onClick={() => { toggleRoomMute(); setShowManagePopup(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${roomMuted ? 'bg-green-600/30 text-green-300 hover:bg-green-600/50' : 'bg-red-600/30 text-red-300 hover:bg-red-600/50'}`}
+                      >
+                        {roomMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                        {roomMuted ? (language === 'tr' ? 'Odayı Aç' : 'Unmute Room') : (language === 'tr' ? 'Odayı Sustur' : 'Mute Room')}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setSoundEnabled(!soundEnabled); setShowManagePopup(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${soundEnabled ? 'bg-blue-600/30 text-blue-300 hover:bg-blue-600/50' : 'bg-gray-600/30 text-gray-300 hover:bg-gray-600/50'}`}
+                    >
+                      {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                      {soundEnabled ? (language === 'tr' ? 'Bildirim Sesi Açık' : 'Notification Sound On') : (language === 'tr' ? 'Bildirim Sesi Kapalı' : 'Notification Sound Off')}
+                    </button>
+                    {(myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
+                      <button
+                        onClick={() => { clearAllMessages(); setShowManagePopup(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-600/30 text-red-300 hover:bg-red-600/50"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        {language === 'tr' ? 'Tüm Mesajları Temizle' : 'Clear All Messages'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNicknameModal(true)}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-purple-600/30 text-purple-300 hover:bg-purple-600/50"
+                    >
+                      <AtSign className="w-5 h-5" />
+                      {language === 'tr' ? 'Takma Adı Değiştir' : 'Change Nickname'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {activeUsers.length === 0 ? (
+                      <p className="text-purple-400/50 text-sm text-center py-4">
+                        {language === 'tr' ? 'Aktif kullanıcı yok' : 'No active users'}
+                      </p>
+                    ) : (
+                      activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
+                        <div key={user.id} className="bg-[#0d0520] rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
+                              {user.roleSymbol && <span className="mr-1">{user.roleSymbol}</span>}
+                              {getDisplayName(user)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {myPermissions?.canMuteUsers && (
+                              <button
+                                onClick={() => performModAction('mute_user', user.id, { duration: 30 })}
+                                className="px-2 py-1 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
+                              >
+                                <MicOff className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Sustur' : 'Mute'}
+                              </button>
+                            )}
+                            {myPermissions?.canKickUsers && (
+                              <button
+                                onClick={() => performModAction('kick_user', user.id)}
+                                className="px-2 py-1 bg-yellow-600/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/50"
+                              >
+                                <UserMinus className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'At' : 'Kick'}
+                              </button>
+                            )}
+                            {myPermissions?.canBanUsers && (
+                              <button
+                                onClick={() => performModAction('ban_user', user.id)}
+                                className="px-2 py-1 bg-red-600/30 text-red-300 rounded text-xs hover:bg-red-600/50"
+                              >
+                                <Ban className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Engelle' : 'Ban'}
+                              </button>
+                            )}
+                            {myPermissions?.canGiveVoice && (
+                              <button
+                                onClick={() => performModAction('set_role', user.id, { role: 'voice' })}
+                                className="px-2 py-1 bg-blue-600/30 text-blue-300 rounded text-xs hover:bg-blue-600/50"
+                              >
+                                +v
+                              </button>
+                            )}
+                            {myPermissions?.canGiveOp && (
+                              <button
+                                onClick={() => performModAction('set_role', user.id, { role: 'op' })}
+                                className="px-2 py-1 bg-green-600/30 text-green-300 rounded text-xs hover:bg-green-600/50"
+                              >
+                                @o
+                              </button>
+                            )}
+                            {myPermissions?.canGiveAdmin && (
+                              <button
+                                onClick={() => performModAction('set_role', user.id, { role: 'admin' })}
+                                className="px-2 py-1 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
+                              >
+                                &a
+                              </button>
+                            )}
+                            {user.chatRole && (
+                              <button
+                                onClick={() => performModAction('remove_role', user.id)}
+                                className="px-2 py-1 bg-gray-600/30 text-gray-300 rounded text-xs hover:bg-gray-600/50"
+                              >
+                                {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rooms Popup */}
+      <AnimatePresence>
+        {showRoomsPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setShowRoomsPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-md w-full max-h-[70vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
+                <h3 className="text-lg font-semibold text-gold-400 flex items-center gap-2">
+                  <DoorOpen className="w-5 h-5" />
+                  {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
+                </h3>
+                <button onClick={() => setShowRoomsPopup(false)} className="text-purple-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 space-y-2 max-h-[55vh] overflow-y-auto">
+                {allRooms.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      router.push(`/${language}/chat/${r.slug}`)
+                      setShowRoomsPopup(false)
+                    }}
+                    className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${r.slug === roomSlug ? 'bg-purple-600/40 border border-purple-500' : 'bg-[#0d0520] hover:bg-purple-600/20'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{r.icon}</span>
+                      <div className="text-left">
+                        <p className="text-white font-medium">{language === 'tr' ? r.nameTr : r.nameEn}</p>
+                        {r.owner && (
+                          <p className="text-xs text-purple-400">
+                            {language === 'tr' ? 'Sahibi' : 'Owner'}: {r.owner.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-green-600/30 text-green-300 rounded text-xs flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {r.userCount || 0}
+                      </span>
+                      {r.slug === roomSlug && (
+                        <span className="px-2 py-1 bg-gold-500/30 text-gold-300 rounded text-xs">
+                          {language === 'tr' ? 'Aktif' : 'Active'}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mention Notification */}
       <AnimatePresence>
         {mentionNotification && (
@@ -639,10 +838,7 @@ export default function ChatRoomPage() {
                 </p>
                 <p className="text-purple-200/70 text-sm mt-1">{mentionNotification.content}</p>
               </div>
-              <button
-                onClick={() => setMentionNotification(null)}
-                className="text-purple-400 hover:text-white ml-2"
-              >
+              <button onClick={() => setMentionNotification(null)} className="text-purple-400 hover:text-white ml-2">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -650,101 +846,71 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* mIRC Style Layout - Full Screen - No Scroll */}
+      {/* Main Chat Layout */}
       <div className="flex-1 flex min-h-0">
-        {/* Chat Area (Left/Main) */}
+        {/* Chat Area */}
         <div className="flex-1 flex flex-col min-h-0 border-r border-purple-500/30">
-          {/* Chat Header - Room Name and Yönet Button - FIXED */}
-          <div className="flex-shrink-0 h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
-            <div className="flex items-center gap-3">
+          {/* Header */}
+          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
+            <div className="flex items-center gap-2">
+              {/* Yönet Button */}
               <button
-                onClick={() => {
-                  if (hasManagePermission) {
-                    setShowChatManagePanel(!showChatManagePanel)
-                  }
-                }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  hasManagePermission 
-                    ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
-                    : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
-                }`}
+                onClick={() => hasManagePermission && setShowManagePopup(true)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${hasManagePermission ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50' : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'}`}
               >
                 <Settings className="w-4 h-4" />
                 {language === 'tr' ? 'Yönet' : 'Manage'}
-                {hasManagePermission && (showChatManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
               </button>
               
+              {/* Odalar Button */}
+              <button
+                onClick={() => setShowRoomsPopup(true)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium bg-gold-600/30 text-gold-200 hover:bg-gold-600/50"
+              >
+                <DoorOpen className="w-4 h-4" />
+                {language === 'tr' ? 'Odalar' : 'Rooms'}
+              </button>
+              
+              {/* Voice Chat Button */}
+              <button
+                onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${voiceEnabled ? 'bg-green-600/50 text-green-200 hover:bg-green-600/70' : 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50'}`}
+              >
+                {voiceEnabled ? (
+                  <><PhoneOff className="w-4 h-4" />{language === 'tr' ? 'Sesli Kapat' : 'End Voice'}</>
+                ) : (
+                  <><Phone className="w-4 h-4" />{language === 'tr' ? 'Sesli' : 'Voice'}</>
+                )}
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
               {/* Room Name */}
               <span className="text-gold-400 font-medium text-sm">
                 {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
               </span>
+              {roomMuted && (
+                <span className="flex items-center gap-1 text-red-400 text-xs">
+                  <VolumeX className="w-4 h-4" />
+                </span>
+              )}
             </div>
-            
-            {/* Room Muted Indicator */}
-            {roomMuted && (
-              <div className="flex items-center gap-1 text-red-400 text-xs">
-                <VolumeX className="w-4 h-4" />
-                {language === 'tr' ? 'Oda Sessiz' : 'Room Muted'}
-              </div>
-            )}
           </div>
-          
-          {/* Chat Management Panel */}
-          <AnimatePresence>
-            {showChatManagePanel && hasManagePermission && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="bg-[#1a0b2e]/80 border-b border-purple-500/30 overflow-hidden"
-              >
-                <div className="p-3 flex flex-wrap gap-2">
-                  {myPermissions?.canMuteRoom && (
-                    <button
-                      onClick={toggleRoomMute}
-                      className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        roomMuted 
-                          ? 'bg-green-600/30 text-green-300 hover:bg-green-600/50' 
-                          : 'bg-red-600/30 text-red-300 hover:bg-red-600/50'
-                      }`}
-                    >
-                      {roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                      {roomMuted 
-                        ? (language === 'tr' ? 'Odayı Aç' : 'Unmute Room')
-                        : (language === 'tr' ? 'Odayı Sustur' : 'Mute Room')
-                      }
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                      soundEnabled 
-                        ? 'bg-blue-600/30 text-blue-300 hover:bg-blue-600/50' 
-                        : 'bg-gray-600/30 text-gray-300 hover:bg-gray-600/50'
-                    }`}
-                  >
-                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                    {soundEnabled 
-                      ? (language === 'tr' ? 'Ses Açık' : 'Sound On')
-                      : (language === 'tr' ? 'Ses Kapalı' : 'Sound Off')
-                    }
-                  </button>
-                  {/* Clear Messages - only for founder and op */}
-                  {(myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
-                    <button
-                      onClick={clearAllMessages}
-                      className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors bg-red-600/30 text-red-300 hover:bg-red-600/50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      {language === 'tr' ? 'Mesajları Temizle' : 'Clear Messages'}
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Messages Area - SCROLLABLE */}
+          {/* Room Owner Banner */}
+          {room.owner && (
+            <div className="flex-shrink-0 bg-red-600/80 px-3 py-2 flex items-center gap-2">
+              <Crown className="w-4 h-4 text-yellow-300" />
+              <span className="text-white text-sm font-medium">
+                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+              </span>
+              <span className="text-yellow-200 text-sm font-bold">
+                {room.owner.username || room.owner.name}
+              </span>
+            </div>
+          )}
+
+          {/* Messages Area */}
           <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
@@ -757,25 +923,36 @@ export default function ChatRoomPage() {
                   const displayName = getDisplayName(msg.user)
                   const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
                   const isMe = msg.user.id === session?.user?.id
+                  const isOwner = isRoomOwner(msg.user.id)
+                  const isSpeakingUser = speakingUsers.has(msg.user.id)
                   
                   return (
                     <div
                       key={msg.id}
-                      className={`px-2 py-0.5 ${isMentioned ? 'bg-gold-500/20' : ''}`}
+                      className={`px-2 py-0.5 ${isMentioned ? 'bg-gold-500/20' : ''} ${isOwner ? 'bg-red-900/30' : ''}`}
                     >
+                      {/* Speaking Indicator */}
+                      {isSpeakingUser && (
+                        <span className="text-green-400 mr-1">🎤</span>
+                      )}
                       {msg.user.chatRole && (
                         <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-1`}>
                           {msg.user.roleSymbol}
                         </span>
                       )}
+                      {isOwner && (
+                        <span className="text-yellow-400 mr-1">👑</span>
+                      )}
                       <button
                         onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
                         className={`font-medium hover:underline ${
-                          msg.user.chatRole 
-                            ? ROLE_COLORS[msg.user.chatRole] 
-                            : isMe 
-                              ? 'text-gold-400' 
-                              : 'text-purple-300'
+                          isOwner
+                            ? 'text-yellow-300'
+                            : msg.user.chatRole 
+                              ? ROLE_COLORS[msg.user.chatRole] 
+                              : isMe 
+                                ? 'text-gold-400' 
+                                : 'text-purple-300'
                         }`}
                       >
                         &lt;{displayName}&gt;
@@ -820,14 +997,12 @@ export default function ChatRoomPage() {
             )}
           </AnimatePresence>
 
-          {/* Error Message */}
-          {error && (
-            <div className="px-3 py-1 bg-red-900/50 text-red-300 text-xs">
-              {error}
-            </div>
+          {/* Error */}
+          {error && !error.includes('banned') && (
+            <div className="px-3 py-1 bg-red-900/50 text-red-300 text-xs">{error}</div>
           )}
 
-          {/* Message Input - FIXED AT BOTTOM */}
+          {/* Message Input */}
           {session?.user ? (
             <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
               <div className="flex gap-2">
@@ -865,132 +1040,32 @@ export default function ChatRoomPage() {
           )}
         </div>
 
-        {/* Users Panel (Right) - mIRC Style */}
+        {/* Users Panel */}
         <div className="w-48 md:w-56 flex flex-col min-h-0 bg-[#1a0b2e]">
-          {/* Users Header - Yönet Button - FIXED */}
-          <div className="flex-shrink-0 h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
-            <button
-              onClick={() => {
-                if (hasManagePermission) {
-                  setShowUsersManagePanel(!showUsersManagePanel)
-                }
-              }}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                hasManagePermission 
-                  ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
-                  : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <Settings className="w-3 h-3" />
-              {language === 'tr' ? 'Yönet' : 'Manage'}
-              {hasManagePermission && (showUsersManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-            </button>
-            <span className="text-purple-400 text-xs">({activeUsers.length})</span>
+          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
+            <span className="text-purple-300 text-sm font-medium flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {language === 'tr' ? 'Kullanıcılar' : 'Users'}
+            </span>
+            <span className="text-purple-400 text-xs bg-purple-600/30 px-2 py-0.5 rounded">({activeUsers.length})</span>
           </div>
 
-          {/* User Management Panel */}
-          <AnimatePresence>
-            {showUsersManagePanel && hasManagePermission && selectedUser && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="bg-[#0d0520] border-b border-purple-500/30 overflow-hidden"
-              >
-                <div className="p-2">
-                  <p className="text-purple-300 text-xs mb-2 font-medium truncate">
-                    {language === 'tr' ? 'Seçili:' : 'Selected:'} {getDisplayName(selectedUser)}
-                  </p>
-                  <div className="space-y-1">
-                    {myPermissions?.canMuteUsers && (
-                      <button
-                        onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
-                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
-                      >
-                        <MicOff className="w-3 h-3" />
-                        {language === 'tr' ? 'Sustur' : 'Mute'}
-                      </button>
-                    )}
-                    {myPermissions?.canKickUsers && (
-                      <button
-                        onClick={() => performModAction('kick_user', selectedUser.id)}
-                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-yellow-600/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/50"
-                      >
-                        <UserMinus className="w-3 h-3" />
-                        {language === 'tr' ? 'At' : 'Kick'}
-                      </button>
-                    )}
-                    {myPermissions?.canBanUsers && (
-                      <button
-                        onClick={() => performModAction('ban_user', selectedUser.id)}
-                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-red-600/30 text-red-300 rounded text-xs hover:bg-red-600/50"
-                      >
-                        <Ban className="w-3 h-3" />
-                        {language === 'tr' ? 'Engelle' : 'Ban'}
-                      </button>
-                    )}
-                    
-                    {/* Roles */}
-                    {(myPermissions?.canGiveVoice || myPermissions?.canGiveOp || myPermissions?.canGiveAdmin || myPermissions?.canGiveFounder) && (
-                      <div className="pt-1 border-t border-purple-500/20 mt-1">
-                        <p className="text-purple-400/70 text-[10px] mb-1">{language === 'tr' ? 'Yetki:' : 'Role:'}</p>
-                        <div className="grid grid-cols-2 gap-1">
-                          {myPermissions?.canGiveVoice && (
-                            <button
-                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
-                              className="flex items-center gap-1 px-1.5 py-1 bg-blue-600/30 text-blue-300 rounded text-[10px] hover:bg-blue-600/50"
-                            >
-                              <Mic className="w-2.5 h-2.5" /> +v
-                            </button>
-                          )}
-                          {myPermissions?.canGiveOp && (
-                            <button
-                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
-                              className="flex items-center gap-1 px-1.5 py-1 bg-green-600/30 text-green-300 rounded text-[10px] hover:bg-green-600/50"
-                            >
-                              <Star className="w-2.5 h-2.5" /> @o
-                            </button>
-                          )}
-                          {myPermissions?.canGiveAdmin && (
-                            <button
-                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
-                              className="flex items-center gap-1 px-1.5 py-1 bg-orange-600/30 text-orange-300 rounded text-[10px] hover:bg-orange-600/50"
-                            >
-                              <Shield className="w-2.5 h-2.5" /> &a
-                            </button>
-                          )}
-                          {myPermissions?.canGiveFounder && (
-                            <button
-                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
-                              className="flex items-center gap-1 px-1.5 py-1 bg-red-600/30 text-red-300 rounded text-[10px] hover:bg-red-600/50"
-                            >
-                              <Crown className="w-2.5 h-2.5" /> ~q
-                            </button>
-                          )}
-                        </div>
-                        {selectedUser.chatRole && (
-                          <button
-                            onClick={() => performModAction('remove_role', selectedUser.id)}
-                            className="w-full mt-1 flex items-center justify-center gap-1 px-1.5 py-1 bg-gray-600/30 text-gray-300 rounded text-[10px] hover:bg-gray-600/50"
-                          >
-                            {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setSelectedUser(null)}
-                    className="w-full mt-2 text-purple-400/70 text-[10px] hover:text-purple-300"
-                  >
-                    {language === 'tr' ? 'Seçimi Kaldır' : 'Deselect'}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Room Owner at Top */}
+          {room.owner && (
+            <div className="flex-shrink-0 bg-red-600/60 px-2 py-2 border-b border-red-500/30">
+              <p className="text-[10px] text-red-200 uppercase tracking-wider mb-1">
+                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+              </p>
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-yellow-300" />
+                <span className="text-yellow-200 text-sm font-bold truncate">
+                  {room.owner.username || room.owner.name}
+                </span>
+              </div>
+            </div>
+          )}
 
-          {/* Users List - mIRC Style - SCROLLABLE */}
+          {/* Users List */}
           <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520]">
             {activeUsers.length === 0 ? (
               <p className="text-purple-400/50 text-xs p-2 text-center">
@@ -998,49 +1073,66 @@ export default function ChatRoomPage() {
               </p>
             ) : (
               <div className="py-1">
-                {activeUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    onClick={() => {
-                      if (user.id !== session?.user?.id) {
-                        if (hasManagePermission) {
-                          setSelectedUser(user)
-                          setShowUsersManagePanel(true)
-                        } else {
-                          addMention(getDisplayName(user))
+                {activeUsers.map((user) => {
+                  const isOwner = isRoomOwner(user.id)
+                  const userIsSpeaking = speakingUsers.has(user.id) || (user.id === session?.user?.id && isSpeaking)
+                  
+                  return (
+                    <div
+                      key={user.id}
+                      onClick={() => {
+                        if (user.id !== session?.user?.id) {
+                          if (hasManagePermission) {
+                            setSelectedUser(user)
+                            setManageTab('users')
+                            setShowManagePopup(true)
+                          } else {
+                            addMention(getDisplayName(user))
+                          }
                         }
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 px-2 py-0.5 cursor-pointer hover:bg-purple-800/30 ${
-                      selectedUser?.id === user.id ? 'bg-purple-800/50' : ''
-                    }`}
-                  >
-                    {/* Role Symbol/Icon */}
-                    {user.chatRole ? (
-                      <span className={`${ROLE_COLORS[user.chatRole]} text-xs font-bold w-4 text-center`}>
-                        {user.roleSymbol}
+                      }}
+                      className={`flex items-center gap-1.5 px-2 py-1 cursor-pointer hover:bg-purple-800/30 ${isOwner ? 'bg-red-900/40' : ''}`}
+                    >
+                      {/* Speaking Indicator */}
+                      {userIsSpeaking ? (
+                        <span className="text-green-400 w-4 text-center">🎤</span>
+                      ) : user.chatRole ? (
+                        <span className={`${ROLE_COLORS[user.chatRole]} text-xs font-bold w-4 text-center`}>
+                          {user.roleSymbol}
+                        </span>
+                      ) : isOwner ? (
+                        <span className="text-yellow-400 w-4 text-center">👑</span>
+                      ) : (
+                        <span className="w-4" />
+                      )}
+                      
+                      <span className={`text-xs truncate ${
+                        isOwner
+                          ? 'text-yellow-300 font-bold'
+                          : user.chatRole 
+                            ? ROLE_COLORS[user.chatRole] 
+                            : user.isAdmin 
+                              ? 'text-red-400'
+                              : 'text-purple-200'
+                      }`}>
+                        {getDisplayName(user)}
                       </span>
-                    ) : (
-                      <span className="w-4" />
-                    )}
-                    
-                    {/* Username */}
-                    <span className={`text-xs truncate ${
-                      user.chatRole 
-                        ? ROLE_COLORS[user.chatRole] 
-                        : user.isAdmin 
-                          ? 'text-red-400'
-                          : 'text-purple-200'
-                    }`}>
-                      {getDisplayName(user)}
-                    </span>
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Home Button - Fixed Bottom Right */}
+      <Link
+        href={`/${language}`}
+        className="fixed bottom-4 right-4 z-40 w-12 h-12 bg-gold-500 hover:bg-gold-400 text-black rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+      >
+        <Home className="w-6 h-6" />
+      </Link>
     </div>
   )
 }

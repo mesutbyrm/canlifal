@@ -55,6 +55,7 @@ model User {
   mutedIn               ChatMute[]           @relation("MutedUser")
   chatPresences         ChatPresence[]
   chatRoles             ChatUserRole[]
+  ownedChatRooms        ChatRoom[]           @relation("RoomOwner")
   fortunes              Fortune[]
   fortuneTellerProfile  LiveFortuneTeller?
   liveSessions          LiveSession[]        @relation("SessionUser")
@@ -353,6 +354,8 @@ model ChatRoom {
   icon      String
   isActive  Boolean        @default(true)
   isMuted   Boolean        @default(false)
+  ownerId   String?        // User who purchased/owns this room
+  owner     User?          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   createdAt DateTime       @default(now())
   bans      ChatBan[]
   messages  ChatMessage[]
