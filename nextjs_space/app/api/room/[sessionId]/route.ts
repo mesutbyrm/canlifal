@@ -227,16 +227,19 @@ export async function PATCH(
 
         const extendMinutes = minutes || 5;
         
-        // Get credits per minute
-        const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'credits_per_minute' }
-        });
-        const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
-        const creditsNeeded = extendMinutes * creditsPerMinute;
+        // Fixed pricing: 10 credits per minute
+        // 5dk=50, 10dk=100, 15dk=150, 20dk=200, 25dk=250, 30dk=300
+        const PRICE_PER_MINUTE = 10;
+        const creditsNeeded = extendMinutes * PRICE_PER_MINUTE;
 
-        // Check user credits
-        if (liveSession.user.credits < creditsNeeded) {
-          return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
+        // Get latest user credits
+        const currentUser = await prisma.user.findUnique({
+          where: { id: liveSession.userId },
+          select: { credits: true }
+        });
+
+        if (!currentUser || currentUser.credits < creditsNeeded) {
+          return NextResponse.json({ error: 'Yetersiz jeton / Insufficient credits' }, { status: 400 });
         }
 
         // Deduct credits and extend time
@@ -257,6 +260,7 @@ export async function PATCH(
         return NextResponse.json({ 
           extended: extendMinutes, 
           creditsUsed: creditsNeeded,
+          creditsRemaining: currentUser.credits - creditsNeeded,
           newMaxMinutes: liveSession.maxMinutes + extendMinutes
         });
       }

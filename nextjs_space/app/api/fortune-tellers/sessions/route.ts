@@ -34,7 +34,14 @@ export async function GET(request: NextRequest) {
 
     const sessions = await prisma.liveSession.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        fortuneType: true,
+        status: true,
+        maxMinutes: true,
+        creditsPerMinute: true,
+        creditsCharged: true,
+        createdAt: true,
         user: { 
           select: { 
             id: true,

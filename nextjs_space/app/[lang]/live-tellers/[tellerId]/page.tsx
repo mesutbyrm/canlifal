@@ -516,9 +516,15 @@ export default function TellerDetailPage() {
                   <label className="block text-sm text-purple-300 mb-2">
                     {language === 'tr' ? 'Süre Seçin' : 'Select Duration'}
                   </label>
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                    {[5, 10, 15, 20, 30].map(mins => {
-                      const cost = mins * creditsPerMinute
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    {[
+                      { mins: 5, cost: 50 },
+                      { mins: 10, cost: 100 },
+                      { mins: 15, cost: 150 },
+                      { mins: 20, cost: 200 },
+                      { mins: 25, cost: 250 },
+                      { mins: 30, cost: 300 }
+                    ].map(({ mins, cost }) => {
                       const canAfford = !session?.user || userCredits >= cost
                       return (
                         <button
@@ -542,8 +548,8 @@ export default function TellerDetailPage() {
                   </div>
                   <p className="text-xs text-purple-400 mt-2 text-center">
                     {language === 'tr' 
-                      ? `${creditsPerMinute} kredi/dakika • Toplam: ${totalCost} kredi`
-                      : `${creditsPerMinute} credits/min • Total: ${totalCost} credits`}
+                      ? `10 jeton/dakika • Toplam: ${totalCost} jeton`
+                      : `10 credits/min • Total: ${totalCost} credits`}
                   </p>
                 </div>
 

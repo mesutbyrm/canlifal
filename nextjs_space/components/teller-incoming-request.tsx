@@ -10,6 +10,8 @@ import { Phone, PhoneOff, Clock, User, Sparkles, X } from 'lucide-react'
 interface PendingSession {
   id: string
   fortuneType: string
+  maxMinutes: number
+  creditsPerMinute: number
   creditsCharged: number
   createdAt: string
   user: {
@@ -232,6 +234,17 @@ export default function TellerIncomingRequest() {
             <div className="flex items-center justify-center gap-2 mt-3 text-purple-300">
               <Sparkles className="w-4 h-4 text-gold-400" />
               <span>{fortuneTypeName}</span>
+            </div>
+            {/* Duration selected by user */}
+            <div className="flex items-center justify-center gap-4 mt-3 px-4 py-2 bg-purple-800/50 rounded-lg">
+              <div className="text-center">
+                <p className="text-gold-400 font-bold text-lg">{pendingRequest.maxMinutes} {language === 'tr' ? 'dakika' : 'min'}</p>
+                <p className="text-purple-300 text-xs">{language === 'tr' ? 'Seçilen Süre' : 'Selected Duration'}</p>
+              </div>
+              <div className="text-center border-l border-purple-600 pl-4">
+                <p className="text-green-400 font-bold text-lg">{pendingRequest.creditsCharged} {language === 'tr' ? 'jeton' : 'credits'}</p>
+                <p className="text-purple-300 text-xs">{language === 'tr' ? 'Toplam Tutar' : 'Total Cost'}</p>
+              </div>
             </div>
             <div className="flex items-center justify-center gap-2 mt-2 text-purple-400 text-sm">
               <Clock className="w-4 h-4" />

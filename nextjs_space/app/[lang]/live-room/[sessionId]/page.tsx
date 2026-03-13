@@ -68,6 +68,8 @@ export default function LiveRoomPage() {
   const [showStartTimerPopup, setShowStartTimerPopup] = useState(false);
   const [userCredits, setUserCredits] = useState(0);
   const [showAddTimePopup, setShowAddTimePopup] = useState(false);
+  const [showUserAddTimePopup, setShowUserAddTimePopup] = useState(false);
+  const [myCredits, setMyCredits] = useState(0);
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -386,7 +388,7 @@ export default function LiveRoomPage() {
     }
   }, [sessionId, fetchRoomData]);
 
-  // Extend session
+  // Extend session (for users)
   const extendSession = async (minutes: number) => {
     try {
       const res = await fetch(`/api/room/${sessionId}`, {
@@ -400,10 +402,14 @@ export default function LiveRoomPage() {
         // Update max seconds ref
         maxSecondsRef.current += minutes * 60;
         setRemainingSeconds(prev => prev + minutes * 60);
+        // Update user's own credits
+        if (data.creditsRemaining !== undefined) {
+          setMyCredits(data.creditsRemaining);
+        } else {
+          setMyCredits(prev => prev - (data.creditsUsed || 0));
+        }
+        setShowUserAddTimePopup(false);
         fetchRoomData();
-        alert(language === 'tr' 
-          ? `${minutes} dakika eklendi. ${data.creditsUsed} kredi kullanıldı.`
-          : `${minutes} minutes added. ${data.creditsUsed} credits used.`);
       } else {
         const err = await res.json();
         alert(err.error);
@@ -597,6 +603,10 @@ export default function LiveRoomPage() {
         setElapsedSeconds(usedSeconds);
         setTimerStarted(roomInfo.timerStarted);
         setUserCredits(roomInfo.user.credits);
+        // Set user's own credits for the extension popup
+        if (roomInfo.isUser) {
+          setMyCredits(roomInfo.user.credits);
+        }
         
         // If teller and timer not started, show popup
         if (roomInfo.isTeller && !roomInfo.timerStarted) {
@@ -740,24 +750,15 @@ export default function LiveRoomPage() {
             </div>
           )}
           
-          {/* User can extend session */}
+          {/* User can extend session - popup button */}
           {roomData.isUser && timerStarted && (
-            <div className="relative group">
-              <button className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500">
-                <Plus className="w-4 h-4" />
-              </button>
-              <div className="absolute right-0 top-full mt-2 bg-deep-purple-900 rounded-lg shadow-xl border border-purple-700 hidden group-hover:block min-w-[160px]">
-                <button onClick={() => extendSession(5)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
-                  +5 dk ({roomData.creditsPerMinute * 5} kr)
-                </button>
-                <button onClick={() => extendSession(10)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
-                  +10 dk ({roomData.creditsPerMinute * 10} kr)
-                </button>
-                <button onClick={() => extendSession(15)} className="block w-full px-4 py-2 text-left text-white hover:bg-purple-700 text-sm">
-                  +15 dk ({roomData.creditsPerMinute * 15} kr)
-                </button>
-              </div>
-            </div>
+            <button 
+              onClick={() => setShowUserAddTimePopup(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500"
+            >
+              <Plus className="w-4 h-4" />
+              {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+            </button>
           )}
 
           {/* Teller can add time (deducts from user) */}
@@ -1029,7 +1030,7 @@ export default function LiveRoomPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              {[5, 10, 15, 20, 30, 60].map((mins) => {
+              {[5, 10, 15, 20, 25, 30].map((mins) => {
                 const cost = mins * roomData.creditsPerMinute;
                 const canAfford = userCredits >= cost;
                 return (
@@ -1045,7 +1046,7 @@ export default function LiveRoomPage() {
                   >
                     <div className="text-lg font-bold">{mins}</div>
                     <div className="text-xs opacity-80">{language === 'tr' ? 'dakika' : 'min'}</div>
-                    <div className="text-xs mt-1 opacity-70">{cost} j</div>
+                    <div className="text-xs mt-1 opacity-70">{cost} ₺</div>
                   </button>
                 );
               })}
@@ -1053,6 +1054,70 @@ export default function LiveRoomPage() {
 
             <button
               onClick={() => setShowAddTimePopup(false)}
+              className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
+            >
+              {language === 'tr' ? 'İptal' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Time Popup - Only for User */}
+      {showUserAddTimePopup && roomData.isUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-purple-900 to-deep-purple-900 rounded-2xl p-6 max-w-sm mx-4 border border-purple-600 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-gold-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+              </h3>
+              <p className="text-gray-300 text-sm">
+                {language === 'tr' 
+                  ? 'Seansa ek süre ekleyin'
+                  : 'Add extra time to your session'
+                }
+              </p>
+              <p className="text-gold-400 text-sm mt-2">
+                {language === 'tr' 
+                  ? `Mevcut Jetonunuz: ${myCredits}`
+                  : `Your Credits: ${myCredits}`
+                }
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { mins: 5, cost: 50 },
+                { mins: 10, cost: 100 },
+                { mins: 15, cost: 150 },
+                { mins: 20, cost: 200 },
+                { mins: 25, cost: 250 },
+                { mins: 30, cost: 300 }
+              ].map(({ mins, cost }) => {
+                const canAfford = myCredits >= cost;
+                return (
+                  <button
+                    key={mins}
+                    onClick={() => canAfford && extendSession(mins)}
+                    disabled={!canAfford}
+                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${
+                      canAfford 
+                        ? 'bg-gradient-to-r from-gold-500 to-yellow-500 text-black hover:from-gold-600 hover:to-yellow-600' 
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="text-lg font-bold">{mins}</div>
+                    <div className="text-xs opacity-80">{language === 'tr' ? 'dakika' : 'min'}</div>
+                    <div className="text-xs mt-1 font-semibold">{cost} ₺</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowUserAddTimePopup(false)}
               className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
             >
               {language === 'tr' ? 'İptal' : 'Cancel'}
