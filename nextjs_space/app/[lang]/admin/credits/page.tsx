@@ -224,6 +224,38 @@ export default function AdminCreditsPage() {
     return labels[method] || method
   }
 
+  // Calculate jeton amount based on payment amount
+  const calculateJetonAmount = (amount: number): number => {
+    // Jeton paketleri - fiyat ve jeton miktarları
+    const packages = [
+      { minAmount: 2250, jetons: 5000 },
+      { minAmount: 950, jetons: 2000 },
+      { minAmount: 500, jetons: 1000 },
+      { minAmount: 250, jetons: 500 },
+      { minAmount: 100, jetons: 200 },
+    ]
+    
+    // En uygun paketi bul
+    for (const pkg of packages) {
+      if (amount >= pkg.minAmount) {
+        return pkg.jetons
+      }
+    }
+    
+    // 100 TL altı için orantılı hesapla (1 TL = 2 jeton)
+    return Math.floor(amount * 2)
+  }
+
+  // Get jeton package info for display
+  const getJetonPackageInfo = (amount: number): string => {
+    if (amount >= 2250) return '2.250₺+ → 5.000 Jeton'
+    if (amount >= 950) return '950₺+ → 2.000 Jeton'
+    if (amount >= 500) return '500₺+ → 1.000 Jeton'
+    if (amount >= 250) return '250₺+ → 500 Jeton'
+    if (amount >= 100) return '100₺+ → 200 Jeton'
+    return `${amount}₺ → ${Math.floor(amount * 2)} Jeton (orantılı)`
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -391,22 +423,28 @@ export default function AdminCreditsPage() {
                   </div>
                   
                   {notif.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setProcessModal(notif); setJetonAmount(String(Math.round(notif.amount))); }}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-                      >
-                        <Check className="w-4 h-4" />
-                        Onayla
-                      </button>
-                      <button
-                        onClick={() => handleReject(notif)}
-                        disabled={processing}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
-                      >
-                        <X className="w-4 h-4" />
-                        Reddet
-                      </button>
+                    <div className="flex flex-col gap-2">
+                      {/* Show package info */}
+                      <div className="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded">
+                        📦 {getJetonPackageInfo(notif.amount)}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setProcessModal(notif); setJetonAmount(String(calculateJetonAmount(notif.amount))); }}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                        >
+                          <Check className="w-4 h-4" />
+                          Onayla
+                        </button>
+                        <button
+                          onClick={() => handleReject(notif)}
+                          disabled={processing}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <X className="w-4 h-4" />
+                          Reddet
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -442,15 +480,31 @@ export default function AdminCreditsPage() {
                   <p className="text-purple-300 text-sm">Yöntem: <span className="text-white font-medium">{getPaymentMethodLabel(processModal.paymentMethod)}</span></p>
                 </div>
                 
+                {/* Jeton Paketleri Bilgisi */}
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <p className="text-yellow-400 text-sm font-medium mb-2">📦 Jeton Paketleri:</p>
+                  <div className="grid grid-cols-2 gap-1 text-xs text-yellow-300">
+                    <span>100₺ → 200 Jeton</span>
+                    <span>250₺ → 500 Jeton</span>
+                    <span>500₺ → 1.000 Jeton</span>
+                    <span>950₺ → 2.000 Jeton</span>
+                    <span className="col-span-2">2.250₺ → 5.000 Jeton</span>
+                  </div>
+                  <p className="text-green-400 text-sm mt-2 font-medium">
+                    ✓ Önerilen: {calculateJetonAmount(processModal.amount).toLocaleString()} Jeton
+                  </p>
+                </div>
+                
                 <div>
                   <label className="block text-sm text-purple-300 mb-2">Yüklenecek Jeton Miktarı</label>
                   <input
                     type="number"
                     value={jetonAmount}
                     onChange={(e) => setJetonAmount(e.target.value)}
-                    className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
+                    className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500 text-lg font-bold"
                     placeholder="Jeton miktarı"
                   />
+                  <p className="text-xs text-purple-400 mt-1">İsterseniz farklı bir miktar girebilirsiniz</p>
                 </div>
                 
                 <div className="flex gap-3">
