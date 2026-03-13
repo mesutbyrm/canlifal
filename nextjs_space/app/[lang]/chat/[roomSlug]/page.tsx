@@ -562,7 +562,7 @@ export default function ChatRoomPage() {
   )
 
   return (
-    <div className="fixed inset-0 bg-[#0a0118] flex flex-col" style={{ height: '100dvh' }}>
+    <div className="h-full w-full flex flex-col" style={{ height: '100dvh' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
