@@ -16,7 +16,10 @@ import {
   Loader2,
   X,
   Check,
-  Gift
+  Gift,
+  ChevronUp,
+  ChevronDown,
+  GripVertical
 } from 'lucide-react'
 
 interface CreditPackage {
@@ -42,6 +45,9 @@ export default function CreditPackagesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingPackage, setEditingPackage] = useState<CreditPackage | null>(null)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     nameEn: '',
@@ -106,8 +112,19 @@ export default function CreditPackagesPage() {
     setShowModal(true)
   }
 
+  const showMessage = (type: 'error' | 'success', msg: string) => {
+    if (type === 'error') {
+      setError(msg)
+      setTimeout(() => setError(null), 5000)
+    } else {
+      setSuccess(msg)
+      setTimeout(() => setSuccess(null), 3000)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       const url = editingPackage
         ? `/api/admin/credit-packages/${editingPackage.id}`
@@ -123,9 +140,14 @@ export default function CreditPackagesPage() {
       if (res.ok) {
         fetchPackages()
         setShowModal(false)
+        showMessage('success', language === 'tr' ? 'Paket başarıyla kaydedildi!' : 'Package saved successfully!')
+      } else {
+        const data = await res.json()
+        showMessage('error', data.error || (language === 'tr' ? 'Kaydetme hatası' : 'Save error'))
       }
     } catch (err) {
       console.error('Save error:', err)
+      showMessage('error', language === 'tr' ? 'Bağlantı hatası' : 'Connection error')
     } finally {
       setSaving(false)
     }
@@ -142,22 +164,66 @@ export default function CreditPackagesPage() {
       })
       if (res.ok) {
         fetchPackages()
+        showMessage('success', language === 'tr' ? 'Paket silindi!' : 'Package deleted!')
+      } else {
+        const data = await res.json()
+        showMessage('error', data.error || (language === 'tr' ? 'Silme hatası' : 'Delete error'))
       }
     } catch (err) {
       console.error('Delete error:', err)
+      showMessage('error', language === 'tr' ? 'Bağlantı hatası' : 'Connection error')
     }
   }
 
   const toggleActive = async (pkg: CreditPackage) => {
     try {
-      await fetch(`/api/admin/credit-packages/${pkg.id}`, {
+      const res = await fetch(`/api/admin/credit-packages/${pkg.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !pkg.isActive })
       })
-      fetchPackages()
+      if (res.ok) {
+        fetchPackages()
+        showMessage('success', pkg.isActive 
+          ? (language === 'tr' ? 'Paket devre dışı bırakıldı' : 'Package deactivated')
+          : (language === 'tr' ? 'Paket aktif edildi' : 'Package activated'))
+      }
     } catch (err) {
       console.error('Toggle error:', err)
+    }
+  }
+
+  const movePackage = async (index: number, direction: 'up' | 'down') => {
+    if (reordering) return
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= packages.length) return
+
+    setReordering(true)
+    const newPackages = [...packages]
+    const temp = newPackages[index]
+    newPackages[index] = newPackages[newIndex]
+    newPackages[newIndex] = temp
+
+    // Update sort orders
+    try {
+      await Promise.all([
+        fetch(`/api/admin/credit-packages/${newPackages[index].id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: index })
+        }),
+        fetch(`/api/admin/credit-packages/${newPackages[newIndex].id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: newIndex })
+        })
+      ])
+      fetchPackages()
+    } catch (err) {
+      console.error('Reorder error:', err)
+      showMessage('error', language === 'tr' ? 'Sıralama hatası' : 'Reorder error')
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -198,6 +264,20 @@ export default function CreditPackagesPage() {
             {language === 'tr' ? 'Yeni Paket' : 'New Package'}
           </button>
         </div>
+
+        {/* Notifications */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 flex items-center gap-2">
+            <X className="w-5 h-5" />
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-300 flex items-center gap-2">
+            <Check className="w-5 h-5" />
+            {success}
+          </div>
+        )}
 
         {packages.length === 0 ? (
           <div className="text-center py-16">
@@ -251,29 +331,55 @@ export default function CreditPackagesPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-center gap-2 pt-4 border-t border-purple-500/20">
-                  <button
-                    onClick={() => openEditModal(pkg)}
-                    className="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => toggleActive(pkg)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      pkg.isActive
-                        ? 'text-green-400 hover:bg-green-500/20'
-                        : 'text-gray-400 hover:bg-gray-500/20'
-                    }`}
-                  >
-                    {pkg.isActive ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(pkg.id)}
-                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                <div className="flex items-center justify-between pt-4 border-t border-purple-500/20">
+                  {/* Reorder buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => movePackage(index, 'up')}
+                      disabled={index === 0 || reordering}
+                      className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      title={language === 'tr' ? 'Yukarı taşı' : 'Move up'}
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => movePackage(index, 'down')}
+                      disabled={index === packages.length - 1 || reordering}
+                      className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      title={language === 'tr' ? 'Aşağı taşı' : 'Move down'}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-purple-500 ml-1">#{index + 1}</span>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(pkg)}
+                      className="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors"
+                      title={language === 'tr' ? 'Düzenle' : 'Edit'}
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => toggleActive(pkg)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        pkg.isActive
+                          ? 'text-green-400 hover:bg-green-500/20'
+                          : 'text-gray-400 hover:bg-gray-500/20'
+                      }`}
+                      title={pkg.isActive ? (language === 'tr' ? 'Devre dışı bırak' : 'Deactivate') : (language === 'tr' ? 'Aktif et' : 'Activate')}
+                    >
+                      {pkg.isActive ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(pkg.id)}
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
+                      title={language === 'tr' ? 'Sil' : 'Delete'}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
