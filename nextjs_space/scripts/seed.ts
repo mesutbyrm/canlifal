@@ -496,7 +496,7 @@ async function main() {
       descriptionEn: 'Payment with Papara',
       isActive: true,
       config: JSON.stringify({
-        paparaNo: '1234567890',
+        paparaNo: '1555517663',
         accountHolder: 'Mesut Bayram'
       }),
       sortOrder: 1
@@ -538,7 +538,15 @@ async function main() {
 📦 Paket: {package}
 👤 Kullanıcı Adı: {username}
 
-Papara veya IBAN ile ödeme yapabilirim.`, description: 'WhatsApp otomatik mesaj şablonu' }
+Papara veya IBAN ile ödeme yapabilirsiniz.
+
+🏦 Garanti Bankası
+Mesut Bayram
+IBAN: TR94 0006 2000 0010 0006 8126 92
+
+💜 Papara Hesabı
+Mesut Bayram
+Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   ]
   for (const setting of whatsappSettings) {
     await prisma.platformSettings.upsert({
