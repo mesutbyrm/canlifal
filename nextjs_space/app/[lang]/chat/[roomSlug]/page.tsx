@@ -459,7 +459,7 @@ export default function ChatRoomPage() {
             next.delete(fromUserId)
             return next
           })
-        } else if (type === 'offer') {
+        } else if (type === 'offer' && data) {
           // Received offer, create answer
           let pc: RTCPeerConnection | null | undefined = peerConnectionsRef.current.get(fromUserId)
           if (!pc) {
@@ -471,13 +471,13 @@ export default function ChatRoomPage() {
             await pc.setLocalDescription(answer)
             sendVoiceSignal('answer', JSON.stringify(answer), fromUserId)
           }
-        } else if (type === 'answer') {
+        } else if (type === 'answer' && data) {
           // Received answer
           const pc = peerConnectionsRef.current.get(fromUserId)
           if (pc) {
             await pc.setRemoteDescription(JSON.parse(data))
           }
-        } else if (type === 'ice-candidate') {
+        } else if (type === 'ice-candidate' && data) {
           // Received ICE candidate
           const pc = peerConnectionsRef.current.get(fromUserId)
           if (pc) {

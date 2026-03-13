@@ -5,26 +5,28 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// Store voice signals in memory (for simplicity - in production use Redis)
-const voiceSignals: Map<string, Array<{
-  id: string
-  fromUserId: string
-  fromUserName: string
-  toUserId: string | null // null means broadcast to all
-  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave'
-  data: string
-  createdAt: number
-}>> = new Map()
-
-// Active voice users per room
-const activeVoiceUsers: Map<string, Map<string, { name: string, joinedAt: number }>> = new Map()
-
-// Cleanup old signals (older than 30 seconds)
-function cleanupOldSignals(roomId: string) {
-  const signals = voiceSignals.get(roomId) || []
-  const now = Date.now()
-  const filtered = signals.filter(s => now - s.createdAt < 30000)
-  voiceSignals.set(roomId, filtered)
+// Cleanup old signals and inactive voice sessions
+async function cleanupOldData(roomId: string) {
+  const thirtySecondsAgo = new Date(Date.now() - 30000)
+  const tenSecondsAgo = new Date(Date.now() - 10000)
+  
+  // Delete old signals
+  await prisma.voiceSignal.deleteMany({
+    where: {
+      roomId,
+      createdAt: { lt: thirtySecondsAgo }
+    }
+  })
+  
+  // Mark inactive sessions (no ping in 10 seconds)
+  await prisma.voiceSession.updateMany({
+    where: {
+      roomId,
+      lastPing: { lt: tenSecondsAgo },
+      isActive: true
+    },
+    data: { isActive: false }
+  })
 }
 
 // GET - Get pending signals for current user and voice users list
@@ -34,35 +36,84 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
     const since = parseInt(searchParams.get('since') || '0')
+    const sinceDate = new Date(since)
 
-    cleanupOldSignals(roomId)
+    // Cleanup old data
+    await cleanupOldData(roomId)
 
-    // Get active voice users (available to everyone)
-    const roomVoiceUsers = activeVoiceUsers.get(roomId) || new Map()
-    const voiceUsers = Array.from(roomVoiceUsers.entries()).map(([id, data]) => ({
-      id,
-      name: data.name,
-      joinedAt: data.joinedAt
+    // Get active voice users from database
+    const voiceSessions = await prisma.voiceSession.findMany({
+      where: {
+        roomId,
+        isActive: true
+      },
+      select: {
+        userId: true,
+        userName: true,
+        joinedAt: true
+      }
+    })
+
+    const voiceUsers = voiceSessions.map(s => ({
+      id: s.userId,
+      name: s.userName,
+      joinedAt: s.joinedAt.getTime()
     }))
 
-    // If user is logged in, also return their signals
+    // If user is logged in, get their signals
     let userSignals: Array<{
       id: string
       fromUserId: string
       fromUserName: string
       toUserId: string | null
       type: string
-      data: string
+      data: string | null
       createdAt: number
     }> = []
+    
     if (session?.user?.id) {
-      const signals = voiceSignals.get(roomId) || []
-      // Get signals for this user (either targeted to them or broadcast)
-      userSignals = signals.filter(s => 
-        s.fromUserId !== session.user!.id && 
-        s.createdAt > since &&
-        (s.toUserId === null || s.toUserId === session.user!.id)
-      )
+      const signals = await prisma.voiceSignal.findMany({
+        where: {
+          roomId,
+          fromUserId: { not: session.user.id },
+          createdAt: { gt: sinceDate },
+          OR: [
+            { toUserId: null },
+            { toUserId: session.user.id }
+          ]
+        },
+        orderBy: { createdAt: 'asc' }
+      })
+
+      userSignals = signals.map(s => ({
+        id: s.id,
+        fromUserId: s.fromUserId,
+        fromUserName: s.fromUserName,
+        toUserId: s.toUserId,
+        type: s.type,
+        data: s.data,
+        createdAt: s.createdAt.getTime()
+      }))
+
+      // Mark signals as processed
+      if (signals.length > 0) {
+        await prisma.voiceSignal.updateMany({
+          where: {
+            id: { in: signals.map(s => s.id) }
+          },
+          data: { processed: true }
+        })
+      }
+
+      // Update user's ping if they're in voice
+      await prisma.voiceSession.updateMany({
+        where: {
+          roomId,
+          userId: session.user.id,
+          isActive: true
+        },
+        data: { lastPing: new Date() }
+      })
     }
 
     return NextResponse.json({
@@ -110,38 +161,53 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'No voice permission' }, { status: 403 })
     }
 
-    // Handle join/leave
+    const userName = user?.name || 'Anonymous'
+
+    // Handle join/leave with database
     if (type === 'join') {
-      if (!activeVoiceUsers.has(roomId)) {
-        activeVoiceUsers.set(roomId, new Map())
-      }
-      activeVoiceUsers.get(roomId)!.set(session.user.id, {
-        name: user?.name || 'Anonymous',
-        joinedAt: Date.now()
+      // Upsert voice session
+      await prisma.voiceSession.upsert({
+        where: {
+          roomId_userId: { roomId, userId: session.user.id }
+        },
+        create: {
+          roomId,
+          userId: session.user.id,
+          userName,
+          isActive: true
+        },
+        update: {
+          userName,
+          isActive: true,
+          lastPing: new Date(),
+          joinedAt: new Date()
+        }
       })
     } else if (type === 'leave') {
-      activeVoiceUsers.get(roomId)?.delete(session.user.id)
+      // Mark session as inactive
+      await prisma.voiceSession.updateMany({
+        where: {
+          roomId,
+          userId: session.user.id
+        },
+        data: { isActive: false }
+      })
     }
 
-    // Store signal
-    if (!voiceSignals.has(roomId)) {
-      voiceSignals.set(roomId, [])
-    }
+    // Store signal in database
+    await prisma.voiceSignal.create({
+      data: {
+        roomId,
+        fromUserId: session.user.id,
+        fromUserName: userName,
+        toUserId: toUserId || null,
+        type,
+        data: typeof data === 'string' ? data : (data ? JSON.stringify(data) : null)
+      }
+    })
 
-    const signal = {
-      id: `${session.user.id}-${Date.now()}`,
-      fromUserId: session.user.id,
-      fromUserName: user?.name || 'Anonymous',
-      toUserId: toUserId || null,
-      type,
-      data: typeof data === 'string' ? data : JSON.stringify(data),
-      createdAt: Date.now()
-    }
-
-    voiceSignals.get(roomId)!.push(signal)
-
-    // Cleanup old signals
-    cleanupOldSignals(roomId)
+    // Cleanup old data
+    await cleanupOldData(roomId)
 
     return NextResponse.json({ success: true, timestamp: Date.now() })
   } catch (error) {
