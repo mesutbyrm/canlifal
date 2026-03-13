@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type SiteTheme = 'falclub';
+export type SiteTheme = 'falclub' | 'cosmic' | 'facebook' | 'falci' | 'mystical';
 
 interface ThemeContextType {
   theme: SiteTheme;

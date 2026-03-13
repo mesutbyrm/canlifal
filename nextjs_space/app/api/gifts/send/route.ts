@@ -130,7 +130,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid jeton amount' }, { status: 400 })
       }
 
-      if (sender.jetonBalance < amount) {
+      // Handle null jetonBalance - default to 0 if null
+      const senderJetonBalance = sender.jetonBalance ?? 0
+      
+      console.log('[Gift Send] Jeton transfer attempt:', {
+        senderId: sender.id,
+        senderName: sender.name,
+        senderJetonBalance: sender.jetonBalance,
+        effectiveBalance: senderJetonBalance,
+        requestedAmount: amount
+      })
+
+      if (senderJetonBalance < amount) {
         return NextResponse.json({ error: 'Insufficient jetons' }, { status: 400 })
       }
 

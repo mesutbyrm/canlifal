@@ -208,7 +208,7 @@ export default function AdminSettingsPage() {
                         onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
                         className="w-64 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
                       >
-                        {item.options.map((opt: { value: string; label: string }) => (
+                        {(item.options as Array<{ value: string; label: string }>).map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { useSiteTheme } from '@/lib/theme-context'
+
 import { motion } from 'framer-motion'
 import { User, Gift, Home, Camera, MessageCircle } from 'lucide-react'
 import Image from 'next/image'
@@ -13,15 +13,9 @@ import Image from 'next/image'
 export default function MobileFooter() {
   const { data: session } = useSession()
   const { language } = useLanguage()
-  const { theme } = useSiteTheme()
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
   const [profileImage, setProfileImage] = useState<string | null>(null)
-  
-  // Theme detection
-  const isFalclub = true
-  
-  
   
   // Hide footer on certain pages
   const hiddenPaths = ['/live-room', '/chat/video', '/login', '/register']
@@ -123,12 +117,7 @@ export default function MobileFooter() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className={`w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg ${
-              isFalclub ? 'border-fuchsia-400 shadow-fuchsia-500/30' 
-              : isFalci ? 'border-indigo-400 shadow-indigo-500/30'
-              : isCosmic ? 'border-blue-400 shadow-blue-500/30'
-              : 'border-purple-400 shadow-purple-500/30'
-            }`}
+            className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg border-fuchsia-400 shadow-fuchsia-500/30"
           >
             {profileImage || session.user.image ? (
               <Image
@@ -139,12 +128,7 @@ export default function MobileFooter() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className={`w-full h-full flex items-center justify-center ${
-                isFalclub ? 'bg-gradient-to-br from-fuchsia-600 to-pink-600'
-                : isFalci ? 'bg-gradient-to-br from-indigo-600 to-purple-600'
-                : isCosmic ? 'bg-gradient-to-br from-blue-600 to-cyan-600'
-                : 'bg-gradient-to-br from-purple-600 to-pink-600'
-              }`}>
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-fuchsia-600 to-pink-600">
                 <span className="text-white font-bold text-sm">
                   {session.user.name?.charAt(0).toUpperCase() || 'U'}
                 </span>
