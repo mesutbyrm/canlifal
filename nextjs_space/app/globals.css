@@ -1196,3 +1196,266 @@
   box-shadow: 0 0 15px rgba(34, 211, 238, 0.7);
   animation: tier-shimmer 2s linear infinite, tier-glow-pulse 1s ease-in-out infinite;
 }
+/* =============================================
+   ACHIEVEMENT & BADGE ANIMATIONS
+   ============================================= */
+
+/* Achievement Badge Glow */
+.achievement-glow {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.3);
+  animation: achievementPulse 2s ease-in-out infinite;
+}
+
+@keyframes achievementPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.7), 0 0 60px rgba(251, 191, 36, 0.5); }
+}
+
+/* Achievement Shine Effect */
+.achievement-shine {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 60%
+  );
+  animation: achievementShine 3s ease-in-out infinite;
+}
+
+@keyframes achievementShine {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+/* Special Badge Animations */
+.badge-pulse-gold {
+  animation: badgePulseGold 2s ease-in-out infinite;
+}
+
+@keyframes badgePulseGold {
+  0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.8), 0 0 50px rgba(234, 179, 8, 0.5); }
+}
+
+.badge-float {
+  animation: badgeFloat 3s ease-in-out infinite;
+}
+
+@keyframes badgeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.badge-heartbeat {
+  animation: badgeHeartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes badgeHeartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.1); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+.badge-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 60%
+  );
+  animation: badgeShineMove 2s ease-in-out infinite;
+}
+
+@keyframes badgeShineMove {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.badge-sparkle {
+  animation: badgeSparkle 2s ease-in-out infinite;
+}
+
+@keyframes badgeSparkle {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+.badge-bounce {
+  animation: badgeBounce 2s ease-in-out infinite;
+}
+
+@keyframes badgeBounce {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-3px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-3px); }
+}
+
+.badge-rotate-star {
+  animation: badgeRotateStar 4s linear infinite;
+}
+
+@keyframes badgeRotateStar {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.badge-glow {
+  animation: badgeGlow 2s ease-in-out infinite;
+}
+
+@keyframes badgeGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(129, 140, 248, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(129, 140, 248, 0.6), 0 0 50px rgba(129, 140, 248, 0.3); }
+}
+
+.badge-pulse {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+.badge-flame {
+  animation: badgeFlame 1s ease-in-out infinite;
+}
+
+@keyframes badgeFlame {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  25% { filter: brightness(1.2) hue-rotate(5deg); }
+  50% { filter: brightness(1.1) hue-rotate(-5deg); }
+  75% { filter: brightness(1.3) hue-rotate(3deg); }
+}
+
+/* Profile Effect Particles */
+.profile-effect-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: particleRise 4s ease-out forwards;
+}
+
+.profile-effect-sparkles {
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #fff 0%, #ffd700 50%, transparent 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ffd700;
+}
+
+.profile-effect-fire {
+  width: 8px;
+  height: 12px;
+  background: linear-gradient(to top, #ff4500, #ff8c00, #ffd700);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  filter: blur(1px);
+}
+
+.profile-effect-hearts {
+  font-size: 16px;
+}
+
+.profile-effect-hearts::before {
+  content: '❤️';
+}
+
+.profile-effect-stars {
+  font-size: 14px;
+}
+
+.profile-effect-stars::before {
+  content: '⭐';
+}
+
+.profile-effect-snow {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.profile-effect-rainbow {
+  width: 3px;
+  height: 10px;
+  background: linear-gradient(to bottom, red, orange, yellow, green, blue, indigo, violet);
+  border-radius: 2px;
+}
+
+.profile-effect-confetti {
+  width: 8px;
+  height: 8px;
+  background: var(--confetti-color, #ff0080);
+}
+
+.profile-effect-bubbles {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.profile-effect-lightning {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, #00d4ff, #fff, #00d4ff);
+  box-shadow: 0 0 10px #00d4ff;
+}
+
+.profile-effect-aurora {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #00ff87, #60efff, #ff00ff, #00ff87);
+  background-size: 300% 100%;
+  animation: auroraWave 4s ease-in-out infinite;
+  filter: blur(2px);
+}
+
+@keyframes particleRise {
+  0% {
+    bottom: 0;
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    bottom: 100%;
+    opacity: 0;
+    transform: translateX(calc(var(--drift, 20px) * (2 * var(--random, 0.5) - 1))) scale(0.5);
+  }
+}
+
+@keyframes auroraWave {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Gradient Animation for Rainbow Effect */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}

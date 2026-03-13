@@ -29,6 +29,8 @@ export async function GET(
         zodiacSign: true,
         membership: true,
         membershipExpiresAt: true,
+        specialBadges: true,
+        profileEffect: true,
         _count: {
           select: {
             socialPosts: true
@@ -75,6 +77,16 @@ export async function GET(
     const membershipActive = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) > new Date() : false
     const effectiveMembership = membershipActive ? user.membership : 'faluser'
 
+    // Parse special badges from JSON string
+    let specialBadges: string[] = []
+    if (user.specialBadges) {
+      try {
+        specialBadges = JSON.parse(user.specialBadges)
+      } catch (e) {
+        specialBadges = []
+      }
+    }
+
     return NextResponse.json({
       id: user.id,
       name: user.name,
@@ -85,6 +97,8 @@ export async function GET(
       zodiacSign: user.zodiacSign,
       membership: effectiveMembership,
       membershipExpiresAt: user.membershipExpiresAt,
+      specialBadges,
+      profileEffect: user.profileEffect,
       followerCount,
       followingCount,
       postCount: user._count.socialPosts,

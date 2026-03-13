@@ -41,6 +41,9 @@ model User {
   theme                 String               @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
   jetonBalance          Int                  @default(50)
+  // Profile customization
+  specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
+  profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)
   // Statistics
   totalTimeSpentMinutes Int                  @default(0)
   lastActiveAt          DateTime?

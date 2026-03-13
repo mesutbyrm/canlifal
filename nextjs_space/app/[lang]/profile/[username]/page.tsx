@@ -23,6 +23,10 @@ import {
   Check
 } from 'lucide-react'
 import { TierAvatarWrapper, TierNameBadge, TierBadge, type MembershipTier } from '@/components/tier-badge'
+import ProfileAchievements from '@/components/profile-achievements'
+import ProfileSpecialBadges, { SpecialBadgeType } from '@/components/profile-special-badges'
+import { ProfileBackground, ProfileEffect } from '@/components/profile-effects'
+import { Trophy } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -40,6 +44,8 @@ interface UserProfile {
   totalLikes: number
   isFollowing: boolean
   isOwnProfile: boolean
+  specialBadges?: SpecialBadgeType[]
+  profileEffect?: ProfileEffect
 }
 
 interface Post {
@@ -380,6 +386,14 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* Special Badges - VIP, Beta Tester, etc. */}
+          {profile.specialBadges && profile.specialBadges.length > 0 && (
+            <ProfileSpecialBadges 
+              badges={profile.specialBadges.map(type => ({ type }))} 
+              size="sm" 
+            />
+          )}
+
           {/* Bio Section */}
           <div className="mt-3 w-full max-w-xs text-center">
             {profile.isOwnProfile && editingBio ? (
@@ -520,10 +534,15 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* Achievements Section */}
+        <div className="px-4">
+          <ProfileAchievements userId={profile.id} isOwnProfile={profile.isOwnProfile} />
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-12 z-30 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30">
+      <div className="sticky top-12 z-30 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 mt-4">
         <div className="max-w-lg mx-auto flex items-center">
           <button
             onClick={() => setActiveTab('posts')}
