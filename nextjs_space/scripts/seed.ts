@@ -533,11 +533,12 @@ async function main() {
   const whatsappSettings = [
     { key: 'whatsapp_number', value: '+905327170173', description: 'WhatsApp destek numarası' },
     { key: 'whatsapp_enabled', value: 'true', description: 'WhatsApp desteği aktif' },
-    { key: 'whatsapp_message', value: `Merhaba
-500 TL jeton almak istiyorum
-Kullanıcı adım: {username}
+    { key: 'whatsapp_message', value: `Merhaba, jeton almak istiyorum.
 
-Not: Papara veya IBAN ile ödeme yapabilirsiniz.`, description: 'WhatsApp otomatik mesaj şablonu' }
+📦 Paket: {package}
+👤 Kullanıcı Adı: {username}
+
+Papara veya IBAN ile ödeme yapabilirim.`, description: 'WhatsApp otomatik mesaj şablonu' }
   ]
   for (const setting of whatsappSettings) {
     await prisma.platformSettings.upsert({
