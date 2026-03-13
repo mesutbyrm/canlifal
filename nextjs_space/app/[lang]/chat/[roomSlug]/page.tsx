@@ -274,6 +274,24 @@ export default function ChatRoomPage() {
     }
   }, [room])
 
+  // Fetch typing users
+  const fetchTypingUsers = useCallback(async () => {
+    if (!room || !session?.user?.id) return
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/typing`)
+      if (res.ok) {
+        const { typingUsers: users } = await res.json()
+        // Filter out current user and get just names
+        const otherTypingUsers = (users || [])
+          .filter((u: { id: string; name: string }) => u.id !== session.user?.id)
+          .map((u: { id: string; name: string }) => u.name)
+        setTypingUsers(otherTypingUsers)
+      }
+    } catch (error) {
+      console.error('Error fetching typing users:', error)
+    }
+  }, [room, session?.user?.id])
+
   // Initialize
   useEffect(() => {
     fetchAllRooms()
@@ -285,6 +303,7 @@ export default function ChatRoomPage() {
       fetchActiveUsers()
       checkBan()
       fetchVoiceUsers()
+      fetchTypingUsers()
       setLoading(false)
 
       const messageInterval = setInterval(fetchMessages, 2000)
@@ -292,6 +311,7 @@ export default function ChatRoomPage() {
       const presenceInterval = setInterval(updatePresence, 10000)
       const roomsInterval = setInterval(fetchAllRooms, 30000)
       const voiceUsersInterval = setInterval(fetchVoiceUsers, 3000)
+      const typingInterval = setInterval(fetchTypingUsers, 1500) // Poll typing every 1.5 seconds
 
       updatePresence()
 
@@ -301,9 +321,10 @@ export default function ChatRoomPage() {
         clearInterval(presenceInterval)
         clearInterval(roomsInterval)
         clearInterval(voiceUsersInterval)
+        clearInterval(typingInterval)
       }
     }
-  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers])
+  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers])
 
   // Auto-scroll
   useEffect(() => {
@@ -472,6 +493,24 @@ export default function ChatRoomPage() {
   // Voice chat functions
   const startVoiceChat = async () => {
     try {
+      // First check if we have voice permission by trying to join
+      if (room) {
+        const joinRes = await fetch(`/api/chat/rooms/${room.id}/voice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'join' })
+        })
+        
+        if (!joinRes.ok) {
+          const errData = await joinRes.json().catch(() => ({}))
+          if (joinRes.status === 403) {
+            alert(language === 'tr' ? 'Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.' : 'You don\'t have voice permission. Room owner or admin must give you "+" (voice) role.')
+            return
+          }
+          throw new Error(errData.error || 'Failed to join voice')
+        }
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       mediaStreamRef.current = stream
       
@@ -508,17 +547,17 @@ export default function ChatRoomPage() {
       
       setVoiceEnabled(true)
       
-      // Send join signal
-      if (room) {
-        await sendVoiceSignal('join')
-        
-        // Start polling for signals
-        lastSignalTimeRef.current = Date.now()
-        voicePollRef.current = setInterval(pollVoiceSignals, 500)
-      }
-    } catch (error) {
+      // Start polling for signals (join signal already sent above)
+      lastSignalTimeRef.current = Date.now()
+      voicePollRef.current = setInterval(pollVoiceSignals, 500)
+    } catch (error: unknown) {
       console.error('Error starting voice chat:', error)
-      alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
+        alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
+      } else {
+        alert(language === 'tr' ? 'Sesli sohbet başlatılamadı: ' + errorMessage : 'Failed to start voice chat: ' + errorMessage)
+      }
     }
   }
 

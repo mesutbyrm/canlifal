@@ -5,6 +5,47 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
+// GET typing users in the room
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+
+    // Get users who are typing (lastTyping within last 3 seconds)
+    const threeSecondsAgo = new Date(Date.now() - 3000)
+    
+    const typingPresences = await prisma.chatPresence.findMany({
+      where: {
+        roomId,
+        isTyping: true,
+        lastTyping: { gte: threeSecondsAgo }
+      },
+      select: {
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true
+          }
+        }
+      }
+    })
+
+    const typingUsers = typingPresences.map(p => ({
+      id: p.user.id,
+      name: p.user.username || p.user.name || 'Misafir'
+    }))
+
+    return NextResponse.json({ typingUsers })
+  } catch (error) {
+    console.error('Error getting typing users:', error)
+    return NextResponse.json({ typingUsers: [] })
+  }
+}
+
 // POST typing status
 export async function POST(
   request: NextRequest,
