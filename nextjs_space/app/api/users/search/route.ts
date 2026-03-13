@@ -14,32 +14,38 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get('q')?.trim()
 
     if (!q || q.length < 1) {
-      return NextResponse.json({ users: [] })
+      return NextResponse.json([])
     }
 
+    // Search users by name, username, or email (contains search for better results)
     const users = await prisma.user.findMany({
       where: {
-        OR: [
-          { name: { startsWith: q, mode: 'insensitive' } },
-          { username: { startsWith: q, mode: 'insensitive' } },
-          { email: { startsWith: q, mode: 'insensitive' } }
+        AND: [
+          // Exclude current user from search results
+          { id: { not: session.user.id } },
+          {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { username: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } }
+            ]
+          }
         ]
       },
       select: {
         id: true,
         name: true,
         username: true,
-        email: true,
-        image: true,
-        jetonBalance: true
+        image: true
       },
       take: 15,
       orderBy: { name: 'asc' }
     })
 
-    return NextResponse.json({ users })
+    // Return array directly for gifts page compatibility
+    return NextResponse.json(users)
   } catch (error) {
     console.error('User search error:', error)
-    return NextResponse.json({ users: [] }, { status: 500 })
+    return NextResponse.json([], { status: 500 })
   }
 }
