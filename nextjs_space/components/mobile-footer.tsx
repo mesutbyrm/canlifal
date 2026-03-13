@@ -143,6 +143,7 @@ export default function MobileFooter() {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        data-mobile-footer="true"
       >
         {/* Background */}
         <div className={`relative h-16 overflow-visible ${bgGradient} border-t`}>

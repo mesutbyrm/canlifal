@@ -202,7 +202,7 @@ export async function POST(
       }
 
       case 'clear_messages': {
-        // Only founder and op can clear messages
+        // Founder, admin, and op can clear messages
         if (ROLE_HIERARCHY[permissions.role] < ROLE_HIERARCHY.op && !permissions.isGlobalAdmin) {
           return NextResponse.json({ error: 'No permission to clear messages' }, { status: 403 })
         }
