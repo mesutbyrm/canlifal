@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, ArrowLeft, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Edit2, Wifi, WifiOff } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface Message {
@@ -96,6 +96,10 @@ export default function ChatRoomPage() {
   
   // Mention notifications
   const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
+  
+  // Management panels
+  const [showChatManagePanel, setShowChatManagePanel] = useState(false)
+  const [showUsersManagePanel, setShowUsersManagePanel] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -497,8 +501,21 @@ export default function ChatRoomPage() {
     )
   }
 
+  // Check if user has management permissions
+  const hasManagePermission = myPermissions && (
+    myPermissions.canMuteUsers || 
+    myPermissions.canKickUsers || 
+    myPermissions.canBanUsers || 
+    myPermissions.canMuteRoom ||
+    myPermissions.canGiveVoice ||
+    myPermissions.canGiveOp ||
+    myPermissions.canGiveAdmin ||
+    myPermissions.canGiveFounder ||
+    myPermissions.isGlobalAdmin
+  )
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118]">
+    <div className="h-screen bg-[#0a0118] flex flex-col overflow-hidden">
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -515,7 +532,7 @@ export default function ChatRoomPage() {
               className="bg-[#1a0b2e] border border-gold-500/30 rounded-xl p-6 max-w-sm w-full"
             >
               <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
-                <Edit2 className="w-5 h-5" />
+                <Settings className="w-5 h-5" />
                 {language === 'tr' ? 'Takma Adınızı Seçin' : 'Choose Your Nickname'}
               </h3>
               <p className="text-purple-200/70 text-sm mb-4">
@@ -562,7 +579,7 @@ export default function ChatRoomPage() {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gold-500/20 border border-gold-500/50 rounded-xl px-6 py-4 shadow-xl backdrop-blur-sm max-w-md"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gold-500/20 border border-gold-500/50 rounded-xl px-6 py-4 shadow-xl backdrop-blur-sm max-w-md"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gold-500/30 rounded-full">
@@ -586,355 +603,378 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto h-[calc(100vh-4rem)] flex flex-col p-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-4 pb-4 border-b border-gold-500/20"
-        >
-          <div className="flex items-center gap-4">
-            <Link 
-              href={`/${language}/chat`}
-              className="text-purple-300 hover:text-gold-400 transition-colors"
+      {/* mIRC Style Layout - Full Screen */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Chat Area (Left/Main) */}
+        <div className="flex-1 flex flex-col border-r border-purple-500/30">
+          {/* Chat Header - Yönet Button */}
+          <div className="h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
+            <button
+              onClick={() => {
+                if (hasManagePermission) {
+                  setShowChatManagePanel(!showChatManagePanel)
+                }
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                hasManagePermission 
+                  ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
+                  : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <span className="text-3xl">{room.icon}</span>
-            <div>
-              <h1 className="text-2xl font-serif text-gold-300 flex items-center gap-2">
-                {language === 'tr' ? room.nameTr : room.nameEn}
-                {roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
-                {/* Connection indicator */}
-                {isConnected ? (
-                  <Wifi className="w-4 h-4 text-green-400" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-red-400 animate-pulse" />
-                )}
-              </h1>
-              <p className="text-purple-200/60 text-sm">
-                {language === 'tr' ? room.descTr : room.descEn}
-              </p>
-            </div>
+              <Settings className="w-4 h-4" />
+              {language === 'tr' ? 'Yönet' : 'Manage'}
+              {hasManagePermission && (showChatManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+            </button>
+            
+            {/* Room Muted Indicator */}
+            {roomMuted && (
+              <div className="flex items-center gap-1 text-red-400 text-xs">
+                <VolumeX className="w-4 h-4" />
+                {language === 'tr' ? 'Oda Sessiz' : 'Room Muted'}
+              </div>
+            )}
           </div>
           
-          <div className="flex items-center gap-4">
-            {/* Sound toggle */}
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`p-2 rounded-lg ${soundEnabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'} hover:opacity-80`}
-              title={soundEnabled ? (language === 'tr' ? 'Sesi kapat' : 'Mute sounds') : (language === 'tr' ? 'Sesi aç' : 'Enable sounds')}
-            >
-              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-            {/* Edit nickname button */}
-            {session?.user && nickname && (
-              <button
-                onClick={() => {
-                  setNicknameInput(nickname)
-                  setShowNicknameModal(true)
-                }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 text-sm"
-                title={language === 'tr' ? 'Takma adı değiştir' : 'Change nickname'}
+          {/* Chat Management Panel */}
+          <AnimatePresence>
+            {showChatManagePanel && hasManagePermission && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="bg-[#1a0b2e]/80 border-b border-purple-500/30 overflow-hidden"
               >
-                <Edit2 className="w-4 h-4" />
-                <span className="hidden sm:inline">{nickname}</span>
-              </button>
-            )}
-            {myPermissions?.canMuteRoom && (
-              <button
-                onClick={toggleRoomMute}
-                className={`p-2 rounded-lg ${roomMuted ? 'bg-red-500/20 text-red-400' : 'bg-purple-500/20 text-purple-300'} hover:opacity-80`}
-                title={roomMuted ? 'Unmute room' : 'Mute room'}
-              >
-                {roomMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-              </button>
-            )}
-            <div className="flex items-center gap-2 text-green-400">
-              <Users className="w-5 h-5" />
-              <span>{activeUsers.length} {t('chat.online')}</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex gap-4 overflow-hidden">
-          {/* Active Users Sidebar - Left Side */}
-          <div className="hidden md:flex md:flex-col w-72 bg-[#1a0b2e]/50 rounded-xl border border-gold-500/20 p-4 overflow-hidden">
-            <h3 className="text-gold-300 font-semibold text-lg mb-4 flex items-center gap-2">
-              <Users className="w-6 h-6" />
-              {t('chat.active_users')} ({activeUsers.length})
-            </h3>
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {activeUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-purple-800/30 transition-colors ${selectedUser?.id === user.id ? 'bg-purple-800/40 border border-gold-500/30' : ''}`}
-                  onClick={() => {
-                    if (myPermissions && user.id !== session?.user?.id) {
-                      setSelectedUser(user)
-                    } else if (user.id !== session?.user?.id) {
-                      addMention(getDisplayName(user))
-                    }
-                  }}
-                >
-                  <div className="w-3 h-3 bg-green-400 rounded-full flex-shrink-0 shadow-lg shadow-green-400/50" />
-                  {user.chatRole && (
-                    <span className={`${ROLE_COLORS[user.chatRole]} flex items-center gap-1 flex-shrink-0`}>
-                      <span className="w-5 h-5">{ROLE_ICONS[user.chatRole]}</span>
-                      <span className="font-bold text-base">{user.roleSymbol}</span>
-                    </span>
-                  )}
-                  <span className={`truncate text-base font-medium ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
-                    {getDisplayName(user)}
-                  </span>
-                  {user.isAdmin && !user.chatRole && (
-                    <span className="ml-auto text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded">
-                      {language === 'tr' ? 'Site Admin' : 'Site Admin'}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {activeUsers.length === 0 && (
-                <p className="text-purple-400/50 text-base">
-                  {language === 'tr' ? 'Kimse yok' : 'No one here'}
-                </p>
-              )}
-            </div>
-
-            {/* Moderation Panel */}
-            {selectedUser && myPermissions && selectedUser.id !== session?.user?.id && (
-              <div className="mt-4 pt-4 border-t border-gold-500/20">
-                <h4 className="text-gold-300 text-base font-medium mb-3">
-                  {language === 'tr' ? 'Moderasyon:' : 'Moderation:'} {selectedUser.name}
-                </h4>
-                <div className="space-y-2">
-                  {myPermissions.canMuteUsers && (
+                <div className="p-3 flex flex-wrap gap-2">
+                  {myPermissions?.canMuteRoom && (
                     <button
-                      onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-base"
+                      onClick={toggleRoomMute}
+                      className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        roomMuted 
+                          ? 'bg-green-600/30 text-green-300 hover:bg-green-600/50' 
+                          : 'bg-red-600/30 text-red-300 hover:bg-red-600/50'
+                      }`}
                     >
-                      <MicOff className="w-5 h-5" />
-                      {language === 'tr' ? 'Sustur (30dk)' : 'Mute (30min)'}
+                      {roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                      {roomMuted 
+                        ? (language === 'tr' ? 'Odayı Aç' : 'Unmute Room')
+                        : (language === 'tr' ? 'Odayı Sustur' : 'Mute Room')
+                      }
                     </button>
                   )}
-                  {myPermissions.canKickUsers && (
-                    <button
-                      onClick={() => performModAction('kick_user', selectedUser.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 text-base"
-                    >
-                      <UserMinus className="w-5 h-5" />
-                      {language === 'tr' ? 'At' : 'Kick'}
-                    </button>
-                  )}
-                  {myPermissions.canBanUsers && (
-                    <button
-                      onClick={() => performModAction('ban_user', selectedUser.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-base"
-                    >
-                      <Ban className="w-5 h-5" />
-                      {language === 'tr' ? 'Engelle' : 'Ban'}
-                    </button>
-                  )}
-                  
-                  {/* Role Management */}
-                  {(myPermissions.canGiveVoice || myPermissions.canGiveOp || myPermissions.canGiveAdmin) && (
-                    <div className="pt-2 border-t border-gold-500/10">
-                      <p className="text-purple-400/70 text-sm mb-2">{language === 'tr' ? 'Yetki Ver:' : 'Grant Role:'}</p>
-                      {myPermissions.canGiveVoice && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 text-base mb-1"
-                        >
-                          <Mic className="w-5 h-5" /> +Voice
-                        </button>
-                      )}
-                      {myPermissions.canGiveOp && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 text-base mb-1"
-                        >
-                          <Star className="w-5 h-5" /> @Op
-                        </button>
-                      )}
-                      {myPermissions.canGiveAdmin && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 text-base mb-1"
-                        >
-                          <Shield className="w-5 h-5" /> &Admin
-                        </button>
-                      )}
-                      {myPermissions.canGiveFounder && (
-                        <button
-                          onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 text-base mb-1"
-                        >
-                          <Crown className="w-5 h-5" /> ~Founder
-                        </button>
-                      )}
-                      {selectedUser.chatRole && (
-                        <button
-                          onClick={() => performModAction('remove_role', selectedUser.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 text-base"
-                        >
-                          {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="w-full mt-3 text-purple-400/70 text-base hover:text-purple-300"
-                >
-                  {language === 'tr' ? 'Kapat' : 'Close'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Messages Area */}
-          <div className="flex-1 flex flex-col bg-[#1a0b2e]/50 rounded-xl border border-gold-500/20 overflow-hidden">
-            {/* Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
-                  <Sparkles className="w-12 h-12 mb-4" />
-                  <p className="text-lg">{t('chat.no_messages')}</p>
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const displayName = getDisplayName(msg.user)
-                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
-                  
-                  return (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${msg.user.id === session?.user?.id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[70%] ${
-                        isMentioned 
-                          ? 'bg-gold-500/30 border-gold-500/50 ring-2 ring-gold-500/30' 
-                          : msg.user.id === session?.user?.id 
-                            ? 'bg-gold-500/20 border-gold-500/30' 
-                            : 'bg-purple-800/30 border-purple-500/30'
-                      } border rounded-xl p-4`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          {msg.user.chatRole && (
-                            <span className={`${ROLE_COLORS[msg.user.chatRole] || 'text-gray-400'} flex items-center gap-1`}>
-                              <span className="w-4 h-4">{ROLE_ICONS[msg.user.chatRole]}</span>
-                              <span className="font-bold text-base">{msg.user.roleSymbol}</span>
-                            </span>
-                          )}
-                          <button
-                            onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
-                            className={`text-base font-semibold hover:underline cursor-pointer ${
-                              msg.user.chatRole 
-                                ? ROLE_COLORS[msg.user.chatRole] 
-                                : msg.user.id === session?.user?.id 
-                                  ? 'text-gold-300' 
-                                  : 'text-purple-300'
-                            }`}
-                            title={msg.user.id !== session?.user?.id ? (language === 'tr' ? 'Bahsetmek için tıkla' : 'Click to mention') : ''}
-                          >
-                            {displayName}
-                          </button>
-                          <span className="text-sm text-purple-400/50">
-                            {formatTime(msg.createdAt)}
-                          </span>
-                          {isMentioned && (
-                            <span className="text-xs bg-gold-500/30 text-gold-300 px-2 py-0.5 rounded flex items-center gap-1">
-                              <AtSign className="w-3 h-3" />
-                              {language === 'tr' ? 'Bahsedildi' : 'Mentioned'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-purple-100 text-base leading-relaxed whitespace-pre-wrap">
-                          {msg.content.split(/(@\w+)/g).map((part, i) => 
-                            part.startsWith('@') ? (
-                              <span key={i} className="text-gold-400 font-medium">{part}</span>
-                            ) : (
-                              <span key={i}>{part}</span>
-                            )
-                          )}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Typing Indicator */}
-            <AnimatePresence>
-              {typingUsers.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-4 py-2 text-purple-300/70 text-sm flex items-center gap-2"
-                >
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span>
-                    {typingUsers.slice(0, 3).join(', ')}
-                    {typingUsers.length > 3 && ` +${typingUsers.length - 3}`}
-                    {language === 'tr' ? ' yazıyor...' : ' typing...'}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Error Message */}
-            {error && (
-              <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 text-red-300 text-base">
-                {error}
-              </div>
-            )}
-
-            {/* Message Input */}
-            {session?.user ? (
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-gold-500/20">
-                <div className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => {
-                      setNewMessage(e.target.value)
-                      handleTyping()
-                    }}
-                    placeholder={t('chat.placeholder')}
-                    maxLength={500}
-                    className="flex-1 bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-base text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 transition-colors"
-                  />
                   <button
-                    type="submit"
-                    disabled={!newMessage.trim() || sending}
-                    className="px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-semibold text-base rounded-lg hover:from-gold-400 hover:to-gold-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                      soundEnabled 
+                        ? 'bg-blue-600/30 text-blue-300 hover:bg-blue-600/50' 
+                        : 'bg-gray-600/30 text-gray-300 hover:bg-gray-600/50'
+                    }`}
                   >
-                    <Send className="w-5 h-5" />
-                    <span className="hidden sm:inline">{t('chat.send')}</span>
+                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    {soundEnabled 
+                      ? (language === 'tr' ? 'Ses Açık' : 'Sound On')
+                      : (language === 'tr' ? 'Ses Kapalı' : 'Sound Off')
+                    }
                   </button>
                 </div>
-              </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto bg-[#0d0520] p-2">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-purple-300/50">
+                <Sparkles className="w-10 h-10 mb-3" />
+                <p className="text-sm">{t('chat.no_messages')}</p>
+              </div>
             ) : (
-              <div className="p-4 border-t border-gold-500/20 text-center">
-                <Link
-                  href={`/${language}/login`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-black font-semibold text-base rounded-lg hover:from-gold-400 hover:to-gold-500 transition-all"
+              <div className="space-y-0.5">
+                {messages.map((msg) => {
+                  const displayName = getDisplayName(msg.user)
+                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
+                  const isMe = msg.user.id === session?.user?.id
+                  
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`px-2 py-0.5 ${isMentioned ? 'bg-gold-500/20' : ''}`}
+                    >
+                      <span className="text-purple-500/60 text-xs mr-2">
+                        [{formatTime(msg.createdAt)}]
+                      </span>
+                      {msg.user.chatRole && (
+                        <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-1`}>
+                          {msg.user.roleSymbol}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
+                        className={`font-medium hover:underline ${
+                          msg.user.chatRole 
+                            ? ROLE_COLORS[msg.user.chatRole] 
+                            : isMe 
+                              ? 'text-gold-400' 
+                              : 'text-purple-300'
+                        }`}
+                      >
+                        &lt;{displayName}&gt;
+                      </button>
+                      <span className="text-white ml-2">
+                        {msg.content.split(/(@\w+)/g).map((part, i) => 
+                          part.startsWith('@') ? (
+                            <span key={i} className="text-gold-400 font-medium">{part}</span>
+                          ) : (
+                            <span key={i}>{part}</span>
+                          )
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Typing Indicator */}
+          <AnimatePresence>
+            {typingUsers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="px-3 py-1 bg-[#1a0b2e] text-purple-300/70 text-xs flex items-center gap-2"
+              >
+                <div className="flex gap-0.5">
+                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span>
+                  {typingUsers.slice(0, 3).join(', ')}
+                  {typingUsers.length > 3 && ` +${typingUsers.length - 3}`}
+                  {language === 'tr' ? ' yazıyor...' : ' typing...'}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error Message */}
+          {error && (
+            <div className="px-3 py-1 bg-red-900/50 text-red-300 text-xs">
+              {error}
+            </div>
+          )}
+
+          {/* Message Input */}
+          {session?.user ? (
+            <form onSubmit={handleSendMessage} className="bg-[#1a0b2e] border-t border-purple-500/30 p-2">
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value)
+                    handleTyping()
+                  }}
+                  placeholder={t('chat.placeholder')}
+                  maxLength={500}
+                  className="flex-1 bg-[#0d0520] border border-purple-500/30 rounded px-3 py-2 text-sm text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || sending}
+                  className="px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
-                  <LogIn className="w-5 h-5" />
-                  {t('chat.login_required')}
-                </Link>
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
+              <Link
+                href={`/${language}/login`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500"
+              >
+                <LogIn className="w-4 h-4" />
+                {t('chat.login_required')}
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Users Panel (Right) - mIRC Style */}
+        <div className="w-52 md:w-60 flex flex-col bg-[#1a0b2e]">
+          {/* Users Header - Yönet Button */}
+          <div className="h-10 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
+            <button
+              onClick={() => {
+                if (hasManagePermission) {
+                  setShowUsersManagePanel(!showUsersManagePanel)
+                }
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                hasManagePermission 
+                  ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 cursor-pointer' 
+                  : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Settings className="w-3 h-3" />
+              {language === 'tr' ? 'Yönet' : 'Manage'}
+              {hasManagePermission && (showUsersManagePanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+            </button>
+            <span className="text-purple-400 text-xs">({activeUsers.length})</span>
+          </div>
+
+          {/* User Management Panel */}
+          <AnimatePresence>
+            {showUsersManagePanel && hasManagePermission && selectedUser && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="bg-[#0d0520] border-b border-purple-500/30 overflow-hidden"
+              >
+                <div className="p-2">
+                  <p className="text-purple-300 text-xs mb-2 font-medium truncate">
+                    {language === 'tr' ? 'Seçili:' : 'Selected:'} {getDisplayName(selectedUser)}
+                  </p>
+                  <div className="space-y-1">
+                    {myPermissions?.canMuteUsers && (
+                      <button
+                        onClick={() => performModAction('mute_user', selectedUser.id, { duration: 30 })}
+                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
+                      >
+                        <MicOff className="w-3 h-3" />
+                        {language === 'tr' ? 'Sustur' : 'Mute'}
+                      </button>
+                    )}
+                    {myPermissions?.canKickUsers && (
+                      <button
+                        onClick={() => performModAction('kick_user', selectedUser.id)}
+                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-yellow-600/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/50"
+                      >
+                        <UserMinus className="w-3 h-3" />
+                        {language === 'tr' ? 'At' : 'Kick'}
+                      </button>
+                    )}
+                    {myPermissions?.canBanUsers && (
+                      <button
+                        onClick={() => performModAction('ban_user', selectedUser.id)}
+                        className="w-full flex items-center gap-1 px-2 py-1.5 bg-red-600/30 text-red-300 rounded text-xs hover:bg-red-600/50"
+                      >
+                        <Ban className="w-3 h-3" />
+                        {language === 'tr' ? 'Engelle' : 'Ban'}
+                      </button>
+                    )}
+                    
+                    {/* Roles */}
+                    {(myPermissions?.canGiveVoice || myPermissions?.canGiveOp || myPermissions?.canGiveAdmin || myPermissions?.canGiveFounder) && (
+                      <div className="pt-1 border-t border-purple-500/20 mt-1">
+                        <p className="text-purple-400/70 text-[10px] mb-1">{language === 'tr' ? 'Yetki:' : 'Role:'}</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {myPermissions?.canGiveVoice && (
+                            <button
+                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'voice' })}
+                              className="flex items-center gap-1 px-1.5 py-1 bg-blue-600/30 text-blue-300 rounded text-[10px] hover:bg-blue-600/50"
+                            >
+                              <Mic className="w-2.5 h-2.5" /> +v
+                            </button>
+                          )}
+                          {myPermissions?.canGiveOp && (
+                            <button
+                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'op' })}
+                              className="flex items-center gap-1 px-1.5 py-1 bg-green-600/30 text-green-300 rounded text-[10px] hover:bg-green-600/50"
+                            >
+                              <Star className="w-2.5 h-2.5" /> @o
+                            </button>
+                          )}
+                          {myPermissions?.canGiveAdmin && (
+                            <button
+                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'admin' })}
+                              className="flex items-center gap-1 px-1.5 py-1 bg-orange-600/30 text-orange-300 rounded text-[10px] hover:bg-orange-600/50"
+                            >
+                              <Shield className="w-2.5 h-2.5" /> &a
+                            </button>
+                          )}
+                          {myPermissions?.canGiveFounder && (
+                            <button
+                              onClick={() => performModAction('set_role', selectedUser.id, { role: 'founder' })}
+                              className="flex items-center gap-1 px-1.5 py-1 bg-red-600/30 text-red-300 rounded text-[10px] hover:bg-red-600/50"
+                            >
+                              <Crown className="w-2.5 h-2.5" /> ~q
+                            </button>
+                          )}
+                        </div>
+                        {selectedUser.chatRole && (
+                          <button
+                            onClick={() => performModAction('remove_role', selectedUser.id)}
+                            className="w-full mt-1 flex items-center justify-center gap-1 px-1.5 py-1 bg-gray-600/30 text-gray-300 rounded text-[10px] hover:bg-gray-600/50"
+                          >
+                            {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="w-full mt-2 text-purple-400/70 text-[10px] hover:text-purple-300"
+                  >
+                    {language === 'tr' ? 'Seçimi Kaldır' : 'Deselect'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Users List - mIRC Style */}
+          <div className="flex-1 overflow-y-auto bg-[#0d0520]">
+            {activeUsers.length === 0 ? (
+              <p className="text-purple-400/50 text-xs p-2 text-center">
+                {language === 'tr' ? 'Kimse yok' : 'No one here'}
+              </p>
+            ) : (
+              <div className="py-1">
+                {activeUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => {
+                      if (user.id !== session?.user?.id) {
+                        if (hasManagePermission) {
+                          setSelectedUser(user)
+                          setShowUsersManagePanel(true)
+                        } else {
+                          addMention(getDisplayName(user))
+                        }
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 cursor-pointer hover:bg-purple-800/30 ${
+                      selectedUser?.id === user.id ? 'bg-purple-800/50' : ''
+                    }`}
+                  >
+                    {/* Role Symbol/Icon */}
+                    {user.chatRole ? (
+                      <span className={`${ROLE_COLORS[user.chatRole]} text-xs font-bold w-4 text-center`}>
+                        {user.roleSymbol}
+                      </span>
+                    ) : (
+                      <span className="w-4" />
+                    )}
+                    
+                    {/* Username */}
+                    <span className={`text-xs truncate ${
+                      user.chatRole 
+                        ? ROLE_COLORS[user.chatRole] 
+                        : user.isAdmin 
+                          ? 'text-red-400'
+                          : 'text-purple-200'
+                    }`}>
+                      {getDisplayName(user)}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

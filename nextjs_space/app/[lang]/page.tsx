@@ -495,7 +495,7 @@ export default function HomePage() {
               <p className="font-semibold text-white mb-1">Koç:</p>
               <p className="opacity-90">{language === 'tr' ? 'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.' : 'Your energy is high today. New opportunities may arise.'}</p>
               <Link 
-                href={`/${language}/fortunes/daily-horoscope`}
+                href={`/${language}/fortunes/horoscope`}
                 className="inline-block mt-2 text-fuchsia-300 font-medium hover:text-fuchsia-200"
               >
                 [{language === 'tr' ? 'Detaylı Oku' : 'Read More'}]
