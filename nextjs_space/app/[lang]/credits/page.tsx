@@ -100,7 +100,7 @@ export default function CreditsPage() {
       const [packagesRes, methodsRes, settingsRes] = await Promise.all([
         fetch('/api/credit-packages'),
         fetch('/api/payment-methods'),
-        fetch('/api/admin/settings')
+        fetch('/api/payment-settings')
       ])
       if (packagesRes.ok) {
         const data = await packagesRes.json()
@@ -112,9 +112,9 @@ export default function CreditsPage() {
       }
       if (settingsRes.ok) {
         const settings = await settingsRes.json()
-        const waNumber = settings.find((s: { key: string }) => s.key === 'whatsapp_number')?.value || ''
-        const waMessage = settings.find((s: { key: string }) => s.key === 'whatsapp_message')?.value || ''
-        const waEnabled = settings.find((s: { key: string }) => s.key === 'whatsapp_enabled')?.value === 'true'
+        const waNumber = settings.whatsapp_number || ''
+        const waMessage = settings.whatsapp_message || ''
+        const waEnabled = settings.whatsapp_enabled === 'true'
         setWhatsappSettings({ number: waNumber, message: waMessage, enabled: waEnabled })
       }
     } catch (err) {

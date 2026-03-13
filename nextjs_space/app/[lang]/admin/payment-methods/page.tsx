@@ -79,12 +79,19 @@ export default function PaymentMethodsPage() {
 
       if (settingsRes.ok) {
         const settings = await settingsRes.json()
-        const waNumber = settings.find((s: { key: string }) => s.key === 'whatsapp_number')?.value || ''
-        const waMessage = settings.find((s: { key: string }) => s.key === 'whatsapp_message')?.value || ''
-        const waEnabled = settings.find((s: { key: string }) => s.key === 'whatsapp_enabled')?.value === 'true'
-        setWhatsappNumber(waNumber)
-        setWhatsappMessage(waMessage)
-        setWhatsappEnabled(waEnabled)
+        // Settings can be either object {key: value} or array [{key, value}]
+        if (Array.isArray(settings)) {
+          const waNumber = settings.find((s: { key: string }) => s.key === 'whatsapp_number')?.value || ''
+          const waMessage = settings.find((s: { key: string }) => s.key === 'whatsapp_message')?.value || ''
+          const waEnabled = settings.find((s: { key: string }) => s.key === 'whatsapp_enabled')?.value === 'true'
+          setWhatsappNumber(waNumber)
+          setWhatsappMessage(waMessage)
+          setWhatsappEnabled(waEnabled)
+        } else {
+          setWhatsappNumber(settings.whatsapp_number || '')
+          setWhatsappMessage(settings.whatsapp_message || '')
+          setWhatsappEnabled(settings.whatsapp_enabled === 'true')
+        }
       }
     } catch (err) {
       console.error('Fetch data error:', err)
