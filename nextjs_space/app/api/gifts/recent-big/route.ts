@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 
-// Returns recent high-value gifts (lion gifts or 500+ jeton gifts) from the last 5 minutes
+// Returns recent high-value gifts (lion gifts or 1000+ jeton gifts) from the last 15 minutes
 export async function GET() {
   try {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000)
 
     // Get recent gift_received notifications that are high value
     const recentGiftNotifs = await prisma.notification.findMany({
       where: {
         type: 'gift_received',
-        createdAt: { gte: fiveMinutesAgo }
+        createdAt: { gte: fifteenMinutesAgo }
       },
       include: {
         user: { select: { name: true, username: true } }

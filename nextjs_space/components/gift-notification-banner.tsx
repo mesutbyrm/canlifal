@@ -172,15 +172,16 @@ export default function GiftNotificationBanner() {
         key={`${currentNotif.id}-pass-${passCount}`}
         className="absolute whitespace-nowrap flex items-center h-full"
         style={{
+          WebkitAnimation: 'giftBannerScroll 6s linear forwards',
           animation: 'giftBannerScroll 6s linear forwards',
         }}
       >
-        <span className="inline-flex items-center gap-4" style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.5px' }}>
+        <span className="inline-flex items-center gap-3 md:gap-4" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
           {/* Left celebration cluster */}
           <span className="inline-flex items-center gap-1">
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite' }}>🎉</span>
-            <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s' }}>{currentNotif.giftIcon}</span>
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>🎊</span>
+            <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite' }}>🎉</span>
+            <span style={{ fontSize: '24px', WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s' }}>{currentNotif.giftIcon}</span>
+            <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>🎊</span>
           </span>
 
           {/* Main text with gold gradient */}
@@ -190,7 +191,9 @@ export default function GiftNotificationBanner() {
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
+            WebkitAnimation: 'textGoldShift 3s linear infinite',
             animation: 'textGoldShift 3s linear infinite',
+            WebkitFilter: 'drop-shadow(0 0 8px rgba(255,215,0,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
             filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
             textShadow: 'none',
           }}>
@@ -199,43 +202,69 @@ export default function GiftNotificationBanner() {
 
           {/* Right celebration cluster */}
           <span className="inline-flex items-center gap-1">
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>✨</span>
-            <span style={{ fontSize: '28px', animation: 'pulseGift 1s ease-in-out infinite' }}>{currentNotif.giftIcon}</span>
-            <span style={{ fontSize: '24px', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>🌟</span>
+            <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>✨</span>
+            <span style={{ fontSize: '24px', WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite' }}>{currentNotif.giftIcon}</span>
+            <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>🌟</span>
           </span>
         </span>
       </div>
 
       <style jsx>{`
+        @-webkit-keyframes giftBannerScroll {
+          0% { -webkit-transform: translateX(100vw); transform: translateX(100vw); }
+          100% { -webkit-transform: translateX(-100%); transform: translateX(-100%); }
+        }
         @keyframes giftBannerScroll {
-          0% {
-            transform: translateX(100vw);
-          }
-          100% {
-            transform: translateX(-100%);
-          }
+          0% { -webkit-transform: translateX(100vw); transform: translateX(100vw); }
+          100% { -webkit-transform: translateX(-100%); transform: translateX(-100%); }
+        }
+        @-webkit-keyframes shimmerSweep {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
         @keyframes shimmerSweep {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
+        @-webkit-keyframes bannerBgShift {
+          0% { background-position: 0% 0; }
+          100% { background-position: 200% 0; }
+        }
         @keyframes bannerBgShift {
           0% { background-position: 0% 0; }
           100% { background-position: 200% 0; }
         }
+        @-webkit-keyframes bounceGift {
+          0%, 100% { -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+          50% { -webkit-transform: translateY(-6px) scale(1.15); transform: translateY(-6px) scale(1.15); }
+        }
         @keyframes bounceGift {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-6px) scale(1.15); }
+          0%, 100% { -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+          50% { -webkit-transform: translateY(-6px) scale(1.15); transform: translateY(-6px) scale(1.15); }
+        }
+        @-webkit-keyframes pulseGift {
+          0%, 100% { -webkit-transform: scale(1); transform: scale(1); -webkit-filter: brightness(1); filter: brightness(1); }
+          50% { -webkit-transform: scale(1.2); transform: scale(1.2); -webkit-filter: brightness(1.3); filter: brightness(1.3); }
         }
         @keyframes pulseGift {
-          0%, 100% { transform: scale(1); filter: brightness(1); }
-          50% { transform: scale(1.2); filter: brightness(1.3); }
+          0%, 100% { -webkit-transform: scale(1); transform: scale(1); -webkit-filter: brightness(1); filter: brightness(1); }
+          50% { -webkit-transform: scale(1.2); transform: scale(1.2); -webkit-filter: brightness(1.3); filter: brightness(1.3); }
+        }
+        @-webkit-keyframes sparkleFloat {
+          0% { opacity: 0; -webkit-transform: translateY(0) scale(0.5); transform: translateY(0) scale(0.5); }
+          30% { opacity: 1; -webkit-transform: translateY(-12px) scale(1); transform: translateY(-12px) scale(1); }
+          70% { opacity: 1; -webkit-transform: translateY(-20px) scale(0.8); transform: translateY(-20px) scale(0.8); }
+          100% { opacity: 0; -webkit-transform: translateY(-28px) scale(0.3); transform: translateY(-28px) scale(0.3); }
         }
         @keyframes sparkleFloat {
-          0% { opacity: 0; transform: translateY(0) scale(0.5); }
-          30% { opacity: 1; transform: translateY(-12px) scale(1); }
-          70% { opacity: 1; transform: translateY(-20px) scale(0.8); }
-          100% { opacity: 0; transform: translateY(-28px) scale(0.3); }
+          0% { opacity: 0; -webkit-transform: translateY(0) scale(0.5); transform: translateY(0) scale(0.5); }
+          30% { opacity: 1; -webkit-transform: translateY(-12px) scale(1); transform: translateY(-12px) scale(1); }
+          70% { opacity: 1; -webkit-transform: translateY(-20px) scale(0.8); transform: translateY(-20px) scale(0.8); }
+          100% { opacity: 0; -webkit-transform: translateY(-28px) scale(0.3); transform: translateY(-28px) scale(0.3); }
+        }
+        @-webkit-keyframes textGoldShift {
+          0% { background-position: 0% 0; }
+          100% { background-position: 200% 0; }
         }
         @keyframes textGoldShift {
           0% { background-position: 0% 0; }
