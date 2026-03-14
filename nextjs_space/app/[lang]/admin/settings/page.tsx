@@ -17,7 +17,8 @@ import {
   Check,
   Clock,
   Coins,
-  Tv
+  Tv,
+  Mail
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -29,6 +30,9 @@ interface PlatformSettings {
   credits_per_minute: string
   ad_duration_seconds: string
   jeton_tl_rate: string
+  site_email: string
+  admin_email: string
+  support_email: string
 }
 
 export default function AdminSettingsPage() {
@@ -44,7 +48,10 @@ export default function AdminSettingsPage() {
     session_duration_minutes: '5',
     credits_per_minute: '10',
     ad_duration_seconds: '5',
-    jeton_tl_rate: '0.5'
+    jeton_tl_rate: '0.5',
+    site_email: '',
+    admin_email: '',
+    support_email: ''
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -166,6 +173,30 @@ export default function AdminSettingsPage() {
       min: 0.01,
       max: 100
     },
+    {
+      key: 'site_email',
+      label: language === 'tr' ? 'Site E-postası' : 'Site Email',
+      description: language === 'tr' ? 'Kullanıcılara gösterilen ve şifre sıfırlama gibi maillerin gönderileceği adres' : 'Displayed to users and used for password reset emails',
+      icon: Mail,
+      type: 'email' as const,
+      placeholder: 'info@site.com'
+    },
+    {
+      key: 'admin_email',
+      label: language === 'tr' ? 'Admin E-postası' : 'Admin Email',
+      description: language === 'tr' ? 'Yönetici bildirimleri ve sistem uyarıları için' : 'For admin notifications and system alerts',
+      icon: Mail,
+      type: 'email' as const,
+      placeholder: 'admin@site.com'
+    },
+    {
+      key: 'support_email',
+      label: language === 'tr' ? 'Destek E-postası' : 'Support Email',
+      description: language === 'tr' ? 'Kullanıcı destek talepleri ve iletişim için' : 'For user support requests and contact',
+      icon: Mail,
+      type: 'email' as const,
+      placeholder: 'destek@site.com'
+    },
   ]
 
   return (
@@ -221,6 +252,14 @@ export default function AdminSettingsPage() {
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
+                    ) : 'type' in item && item.type === 'email' ? (
+                      <input
+                        type="email"
+                        placeholder={'placeholder' in item ? (item as any).placeholder : ''}
+                        value={settings[item.key as keyof PlatformSettings]}
+                        onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                        className="w-64 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 placeholder-purple-500/50"
+                      />
                     ) : (
                       <input
                         type="number"

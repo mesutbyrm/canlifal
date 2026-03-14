@@ -10,10 +10,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { planId } = await req.json()
+    const { planId, paymentMethod } = await req.json()
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
     }
+    // paymentMethod: 'jeton' or 'cfc' — defaults to 'jeton'
+    const method = paymentMethod === 'cfc' ? 'cfc' : 'jeton'
 
     // Get the plan
     const plan = await prisma.membershipPlan.findUnique({
@@ -34,10 +36,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user can afford it (jeton payment only for now)
-    if (plan.priceType === 'jeton') {
+    // Allow payment with jeton or CFC
+    if (method === 'cfc') {
+      if (user.credits < plan.price) {
+        return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+      }
+
+      // Deduct CFC
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { credits: { decrement: plan.price } }
+      })
+    } else {
+      // Jeton payment
       if (user.jetonBalance < plan.price) {
-        return NextResponse.json({ error: 'Insufficient jetons' }, { status: 400 })
+        return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
       }
 
       // Deduct jetons
@@ -56,13 +69,6 @@ export async function POST(req: NextRequest) {
           balanceBefore: user.jetonBalance,
           balanceAfter: user.jetonBalance - plan.price
         }
-      })
-    } else {
-      // For money payments, return info for payment processing
-      return NextResponse.json({ 
-        requiresPayment: true, 
-        plan,
-        message: 'Money payment not implemented yet' 
       })
     }
 

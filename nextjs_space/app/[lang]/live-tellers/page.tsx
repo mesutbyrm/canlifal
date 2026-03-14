@@ -20,6 +20,10 @@ interface FortuneTeller {
   isOnline: boolean
   isVerified: boolean
   avatar: string | null
+  isStreaming?: boolean
+  isInSession?: boolean
+  pendingCount?: number
+  queuePosition?: number
   user: {
     name: string
     image: string | null
@@ -232,10 +236,31 @@ export default function LiveTellersPage() {
                   transition={{ delay: index * 0.05 }}
                   className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-2 border-green-500/50 rounded-2xl p-4 hover:border-green-400 transition-all duration-300 relative overflow-hidden"
                 >
-                  {/* Live Badge */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 px-2 py-1 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    <span className="text-xs font-bold text-white">CANLI</span>
+                  {/* Status Badges */}
+                  <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                    {teller.isStreaming && (
+                      <div className="flex items-center gap-1.5 bg-red-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{language === 'tr' ? 'Canlı Yayında' : 'LIVE'}</span>
+                      </div>
+                    )}
+                    {teller.isInSession && (
+                      <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{language === 'tr' ? 'Seansta' : 'In Session'}</span>
+                      </div>
+                    )}
+                    {!teller.isStreaming && !teller.isInSession && (
+                      <div className="flex items-center gap-1.5 bg-green-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{language === 'tr' ? 'Çevrimiçi' : 'Online'}</span>
+                      </div>
+                    )}
+                    {!!teller.queuePosition && teller.queuePosition > 0 && (
+                      <div className="flex items-center gap-1 bg-purple-600 px-2 py-0.5 rounded-full">
+                        <span className="text-xs text-white">{language === 'tr' ? `Sıra: ${teller.queuePosition}` : `Queue: ${teller.queuePosition}`}</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-3 mb-3">
@@ -361,8 +386,19 @@ export default function LiveTellersPage() {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-serif text-lg text-gold-400 truncate">{teller.displayName}</h3>
+                        {teller.isStreaming && (
+                          <span className="inline-flex items-center gap-1 bg-red-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {language === 'tr' ? 'Canlı Yayında' : 'LIVE'}
+                          </span>
+                        )}
+                        {teller.isInSession && !teller.isStreaming && (
+                          <span className="inline-flex items-center gap-1 bg-amber-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            {language === 'tr' ? 'Seansta' : 'In Session'}
+                          </span>
+                        )}
                         {teller.isVerified && (
                           <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
                         )}

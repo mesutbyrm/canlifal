@@ -31,6 +31,11 @@ export async function GET(request: NextRequest) {
       include: {
         user: {
           select: { name: true, image: true }
+        },
+        sessions: {
+          where: { status: { in: ['active', 'pending'] } },
+          select: { id: true, status: true, userId: true },
+          orderBy: { createdAt: 'asc' }
         }
       },
       orderBy: [
@@ -40,7 +45,46 @@ export async function GET(request: NextRequest) {
       ]
     });
 
-    return NextResponse.json({ tellers });
+    // Check for active video streams for each teller
+    const tellerUserIds = tellers.map((t: { userId: string }) => t.userId);
+    const activeStreams = await prisma.videoStream.findMany({
+      where: {
+        userId: { in: tellerUserIds },
+        status: 'live'
+      },
+      select: { userId: true, id: true }
+    });
+    const streamingUserIds = new Set(activeStreams.map((s: { userId: string }) => s.userId));
+
+    // Get current user for queue position
+    const userSession = await getServerSession(authOptions);
+    const currentUserId = userSession?.user?.id;
+
+    const enrichedTellers = tellers.map((teller: typeof tellers[number]) => {
+      const isStreaming = streamingUserIds.has(teller.userId);
+      const activeSessions = teller.sessions.filter((s: { status: string }) => s.status === 'active');
+      const pendingSessions = teller.sessions.filter((s: { status: string }) => s.status === 'pending');
+      const isInSession = activeSessions.length > 0;
+
+      // Calculate queue position for current user
+      let queuePosition = 0;
+      if (currentUserId && pendingSessions.length > 0) {
+        const userIndex = pendingSessions.findIndex((s: { userId: string }) => s.userId === currentUserId);
+        if (userIndex >= 0) queuePosition = userIndex + 1;
+      }
+
+      // Remove sessions from response to keep payload small
+      const { sessions, ...tellerData } = teller;
+      return {
+        ...tellerData,
+        isStreaming,
+        isInSession,
+        pendingCount: pendingSessions.length,
+        queuePosition
+      };
+    });
+
+    return NextResponse.json({ tellers: enrichedTellers });
   } catch (error) {
     console.error('Fortune tellers error:', error);
     return NextResponse.json({ tellers: [] });

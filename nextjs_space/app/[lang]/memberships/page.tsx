@@ -35,6 +35,7 @@ interface UserMembership {
   membership: string
   membershipExpiresAt: string | null
   jetonBalance: number
+  credits: number
 }
 
 export default function MembershipsPage() {
@@ -51,6 +52,7 @@ export default function MembershipsPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'jeton' | 'cfc'>('jeton')
 
   // Theme colors
   const isCosmic = theme === 'cosmic'
@@ -88,7 +90,8 @@ export default function MembershipsPage() {
         setUserMembership({
           membership: data.membership,
           membershipExpiresAt: data.membershipExpiresAt,
-          jetonBalance: data.jetonBalance || 0
+          jetonBalance: data.jetonBalance || 0,
+          credits: data.credits || 0
         })
       }
     } catch (e) { console.error(e) }
@@ -104,7 +107,7 @@ export default function MembershipsPage() {
       const res = await fetch('/api/memberships/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: selectedPlan.id })
+        body: JSON.stringify({ planId: selectedPlan.id, paymentMethod })
       })
 
       const data = await res.json()
@@ -189,18 +192,26 @@ export default function MembershipsPage() {
           </motion.div>
         )}
 
-        {/* Jeton Balance */}
+        {/* Balances */}
         {userMembership && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className={`mb-6 p-3 rounded-xl border ${cardBg} flex items-center justify-between`}
+            className={`mb-6 p-3 rounded-xl border ${cardBg}`}
           >
-            <span className={textSecondary}>{language === 'tr' ? 'Jeton Bakiyeniz:' : 'Your Jetons:'}</span>
-            <span className={`${goldColor} font-bold text-lg flex items-center gap-1`}>
-              <Coins className="w-4 h-4" /> {userMembership.jetonBalance}
-            </span>
+            <div className="flex items-center justify-between mb-2">
+              <span className={textSecondary}>{language === 'tr' ? 'Jeton Bakiyeniz:' : 'Your Jetons:'}</span>
+              <span className={`${goldColor} font-bold text-lg flex items-center gap-1`}>
+                <Coins className="w-4 h-4" /> {userMembership.jetonBalance}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={textSecondary}>{language === 'tr' ? 'CFC Bakiyeniz:' : 'Your CFC:'}</span>
+              <span className={`${accentColor} font-bold text-lg flex items-center gap-1`}>
+                <Sparkles className="w-4 h-4" /> {userMembership.credits}
+              </span>
+            </div>
           </motion.div>
         )}
 
@@ -337,32 +348,60 @@ export default function MembershipsPage() {
                   </p>
                 </div>
 
-                <div className={`${cardBg} rounded-xl p-4 mb-6 border`}>
+                <div className={`${cardBg} rounded-xl p-4 mb-4 border`}>
                   <div className="flex justify-between mb-2">
-                    <span className={textSecondary}>{language === 'tr' ? 'S\u00fcre:' : 'Duration:'}</span>
-                    <span className={textPrimary}>{selectedPlan.durationDays} {language === 'tr' ? 'g\u00fcn' : 'days'}</span>
+                    <span className={textSecondary}>{language === 'tr' ? 'Süre:' : 'Duration:'}</span>
+                    <span className={textPrimary}>{selectedPlan.durationDays} {language === 'tr' ? 'gün' : 'days'}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between">
                     <span className={textSecondary}>{language === 'tr' ? 'Fiyat:' : 'Price:'}</span>
-                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {selectedPlan.priceType === 'jeton' ? 'Jeton' : 'TL'}</span>
+                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'CFC' : 'Jeton'}</span>
                   </div>
-                  {userMembership && selectedPlan.priceType === 'jeton' && (
-                    <div className="flex justify-between">
-                      <span className={textSecondary}>{language === 'tr' ? 'Bakiyeniz:' : 'Your Balance:'}</span>
-                      <span className={userMembership.jetonBalance >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}>
-                        {userMembership.jetonBalance} Jeton
-                      </span>
-                    </div>
-                  )}
                 </div>
 
-                {userMembership && selectedPlan.priceType === 'jeton' && userMembership.jetonBalance < selectedPlan.price && (
+                {/* Payment Method Selection */}
+                <div className="mb-4">
+                  <p className={`${textSecondary} text-sm mb-2`}>{language === 'tr' ? 'Ödeme Yöntemi:' : 'Payment Method:'}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('jeton')}
+                      className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${paymentMethod === 'jeton' ? 'border-amber-500 bg-amber-500/10' : `border ${modalBorder} opacity-60`}`}
+                    >
+                      <Coins className={`w-5 h-5 ${goldColor}`} />
+                      <span className={`${textPrimary} text-sm font-medium`}>Jeton</span>
+                      {userMembership && (
+                        <span className={`text-xs ${userMembership.jetonBalance >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
+                          {userMembership.jetonBalance} {language === 'tr' ? 'mevcut' : 'available'}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('cfc')}
+                      className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${paymentMethod === 'cfc' ? 'border-fuchsia-500 bg-fuchsia-500/10' : `border ${modalBorder} opacity-60`}`}
+                    >
+                      <Sparkles className={`w-5 h-5 ${accentColor}`} />
+                      <span className={`${textPrimary} text-sm font-medium`}>CFC</span>
+                      {userMembership && (
+                        <span className={`text-xs ${userMembership.credits >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
+                          {userMembership.credits} {language === 'tr' ? 'mevcut' : 'available'}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {userMembership && (
+                  (paymentMethod === 'jeton' && userMembership.jetonBalance < selectedPlan.price) ||
+                  (paymentMethod === 'cfc' && userMembership.credits < selectedPlan.price)
+                ) && (
                   <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
                     <p className="text-red-400 text-sm">
-                      {language === 'tr' ? 'Yetersiz jeton bakiyesi' : 'Insufficient jeton balance'}
+                      {language === 'tr' ? `Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi` : `Insufficient ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} balance`}
                     </p>
                     <Link href={`/${language}/credits`} className="text-amber-400 text-sm underline">
-                      {language === 'tr' ? 'Jeton sat\u0131n al' : 'Buy jetons'}
+                      {language === 'tr' ? 'Bakiye yükle' : 'Top up balance'}
                     </Link>
                   </div>
                 )}
@@ -372,11 +411,14 @@ export default function MembershipsPage() {
                     onClick={() => setShowConfirm(false)}
                     className={`flex-1 py-3 border ${modalBorder} ${textSecondary} rounded-xl hover:opacity-80 transition-all`}
                   >
-                    {language === 'tr' ? '\u0130ptal' : 'Cancel'}
+                    {language === 'tr' ? 'İptal' : 'Cancel'}
                   </button>
                   <button
                     onClick={handlePurchase}
-                    disabled={purchasing || !!(userMembership && selectedPlan.priceType === 'jeton' && userMembership.jetonBalance < selectedPlan.price)}
+                    disabled={purchasing || !!(userMembership && (
+                      (paymentMethod === 'jeton' && userMembership.jetonBalance < selectedPlan.price) ||
+                      (paymentMethod === 'cfc' && userMembership.credits < selectedPlan.price)
+                    ))}
                     className={`flex-1 py-3 bg-gradient-to-r ${getTierGradient(selectedPlan.tier)} text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50`}
                   >
                     {purchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
