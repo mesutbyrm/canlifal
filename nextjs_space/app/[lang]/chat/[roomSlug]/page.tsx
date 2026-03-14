@@ -137,7 +137,7 @@ export default function ChatRoomPage() {
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
   const [giftPaymentType, setGiftPaymentType] = useState<'jeton' | 'cfc'>('jeton')
   const [sendingGift, setSendingGift] = useState(false)
-  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number}>>([])
+  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
   const lastGiftPollRef = useRef<string>(new Date().toISOString())
   const seenGiftIdsRef = useRef<Set<string>>(new Set())
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
@@ -301,19 +301,23 @@ export default function ChatRoomPage() {
     }
   }, [room])
 
-  // Update presence
+  // Update presence and immediately refresh active users
   const updatePresence = useCallback(async () => {
     if (!room || !session?.user) return
     try {
-      await fetch(`/api/chat/rooms/${room.id}/presence`, {
+      const res = await fetch(`/api/chat/rooms/${room.id}/presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nickname: nickname || session.user.name })
       })
+      // After posting presence, immediately fetch updated user list
+      if (res.ok) {
+        fetchActiveUsers()
+      }
     } catch (error) {
       console.error('Error updating presence:', error)
     }
-  }, [room, session?.user, nickname])
+  }, [room, session?.user, nickname, fetchActiveUsers])
 
   // Check for bans
   const checkBan = useCallback(async () => {
@@ -378,13 +382,21 @@ export default function ChatRoomPage() {
       setLoading(false)
 
       const messageInterval = setInterval(fetchMessages, 2000)
-      const userInterval = setInterval(fetchActiveUsers, 5000)
-      const presenceInterval = setInterval(updatePresence, 10000)
+      const userInterval = setInterval(fetchActiveUsers, 3000)
+      const presenceInterval = setInterval(updatePresence, 8000)
       const roomsInterval = setInterval(fetchAllRooms, 30000)
       const voiceUsersInterval = setInterval(fetchVoiceUsers, 3000)
       const typingInterval = setInterval(fetchTypingUsers, 1500) // Poll typing every 1.5 seconds
 
       updatePresence()
+
+      // Remove presence when leaving page
+      const handleBeforeUnload = () => {
+        if (room?.id) {
+          navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1`, '')
+        }
+      }
+      window.addEventListener('beforeunload', handleBeforeUnload)
 
       return () => {
         clearInterval(messageInterval)
@@ -393,6 +405,11 @@ export default function ChatRoomPage() {
         clearInterval(roomsInterval)
         clearInterval(voiceUsersInterval)
         clearInterval(typingInterval)
+        window.removeEventListener('beforeunload', handleBeforeUnload)
+        // Also clean up presence on component unmount
+        if (room?.id) {
+          fetch(`/api/chat/rooms/${room.id}/presence`, { method: 'DELETE' }).catch(() => {})
+        }
       }
     }
   }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers])
@@ -1064,7 +1081,7 @@ export default function ChatRoomPage() {
         setLeaderboard(data.leaderboard || [])
         // Process recent gifts for animation
         const recent = data.recentGifts || []
-        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number}> = []
+        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
         for (const g of recent) {
           if (!seenGiftIdsRef.current.has(g.id)) {
             seenGiftIdsRef.current.add(g.id)
@@ -1076,16 +1093,26 @@ export default function ChatRoomPage() {
               recipientId: g.recipientId,
               recipientName: g.recipientName,
               amount: g.amount,
+              phase: 'enter',
             })
           }
         }
         if (newAnims.length > 0) {
           setGiftAnimations(prev => [...prev, ...newAnims])
-          // Auto-remove each animation after 4s
+          // Phase transitions: enter(0) → hit(1s) → burst(2.5s) → exit(4s) → remove(5.5s)
           newAnims.forEach(a => {
             setTimeout(() => {
-              setGiftAnimations(prev => prev.filter(p => p.id !== a.id))
+              setGiftAnimations(prev => prev.map(p => p.id === a.id ? { ...p, phase: 'hit' } : p))
+            }, 1000)
+            setTimeout(() => {
+              setGiftAnimations(prev => prev.map(p => p.id === a.id ? { ...p, phase: 'burst' } : p))
+            }, 2500)
+            setTimeout(() => {
+              setGiftAnimations(prev => prev.map(p => p.id === a.id ? { ...p, phase: 'exit' } : p))
             }, 4000)
+            setTimeout(() => {
+              setGiftAnimations(prev => prev.filter(p => p.id !== a.id))
+            }, 5500)
           })
         }
         if (recent.length > 0) {
@@ -1961,75 +1988,162 @@ export default function ChatRoomPage() {
         </div>
       </div>
 
-      {/* Gift Animation Overlay - Flying PNG to recipient */}
+      {/* Gift Animation Overlay - Profile appears center, gift hits, star burst, exit */}
       <AnimatePresence>
-        {giftAnimations.map((anim) => {
-          // Find the recipient element in the sidebar
-          const recipientEl = typeof document !== 'undefined' ? document.querySelector(`[data-user-id="${anim.recipientId}"]`) : null
-          const recipientRect = recipientEl?.getBoundingClientRect()
-          // Target position: recipient's nick in the sidebar, or center-right as fallback
-          const targetX = recipientRect ? recipientRect.left + recipientRect.width / 2 : (typeof window !== 'undefined' ? window.innerWidth - 120 : 500)
-          const targetY = recipientRect ? recipientRect.top + recipientRect.height / 2 : (typeof window !== 'undefined' ? window.innerHeight / 2 : 300)
-          // Start from bottom center
-          const startX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500
-          const startY = typeof window !== 'undefined' ? window.innerHeight - 80 : 600
+        {giftAnimations.map((anim) => (
+          <motion.div
+            key={anim.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+          >
+            {/* Dark overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: anim.phase === 'exit' ? 0 : 0.5 }}
+              transition={{ duration: 0.4 }}
+              className="absolute inset-0 bg-black"
+            />
 
-          return (
-            <div key={anim.id} className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
-              {/* Flying gift image */}
+            {/* Recipient profile card - slides in from right, exits right */}
+            <motion.div
+              initial={{ x: 300, opacity: 0, scale: 0.7 }}
+              animate={
+                anim.phase === 'exit'
+                  ? { x: 300, opacity: 0, scale: 0.7 }
+                  : { x: 0, opacity: 1, scale: 1 }
+              }
+              transition={{ 
+                duration: anim.phase === 'exit' ? 0.6 : 0.5, 
+                ease: anim.phase === 'exit' ? 'easeIn' : [0.34, 1.56, 0.64, 1]
+              }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="flex flex-col items-center">
+                {/* Glow ring behind avatar */}
+                <motion.div
+                  animate={
+                    anim.phase === 'burst' || anim.phase === 'hit'
+                      ? { scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }
+                      : { scale: 1, opacity: 0.3 }
+                  }
+                  transition={{ duration: 1, repeat: anim.phase === 'burst' ? 2 : 0 }}
+                  className="absolute w-36 h-36 rounded-full bg-gradient-to-r from-yellow-400/40 via-purple-500/40 to-pink-500/40 blur-xl"
+                />
+                {/* Avatar circle */}
+                <motion.div
+                  animate={
+                    anim.phase === 'hit'
+                      ? { scale: [1, 1.15, 0.95, 1.05, 1] }
+                      : { scale: 1 }
+                  }
+                  transition={{ duration: 0.5 }}
+                  className="relative w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-4 border-yellow-400 shadow-[0_0_30px_rgba(168,85,247,0.6)]"
+                >
+                  <span className="text-3xl font-bold text-white">
+                    {anim.recipientName.charAt(0).toUpperCase()}
+                  </span>
+                </motion.div>
+                {/* Recipient name */}
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-3 text-white font-bold text-lg drop-shadow-lg"
+                >
+                  {anim.recipientName}
+                </motion.p>
+                {/* Sender info */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-yellow-300 text-sm mt-1"
+                >
+                  {anim.senderName} → 🎁
+                </motion.p>
+              </div>
+            </motion.div>
+
+            {/* Flying gift - appears after profile card, flies to center */}
+            {(anim.phase === 'hit' || anim.phase === 'burst') && (
               <motion.div
-                initial={{ x: startX - 40, y: startY, scale: 1.2, opacity: 1 }}
-                animate={{ x: targetX - 40, y: targetY - 40, scale: 0.5, opacity: 1 }}
-                transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="absolute"
+                initial={{ y: 200, x: '-50%', scale: 1.5, opacity: 0 }}
+                animate={{ y: -20, x: '-50%', scale: 1, opacity: 1 }}
+                transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+                className="absolute left-1/2 top-1/2"
+                style={{ marginTop: '-70px' }}
               >
                 {anim.giftImage ? (
-                  <img src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]" />
+                  <img src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
                 ) : (
                   <span className="text-6xl">{anim.giftIcon}</span>
                 )}
               </motion.div>
+            )}
 
-              {/* Star burst particles at target after delay */}
-              {[0,1,2,3,4,5,6,7,8,9,10,11].map((i) => {
-                const angle = (i / 12) * Math.PI * 2
-                const distance = 60 + (i * 7) % 40
-                const fsize = 10 + (i * 3) % 10
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ x: targetX, y: targetY, scale: 0, opacity: 0 }}
-                    animate={{ 
-                      x: targetX + Math.cos(angle) * distance, 
-                      y: targetY + Math.sin(angle) * distance, 
-                      scale: [0, 1.5, 0], 
-                      opacity: [0, 1, 0] 
-                    }}
-                    transition={{ duration: 1.2, delay: 1.5, ease: 'easeOut' }}
-                    className="absolute text-yellow-300"
-                    style={{ fontSize: `${fsize}px` }}
-                  >
-                    ✦
-                  </motion.div>
-                )
-              })}
+            {/* Star burst particles on hit */}
+            {(anim.phase === 'burst') && (
+              <>
+                {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map((i) => {
+                  const angle = (i / 16) * Math.PI * 2
+                  const dist = 80 + (i * 11) % 60
+                  const sz = 12 + (i * 5) % 14
+                  const colors = ['text-yellow-300', 'text-yellow-400', 'text-amber-300', 'text-orange-400', 'text-pink-400', 'text-purple-300']
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ 
+                        left: '50%', 
+                        top: '50%', 
+                        x: -sz/2, 
+                        y: -sz/2, 
+                        scale: 0, 
+                        opacity: 0 
+                      }}
+                      animate={{ 
+                        x: Math.cos(angle) * dist - sz/2, 
+                        y: Math.sin(angle) * dist - sz/2 - 20, 
+                        scale: [0, 2, 0], 
+                        opacity: [0, 1, 0],
+                        rotate: [0, 180 + i * 30]
+                      }}
+                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                      className={`absolute ${colors[i % colors.length]}`}
+                      style={{ fontSize: `${sz}px` }}
+                    >
+                      {i % 3 === 0 ? '✦' : i % 3 === 1 ? '⭐' : '✨'}
+                    </motion.div>
+                  )
+                })}
+                {/* Shockwave ring */}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0.8 }}
+                  animate={{ scale: 3, opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-yellow-400"
+                  style={{ marginTop: '-10px' }}
+                />
+              </>
+            )}
 
-              {/* Sender → Recipient label at bottom */}
+            {/* Gift amount badge */}
+            {(anim.phase === 'hit' || anim.phase === 'burst') && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.3 }}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2"
+                style={{ marginTop: '50px' }}
               >
-                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-3 text-center border border-yellow-500/30">
-                  <p className="text-yellow-300 font-bold text-sm">{anim.senderName}</p>
-                  <p className="text-purple-300 text-xs">🎁 → {anim.recipientName}</p>
+                <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold px-4 py-1.5 rounded-full text-sm shadow-lg shadow-yellow-500/50">
+                  x{anim.amount}
                 </div>
               </motion.div>
-            </div>
-          )
-        })}
+            )}
+          </motion.div>
+        ))}
       </AnimatePresence>
 
       {/* Gift Modal */}

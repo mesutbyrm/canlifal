@@ -85,7 +85,7 @@ export async function GET(
   }
 }
 
-// POST to update user presence (heartbeat)
+// POST to update user presence (heartbeat) or remove presence (with ?_delete=1 via sendBeacon)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
@@ -102,6 +102,18 @@ export async function POST(
 
     const { roomId } = await params
     
+    // Handle sendBeacon delete (page unload)
+    const isDelete = request.nextUrl.searchParams.get('_delete') === '1'
+    if (isDelete) {
+      try {
+        await prisma.chatPresence.update({
+          where: { roomId_userId: { roomId, userId: session.user.id } },
+          data: { lastSeen: new Date(0) }
+        })
+      } catch { /* ignore */ }
+      return NextResponse.json({ success: true })
+    }
+
     // Parse body for nickname
     let nickname: string | undefined
     try {
@@ -224,5 +236,43 @@ export async function POST(
       { error: 'Failed to update presence' },
       { status: 500 }
     )
+  }
+}
+
+
+// DELETE to remove user presence (when leaving room)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { roomId } = await params
+
+    // Set lastSeen to past so user disappears from active list immediately
+    try {
+      await prisma.chatPresence.update({
+        where: {
+          roomId_userId: {
+            roomId,
+            userId: session.user.id
+          }
+        },
+        data: {
+          lastSeen: new Date(0) // epoch - effectively removes from active list
+        }
+      })
+    } catch {
+      // Presence record might not exist
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error removing presence:', error)
+    return NextResponse.json({ error: 'Failed to remove presence' }, { status: 500 })
   }
 }
