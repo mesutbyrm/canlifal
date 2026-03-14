@@ -41,6 +41,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
+        // Generate unique device token for single-device enforcement
+        const deviceToken = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { activeDeviceToken: deviceToken }
+        })
+
         return {
           id: user.id,
           email: user.email,
@@ -49,6 +56,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           credits: user.credits,
           preferredLanguage: user.preferredLanguage,
+          deviceToken,
         }
       },
     }),
@@ -61,6 +69,7 @@ export const authOptions: NextAuthOptions = {
         token.credits = user.credits ?? 10
         token.preferredLanguage = user.preferredLanguage || 'tr'
         token.image = user.image
+        token.deviceToken = (user as any).deviceToken
       }
       
       // Update token when session is updated
@@ -78,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         session.user.credits = (token?.credits as number) ?? 10
         session.user.preferredLanguage = (token?.preferredLanguage as string) || 'tr'
         session.user.image = (token?.image as string) || null
+        ;(session.user as any).deviceToken = token?.deviceToken
       }
       return session
     },

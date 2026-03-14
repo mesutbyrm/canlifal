@@ -49,6 +49,7 @@ model User {
   // Statistics
   totalTimeSpentMinutes Int                  @default(0)
   lastActiveAt          DateTime?
+  activeDeviceToken     String?
   accounts              Account[]
   bannedOthers          ChatBan[]            @relation("Banner")
   bannedIn              ChatBan[]            @relation("BannedUser")

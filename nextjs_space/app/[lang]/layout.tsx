@@ -6,6 +6,8 @@ import PresenceTracker from '@/components/presence-tracker'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import PushNotificationProvider from '@/components/push-notification-provider'
 import NotificationPermissionPrompt from '@/components/notification-permission-prompt'
+import { ProfilePopupProvider } from '@/components/user-profile-popup'
+import DeviceGuard from '@/components/device-guard'
 
 export default function LangLayout({
   children,
@@ -14,6 +16,7 @@ export default function LangLayout({
 }) {
   return (
     <PushNotificationProvider>
+      <ProfilePopupProvider>
       <div className="min-h-screen relative">
         {/* Twinkling star background */}
         <StarBackground />
@@ -37,7 +40,11 @@ export default function LangLayout({
         
         {/* Push notification permission prompt */}
         <NotificationPermissionPrompt />
+        
+        {/* Single device session enforcement */}
+        <DeviceGuard />
       </div>
+    </ProfilePopupProvider>
     </PushNotificationProvider>
   )
 }

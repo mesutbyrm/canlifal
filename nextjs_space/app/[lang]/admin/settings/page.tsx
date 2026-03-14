@@ -242,17 +242,17 @@ export default function AdminSettingsPage() {
                   <p className="text-sm text-purple-400 mb-4">{item.description}</p>
                   
                   <div className="flex items-center gap-3">
-                    {'type' in item && item.type === 'select' && 'options' in item ? (
+                    {(item as any).type === 'select' && (item as any).options ? (
                       <select
                         value={settings[item.key as keyof PlatformSettings]}
                         onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
                         className="w-64 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
                       >
-                        {(item.options as Array<{ value: string; label: string }>).map((opt) => (
+                        {((item as any).options as Array<{ value: string; label: string }>).map((opt: any) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
-                    ) : 'type' in item && item.type === 'email' ? (
+                    ) : (item as any).type === 'email' ? (
                       <input
                         type="email"
                         placeholder={'placeholder' in item ? (item as any).placeholder : ''}
