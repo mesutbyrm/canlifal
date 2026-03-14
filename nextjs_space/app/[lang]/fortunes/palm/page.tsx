@@ -169,7 +169,7 @@ export default function PalmReadingPage() {
             {language === 'tr' ? 'Elinizin çizgileri kaderinizi açığa çıkarır' : 'The lines of your palm reveal your destiny'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />8 {language === 'tr' ? 'kredi' : 'credits'}
+            <Sparkles className="inline w-4 h-4 mr-1" />8 {language === 'tr' ? 'cFc' : 'credits'}
           </p>
         </motion.div>
 

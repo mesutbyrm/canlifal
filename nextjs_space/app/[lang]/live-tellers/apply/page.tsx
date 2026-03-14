@@ -217,7 +217,7 @@ export default function ApplyTellerPage() {
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              {language === 'tr' ? 'Seans Başına Kredi' : 'Credits per Session'}
+              {language === 'tr' ? 'Seans Başına Jeton' : 'Jetons per Session'}
             </label>
             <input
               type="number"
@@ -228,7 +228,7 @@ export default function ApplyTellerPage() {
               className="w-full px-4 py-3 bg-deep-purple-950 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600"
             />
             <p className="text-deep-purple-400 text-xs mt-1">
-              {language === 'tr' ? 'Minimum 50, maksimum 500 kredi' : 'Minimum 50, maximum 500 credits'}
+              {language === 'tr' ? 'Minimum 50, maksimum 500 jeton' : 'Minimum 50, maximum 500 jetons'}
             </p>
           </div>
 

@@ -468,7 +468,7 @@ export default function KursunDokmePage() {
           </p>
           <div className="mt-3 flex items-center justify-center gap-2 text-gold-400">
             <Sparkles className="w-5 h-5" />
-            <span>6 {language === 'tr' ? 'kredi' : 'credits'}</span>
+            <span>6 {language === 'tr' ? 'cFc' : 'credits'}</span>
           </div>
         </motion.div>
 

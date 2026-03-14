@@ -111,7 +111,7 @@ export default function AdminSettingsPage() {
     {
       key: 'min_withdrawal',
       label: language === 'tr' ? 'Minimum Çekim Miktarı' : 'Minimum Withdrawal',
-      description: language === 'tr' ? 'Falcıların çekim yapabileceği minimum kredi' : 'Minimum credits for teller withdrawal',
+      description: language === 'tr' ? 'Falcıların çekim yapabileceği minimum cFc' : 'Minimum cFc for teller withdrawal',
       icon: CreditCard,
       min: 0,
       max: 10000
@@ -119,15 +119,15 @@ export default function AdminSettingsPage() {
     {
       key: 'referral_bonus',
       label: language === 'tr' ? 'Referans Bonusu' : 'Referral Bonus',
-      description: language === 'tr' ? 'Davet eden ve edilen kişiye verilecek kredi' : 'Credits given to referrer and referred user',
+      description: language === 'tr' ? 'Davet eden ve edilen kişiye verilecek cFc' : 'cFc given to referrer and referred user',
       icon: Gift,
       min: 0,
       max: 1000
     },
     {
       key: 'welcome_credits',
-      label: language === 'tr' ? 'Hoşgeldin Kredisi' : 'Welcome Credits',
-      description: language === 'tr' ? 'Yeni üyelere verilecek başlangıç kredisi' : 'Starting credits for new users',
+      label: language === 'tr' ? 'Hoşgeldin cFc' : 'Welcome cFc',
+      description: language === 'tr' ? 'Yeni üyelere verilecek başlangıç cFc' : 'Starting cFc for new users',
       icon: CreditCard,
       min: 0,
       max: 1000
@@ -142,8 +142,8 @@ export default function AdminSettingsPage() {
     },
     {
       key: 'credits_per_minute',
-      label: language === 'tr' ? 'Dakika Başı Kredi' : 'Credits Per Minute',
-      description: language === 'tr' ? 'Süre uzatma için dakika başına alınacak kredi' : 'Credits charged per minute for session extension',
+      label: language === 'tr' ? 'Dakika Başı Jeton' : 'Jetons Per Minute',
+      description: language === 'tr' ? 'Süre uzatma için dakika başına alınacak jeton' : 'Jetons charged per minute for session extension',
       icon: Coins,
       min: 1,
       max: 100
@@ -180,7 +180,7 @@ export default function AdminSettingsPage() {
             {language === 'tr' ? 'Platform Ayarları' : 'Platform Settings'}
           </h1>
           <p className="text-purple-300 mt-2">
-            {language === 'tr' ? 'Komisyon, bonus ve kredi ayarlarını yönetin' : 'Manage commission, bonus and credit settings'}
+            {language === 'tr' ? 'Komisyon, bonus ve cFc ayarlarını yönetin' : 'Manage commission, bonus and cFc settings'}
           </p>
         </motion.div>
 

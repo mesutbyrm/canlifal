@@ -250,10 +250,10 @@ export default function CreditPackagesPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
               <Package className="w-8 h-8 text-gold-400" />
-              {language === 'tr' ? 'Kredi Paketleri' : 'Credit Packages'}
+              {language === 'tr' ? 'cFc Paketleri' : 'cFc Packages'}
             </h1>
             <p className="text-purple-300 mt-2">
-              {language === 'tr' ? 'Satışa sunulan kredi paketlerini yönetin' : 'Manage credit packages for sale'}
+              {language === 'tr' ? 'Satışa sunulan cFc paketlerini yönetin' : 'Manage cFc packages for sale'}
             </p>
           </div>
           <button
@@ -315,7 +315,7 @@ export default function CreditPackagesPage() {
                       <span className="text-lg text-green-400"> +{pkg.bonusCredits}</span>
                     )}
                   </div>
-                  <p className="text-purple-300 text-sm">{language === 'tr' ? 'kredi' : 'credits'}</p>
+                  <p className="text-purple-300 text-sm">{language === 'tr' ? 'cFc' : 'cFc'}</p>
                 </div>
 
                 <div className="text-center mb-4">
@@ -430,7 +430,7 @@ export default function CreditPackagesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'Kredi Miktarı' : 'Credits'}
+                      {language === 'tr' ? 'cFc Miktarı' : 'cFc'}
                     </label>
                     <input
                       type="number"
@@ -441,7 +441,7 @@ export default function CreditPackagesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'Bonus Kredi' : 'Bonus Credits'}
+                      {language === 'tr' ? 'Bonus cFc' : 'Bonus cFc'}
                     </label>
                     <input
                       type="number"

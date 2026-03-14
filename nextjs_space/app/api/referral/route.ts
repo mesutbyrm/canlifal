@@ -48,9 +48,9 @@ export async function GET() {
     const referralCount = user.referrals.length;
     const milestones = [
       { count: 1, reward: 'free_reading', rewardText: { tr: 'Ücretsiz Fal', en: 'Free Reading' }, achieved: referralCount >= 1 },
-      { count: 5, reward: 'credits_200', rewardText: { tr: '200 Kredi', en: '200 Credits' }, achieved: referralCount >= 5 },
+      { count: 5, reward: 'credits_200', rewardText: { tr: '200 cFc', en: '200 cFc' }, achieved: referralCount >= 5 },
       { count: 20, reward: 'vip_fortune', rewardText: { tr: 'VIP Fal', en: 'VIP Fortune' }, achieved: referralCount >= 20 },
-      { count: 50, reward: 'credits_1000', rewardText: { tr: '1000 Kredi', en: '1000 Credits' }, achieved: referralCount >= 50 },
+      { count: 50, reward: 'credits_1000', rewardText: { tr: '1000 cFc', en: '1000 cFc' }, achieved: referralCount >= 50 },
     ];
 
     return NextResponse.json({

@@ -13,6 +13,7 @@ import {
   Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail, Send, AlertCircle
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import CfcCoin from './cfc-coin'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import TellerIncomingRequest from './teller-incoming-request'
@@ -372,30 +373,30 @@ export default function Navbar() {
                         </div>
                       </div>
                       
-                      {/* Credits display */}
-                      <Link
-                        href={`/${language}/credits`}
-                        className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Coins className="w-5 h-5 text-gold-400" />
-                          {language === 'tr' ? 'Kredilerim' : 'My Credits'}
-                        </div>
-                        <span className="font-bold text-gold-400">{credits}</span>
-                      </Link>
-                      {/* Jeton display */}
-                      <Link
-                        href={`/${language}/credits`}
-                        className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-5 h-5 text-center text-lg leading-5">🪙</span>
-                          {language === 'tr' ? 'Jetonlarım' : 'My Jetons'}
-                        </div>
-                        <span className="font-bold text-amber-400">{jetonBalance}</span>
-                      </Link>
+                       {/* cFc display */}
+                       <Link
+                         href={`/${language}/credits`}
+                         className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                         onClick={() => setShowProfileMenu(false)}
+                       >
+                         <div className="flex items-center gap-3">
+                           <CfcCoin size={20} />
+                           {language === 'tr' ? "cFc'lerim" : 'My cFc'}
+                         </div>
+                         <span className="font-bold text-gold-400">{credits} cFc</span>
+                       </Link>
+                       {/* Jeton display */}
+                       <Link
+                         href={`/${language}/credits`}
+                         className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                         onClick={() => setShowProfileMenu(false)}
+                       >
+                         <div className="flex items-center gap-3">
+                           <span className="w-5 h-5 text-center text-lg leading-5">🪙</span>
+                           {language === 'tr' ? 'Jetonlarım' : 'My Jetons'}
+                         </div>
+                         <span className="font-bold text-amber-400">{jetonBalance}</span>
+                       </Link>
                       
                       {/* Payment Notification / Admin Payment Orders */}
                       {session?.user?.role === 'admin' ? (

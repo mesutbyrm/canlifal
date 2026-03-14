@@ -55,7 +55,7 @@ export async function POST(
 
     return NextResponse.json({ 
       teller: updatedTeller,
-      message: `${amount} kredi bonus olarak eklendi. Sebep: ${reason || 'Belirtilmedi'}`,
+      message: `${amount} cFc bonus olarak eklendi. Sebep: ${reason || 'Belirtilmedi'}`,
     });
   } catch (error) {
     console.error('Error giving bonus:', error);

@@ -182,7 +182,7 @@ export default function WatchAdCredits() {
                     </span>
                     <span className="text-gold-400 font-semibold flex items-center gap-1">
                       <Sparkles className="w-4 h-4" />
-                      +{adStatus.creditsPerAd} {language === 'tr' ? 'kredi' : 'credits'}
+                      +{adStatus.creditsPerAd} {language === 'tr' ? 'cFc' : 'cFc'}
                     </span>
                   </div>
                 </div>
@@ -228,10 +228,10 @@ export default function WatchAdCredits() {
                   <p className="text-green-200 flex items-center justify-center gap-2">
                     <Sparkles className="w-5 h-5 text-gold-400" />
                     <span className="text-gold-400 font-bold text-xl">+{result.creditsEarned}</span>
-                    <span>{language === 'tr' ? 'kredi kazandınız!' : 'credits earned!'}</span>
+                    <span>{language === 'tr' ? 'cFc kazandınız!' : 'cFc earned!'}</span>
                   </p>
                   <p className="text-deep-purple-400 text-sm mt-2">
-                    {language === 'tr' ? 'Toplam krediniz:' : 'Total credits:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
+                    {language === 'tr' ? 'Toplam cFc:' : 'Total cFc:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
                   </p>
                 </motion.div>
               )}

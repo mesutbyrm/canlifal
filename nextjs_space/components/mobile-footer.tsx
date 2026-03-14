@@ -83,7 +83,7 @@ export default function MobileFooter() {
     {
       href: `/${language}/credits`,
       icon: Gift,
-      label: language === 'tr' ? 'Kredi' : 'Credits',
+      label: language === 'tr' ? 'cFc' : 'cFc',
       isCenter: false,
     },
     {

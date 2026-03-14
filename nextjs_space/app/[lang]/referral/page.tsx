@@ -65,7 +65,7 @@ export default function ReferralPage() {
         await navigator.share({
           title: language === 'tr' ? 'FALCI - Davet' : 'FALCI - Invitation',
           text: language === 'tr' 
-            ? 'Falcı\'ya katıl ve 50 ücretsiz kredi kazan!' 
+            ? 'Falcı\'ya katıl ve 50 ücretsiz cFc kazan!' 
             : 'Join Falcı and get 50 free credits!',
           url: data.referralLink
         })
@@ -119,7 +119,7 @@ export default function ReferralPage() {
           </h1>
           <p className="text-deep-purple-200">
             {language === 'tr' 
-              ? 'Arkadaşlarını davet et, her ikimiz de 50 kredi kazanalım!' 
+              ? 'Arkadaşlarını davet et, her ikimiz de 50 cFc kazanalım!' 
               : 'Invite friends, both of us get 50 credits!'}
           </p>
         </motion.div>
@@ -143,7 +143,7 @@ export default function ReferralPage() {
           >
             <Sparkles className="w-8 h-8 text-gold-400 mx-auto mb-2" />
             <p className="text-3xl font-bold text-gold-400">{data?.totalCreditsEarned || 0}</p>
-            <p className="text-deep-purple-300 text-sm">{language === 'tr' ? 'Kazanılan Kredi' : 'Credits Earned'}</p>
+            <p className="text-deep-purple-300 text-sm">{language === 'tr' ? 'Kazanılan cFc' : 'cFc Earned'}</p>
           </motion.div>
         </div>
 

@@ -61,7 +61,7 @@ export function getWelcomeEmailHtml(name: string, language: string): string {
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
           ${isTr 
-            ? 'Falcı platformuna hoş geldiniz! Geleceğinizi keşfetmeye hazır mısınız? Size <strong style="color: #ffd700;">10 ücretsiz kredi</strong> hediye ettik.' 
+            ? 'Falcı platformuna hoş geldiniz! Geleceğinizi keşfetmeye hazır mısınız? Size <strong style="color: #ffd700;">10 ücretsiz cFc</strong> hediye ettik.' 
             : 'Welcome to Falcı platform! Ready to discover your future? We have gifted you <strong style="color: #ffd700;">10 free credits</strong>.'}
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
@@ -125,7 +125,7 @@ export function getLowCreditsEmailHtml(name: string, credits: number, language: 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); padding: 40px; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #ff9500; font-size: 28px; margin: 0;">⚠️ ${isTr ? 'Düşük Kredi Uyarısı' : 'Low Credits Warning'}</h1>
+        <h1 style="color: #ff9500; font-size: 28px; margin: 0;">⚠️ ${isTr ? 'Düşük cFc Uyarısı' : 'Low cFc Warning'}</h1>
       </div>
       <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,149,0,0.3);">
         <p style="color: #e8e0f0; font-size: 18px; margin: 0 0 20px;">
@@ -133,13 +133,13 @@ export function getLowCreditsEmailHtml(name: string, credits: number, language: 
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
           ${isTr 
-            ? `Kalan krediniz: <strong style="color: #ff9500;">${credits}</strong>. Fal bakmaya devam etmek için kredi satın almayı düşünün.`
+            ? `Kalan cFc: <strong style="color: #ff9500;">${credits}</strong>. Fal bakmaya devam etmek için cFc satın almayı düşünün.`
             : `Your remaining credits: <strong style="color: #ff9500;">${credits}</strong>. Consider purchasing more credits to continue your fortune readings.`}
         </p>
       </div>
       <div style="text-align: center; margin-top: 30px;">
         <a href="${process.env.NEXTAUTH_URL}/${language}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
-          ${isTr ? 'Kredi Al' : 'Get Credits'}
+          ${isTr ? 'cFc Al' : 'Get cFc'}
         </a>
       </div>
     </div>

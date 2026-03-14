@@ -101,7 +101,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
   { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
   { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
-  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'Kredi Paketleri', enLabel: 'Credit Packages' },
+  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'cFc Paketleri', enLabel: 'cFc Packages' },
   { href: `/${lang}/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
   { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
   { href: `/${lang}/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
@@ -233,8 +233,8 @@ export default function AdminPage() {
       })
       if (response?.ok) {
         await fetchData(); setSelectedUser(null)
-        alert(language === 'tr' ? 'Kredi eklendi!' : 'Credits added!')
-      } else { alert(language === 'tr' ? 'Kredi eklenemedi!' : 'Failed to add credits!') }
+        alert(language === 'tr' ? 'cFc eklendi!' : 'cFc added!')
+      } else { alert(language === 'tr' ? 'cFc eklenemedi!' : 'Failed to add cFc!') }
     } catch (error) {
       console.error('Failed to add credits:', error)
       alert(language === 'tr' ? 'Hata oluştu!' : 'Error occurred!')
@@ -305,7 +305,7 @@ export default function AdminPage() {
         </div>
         <StatCard icon={Users} label={t('admin.total_users')} value={statistics?.totalUsers ?? 0} color={accentColor} />
         <StatCard icon={Sparkles} label={t('admin.total_fortunes')} value={statistics?.totalFortunes ?? 0} color={goldColor} />
-        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki Kredi' : 'Credits'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki cFc' : 'cFc'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
       </div>
 
       {/* Quick Actions Grid */}
@@ -411,7 +411,7 @@ export default function AdminPage() {
                 <td className="py-3 px-4 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={() => setSelectedUser(user)}
-                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'Kredi Ekle' : 'Add Credits'}>
+                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'cFc Ekle' : 'Add cFc'}>
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
@@ -625,7 +625,7 @@ export default function AdminPage() {
         <AdSlot slotKey="ads_sidebar" title={language === 'tr' ? 'Kenar Çubuğu' : 'Sidebar'} desc={language === 'tr' ? 'Sayfa kenarında' : 'Page sidebar'} />
         <AdSlot slotKey="ads_inline" title={language === 'tr' ? 'İçerik Arası' : 'Inline Content'} desc={language === 'tr' ? 'İçerik arasında' : 'Between content'} />
         <AdSlot slotKey="ads_footer" title={language === 'tr' ? 'Alt Banner' : 'Footer Banner'} desc={language === 'tr' ? 'Sayfa altında' : 'Bottom of pages'} />
-        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 kredi kazanma, günlük 10 limit' : 'Earn 5 credits, 10/day limit'} />
+        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 cFc kazanma, günlük 10 limit' : 'Earn 5 cFc, 10/day limit'} />
       </div>
     </div>
   )
@@ -766,7 +766,7 @@ export default function AdminPage() {
       <div>
         <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi' : 'Economy'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki Kredi' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki cFc' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
           <MiniStatCard label={language === 'tr' ? 'Harcanan' : 'Spent'} value={statistics?.economy?.creditsSpent ?? 0} color="text-red-500" />
           <MiniStatCard label={language === 'tr' ? 'Takip' : 'Follows'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
         </div>
@@ -899,11 +899,11 @@ export default function AdminPage() {
                 <p className={`${textPrimary} font-medium`}>{selectedUser?.name}</p>
               </div>
               <div>
-                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut Kredi' : 'Current Credits'}</p>
+                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut cFc' : 'Current cFc'}</p>
                 <p className={`${goldColor} font-bold text-xl`}>{selectedUser?.credits}</p>
               </div>
               <div>
-                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek Kredi' : 'Credits to Add'}</label>
+                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek cFc' : 'cFc to Add'}</label>
                 <input type="number" value={creditAmount}
                   onChange={(e) => setCreditAmount(parseInt(e?.target?.value ?? '0'))}
                   min="1" className={`w-full px-4 py-3 rounded-xl border ${inputBg} focus:outline-none`} />

@@ -660,7 +660,7 @@ export default function AdminLiveTellersPage() {
                       <p><span className="text-gray-400">{language === 'tr' ? 'Puan:' : 'Rating:'}</span> <span className="text-yellow-400">{selectedTeller.rating.toFixed(1)} ⭐</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Seans:' : 'Total Sessions:'}</span> <span className="text-white">{selectedTeller.totalSessions}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Kazanç:' : 'Total Earnings:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} jeton</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Bonus Kredi:' : 'Bonus Credits:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Bonus cFc:' : 'Bonus cFc:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Durum:' : 'Status:'}</span> <span className="text-white">{selectedTeller.applicationStatus}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Onaylı:' : 'Verified:'}</span> <span className={selectedTeller.isVerified ? 'text-green-400' : 'text-gray-400'}>{selectedTeller.isVerified ? '✓' : '✗'}</span></p>
                     </div>
@@ -919,7 +919,7 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
                       <Gift className="w-5 h-5" />
-                      {language === 'tr' ? 'Bonus Kredi Ver' : 'Give Bonus Credits'}
+                      {language === 'tr' ? 'Bonus cFc Ver' : 'Give Bonus cFc'}
                     </h3>
                     <p className="text-gray-300 mb-4">
                       <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({language === 'tr' ? 'mevcut bonus' : 'current bonus'}: {selectedTeller.bonusCredits})

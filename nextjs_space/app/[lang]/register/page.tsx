@@ -120,7 +120,7 @@ export default function RegisterPage() {
                     {language === 'tr' ? `${referrerName} seni davet etti!` : `${referrerName} invited you!`}
                   </p>
                   <p className="text-gold-300/80 text-xs">
-                    {language === 'tr' ? 'Kayıt olunca 50 bonus kredi kazanacaksın!' : 'You\'ll get 50 bonus credits when you sign up!'}
+                    {language === 'tr' ? 'Kayıt olunca 50 bonus cFc kazanacaksın!' : 'You\'ll get 50 bonus cFc when you sign up!'}
                   </p>
                 </div>
               </div>

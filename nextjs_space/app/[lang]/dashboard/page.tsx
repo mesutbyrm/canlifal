@@ -381,7 +381,7 @@ export default function DashboardPage() {
                 <Coins className="h-4 w-4" />
                 <span className="font-bold">{statistics.coins.currentBalance}</span>
               </div>
-              <p className="text-white/40 text-xs">{language === 'tr' ? 'Kredi' : 'Credits'}</p>
+              <p className="text-white/40 text-xs">{language === 'tr' ? 'cFc' : 'cFc'}</p>
             </div>
           </div>
 
