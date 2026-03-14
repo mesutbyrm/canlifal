@@ -70,24 +70,26 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Gift type not found' }, { status: 404 })
       }
 
-      if (sender.credits < giftType.price) {
-        return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 })
+      const senderJetons = sender.jetonBalance ?? 0
+      if (senderJetons < giftType.price) {
+        return NextResponse.json({ error: 'Yetersiz jeton / Insufficient jetons' }, { status: 400 })
       }
 
-      // Deduct credits from sender
+      // Deduct jetons from sender
       await prisma.user.update({
         where: { id: sender.id },
-        data: { credits: { decrement: giftType.price } }
+        data: { jetonBalance: { decrement: giftType.price } }
       })
 
-      // Record transaction for sender
-      await prisma.creditTransaction.create({
+      // Record jeton transaction for sender
+      await prisma.jetonTransaction.create({
         data: {
           userId: sender.id,
           amount: -giftType.price,
           type: 'gift_sent',
           description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi`,
-          balance: sender.credits - giftType.price
+          balanceBefore: senderJetons,
+          balanceAfter: senderJetons - giftType.price
         }
       })
 
