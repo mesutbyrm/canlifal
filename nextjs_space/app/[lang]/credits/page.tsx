@@ -225,7 +225,7 @@ export default function CreditsPage() {
               </div>
               <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
                 <span className="text-sm">🪙</span>
-                <span className={textSecondary}>cFc:</span>
+                <span className={textSecondary}>CFC:</span>
                 <span className={`${goldColor} font-bold`}>{userCredits}</span>
               </div>
             </div>

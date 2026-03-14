@@ -52,13 +52,13 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
             {/* Content */}
             <div className="px-6 py-5 space-y-5">
               
-              {/* cFc Section */}
+              {/* CFC Section */}
               <div className="bg-gradient-to-r from-amber-900/20 to-yellow-900/20 border border-amber-500/30 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <CfcCoin size={36} />
                   <div>
                     <h4 className="text-gold-400 font-bold text-base">
-                      cFc <span className="text-gold-400/70 text-sm font-normal">(Canlı Fal Coini)</span>
+                      CFC <span className="text-gold-400/70 text-sm font-normal">(Canlı Fal Coini)</span>
                     </h4>
                   </div>
                 </div>

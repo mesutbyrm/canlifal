@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Mail, Lock, User as UserIcon, Sparkles, Globe, Gift } from 'lucide-react'
+import { Mail, Lock, User as UserIcon, Sparkles, Globe, Gift, Calendar, Clock, AtSign } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 
 export default function RegisterPage() {
@@ -16,6 +16,9 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [birthTime, setBirthTime] = useState('')
   const [preferredLanguage, setPreferredLanguage] = useState('tr')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -48,7 +51,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, preferredLanguage, referralCode }),
+        body: JSON.stringify({ name, email, password, username, birthDate, birthTime, preferredLanguage, referralCode }),
       })
 
       const data = await response.json()
@@ -56,6 +59,8 @@ export default function RegisterPage() {
       if (!response.ok) {
         if (data.error?.includes('already exists')) {
           setError(language === 'tr' ? 'Bu e-posta adresi zaten kayıtlı' : 'This email is already registered')
+        } else if (data.error?.includes('Username already taken')) {
+          setError(language === 'tr' ? 'Bu kullanıcı adı zaten kullanılıyor' : 'This username is already taken')
         } else {
           setError(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
         }
@@ -120,7 +125,7 @@ export default function RegisterPage() {
                     {language === 'tr' ? `${referrerName} seni davet etti!` : `${referrerName} invited you!`}
                   </p>
                   <p className="text-gold-300/80 text-xs">
-                    {language === 'tr' ? 'Kayıt olunca 50 bonus cFc kazanacaksın!' : 'You\'ll get 50 bonus cFc when you sign up!'}
+                    {language === 'tr' ? 'Kayıt olunca 50 bonus CFC kazanacaksın!' : 'You\'ll get 50 bonus CFC when you sign up!'}
                   </p>
                 </div>
               </div>
@@ -154,7 +159,64 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'E-posta' : 'Email'}
+                {language === 'tr' ? 'Kullanıcı Adı' : 'Username'} <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e?.target?.value?.toLowerCase().replace(/[^a-z0-9_]/g, '') ?? '')}
+                  className="w-full pl-11 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors"
+                  placeholder={language === 'tr' ? 'kullanici_adi' : 'username'}
+                  required
+                  minLength={3}
+                  maxLength={30}
+                />
+              </div>
+              <p className="text-deep-purple-400 text-xs">
+                {language === 'tr' ? 'Sadece küçük harf, rakam ve alt çizgi' : 'Only lowercase letters, numbers and underscore'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-deep-purple-200 text-sm font-medium">
+                  {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'} <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e?.target?.value ?? '')}
+                    className="w-full pl-11 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600 transition-colors"
+                    required
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-deep-purple-200 text-sm font-medium">
+                  {language === 'tr' ? 'Doğum Saati' : 'Birth Time'} <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
+                  <input
+                    type="time"
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e?.target?.value ?? '')}
+                    className="w-full pl-11 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600 transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-deep-purple-200 text-sm font-medium">
+                {language === 'tr' ? 'E-posta' : 'Email'} <span className="text-red-400">*</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />

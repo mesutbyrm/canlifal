@@ -128,7 +128,7 @@ export default function WatchAdCredits() {
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-medium transition-all shadow-lg"
       >
         <Gift className="w-5 h-5" />
-        <span>{language === 'tr' ? 'Ücretsiz cFc Kazan' : 'Earn Free cFc'}</span>
+        <span>{language === 'tr' ? 'Ücretsiz CFC Kazan' : 'Earn Free CFC'}</span>
       </button>
 
       {/* Modal */}
@@ -145,7 +145,7 @@ export default function WatchAdCredits() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-serif text-xl text-gold-400 flex items-center gap-2">
                   <Gift className="w-6 h-6" />
-                  {language === 'tr' ? 'Reklam İzle, cFc Kazan' : 'Watch Ad, Earn cFc'}
+                  {language === 'tr' ? 'Reklam İzle, CFC Kazan' : 'Watch Ad, Earn CFC'}
                 </h2>
                 {!isWatching && (
                   <button
@@ -182,7 +182,7 @@ export default function WatchAdCredits() {
                     </span>
                     <span className="text-gold-400 font-semibold flex items-center gap-1">
                       <Sparkles className="w-4 h-4" />
-                      +{adStatus.creditsPerAd} {language === 'tr' ? 'cFc' : 'cFc'}
+                      +{adStatus.creditsPerAd} {language === 'tr' ? 'CFC' : 'CFC'}
                     </span>
                   </div>
                 </div>
@@ -228,10 +228,10 @@ export default function WatchAdCredits() {
                   <p className="text-green-200 flex items-center justify-center gap-2">
                     <Sparkles className="w-5 h-5 text-gold-400" />
                     <span className="text-gold-400 font-bold text-xl">+{result.creditsEarned}</span>
-                    <span>{language === 'tr' ? 'cFc kazandınız!' : 'cFc earned!'}</span>
+                    <span>{language === 'tr' ? 'CFC kazandınız!' : 'CFC earned!'}</span>
                   </p>
                   <p className="text-deep-purple-400 text-sm mt-2">
-                    {language === 'tr' ? 'Toplam cFc:' : 'Total cFc:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
+                    {language === 'tr' ? 'Toplam CFC:' : 'Total CFC:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
                   </p>
                 </motion.div>
               )}
@@ -252,7 +252,7 @@ export default function WatchAdCredits() {
                       className="w-full py-3 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg flex items-center justify-center gap-2 transition-all"
                     >
                       <Play className="w-5 h-5" />
-                      {language === 'tr' ? 'Reklam İzle (+5 cFc)' : 'Watch Ad (+5 cFc)'}
+                      {language === 'tr' ? 'Reklam İzle (+5 CFC)' : 'Watch Ad (+5 CFC)'}
                     </button>
                   ) : (
                     <div className="text-center py-4">

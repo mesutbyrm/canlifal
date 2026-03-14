@@ -58,7 +58,7 @@ export async function checkAndDeductCredits(
       sendNotificationEmail({
         notificationId: process.env.NOTIF_ID_LOW_CREDITS_WARNING || '',
         recipientEmail: user.email,
-        subject: lang === 'tr' ? '⚠️ Düşük cFc Uyarısı' : '⚠️ Low cFc Warning',
+        subject: lang === 'tr' ? '⚠️ Düşük CFC Uyarısı' : '⚠️ Low CFC Warning',
         htmlBody: getLowCreditsEmailHtml(user.name || 'User', updatedUser.credits, lang),
       }).catch(err => console.error('Low credits email error:', err))
     }

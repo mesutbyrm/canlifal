@@ -13,9 +13,9 @@ function generateReferralCode(): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, password, name, preferredLanguage, referralCode } = body
+    const { email, password, name, preferredLanguage, referralCode, username, birthDate, birthTime } = body
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !username || !birthDate || !birthTime) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -30,6 +30,18 @@ export async function POST(request: Request) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'User already exists' },
+        { status: 400 }
+      )
+    }
+
+    // Check if username is taken
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    })
+
+    if (existingUsername) {
+      return NextResponse.json(
+        { error: 'Username already taken' },
         { status: 400 }
       )
     }
@@ -64,6 +76,9 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         name,
+        username,
+        birthDate: new Date(birthDate),
+        birthTime,
         preferredLanguage: preferredLanguage || 'tr',
         credits: initialCredits,
         role: 'user',

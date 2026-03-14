@@ -46,6 +46,7 @@ export default function GiftsPage() {
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [showBlockPopup, setShowBlockPopup] = useState(false)
+  const [userJetonBalance, setUserJetonBalance] = useState(0)
   const [bigGiftPopup, setBigGiftPopup] = useState<{
     senderName: string
     recipientName: string
@@ -78,6 +79,7 @@ export default function GiftsPage() {
       return
     }
     fetchGiftTypes()
+    fetchBalance()
   }, [status])
 
   const fetchGiftTypes = async () => {
@@ -85,6 +87,16 @@ export default function GiftsPage() {
       const res = await fetch('/api/gifts/types')
       if (res.ok) setGiftTypes(await res.json())
     } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  const fetchBalance = async () => {
+    try {
+      const res = await fetch('/api/user/credits')
+      if (res.ok) {
+        const data = await res.json()
+        setUserJetonBalance(data.jetonBalance || 0)
+      }
+    } catch (e) { console.error(e) }
   }
 
   const searchUsers = useCallback(async (query: string) => {
@@ -104,7 +116,8 @@ export default function GiftsPage() {
   const handleSend = async () => {
     if (!selectedUser) { setErrorMsg(language === 'tr' ? 'L\u00fctfen bir kullan\u0131c\u0131 se\u00e7in' : 'Please select a user'); return }
     if (selectedTab === 'gift' && !selectedGift) { setErrorMsg(language === 'tr' ? 'L\u00fctfen bir hediye se\u00e7in' : 'Please select a gift'); return }
-    if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 1)) { setErrorMsg(language === 'tr' ? 'Ge\u00e7erli bir jeton miktar\u0131 girin' : 'Enter a valid jeton amount'); return }
+    if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5)) { setErrorMsg(language === 'tr' ? 'Minimum 5 jeton gönderebilirsiniz' : 'Minimum 5 jetons required'); return }
+    if (selectedTab === 'jeton' && parseInt(jetonAmount) > 100000) { setErrorMsg(language === 'tr' ? 'Maksimum 100.000 jeton gönderebilirsiniz' : 'Maximum 100,000 jetons allowed'); return }
 
     setSending(true)
     setErrorMsg('')
@@ -131,6 +144,7 @@ export default function GiftsPage() {
         setJetonAmount('')
         setSelectedUser(null)
         setSearchQuery('')
+        fetchBalance()
         // Show big gift celebration popup
         if (data.bigGift) {
           setBigGiftPopup(data.bigGift)
@@ -287,27 +301,58 @@ export default function GiftsPage() {
                   <span className={`text-[10px] ${textPrimary} font-medium`}>
                     {language === 'tr' ? gift.name : gift.nameEn}
                   </span>
-                  <span className={`text-[10px] ${accentColor} font-bold mt-0.5`}>{gift.price} ₺</span>
+                  <span className={`text-[10px] ${accentColor} font-bold mt-0.5`}>{gift.price} Jeton</span>
                 </button>
               ))}
             </div>
           ) : (
             <div>
-              <label className={`${textSecondary} text-sm mb-2 block`}>
-                {language === 'tr' ? 'G\u00f6nderilecek jeton miktar\u0131:' : 'Jeton amount to send:'}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`${textSecondary} text-sm`}>
+                  {language === 'tr' ? 'Gönderilecek jeton miktarı:' : 'Jeton amount to send:'}
+                </label>
+                <span className={`text-xs ${accentColor} font-medium`}>
+                  {language === 'tr' ? 'Bakiye:' : 'Balance:'} {userJetonBalance.toLocaleString()} Jeton
+                </span>
+              </div>
               <div className="flex gap-2">
                 <input
                   type="number"
-                  min="1"
+                  min="5"
+                  max="100000"
                   value={jetonAmount}
-                  onChange={(e) => setJetonAmount(e.target.value)}
-                  placeholder="0"
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 100000)) {
+                      setJetonAmount(val)
+                    }
+                  }}
+                  placeholder={language === 'tr' ? 'Min 5, Max 100.000' : 'Min 5, Max 100,000'}
                   className={`flex-1 px-4 py-3 rounded-xl border text-sm ${inputBg} focus:outline-none`}
                 />
               </div>
-              <div className="flex gap-2 mt-3">
-                {[5, 10, 25, 50, 100].map(amt => (
+              {jetonAmount && parseInt(jetonAmount) > 0 && (
+                <div className={`mt-2 text-sm ${parseInt(jetonAmount) > userJetonBalance ? 'text-red-400' : 'text-green-400'}`}>
+                  {parseInt(jetonAmount) > userJetonBalance ? (
+                    <div className="flex items-center justify-between">
+                      <span>⚠️ {language === 'tr' ? `Yetersiz bakiye! ${(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jeton eksik.` : `Insufficient balance! ${(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jetons short.`}</span>
+                      <button 
+                        onClick={() => router.push(`/${language}/credits`)}
+                        className={`ml-2 px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r ${btnGradient} text-white`}
+                      >
+                        {language === 'tr' ? 'Jeton Yükle' : 'Buy Jeton'}
+                      </button>
+                    </div>
+                  ) : (
+                    <span>✅ {language === 'tr' ? `${parseInt(jetonAmount).toLocaleString()} jeton gönderilecek` : `${parseInt(jetonAmount).toLocaleString()} jetons will be sent`}</span>
+                  )}
+                </div>
+              )}
+              {jetonAmount && parseInt(jetonAmount) > 0 && parseInt(jetonAmount) < 5 && (
+                <p className="text-red-400 text-xs mt-1">{language === 'tr' ? 'Minimum 5 jeton gönderebilirsiniz' : 'Minimum 5 jetons required'}</p>
+              )}
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {[5, 10, 25, 50, 100, 500, 1000].map(amt => (
                   <button key={amt} onClick={() => setJetonAmount(String(amt))}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                       jetonAmount === String(amt) ? tabActive : tabInactive
@@ -324,7 +369,7 @@ export default function GiftsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <button
             onClick={handleSend}
-            disabled={sending || !selectedUser || (selectedTab === 'gift' && !selectedGift) || (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 1))}
+            disabled={sending || !selectedUser || (selectedTab === 'gift' && !selectedGift) || (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5 || parseInt(jetonAmount) > 100000))}
             className={`w-full py-4 rounded-2xl font-bold text-white bg-gradient-to-r ${btnGradient} flex items-center justify-center gap-3 hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-lg`}
           >
             {sending ? (
@@ -506,7 +551,7 @@ export default function GiftsPage() {
                 </p>
                 {bigGiftPopup.giftType !== 'Jeton' && (
                   <p className={`text-sm ${isFacebook ? 'text-gray-500' : 'text-yellow-400/70'}`}>
-                    {bigGiftPopup.amount.toLocaleString()} ₺
+                    {bigGiftPopup.amount.toLocaleString()} Jeton
                   </p>
                 )}
               </motion.div>

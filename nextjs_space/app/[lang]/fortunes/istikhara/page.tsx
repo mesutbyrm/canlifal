@@ -81,7 +81,7 @@ export default function IstikharaPage() {
             {language === 'tr' ? 'Manevi rehberlik ve iç huzur arayışı' : 'Spiritual guidance and inner peace'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />4 {language === 'tr' ? 'cFc' : 'cFc'}
+            <Sparkles className="inline w-4 h-4 mr-1" />4 {language === 'tr' ? 'CFC' : 'CFC'}
           </p>
         </motion.div>
 

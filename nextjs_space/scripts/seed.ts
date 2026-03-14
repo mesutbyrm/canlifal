@@ -83,7 +83,7 @@ async function main() {
     { languageCode: 'tr', translationKey: 'nav.profile', translationValue: 'Profil' },
     { languageCode: 'tr', translationKey: 'nav.admin', translationValue: 'Admin Paneli' },
     { languageCode: 'tr', translationKey: 'nav.logout', translationValue: 'Çıkış Yap' },
-    { languageCode: 'tr', translationKey: 'nav.credits', translationValue: 'cFc' },
+    { languageCode: 'tr', translationKey: 'nav.credits', translationValue: 'CFC' },
 
     // Fortune Types - English
     { languageCode: 'en', translationKey: 'fortune.coffee.name', translationValue: 'Coffee Fortune' },
@@ -99,13 +99,13 @@ async function main() {
     // Fortune Types - Turkish
     { languageCode: 'tr', translationKey: 'fortune.coffee.name', translationValue: 'Kahve Falı' },
     { languageCode: 'tr', translationKey: 'fortune.coffee.description', translationValue: 'Kahve fincanınızda gizli mistik mesajları keşfedin' },
-    { languageCode: 'tr', translationKey: 'fortune.coffee.cost', translationValue: '5 cFc' },
+    { languageCode: 'tr', translationKey: 'fortune.coffee.cost', translationValue: '5 CFC' },
     { languageCode: 'tr', translationKey: 'fortune.tarot.name', translationValue: 'Tarot Falı' },
     { languageCode: 'tr', translationKey: 'fortune.tarot.description', translationValue: 'Antik tarot bilgeliği ile geleceğinizi keşfedin' },
-    { languageCode: 'tr', translationKey: 'fortune.tarot.cost', translationValue: '7 cFc' },
+    { languageCode: 'tr', translationKey: 'fortune.tarot.cost', translationValue: '7 CFC' },
     { languageCode: 'tr', translationKey: 'fortune.dream.name', translationValue: 'Rüya Tabiri' },
     { languageCode: 'tr', translationKey: 'fortune.dream.description', translationValue: 'Rüyalarınızdaki gizli anlamları çözün' },
-    { languageCode: 'tr', translationKey: 'fortune.dream.cost', translationValue: '5 cFc' },
+    { languageCode: 'tr', translationKey: 'fortune.dream.cost', translationValue: '5 CFC' },
 
     // Additional Fortune Types - English
     { languageCode: 'en', translationKey: 'fortune.katina.name', translationValue: 'Katina Fortune' },
@@ -184,9 +184,9 @@ async function main() {
     { languageCode: 'en', translationKey: 'message.error', translationValue: 'An error occurred. Please try again.' },
 
     // Messages - Turkish
-    { languageCode: 'tr', translationKey: 'message.insufficient_credits', translationValue: 'Yetersiz cFc. Lütfen yönetici ile iletişime geçin.' },
+    { languageCode: 'tr', translationKey: 'message.insufficient_credits', translationValue: 'Yetersiz CFC. Lütfen yönetici ile iletişime geçin.' },
     { languageCode: 'tr', translationKey: 'message.fortune_generated', translationValue: 'Falınız açığa çıktı!' },
-    { languageCode: 'tr', translationKey: 'message.welcome', translationValue: 'Hoş geldiniz! 10 ücretsiz cFc kazandınız.' },
+    { languageCode: 'tr', translationKey: 'message.welcome', translationValue: 'Hoş geldiniz! 10 ücretsiz CFC kazandınız.' },
     { languageCode: 'tr', translationKey: 'message.error', translationValue: 'Bir hata oluştu. Lütfen tekrar deneyin.' },
 
     // Dashboard - English
@@ -206,7 +206,7 @@ async function main() {
 
     // Profile - Turkish
     { languageCode: 'tr', translationKey: 'profile.title', translationValue: 'Profilim' },
-    { languageCode: 'tr', translationKey: 'profile.balance', translationValue: 'cFc Bakiyesi' },
+    { languageCode: 'tr', translationKey: 'profile.balance', translationValue: 'CFC Bakiyesi' },
     { languageCode: 'tr', translationKey: 'profile.member_since', translationValue: 'Üyelik Tarihi' },
 
     // Admin - English
@@ -221,7 +221,7 @@ async function main() {
     { languageCode: 'tr', translationKey: 'admin.users', translationValue: 'Kullanıcılar' },
     { languageCode: 'tr', translationKey: 'admin.fortunes', translationValue: 'Fallar' },
     { languageCode: 'tr', translationKey: 'admin.statistics', translationValue: 'İstatistikler' },
-    { languageCode: 'tr', translationKey: 'admin.add_credits', translationValue: 'cFc Ekle' },
+    { languageCode: 'tr', translationKey: 'admin.add_credits', translationValue: 'CFC Ekle' },
     { languageCode: 'tr', translationKey: 'admin.total_users', translationValue: 'Toplam Kullanıcı' },
     { languageCode: 'tr', translationKey: 'admin.total_fortunes', translationValue: 'Toplam Fal' },
 
@@ -269,7 +269,7 @@ async function main() {
     { languageCode: 'tr', translationKey: 'auth.login.title', translationValue: 'Tekrar Hoş Geldiniz' },
     { languageCode: 'tr', translationKey: 'auth.login.subtitle', translationValue: 'Mistik yolculuğunuza devam etmek için giriş yapın' },
     { languageCode: 'tr', translationKey: 'auth.register.title', translationValue: 'Yolculuğunuza Başlayın' },
-    { languageCode: 'tr', translationKey: 'auth.register.subtitle', translationValue: 'Hesap oluşturun ve 10 ücretsiz cFc kazanın' },
+    { languageCode: 'tr', translationKey: 'auth.register.subtitle', translationValue: 'Hesap oluşturun ve 10 ücretsiz CFC kazanın' },
     { languageCode: 'tr', translationKey: 'auth.no_account', translationValue: 'Hesabınız yok mu?' },
     { languageCode: 'tr', translationKey: 'auth.have_account', translationValue: 'Zaten hesabınız var mı?' },
 

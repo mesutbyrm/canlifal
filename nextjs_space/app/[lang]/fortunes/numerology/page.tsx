@@ -88,7 +88,7 @@ export default function NumerologyPage() {
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            4 {language === 'tr' ? 'cFc' : 'cFc'}
+            4 {language === 'tr' ? 'CFC' : 'CFC'}
           </p>
         </motion.div>
 

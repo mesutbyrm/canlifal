@@ -375,7 +375,7 @@ export default function Navbar() {
                         </div>
                       </div>
                       
-                       {/* cFc display */}
+                       {/* CFC display */}
                        <Link
                          href={`/${language}/credits`}
                          className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
@@ -383,9 +383,9 @@ export default function Navbar() {
                        >
                          <div className="flex items-center gap-3">
                            <CfcCoin size={20} />
-                           {language === 'tr' ? "cFc'lerim" : 'My cFc'}
+                           {language === 'tr' ? "CFC'lerim" : 'My CFC'}
                          </div>
-                         <span className="font-bold text-gold-400">{credits} cFc</span>
+                         <span className="font-bold text-gold-400">{credits} CFC</span>
                        </Link>
                        {/* Jeton display with TL */}
                        <Link

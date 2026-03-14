@@ -9,7 +9,7 @@ import {
   Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical,
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
-  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet
+  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -22,6 +22,7 @@ interface User {
   id: string
   email: string
   name: string
+  username?: string
   credits: number
   role: string
   preferredLanguage: string
@@ -101,7 +102,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
   { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
   { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
-  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'cFc Paketleri', enLabel: 'cFc Packages' },
+  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
   { href: `/${lang}/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
   { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
   { href: `/${lang}/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
@@ -118,6 +119,7 @@ export default function AdminPage() {
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [adminUserSearch, setAdminUserSearch] = useState('')
   const [creditAmount, setCreditAmount] = useState(10)
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -161,10 +163,26 @@ export default function AdminPage() {
 
   useEffect(() => { fetchData(); fetchAdSettings(); fetchVisitorStats() }, [])
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsersWithSearch(adminUserSearch)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [adminUserSearch])
+
+  const fetchUsersWithSearch = async (query: string) => {
+    try {
+      const url = query ? `/api/admin/users?search=${encodeURIComponent(query)}&limit=50` : '/api/admin/users?limit=50'
+      const res = await fetch(url)
+      const data = await res.json()
+      setUsers(data?.users || data || [])
+    } catch (e) { console.error(e) }
+  }
+
   const fetchData = async () => {
     try {
       const [usersRes, statsRes, roomsRes] = await Promise.all([
-        fetch('/api/admin/users'), fetch('/api/admin/statistics'), fetch('/api/chat/rooms'),
+        fetch('/api/admin/users?limit=50'), fetch('/api/admin/statistics'), fetch('/api/chat/rooms'),
       ])
       const usersData = await usersRes.json()
       const statsData = await statsRes.json()
@@ -235,8 +253,8 @@ export default function AdminPage() {
       })
       if (response?.ok) {
         await fetchData(); setSelectedUser(null)
-        alert(language === 'tr' ? 'cFc eklendi!' : 'cFc added!')
-      } else { alert(language === 'tr' ? 'cFc eklenemedi!' : 'Failed to add cFc!') }
+        alert(language === 'tr' ? 'CFC eklendi!' : 'CFC added!')
+      } else { alert(language === 'tr' ? 'CFC eklenemedi!' : 'Failed to add CFC!') }
     } catch (error) {
       console.error('Failed to add credits:', error)
       alert(language === 'tr' ? 'Hata oluştu!' : 'Error occurred!')
@@ -307,7 +325,7 @@ export default function AdminPage() {
         </div>
         <StatCard icon={Users} label={t('admin.total_users')} value={statistics?.totalUsers ?? 0} color={accentColor} />
         <StatCard icon={Sparkles} label={t('admin.total_fortunes')} value={statistics?.totalFortunes ?? 0} color={goldColor} />
-        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki cFc' : 'cFc'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
       </div>
 
       {/* Quick Actions Grid */}
@@ -386,7 +404,19 @@ export default function AdminPage() {
   const renderUsers = () => (
     <div className="space-y-6">
       <div className={`${cardBg} rounded-xl p-5 overflow-x-auto`}>
-        <h2 className={`${textPrimary} text-xl font-bold mb-6`}>{t('admin.users')}</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className={`${textPrimary} text-xl font-bold`}>{t('admin.users')}</h2>
+          <div className="relative w-72">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted}`} />
+            <input
+              type="text"
+              value={adminUserSearch}
+              onChange={(e) => setAdminUserSearch(e.target.value)}
+              placeholder={language === 'tr' ? 'Ad, kullanıcı adı veya e-posta ara...' : 'Search name, username or email...'}
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm ${inputBg} focus:outline-none`}
+            />
+          </div>
+        </div>
         <table className="w-full">
           <thead>
             <tr className={`border-b ${tableBorder}`}>
@@ -413,7 +443,7 @@ export default function AdminPage() {
                 <td className="py-3 px-4 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={() => setSelectedUser(user)}
-                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'cFc Ekle' : 'Add cFc'}>
+                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'CFC Ekle' : 'Add CFC'}>
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
@@ -627,7 +657,7 @@ export default function AdminPage() {
         <AdSlot slotKey="ads_sidebar" title={language === 'tr' ? 'Kenar Çubuğu' : 'Sidebar'} desc={language === 'tr' ? 'Sayfa kenarında' : 'Page sidebar'} />
         <AdSlot slotKey="ads_inline" title={language === 'tr' ? 'İçerik Arası' : 'Inline Content'} desc={language === 'tr' ? 'İçerik arasında' : 'Between content'} />
         <AdSlot slotKey="ads_footer" title={language === 'tr' ? 'Alt Banner' : 'Footer Banner'} desc={language === 'tr' ? 'Sayfa altında' : 'Bottom of pages'} />
-        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 cFc kazanma, günlük 10 limit' : 'Earn 5 cFc, 10/day limit'} />
+        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 CFC kazanma, günlük 10 limit' : 'Earn 5 CFC, 10/day limit'} />
       </div>
     </div>
   )
@@ -768,7 +798,7 @@ export default function AdminPage() {
       <div>
         <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi' : 'Economy'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki cFc' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
+          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki CFC' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
           <MiniStatCard label={language === 'tr' ? 'Harcanan' : 'Spent'} value={statistics?.economy?.creditsSpent ?? 0} color="text-red-500" />
           <MiniStatCard label={language === 'tr' ? 'Takip' : 'Follows'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
         </div>
@@ -901,11 +931,11 @@ export default function AdminPage() {
                 <p className={`${textPrimary} font-medium`}>{selectedUser?.name}</p>
               </div>
               <div>
-                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut cFc' : 'Current cFc'}</p>
+                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut CFC' : 'Current CFC'}</p>
                 <p className={`${goldColor} font-bold text-xl`}>{selectedUser?.credits}</p>
               </div>
               <div>
-                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek cFc' : 'cFc to Add'}</label>
+                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek CFC' : 'CFC to Add'}</label>
                 <input type="number" value={creditAmount}
                   onChange={(e) => setCreditAmount(parseInt(e?.target?.value ?? '0'))}
                   min="1" className={`w-full px-4 py-3 rounded-xl border ${inputBg} focus:outline-none`} />
