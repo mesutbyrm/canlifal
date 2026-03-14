@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { sendNotificationEmail } from '@/lib/email-service'
 
 // User submits payment notification
 export async function POST(req: NextRequest) {
@@ -64,6 +65,30 @@ export async function POST(req: NextRequest) {
         }
       })
     }
+
+    // Send email notification to admin
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d4af37; border-bottom: 2px solid #d4af37; padding-bottom: 10px;">💰 Yeni Ödeme Bildirimi</h2>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 10px 0;"><strong>Kullanıcı:</strong> ${user.username || user.name}</p>
+          <p style="margin: 10px 0;"><strong>Tutar:</strong> ${amount} TL</p>
+          <p style="margin: 10px 0;"><strong>Ödeme Yöntemi:</strong> ${paymentMethod}</p>
+          ${transactionId ? `<p style="margin: 10px 0;"><strong>İşlem No:</strong> ${transactionId}</p>` : ''}
+          ${senderName ? `<p style="margin: 10px 0;"><strong>Gönderen İsmi:</strong> ${senderName}</p>` : ''}
+          ${notes ? `<p style="margin: 10px 0;"><strong>Not:</strong> ${notes}</p>` : ''}
+          <p style="margin: 10px 0;"><strong>Tarih:</strong> ${new Date().toLocaleString('tr-TR')}</p>
+        </div>
+        <p style="color: #666; font-size: 14px;">Lütfen ödemeyi kontrol edip onaylayın.</p>
+      </div>
+    `;
+
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_DEME_BILDIRIMI || '',
+      recipientEmail: 'mesutbyrm1@gmail.com',
+      subject: `💰 Yeni Ödeme Bildirimi: ${user.username || user.name} - ${amount} TL`,
+      htmlBody: emailHtml,
+    }).catch(err => console.error('Payment email error:', err))
 
     return NextResponse.json({ 
       success: true, 

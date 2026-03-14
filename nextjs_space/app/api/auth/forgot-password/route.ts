@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await sendNotificationEmail({
-        notificationId: process.env.NOTIF_ID_PASSWORD_RESET || '',
+        notificationId: process.env.NOTIF_ID_IFRE_SFRLAMA || '',
         recipientEmail: user.email,
         subject: 'FALCI - Şifre Sıfırlama',
         htmlBody: emailHtml

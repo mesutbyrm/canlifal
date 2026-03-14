@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const htmlBody = getContactFormEmailHtml(name, email, message)
 
     await sendNotificationEmail({
-      notificationId: process.env.NOTIF_ID_CONTACT_FORM_SUBMISSION || '',
+      notificationId: process.env.NOTIF_ID_LETIIM_FORMU || '',
       recipientEmail: adminEmail,
       subject: `Yeni İletişim Mesajı: ${name}`,
       htmlBody,

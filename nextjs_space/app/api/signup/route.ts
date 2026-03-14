@@ -141,7 +141,7 @@ export async function POST(request: Request) {
 
     // Send notification to admin (non-blocking)
     sendNotificationEmail({
-      notificationId: process.env.NOTIF_ID_NEW_USER_SIGNUP || '',
+      notificationId: process.env.NOTIF_ID_YENI_KULLANC_KAYD || '',
       recipientEmail: 'mesutbyrm1@gmail.com',
       subject: `🎉 Yeni Kullanıcı: ${name}`,
       htmlBody: getNewUserSignupEmailHtml(name, email),

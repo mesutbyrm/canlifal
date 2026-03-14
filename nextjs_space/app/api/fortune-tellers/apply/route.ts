@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { sendNotificationEmail } from '@/lib/email-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,6 +76,28 @@ export async function POST(request: NextRequest) {
         }
       })
     }
+
+    // Send email notification to admin
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d4af37; border-bottom: 2px solid #d4af37; padding-bottom: 10px;">🔮 Yeni Falcı Başvurusu</h2>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 10px 0;"><strong>Falcı Adı:</strong> ${displayName}</p>
+          <p style="margin: 10px 0;"><strong>Uzmanlık Alanları:</strong> ${specialties.join(', ')}</p>
+          ${bio ? `<p style="margin: 10px 0;"><strong>Bio:</strong> ${bio}</p>` : ''}
+          ${applicationNote ? `<p style="margin: 10px 0;"><strong>Başvuru Notu:</strong> ${applicationNote}</p>` : ''}
+          <p style="margin: 10px 0;"><strong>Başvuru Tarihi:</strong> ${new Date().toLocaleString('tr-TR')}</p>
+        </div>
+        <p style="color: #666; font-size: 14px;">Lütfen başvuruyu inceleyin ve onaylayın/reddedin.</p>
+      </div>
+    `;
+
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_FALC_BAVURUSU || '',
+      recipientEmail: 'mesutbyrm1@gmail.com',
+      subject: `🔮 Yeni Falcı Başvurusu: ${displayName}`,
+      htmlBody: emailHtml,
+    }).catch(err => console.error('Teller application email error:', err))
 
     return NextResponse.json({ success: true, teller })
   } catch (error) {
