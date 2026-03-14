@@ -114,6 +114,7 @@ export default function ChatRoomPage() {
   
   // Mention notifications
   const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
+  const mentionShownCountRef = useRef<Map<string, number>>(new Map()) // messageId -> show count
   
   // Combined Management Popup
   const [showManagePopup, setShowManagePopup] = useState(false)
@@ -983,14 +984,19 @@ export default function ChatRoomPage() {
     inputRef.current?.focus()
   }
 
-  // Check for mentions
+  // Check for mentions (max 3 times per message)
   useEffect(() => {
     if (!nickname || messages.length === 0) return
     const lastMsg = messages[messages.length - 1]
     if (lastMsg.user.id !== session?.user?.id && lastMsg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)) {
-      setMentionNotification({ from: lastMsg.user.nickname || lastMsg.user.name, content: lastMsg.content })
-      audioRef.current?.play()
-      setTimeout(() => setMentionNotification(null), 5000)
+      const msgId = lastMsg.id
+      const count = mentionShownCountRef.current.get(msgId) || 0
+      if (count < 3) {
+        mentionShownCountRef.current.set(msgId, count + 1)
+        setMentionNotification({ from: lastMsg.user.nickname || lastMsg.user.name, content: lastMsg.content })
+        audioRef.current?.play()
+        setTimeout(() => setMentionNotification(null), 5000)
+      }
     }
   }, [messages, nickname, session?.user?.id])
 
@@ -1570,49 +1576,7 @@ export default function ChatRoomPage() {
                 {language === 'tr' ? 'Odalar' : 'Rooms'}
               </button>
               
-              {/* Voice Chat Button */}
-              {canUseVoice() ? (
-                // User has voice permission - can speak
-                <button
-                  onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                  disabled={voiceConnecting}
-                  className={`relative flex items-center justify-center min-w-[52px] h-8 px-2 rounded-full text-xs font-bold transition-all ${
-                    voiceConnecting 
-                      ? 'bg-yellow-500 text-white animate-pulse cursor-wait' 
-                      : voiceEnabled 
-                        ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' 
-                        : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'
-                  }`}
-                  title={voiceEnabled ? (language === 'tr' ? 'Sesi Kapat' : 'Mute') : (language === 'tr' ? 'Sesi Aç' : 'Unmute')}
-                >
-                  {voiceConnecting 
-                    ? '...' 
-                    : voiceEnabled 
-                      ? (language === 'tr' ? 'SES' : 'ON') 
-                      : (language === 'tr' ? 'SES' : 'OFF')
-                  }
-                  {voiceEnabled && <span className="ml-1 w-2 h-2 bg-white rounded-full animate-pulse"></span>}
-                  {voiceUsers.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                      {voiceUsers.length}
-                    </span>
-                  )}
-                </button>
-              ) : (
-                // User doesn't have voice permission - can only listen
-                <button
-                  onClick={() => isListening ? stopListening() : startListening()}
-                  className={`relative flex items-center justify-center min-w-[52px] h-8 px-2 rounded-full text-xs font-bold transition-all ${isListening ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' : 'bg-gray-500 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30'}`}
-                  title={language === 'tr' ? 'Sadece dinleyebilirsiniz' : 'Listen only mode'}
-                >
-                  {isListening ? '👂' : '🔇'}
-                  {voiceUsers.length > 0 && !isListening && (
-                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                      {voiceUsers.length}
-                    </span>
-                  )}
-                </button>
-              )}
+              {/* Voice Chat Button removed */}
             </div>
             
             <div className="flex items-center gap-2">
@@ -1647,26 +1611,7 @@ export default function ChatRoomPage() {
             </div>
           )}
 
-          {/* Voice Users Bar */}
-          {voiceUsers.length > 0 && (
-            <div className="flex-shrink-0 bg-green-600/30 px-3 py-2 flex items-center gap-2 border-b border-green-500/30">
-              <Phone className="w-4 h-4 text-green-400" />
-              <span className="text-green-200 text-sm">
-                {language === 'tr' ? 'Sesli Sohbette:' : 'In Voice:'}
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {voiceUsers.map(user => (
-                  <span 
-                    key={user.id} 
-                    className={`text-sm px-2 py-0.5 rounded ${speakingUsers.has(user.id) ? 'bg-green-500/50 text-white' : 'bg-green-900/50 text-green-200'}`}
-                  >
-                    {speakingUsers.has(user.id) && <span className="mr-1 text-green-400">●</span>}
-                    {user.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Voice Users Bar removed */}
 
           {/* Messages Area */}
           <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative">
