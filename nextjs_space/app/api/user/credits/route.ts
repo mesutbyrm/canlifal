@@ -18,7 +18,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true, jetonBalance: true },
+      select: { credits: true, jetonBalance: true, withdrawalLimit: true },
     })
 
     if (!user) {
@@ -28,7 +28,18 @@ export async function GET() {
       )
     }
 
-    return NextResponse.json({ credits: user.credits, jetonBalance: user.jetonBalance ?? 0 })
+    // Get jeton to TL rate from platform settings
+    const rateSetting = await prisma.platformSettings.findUnique({
+      where: { key: 'jeton_tl_rate' }
+    })
+    const jetonTlRate = rateSetting ? parseFloat(rateSetting.value) : 0.5 // default 1 jeton = 0.5 TL
+
+    return NextResponse.json({ 
+      credits: user.credits, 
+      jetonBalance: user.jetonBalance ?? 0,
+      jetonTlRate,
+      withdrawalLimit: user.withdrawalLimit ?? 0,
+    })
   } catch (error) {
     console.error('Fetch credits error:', error)
     return NextResponse.json(

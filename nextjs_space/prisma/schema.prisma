@@ -44,6 +44,8 @@ model User {
   // Profile customization
   specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
   profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)
+  // Withdrawal settings (admin-controlled)
+  withdrawalLimit       Int                  @default(0) // 0 means cannot withdraw
   // Statistics
   totalTimeSpentMinutes Int                  @default(0)
   lastActiveAt          DateTime?
@@ -1227,4 +1229,58 @@ model TickerMessage {
 
   @@index([isActive])
   @@map("ticker_messages")
+}
+
+// Withdrawal Requests - users/tellers request money withdrawal
+model WithdrawalRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Int      // Amount in jetons to withdraw
+  amountTL        Float    // Equivalent TL amount
+  method          String   // bank_transfer, papara, etc.
+  accountDetails  String?  @db.Text // JSON: IBAN, name, etc.
+  status          String   @default("pending") // pending, approved, rejected, processing
+  adminNote       String?
+  processedBy     String?
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("withdrawal_requests")
+}
+
+// Teller Awards - medium of the day/week/month
+model TellerAward {
+  id          String   @id @default(cuid())
+  tellerId    String
+  awardType   String   // medium_of_day, medium_of_week, medium_of_month
+  title       String?
+  awardedBy   String?  // admin who awarded
+  startDate   DateTime @default(now())
+  endDate     DateTime // When the award expires
+  createdAt   DateTime @default(now())
+
+  @@index([tellerId])
+  @@index([awardType])
+  @@index([endDate])
+  @@map("teller_awards")
+}
+
+// Teller Gifts - gifts sent specifically to tellers (not stream gifts)
+model TellerGift {
+  id          String   @id @default(cuid())
+  tellerId    String
+  senderId    String
+  giftTypeId  String
+  quantity    Int      @default(1)
+  totalPrice  Int      // total jetons spent
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@index([tellerId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("teller_gifts")
 }

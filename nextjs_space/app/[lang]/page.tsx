@@ -153,7 +153,8 @@ export default function HomePage() {
   const { theme } = useSiteTheme()
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
-  
+  const [isTeller, setIsTeller] = useState(false)
+  const [pendingRequestCount, setPendingRequestCount] = useState(0)
   
   // Theme detection
   const isFalci = theme === 'falci'
@@ -202,6 +203,31 @@ export default function HomePage() {
       clearInterval(streamInterval)
     }
   }, [])
+
+  // Check if logged-in user is a teller and fetch pending requests
+  useEffect(() => {
+    if (!session?.user) return
+    const checkTeller = async () => {
+      try {
+        const res = await fetch('/api/fortune-tellers/my-profile')
+        if (res.ok) {
+          const data = await res.json()
+          setIsTeller(true)
+          // Fetch pending sessions
+          if (data.id) {
+            const sessRes = await fetch(`/api/fortune-tellers/sessions?status=pending`)
+            if (sessRes.ok) {
+              const sessData = await sessRes.json()
+              setPendingRequestCount(Array.isArray(sessData) ? sessData.length : 0)
+            }
+          }
+        }
+      } catch {}
+    }
+    checkTeller()
+    const interval = setInterval(checkTeller, 30000)
+    return () => clearInterval(interval)
+  }, [session])
 
   // Sort tellers: online first, then offline
   const sortedTellers = [...liveTellers].sort((a, b) => {
@@ -254,17 +280,27 @@ export default function HomePage() {
               <span className="text-sm font-medium">{language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}</span>
             </Link>
 
-            {/* Become Live Teller Button */}
+            {/* Become Live Teller / Teller Panel Button */}
             <Link
-              href={session?.user ? `/${language}/become-teller` : `/${language}/login`}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
+              href={session?.user ? (isTeller ? `/${language}/profile` : `/${language}/become-teller`) : `/${language}/login`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
                 isCosmic 
                   ? 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
                   : 'bg-gradient-to-r from-emerald-900/40 to-green-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
               }`}
             >
               <Video className="w-4 h-4" />
-              <span className="text-sm font-medium">{language === 'tr' ? 'Canlı Falcı Ol' : 'Become Live Teller'}</span>
+              <span className="text-sm font-medium">
+                {isTeller 
+                  ? (language === 'tr' ? 'Falcı Paneli' : 'Teller Panel')
+                  : (language === 'tr' ? 'Canlı Falcı Ol' : 'Become Live Teller')
+                }
+              </span>
+              {isTeller && pendingRequestCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold animate-pulse shadow-lg shadow-red-500/50">
+                  {pendingRequestCount}
+                </span>
+              )}
             </Link>
           </div>
 

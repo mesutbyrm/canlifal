@@ -14,7 +14,7 @@ import {
   Pin, PinOff, BookmarkPlus, BookmarkMinus, Loader2,
   Star, BadgeCheck, Video, Check, Clock, Calendar,
   Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
-  AlertCircle, CreditCard, Power
+  AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -86,6 +86,21 @@ interface TellerProfile {
   canWithdraw: boolean
   maxSessionsPerDay: number
   commissionRate: number
+}
+
+interface TellerAward {
+  id: string
+  awardType: string
+  title: string
+  startDate: string
+  endDate: string
+}
+
+interface TellerGiftSender {
+  senderName: string
+  senderImage: string | null
+  totalAmount: number
+  giftCount: number
 }
 
 interface TellerSession {
@@ -172,6 +187,18 @@ export default function ProfilePage() {
   const [tellerOnlineToggling, setTellerOnlineToggling] = useState(false)
   const [tellerSessionAction, setTellerSessionAction] = useState<string | null>(null)
   const [tellerTab, setTellerTab] = useState<'pending' | 'active' | 'history'>('pending')
+  const [tellerAwards, setTellerAwards] = useState<TellerAward[]>([])
+  const [tellerGiftSenders, setTellerGiftSenders] = useState<TellerGiftSender[]>([])
+  const [giftsOpen, setGiftsOpen] = useState(false)
+  const [withdrawalAmount, setWithdrawalAmount] = useState('')
+  const [withdrawalMethod, setWithdrawalMethod] = useState('bank_transfer')
+  const [withdrawalAccount, setWithdrawalAccount] = useState('')
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false)
+  const [withdrawalMessage, setWithdrawalMessage] = useState('')
+  const [withdrawalLimit, setWithdrawalLimit] = useState(0)
+  const [jetonTlRate, setJetonTlRate] = useState(0.5)
+  const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
+  const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -257,6 +284,30 @@ export default function ProfilePage() {
           const sessData = await sessRes.json()
           setTellerSessions(sessData)
         }
+        // Fetch awards
+        try {
+          const awardsRes = await fetch(`/api/fortune-tellers/awards?tellerId=${data.id}`)
+          if (awardsRes.ok) { const ad = await awardsRes.json(); setTellerAwards(ad.awards || []) }
+        } catch {}
+        // Fetch gifts
+        try {
+          const giftsRes = await fetch(`/api/fortune-tellers/gifts?tellerId=${data.id}`)
+          if (giftsRes.ok) { const gd = await giftsRes.json(); setTellerGiftSenders(gd.senders || []) }
+        } catch {}
+        // Fetch withdrawal info
+        try {
+          const credRes = await fetch('/api/user/credits')
+          if (credRes.ok) {
+            const cd = await credRes.json()
+            setWithdrawalLimit(cd.withdrawalLimit || 0)
+            setJetonTlRate(cd.jetonTlRate || 0.5)
+          }
+        } catch {}
+        // Fetch withdrawal history
+        try {
+          const whRes = await fetch('/api/withdrawals')
+          if (whRes.ok) { const wd = await whRes.json(); setWithdrawalHistory(wd.requests || []) }
+        } catch {}
       }
     } catch (e) { /* Not a teller, ignore */ }
   }
@@ -285,6 +336,33 @@ export default function ProfilePage() {
       if (res.ok) fetchTellerProfile()
     } catch (e) { console.error('Session action error:', e) }
     finally { setTellerSessionAction(null) }
+  }
+
+  const handleWithdrawalSubmit = async () => {
+    const amount = parseInt(withdrawalAmount)
+    if (!amount || amount <= 0) { setWithdrawalMessage(language === 'tr' ? 'Geçerli bir miktar girin' : 'Enter a valid amount'); return }
+    if (withdrawalLimit > 0 && amount > withdrawalLimit) { setWithdrawalMessage(language === 'tr' ? `Maksimum çekim limiti: ${withdrawalLimit} jeton` : `Max withdrawal limit: ${withdrawalLimit} jetons`); return }
+    if (!withdrawalAccount.trim()) { setWithdrawalMessage(language === 'tr' ? 'Hesap bilgilerini girin' : 'Enter account details'); return }
+    setWithdrawalLoading(true)
+    setWithdrawalMessage('')
+    try {
+      const res = await fetch('/api/withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, method: withdrawalMethod, accountDetails: withdrawalAccount })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setWithdrawalMessage(language === 'tr' ? '✅ Çekim talebi gönderildi!' : '✅ Withdrawal request submitted!')
+        setWithdrawalAmount('')
+        setWithdrawalAccount('')
+        setShowWithdrawalForm(false)
+        fetchTellerProfile()
+      } else {
+        setWithdrawalMessage(`❌ ${data.error || 'Hata oluştu'}`)
+      }
+    } catch { setWithdrawalMessage('❌ Bağlantı hatası') }
+    finally { setWithdrawalLoading(false) }
   }
 
   const tellerFilteredSessions = tellerSessions.filter(s => {
@@ -473,14 +551,30 @@ export default function ProfilePage() {
                   <h3 className={`font-bold text-base ${textPrimary}`}>
                     {language === 'tr' ? '🔮 Falcı Paneli' : '🔮 Teller Panel'}
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${tellerProfile.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
-                    <span className={`text-xs ${textSecondary}`}>
-                      {tellerProfile.isOnline
-                        ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
-                        : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`w-2 h-2 rounded-full ${
+                      tellerActiveCount > 0 ? 'bg-red-500 animate-pulse' : tellerProfile.isOnline ? 'bg-green-500' : 'bg-gray-500'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      tellerActiveCount > 0
+                        ? (isFacebook ? 'text-red-600' : 'text-red-400')
+                        : tellerProfile.isOnline
+                          ? (isFacebook ? 'text-green-600' : 'text-green-400')
+                          : textSecondary
+                    }`}>
+                      {tellerActiveCount > 0
+                        ? (language === 'tr' ? '🔴 Seansta' : '🔴 In Session')
+                        : tellerProfile.isOnline
+                          ? (language === 'tr' ? '🟢 Canlıda' : '🟢 Live')
+                          : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
                     </span>
                     {tellerProfile.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
+                    {tellerAwards.length > 0 && tellerAwards.map(aw => (
+                      <span key={aw.id} className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center gap-0.5">
+                        <Trophy className="w-2.5 h-2.5" />
+                        {aw.title}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -720,6 +814,156 @@ export default function ProfilePage() {
               )}
             </AnimatePresence>
           </motion.div>
+        </div>
+      )}
+
+      {/* ===== HEDİYE VERENLer + ÇEKIM ===== */}
+      {isTeller && tellerProfile && (
+        <div className="px-4 mt-3 space-y-3">
+          {/* Gift Givers Section */}
+          {tellerGiftSenders.length > 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className={`rounded-2xl border overflow-hidden ${
+                isFacebook ? 'bg-white border-blue-200 shadow' : isCosmic ? 'bg-blue-900/30 border-blue-500/30' : 'bg-purple-900/30 border-fuchsia-500/30'
+              }`}>
+              <button onClick={() => setGiftsOpen(!giftsOpen)}
+                className={`w-full flex items-center justify-between p-3 ${isFacebook ? 'hover:bg-blue-50' : 'hover:bg-white/5'} transition-colors`}>
+                <div className="flex items-center gap-2">
+                  <Gift className={`w-4 h-4 ${isFacebook ? 'text-pink-500' : 'text-pink-400'}`} />
+                  <span className={`text-sm font-semibold ${textPrimary}`}>
+                    {language === 'tr' ? 'Hediye Verenler' : 'Gift Senders'} ({tellerGiftSenders.length})
+                  </span>
+                </div>
+                {giftsOpen ? <ChevronUp className={`w-4 h-4 ${textSecondary}`} /> : <ChevronDown className={`w-4 h-4 ${textSecondary}`} />}
+              </button>
+              <AnimatePresence>
+                {giftsOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className={`px-3 pb-3 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
+                      <p className={`text-[10px] ${textSecondary} mt-2 mb-2`}>{language === 'tr' ? 'Son 7 gün' : 'Last 7 days'}</p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {tellerGiftSenders.map((g, i) => (
+                          <div key={i} className={`flex items-center justify-between p-2 rounded-xl ${
+                            isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold w-5 text-center ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-400' : textSecondary}`}>
+                                {i + 1}.
+                              </span>
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden ${
+                                isFacebook ? 'bg-blue-100' : 'bg-gradient-to-br from-pink-600 to-purple-600'
+                              }`}>
+                                {g.senderImage ? <img src={g.senderImage} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-white/70" />}
+                              </div>
+                              <div>
+                                <p className={`text-xs font-medium ${textPrimary}`}>{g.senderName}</p>
+                                <p className={`text-[10px] ${textSecondary}`}>{g.giftCount} {language === 'tr' ? 'hediye' : 'gifts'}</p>
+                              </div>
+                            </div>
+                            <span className={`text-xs font-bold ${isFacebook ? 'text-green-600' : 'text-green-400'}`}>
+                              {g.totalAmount} jeton
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* Withdrawal Section */}
+          {tellerProfile.canWithdraw && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className={`rounded-2xl border overflow-hidden ${
+                isFacebook ? 'bg-white border-blue-200 shadow' : isCosmic ? 'bg-blue-900/30 border-blue-500/30' : 'bg-purple-900/30 border-fuchsia-500/30'
+              }`}>
+              <button onClick={() => setShowWithdrawalForm(!showWithdrawalForm)}
+                className={`w-full flex items-center justify-between p-3 ${isFacebook ? 'hover:bg-blue-50' : 'hover:bg-white/5'} transition-colors`}>
+                <div className="flex items-center gap-2">
+                  <Wallet className={`w-4 h-4 ${isFacebook ? 'text-green-600' : 'text-green-400'}`} />
+                  <span className={`text-sm font-semibold ${textPrimary}`}>
+                    {language === 'tr' ? 'Para Çekimi' : 'Withdrawal'}
+                  </span>
+                  {withdrawalLimit > 0 && (
+                    <span className={`text-[10px] ${textSecondary}`}>
+                      (max: {withdrawalLimit} jeton)
+                    </span>
+                  )}
+                </div>
+                {showWithdrawalForm ? <ChevronUp className={`w-4 h-4 ${textSecondary}`} /> : <ChevronDown className={`w-4 h-4 ${textSecondary}`} />}
+              </button>
+              <AnimatePresence>
+                {showWithdrawalForm && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className={`px-3 pb-3 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'} space-y-2`}>
+                      <div className="mt-2">
+                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Miktar (Jeton)' : 'Amount (Jeton)'}</label>
+                        <input type="number" value={withdrawalAmount} onChange={e => setWithdrawalAmount(e.target.value)} placeholder={`${language === 'tr' ? 'Örn' : 'e.g.'}: 100`}
+                          className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
+                            isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
+                          } outline-none`} />
+                        {withdrawalAmount && (
+                          <p className={`text-[10px] mt-0.5 ${textSecondary}`}>
+                            ≈ {(parseInt(withdrawalAmount) * jetonTlRate).toFixed(2)} TL
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Yöntem' : 'Method'}</label>
+                        <select value={withdrawalMethod} onChange={e => setWithdrawalMethod(e.target.value)}
+                          className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
+                            isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
+                          } outline-none`}>
+                          <option value="bank_transfer">{language === 'tr' ? 'Banka Havalesi' : 'Bank Transfer'}</option>
+                          <option value="papara">Papara</option>
+                          <option value="crypto">{language === 'tr' ? 'Kripto' : 'Crypto'}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Hesap Bilgileri (IBAN/Adres)' : 'Account Details (IBAN/Address)'}</label>
+                        <textarea value={withdrawalAccount} onChange={e => setWithdrawalAccount(e.target.value)} rows={2}
+                          className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
+                            isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
+                          } outline-none resize-none`} />
+                      </div>
+                      {withdrawalMessage && <p className={`text-xs ${withdrawalMessage.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{withdrawalMessage}</p>}
+                      <button onClick={handleWithdrawalSubmit} disabled={withdrawalLoading}
+                        className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                          isFacebook ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+                        } disabled:opacity-50`}>
+                        {withdrawalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> {language === 'tr' ? 'Çekim Talebi Gönder' : 'Submit Withdrawal'}</>}
+                      </button>
+                      {/* Withdrawal History */}
+                      {withdrawalHistory.length > 0 && (
+                        <div className="mt-2">
+                          <p className={`text-xs font-medium ${textPrimary} mb-1`}>{language === 'tr' ? 'Geçmiş Talepler' : 'Past Requests'}</p>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {withdrawalHistory.slice(0, 5).map((wr: any) => (
+                              <div key={wr.id} className={`flex items-center justify-between p-2 rounded-lg text-[10px] ${
+                                isFacebook ? 'bg-gray-50' : 'bg-black/20'
+                              }`}>
+                                <div>
+                                  <span className={`font-medium ${textPrimary}`}>{wr.amount} jeton</span>
+                                  <span className={`ml-1 ${textSecondary}`}>({wr.amountTL} TL)</span>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded-full font-medium ${
+                                  wr.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                  wr.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                  'bg-yellow-500/20 text-yellow-400'
+                                }`}>{wr.status === 'pending' ? (language === 'tr' ? 'Bekliyor' : 'Pending') : wr.status === 'approved' ? (language === 'tr' ? 'Onaylandı' : 'Approved') : (language === 'tr' ? 'Reddedildi' : 'Rejected')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </div>
       )}
 
