@@ -11,7 +11,7 @@ import {
   User, Mail, Phone, AtSign, Crown, Shield, Coins, Calendar, Camera,
   Key, Ban, Video, Radio, Eye, EyeOff, Trash2, Edit, MoreVertical,
   Check, AlertCircle, Gift, MessageCircle, Star, Lock, Unlock, Clock,
-  UserX, UserCheck, RefreshCw, Upload, Award, Sparkles
+  UserX, UserCheck, RefreshCw, Upload, Award, Sparkles, Wallet
 } from 'lucide-react'
 import Link from 'next/link'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -743,6 +743,45 @@ export default function AdminUsersPage() {
                         <><Radio className="w-5 h-5 text-green-400 mx-auto mb-1" /><span className="text-green-400 text-sm">Yayın Başlat</span></>
                       )}
                     </button>
+                  </div>
+
+                  {/* Withdrawal Limit */}
+                  <div className="mb-4 p-3 bg-green-900/20 border border-green-500/20 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-green-400" />
+                        <span className="text-sm text-green-300 font-medium">Çekim Limiti</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          defaultValue={(selectedUser as any).withdrawalLimit || 0}
+                          id="withdrawalLimitInput"
+                          className="w-24 px-2 py-1 bg-black/30 border border-green-500/20 rounded-lg text-white text-sm outline-none"
+                          placeholder="0"
+                        />
+                        <span className="text-xs text-green-400">jeton</span>
+                        <button
+                          onClick={async () => {
+                            const input = document.getElementById('withdrawalLimitInput') as HTMLInputElement
+                            const limit = parseInt(input?.value || '0')
+                            try {
+                              await fetch('/api/admin/users/withdrawal-limit', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: selectedUser.id, limit })
+                              })
+                              setMessage({ type: 'success', text: 'Çekim limiti güncellendi' })
+                            } catch { setMessage({ type: 'error', text: 'Hata oluştu' }) }
+                          }}
+                          className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs"
+                        >
+                          Kaydet
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-green-400/60 mt-1">0 = çekim kapalı. Kullanıcının tek seferde çekebileceği maks jeton.</p>
                   </div>
 
                   {/* Edit Form */}

@@ -28,6 +28,7 @@ interface PlatformSettings {
   session_duration_minutes: string
   credits_per_minute: string
   ad_duration_seconds: string
+  jeton_tl_rate: string
 }
 
 export default function AdminSettingsPage() {
@@ -42,7 +43,8 @@ export default function AdminSettingsPage() {
     welcome_credits: '10',
     session_duration_minutes: '5',
     credits_per_minute: '10',
-    ad_duration_seconds: '5'
+    ad_duration_seconds: '5',
+    jeton_tl_rate: '0.5'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -156,7 +158,14 @@ export default function AdminSettingsPage() {
       min: 0,
       max: 30
     },
-
+    {
+      key: 'jeton_tl_rate',
+      label: language === 'tr' ? 'Jeton/TL Oranı' : 'Jeton/TL Rate',
+      description: language === 'tr' ? '1 jeton = kaç TL (örn: 0.5 = 1 jeton 0.50 TL)' : '1 jeton = how many TL (e.g., 0.5 = 1 jeton is 0.50 TL)',
+      icon: Coins,
+      min: 0.01,
+      max: 100
+    },
   ]
 
   return (
