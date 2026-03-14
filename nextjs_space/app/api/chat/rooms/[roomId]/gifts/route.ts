@@ -164,10 +164,28 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     const { searchParams } = new URL(req.url)
     const after = searchParams.get('after') // ISO timestamp for polling recent gifts
 
-    // Get aggregated gifts per sender in this room
+    // Calculate start of today (midnight UTC+3 Turkey time)
+    const now = new Date()
+    const turkeyOffset = 3 * 60 * 60 * 1000 // UTC+3
+    const turkeyNow = new Date(now.getTime() + turkeyOffset)
+    const todayStart = new Date(Date.UTC(turkeyNow.getUTCFullYear(), turkeyNow.getUTCMonth(), turkeyNow.getUTCDate()) - turkeyOffset)
+
+    // Get currently active users in the room (present in last 60s)
+    const oneMinuteAgo = new Date(Date.now() - 60000)
+    const activePresences = await prisma.chatPresence.findMany({
+      where: { roomId, lastSeen: { gte: oneMinuteAgo } },
+      select: { userId: true }
+    })
+    const activeUserIds = activePresences.map((p: { userId: string }) => p.userId)
+
+    // Get aggregated gifts per sender in this room - only today's gifts from active users
     const gifts = await prisma.chatRoomGift.groupBy({
       by: ['senderId', 'currencyType'],
-      where: { roomId },
+      where: {
+        roomId,
+        createdAt: { gte: todayStart },
+        senderId: { in: activeUserIds.length > 0 ? activeUserIds : ['__none__'] }
+      },
       _sum: { totalPrice: true },
       orderBy: { _sum: { totalPrice: 'desc' } }
     })

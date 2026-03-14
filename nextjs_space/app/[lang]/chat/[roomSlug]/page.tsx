@@ -143,6 +143,7 @@ export default function ChatRoomPage() {
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
+  const [showMobileUsers, setShowMobileUsers] = useState(false)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -160,11 +161,18 @@ export default function ChatRoomPage() {
   const previousMessagesCount = useRef(0)
   const iceCandidatesBuffer = useRef<Map<string, RTCIceCandidate[]>>(new Map())
 
-  // Handle mobile keyboard - scroll input into view
+  // Handle mobile keyboard - ensure input stays visible
   const handleInputFocus = useCallback(() => {
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }, 300)
+    // Force recalculate --vh after keyboard animation completes
+    const recalc = () => {
+      const height = window.visualViewport?.height || window.innerHeight
+      const vh = height * 0.01
+      document.documentElement.style.setProperty('--vh', `${vh}px`)
+    }
+    // Multiple timeouts to catch different keyboard animation speeds
+    setTimeout(recalc, 100)
+    setTimeout(recalc, 300)
+    setTimeout(recalc, 500)
   }, [])
 
   // Initialize audio
@@ -196,7 +204,9 @@ export default function ChatRoomPage() {
     if (typeof window === 'undefined') return
     
     const setVH = () => {
-      const vh = window.innerHeight * 0.01
+      // Use visualViewport height when available (handles mobile keyboard)
+      const height = window.visualViewport?.height || window.innerHeight
+      const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
     }
     
@@ -206,12 +216,14 @@ export default function ChatRoomPage() {
     // Also handle visual viewport for mobile keyboard
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', setVH)
+      window.visualViewport.addEventListener('scroll', setVH)
     }
     
     return () => {
       window.removeEventListener('resize', setVH)
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', setVH)
+        window.visualViewport.removeEventListener('scroll', setVH)
       }
     }
   }, [])
@@ -1182,7 +1194,7 @@ export default function ChatRoomPage() {
   )
 
   return (
-    <div className="h-full w-full flex flex-col relative" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+    <div className="h-full w-full flex flex-col relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -1583,6 +1595,15 @@ export default function ChatRoomPage() {
                   <VolumeX className="w-4 h-4" />
                 </span>
               )}
+
+              {/* Mobile Users Toggle */}
+              <button
+                onClick={() => setShowMobileUsers(!showMobileUsers)}
+                className="md:hidden flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 relative"
+              >
+                <Users className="w-4 h-4" />
+                <span className="bg-purple-500/50 px-1.5 rounded text-[10px]">{activeUsers.length}</span>
+              </button>
             </div>
           </div>
 
@@ -1624,7 +1645,7 @@ export default function ChatRoomPage() {
           <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative">
             {/* Watermark Room Name */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-              <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/5 whitespace-nowrap select-none">
+              <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/10 whitespace-nowrap select-none">
                 {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
               </span>
             </div>
@@ -1674,7 +1695,7 @@ export default function ChatRoomPage() {
                       >
                         &lt;{displayName}&gt;
                       </button>
-                      <span className="text-white ml-2">
+                      <span className="text-white ml-2 break-all">
                         {msg.content.split(/(@\w+)/g).map((part, i) => 
                           part.startsWith('@') ? (
                             <span key={i} className="text-gold-400 font-medium">{part}</span>
@@ -1827,14 +1848,22 @@ export default function ChatRoomPage() {
           )}
         </div>
 
-        {/* Users Panel */}
-        <div className="w-56 md:w-64 flex flex-col min-h-0 bg-[#1a0b2e]">
+        {/* Users Panel - Hidden on mobile, overlay when toggled */}
+        {showMobileUsers && (
+          <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setShowMobileUsers(false)} />
+        )}
+        <div className={`${showMobileUsers ? 'fixed right-0 top-0 bottom-0 z-40 w-64' : 'hidden'} md:relative md:block md:w-64 flex flex-col min-h-0 bg-[#1a0b2e]`} style={showMobileUsers ? { height: 'calc(var(--vh, 1vh) * 100)' } : undefined}>
           <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
             <span className="text-purple-300 text-sm font-medium flex items-center gap-1">
               <Users className="w-4 h-4" />
               {language === 'tr' ? 'Kullanıcılar' : 'Users'}
             </span>
-            <span className="text-purple-400 text-xs bg-purple-600/30 px-2 py-0.5 rounded">({activeUsers.length})</span>
+            <div className="flex items-center gap-1">
+              <span className="text-purple-400 text-xs bg-purple-600/30 px-2 py-0.5 rounded">({activeUsers.length})</span>
+              <button onClick={() => setShowMobileUsers(false)} className="md:hidden text-purple-400 hover:text-white p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Room Owner at Top */}
@@ -1903,7 +1932,7 @@ export default function ChatRoomPage() {
                         <span className="w-4" />
                       )}
                       
-                      <span className={`text-xs truncate ${
+                      <span className={`text-xs truncate flex-1 min-w-0 ${
                         isOwner
                           ? 'text-yellow-300 font-bold'
                           : user.chatRole 
@@ -1911,7 +1940,7 @@ export default function ChatRoomPage() {
                             : user.isAdmin 
                               ? 'text-red-400'
                               : 'text-purple-200'
-                      }`}>
+                      }`} title={getDisplayName(user)}>
                         {getDisplayName(user)}
                       </span>
                       {user.id !== session?.user?.id && (
