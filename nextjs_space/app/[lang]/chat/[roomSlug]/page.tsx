@@ -73,6 +73,17 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
   voice: <Mic className="w-3 h-3" />
 }
 
+const GIFT_IMAGES: Record<string, string> = {
+  gul: '/gifts/gul.png',
+  kalp: '/gifts/kalp.png',
+  yildiz: '/gifts/yildiz.png',
+  tac: '/gifts/tac.png',
+  elmas: '/gifts/elmas.png',
+  roket: '/gifts/roket.png',
+  galaksi: '/gifts/galaksi.png',
+  aslan: '/gifts/aslan.png',
+}
+
 export default function ChatRoomPage() {
   const params = useParams()
   const router = useRouter()
@@ -126,7 +137,9 @@ export default function ChatRoomPage() {
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
   const [giftPaymentType, setGiftPaymentType] = useState<'jeton' | 'cfc'>('jeton')
   const [sendingGift, setSendingGift] = useState(false)
-  const [giftAnimation, setGiftAnimation] = useState<{icon: string; senderName: string; recipientName: string} | null>(null)
+  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number}>>([])
+  const lastGiftPollRef = useRef<string>(new Date().toISOString())
+  const seenGiftIdsRef = useRef<Set<string>>(new Set())
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
@@ -1033,10 +1046,39 @@ export default function ChatRoomPage() {
   const fetchLeaderboard = useCallback(async () => {
     if (!room) return
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/gifts`)
+      const res = await fetch(`/api/chat/rooms/${room.id}/gifts?after=${encodeURIComponent(lastGiftPollRef.current)}`)
       if (res.ok) {
         const data = await res.json()
         setLeaderboard(data.leaderboard || [])
+        // Process recent gifts for animation
+        const recent = data.recentGifts || []
+        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number}> = []
+        for (const g of recent) {
+          if (!seenGiftIdsRef.current.has(g.id)) {
+            seenGiftIdsRef.current.add(g.id)
+            newAnims.push({
+              id: g.id,
+              giftImage: g.giftImage || GIFT_IMAGES[g.giftTypeId] || '',
+              giftIcon: g.giftIcon || '🎁',
+              senderName: g.senderName,
+              recipientId: g.recipientId,
+              recipientName: g.recipientName,
+              amount: g.amount,
+            })
+          }
+        }
+        if (newAnims.length > 0) {
+          setGiftAnimations(prev => [...prev, ...newAnims])
+          // Auto-remove each animation after 4s
+          newAnims.forEach(a => {
+            setTimeout(() => {
+              setGiftAnimations(prev => prev.filter(p => p.id !== a.id))
+            }, 4000)
+          })
+        }
+        if (recent.length > 0) {
+          lastGiftPollRef.current = recent[recent.length - 1].createdAt
+        }
       }
     } catch (err) { console.error('Leaderboard fetch error:', err) }
   }, [room])
@@ -1051,12 +1093,9 @@ export default function ChatRoomPage() {
         body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType })
       })
       if (res.ok) {
-        const data = await res.json()
-        const gt = giftTypes.find(g => g.id === selectedGiftType)
-        setGiftAnimation({ icon: gt?.icon || '🎁', senderName: nickname || 'Anonim', recipientName: getDisplayName(giftTargetUser) })
-        setTimeout(() => setGiftAnimation(null), 3000)
         setShowGiftModal(false)
         setGiftTargetUser(null)
+        // Gift animation will be triggered via polling for ALL users
         fetchLeaderboard()
       } else {
         const err = await res.json()
@@ -1090,7 +1129,7 @@ export default function ChatRoomPage() {
     if (room) {
       fetchGiftTypes()
       fetchLeaderboard()
-      const interval = setInterval(fetchLeaderboard, 30000)
+      const interval = setInterval(fetchLeaderboard, 5000)
       return () => clearInterval(interval)
     }
   }, [room, fetchGiftTypes, fetchLeaderboard])
@@ -1789,7 +1828,7 @@ export default function ChatRoomPage() {
         </div>
 
         {/* Users Panel */}
-        <div className="w-48 md:w-56 flex flex-col min-h-0 bg-[#1a0b2e]">
+        <div className="w-56 md:w-64 flex flex-col min-h-0 bg-[#1a0b2e]">
           <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
             <span className="text-purple-300 text-sm font-medium flex items-center gap-1">
               <Users className="w-4 h-4" />
@@ -1837,6 +1876,7 @@ export default function ChatRoomPage() {
                   return (
                     <div
                       key={user.id}
+                      data-user-id={user.id}
                       onClick={() => {
                         if (user.id !== session?.user?.id) {
                           if (hasManagePermission) {
@@ -1892,23 +1932,75 @@ export default function ChatRoomPage() {
         </div>
       </div>
 
-      {/* Gift Animation Overlay */}
+      {/* Gift Animation Overlay - Flying PNG to recipient */}
       <AnimatePresence>
-        {giftAnimation && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-          >
-            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-6 text-center">
-              <div className="text-6xl mb-3 animate-bounce">{giftAnimation.icon}</div>
-              <p className="text-yellow-300 font-bold text-lg">{giftAnimation.senderName}</p>
-              <p className="text-purple-300 text-sm">→</p>
-              <p className="text-green-300 font-bold text-lg">{giftAnimation.recipientName}</p>
+        {giftAnimations.map((anim) => {
+          // Find the recipient element in the sidebar
+          const recipientEl = typeof document !== 'undefined' ? document.querySelector(`[data-user-id="${anim.recipientId}"]`) : null
+          const recipientRect = recipientEl?.getBoundingClientRect()
+          // Target position: recipient's nick in the sidebar, or center-right as fallback
+          const targetX = recipientRect ? recipientRect.left + recipientRect.width / 2 : (typeof window !== 'undefined' ? window.innerWidth - 120 : 500)
+          const targetY = recipientRect ? recipientRect.top + recipientRect.height / 2 : (typeof window !== 'undefined' ? window.innerHeight / 2 : 300)
+          // Start from bottom center
+          const startX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500
+          const startY = typeof window !== 'undefined' ? window.innerHeight - 80 : 600
+
+          return (
+            <div key={anim.id} className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+              {/* Flying gift image */}
+              <motion.div
+                initial={{ x: startX - 40, y: startY, scale: 1.2, opacity: 1 }}
+                animate={{ x: targetX - 40, y: targetY - 40, scale: 0.5, opacity: 1 }}
+                transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="absolute"
+              >
+                {anim.giftImage ? (
+                  <img src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]" />
+                ) : (
+                  <span className="text-6xl">{anim.giftIcon}</span>
+                )}
+              </motion.div>
+
+              {/* Star burst particles at target after delay */}
+              {[0,1,2,3,4,5,6,7,8,9,10,11].map((i) => {
+                const angle = (i / 12) * Math.PI * 2
+                const distance = 60 + (i * 7) % 40
+                const fsize = 10 + (i * 3) % 10
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ x: targetX, y: targetY, scale: 0, opacity: 0 }}
+                    animate={{ 
+                      x: targetX + Math.cos(angle) * distance, 
+                      y: targetY + Math.sin(angle) * distance, 
+                      scale: [0, 1.5, 0], 
+                      opacity: [0, 1, 0] 
+                    }}
+                    transition={{ duration: 1.2, delay: 1.5, ease: 'easeOut' }}
+                    className="absolute text-yellow-300"
+                    style={{ fontSize: `${fsize}px` }}
+                  >
+                    ✦
+                  </motion.div>
+                )
+              })}
+
+              {/* Sender → Recipient label at bottom */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.3 }}
+                className="absolute bottom-6 left-1/2 -translate-x-1/2"
+              >
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-3 text-center border border-yellow-500/30">
+                  <p className="text-yellow-300 font-bold text-sm">{anim.senderName}</p>
+                  <p className="text-purple-300 text-xs">🎁 → {anim.recipientName}</p>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
-        )}
+          )
+        })}
       </AnimatePresence>
 
       {/* Gift Modal */}
@@ -1969,7 +2061,11 @@ export default function ChatRoomPage() {
                     onClick={() => setSelectedGiftType(gt.id)}
                     className={`flex flex-col items-center p-2 rounded-lg transition-all ${selectedGiftType === gt.id ? 'bg-gold-500/20 border border-gold-500/50 scale-105' : 'bg-purple-900/30 border border-purple-500/20 hover:border-purple-400/40'}`}
                   >
-                    <span className="text-2xl">{gt.icon}</span>
+                    {GIFT_IMAGES[gt.id] ? (
+                      <img src={GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
+                    ) : (
+                      <span className="text-2xl">{gt.icon}</span>
+                    )}
                     <span className="text-[10px] text-purple-300 mt-0.5">{gt.name}</span>
                     <span className="text-[10px] text-yellow-400 font-bold">{gt.price}</span>
                   </button>

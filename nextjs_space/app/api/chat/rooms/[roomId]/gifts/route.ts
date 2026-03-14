@@ -157,10 +157,12 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
   }
 }
 
-// GET - Get gift leaderboard for a room
+// GET - Get gift leaderboard and recent gifts for a room
 export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
     const { roomId } = params
+    const { searchParams } = new URL(req.url)
+    const after = searchParams.get('after') // ISO timestamp for polling recent gifts
 
     // Get aggregated gifts per sender in this room
     const gifts = await prisma.chatRoomGift.groupBy({
@@ -172,10 +174,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
 
     // Get sender details
     const senderIds = [...new Set(gifts.map(g => g.senderId))]
-    const users = await prisma.user.findMany({
+    const users = senderIds.length > 0 ? await prisma.user.findMany({
       where: { id: { in: senderIds } },
       select: { id: true, name: true, username: true, image: true }
-    })
+    }) : []
     const userMap = new Map(users.map(u => [u.id, u]))
 
     // Combine jeton and cfc amounts per sender
@@ -205,7 +207,42 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       .sort((a, b) => (b.jetonTotal + b.cfcTotal) - (a.jetonTotal + a.cfcTotal))
       .slice(0, 20)
 
-    return NextResponse.json({ leaderboard })
+    // Get recent gifts for broadcasting to all users
+    const recentWhere: any = { roomId }
+    if (after) {
+      recentWhere.createdAt = { gt: new Date(after) }
+    } else {
+      // Default: gifts from last 15 seconds
+      recentWhere.createdAt = { gt: new Date(Date.now() - 15000) }
+    }
+
+    const recentGifts = await prisma.chatRoomGift.findMany({
+      where: recentWhere,
+      include: {
+        sender: { select: { id: true, name: true, username: true } },
+        recipient: { select: { id: true, name: true, username: true } },
+        giftType: { select: { id: true, name: true, icon: true, price: true } }
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 20
+    })
+
+    const recentGiftsFormatted = recentGifts.map(g => ({
+      id: g.id,
+      senderId: g.senderId,
+      senderName: g.sender.username || g.sender.name,
+      recipientId: g.recipientId,
+      recipientName: g.recipient.username || g.recipient.name,
+      giftTypeId: g.giftType.id,
+      giftName: g.giftType.name,
+      giftIcon: g.giftType.icon,
+      giftImage: `/gifts/${g.giftType.id}.png`,
+      amount: g.totalPrice,
+      currencyType: g.currencyType,
+      createdAt: g.createdAt.toISOString()
+    }))
+
+    return NextResponse.json({ leaderboard, recentGifts: recentGiftsFormatted })
   } catch (error) {
     console.error('Gift leaderboard error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
