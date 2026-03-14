@@ -163,7 +163,7 @@ Include:
 Use a warm, positive and motivating tone. Write 150-200 words.`;
 
     const completion = await client.chat.completions.create({
-      model: 'route-llm',
+      model: 'gpt-4.1-nano',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 500,
       temperature: 0.8

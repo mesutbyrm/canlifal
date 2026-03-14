@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     let content = ''
     try {
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-nano',
         messages: [
           { role: 'system', content: 'Sen mistik, gizemli ve etkileyici bir dilde konuşan bir fal ve astroloji uzmanısın. Yanıtlarını Türkçe ver. Emoji kullan ama abartma. Her zaman olumlu ve umut verici ol.' },
           { role: 'user', content: prompt },

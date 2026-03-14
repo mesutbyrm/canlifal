@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4.1-nano',
         messages,
         stream: true,
         max_tokens: 600,

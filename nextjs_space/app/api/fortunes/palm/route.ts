@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
       },
-      body: JSON.stringify({ model: 'gpt-4.1', messages, stream: true, max_tokens: 700 }),
+      body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 700 }),
     })
 
     if (!response?.ok) throw new Error('LLM API request failed')
