@@ -217,10 +217,17 @@ export default function CreditsPage() {
             {language === 'tr' ? 'Jeton Satın Al' : 'Buy Credits'}
           </h1>
           {session?.user && (
-            <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
-              <Coins className={`w-3.5 h-3.5 ${goldColor}`} />
-              <span className={textSecondary}>{language === 'tr' ? 'Bakiye:' : 'Balance:'}</span>
-              <span className={`${goldColor} font-bold`}>{userCredits}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
+                <Coins className={`w-3.5 h-3.5 ${goldColor}`} />
+                <span className={textSecondary}>Jeton:</span>
+                <span className={`${goldColor} font-bold`}>{userJetons}</span>
+              </div>
+              <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
+                <span className="text-sm">🪙</span>
+                <span className={textSecondary}>cFc:</span>
+                <span className={`${goldColor} font-bold`}>{userCredits}</span>
+              </div>
             </div>
           )}
         </motion.div>
@@ -275,7 +282,7 @@ export default function CreditsPage() {
                   {pkg.credits}
                 </div>
                 <div className={`text-xs ${textSecondary} mb-1`}>
-                  {language === 'tr' ? 'jeton' : 'credits'}
+                  {language === 'tr' ? 'jeton' : 'jetons'}
                 </div>
                 {pkg.bonusCredits > 0 && (
                   <div className="text-green-400 text-[10px] font-medium mb-1">
@@ -333,7 +340,7 @@ export default function CreditsPage() {
                     </div>
                     <div>
                       <div className={`${textPrimary} font-bold`}>
-                        {selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}
+                        {selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}
                       </div>
                       {selectedPackage.bonusCredits > 0 && (
                         <div className="text-green-400 text-xs">+{selectedPackage.bonusCredits} bonus</div>
@@ -531,7 +538,7 @@ export default function CreditsPage() {
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}</div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}</div>
                     {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
                   <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>
@@ -630,7 +637,7 @@ export default function CreditsPage() {
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Credits'}</div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}</div>
                     {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
                   <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>

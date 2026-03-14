@@ -154,7 +154,7 @@ export default function HomepageTicker() {
       <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
         <Coins className={`w-4 h-4 ${accentColor}`} />
         <span className={`${accentColor} text-xs font-medium`}>
-          {language === 'tr' ? 'Yeni Jeton' : 'New Credits'}
+          {language === 'tr' ? 'Yeni Jeton' : 'New Jetons'}
         </span>
         <div className="flex items-center gap-1.5">
           {purchase.user.image ? (

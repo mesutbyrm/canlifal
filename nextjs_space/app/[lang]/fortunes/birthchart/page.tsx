@@ -82,7 +82,7 @@ export default function BirthChartPage() {
             {language === 'tr' ? 'Yıldızların doğduğunuz anda size anlattıkları' : 'What the stars told you at the moment of your birth'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />10 {language === 'tr' ? 'cFc' : 'credits'}
+            <Sparkles className="inline w-4 h-4 mr-1" />10 {language === 'tr' ? 'cFc' : 'cFc'}
           </p>
         </motion.div>
 

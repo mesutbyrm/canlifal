@@ -242,7 +242,7 @@ export default function TellerIncomingRequest() {
                 <p className="text-purple-300 text-xs">{language === 'tr' ? 'Seçilen Süre' : 'Selected Duration'}</p>
               </div>
               <div className="text-center border-l border-purple-600 pl-4">
-                <p className="text-green-400 font-bold text-lg">{pendingRequest.creditsCharged} {language === 'tr' ? 'jeton' : 'credits'}</p>
+                <p className="text-green-400 font-bold text-lg">{pendingRequest.creditsCharged} {language === 'tr' ? 'jeton' : 'jetons'}</p>
                 <p className="text-purple-300 text-xs">{language === 'tr' ? 'Toplam Tutar' : 'Total Cost'}</p>
               </div>
             </div>

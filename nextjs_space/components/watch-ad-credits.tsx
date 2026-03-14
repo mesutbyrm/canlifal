@@ -128,7 +128,7 @@ export default function WatchAdCredits() {
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-medium transition-all shadow-lg"
       >
         <Gift className="w-5 h-5" />
-        <span>{language === 'tr' ? 'Ücretsiz Kredi Kazan' : 'Earn Free Credits'}</span>
+        <span>{language === 'tr' ? 'Ücretsiz cFc Kazan' : 'Earn Free cFc'}</span>
       </button>
 
       {/* Modal */}
@@ -145,7 +145,7 @@ export default function WatchAdCredits() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-serif text-xl text-gold-400 flex items-center gap-2">
                   <Gift className="w-6 h-6" />
-                  {language === 'tr' ? 'Reklam İzle, Kredi Kazan' : 'Watch Ad, Earn Credits'}
+                  {language === 'tr' ? 'Reklam İzle, cFc Kazan' : 'Watch Ad, Earn cFc'}
                 </h2>
                 {!isWatching && (
                   <button
@@ -252,7 +252,7 @@ export default function WatchAdCredits() {
                       className="w-full py-3 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg flex items-center justify-center gap-2 transition-all"
                     >
                       <Play className="w-5 h-5" />
-                      {language === 'tr' ? 'Reklam İzle (+5 Kredi)' : 'Watch Ad (+5 Credits)'}
+                      {language === 'tr' ? 'Reklam İzle (+5 cFc)' : 'Watch Ad (+5 cFc)'}
                     </button>
                   ) : (
                     <div className="text-center py-4">

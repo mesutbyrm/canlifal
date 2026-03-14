@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -83,6 +84,7 @@ export default function TellerDetailPage() {
   const [creditsPerMinute, setCreditsPerMinute] = useState(10) // Default 10 jetons/min
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState('')
+  const [showCfcPopup, setShowCfcPopup] = useState(false)
   const [userJetons, setUserJetons] = useState(0)
   
   // Waiting state
@@ -388,7 +390,7 @@ export default function TellerDetailPage() {
                 <div className="flex items-center gap-2 text-lg">
                   <CreditCard className="w-5 h-5 text-gold-400" />
                   <span className="text-gold-400 font-semibold">
-                    {teller.pricePerSession} {language === 'tr' ? 'kredi/seans' : 'credits/session'}
+                    {teller.pricePerSession} {language === 'tr' ? 'jeton/seans' : 'jetons/session'}
                   </span>
                 </div>
               </div>
@@ -557,13 +559,14 @@ export default function TellerDetailPage() {
                 {session?.user && (
                   <div className="flex items-center justify-between p-4 bg-deep-purple-900/50 rounded-lg">
                     <span className="text-purple-300">
-                      {language === 'tr' ? 'Mevcut Krediniz:' : 'Your Credits:'}
+                      {language === 'tr' ? 'Mevcut Jetonunuz:' : 'Your Jetons:'}
                     </span>
                     <span className={`font-semibold ${
                       userJetons >= totalCost ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {userJetons} {language === 'tr' ? 'jeton' : 'jetons'}
                     </span>
+                    <button onClick={() => setShowCfcPopup(true)} className="text-purple-400 hover:text-purple-300 text-xs underline ml-1">?</button>
                   </div>
                 )}
 
@@ -589,8 +592,8 @@ export default function TellerDetailPage() {
                         : !teller.isOnline
                           ? (language === 'tr' ? 'Falcı Çevrimdışı' : 'Teller is Offline')
                           : userJetons < totalCost
-                            ? (language === 'tr' ? 'Yetersiz Kredi' : 'Insufficient Credits')
-                            : (language === 'tr' ? `Randevu Al (${totalCost} Kredi - ${selectedDuration} dk)` : `Book Session (${totalCost} Credits - ${selectedDuration} min)`)}
+                            ? (language === 'tr' ? 'Yetersiz Jeton' : 'Insufficient Jetons')
+                            : (language === 'tr' ? `Randevu Al (${totalCost} Jeton - ${selectedDuration} dk)` : `Book Session (${totalCost} Jetons - ${selectedDuration} min)`)}
                     </>
                   )}
                 </button>
@@ -660,6 +663,7 @@ export default function TellerDetailPage() {
           </div>
         </motion.div>
       </div>
+      {showCfcPopup && <CfcJetonInfoPopup isOpen={showCfcPopup} onClose={() => setShowCfcPopup(false)} />}
     </div>
   )
 }

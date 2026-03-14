@@ -90,7 +90,7 @@ export default function AuraReadingPage() {
             {language === 'tr' ? 'Enerji alanınızın renklerini keşfedin' : 'Discover the colors of your energy field'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />6 {language === 'tr' ? 'cFc' : 'credits'}
+            <Sparkles className="inline w-4 h-4 mr-1" />6 {language === 'tr' ? 'cFc' : 'cFc'}
           </p>
         </motion.div>
 

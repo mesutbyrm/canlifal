@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
+import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -114,7 +115,8 @@ export default function VideoStreamPage() {
   const [streamTitle, setStreamTitle] = useState('')
   const [isStartingStream, setIsStartingStream] = useState(false)
   const [giftTypes, setGiftTypes] = useState<GiftType[]>([])
-  const [userCredits, setUserCredits] = useState(0)
+  const [userJetons, setUserJetons] = useState(0)
+  const [showCfcPopup, setShowCfcPopup] = useState(false)
   const [sendingGift, setSendingGift] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
@@ -494,7 +496,7 @@ export default function VideoStreamPage() {
   const fetchCredits = async () => {
     try {
       const res = await fetch('/api/user/credits')
-      if (res.ok) setUserCredits((await res.json()).credits)
+      if (res.ok) { const d = await res.json(); setUserJetons(d.jetonBalance ?? 0) }
     } catch (e) {}
   }
 
@@ -658,8 +660,8 @@ export default function VideoStreamPage() {
   }
 
   const handleSendGift = async (gift: GiftType) => {
-    if (!currentStream || !session?.user || userCredits < gift.price) {
-      if (userCredits < gift.price) alert(language === 'tr' ? 'Yetersiz jeton!' : 'Insufficient credits!')
+    if (!currentStream || !session?.user || userJetons < gift.price) {
+      if (userJetons < gift.price) alert(language === 'tr' ? 'Yetersiz jeton!' : 'Insufficient credits!')
       return
     }
     setSendingGift(gift.id)
@@ -671,7 +673,7 @@ export default function VideoStreamPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setUserCredits(data.newBalance)
+        setUserJetons(data.newBalance)
         setShowGifts(false)
         
         // Show center gift animation
@@ -1193,15 +1195,16 @@ export default function VideoStreamPage() {
                   <span className="text-white font-bold">{language === 'tr' ? 'Hediye Gönder' : 'Send a Gift'}</span>
                   <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded-full">
                     <Coins className="w-3 h-3 text-yellow-400" />
-                    <span className="text-yellow-400 text-xs font-semibold">{userCredits}</span>
+                      <span className="text-yellow-400 text-xs font-semibold">{userJetons} Jeton</span>
                   </div>
+                  <button onClick={() => setShowCfcPopup(true)} className="text-white/50 hover:text-white text-xs underline">?</button>
                 </div>
                 <button onClick={() => setShowGifts(false)}><X className="w-6 h-6 text-white" /></button>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {giftTypes.map(gift => (
-                  <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userCredits < gift.price}
-                    className={`flex flex-col items-center p-3 rounded-xl ${userCredits >= gift.price ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-50'}`}>
+                  <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userJetons < gift.price}
+                    className={`flex flex-col items-center p-3 rounded-xl ${userJetons >= gift.price ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-50'}`}>
                     <span className="text-3xl mb-1">{gift.icon}</span>
                     <span className="text-white text-xs font-medium">{language === 'tr' ? gift.name : gift.nameEn}</span>
                     <div className="flex items-center gap-1 mt-1">
@@ -1385,6 +1388,8 @@ export default function VideoStreamPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CfcJetonInfoPopup isOpen={showCfcPopup} onClose={() => setShowCfcPopup(false)} />
 
     </div>
   )

@@ -497,10 +497,10 @@ Not: Papara veya IBAN ile ödeme yapabilirsiniz.`}
               💡 {language === 'tr' ? 'Kullanım Bilgisi' : 'Usage Info'}
             </h3>
             <ul className="text-yellow-200 space-y-2 text-sm">
-              <li>• {language === 'tr' ? 'Kullanıcılar jeton satın al sayfasında bu ödeme yöntemlerini görecek' : 'Users will see these payment methods on the credits page'}</li>
+              <li>• {language === 'tr' ? 'Kullanıcılar jeton satın al sayfasında bu ödeme yöntemlerini görecek' : 'Users will see these payment methods on the jeton page'}</li>
               <li>• {language === 'tr' ? 'Ödeme açıklamasına kullanıcı adı yazması isteniyor' : 'Users are asked to write their username in payment description'}</li>
               <li>• {language === 'tr' ? 'WhatsApp linki tıklandığında otomatik mesaj gönderilecek' : 'WhatsApp link will send auto message when clicked'}</li>
-              <li>• {language === 'tr' ? 'Ödeme onayı sonrası manuel olarak jeton ekleyebilirsiniz' : 'You can manually add credits after payment confirmation'}</li>
+              <li>• {language === 'tr' ? 'Ödeme onayı sonrası manuel olarak jeton ekleyebilirsiniz' : 'You can manually add jetons after payment confirmation'}</li>
             </ul>
           </motion.div>
         </div>

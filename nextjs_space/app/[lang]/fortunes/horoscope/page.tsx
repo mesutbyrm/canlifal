@@ -115,7 +115,7 @@ export default function HoroscopePage() {
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            3 {language === 'tr' ? 'cFc' : 'credits'}
+            3 {language === 'tr' ? 'cFc' : 'cFc'}
           </p>
         </motion.div>
 
