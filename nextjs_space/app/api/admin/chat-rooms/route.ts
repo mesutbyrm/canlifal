@@ -126,12 +126,25 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { searchParams } = new URL(req.url)
-    const roomId = searchParams.get('roomId')
+    let roomId: string | null = null
+    try {
+      const body = await req.json()
+      roomId = body.roomId
+    } catch {
+      const { searchParams } = new URL(req.url)
+      roomId = searchParams.get('roomId')
+    }
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID required' }, { status: 400 })
     }
 
+    // Delete related records first
+    await prisma.chatRoomGift.deleteMany({ where: { roomId } })
+    await prisma.chatMessage.deleteMany({ where: { roomId } })
+    await prisma.chatPresence.deleteMany({ where: { roomId } })
+    await prisma.chatUserRole.deleteMany({ where: { roomId } })
+    await prisma.chatMute.deleteMany({ where: { roomId } })
+    await prisma.chatBan.deleteMany({ where: { roomId } })
     await prisma.chatRoom.delete({ where: { id: roomId } })
 
     return NextResponse.json({ success: true })

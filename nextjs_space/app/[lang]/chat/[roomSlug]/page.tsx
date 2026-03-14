@@ -1017,6 +1017,72 @@ export default function ChatRoomPage() {
   }
 
   // Check if current user can use voice (has voice permission, higher role, or is room owner)
+  // ===== Gift System Functions =====
+  const fetchGiftTypes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/gifts/types')
+      if (res.ok) {
+        const data = await res.json()
+        setGiftTypes(data)
+        if (data.length > 0) setSelectedGiftType(data[0].id)
+      }
+    } catch (err) { console.error('Gift types fetch error:', err) }
+  }, [])
+
+  const fetchLeaderboard = useCallback(async () => {
+    if (!room) return
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/gifts`)
+      if (res.ok) {
+        const data = await res.json()
+        setLeaderboard(data.leaderboard || [])
+      }
+    } catch (err) { console.error('Leaderboard fetch error:', err) }
+  }, [room])
+
+  const sendGift = async () => {
+    if (!room || !giftTargetUser || !selectedGiftType || sendingGift) return
+    setSendingGift(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/gifts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const gt = giftTypes.find(g => g.id === selectedGiftType)
+        setGiftAnimation({ icon: gt?.icon || '🎁', senderName: nickname || 'Anonim', recipientName: getDisplayName(giftTargetUser) })
+        setTimeout(() => setGiftAnimation(null), 3000)
+        setShowGiftModal(false)
+        setGiftTargetUser(null)
+        fetchLeaderboard()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Hediye gönderilemedi')
+      }
+    } catch (err) {
+      console.error('Send gift error:', err)
+      alert('Hediye gönderilemedi')
+    } finally {
+      setSendingGift(false)
+    }
+  }
+
+  const openGiftModal = (user: ActiveUser) => {
+    setGiftTargetUser(user)
+    setShowGiftModal(true)
+  }
+
+  useEffect(() => {
+    if (room) {
+      fetchGiftTypes()
+      fetchLeaderboard()
+      const interval = setInterval(fetchLeaderboard, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [room, fetchGiftTypes, fetchLeaderboard])
+
   const canUseVoice = () => {
     if (!session?.user?.id) return false
     // Room owner can always use voice
@@ -1602,6 +1668,33 @@ export default function ChatRoomPage() {
             <div className="px-3 py-1 bg-red-900/50 text-red-300 text-xs">{error}</div>
           )}
 
+          {/* Gift Leaderboard */}
+          {leaderboard.length > 0 && (
+            <div className="flex-shrink-0 bg-[#1a0b2e]/80 border-t border-yellow-500/20">
+              <button
+                onClick={() => setShowLeaderboard(!showLeaderboard)}
+                className="w-full flex items-center justify-between px-3 py-1 text-xs"
+              >
+                <span className="text-yellow-400 flex items-center gap-1"><Trophy className="w-3 h-3" /> Hediye Sıralaması</span>
+                <span className="text-purple-400">{showLeaderboard ? '▲' : '▼'}</span>
+              </button>
+              {showLeaderboard && (
+                <div className="flex gap-2 px-3 pb-1.5 overflow-x-auto scrollbar-hide">
+                  {leaderboard.slice(0, 10).map((entry, i) => (
+                    <div key={entry.userId} className={`flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${i === 0 ? 'bg-yellow-500/20 border border-yellow-500/40' : i === 1 ? 'bg-gray-400/20 border border-gray-400/40' : i === 2 ? 'bg-orange-500/20 border border-orange-500/40' : 'bg-purple-900/30 border border-purple-500/20'}`}>
+                      <span className={`font-bold ${i === 0 ? 'text-yellow-300' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-300' : 'text-purple-300'}`}>
+                        {i + 1}.
+                      </span>
+                      <span className="text-white truncate max-w-[60px]">{entry.name}</span>
+                      {entry.jetonTotal > 0 && <span className="text-yellow-400">💎{entry.jetonTotal}</span>}
+                      {entry.cfcTotal > 0 && <span className="text-blue-400">💰{entry.cfcTotal}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Message Input */}
           {session?.user ? (
             <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
@@ -1688,7 +1781,7 @@ export default function ChatRoomPage() {
                             setManageTab('users')
                             setShowManagePopup(true)
                           } else {
-                            addMention(getDisplayName(user))
+                            openGiftModal(user)
                           }
                         }
                       }}
@@ -1718,6 +1811,15 @@ export default function ChatRoomPage() {
                       }`}>
                         {getDisplayName(user)}
                       </span>
+                      {user.id !== session?.user?.id && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openGiftModal(user) }}
+                          className="ml-auto text-yellow-400 hover:text-yellow-300 opacity-60 hover:opacity-100 transition-opacity"
+                          title="Hediye Gönder"
+                        >
+                          <Gift className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   )
                 })}
@@ -1726,6 +1828,105 @@ export default function ChatRoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Gift Animation Overlay */}
+      <AnimatePresence>
+        {giftAnimation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-6 text-center">
+              <div className="text-6xl mb-3 animate-bounce">{giftAnimation.icon}</div>
+              <p className="text-yellow-300 font-bold text-lg">{giftAnimation.senderName}</p>
+              <p className="text-purple-300 text-sm">→</p>
+              <p className="text-green-300 font-bold text-lg">{giftAnimation.recipientName}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Gift Modal */}
+      <AnimatePresence>
+        {showGiftModal && giftTargetUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowGiftModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl w-full max-w-sm overflow-hidden"
+            >
+              <div className="p-4 border-b border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-gold-400 font-bold flex items-center gap-2">
+                    <Gift className="w-5 h-5" /> Hediye Gönder
+                  </h3>
+                  <button onClick={() => setShowGiftModal(false)} className="text-purple-400 hover:text-white">✕</button>
+                </div>
+                <p className="text-purple-300 text-sm mt-1">
+                  Alıcı: <span className="text-white font-medium">{getDisplayName(giftTargetUser)}</span>
+                </p>
+              </div>
+
+              {/* Payment Type Toggle */}
+              <div className="p-3 border-b border-purple-500/20">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setGiftPaymentType('jeton')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'jeton' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
+                  >
+                    <Coins className="w-4 h-4 inline mr-1" /> Jeton
+                  </button>
+                  <button
+                    onClick={() => setGiftPaymentType('cfc')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'cfc' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
+                  >
+                    💰 CFC
+                  </button>
+                </div>
+                <p className="text-xs text-purple-400/70 mt-1 text-center">
+                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler gerçek paraya dönüşür' : '⚠️ CFC ile gönderilen hediyeler paraya dönüşmez'}
+                </p>
+              </div>
+
+              {/* Gift Types Grid */}
+              <div className="p-3 grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                {giftTypes.map(gt => (
+                  <button
+                    key={gt.id}
+                    onClick={() => setSelectedGiftType(gt.id)}
+                    className={`flex flex-col items-center p-2 rounded-lg transition-all ${selectedGiftType === gt.id ? 'bg-gold-500/20 border border-gold-500/50 scale-105' : 'bg-purple-900/30 border border-purple-500/20 hover:border-purple-400/40'}`}
+                  >
+                    <span className="text-2xl">{gt.icon}</span>
+                    <span className="text-[10px] text-purple-300 mt-0.5">{gt.name}</span>
+                    <span className="text-[10px] text-yellow-400 font-bold">{gt.price}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Send Button */}
+              <div className="p-3 border-t border-purple-500/20">
+                <button
+                  onClick={sendGift}
+                  disabled={!selectedGiftType || sendingGift}
+                  className="w-full py-2.5 bg-gradient-to-r from-gold-500 to-yellow-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-gold-400 hover:to-yellow-400 transition-all"
+                >
+                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'CFC'})`}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Home Button - Fixed Bottom Right */}
       <Link

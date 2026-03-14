@@ -9,7 +9,7 @@ import {
   Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical,
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
-  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search
+  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -491,6 +491,17 @@ export default function AdminPage() {
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm ${roomModData.roomMuted ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                 {roomModData.roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 {roomModData.roomMuted ? (language === 'tr' ? 'Sessizi Aç' : 'Unmute') : (language === 'tr' ? 'Sessize Al' : 'Mute')}
+              </button>
+              <button onClick={async () => {
+                if (!confirm(language === 'tr' ? 'Bu odayı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this room?')) return
+                try {
+                  const res = await fetch('/api/admin/chat-rooms', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId: selectedRoom.id }) })
+                  if (res.ok) { const rr = await fetch('/api/chat/rooms'); const rd = await rr.json(); setChatRooms(rd || []); setSelectedRoom(null); setRoomModData(null) }
+                  else { const d = await res.json(); alert(d.error) }
+                } catch { alert('Hata oluştu') }
+              }} className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20">
+                <Trash2 className="w-4 h-4" />
+                {language === 'tr' ? 'Odayı Sil' : 'Delete Room'}
               </button>
             </div>
 

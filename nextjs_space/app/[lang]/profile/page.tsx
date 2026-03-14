@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
+import ChatRoomReceivedGifts from '@/components/chat-room-received-gifts'
 
 interface UserProfile {
   id: string
@@ -966,6 +967,11 @@ export default function ProfilePage() {
           )}
         </div>
       )}
+
+      {/* Chat Room Received Gifts */}
+      <div className="px-4 mt-3">
+        <ChatRoomReceivedGifts language={language} isFacebook={isFacebook} isCosmic={isCosmic} textPrimary={textPrimary} textSecondary={textSecondary} />
+      </div>
 
       {/* Pinned Fortunes */}
       {pinnedFortunes.length > 0 && (
