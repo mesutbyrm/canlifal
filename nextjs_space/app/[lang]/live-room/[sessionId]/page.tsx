@@ -29,7 +29,7 @@ interface RoomData {
     id: string;
     name: string;
     image?: string;
-    credits: number;
+    jetonBalance: number;
     membership: string;
   };
 }
@@ -66,10 +66,10 @@ export default function LiveRoomPage() {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
   const [showStartTimerPopup, setShowStartTimerPopup] = useState(false);
-  const [userCredits, setUserCredits] = useState(0);
+  const [userJetons, setUserJetons] = useState(0);
   const [showAddTimePopup, setShowAddTimePopup] = useState(false);
   const [showUserAddTimePopup, setShowUserAddTimePopup] = useState(false);
-  const [myCredits, setMyCredits] = useState(0);
+  const [myJetons, setMyJetons] = useState(0);
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -402,11 +402,11 @@ export default function LiveRoomPage() {
         // Update max seconds ref
         maxSecondsRef.current += minutes * 60;
         setRemainingSeconds(prev => prev + minutes * 60);
-        // Update user's own credits
-        if (data.creditsRemaining !== undefined) {
-          setMyCredits(data.creditsRemaining);
+        // Update user's own jetons
+        if (data.jetonsRemaining !== undefined) {
+          setMyJetons(data.jetonsRemaining);
         } else {
-          setMyCredits(prev => prev - (data.creditsUsed || 0));
+          setMyJetons(prev => prev - (data.jetonsUsed || 0));
         }
         setShowUserAddTimePopup(false);
         fetchRoomData();
@@ -443,7 +443,7 @@ export default function LiveRoomPage() {
     }
   };
 
-  // Teller adds time (deducts from user's credits)
+  // Teller adds time (deducts from user's jetons)
   const tellerAddTime = async (minutes: number) => {
     try {
       const res = await fetch(`/api/room/${sessionId}`, {
@@ -457,7 +457,7 @@ export default function LiveRoomPage() {
         // Update max seconds ref
         maxSecondsRef.current += minutes * 60;
         setRemainingSeconds(prev => prev + minutes * 60);
-        setUserCredits(data.userCreditsRemaining);
+        setUserJetons(data.userJetonsRemaining);
         setShowAddTimePopup(false);
         fetchRoomData();
       } else {
@@ -602,10 +602,10 @@ export default function LiveRoomPage() {
         setRemainingSeconds(maxSeconds - usedSeconds);
         setElapsedSeconds(usedSeconds);
         setTimerStarted(roomInfo.timerStarted);
-        setUserCredits(roomInfo.user.credits);
-        // Set user's own credits for the extension popup
+        setUserJetons(roomInfo.user.jetonBalance);
+        // Set user's own jetons for the extension popup
         if (roomInfo.isUser) {
-          setMyCredits(roomInfo.user.credits);
+          setMyJetons(roomInfo.user.jetonBalance);
         }
         
         // If teller and timer not started, show popup
@@ -953,8 +953,8 @@ export default function LiveRoomPage() {
               </p>
               <p className="text-gold-400 text-sm mt-2">
                 {language === 'tr' 
-                  ? `Kullanıcının jetonu: ${userCredits}`
-                  : `User credits: ${userCredits}`
+                  ? `Kullanıcının jetonu: ${userJetons}`
+                  : `User jetons: ${userJetons}`
                 }
               </p>
             </div>
@@ -976,7 +976,7 @@ export default function LiveRoomPage() {
               <div className="grid grid-cols-3 gap-2">
                 {[5, 10, 15].map((mins) => {
                   const cost = mins * roomData.creditsPerMinute;
-                  const canAfford = userCredits >= cost;
+                  const canAfford = userJetons >= cost;
                   return (
                     <button
                       key={mins}
@@ -1018,13 +1018,13 @@ export default function LiveRoomPage() {
               <p className="text-gray-300 text-sm">
                 {language === 'tr' 
                   ? 'Kullanıcının jetonundan düşülecek'
-                  : 'Will be deducted from user credits'
+                  : 'Will be deducted from user jetons'
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
                 {language === 'tr' 
-                  ? `Kullanıcının jetonu: ${userCredits}`
-                  : `User credits: ${userCredits}`
+                  ? `Kullanıcının jetonu: ${userJetons}`
+                  : `User jetons: ${userJetons}`
                 }
               </p>
             </div>
@@ -1032,7 +1032,7 @@ export default function LiveRoomPage() {
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[5, 10, 15, 20, 25, 30].map((mins) => {
                 const cost = mins * roomData.creditsPerMinute;
-                const canAfford = userCredits >= cost;
+                const canAfford = userJetons >= cost;
                 return (
                   <button
                     key={mins}
@@ -1081,8 +1081,8 @@ export default function LiveRoomPage() {
               </p>
               <p className="text-gold-400 text-sm mt-2">
                 {language === 'tr' 
-                  ? `Mevcut Jetonunuz: ${myCredits}`
-                  : `Your Credits: ${myCredits}`
+                  ? `Mevcut Jetonunuz: ${myJetons}`
+                  : `Your Jetons: ${myJetons}`
                 }
               </p>
             </div>
@@ -1096,7 +1096,7 @@ export default function LiveRoomPage() {
                 { mins: 25, cost: 250 },
                 { mins: 30, cost: 300 }
               ].map(({ mins, cost }) => {
-                const canAfford = myCredits >= cost;
+                const canAfford = myJetons >= cost;
                 return (
                   <button
                     key={mins}

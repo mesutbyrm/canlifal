@@ -575,7 +575,7 @@ export default function AdminLiveTellersPage() {
                             <div className="text-sm space-y-2">
                               <p><span className="text-gray-400">{language === 'tr' ? 'Biyografi:' : 'Bio:'}</span> <span className="text-white">{teller.bio || '-'}</span></p>
                               <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s]?.[language] || s).join(', ') || '-'}</span></p>
-                              <p><span className="text-gray-400">{language === 'tr' ? 'Seans Ücreti:' : 'Price/Session:'}</span> <span className="text-gold-400">{teller.pricePerSession} kredi</span></p>
+                              <p><span className="text-gray-400">{language === 'tr' ? 'Seans Ücreti:' : 'Price/Session:'}</span> <span className="text-gold-400">{teller.pricePerSession} jeton</span></p>
                               <p><span className="text-gray-400">{language === 'tr' ? 'Kayıt:' : 'Registered:'}</span> <span className="text-white">{new Date(teller.createdAt).toLocaleDateString()}</span></p>
                             </div>
                           </div>
@@ -659,7 +659,7 @@ export default function AdminLiveTellersPage() {
                       <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{selectedTeller.specialties.join(', ') || '-'}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Puan:' : 'Rating:'}</span> <span className="text-yellow-400">{selectedTeller.rating.toFixed(1)} ⭐</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Seans:' : 'Total Sessions:'}</span> <span className="text-white">{selectedTeller.totalSessions}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Kazanç:' : 'Total Earnings:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} kredi</span></p>
+                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Kazanç:' : 'Total Earnings:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} jeton</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Bonus Kredi:' : 'Bonus Credits:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Durum:' : 'Status:'}</span> <span className="text-white">{selectedTeller.applicationStatus}</span></p>
                       <p><span className="text-gray-400">{language === 'tr' ? 'Onaylı:' : 'Verified:'}</span> <span className={selectedTeller.isVerified ? 'text-green-400' : 'text-gray-400'}>{selectedTeller.isVerified ? '✓' : '✗'}</span></p>

@@ -111,7 +111,7 @@ export default function BroadcastPage() {
 
   const [viewerCount, setViewerCount] = useState(0)
   const [likeCount, setLikeCount] = useState(0)
-  const [totalGiftCredits, setTotalGiftCredits] = useState(0)
+  const [totalGiftJetons, setTotalGiftCredits] = useState(0)
   const [comments, setComments] = useState<Comment[]>([])
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isAudioOn, setIsAudioOn] = useState(true)
@@ -1309,10 +1309,10 @@ export default function BroadcastPage() {
                   <Heart className="w-3.5 h-3.5 text-[#fe2c55]" fill="#fe2c55" />
                   <span className="text-white text-xs">{formatCount(likeCount)}</span>
                 </div>
-                {totalGiftCredits > 0 && (
+                {totalGiftJetons > 0 && (
                   <div className="flex items-center gap-1 bg-yellow-500/30 px-2 py-1 rounded-full">
                     <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                    <span className="text-yellow-400 text-xs font-bold">+{totalGiftCredits}</span>
+                    <span className="text-yellow-400 text-xs font-bold">+{totalGiftJetons}</span>
                   </div>
                 )}
               </div>
@@ -1649,10 +1649,10 @@ export default function BroadcastPage() {
               <Radio className="w-12 h-12 text-[#fe2c55] mx-auto mb-4" />
               <h2 className="text-lg font-bold text-white mb-2">{language === 'tr' ? 'Yayını bitir?' : 'End stream?'}</h2>
               <p className="text-white/60 text-sm mb-3">{formatDuration(duration)}</p>
-              {totalGiftCredits > 0 && (
+              {totalGiftJetons > 0 && (
                 <div className="flex items-center justify-center gap-2 mb-4 text-yellow-400">
                   <Coins className="w-4 h-4" />
-                  <span className="font-bold">+{totalGiftCredits}</span>
+                  <span className="font-bold">+{totalGiftJetons}</span>
                 </div>
               )}
               <div className="flex gap-3">

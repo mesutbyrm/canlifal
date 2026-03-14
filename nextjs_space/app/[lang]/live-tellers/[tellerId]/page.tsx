@@ -233,7 +233,7 @@ export default function TellerDetailPage() {
       }
 
       const data = await res.json()
-      setUserCredits(prev => prev - totalCost)
+      setUserJetons((prev: number) => prev - totalCost)
       
       // Show ad first, then waiting screen
       setWaitingSessionId(data.sessionId)
