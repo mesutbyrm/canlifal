@@ -129,6 +129,7 @@ export default function ChatRoomPage() {
   const [giftAnimation, setGiftAnimation] = useState<{icon: string; senderName: string; recipientName: string} | null>(null)
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
   const [showLeaderboard, setShowLeaderboard] = useState(true)
+  const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -1069,9 +1070,20 @@ export default function ChatRoomPage() {
     }
   }
 
-  const openGiftModal = (user: ActiveUser) => {
-    setGiftTargetUser(user)
+  const openGiftModal = (user: ActiveUser | { id: string; name: string; nickname?: string; lastSeen?: string; chatRole?: string; roleSymbol?: string; roleLevel?: number; isAdmin?: boolean }) => {
+    const fullUser: ActiveUser = {
+      id: user.id,
+      name: user.name,
+      nickname: user.nickname,
+      lastSeen: (user as ActiveUser).lastSeen || new Date().toISOString(),
+      chatRole: (user as ActiveUser).chatRole,
+      roleSymbol: (user as ActiveUser).roleSymbol,
+      roleLevel: (user as ActiveUser).roleLevel ?? 0,
+      isAdmin: (user as ActiveUser).isAdmin ?? false,
+    }
+    setGiftTargetUser(fullUser)
     setShowGiftModal(true)
+    setShowGiftUserSelect(false)
   }
 
   useEffect(() => {
@@ -1697,8 +1709,50 @@ export default function ChatRoomPage() {
 
           {/* Message Input */}
           {session?.user ? (
-            <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
-              <div className="flex gap-2">
+            <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
+              {/* Gift User Selection Panel */}
+              {showGiftUserSelect && (
+                <div className="mb-2 bg-[#0d0520] border border-yellow-500/30 rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-yellow-400 text-xs font-bold flex items-center gap-1">
+                      <Gift className="w-3 h-3" /> Kime hediye göndermek istiyorsunuz?
+                    </span>
+                    <button onClick={() => setShowGiftUserSelect(false)} className="text-purple-400 hover:text-white text-xs">✕</button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                    {room?.owner && room.owner.id !== session?.user?.id && (
+                      <button
+                        onClick={() => openGiftModal({ id: room.owner!.id, name: room.owner!.username || room.owner!.name || 'Oda Sahibi' })}
+                        className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-xs text-yellow-200 hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Crown className="w-3 h-3 text-yellow-300" />
+                        {room.owner.username || room.owner.name}
+                      </button>
+                    )}
+                    {activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => openGiftModal(user)}
+                        className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-xs text-purple-200 hover:bg-purple-500/30 transition-colors"
+                      >
+                        {getDisplayName(user)}
+                      </button>
+                    ))}
+                    {activeUsers.filter(u => u.id !== session?.user?.id).length === 0 && !room?.owner && (
+                      <span className="text-purple-400/50 text-xs">{language === 'tr' ? 'Hediye gönderilecek kullanıcı yok' : 'No users to send gifts to'}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowGiftUserSelect(!showGiftUserSelect)}
+                  className={`px-3 py-2 rounded text-sm font-medium flex items-center gap-1 transition-all ${showGiftUserSelect ? 'bg-yellow-500 text-black' : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/40'}`}
+                  title="Hediye Gönder"
+                >
+                  <Gift className="w-4 h-4" />
+                </button>
                 <input
                   ref={inputRef}
                   type="text"
@@ -1719,8 +1773,8 @@ export default function ChatRoomPage() {
                 >
                   <Send className="w-4 h-4" />
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
           ) : (
             <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
               <Link
@@ -1752,9 +1806,18 @@ export default function ChatRoomPage() {
               </p>
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-yellow-300" />
-                <span className="text-yellow-200 text-sm font-bold truncate">
+                <span className="text-yellow-200 text-sm font-bold truncate flex-1">
                   {room.owner.username || room.owner.name}
                 </span>
+                {room.owner.id !== session?.user?.id && (
+                  <button
+                    onClick={() => openGiftModal({ id: room.owner!.id, name: room.owner!.username || room.owner!.name || 'Oda Sahibi' })}
+                    className="text-yellow-400 hover:text-yellow-200 transition-colors bg-yellow-500/20 rounded p-1"
+                    title="Hediye Gönder"
+                  >
+                    <Gift className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1814,10 +1877,10 @@ export default function ChatRoomPage() {
                       {user.id !== session?.user?.id && (
                         <button
                           onClick={(e) => { e.stopPropagation(); openGiftModal(user) }}
-                          className="ml-auto text-yellow-400 hover:text-yellow-300 opacity-60 hover:opacity-100 transition-opacity"
+                          className="ml-auto text-yellow-400 hover:text-yellow-200 hover:bg-yellow-500/20 rounded p-0.5 transition-all"
                           title="Hediye Gönder"
                         >
-                          <Gift className="w-3 h-3" />
+                          <Gift className="w-4 h-4" />
                         </button>
                       )}
                     </div>
