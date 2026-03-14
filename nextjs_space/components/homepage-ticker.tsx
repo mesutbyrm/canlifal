@@ -53,11 +53,18 @@ interface BigGift {
   }
 }
 
+interface CustomMessage {
+  id: string
+  text: string
+  icon: string
+}
+
 interface TickerData {
   onlineUsers: OnlineUser[]
   onlineCount: number
   recentPurchasers: RecentPurchaser[]
   bigGifts: BigGift[]
+  customMessages: CustomMessage[]
 }
 
 export default function HomepageTicker() {
@@ -67,7 +74,8 @@ export default function HomepageTicker() {
     onlineUsers: [],
     onlineCount: 0,
     recentPurchasers: [],
-    bigGifts: []
+    bigGifts: [],
+    customMessages: [],
   })
   const tickerRef = useRef<HTMLDivElement>(null)
   
@@ -96,7 +104,7 @@ export default function HomepageTicker() {
     return () => clearInterval(interval)
   }, [])
 
-  const hasData = data.onlineUsers.length > 0 || data.recentPurchasers.length > 0 || data.bigGifts.length > 0
+  const hasData = data.onlineUsers.length > 0 || data.recentPurchasers.length > 0 || data.bigGifts.length > 0 || data.customMessages.length > 0
 
   // Build ticker items
   const tickerItems: JSX.Element[] = []
@@ -192,6 +200,16 @@ export default function HomepageTicker() {
           <span className={`${accentColor} font-bold`}>{gift.totalPrice.toLocaleString()}</span>
           {language === 'tr' ? ' attı!' : '!'}
         </span>
+      </div>
+    )
+  })
+
+  // Add custom admin messages
+  data.customMessages.forEach((msg, index) => {
+    tickerItems.push(
+      <div key={`custom-${msg.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
+        <span className="text-lg">{msg.icon}</span>
+        <span className="text-fuchsia-300 text-xs font-medium">{msg.text}</span>
       </div>
     )
   })

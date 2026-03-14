@@ -168,11 +168,19 @@ export async function GET() {
       }
     })
 
+    // 4. Custom ticker messages from admin
+    const customMessages = await prisma.tickerMessage.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, text: true, icon: true },
+    })
+
     return NextResponse.json({
       onlineUsers: allOnlineUsers,
       onlineCount,
       recentPurchasers: recentPurchasersWithInfo,
-      bigGifts
+      bigGifts,
+      customMessages,
     })
   } catch (error) {
     console.error('Homepage ticker error:', error)
@@ -180,7 +188,8 @@ export async function GET() {
       onlineUsers: [],
       onlineCount: 0,
       recentPurchasers: [],
-      bigGifts: []
+      bigGifts: [],
+      customMessages: [],
     })
   }
 }

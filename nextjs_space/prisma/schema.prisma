@@ -1214,3 +1214,17 @@ model VoiceSignal {
   @@map("voice_signals")
 }
 
+
+// Ticker Messages - Admin-defined scrolling messages on homepage
+model TickerMessage {
+  id        String   @id @default(cuid())
+  text      String
+  icon      String   @default("✨")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("ticker_messages")
+}
