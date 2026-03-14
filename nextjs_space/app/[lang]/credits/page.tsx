@@ -65,6 +65,7 @@ export default function CreditsPage() {
   const [loading, setLoading] = useState(true)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [userCredits, setUserCredits] = useState(0)
+  const [userJetons, setUserJetons] = useState(0)
   const [showPaymentMethodsPopup, setShowPaymentMethodsPopup] = useState(false)
   const [activePaymentPopup, setActivePaymentPopup] = useState<string | null>(null)
 
@@ -131,6 +132,7 @@ export default function CreditsPage() {
       if (res.ok) {
         const data = await res.json()
         setUserCredits(data.credits || 0)
+        setUserJetons(data.jetonBalance || 0)
       }
     } catch (err) {
       console.error('Fetch credits error:', err)

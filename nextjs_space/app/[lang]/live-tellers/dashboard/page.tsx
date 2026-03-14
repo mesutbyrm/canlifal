@@ -316,12 +316,12 @@ export default function TellerDashboard() {
               {teller.canViewEarnings !== false && (
                 <div className="flex justify-between items-center">
                   <span className="text-purple-300">{language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}</span>
-                  <span className="text-gold-400 font-semibold">{teller.totalEarnings} kredi</span>
+                  <span className="text-gold-400 font-semibold">{teller.totalEarnings} jeton</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
                 <span className="text-purple-300">{language === 'tr' ? 'Seans Ücreti' : 'Session Price'}</span>
-                <span className="text-white font-semibold">{teller.pricePerSession} kredi</span>
+                <span className="text-white font-semibold">{teller.pricePerSession} jeton</span>
               </div>
               {teller.commissionRate && (
                 <div className="flex justify-between items-center">
@@ -443,7 +443,7 @@ export default function TellerDashboard() {
                           {STATUS_LABELS[sess.status]?.[language as 'tr' | 'en'] || sess.status}
                         </span>
                         <p className="text-gold-400 font-semibold mt-1">
-                          {sess.creditsCharged} kredi
+                          {sess.creditsCharged} jeton
                         </p>
                       </div>
                     </div>

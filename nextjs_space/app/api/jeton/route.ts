@@ -82,21 +82,27 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Günlük bonus zaten alındı', alreadyClaimed: true }, { status: 400 })
       }
 
+      // Daily login bonus goes to CREDITS (not jetons)
+      // Jetons are only obtained through real money purchases
       const bonusAmount = 5
-      const newBalance = user.jetonBalance + bonusAmount
+      const userFull = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { credits: true },
+      })
+      const currentCredits = userFull?.credits ?? 0
+      const newCreditsBalance = currentCredits + bonusAmount
       await prisma.$transaction([
         prisma.user.update({
           where: { id: session.user.id },
-          data: { jetonBalance: newBalance },
+          data: { credits: { increment: bonusAmount } },
         }),
-        prisma.jetonTransaction.create({
+        prisma.creditTransaction.create({
           data: {
             userId: session.user.id,
             amount: bonusAmount,
             type: 'daily_bonus',
             description: 'Günlük giriş bonusu',
-            balanceBefore: user.jetonBalance,
-            balanceAfter: newBalance,
+            balance: newCreditsBalance,
           },
         }),
         prisma.dailyTask.create({
@@ -109,7 +115,7 @@ export async function POST(req: NextRequest) {
         }),
       ])
 
-      return NextResponse.json({ success: true, jetonEarned: bonusAmount, newBalance })
+      return NextResponse.json({ success: true, creditsEarned: bonusAmount, newCreditsBalance })
     }
 
     return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })

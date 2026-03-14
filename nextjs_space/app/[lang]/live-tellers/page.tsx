@@ -264,7 +264,7 @@ export default function LiveTellersPage() {
                   <div className="flex items-center justify-between">
                     <div className="text-sm">
                       <span className="text-gold-400 font-bold">{teller.pricePerSession}</span>
-                      <span className="text-purple-400"> {language === 'tr' ? 'kredi' : 'credits'}</span>
+                      <span className="text-purple-400"> {language === 'tr' ? 'jeton' : 'jetons'}</span>
                     </div>
                     <Link
                       href={session?.user ? `/${language}/live-tellers/${teller.id}` : `/${language}/login`}
@@ -402,7 +402,7 @@ export default function LiveTellersPage() {
                 <div className="px-6 py-4 bg-deep-purple-950/50 border-t border-purple-500/20 flex items-center justify-between">
                   <div>
                     <span className="text-gold-400 font-bold text-lg">{teller.pricePerSession}</span>
-                    <span className="text-deep-purple-400 text-sm"> {language === 'tr' ? 'kredi' : 'credits'}</span>
+                    <span className="text-deep-purple-400 text-sm"> {language === 'tr' ? 'jeton' : 'jetons'}</span>
                   </div>
                   <Link
                     href={session?.user ? `/${language}/live-tellers/${teller.id}` : `/${language}/login`}
@@ -444,8 +444,8 @@ export default function LiveTellersPage() {
             </h2>
             <p className="text-deep-purple-200 mb-6 max-w-md mx-auto">
               {language === 'tr' 
-                ? 'Yeteneklerinizi paylaşın ve kredi kazanın. Falcı olarak başvurun!' 
-                : 'Share your talents and earn credits. Apply to become a fortune teller!'}
+                ? 'Yeteneklerinizi paylaşın ve jeton kazanın. Falcı olarak başvurun!' 
+                : 'Share your talents and earn jetons. Apply to become a fortune teller!'}
             </p>
             <Link
               href={session?.user ? `/${language}/live-tellers/apply` : `/${language}/login`}

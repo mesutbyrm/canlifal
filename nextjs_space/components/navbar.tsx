@@ -24,6 +24,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [credits, setCredits] = useState<number>(0)
+  const [jetonBalance, setJetonBalance] = useState<number>(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [profileImage, setProfileImage] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -57,7 +58,10 @@ export default function Navbar() {
     if (session?.user) {
       fetch('/api/user/credits')
         .then(res => res.json())
-        .then(data => setCredits(data.credits || 0))
+        .then(data => {
+          setCredits(data.credits || 0)
+          setJetonBalance(data.jetonBalance || 0)
+        })
         .catch(() => {})
       
       // Fetch profile image
@@ -379,6 +383,18 @@ export default function Navbar() {
                           {language === 'tr' ? 'Kredilerim' : 'My Credits'}
                         </div>
                         <span className="font-bold text-gold-400">{credits}</span>
+                      </Link>
+                      {/* Jeton display */}
+                      <Link
+                        href={`/${language}/credits`}
+                        className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 h-5 text-center text-lg leading-5">🪙</span>
+                          {language === 'tr' ? 'Jetonlarım' : 'My Jetons'}
+                        </div>
+                        <span className="font-bold text-amber-400">{jetonBalance}</span>
                       </Link>
                       
                       {/* Payment Notification / Admin Payment Orders */}

@@ -18,7 +18,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true },
+      select: { credits: true, jetonBalance: true },
     })
 
     if (!user) {
@@ -28,7 +28,7 @@ export async function GET() {
       )
     }
 
-    return NextResponse.json({ credits: user.credits })
+    return NextResponse.json({ credits: user.credits, jetonBalance: user.jetonBalance ?? 0 })
   } catch (error) {
     console.error('Fetch credits error:', error)
     return NextResponse.json(

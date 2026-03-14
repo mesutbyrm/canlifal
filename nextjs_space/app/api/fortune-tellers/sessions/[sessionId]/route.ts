@@ -132,15 +132,15 @@ export async function PATCH(
           endedAt: new Date()
         };
         
-        // Refund credits to user
+        // Refund jetons to user
         await prisma.user.update({
           where: { id: liveSession.userId },
-          data: { credits: { increment: liveSession.creditsCharged } }
+          data: { jetonBalance: { increment: liveSession.creditsCharged } }
         });
         
         notificationMessage = action === 'reject'
-          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Krediniz iade edildi. / ${liveSession.teller.displayName} rejected your session request. Your credits have been refunded.`
-          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Krediniz iade edildi. / ${liveSession.teller.displayName} cancelled your session request. Your credits have been refunded.`;
+          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Jetonlarınız iade edildi. / ${liveSession.teller.displayName} rejected your session request. Your jetons have been refunded.`
+          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Jetonlarınız iade edildi. / ${liveSession.teller.displayName} cancelled your session request. Your jetons have been refunded.`;
         break;
     }
 

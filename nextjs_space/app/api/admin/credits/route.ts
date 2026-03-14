@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { userId, amount } = body
+    const { userId, amount, currency = 'credits' } = body
 
     if (!userId || typeof amount !== 'number') {
       return NextResponse.json(
@@ -26,10 +26,14 @@ export async function POST(request: Request) {
       )
     }
 
+    const updateData = currency === 'jeton' 
+      ? { jetonBalance: { increment: amount } }
+      : { credits: { increment: amount } }
+
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { credits: { increment: amount } },
-      select: { id: true, email: true, credits: true },
+      data: updateData,
+      select: { id: true, email: true, credits: true, jetonBalance: true },
     })
 
     return NextResponse.json({

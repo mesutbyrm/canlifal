@@ -80,10 +80,10 @@ export default function TellerDetailPage() {
   const [showBooking, setShowBooking] = useState(false)
   const [selectedFortuneType, setSelectedFortuneType] = useState('general')
   const [selectedDuration, setSelectedDuration] = useState(10) // Default 10 minutes
-  const [creditsPerMinute, setCreditsPerMinute] = useState(10) // Default 10 credits/min
+  const [creditsPerMinute, setCreditsPerMinute] = useState(10) // Default 10 jetons/min
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState('')
-  const [userCredits, setUserCredits] = useState(0)
+  const [userJetons, setUserJetons] = useState(0)
   
   // Waiting state
   const [isWaiting, setIsWaiting] = useState(false)
@@ -191,10 +191,10 @@ export default function TellerDetailPage() {
       const res = await fetch('/api/user/credits')
       if (res.ok) {
         const data = await res.json()
-        setUserCredits(data.credits)
+        setUserJetons(data.jetonBalance || 0)
       }
     } catch (err) {
-      console.error('Fetch credits error:', err)
+      console.error('Fetch jetons error:', err)
     }
   }
 
@@ -209,8 +209,8 @@ export default function TellerDetailPage() {
 
     if (!teller) return
 
-    if (userCredits < totalCost) {
-      setBookingError(language === 'tr' ? 'Yetersiz kredi' : 'Insufficient credits')
+    if (userJetons < totalCost) {
+      setBookingError(language === 'tr' ? 'Yetersiz jeton bakiyesi' : 'Insufficient jetons')
       return
     }
 
@@ -525,7 +525,7 @@ export default function TellerDetailPage() {
                       { mins: 25, cost: 250 },
                       { mins: 30, cost: 300 }
                     ].map(({ mins, cost }) => {
-                      const canAfford = !session?.user || userCredits >= cost
+                      const canAfford = !session?.user || userJetons >= cost
                       return (
                         <button
                           key={mins}
@@ -560,9 +560,9 @@ export default function TellerDetailPage() {
                       {language === 'tr' ? 'Mevcut Krediniz:' : 'Your Credits:'}
                     </span>
                     <span className={`font-semibold ${
-                      userCredits >= totalCost ? 'text-green-400' : 'text-red-400'
+                      userJetons >= totalCost ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {userCredits} {language === 'tr' ? 'kredi' : 'credits'}
+                      {userJetons} {language === 'tr' ? 'jeton' : 'jetons'}
                     </span>
                   </div>
                 )}
@@ -576,7 +576,7 @@ export default function TellerDetailPage() {
                 {/* Book Button */}
                 <button
                   onClick={handleBookSession}
-                  disabled={bookingLoading || !teller.isOnline || (session?.user && userCredits < totalCost)}
+                  disabled={bookingLoading || !teller.isOnline || (session?.user && userJetons < totalCost)}
                   className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   {bookingLoading ? (
@@ -588,7 +588,7 @@ export default function TellerDetailPage() {
                         ? (language === 'tr' ? 'Giriş Yap & Randevu Al' : 'Login & Book Session')
                         : !teller.isOnline
                           ? (language === 'tr' ? 'Falcı Çevrimdışı' : 'Teller is Offline')
-                          : userCredits < totalCost
+                          : userJetons < totalCost
                             ? (language === 'tr' ? 'Yetersiz Kredi' : 'Insufficient Credits')
                             : (language === 'tr' ? `Randevu Al (${totalCost} Kredi - ${selectedDuration} dk)` : `Book Session (${totalCost} Credits - ${selectedDuration} min)`)}
                     </>

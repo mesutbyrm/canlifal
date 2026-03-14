@@ -37,14 +37,14 @@ export async function POST(
     // Calculate total cost based on duration
     const totalCost = duration * creditsPerMinute;
 
-    // Check user credits
+    // Check user jeton balance (live sessions require jetons)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true }
+      select: { jetonBalance: true }
     });
 
-    if (!user || user.credits < totalCost) {
-      return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
+    if (!user || (user.jetonBalance ?? 0) < totalCost) {
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi / Insufficient jetons' }, { status: 400 });
     }
 
     // Get user info for notification
@@ -68,7 +68,7 @@ export async function POST(
       }),
       prisma.user.update({
         where: { id: session.user.id },
-        data: { credits: { decrement: totalCost } }
+        data: { jetonBalance: { decrement: totalCost } }
       })
     ]);
 

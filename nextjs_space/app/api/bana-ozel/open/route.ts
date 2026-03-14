@@ -160,22 +160,21 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // Streak bonus: every 7 days give 10 bonus jetons
+      // Streak bonus: every 7 days give 10 bonus credits (bonuses go to credits, not jetons)
       if (newStreak > 0 && newStreak % 7 === 0) {
         const bonusAmount = 10
         await prisma.$transaction([
           prisma.user.update({
             where: { id: session.user.id },
-            data: { jetonBalance: { increment: bonusAmount } },
+            data: { credits: { increment: bonusAmount } },
           }),
-          prisma.jetonTransaction.create({
+          prisma.creditTransaction.create({
             data: {
               userId: session.user.id,
               amount: bonusAmount,
               type: 'streak_bonus',
               description: `${newStreak} günlük seri bonusu!`,
-              balanceBefore: newBalance,
-              balanceAfter: newBalance + bonusAmount,
+              balance: 0, // approximate
             },
           }),
         ])

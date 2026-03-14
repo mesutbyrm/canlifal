@@ -27,7 +27,7 @@ export async function GET(
           }
         },
         user: {
-          select: { id: true, name: true, image: true, credits: true, membership: true }
+          select: { id: true, name: true, image: true, jetonBalance: true, membership: true }
         }
       }
     });
@@ -56,10 +56,10 @@ export async function GET(
     });
     const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
 
-    // Calculate max minutes based on user's membership and credits
+    // Calculate max minutes based on user's membership and jetons
     let maxMinutes = defaultDuration;
     if (isUser) {
-      const userCredits = liveSession.user.credits;
+      const userJetons = liveSession.user.jetonBalance ?? 0;
       const membership = liveSession.user.membership;
       
       // Membership bonuses
@@ -69,10 +69,10 @@ export async function GET(
         maxMinutes = defaultDuration + 5; // Premium gets +5 minutes
       }
       
-      // Can extend with credits
-      const extraMinutesFromCredits = Math.floor(userCredits / creditsPerMinute);
-      // Allow unlimited extension based on credits
-      maxMinutes += extraMinutesFromCredits;
+      // Can extend with jetons
+      const extraMinutesFromJetons = Math.floor(userJetons / creditsPerMinute);
+      // Allow unlimited extension based on jetons
+      maxMinutes += extraMinutesFromJetons;
     }
 
     return NextResponse.json({
@@ -172,50 +172,50 @@ export async function PATCH(
       }
 
       case 'teller_add_time': {
-        // Teller adds time - deduct from user's credits
+        // Teller adds time - deduct from user's jetons
         if (!isTeller) {
           return NextResponse.json({ error: 'Only teller can add time' }, { status: 403 });
         }
 
         const addMinutes = minutes || 5;
         
-        // Get credits per minute
+        // Get credits per minute (jeton cost per minute)
         const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
           where: { key: 'credits_per_minute' }
         });
         const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
-        const creditsNeeded = addMinutes * creditsPerMinute;
+        const jetonsNeeded = addMinutes * creditsPerMinute;
 
-        // Check user credits
+        // Check user jetons
         const currentUser = await prisma.user.findUnique({
           where: { id: liveSession.userId },
-          select: { credits: true }
+          select: { jetonBalance: true }
         });
 
-        if (!currentUser || currentUser.credits < creditsNeeded) {
-          return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok / User has insufficient credits' }, { status: 400 });
+        if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
+          return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok / User has insufficient jetons' }, { status: 400 });
         }
 
-        // Deduct credits and add time
+        // Deduct jetons and add time
         await prisma.$transaction([
           prisma.user.update({
             where: { id: liveSession.userId },
-            data: { credits: { decrement: creditsNeeded } }
+            data: { jetonBalance: { decrement: jetonsNeeded } }
           }),
           prisma.liveSession.update({
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: addMinutes },
-              creditsCharged: { increment: creditsNeeded }
+              creditsCharged: { increment: jetonsNeeded }
             }
           })
         ]);
 
         return NextResponse.json({ 
           added: addMinutes, 
-          creditsUsed: creditsNeeded,
+          jetonsUsed: jetonsNeeded,
           newMaxMinutes: liveSession.maxMinutes + addMinutes,
-          userCreditsRemaining: currentUser.credits - creditsNeeded
+          userJetonsRemaining: (currentUser.jetonBalance ?? 0) - jetonsNeeded
         });
       }
 
@@ -227,40 +227,40 @@ export async function PATCH(
 
         const extendMinutes = minutes || 5;
         
-        // Fixed pricing: 10 credits per minute
+        // Fixed pricing: 10 jetons per minute
         // 5dk=50, 10dk=100, 15dk=150, 20dk=200, 25dk=250, 30dk=300
         const PRICE_PER_MINUTE = 10;
-        const creditsNeeded = extendMinutes * PRICE_PER_MINUTE;
+        const jetonsNeeded = extendMinutes * PRICE_PER_MINUTE;
 
-        // Get latest user credits
+        // Get latest user jeton balance
         const currentUser = await prisma.user.findUnique({
           where: { id: liveSession.userId },
-          select: { credits: true }
+          select: { jetonBalance: true }
         });
 
-        if (!currentUser || currentUser.credits < creditsNeeded) {
-          return NextResponse.json({ error: 'Yetersiz jeton / Insufficient credits' }, { status: 400 });
+        if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
+          return NextResponse.json({ error: 'Yetersiz jeton / Insufficient jetons' }, { status: 400 });
         }
 
-        // Deduct credits and extend time
+        // Deduct jetons and extend time
         await prisma.$transaction([
           prisma.user.update({
             where: { id: liveSession.userId },
-            data: { credits: { decrement: creditsNeeded } }
+            data: { jetonBalance: { decrement: jetonsNeeded } }
           }),
           prisma.liveSession.update({
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: extendMinutes },
-              creditsCharged: { increment: creditsNeeded }
+              creditsCharged: { increment: jetonsNeeded }
             }
           })
         ]);
 
         return NextResponse.json({ 
           extended: extendMinutes, 
-          creditsUsed: creditsNeeded,
-          creditsRemaining: currentUser.credits - creditsNeeded,
+          jetonsUsed: jetonsNeeded,
+          jetonsRemaining: (currentUser.jetonBalance ?? 0) - jetonsNeeded,
           newMaxMinutes: liveSession.maxMinutes + extendMinutes
         });
       }
