@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
 interface Message {
@@ -118,6 +118,17 @@ export default function ChatRoomPage() {
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
   const audioContextRef = useRef<AudioContext | null>(null)
+  
+  // Gift system
+  const [showGiftModal, setShowGiftModal] = useState(false)
+  const [giftTargetUser, setGiftTargetUser] = useState<ActiveUser | null>(null)
+  const [giftTypes, setGiftTypes] = useState<Array<{id: string; name: string; icon: string; price: number}>>([])
+  const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
+  const [giftPaymentType, setGiftPaymentType] = useState<'jeton' | 'cfc'>('jeton')
+  const [sendingGift, setSendingGift] = useState(false)
+  const [giftAnimation, setGiftAnimation] = useState<{icon: string; senderName: string; recipientName: string} | null>(null)
+  const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
+  const [showLeaderboard, setShowLeaderboard] = useState(true)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)

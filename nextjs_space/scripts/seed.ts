@@ -557,6 +557,14 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('WhatsApp settings seeded')
 
+  // Chat room creation cost
+  await prisma.platformSettings.upsert({
+    where: { key: 'chat_room_creation_cost' },
+    update: {},
+    create: { key: 'chat_room_creation_cost', value: '100', description: 'Cost to create a chat room (in jetons or CFC)' }
+  })
+  console.log('Chat room settings seeded')
+
   console.log('Seed completed successfully!')
 }
 

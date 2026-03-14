@@ -77,6 +77,8 @@ model User {
   videoStreamComments   VideoStreamComment[]
   videoStreamLikes      VideoStreamLike[]
   streamGifts           StreamGift[]
+  sentChatRoomGifts     ChatRoomGift[]       @relation("ChatGiftSender")
+  receivedChatRoomGifts ChatRoomGift[]       @relation("ChatGiftRecipient")
   followers             Follow[]             @relation("Following")
   following             Follow[]             @relation("Follower")
   sentMessages          DirectMessage[]      @relation("SentMessages")
@@ -363,10 +365,34 @@ model ChatRoom {
   bans      ChatBan[]
   messages  ChatMessage[]
   mutes     ChatMute[]
-  presences ChatPresence[]
-  userRoles ChatUserRole[]
+  presences  ChatPresence[]
+  userRoles  ChatUserRole[]
+  chatGifts  ChatRoomGift[]
 
   @@map("chat_rooms")
+}
+
+// Gifts sent in chat rooms
+model ChatRoomGift {
+  id            String   @id @default(cuid())
+  roomId        String
+  senderId      String
+  recipientId   String
+  giftTypeId    String
+  quantity      Int      @default(1)
+  totalPrice    Int      // total cost
+  currencyType  String   @default("jeton") // "jeton" or "cfc"
+  createdAt     DateTime @default(now())
+  room          ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender        User     @relation("ChatGiftSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient     User     @relation("ChatGiftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  giftType      GiftType @relation(fields: [giftTypeId], references: [id])
+
+  @@index([roomId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([roomId, senderId])
+  @@map("chat_room_gifts")
 }
 
 model ChatMessage {
@@ -774,7 +800,8 @@ model GiftType {
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  gifts       StreamGift[]
+  gifts          StreamGift[]
+  chatRoomGifts  ChatRoomGift[]
 
   @@map("gift_types")
 }
