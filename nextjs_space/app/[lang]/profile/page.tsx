@@ -11,7 +11,10 @@ import Link from 'next/link'
 import {
   Settings, Grid3X3, Bookmark, Heart, Eye,
   Camera, Sparkles, X,
-  Pin, PinOff, BookmarkPlus, BookmarkMinus, Loader2
+  Pin, PinOff, BookmarkPlus, BookmarkMinus, Loader2,
+  Star, BadgeCheck, Video, Check, Clock, Calendar,
+  Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
+  AlertCircle, CreditCard, Power
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -60,6 +63,62 @@ interface FollowUser {
   image: string | null
 }
 
+interface TellerProfile {
+  id: string
+  displayName: string
+  bio: string | null
+  avatar: string | null
+  specialties: string[]
+  pricePerSession: number
+  rating: number
+  totalSessions: number
+  isOnline: boolean
+  isVerified: boolean
+  isActive: boolean
+  applicationStatus: string
+  totalEarnings: number
+  canGoOnline: boolean
+  canChat: boolean
+  canStartSession: boolean
+  canSetPrice: boolean
+  canEditProfile: boolean
+  canViewEarnings: boolean
+  canWithdraw: boolean
+  maxSessionsPerDay: number
+  commissionRate: number
+}
+
+interface TellerSession {
+  id: string
+  fortuneType: string
+  status: string
+  creditsCharged: number
+  maxMinutes: number
+  createdAt: string
+  startedAt: string | null
+  endedAt: string | null
+  user: {
+    name: string | null
+    image: string | null
+  }
+}
+
+const FORTUNE_TYPE_NAMES: Record<string, { tr: string; en: string }> = {
+  coffee: { tr: 'Kahve Falı', en: 'Coffee Reading' },
+  tarot: { tr: 'Tarot', en: 'Tarot Reading' },
+  astrology: { tr: 'Astroloji', en: 'Astrology' },
+  palmistry: { tr: 'El Falı', en: 'Palm Reading' },
+  numerology: { tr: 'Numeroloji', en: 'Numerology' },
+  general: { tr: 'Genel Danışmanlık', en: 'General Consultation' }
+}
+
+const SESSION_STATUS: Record<string, { tr: string; en: string; color: string }> = {
+  pending: { tr: 'Bekliyor', en: 'Pending', color: 'bg-yellow-500/20 text-yellow-400' },
+  active: { tr: 'Aktif', en: 'Active', color: 'bg-green-500/20 text-green-400' },
+  completed: { tr: 'Tamamlandı', en: 'Completed', color: 'bg-blue-500/20 text-blue-400' },
+  cancelled: { tr: 'İptal', en: 'Cancelled', color: 'bg-red-500/20 text-red-400' }
+}
+
 const FORTUNE_ICONS: Record<string, string> = {
   coffee: '☕', tarot: '🃏', horoscope: '♈', daily_horoscope: '🔮',
   palm: '✋', dream: '💤', love: '❤️', numerology: '🔢',
@@ -105,6 +164,15 @@ export default function ProfilePage() {
   const [modalLoading, setModalLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  // Teller panel states
+  const [tellerProfile, setTellerProfile] = useState<TellerProfile | null>(null)
+  const [tellerSessions, setTellerSessions] = useState<TellerSession[]>([])
+  const [isTeller, setIsTeller] = useState(false)
+  const [tellerPanelOpen, setTellerPanelOpen] = useState(true)
+  const [tellerOnlineToggling, setTellerOnlineToggling] = useState(false)
+  const [tellerSessionAction, setTellerSessionAction] = useState<string | null>(null)
+  const [tellerTab, setTellerTab] = useState<'pending' | 'active' | 'history'>('pending')
+
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
   const isCosmic = theme === 'cosmic'
@@ -135,6 +203,7 @@ export default function ProfilePage() {
       fetchProfile()
       fetchPosts()
       fetchFortunes()
+      fetchTellerProfile()
     }
   }, [session, status, language])
 
@@ -173,6 +242,59 @@ export default function ProfilePage() {
     setModalLoading(true)
     try { const res = await fetch('/api/user/likers'); if (res.ok) { const data = await res.json(); setLikers(data.likers || []) } } catch (e) { console.error(e) } finally { setModalLoading(false) }
   }
+
+  // === Teller Panel Functions ===
+  const fetchTellerProfile = async () => {
+    try {
+      const res = await fetch('/api/fortune-tellers/my-profile')
+      if (res.ok) {
+        const data = await res.json()
+        setTellerProfile(data)
+        setIsTeller(true)
+        // Fetch sessions
+        const sessRes = await fetch(`/api/fortune-tellers/${data.id}/session`)
+        if (sessRes.ok) {
+          const sessData = await sessRes.json()
+          setTellerSessions(sessData)
+        }
+      }
+    } catch (e) { /* Not a teller, ignore */ }
+  }
+
+  const toggleTellerOnline = async () => {
+    if (!tellerProfile) return
+    setTellerOnlineToggling(true)
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setTellerProfile(prev => prev ? { ...prev, isOnline: data.isOnline } : null)
+      }
+    } catch (e) { console.error('Toggle error:', e) }
+    finally { setTellerOnlineToggling(false) }
+  }
+
+  const handleTellerSessionAction = async (sessionId: string, action: 'accept' | 'complete' | 'cancel') => {
+    setTellerSessionAction(sessionId)
+    try {
+      const res = await fetch(`/api/fortune-tellers/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+      if (res.ok) fetchTellerProfile()
+    } catch (e) { console.error('Session action error:', e) }
+    finally { setTellerSessionAction(null) }
+  }
+
+  const tellerFilteredSessions = tellerSessions.filter(s => {
+    if (tellerTab === 'pending') return s.status === 'pending'
+    if (tellerTab === 'active') return s.status === 'active'
+    return s.status === 'completed' || s.status === 'cancelled'
+  })
+
+  const tellerPendingCount = tellerSessions.filter(s => s.status === 'pending').length
+  const tellerActiveCount = tellerSessions.filter(s => s.status === 'active').length
 
   const handleFortuneAction = async (fortuneId: string, action: 'save' | 'unsave' | 'pin' | 'unpin') => {
     setActionLoading(fortuneId + action)
@@ -319,6 +441,287 @@ export default function ProfilePage() {
           </Link>
         </div>
       </div>
+
+      {/* ===== FALCI PANELİ ===== */}
+      {isTeller && tellerProfile && (
+        <div className="px-4 mt-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-2xl border overflow-hidden ${
+              isFacebook
+                ? 'bg-white border-blue-200 shadow-lg'
+                : isCosmic
+                  ? 'bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/30'
+                  : 'bg-gradient-to-br from-purple-900/50 to-fuchsia-900/30 border-fuchsia-500/30'
+            }`}
+          >
+            {/* Panel Header */}
+            <button
+              onClick={() => setTellerPanelOpen(!tellerPanelOpen)}
+              className={`w-full flex items-center justify-between p-4 ${
+                isFacebook ? 'hover:bg-blue-50' : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'
+              } transition-colors`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  isFacebook ? 'bg-blue-100' : isCosmic ? 'bg-blue-600/30' : 'bg-gradient-to-br from-fuchsia-600/50 to-purple-600/50'
+                }`}>
+                  <Sparkles className={`w-5 h-5 ${isFacebook ? 'text-blue-600' : isCosmic ? 'text-blue-400' : 'text-fuchsia-400'}`} />
+                </div>
+                <div className="text-left">
+                  <h3 className={`font-bold text-base ${textPrimary}`}>
+                    {language === 'tr' ? '🔮 Falcı Paneli' : '🔮 Teller Panel'}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${tellerProfile.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+                    <span className={`text-xs ${textSecondary}`}>
+                      {tellerProfile.isOnline
+                        ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
+                        : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                    </span>
+                    {tellerProfile.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {tellerPendingCount > 0 && (
+                  <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-bold animate-pulse">
+                    {tellerPendingCount}
+                  </span>
+                )}
+                {tellerPanelOpen ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
+              </div>
+            </button>
+
+            {/* Panel Content */}
+            <AnimatePresence>
+              {tellerPanelOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`px-4 pb-4 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
+                    {/* Application Status Warning */}
+                    {tellerProfile.applicationStatus !== 'approved' && (
+                      <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl">
+                        <p className="text-yellow-300 text-sm flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                          {tellerProfile.applicationStatus === 'pending'
+                            ? (language === 'tr' ? 'Başvurunuz inceleniyor...' : 'Application under review...')
+                            : (language === 'tr' ? 'Başvurunuz reddedildi.' : 'Application rejected.')}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Online Toggle + Stats Row */}
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      {/* Online Toggle */}
+                      <button
+                        onClick={toggleTellerOnline}
+                        disabled={tellerOnlineToggling || tellerProfile.applicationStatus !== 'approved' || tellerProfile.canGoOnline === false}
+                        className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
+                          tellerProfile.isOnline
+                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
+                            : isFacebook
+                              ? 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200'
+                              : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {tellerOnlineToggling ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Power className="w-4 h-4" />
+                            {tellerProfile.isOnline
+                              ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
+                              : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                          </>
+                        )}
+                      </button>
+
+                      {/* Go to full dashboard */}
+                      <Link
+                        href={`/${language}/live-tellers/dashboard`}
+                        className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
+                          isFacebook
+                            ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                            : isCosmic
+                              ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+                              : 'bg-fuchsia-600/20 text-fuchsia-400 hover:bg-fuchsia-600/30 border border-fuchsia-500/30'
+                        }`}
+                      >
+                        <Video className="w-4 h-4" />
+                        {language === 'tr' ? 'Tam Panel' : 'Full Panel'}
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
+                        <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.totalSessions}</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Seans' : 'Sessions'}</p>
+                      </div>
+                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                          <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.rating.toFixed(1)}</p>
+                        </div>
+                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Puan' : 'Rating'}</p>
+                      </div>
+                      {tellerProfile.canViewEarnings !== false && (
+                        <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
+                          <p className={`text-lg font-bold ${isFacebook ? 'text-green-600' : 'text-green-400'}`}>{tellerProfile.totalEarnings}</p>
+                          <p className={`text-[10px] ${textSecondary}`}>Jeton</p>
+                        </div>
+                      )}
+                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
+                        <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.pricePerSession}</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Ücret' : 'Price'}</p>
+                      </div>
+                    </div>
+
+                    {/* Session Tabs */}
+                    <div className={`mt-3 flex rounded-xl overflow-hidden border ${isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
+                      {(['pending', 'active', 'history'] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setTellerTab(tab)}
+                          className={`flex-1 py-2 text-xs font-medium transition-colors relative ${
+                            tellerTab === tab
+                              ? isFacebook
+                                ? 'bg-blue-500 text-white'
+                                : isCosmic
+                                  ? 'bg-blue-600/40 text-blue-300'
+                                  : 'bg-fuchsia-600/40 text-fuchsia-300'
+                              : isFacebook
+                                ? 'text-gray-500 hover:bg-gray-50'
+                                : 'text-gray-500 hover:bg-white/5'
+                          }`}
+                        >
+                          {tab === 'pending'
+                            ? (language === 'tr' ? 'Bekleyen' : 'Pending')
+                            : tab === 'active'
+                              ? (language === 'tr' ? 'Aktif' : 'Active')
+                              : (language === 'tr' ? 'Geçmiş' : 'History')}
+                          {tab === 'pending' && tellerPendingCount > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 bg-yellow-500 text-black text-[9px] rounded-full font-bold">
+                              {tellerPendingCount}
+                            </span>
+                          )}
+                          {tab === 'active' && tellerActiveCount > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 bg-green-500 text-black text-[9px] rounded-full font-bold">
+                              {tellerActiveCount}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Sessions List */}
+                    <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                      {tellerFilteredSessions.length === 0 ? (
+                        <div className={`text-center py-6 ${textSecondary}`}>
+                          <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                          <p className="text-xs">
+                            {tellerTab === 'pending'
+                              ? (language === 'tr' ? 'Bekleyen talep yok' : 'No pending requests')
+                              : tellerTab === 'active'
+                                ? (language === 'tr' ? 'Aktif seans yok' : 'No active sessions')
+                                : (language === 'tr' ? 'Geçmiş seans yok' : 'No history')}
+                          </p>
+                        </div>
+                      ) : (
+                        tellerFilteredSessions.map(sess => (
+                          <div
+                            key={sess.id}
+                            className={`rounded-xl p-3 border ${
+                              isFacebook
+                                ? 'bg-gray-50 border-gray-200'
+                                : isCosmic
+                                  ? 'bg-blue-900/20 border-blue-800/20'
+                                  : 'bg-purple-900/20 border-purple-800/20'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden ${
+                                  isFacebook ? 'bg-blue-100' : 'bg-gradient-to-br from-purple-600 to-pink-600'
+                                }`}>
+                                  {sess.user.image ? (
+                                    <img src={sess.user.image} alt="" className="w-full h-full object-cover rounded-full" />
+                                  ) : (
+                                    <User className="w-4 h-4 text-white/70" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className={`text-sm font-medium ${textPrimary}`}>
+                                    {sess.user.name || (language === 'tr' ? 'Anonim' : 'Anonymous')}
+                                  </p>
+                                  <p className={`text-[10px] ${textSecondary}`}>
+                                    {FORTUNE_TYPE_NAMES[sess.fortuneType]?.[language as 'tr' | 'en'] || sess.fortuneType} • {sess.creditsCharged} jeton
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${SESSION_STATUS[sess.status]?.color || 'bg-gray-500/20 text-gray-400'}`}>
+                                {SESSION_STATUS[sess.status]?.[language as 'tr' | 'en'] || sess.status}
+                              </span>
+                            </div>
+
+                            {/* Session Actions */}
+                            {sess.status === 'pending' && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={() => handleTellerSessionAction(sess.id, 'accept')}
+                                  disabled={tellerSessionAction === sess.id}
+                                  className="flex-1 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
+                                >
+                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {language === 'tr' ? 'Kabul' : 'Accept'}</>}
+                                </button>
+                                <button
+                                  onClick={() => handleTellerSessionAction(sess.id, 'cancel')}
+                                  disabled={tellerSessionAction === sess.id}
+                                  className="flex-1 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
+                                >
+                                  <X className="w-3 h-3" /> {language === 'tr' ? 'Reddet' : 'Reject'}
+                                </button>
+                              </div>
+                            )}
+
+                            {sess.status === 'active' && (
+                              <div className="flex gap-2 mt-2">
+                                <Link
+                                  href={`/${language}/live-room/${sess.id}`}
+                                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 ${
+                                    isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white'
+                                  }`}
+                                >
+                                  <Video className="w-3 h-3" /> {language === 'tr' ? 'Odaya Gir' : 'Enter Room'}
+                                </Link>
+                                <button
+                                  onClick={() => handleTellerSessionAction(sess.id, 'complete')}
+                                  disabled={tellerSessionAction === sess.id}
+                                  className="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
+                                >
+                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {language === 'tr' ? 'Bitir' : 'Complete'}</>}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      )}
 
       {/* Pinned Fortunes */}
       {pinnedFortunes.length > 0 && (
