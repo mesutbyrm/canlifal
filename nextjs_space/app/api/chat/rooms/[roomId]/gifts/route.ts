@@ -29,8 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Kendinize hediye gönderemezsiniz' }, { status: 400 })
     }
 
-    // Verify room exists
-    const room = await prisma.chatRoom.findUnique({ where: { id: roomId } })
+    // Verify room exists (include commission settings)
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      include: { owner: { select: { id: true, name: true } }, giftBeneficiary: { select: { id: true, name: true } } }
+    })
     if (!room || !room.isActive) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 })
     }
@@ -72,13 +75,21 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
     }
 
+    // Calculate commission
+    const commissionPercent = room.giftCommissionPercent || 0
+    const commissionAmount = commissionPercent > 0 ? Math.floor(price * commissionPercent / 100) : 0
+    const recipientAmount = price - commissionAmount
+    // Determine who gets the commission: beneficiary or room owner
+    const beneficiaryUser = room.giftBeneficiary || room.owner
+    const beneficiaryId = beneficiaryUser?.id || null
+
     // Deduct from sender
     if (paymentType === 'jeton') {
       await prisma.user.update({
         where: { id: sender.id },
         data: { jetonBalance: { decrement: price } }
       })
-      // Record jeton transaction
+      // Record jeton transaction for sender
       await prisma.jetonTransaction.create({
         data: {
           userId: sender.id,
@@ -89,11 +100,43 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
           balanceAfter: (sender.jetonBalance ?? 0) - price
         }
       })
-      // Add jetons to recipient (only jeton gifts give real money value)
-      await prisma.user.update({
-        where: { id: recipient.id },
-        data: { jetonBalance: { increment: price } }
-      })
+      // Add jetons to recipient (minus commission)
+      if (recipientAmount > 0) {
+        const recipientBefore = recipient.jetonBalance ?? 0
+        await prisma.user.update({
+          where: { id: recipient.id },
+          data: { jetonBalance: { increment: recipientAmount } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: recipient.id,
+            amount: recipientAmount,
+            type: 'gift_received',
+            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı`,
+            balanceBefore: recipientBefore,
+            balanceAfter: recipientBefore + recipientAmount
+          }
+        })
+      }
+      // Give commission to beneficiary
+      if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id) {
+        const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })
+        const bBefore = beneficiary?.jetonBalance ?? 0
+        await prisma.user.update({
+          where: { id: beneficiaryId },
+          data: { jetonBalance: { increment: commissionAmount } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: beneficiaryId,
+            amount: commissionAmount,
+            type: 'gift_commission',
+            description: `Oda komisyonu: ${giftType.name} hediyesinden %${commissionPercent} (${room.nameTr})`,
+            balanceBefore: bBefore,
+            balanceAfter: bBefore + commissionAmount
+          }
+        })
+      }
     } else {
       // CFC payment - deduct CFC from sender, recipient sees it but doesn't get money
       await prisma.user.update({
@@ -111,7 +154,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         giftTypeId: giftType.id,
         quantity: 1,
         totalPrice: price,
-        currencyType: paymentType
+        currencyType: paymentType,
+        commissionAmount,
+        beneficiaryId
       }
     })
 

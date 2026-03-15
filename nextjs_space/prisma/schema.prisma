@@ -59,6 +59,7 @@ model User {
   chatPresences         ChatPresence[]
   chatRoles             ChatUserRole[]
   ownedChatRooms        ChatRoom[]           @relation("RoomOwner")
+  beneficiaryRooms      ChatRoom[]           @relation("RoomGiftBeneficiary")
   fortunes              Fortune[]
   fortuneTellerProfile  LiveFortuneTeller?
   liveSessions          LiveSession[]        @relation("SessionUser")
@@ -350,43 +351,48 @@ model VerificationToken {
 }
 
 model ChatRoom {
-  id        String         @id @default(cuid())
-  slug      String         @unique
-  nameEn    String
-  nameTr    String
-  descEn    String
-  descTr    String
-  icon      String
-  isActive  Boolean        @default(true)
-  isMuted   Boolean        @default(false)
-  ownerId   String?        // User who purchased/owns this room
-  owner     User?          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  createdAt DateTime       @default(now())
-  bans      ChatBan[]
-  messages  ChatMessage[]
-  mutes     ChatMute[]
-  presences  ChatPresence[]
-  userRoles  ChatUserRole[]
-  chatGifts  ChatRoomGift[]
+  id                    String         @id @default(cuid())
+  slug                  String         @unique
+  nameEn                String
+  nameTr                String
+  descEn                String
+  descTr                String
+  icon                  String
+  isActive              Boolean        @default(true)
+  isMuted               Boolean        @default(false)
+  ownerId               String?        // User who purchased/owns this room
+  owner                 User?          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  giftCommissionPercent Int            @default(0) // 0-100, percentage of gift value going to beneficiary
+  giftBeneficiaryId     String?        // Who receives the commission (null = room owner)
+  giftBeneficiary       User?          @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
+  createdAt             DateTime       @default(now())
+  bans                  ChatBan[]
+  messages              ChatMessage[]
+  mutes                 ChatMute[]
+  presences             ChatPresence[]
+  userRoles             ChatUserRole[]
+  chatGifts             ChatRoomGift[]
 
   @@map("chat_rooms")
 }
 
 // Gifts sent in chat rooms
 model ChatRoomGift {
-  id            String   @id @default(cuid())
-  roomId        String
-  senderId      String
-  recipientId   String
-  giftTypeId    String
-  quantity      Int      @default(1)
-  totalPrice    Int      // total cost
-  currencyType  String   @default("jeton") // "jeton" or "cfc"
-  createdAt     DateTime @default(now())
-  room          ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender        User     @relation("ChatGiftSender", fields: [senderId], references: [id], onDelete: Cascade)
-  recipient     User     @relation("ChatGiftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  giftType      GiftType @relation(fields: [giftTypeId], references: [id])
+  id               String   @id @default(cuid())
+  roomId           String
+  senderId         String
+  recipientId      String
+  giftTypeId       String
+  quantity         Int      @default(1)
+  totalPrice       Int      // total cost
+  currencyType     String   @default("jeton") // "jeton" or "cfc"
+  commissionAmount Int      @default(0) // amount taken as commission
+  beneficiaryId    String?  // who received commission (null if no commission)
+  createdAt        DateTime @default(now())
+  room             ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender           User     @relation("ChatGiftSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient        User     @relation("ChatGiftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  giftType         GiftType @relation(fields: [giftTypeId], references: [id])
 
   @@index([roomId])
   @@index([senderId])

@@ -85,12 +85,14 @@ interface VisitorStats {
   }
 }
 
-type AdminTab = 'dashboard' | 'users' | 'chat' | 'ads' | 'visitors' | 'statistics'
+type AdminTab = 'dashboard' | 'users' | 'chat' | 'economy' | 'gift-settings' | 'ads' | 'visitors' | 'statistics'
 
 const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; enLabel: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, trLabel: 'Gösterge Paneli', enLabel: 'Dashboard' },
   { id: 'users', icon: Users, trLabel: 'Kullanıcılar', enLabel: 'Users' },
   { id: 'chat', icon: MessageCircle, trLabel: 'Sohbet Yönetimi', enLabel: 'Chat Management' },
+  { id: 'economy', icon: DollarSign, trLabel: 'Gelir-Gider Tablosu', enLabel: 'Income & Expenses' },
+  { id: 'gift-settings', icon: Gift, trLabel: 'Hediye Komisyon', enLabel: 'Gift Commission' },
   { id: 'ads', icon: Megaphone, trLabel: 'Reklam Yönetimi', enLabel: 'Ad Management' },
   { id: 'visitors', icon: Globe, trLabel: 'Ziyaretçi İstatistikleri', enLabel: 'Visitor Stats' },
   { id: 'statistics', icon: BarChart3, trLabel: 'Tüm İstatistikler', enLabel: 'All Statistics' },
@@ -138,6 +140,15 @@ export default function AdminPage() {
   // Ads management state
   const [adSettings, setAdSettings] = useState<Record<string, string>>({})
   const [adSaveStatus, setAdSaveStatus] = useState<string | null>(null)
+
+  // Gift commission state
+  const [commissionRooms, setCommissionRooms] = useState<any[]>([])
+  const [commissionLoading, setCommissionLoading] = useState(false)
+  const [editingRoom, setEditingRoom] = useState<string | null>(null)
+  const [editPercent, setEditPercent] = useState(0)
+  const [editBeneficiary, setEditBeneficiary] = useState('')
+  const [beneficiarySearch, setBeneficiarySearch] = useState('')
+  const [beneficiaryResults, setBeneficiaryResults] = useState<any[]>([])
 
   // Theme colors
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -261,6 +272,39 @@ export default function AdminPage() {
     }
   }
 
+  const fetchCommissionRooms = async () => {
+    setCommissionLoading(true)
+    try {
+      const res = await fetch('/api/admin/rooms')
+      if (res.ok) { const data = await res.json(); setCommissionRooms(data.rooms || []) }
+    } catch (error) { console.error('Failed to fetch commission rooms:', error) }
+    finally { setCommissionLoading(false) }
+  }
+
+  const saveRoomCommission = async (roomId: string) => {
+    try {
+      const res = await fetch('/api/admin/rooms', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId, giftCommissionPercent: editPercent, giftBeneficiaryId: editBeneficiary || null })
+      })
+      if (res.ok) {
+        await fetchCommissionRooms()
+        setEditingRoom(null)
+        alert(language === 'tr' ? 'Komisyon ayarları kaydedildi!' : 'Commission settings saved!')
+      } else { alert(language === 'tr' ? 'Kaydetme başarısız!' : 'Save failed!') }
+    } catch { alert('Hata oluştu') }
+  }
+
+  const searchBeneficiary = async (query: string) => {
+    setBeneficiarySearch(query)
+    if (query.length < 2) { setBeneficiaryResults([]); return }
+    try {
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}&limit=5`)
+      const data = await res.json()
+      setBeneficiaryResults(data?.users || data || [])
+    } catch { setBeneficiaryResults([]) }
+  }
+
   const fetchAdSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings')
@@ -312,7 +356,7 @@ export default function AdminPage() {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className={`${statCardBg} rounded-xl p-5`}>
           <div className="flex items-center gap-3 mb-2">
             <div className={`w-10 h-10 rounded-lg ${isFacebook ? 'bg-green-50' : 'bg-green-500/10'} flex items-center justify-center`}>
@@ -325,7 +369,8 @@ export default function AdminPage() {
         </div>
         <StatCard icon={Users} label={t('admin.total_users')} value={statistics?.totalUsers ?? 0} color={accentColor} />
         <StatCard icon={Sparkles} label={t('admin.total_fortunes')} value={statistics?.totalFortunes ?? 0} color={goldColor} />
-        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC'} value={statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+        <StatCard icon={Coins} label={language === 'tr' ? 'Dolaşımdaki Jeton' : 'Jetons'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
       </div>
 
       {/* Quick Actions Grid */}
@@ -805,12 +850,21 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Economy */}
+      {/* Economy Summary */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi' : 'Economy'}</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki CFC' : 'In Circulation'} value={statistics?.economy?.creditsInCirculation ?? 0} color={textPrimary} />
-          <MiniStatCard label={language === 'tr' ? 'Harcanan' : 'Spent'} value={statistics?.economy?.creditsSpent ?? 0} color="text-red-500" />
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi Özeti' : 'Economy Summary'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC Circulation'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki Jeton' : 'Jeton Circulation'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
+          <MiniStatCard label={language === 'tr' ? 'Hediye (Jeton)' : 'Gifts (Jeton)'} value={statistics?.economy?.chatGiftJetonTotal ?? 0} color="text-blue-500" />
+          <MiniStatCard label={language === 'tr' ? 'Komisyon Toplam' : 'Commission Total'} value={statistics?.economy?.chatGiftCommissionTotal ?? 0} color="text-pink-500" />
+        </div>
+      </div>
+
+      {/* Community */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Topluluk' : 'Community'}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
           <MiniStatCard label={language === 'tr' ? 'Takip' : 'Follows'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
         </div>
       </div>
@@ -822,6 +876,236 @@ export default function AdminPage() {
       </div>
     </div>
   )
+
+  const renderEconomy = () => (
+    <div className="space-y-6">
+      {/* Dolaşımdaki Bakiyeler */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
+          <Layers className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Dolaşımdaki Bakiyeler' : 'Balances in Circulation'}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+          <div className={`${cardBg} rounded-xl p-6`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-12 h-12 rounded-xl ${isFacebook ? 'bg-green-50' : 'bg-green-500/10'} flex items-center justify-center`}>
+                <DollarSign className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <p className={`${textMuted} text-xs`}>CFC</p>
+                <p className={`text-3xl font-bold text-green-500`}>{statistics?.economy?.cfcInCirculation ?? 0}</p>
+              </div>
+            </div>
+            <p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tüm kullanıcıların toplam CFC bakiyesi' : 'Total CFC across all users'}</p>
+          </div>
+          <div className={`${cardBg} rounded-xl p-6`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-12 h-12 rounded-xl ${isFacebook ? 'bg-amber-50' : 'bg-amber-500/10'} flex items-center justify-center`}>
+                <Coins className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <p className={`${textMuted} text-xs`}>Jeton</p>
+                <p className={`text-3xl font-bold text-amber-500`}>{statistics?.economy?.jetonInCirculation ?? 0}</p>
+              </div>
+            </div>
+            <p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tüm kullanıcıların toplam jeton bakiyesi' : 'Total jetons across all users'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Gelir-Gider Tablosu */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
+          <TrendingUp className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Jeton Gelir-Gider Tablosu' : 'Jeton Income & Expenses'}
+        </h3>
+        <div className={`${cardBg} rounded-xl overflow-hidden`}>
+          <table className="w-full">
+            <thead>
+              <tr className={`border-b ${tableBorder} ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
+                <th className={`text-left py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Kalem' : 'Item'}</th>
+                <th className={`text-right py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Tutar' : 'Amount'}</th>
+                <th className={`text-center py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Tür' : 'Type'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className={`border-b ${tableBorder} ${hoverRow}`}>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Zap className="w-4 h-4 text-green-500" /> {language === 'tr' ? 'Yüklenen Jeton (Satın Alma)' : 'Loaded Jetons (Purchase)'}</td>
+                <td className="py-3 px-5 text-right text-green-500 font-semibold">+{statistics?.economy?.jetonLoaded ?? 0}</td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{language === 'tr' ? 'Gelir' : 'Income'}</span></td>
+              </tr>
+              <tr className={`border-b ${tableBorder} ${hoverRow}`}>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-blue-500" /> {language === 'tr' ? 'Hediye Gönderilen (Jeton)' : 'Gifts Sent (Jeton)'}</td>
+                <td className="py-3 px-5 text-right text-red-400 font-semibold">-{statistics?.economy?.jetonGiftSent ?? 0}</td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{language === 'tr' ? 'Gider' : 'Expense'}</span></td>
+              </tr>
+              <tr className={`border-b ${tableBorder} ${hoverRow}`}>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-green-500" /> {language === 'tr' ? 'Hediye Alınan (Jeton)' : 'Gifts Received (Jeton)'}</td>
+                <td className="py-3 px-5 text-right text-green-500 font-semibold">+{statistics?.economy?.jetonGiftReceived ?? 0}</td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{language === 'tr' ? 'Gelir' : 'Income'}</span></td>
+              </tr>
+              <tr className={`border-b ${tableBorder} ${hoverRow}`}>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Crown className="w-4 h-4 text-pink-500" /> {language === 'tr' ? 'Komisyon Geliri' : 'Commission Income'}</td>
+                <td className="py-3 px-5 text-right text-pink-500 font-semibold">+{statistics?.economy?.jetonCommission ?? 0}</td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-pink-500/10 text-pink-500">{language === 'tr' ? 'Komisyon' : 'Commission'}</span></td>
+              </tr>
+              <tr className={`border-b ${tableBorder} ${hoverRow}`}>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Sparkles className="w-4 h-4 text-red-400" /> {language === 'tr' ? 'Harcanan Jeton (Bana Özel vb.)' : 'Spent Jetons (Items etc.)'}</td>
+                <td className="py-3 px-5 text-right text-red-400 font-semibold">-{statistics?.economy?.jetonSpent ?? 0}</td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{language === 'tr' ? 'Gider' : 'Expense'}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Hediye İstatistikleri */}
+      <div>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
+          <Gift className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Sohbet Odası Hediye İstatistikleri' : 'Chat Room Gift Stats'}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className={`${statCardBg} rounded-xl p-5 text-center`}>
+            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Hediye (Jeton)' : 'Gifts (Jeton)'}</p>
+            <p className="text-2xl font-bold text-amber-500">{statistics?.economy?.chatGiftJetonTotal ?? 0}</p>
+          </div>
+          <div className={`${statCardBg} rounded-xl p-5 text-center`}>
+            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Hediye (CFC)' : 'Gifts (CFC)'}</p>
+            <p className="text-2xl font-bold text-green-500">{statistics?.economy?.chatGiftCfcTotal ?? 0}</p>
+          </div>
+          <div className={`${statCardBg} rounded-xl p-5 text-center`}>
+            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Kesilen Komisyon' : 'Commission'}</p>
+            <p className="text-2xl font-bold text-pink-500">{statistics?.economy?.chatGiftCommissionTotal ?? 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button onClick={fetchData} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
+          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderGiftSettings = () => {
+    if (commissionRooms.length === 0 && !commissionLoading) { fetchCommissionRooms() }
+    return (
+      <div className="space-y-6">
+        <div className={`${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'} rounded-xl p-4`}>
+          <h3 className={`${accentColor} font-medium text-sm mb-1`}>{language === 'tr' ? 'Hediye Komisyon Sistemi' : 'Gift Commission System'}</h3>
+          <p className={`${textSecondary} text-xs`}>
+            {language === 'tr'
+              ? 'Her sohbet odasında hediye gönderildiğinde, belirlenen yüzde oda sahibine veya atadığı kişiye komisyon olarak gider. Jeton hediyeleri için geçerlidir.'
+              : 'When gifts are sent in chat rooms, the set percentage goes to the room owner or designated beneficiary as commission. Applies to jeton gifts.'}
+          </p>
+        </div>
+
+        {commissionLoading ? (
+          <div className="flex justify-center py-10">
+            <div className={`w-8 h-8 border-2 ${isFacebook ? 'border-blue-500' : isCosmic ? 'border-blue-400' : 'border-fuchsia-500'} border-t-transparent rounded-full animate-spin`} />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {commissionRooms.map((room: any) => (
+              <div key={room.id} className={`${cardBg} rounded-xl p-5`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{room.icon}</span>
+                    <div>
+                      <h4 className={`${textPrimary} font-semibold`}>{language === 'tr' ? room.nameTr : room.nameEn}</h4>
+                      <p className={`${textMuted} text-xs`}>
+                        {language === 'tr' ? 'Sahip' : 'Owner'}: {room.owner ? (room.owner.username || room.owner.name) : (language === 'tr' ? 'Yok' : 'None')}
+                        {' • '}{room._count?.chatGifts ?? 0} {language === 'tr' ? 'hediye' : 'gifts'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${room.giftCommissionPercent > 0 ? 'bg-pink-500/10 text-pink-500' : `${isFacebook ? 'bg-gray-100 text-gray-500' : 'bg-white/5 text-gray-400'}`}`}>
+                      %{room.giftCommissionPercent}
+                    </span>
+                    <button onClick={() => {
+                      setEditingRoom(editingRoom === room.id ? null : room.id)
+                      setEditPercent(room.giftCommissionPercent)
+                      setEditBeneficiary(room.giftBeneficiaryId || '')
+                      setBeneficiarySearch('')
+                      setBeneficiaryResults([])
+                    }} className={`p-2 rounded-lg ${btnSecondary} transition-colors`}>
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Beneficiary info */}
+                {room.giftBeneficiary && (
+                  <div className={`mb-3 px-3 py-2 rounded-lg ${isFacebook ? 'bg-pink-50' : 'bg-pink-500/5'} flex items-center gap-2`}>
+                    <Crown className="w-4 h-4 text-pink-500" />
+                    <span className={`${textSecondary} text-xs`}>{language === 'tr' ? 'Komisyon alıcısı' : 'Beneficiary'}:</span>
+                    <span className={`${textPrimary} text-sm font-medium`}>{room.giftBeneficiary.username || room.giftBeneficiary.name}</span>
+                  </div>
+                )}
+
+                {/* Edit Panel */}
+                {editingRoom === room.id && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={`mt-4 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'} space-y-4`}>
+                    <div>
+                      <label className={`${textSecondary} text-sm mb-2 block`}>{language === 'tr' ? 'Komisyon Yüzdesi (%)' : 'Commission Percent (%)'}</label>
+                      <div className="flex items-center gap-3">
+                        <input type="range" min={0} max={50} value={editPercent} onChange={(e) => setEditPercent(parseInt(e.target.value))}
+                          className="flex-1 accent-pink-500" />
+                        <input type="number" min={0} max={100} value={editPercent} onChange={(e) => setEditPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                          className={`w-20 px-3 py-2 rounded-lg border text-sm text-center ${inputBg}`} />
+                        <span className={`${textMuted} text-sm`}>%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`${textSecondary} text-sm mb-2 block`}>{language === 'tr' ? 'Komisyon Alıcısı (boş = oda sahibi)' : 'Beneficiary (empty = room owner)'}</label>
+                      <div className="relative">
+                        <input type="text" value={beneficiarySearch} onChange={(e) => searchBeneficiary(e.target.value)}
+                          placeholder={language === 'tr' ? 'Kullanıcı ara...' : 'Search user...'}
+                          className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg} focus:outline-none`} />
+                        {beneficiaryResults.length > 0 && (
+                          <div className={`absolute top-full left-0 right-0 mt-1 ${modalBg} border rounded-xl shadow-lg z-10 max-h-40 overflow-y-auto`}>
+                            {beneficiaryResults.map((u: any) => (
+                              <button key={u.id} onClick={() => { setEditBeneficiary(u.id); setBeneficiarySearch(u.username || u.name); setBeneficiaryResults([]) }}
+                                className={`w-full text-left px-3 py-2 ${hoverRow} ${textPrimary} text-sm`}>
+                                {u.name} {u.username && <span className={textMuted}>@{u.username}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {editBeneficiary && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`${textMuted} text-xs`}>{language === 'tr' ? 'Seçili' : 'Selected'}: {beneficiarySearch || editBeneficiary}</span>
+                          <button onClick={() => { setEditBeneficiary(''); setBeneficiarySearch('') }}
+                            className="text-red-400 text-xs hover:text-red-300">✕</button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingRoom(null)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${btnSecondary}`}>
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button onClick={() => saveRoomCommission(room.id)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${btnPrimary} flex items-center justify-center gap-2`}>
+                        <Save className="w-4 h-4" /> {language === 'tr' ? 'Kaydet' : 'Save'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-center">
+          <button onClick={fetchCommissionRooms} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
+            <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`min-h-screen ${bgColor} flex`}>

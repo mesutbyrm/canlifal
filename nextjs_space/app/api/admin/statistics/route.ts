@@ -27,7 +27,7 @@ export async function GET() {
     const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    // Get all statistics in parallel
+    // Get all statistics in parallel - batch 1 (core stats)
     const [
       totalUsers,
       newUsersToday,
@@ -40,6 +40,22 @@ export async function GET() {
       socialPostsToday,
       totalLikes,
       totalComments,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { createdAt: { gte: today } } }),
+      prisma.user.count({ where: { createdAt: { gte: thisWeek } } }),
+      prisma.user.count({ where: { createdAt: { gte: thisMonth } } }),
+      prisma.fortune.count(),
+      prisma.fortune.aggregate({ _sum: { viewCount: true } }),
+      prisma.fortune.groupBy({ by: ['fortuneType'], _count: { fortuneType: true } }),
+      prisma.socialPost.count(),
+      prisma.socialPost.count({ where: { createdAt: { gte: today } } }),
+      prisma.socialLike.count(),
+      prisma.socialComment.count(),
+    ])
+
+    // Batch 2 - messaging & community
+    const [
       totalDirectMessages,
       messagesThisWeek,
       totalConversations,
@@ -48,50 +64,44 @@ export async function GET() {
       activeVideoStreams,
       totalStreamGifts,
       totalStreamLikes,
-      totalCreditsInCirculation,
       premiumUsers,
       vipUsers,
     ] = await Promise.all([
-      // User stats
-      prisma.user.count(),
-      prisma.user.count({ where: { createdAt: { gte: today } } }),
-      prisma.user.count({ where: { createdAt: { gte: thisWeek } } }),
-      prisma.user.count({ where: { createdAt: { gte: thisMonth } } }),
-      
-      // Fortune stats
-      prisma.fortune.count(),
-      prisma.fortune.aggregate({ _sum: { viewCount: true } }),
-      prisma.fortune.groupBy({
-        by: ['fortuneType'],
-        _count: { fortuneType: true }
-      }),
-      
-      // Social stats
-      prisma.socialPost.count(),
-      prisma.socialPost.count({ where: { createdAt: { gte: today } } }),
-      prisma.socialLike.count(),
-      prisma.socialComment.count(),
-      
-      // Message stats
       prisma.directMessage.count(),
       prisma.directMessage.count({ where: { createdAt: { gte: thisWeek } } }),
       prisma.conversation.count(),
-      
-      // Follow stats
       prisma.follow.count(),
-      
-      // Video stream stats
       prisma.videoStream.count(),
       prisma.videoStream.count({ where: { status: 'live' } }),
       prisma.streamGift.aggregate({ _sum: { totalPrice: true } }),
       prisma.videoStreamLike.count(),
-      
-      // Credit stats
-      prisma.user.aggregate({ _sum: { credits: true } }),
-      
-      // Membership stats
       prisma.user.count({ where: { membership: 'premium' } }),
       prisma.user.count({ where: { membership: 'vip' } }),
+    ])
+
+    // Batch 3 - Economy/Finance stats
+    const [
+      totalCfcInCirculation,
+      totalJetonInCirculation,
+      jetonLoadedAgg,
+      jetonGiftSentAgg,
+      jetonGiftReceivedAgg,
+      jetonCommissionAgg,
+      jetonSpendAgg,
+      chatRoomGiftJetonAgg,
+      chatRoomGiftCfcAgg,
+      chatRoomCommissionAgg,
+    ] = await Promise.all([
+      prisma.user.aggregate({ _sum: { credits: true } }),
+      prisma.user.aggregate({ _sum: { jetonBalance: true } }),
+      prisma.jetonTransaction.aggregate({ _sum: { amount: true }, where: { type: 'purchase', amount: { gt: 0 } } }),
+      prisma.jetonTransaction.aggregate({ _sum: { amount: true }, where: { type: 'gift_sent' } }),
+      prisma.jetonTransaction.aggregate({ _sum: { amount: true }, where: { type: 'gift_received' } }),
+      prisma.jetonTransaction.aggregate({ _sum: { amount: true }, where: { type: 'gift_commission' } }),
+      prisma.jetonTransaction.aggregate({ _sum: { amount: true }, where: { type: 'spend' } }),
+      prisma.chatRoomGift.aggregate({ _sum: { totalPrice: true }, where: { currencyType: 'jeton' } }),
+      prisma.chatRoomGift.aggregate({ _sum: { totalPrice: true }, where: { currencyType: 'cfc' } }),
+      prisma.chatRoomGift.aggregate({ _sum: { commissionAmount: true }, where: { commissionAmount: { gt: 0 } } }),
     ])
 
     // Format fortune stats by type
@@ -152,10 +162,21 @@ export async function GET() {
         totalLikes: totalStreamLikes,
       },
       
-      // Economy
+      // Economy - detailed breakdown
       economy: {
-        creditsInCirculation: totalCreditsInCirculation._sum.credits || 0,
-        creditsSpent: 0, // Not tracked separately
+        cfcInCirculation: totalCfcInCirculation._sum.credits || 0,
+        jetonInCirculation: totalJetonInCirculation._sum.jetonBalance || 0,
+        jetonLoaded: jetonLoadedAgg._sum.amount || 0,
+        jetonGiftSent: Math.abs(jetonGiftSentAgg._sum.amount || 0),
+        jetonGiftReceived: jetonGiftReceivedAgg._sum.amount || 0,
+        jetonCommission: jetonCommissionAgg._sum.amount || 0,
+        jetonSpent: Math.abs(jetonSpendAgg._sum.amount || 0),
+        chatGiftJetonTotal: chatRoomGiftJetonAgg._sum.totalPrice || 0,
+        chatGiftCfcTotal: chatRoomGiftCfcAgg._sum.totalPrice || 0,
+        chatGiftCommissionTotal: chatRoomCommissionAgg._sum.commissionAmount || 0,
+        // backward compat
+        creditsInCirculation: totalCfcInCirculation._sum.credits || 0,
+        creditsSpent: 0,
       },
     })
   } catch (error) {
