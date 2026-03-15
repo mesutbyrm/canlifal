@@ -1411,6 +1411,17 @@ model DailyQuest {
 }
 
 // Blog posts managed by admin
+model BlogCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nameTr    String
+  nameEn    String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("blog_categories")
+}
+
 model BlogPost {
   id          String   @id @default(cuid())
   slug        String   @unique

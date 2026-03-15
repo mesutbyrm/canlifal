@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 
@@ -22,22 +22,30 @@ interface BlogPost {
   updatedAt: string
 }
 
-const CATEGORIES = [
-  { value: 'kahve-fali', labelTr: 'Kahve Falı', labelEn: 'Coffee Reading' },
-  { value: 'tarot', labelTr: 'Tarot', labelEn: 'Tarot' },
-  { value: 'burc', labelTr: 'Burç', labelEn: 'Horoscope' },
-  { value: 'genel', labelTr: 'Genel', labelEn: 'General' },
-]
+interface BlogCategory {
+  id: string
+  slug: string
+  nameTr: string
+  nameEn: string
+  sortOrder: number
+}
 
 export default function AdminBlogPage() {
   const params = useParams()
-  const router = useRouter()
   const lang = (params?.lang as string) || 'tr'
   const [posts, setPosts] = useState<BlogPost[]>([])
+  const [categories, setCategories] = useState<BlogCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<BlogPost | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [aiTitle, setAiTitle] = useState('')
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
+  const [newCatSlug, setNewCatSlug] = useState('')
+  const [newCatNameTr, setNewCatNameTr] = useState('')
+  const [newCatNameEn, setNewCatNameEn] = useState('')
+  const [filterCategory, setFilterCategory] = useState('all')
 
   const emptyPost: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'> = {
     slug: '',
@@ -69,13 +77,29 @@ export default function AdminBlogPage() {
     }
   }, [])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/blog/categories')
+      if (res.ok) {
+        const data = await res.json()
+        setCategories(data.categories || [])
+      }
+    } catch (e) {
+      console.error('Failed to fetch categories', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPosts()
+    fetchCategories()
+  }, [fetchPosts, fetchCategories])
 
   const openNew = () => {
     setForm(emptyPost)
     setKeywordsInput('')
     setEditing(null)
     setIsNew(true)
+    setAiTitle('')
   }
 
   const openEdit = (post: BlogPost) => {
@@ -99,6 +123,52 @@ export default function AdminBlogPage() {
   const closeForm = () => {
     setEditing(null)
     setIsNew(false)
+  }
+
+  // AI GENERATE
+  const handleAiGenerate = async () => {
+    if (!aiTitle.trim() || aiTitle.trim().length < 3) {
+      alert('L\u00fctfen en az 3 karakterlik bir ba\u015fl\u0131k girin.')
+      return
+    }
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/admin/blog/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: aiTitle.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Yapay zeka hatası')
+        return
+      }
+      const data = await res.json()
+      setForm({
+        slug: data.slug || '',
+        titleTr: data.titleTr || aiTitle.trim(),
+        titleEn: data.titleEn || '',
+        descTr: data.descTr || '',
+        descEn: data.descEn || '',
+        contentTr: data.contentTr || '',
+        contentEn: data.contentEn || '',
+        category: data.category || 'genel',
+        keywords: data.keywords || [],
+        isPublished: false,
+      })
+      setKeywordsInput((data.keywords || []).join(', '))
+      // Refresh categories in case new one was created
+      if (data.newCategoryCreated) {
+        fetchCategories()
+      }
+      setIsNew(true)
+      setEditing(null)
+    } catch (e) {
+      console.error(e)
+      alert('Yapay zeka bağlantı hatası')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const handleSave = async () => {
@@ -166,13 +236,55 @@ export default function AdminBlogPage() {
     }
   }
 
+  const handleAddCategory = async () => {
+    if (!newCatSlug || !newCatNameTr) {
+      alert('Slug ve Türkçe ad zorunlu')
+      return
+    }
+    try {
+      const res = await fetch('/api/admin/blog/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: newCatSlug, nameTr: newCatNameTr, nameEn: newCatNameEn }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Hata')
+        return
+      }
+      setNewCatSlug('')
+      setNewCatNameTr('')
+      setNewCatNameEn('')
+      setShowCategoryForm(false)
+      fetchCategories()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleDeleteCategory = async (cat: BlogCategory) => {
+    if (!confirm(`"${cat.nameTr}" kategorisini silmek istediğinize emin misiniz?`)) return
+    try {
+      await fetch(`/api/admin/blog/categories?id=${cat.id}`, { method: 'DELETE' })
+      fetchCategories()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const getCategoryLabel = (slug: string) => {
+    const cat = categories.find(c => c.slug === slug)
+    return cat ? cat.nameTr : slug
+  }
+
   const showForm = isNew || editing
+  const filteredPosts = filterCategory === 'all' ? posts : posts.filter(p => p.category === filterCategory)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950">
       <div className="max-w-5xl mx-auto px-4 py-8 pb-28">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Link href={`/${lang}/admin`} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
               <ArrowLeft className="w-5 h-5 text-white" />
@@ -183,11 +295,84 @@ export default function AdminBlogPage() {
             </h1>
           </div>
           {!showForm && (
-            <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
-              <Plus className="w-4 h-4" /> Yeni Yazı
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCategoryForm(!showCategoryForm)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium transition border border-white/10">
+                <Tag className="w-4 h-4" /> Kategoriler
+              </button>
+              <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
+                <Plus className="w-4 h-4" /> Yeni Yazı
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Category Management */}
+        {showCategoryForm && !showForm && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <Tag className="w-4 h-4 text-purple-400" /> Kategori Yönetimi
+            </h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {categories.map(cat => (
+                <div key={cat.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <span className="text-sm text-purple-200">{cat.nameTr}</span>
+                  <span className="text-xs text-gray-500">({cat.slug})</span>
+                  <button onClick={() => handleDeleteCategory(cat)} className="text-red-400 hover:text-red-300 ml-1">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 items-end">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Slug</label>
+                <input value={newCatSlug} onChange={e => setNewCatSlug(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="yeni-slug" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Türkçe Ad</label>
+                <input value={newCatNameTr} onChange={e => setNewCatNameTr(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="Kategori Adı" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">İngilizce Ad</label>
+                <input value={newCatNameEn} onChange={e => setNewCatNameEn(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="Category Name" />
+              </div>
+              <button onClick={handleAddCategory} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm transition">
+                <FolderPlus className="w-4 h-4" /> Ekle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* AI Generate Section */}
+        {!showForm && (
+          <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-2xl p-5 mb-6">
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-yellow-400" /> Yapay Zeka ile Blog Oluştur
+            </h3>
+            <p className="text-sm text-gray-400 mb-3">Sadece bir başlık yazın, yapay zeka tüm içeriği (slug, kategori, başlıklar, açıklamalar, içerikler, anahtar kelimeler) otomatik oluştursun.</p>
+            <div className="flex gap-2">
+              <input
+                value={aiTitle}
+                onChange={e => setAiTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !generating && handleAiGenerate()}
+                className="flex-1 px-4 py-2.5 bg-white/5 border border-purple-500/30 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-400"
+                placeholder="Blog başlığını yazın... (ör: Tarot kartlarının tarihi)"
+                disabled={generating}
+              />
+              <button
+                onClick={handleAiGenerate}
+                disabled={generating || !aiTitle.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition disabled:opacity-50"
+              >
+                {generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Oluşturuluyor...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Oluştur</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         {showForm && (
@@ -207,7 +392,7 @@ export default function AdminBlogPage() {
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Kategori</label>
                 <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm">
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.labelTr}</option>)}
+                  {categories.map(c => <option key={c.slug} value={c.slug}>{c.nameTr}</option>)}
                 </select>
               </div>
             </div>
@@ -265,6 +450,23 @@ export default function AdminBlogPage() {
           </div>
         )}
 
+        {/* Filter by Category */}
+        {!showForm && posts.length > 0 && (
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-xs text-gray-500">Filtre:</span>
+            <button onClick={() => setFilterCategory('all')} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Tümü ({posts.length})</button>
+            {categories.map(cat => {
+              const count = posts.filter(p => p.category === cat.slug).length
+              if (count === 0) return null
+              return (
+                <button key={cat.slug} onClick={() => setFilterCategory(cat.slug)} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === cat.slug ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {cat.nameTr} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Posts List */}
         {loading ? (
           <div className="flex justify-center py-20"><LoadingSpinner /></div>
@@ -272,21 +474,29 @@ export default function AdminBlogPage() {
           <div className="text-center py-20">
             <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">Henüz blog yazısı yok</p>
-            <button onClick={openNew} className="mt-4 text-purple-400 hover:text-purple-300 text-sm">+ İlk yazını oluştur</button>
+            <p className="text-sm text-gray-500 mt-2">Yukarıdaki yapay zeka aracı ile hızlıca blog oluşturabilirsiniz</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {posts.map(post => (
+            {filteredPosts.map(post => (
               <div key={post.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${post.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>
                       {post.isPublished ? 'Yayında' : 'Taslak'}
                     </span>
-                    <span className="text-xs text-gray-500">{post.category}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300">{getCategoryLabel(post.category)}</span>
                   </div>
                   <h3 className="text-white font-medium truncate">{post.titleTr}</h3>
                   <p className="text-xs text-gray-500 truncate">{post.descTr}</p>
+                  {post.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {post.keywords.slice(0, 4).map((kw, i) => (
+                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">{kw}</span>
+                      ))}
+                      {post.keywords.length > 4 && <span className="text-[10px] text-gray-600">+{post.keywords.length - 4}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => togglePublish(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title={post.isPublished ? 'Yayından Kaldır' : 'Yayınla'}>

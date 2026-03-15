@@ -20,7 +20,8 @@ import {
   MessageCircle,
   GripVertical,
   LayoutList,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react'
 
 const BUTTON_INFO: Record<string, { icon: React.ReactNode; labelTr: string; labelEn: string; color: string }> = {
@@ -54,6 +55,12 @@ const BUTTON_INFO: Record<string, { icon: React.ReactNode; labelTr: string; labe
     labelEn: 'Fortune Chat',
     color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/40',
   },
+  blog: {
+    icon: <BookOpen className="w-5 h-5" />,
+    labelTr: 'Blog',
+    labelEn: 'Blog',
+    color: 'from-orange-500/20 to-red-500/20 border-orange-500/40',
+  },
   'bana-ozel': {
     icon: <Sparkles className="w-5 h-5" />,
     labelTr: 'Bana Özel',
@@ -62,7 +69,7 @@ const BUTTON_INFO: Record<string, { icon: React.ReactNode; labelTr: string; labe
   },
 }
 
-const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat', 'bana-ozel']
+const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat', 'blog', 'bana-ozel']
 
 export default function AdminButtonOrderPage() {
   const { data: session, status } = useSession() || {}
