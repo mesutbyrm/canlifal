@@ -16,7 +16,7 @@ export async function GET(
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') // For polling new messages
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '100')
 
     // Check if user is banned (if logged in)
     if (session?.user?.id) {
@@ -221,19 +221,7 @@ export async function POST(
       }
     })
     
-    // Limit messages to 50 - delete older ones
-    const messageCount = await prisma.chatMessage.count({ where: { roomId } })
-    if (messageCount > 50) {
-      const oldMessages = await prisma.chatMessage.findMany({
-        where: { roomId },
-        orderBy: { createdAt: 'asc' },
-        take: messageCount - 50,
-        select: { id: true }
-      })
-      await prisma.chatMessage.deleteMany({
-        where: { id: { in: oldMessages.map(m => m.id) } }
-      })
-    }
+    // Messages are NOT auto-deleted - only deleted when room empties
 
     return NextResponse.json({
       ...message,

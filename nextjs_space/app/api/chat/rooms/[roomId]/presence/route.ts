@@ -283,19 +283,7 @@ export async function POST(
           }
         })
         
-        // Limit messages to 50 - delete older ones
-        const messageCount = await prisma.chatMessage.count({ where: { roomId } })
-        if (messageCount > 50) {
-          const oldMessages = await prisma.chatMessage.findMany({
-            where: { roomId },
-            orderBy: { createdAt: 'asc' },
-            take: messageCount - 50,
-            select: { id: true }
-          })
-          await prisma.chatMessage.deleteMany({
-            where: { id: { in: oldMessages.map(m => m.id) } }
-          })
-        }
+        // Messages are NOT auto-deleted - only deleted when room empties
       }
     }
 
@@ -418,19 +406,7 @@ export async function DELETE(
       }
     })
     
-    // Limit messages to 50
-    const messageCount = await prisma.chatMessage.count({ where: { roomId } })
-    if (messageCount > 50) {
-      const oldMessages = await prisma.chatMessage.findMany({
-        where: { roomId },
-        orderBy: { createdAt: 'asc' },
-        take: messageCount - 50,
-        select: { id: true }
-      })
-      await prisma.chatMessage.deleteMany({
-        where: { id: { in: oldMessages.map(m => m.id) } }
-      })
-    }
+    // Messages are NOT auto-deleted - only deleted when room empties
 
     // Check if room is empty and auto-clean
     cleanEmptyRoom(roomId).catch(() => {})
