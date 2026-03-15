@@ -86,8 +86,9 @@ export async function POST(request: NextRequest) {
 
     const message = `${badge} ${displayName} giriş yaptı!`
 
-    // VIP users get their team colors, staff gets red
-    const announcementColor = (isVip && user.favoriteTeam) ? `team:${user.favoriteTeam}` : 'red'
+    // Users with a specific favorite team get team colors; 'Diğer' or no team gets red
+    const hasTeam = user.favoriteTeam && user.favoriteTeam !== 'Diğer'
+    const announcementColor = ((isVip || isStaff) && hasTeam) ? `team:${user.favoriteTeam}` : 'red'
 
     await prisma.siteAnnouncement.create({
       data: {

@@ -6,7 +6,7 @@ import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissio
 
 export const dynamic = 'force-dynamic'
 
-// Auto-clean messages when room becomes empty (keep last 50)
+// Auto-clean ALL messages when room becomes empty for 30 seconds
 async function cleanEmptyRoom(roomId: string) {
   try {
     // Check if any user is active in the room (lastSeen within last 30 seconds)
@@ -19,28 +19,12 @@ async function cleanEmptyRoom(roomId: string) {
     })
 
     if (activeCount === 0) {
-      // Room is empty - delete all messages except the last 50
-      const messages = await prisma.chatMessage.findMany({
-        where: { roomId },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        select: { id: true }
+      // Room is empty for 30+ seconds - delete ALL messages
+      const deleted = await prisma.chatMessage.deleteMany({
+        where: { roomId }
       })
-
-      const keepIds = messages.map((m: { id: string }) => m.id)
-
-      if (keepIds.length > 0) {
-        await prisma.chatMessage.deleteMany({
-          where: {
-            roomId,
-            id: { notIn: keepIds }
-          }
-        })
-      } else {
-        // No messages to keep, delete all
-        await prisma.chatMessage.deleteMany({
-          where: { roomId }
-        })
+      if (deleted.count > 0) {
+        console.log(`Auto-cleaned ${deleted.count} messages from empty room ${roomId}`)
       }
     }
   } catch (error) {
@@ -113,6 +97,11 @@ export async function GET(
       if (b.roleLevel !== a.roleLevel) return b.roleLevel - a.roleLevel
       return a.name.localeCompare(b.name)
     })
+
+    // If room is empty, trigger auto-clean in background
+    if (activeUsers.length === 0) {
+      cleanEmptyRoom(roomId).catch(() => {})
+    }
 
     return NextResponse.json({
       users: activeUsers,
