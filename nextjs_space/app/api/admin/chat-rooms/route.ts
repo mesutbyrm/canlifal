@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT - Update room
+// PUT - Update room (including owner assignment)
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -89,7 +89,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive } = await req.json()
+    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId } = await req.json()
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID required' }, { status: 400 })
     }
@@ -101,10 +101,34 @@ export async function PUT(req: NextRequest) {
     if (descEn !== undefined) updateData.descEn = descEn
     if (icon !== undefined) updateData.icon = icon
     if (isActive !== undefined) updateData.isActive = isActive
+    
+    // Handle owner assignment
+    if (ownerId !== undefined) {
+      if (ownerId === null || ownerId === '') {
+        updateData.ownerId = null
+      } else {
+        // Verify the user exists
+        const ownerUser = await prisma.user.findUnique({ where: { id: ownerId } })
+        if (!ownerUser) {
+          return NextResponse.json({ error: 'Owner user not found' }, { status: 400 })
+        }
+        updateData.ownerId = ownerId
+        
+        // Also give them founder role in the room
+        await prisma.chatUserRole.upsert({
+          where: { roomId_userId: { roomId, userId: ownerId } },
+          update: { role: 'founder' },
+          create: { roomId, userId: ownerId, role: 'founder' }
+        })
+      }
+    }
 
     const room = await prisma.chatRoom.update({
       where: { id: roomId },
-      data: updateData
+      data: updateData,
+      include: {
+        owner: { select: { id: true, name: true, username: true } }
+      }
     })
 
     return NextResponse.json({ success: true, room })

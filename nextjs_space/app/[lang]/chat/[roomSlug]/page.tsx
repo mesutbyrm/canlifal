@@ -1652,10 +1652,101 @@ export default function ChatRoomPage() {
               <div className="space-y-0.5 relative z-10">
                 {messages.map((msg) => {
                   const displayName = getDisplayName(msg.user)
-                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
                   const isMe = msg.user.id === session?.user?.id
                   const isOwner = isRoomOwner(msg.user.id)
                   const isSpeakingUser = speakingUsers.has(msg.user.id)
+                  
+                  // Check if this is a system message
+                  const isSystemJoin = msg.content.startsWith('[SYSTEM_JOIN]')
+                  const isVipJoin = msg.content.startsWith('[SYSTEM_VIP_JOIN:')
+                  const isSystemMessage = isSystemJoin || isVipJoin
+                  
+                  // Parse VIP join type
+                  let vipType: string | null = null
+                  let joinName = ''
+                  if (isVipJoin) {
+                    const match = msg.content.match(/\[SYSTEM_VIP_JOIN:(\w+)\](.+)/)
+                    if (match) {
+                      vipType = match[1]
+                      joinName = match[2]
+                    }
+                  } else if (isSystemJoin) {
+                    joinName = msg.content.replace('[SYSTEM_JOIN]', '')
+                  }
+                  
+                  // Render system messages differently
+                  if (isSystemMessage) {
+                    const vipLabels: Record<string, { label: string; labelEn: string; icon: string; color: string; bgColor: string }> = {
+                      'ADMIN': { label: '👑 Site Yöneticisi', labelEn: '👑 Site Admin', icon: '👑', color: 'text-red-400', bgColor: 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-500/50' },
+                      'OWNER': { label: '🏠 Oda Sahibi', labelEn: '🏠 Room Owner', icon: '🏠', color: 'text-yellow-400', bgColor: 'bg-gradient-to-r from-yellow-900/50 to-amber-900/50 border-yellow-500/50' },
+                      'FOUNDER': { label: '⭐ Kurucu', labelEn: '⭐ Founder', icon: '⭐', color: 'text-red-400', bgColor: 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-red-500/40' },
+                      'MODERATOR': { label: '🛡️ Moderatör', labelEn: '🛡️ Moderator', icon: '🛡️', color: 'text-orange-400', bgColor: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/40' },
+                      'OP': { label: '✨ Operatör', labelEn: '✨ Operator', icon: '✨', color: 'text-green-400', bgColor: 'bg-gradient-to-r from-green-900/40 to-emerald-900/40 border-green-500/40' }
+                    }
+                    
+                    if (isVipJoin && vipType && vipLabels[vipType]) {
+                      const vipInfo = vipLabels[vipType]
+                      return (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ duration: 0.5, type: 'spring' }}
+                          className={`mx-2 my-2 p-3 rounded-xl border ${vipInfo.bgColor} relative overflow-hidden`}
+                        >
+                          {/* Animated background effect */}
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: '100%' }}
+                            transition={{ duration: 1.5, repeat: 2, ease: 'linear' }}
+                          />
+                          <div className="relative z-10 flex items-center justify-center gap-2">
+                            <motion.span
+                              className="text-2xl"
+                              animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }}
+                              transition={{ duration: 0.8, repeat: 2 }}
+                            >
+                              {vipInfo.icon}
+                            </motion.span>
+                            <div className="text-center">
+                              <span className={`font-bold ${vipInfo.color}`}>{joinName}</span>
+                              <span className="text-white/80 mx-2">
+                                {language === 'tr' ? 'odaya giriş yaptı!' : 'entered the room!'}
+                              </span>
+                            </div>
+                            <motion.span
+                              className="text-2xl"
+                              animate={{ scale: [1, 1.3, 1], rotate: [0, -10, 10, 0] }}
+                              transition={{ duration: 0.8, repeat: 2 }}
+                            >
+                              {vipInfo.icon}
+                            </motion.span>
+                          </div>
+                          <div className="text-center text-xs mt-1 text-white/60">
+                            {language === 'tr' ? vipInfo.label : vipInfo.labelEn}
+                          </div>
+                        </motion.div>
+                      )
+                    }
+                    
+                    // Regular join message
+                    return (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="px-2 py-1 text-center"
+                      >
+                        <span className="text-purple-400/70 text-xs">
+                          ➜ <span className="text-purple-300">{joinName}</span>{' '}
+                          {language === 'tr' ? 'odaya katıldı' : 'joined the room'}
+                        </span>
+                      </motion.div>
+                    )
+                  }
+                  
+                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
                   
                   return (
                     <div

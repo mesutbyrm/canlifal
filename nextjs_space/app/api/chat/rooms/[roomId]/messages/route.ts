@@ -220,6 +220,20 @@ export async function POST(
         userId: session.user.id
       }
     })
+    
+    // Limit messages to 50 - delete older ones
+    const messageCount = await prisma.chatMessage.count({ where: { roomId } })
+    if (messageCount > 50) {
+      const oldMessages = await prisma.chatMessage.findMany({
+        where: { roomId },
+        orderBy: { createdAt: 'asc' },
+        take: messageCount - 50,
+        select: { id: true }
+      })
+      await prisma.chatMessage.deleteMany({
+        where: { id: { in: oldMessages.map(m => m.id) } }
+      })
+    }
 
     return NextResponse.json({
       ...message,

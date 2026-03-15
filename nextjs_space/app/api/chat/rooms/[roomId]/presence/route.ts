@@ -116,6 +116,47 @@ export async function GET(
   }
 }
 
+// Helper to check user's special role for entry announcement
+async function getUserSpecialRole(roomId: string, userId: string): Promise<{ role: string | null; isSpecial: boolean; entryType: string | null }> {
+  // Check if site admin
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, name: true }
+  })
+  
+  if (user?.role === 'admin') {
+    return { role: 'admin', isSpecial: true, entryType: 'ADMIN' }
+  }
+  
+  // Check if room owner
+  const room = await prisma.chatRoom.findUnique({
+    where: { id: roomId },
+    select: { ownerId: true }
+  })
+  
+  if (room?.ownerId === userId) {
+    return { role: 'owner', isSpecial: true, entryType: 'OWNER' }
+  }
+  
+  // Check chat role
+  const chatRole = await prisma.chatUserRole.findUnique({
+    where: { roomId_userId: { roomId, userId } },
+    select: { role: true }
+  })
+  
+  if (chatRole?.role === 'founder') {
+    return { role: 'founder', isSpecial: true, entryType: 'FOUNDER' }
+  }
+  if (chatRole?.role === 'admin') {
+    return { role: 'admin', isSpecial: true, entryType: 'MODERATOR' }
+  }
+  if (chatRole?.role === 'op') {
+    return { role: 'op', isSpecial: true, entryType: 'OP' }
+  }
+  
+  return { role: null, isSpecial: false, entryType: null }
+}
+
 // POST to update user presence (heartbeat) or remove presence (with ?_delete=1 via sendBeacon)
 export async function POST(
   request: NextRequest,
@@ -162,6 +203,14 @@ export async function POST(
       return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
     }
 
+    // Check if this is a NEW join (not a heartbeat)
+    const existingPresence = await prisma.chatPresence.findUnique({
+      where: { roomId_userId: { roomId, userId: session.user.id } }
+    })
+    
+    const thirtySecondsAgo = new Date(Date.now() - 30000)
+    const isNewJoin = !existingPresence || existingPresence.lastSeen < thirtySecondsAgo
+    
     // Update presence with nickname (handle race condition with retry)
     try {
       await prisma.chatPresence.upsert({
@@ -198,6 +247,40 @@ export async function POST(
         })
       } else {
         throw upsertError
+      }
+    }
+    
+    // If new join, create a system message
+    if (isNewJoin) {
+      const displayName = nickname || session.user.name || 'Kullanıcı'
+      const specialRole = await getUserSpecialRole(roomId, session.user.id)
+      
+      // Create entry system message
+      let systemContent = `[SYSTEM_JOIN]${displayName}`
+      if (specialRole.isSpecial && specialRole.entryType) {
+        systemContent = `[SYSTEM_VIP_JOIN:${specialRole.entryType}]${displayName}`
+      }
+      
+      await prisma.chatMessage.create({
+        data: {
+          roomId,
+          userId: session.user.id,
+          content: systemContent
+        }
+      })
+      
+      // Limit messages to 50 - delete older ones
+      const messageCount = await prisma.chatMessage.count({ where: { roomId } })
+      if (messageCount > 50) {
+        const oldMessages = await prisma.chatMessage.findMany({
+          where: { roomId },
+          orderBy: { createdAt: 'asc' },
+          take: messageCount - 50,
+          select: { id: true }
+        })
+        await prisma.chatMessage.deleteMany({
+          where: { id: { in: oldMessages.map(m => m.id) } }
+        })
       }
     }
 
