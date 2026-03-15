@@ -546,30 +546,6 @@ export default function HomePage() {
 
         {/* Main Content */}
         <div className="pt-32 pb-28 px-4 space-y-4 relative z-10">
-          {/* Two Main Buttons - Canlı Yayın & Canlı Falcı - Separated */}
-          <div className="space-y-3">
-            <Link
-              href={`/${language}/chat/video`}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-red-600/30 to-orange-600/30 border-2 border-red-400/60 backdrop-blur-sm transition-all hover:border-red-300 hover:from-red-600/40 hover:to-orange-600/40"
-              style={{ boxShadow: '0 0 25px rgba(239, 68, 68, 0.4)' }}
-            >
-              <Radio className="w-6 h-6 text-red-300" />
-              <span className="text-white font-bold text-xl">
-                {language === 'tr' ? '📺 Canlı Yayın' : '📺 Live Stream'}
-              </span>
-            </Link>
-            <Link
-              href={`/${language}/live-tellers`}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 border-2 border-indigo-400/60 backdrop-blur-sm transition-all hover:border-indigo-300 hover:from-indigo-600/40 hover:to-purple-600/40"
-              style={{ boxShadow: '0 0 25px rgba(99, 102, 241, 0.4)' }}
-            >
-              <Sparkles className="w-6 h-6 text-indigo-300" />
-              <span className="text-white font-bold text-xl">
-                {language === 'tr' ? '🔮 Canlı Falcı' : '🔮 Live Teller'}
-              </span>
-            </Link>
-          </div>
-
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
 

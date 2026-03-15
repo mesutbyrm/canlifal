@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import prisma from '@/lib/db'
+import { BLOG_POSTS, SEO_PAGES } from '@/lib/seo-config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
@@ -125,5 +126,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching posts for sitemap:', error)
   }
 
-  return [...staticPages, ...fortunePages, ...socialPostPages]
+  // Blog pages
+  const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.flatMap(post => [
+    {
+      url: `${baseUrl}/tr/blog/${post.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/en/blog/${post.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+  ])
+
+  // Blog index
+  const blogIndex: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/tr/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${baseUrl}/en/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.8 },
+  ]
+
+  // SEO landing pages
+  const seoPages: MetadataRoute.Sitemap = SEO_PAGES.flatMap(page => [
+    {
+      url: `${baseUrl}/tr/${page.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/en/${page.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+  ])
+
+  return [...staticPages, ...fortunePages, ...blogIndex, ...blogPages, ...seoPages, ...socialPostPages]
 }

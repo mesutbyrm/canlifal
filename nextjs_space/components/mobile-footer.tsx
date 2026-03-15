@@ -147,21 +147,6 @@ export default function MobileFooter() {
       >
         {/* Background */}
         <div className={`relative h-16 overflow-visible ${bgGradient} border-t`}>
-          {/* Starry effect */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(10)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-0.5 h-0.5 bg-white rounded-full animate-twinkle"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                }}
-              />
-            ))}
-          </div>
-          
           {/* Navigation Items */}
           <nav className="relative h-full flex items-center justify-around px-1">
             {navItems.map((item, index) => {
@@ -171,17 +156,17 @@ export default function MobileFooter() {
               if (item.isCenter) {
                 // Center CAMERA button - bigger, raised above footer
                 return (
-                  <div key={index} className="flex flex-col items-center w-16 relative">
+                  <div key={index} className="flex flex-col items-center w-18 relative">
                     <Link
                       href={item.href}
-                      className="absolute -top-8 group"
+                      className="absolute -top-9 group"
                     >
                       <div 
-                        className={`relative w-16 h-16 rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
-                        style={{ boxShadow: '0 0 25px rgba(217, 70, 239, 0.4)' }}
+                        className={`relative w-[72px] h-[72px] rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
+                        style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)' }}
                       >
                         <Camera 
-                          className="w-8 h-8 text-white group-hover:scale-110 transition-transform" 
+                          className="w-9 h-9 text-white group-hover:scale-110 transition-transform" 
                         />
                       </div>
                     </Link>

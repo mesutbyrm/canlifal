@@ -125,7 +125,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       icon: <Sparkles className="w-4 h-4" />,
       labelTr: 'Bana Özel',
       labelEn: 'For Me',
-      badgeCount: 0,
+      badgeCount: counts.games + counts.fortunes,
     },
   }
 
