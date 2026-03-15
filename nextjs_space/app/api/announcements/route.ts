@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
         username: true,
         role: true,
         membership: true,
-        membershipExpiresAt: true
+        membershipExpiresAt: true,
+        favoriteTeam: true
       }
     })
 
@@ -85,11 +86,14 @@ export async function POST(request: NextRequest) {
 
     const message = `${badge} ${displayName} giriş yaptı!`
 
+    // VIP users get their team colors, staff gets red
+    const announcementColor = (isVip && user.favoriteTeam) ? `team:${user.favoriteTeam}` : 'red'
+
     await prisma.siteAnnouncement.create({
       data: {
         type: 'login',
         message,
-        color: 'red',
+        color: announcementColor,
         userId: user.id,
         userName: displayName,
         expiresAt: new Date(Date.now() + 2 * 60 * 1000) // expires in 2 minutes

@@ -155,6 +155,7 @@ export default function ChatRoomPage() {
   const voiceUsersPollRef = useRef<NodeJS.Timeout | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -169,6 +170,10 @@ export default function ChatRoomPage() {
       const height = window.visualViewport?.height || window.innerHeight
       const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
+      // Prevent page scroll - reset any scroll on document/window
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
     }
     // Multiple timeouts to catch different keyboard animation speeds
     setTimeout(recalc, 100)
@@ -209,6 +214,8 @@ export default function ChatRoomPage() {
       const height = window.visualViewport?.height || window.innerHeight
       const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
+      // Prevent any document-level scrolling in chat room
+      window.scrollTo(0, 0)
     }
     
     setVH()
@@ -219,9 +226,18 @@ export default function ChatRoomPage() {
       window.visualViewport.addEventListener('resize', setVH)
       window.visualViewport.addEventListener('scroll', setVH)
     }
+
+    // Prevent document scroll entirely in chat room
+    const preventScroll = (e: Event) => {
+      if (!(e.target as HTMLElement)?.closest?.('.overflow-y-auto')) {
+        window.scrollTo(0, 0)
+      }
+    }
+    document.addEventListener('scroll', preventScroll, { passive: true })
     
     return () => {
       window.removeEventListener('resize', setVH)
+      document.removeEventListener('scroll', preventScroll)
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', setVH)
         window.visualViewport.removeEventListener('scroll', setVH)
@@ -415,9 +431,12 @@ export default function ChatRoomPage() {
     }
   }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers])
 
-  // Auto-scroll
+  // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
   }, [messages])
 
   // WebRTC Configuration with TURN servers for NAT traversal
@@ -932,6 +951,8 @@ export default function ChatRoomPage() {
       if (res.ok) {
         setNewMessage('')
         fetchMessages()
+        // Keep input focused after sending
+        requestAnimationFrame(() => inputRef.current?.focus())
       } else {
         const data = await res.json()
         if (data.error === 'muted') {
@@ -1227,7 +1248,7 @@ export default function ChatRoomPage() {
   )
 
   return (
-    <div className="h-full w-full flex flex-col relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+    <div className="h-full w-full flex flex-col relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)', overscrollBehavior: 'none' }}>
       {/* Nickname Modal */}
       <AnimatePresence>
         {showNicknameModal && session?.user && (
@@ -1614,7 +1635,7 @@ export default function ChatRoomPage() {
           {/* Voice Users Bar removed */}
 
           {/* Messages Area */}
-          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative">
+          <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative" style={{ overscrollBehavior: 'contain' }}>
             {/* Watermark Room Name */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
               <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/10 whitespace-nowrap select-none">
