@@ -24,6 +24,7 @@ interface UserListItem {
   username: string | null
   image: string | null
   credits: number
+  jetonBalance: number
   role: string
   membership: string
   createdAt: string
@@ -39,6 +40,7 @@ interface UserDetail {
   image: string | null
   preferredLanguage: string
   credits: number
+  jetonBalance: number
   role: string
   membership: string
   membershipExpiresAt: string | null
@@ -121,10 +123,11 @@ export default function AdminUsersPage() {
   const [showStreamBanModal, setShowStreamBanModal] = useState(false)
   const [streamBanReason, setStreamBanReason] = useState('')
   
-  // Credit management
+  // Currency management
   const [showCreditModal, setShowCreditModal] = useState(false)
   const [creditAmount, setCreditAmount] = useState(100)
-  const [creditAction, setCreditAction] = useState<'add' | 'remove'>('add')
+  const [creditAction, setCreditAction] = useState<'add' | 'remove' | 'set'>('add')
+  const [creditCurrency, setCreditCurrency] = useState<'cfc' | 'jeton'>('cfc')
   
   // Image upload
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -258,18 +261,27 @@ export default function AdminUsersPage() {
     if (!selectedUser) return
     setSaving(true)
     try {
+      let action = ''
+      if (creditCurrency === 'cfc') {
+        action = creditAction === 'set' ? 'set_credits' : creditAction === 'add' ? 'add_credits' : 'remove_credits'
+      } else {
+        action = creditAction === 'set' ? 'set_jetons' : creditAction === 'add' ? 'add_jetons' : 'remove_jetons'
+      }
       const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          action: creditAction === 'add' ? 'add_credits' : 'remove_credits',
-          credits: creditAmount
+          action,
+          credits: creditAmount,
+          amount: creditAmount
         })
       })
       const data = await res.json()
       if (res.ok) {
-        setMessage({ type: 'success', text: `Jeton ${creditAction === 'add' ? 'eklendi' : 'çıkarıldı'}` })
-        setSelectedUser({ ...selectedUser, credits: data.newCredits })
+        const currLabel = creditCurrency === 'cfc' ? 'CFC' : 'Jeton'
+        const actLabel = creditAction === 'add' ? 'eklendi' : creditAction === 'remove' ? 'çıkarıldı' : 'ayarlandı'
+        setMessage({ type: 'success', text: `${currLabel} ${actLabel}` })
+        setSelectedUser({ ...selectedUser, credits: data.newCredits, jetonBalance: data.newJetons })
         setShowCreditModal(false)
         fetchUsers()
       }
@@ -523,6 +535,7 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-purple-500/20">
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Kullanıcı</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Email</th>
+                    <th className="text-left px-4 py-3 text-purple-300 font-medium">CFC</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Jeton</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Rol</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Üyelik</th>
@@ -554,7 +567,10 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-purple-200">{user.email}</td>
                       <td className="px-4 py-3">
-                        <span className="text-yellow-400 font-medium">{user.credits} 💰</span>
+                        <span className="text-emerald-400 font-medium">{user.credits}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-yellow-400 font-medium">{user.jetonBalance}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -676,9 +692,12 @@ export default function AdminUsersPage() {
                       </div>
                       {selectedUser.username && <p className="text-purple-400">@{selectedUser.username}</p>}
                       <p className="text-purple-300 text-sm">{selectedUser.email}</p>
-                      <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-sm">
+                          🪙 {selectedUser.credits} CFC
+                        </span>
                         <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-sm">
-                          💰 {selectedUser.credits} Jeton
+                          💰 {selectedUser.jetonBalance} Jeton
                         </span>
                         <span className={`px-2 py-1 rounded text-sm ${
                           selectedUser.membership === 'gold' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -695,10 +714,10 @@ export default function AdminUsersPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
                     <button
                       onClick={() => setShowCreditModal(true)}
-                      className="p-3 bg-yellow-500/20 rounded-xl text-center hover:bg-yellow-500/30 transition-colors"
+                      className="p-3 bg-gradient-to-br from-emerald-500/20 to-yellow-500/20 rounded-xl text-center hover:from-emerald-500/30 hover:to-yellow-500/30 transition-colors"
                     >
-                      <Coins className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-                      <span className="text-yellow-400 text-sm">Jeton</span>
+                      <Coins className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <span className="text-emerald-300 text-xs">CFC / Jeton</span>
                     </button>
                     <button
                       onClick={() => setShowPasswordModal(true)}
@@ -1040,51 +1059,120 @@ export default function AdminUsersPage() {
           </Dialog.Portal>
         </Dialog.Root>
 
-        {/* Credit Modal */}
+        {/* Currency Management Modal */}
         <Dialog.Root open={showCreditModal} onOpenChange={setShowCreditModal}>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/80 z-50" />
             <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a0b2e] rounded-2xl z-50 p-6">
-              <Dialog.Title className="text-xl font-bold text-white mb-4">Jeton Yönetimi</Dialog.Title>
+              <Dialog.Title className="text-xl font-bold text-white mb-4">CFC / Jeton Yönetimi</Dialog.Title>
+
+              {/* Current Balances */}
+              {selectedUser && (
+                <div className="flex gap-3 mb-5">
+                  <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
+                    <p className="text-emerald-400 text-xs mb-1">Mevcut CFC</p>
+                    <p className="text-emerald-300 text-xl font-bold">{selectedUser.credits}</p>
+                  </div>
+                  <div className="flex-1 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
+                    <p className="text-yellow-400 text-xs mb-1">Mevcut Jeton</p>
+                    <p className="text-yellow-300 text-xl font-bold">{selectedUser.jetonBalance}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Currency selector */}
               <div className="mb-4">
-                <div className="flex gap-2 mb-4">
+                <label className="text-purple-300 text-sm mb-2 block">Birim Seçin</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCreditCurrency('cfc')}
+                    className={`flex-1 py-2 rounded-lg font-medium text-sm ${
+                      creditCurrency === 'cfc' ? 'bg-emerald-600 text-white' : 'bg-white/10 text-white/70'
+                    }`}
+                  >
+                    🪙 CFC
+                  </button>
+                  <button
+                    onClick={() => setCreditCurrency('jeton')}
+                    className={`flex-1 py-2 rounded-lg font-medium text-sm ${
+                      creditCurrency === 'jeton' ? 'bg-yellow-600 text-white' : 'bg-white/10 text-white/70'
+                    }`}
+                  >
+                    💰 Jeton
+                  </button>
+                </div>
+              </div>
+
+              {/* Action selector */}
+              <div className="mb-4">
+                <label className="text-purple-300 text-sm mb-2 block">İşlem</label>
+                <div className="flex gap-2">
                   <button
                     onClick={() => setCreditAction('add')}
-                    className={`flex-1 py-2 rounded-lg font-medium ${
-                      creditAction === 'add' ? 'bg-green-600 text-white' : 'bg-white/10 text-white'
+                    className={`flex-1 py-2 rounded-lg font-medium text-sm ${
+                      creditAction === 'add' ? 'bg-green-600 text-white' : 'bg-white/10 text-white/70'
                     }`}
                   >
                     Ekle
                   </button>
                   <button
                     onClick={() => setCreditAction('remove')}
-                    className={`flex-1 py-2 rounded-lg font-medium ${
-                      creditAction === 'remove' ? 'bg-red-600 text-white' : 'bg-white/10 text-white'
+                    className={`flex-1 py-2 rounded-lg font-medium text-sm ${
+                      creditAction === 'remove' ? 'bg-red-600 text-white' : 'bg-white/10 text-white/70'
                     }`}
                   >
                     Çıkar
                   </button>
+                  <button
+                    onClick={() => setCreditAction('set')}
+                    className={`flex-1 py-2 rounded-lg font-medium text-sm ${
+                      creditAction === 'set' ? 'bg-blue-600 text-white' : 'bg-white/10 text-white/70'
+                    }`}
+                  >
+                    Ayarla
+                  </button>
                 </div>
-                <label className="text-purple-300 text-sm mb-1 block">Miktar</label>
+              </div>
+
+              {/* Amount */}
+              <div className="mb-5">
+                <label className="text-purple-300 text-sm mb-1 block">
+                  {creditAction === 'set' ? 'Yeni Bakiye' : 'Miktar'}
+                </label>
                 <input
                   type="number"
                   value={creditAmount}
                   onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
-                  className="w-full bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white"
-                  min="1"
+                  className="w-full bg-white/5 border border-purple-500/30 rounded-lg px-4 py-3 text-white text-lg"
+                  min="0"
                 />
+                {creditAction !== 'set' && selectedUser && (
+                  <p className="text-purple-400/60 text-xs mt-1">
+                    Sonuç: {creditCurrency === 'cfc' 
+                      ? (creditAction === 'add' ? selectedUser.credits + creditAmount : Math.max(0, selectedUser.credits - creditAmount))
+                      : (creditAction === 'add' ? selectedUser.jetonBalance + creditAmount : Math.max(0, selectedUser.jetonBalance - creditAmount))
+                    } {creditCurrency === 'cfc' ? 'CFC' : 'Jeton'}
+                  </p>
+                )}
               </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={handleCredits}
-                  disabled={saving || creditAmount <= 0}
-                  className={`flex-1 py-2 rounded-lg disabled:opacity-50 ${
-                    creditAction === 'add' ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-red-600 hover:bg-red-500 text-white'
+                  disabled={saving || (creditAction !== 'set' && creditAmount <= 0)}
+                  className={`flex-1 py-2.5 rounded-lg disabled:opacity-50 font-medium ${
+                    creditAction === 'add' ? 'bg-green-600 hover:bg-green-500 text-white' :
+                    creditAction === 'remove' ? 'bg-red-600 hover:bg-red-500 text-white' :
+                    'bg-blue-600 hover:bg-blue-500 text-white'
                   }`}
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (creditAction === 'add' ? 'Jeton Ekle' : 'Jeton Çıkar')}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (
+                    creditAction === 'add' ? `${creditCurrency === 'cfc' ? 'CFC' : 'Jeton'} Ekle` :
+                    creditAction === 'remove' ? `${creditCurrency === 'cfc' ? 'CFC' : 'Jeton'} Çıkar` :
+                    `${creditCurrency === 'cfc' ? 'CFC' : 'Jeton'} Ayarla`
+                  )}
                 </button>
-                <Dialog.Close className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20">
+                <Dialog.Close className="px-6 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20">
                   İptal
                 </Dialog.Close>
               </div>

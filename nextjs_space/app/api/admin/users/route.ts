@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
           username: true,
           image: true,
           credits: true,
+          jetonBalance: true,
           role: true,
           membership: true,
           createdAt: true,

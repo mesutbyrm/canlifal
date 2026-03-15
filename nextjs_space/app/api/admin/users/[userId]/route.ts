@@ -26,6 +26,7 @@ export async function GET(
         image: true,
         preferredLanguage: true,
         credits: true,
+        jetonBalance: true,
         role: true,
         membership: true,
         membershipExpiresAt: true,
@@ -187,18 +188,58 @@ export async function PATCH(
       const user = await prisma.user.update({
         where: { id: params.userId },
         data: { credits: { increment: credits } },
-        select: { credits: true }
+        select: { credits: true, jetonBalance: true }
       })
-      return NextResponse.json({ success: true, newCredits: user.credits })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
     }
 
     if (action === 'remove_credits') {
       const user = await prisma.user.update({
         where: { id: params.userId },
         data: { credits: { decrement: Math.abs(credits) } },
-        select: { credits: true }
+        select: { credits: true, jetonBalance: true }
       })
-      return NextResponse.json({ success: true, newCredits: user.credits })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
+    }
+
+    if (action === 'set_credits') {
+      const amount = Math.max(0, Number(body.amount) || 0)
+      const user = await prisma.user.update({
+        where: { id: params.userId },
+        data: { credits: amount },
+        select: { credits: true, jetonBalance: true }
+      })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
+    }
+
+    if (action === 'add_jetons') {
+      const amount = Math.abs(Number(body.amount) || 0)
+      const user = await prisma.user.update({
+        where: { id: params.userId },
+        data: { jetonBalance: { increment: amount } },
+        select: { credits: true, jetonBalance: true }
+      })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
+    }
+
+    if (action === 'remove_jetons') {
+      const amount = Math.abs(Number(body.amount) || 0)
+      const user = await prisma.user.update({
+        where: { id: params.userId },
+        data: { jetonBalance: { decrement: amount } },
+        select: { credits: true, jetonBalance: true }
+      })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
+    }
+
+    if (action === 'set_jetons') {
+      const amount = Math.max(0, Number(body.amount) || 0)
+      const user = await prisma.user.update({
+        where: { id: params.userId },
+        data: { jetonBalance: amount },
+        select: { credits: true, jetonBalance: true }
+      })
+      return NextResponse.json({ success: true, newCredits: user.credits, newJetons: user.jetonBalance })
     }
 
     // General update
@@ -229,6 +270,7 @@ export async function PATCH(
         role: true,
         membership: true,
         credits: true,
+        jetonBalance: true,
       }
     })
 
