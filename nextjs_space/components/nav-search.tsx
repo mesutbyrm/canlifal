@@ -110,7 +110,7 @@ export default function NavSearch() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg hover:bg-fuchsia-900/30 text-fuchsia-300 hover:text-fuchsia-200 transition-colors"
+          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
         >
           <Search className="w-6 h-6" />
           <span className="text-[10px] font-medium">{language === 'tr' ? 'Ara' : 'Search'}</span>
@@ -128,7 +128,7 @@ export default function NavSearch() {
               }}
               onKeyDown={handleKeyDown}
               placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
-              className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-fuchsia-900/40 border border-fuchsia-500/40 rounded-full text-white placeholder-fuchsia-400/60 focus:outline-none focus:border-fuchsia-400 transition-all"
+              className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-red-900/40 border border-red-500/40 rounded-full text-white placeholder-red-300/60 focus:outline-none focus:border-red-400 transition-all"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fuchsia-400/60" />
             {query && (

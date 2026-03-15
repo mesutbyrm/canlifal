@@ -1410,6 +1410,29 @@ model DailyQuest {
   @@map("daily_quests")
 }
 
+// Blog posts managed by admin
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  titleTr     String
+  titleEn     String   @default("")
+  descTr      String
+  descEn      String   @default("")
+  contentTr   String   @db.Text
+  contentEn   String   @default("") @db.Text
+  category    String   @default("genel")
+  keywords    String[] @default([])
+  isPublished Boolean  @default(false)
+  authorId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+  @@index([slug])
+  @@map("blog_posts")
+}
+
 // User game level & XP tracking
 model UserGameProfile {
   id             String   @id @default(cuid())

@@ -168,7 +168,17 @@ export async function GET() {
       }
     })
 
-    // 4. Custom ticker messages from admin
+    // 4. Online teller count
+    const onlineTellerCount = await prisma.liveFortuneTeller.count({
+      where: {
+        isOnline: true,
+        isActive: true,
+        isBanned: false,
+        isFrozen: false,
+      },
+    })
+
+    // 5. Custom ticker messages from admin
     const customMessages = await prisma.tickerMessage.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -178,6 +188,7 @@ export async function GET() {
     return NextResponse.json({
       onlineUsers: allOnlineUsers,
       onlineCount,
+      onlineTellerCount,
       recentPurchasers: recentPurchasersWithInfo,
       bigGifts,
       customMessages,
@@ -187,6 +198,7 @@ export async function GET() {
     return NextResponse.json({
       onlineUsers: [],
       onlineCount: 0,
+      onlineTellerCount: 0,
       recentPurchasers: [],
       bigGifts: [],
       customMessages: [],

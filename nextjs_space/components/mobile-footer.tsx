@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 
 import { motion } from 'framer-motion'
-import { User, Gift, Home, Camera, MessageCircle } from 'lucide-react'
+import { User, Home, Camera, MessageCircle, Coins } from 'lucide-react'
 import Image from 'next/image'
 
 export default function MobileFooter() {
@@ -82,9 +82,10 @@ export default function MobileFooter() {
     },
     {
       href: `/${language}/credits`,
-      icon: Gift,
+      icon: Coins,
       label: language === 'tr' ? 'Jeton Al' : 'Buy Jeton',
       isCenter: false,
+      isJeton: true,
     },
     {
       href: `/${language}`,
@@ -152,22 +153,18 @@ export default function MobileFooter() {
             {navItems.map((item, index) => {
               const isActive = pathname === item.href || (item.href === `/${language}` && pathname === `/${language}/`)
               const Icon = item.icon
+              const isJeton = 'isJeton' in item && item.isJeton
               
               if (item.isCenter) {
                 // Center CAMERA button - bigger, raised above footer
                 return (
                   <div key={index} className="flex flex-col items-center w-18 relative">
-                    <Link
-                      href={item.href}
-                      className="absolute -top-9 group"
-                    >
+                    <Link href={item.href} className="absolute -top-9 group">
                       <div 
                         className={`relative w-[72px] h-[72px] rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
                         style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)' }}
                       >
-                        <Camera 
-                          className="w-9 h-9 text-white group-hover:scale-110 transition-transform" 
-                        />
+                        <Camera className="w-9 h-9 text-white group-hover:scale-110 transition-transform" />
                       </div>
                     </Link>
                   </div>
@@ -181,45 +178,25 @@ export default function MobileFooter() {
                   className="flex flex-col items-center justify-center w-14 py-1.5 group"
                 >
                   <div className="relative w-8 h-8 flex items-center justify-center">
-                    {index === 0 && (
-                      <div 
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}
-                      >
-                        <Icon className={`w-4.5 h-4.5 ${isActive ? accentActiveColor : iconColor}`} />
-                      </div>
-                    )}
-                    
-                    {index === 1 && (
-                      <>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}>
-                          <MessageCircle 
-                            className={`w-4.5 h-4.5 ${isActive ? accentActiveColor : iconColor}`}
-                          />
-                        </div>
-                        {unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-0 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {unreadCount > 9 ? '9+' : unreadCount}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    
-                    {index === 3 && (
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}>
-                        <Gift className={`w-4.5 h-4.5 ${isActive ? accentActiveColor : iconColor}`} />
-                      </div>
-                    )}
-                    
-                    {index === 4 && (
-                      <div 
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? iconBgActive : iconBgInactive}`}
-                      >
-                        <Home className={`w-4.5 h-4.5 ${isActive ? accentActiveColor : iconColor}`} />
-                      </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      isJeton
+                        ? 'bg-amber-500/80 shadow-lg shadow-amber-500/40'
+                        : isActive ? iconBgActive : iconBgInactive
+                    }`}>
+                      <Icon className={`w-4.5 h-4.5 ${
+                        isJeton ? 'text-white' : isActive ? accentActiveColor : iconColor
+                      }`} />
+                    </div>
+                    {index === 1 && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-0 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
                     )}
                   </div>
                   
-                  <span className={`text-[9px] font-medium mt-0.5 ${isActive ? accentActiveColor : iconColor}`}>
+                  <span className={`text-[9px] font-medium mt-0.5 ${
+                    isJeton ? 'text-amber-300' : isActive ? accentActiveColor : iconColor
+                  }`}>
                     {item.label}
                   </span>
                 </Link>

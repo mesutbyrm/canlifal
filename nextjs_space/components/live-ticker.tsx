@@ -57,6 +57,7 @@ interface BigGift {
 interface TickerData {
   onlineUsers: OnlineUser[]
   onlineCount: number
+  onlineTellerCount: number
   recentPurchasers: RecentPurchaser[]
   bigGifts: BigGift[]
 }
@@ -68,6 +69,7 @@ export default function LiveTicker() {
   const [data, setData] = useState<TickerData>({
     onlineUsers: [],
     onlineCount: 0,
+    onlineTellerCount: 0,
     recentPurchasers: [],
     bigGifts: []
   })
@@ -151,7 +153,12 @@ export default function LiveTicker() {
           className="flex-shrink-0 flex items-center gap-1 px-3 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-[11px] font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
         >
           <Sparkles className="w-3 h-3" />
-          <span>{language === 'tr' ? 'Canl\u0131 Falc\u0131' : 'Live Teller'}</span>
+          <span>{language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}</span>
+          {data.onlineTellerCount > 0 && (
+            <span className="ml-0.5 px-1.5 py-0 rounded-full bg-green-500 text-white text-[10px] font-bold animate-pulse">
+              {data.onlineTellerCount}
+            </span>
+          )}
         </Link>
         <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-full bg-green-900/40">
           <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />

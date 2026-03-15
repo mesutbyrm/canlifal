@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Gamepad2, Gift, Video, Users, MessageCircle, Sparkles } from 'lucide-react'
+import { Gamepad2, Gift, Video, Users, MessageCircle, Sparkles, BookOpen } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useSectionPresence } from '@/hooks/use-section-presence'
@@ -51,6 +51,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
         teller: 'bg-gradient-to-r from-emerald-600/30 to-teal-600/30 border-emerald-400/50 text-emerald-200 hover:border-emerald-300',
         social: 'bg-gradient-to-r from-pink-600/30 to-rose-600/30 border-pink-400/50 text-pink-200 hover:border-pink-300',
         chat: 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-400/50 text-cyan-200 hover:border-cyan-300',
+        blog: 'bg-gradient-to-r from-orange-600/30 to-red-600/30 border-orange-400/50 text-orange-200 hover:border-orange-300',
         'bana-ozel': 'bg-gradient-to-r from-fuchsia-600/30 to-purple-600/30 border-fuchsia-400/50 text-fuchsia-200 hover:border-fuchsia-300',
       }
       return styles[key] || styles.games
@@ -62,6 +63,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
         teller: 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400',
         social: 'bg-gradient-to-r from-pink-900/40 to-rose-900/40 border-pink-500/50 text-pink-300 hover:border-pink-400',
         chat: 'bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
+        blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
         'bana-ozel': 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400',
       }
       return styles[key] || styles.games
@@ -73,6 +75,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       teller: 'bg-gradient-to-r from-emerald-900/40 to-green-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400',
       social: 'bg-gradient-to-r from-pink-900/40 to-rose-900/40 border-pink-500/50 text-pink-300 hover:border-pink-400',
       chat: 'bg-gradient-to-r from-cyan-900/40 to-teal-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
+      blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
       'bana-ozel': 'bg-gradient-to-r from-violet-900/40 to-fuchsia-900/40 border-violet-500/50 text-violet-300 hover:border-violet-400',
     }
     return styles[key] || styles.games
@@ -118,6 +121,14 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       labelTr: 'Fal Sohbet',
       labelEn: 'Fortune Chat',
       badgeCount: counts.chat,
+    },
+    blog: {
+      key: 'blog',
+      href: `/${language}/blog`,
+      icon: <BookOpen className="w-4 h-4" />,
+      labelTr: 'Blog',
+      labelEn: 'Blog',
+      badgeCount: 0,
     },
     'bana-ozel': {
       key: 'bana-ozel',
