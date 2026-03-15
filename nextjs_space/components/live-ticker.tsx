@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { useSession } from 'next-auth/react'
-import { Circle, Coins, Crown, Sparkles, Radio, Video } from 'lucide-react'
+import { Circle, Coins, Crown, Sparkles } from 'lucide-react'
 
 interface OnlineUser {
   id: string
@@ -144,15 +144,8 @@ export default function LiveTicker() {
 
   return (
     <div className={`w-full overflow-hidden ${bgGradient} border-b`}>
-      {/* Row 1: Canl\u0131 Yay\u0131n + Canl\u0131 Falc\u0131 buttons + Online count - NO gaps */}
+      {/* Row 1: Canlı Falcı button + Online count + scrolling ticker */}
       <div className="flex items-center h-8">
-        <Link
-          href={`/${language}/chat/video`}
-          className="flex-shrink-0 flex items-center gap-1 px-3 h-full bg-gradient-to-r from-red-600/80 to-orange-600/80 text-white text-[11px] font-bold hover:from-red-500 hover:to-orange-500 transition-all"
-        >
-          <Radio className="w-3 h-3" />
-          <span>{language === 'tr' ? 'Canl\u0131 Yay\u0131n' : 'Live Stream'}</span>
-        </Link>
         <Link
           href={`/${language}/live-tellers`}
           className="flex-shrink-0 flex items-center gap-1 px-3 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-[11px] font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
