@@ -112,6 +112,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
   { href: `/${lang}/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
   { href: `/${lang}/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
+  { href: `/${lang}/admin/button-order`, icon: LayoutDashboard, trLabel: 'Buton Sıralaması', enLabel: 'Button Order' },
 ]
 
 export default function AdminPage() {

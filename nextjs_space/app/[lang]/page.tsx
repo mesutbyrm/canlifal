@@ -6,7 +6,9 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2 } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2, MessageCircle } from 'lucide-react'
+import ActionButtonsRow from '@/components/action-buttons-row'
+import { useSectionPresence } from '@/hooks/use-section-presence'
 import { AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import HomepageTicker from '@/components/homepage-ticker'
@@ -155,6 +157,7 @@ export default function HomePage() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [isTeller, setIsTeller] = useState(false)
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
+  const { counts: sectionCounts } = useSectionPresence()
   
   // Theme detection
   const isFalci = theme === 'falci'
@@ -266,56 +269,7 @@ export default function HomePage() {
         {/* Main Content */}
         <div className="pt-[114px] pb-28 px-4 space-y-4 relative z-10">
           {/* Action Buttons Row */}
-          <div className="flex flex-wrap gap-3">
-            {/* Game Center Button */}
-            <Link
-              href={`/${language}/games`}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
-                isCosmic 
-                  ? 'bg-gradient-to-r from-indigo-900/40 to-violet-900/40 border-indigo-500/50 text-indigo-300 hover:border-indigo-400'
-                  : 'bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400'
-              }`}
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span className="text-sm font-medium">{language === 'tr' ? 'Oyun Merkezi' : 'Game Center'}</span>
-            </Link>
-
-            {/* Gift Button */}
-            <Link
-              href={session?.user ? `/${language}/gifts` : `/${language}/login`}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
-                isCosmic 
-                  ? 'bg-gradient-to-r from-amber-900/40 to-orange-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400'
-                  : 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400'
-              }`}
-            >
-              <Gift className="w-4 h-4" />
-              <span className="text-sm font-medium">{language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}</span>
-            </Link>
-
-            {/* Become Live Teller / Teller Panel Button */}
-            <Link
-              href={session?.user ? (isTeller ? `/${language}/profile` : `/${language}/become-teller`) : `/${language}/login`}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
-                isCosmic 
-                  ? 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
-                  : 'bg-gradient-to-r from-emerald-900/40 to-green-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400'
-              }`}
-            >
-              <Video className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {isTeller 
-                  ? (language === 'tr' ? 'Falcı Paneli' : 'Teller Panel')
-                  : (language === 'tr' ? 'Canlı Falcı Ol' : 'Become Live Teller')
-                }
-              </span>
-              {isTeller && pendingRequestCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold animate-pulse shadow-lg shadow-red-500/50">
-                  {pendingRequestCount}
-                </span>
-              )}
-            </Link>
-          </div>
+          <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
 
           {/* CANLI YAYINLAR Section */}
           <div className="falclub-card p-4 relative overflow-hidden">
@@ -388,6 +342,11 @@ export default function HomePage() {
             <h2 className="falclub-section-title mb-4">
               <Sparkles className="w-5 h-5" />
               {language === 'tr' ? 'FALLAR' : 'FORTUNES'}
+              {sectionCounts.fortunes > 0 && (
+                <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
+                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                </span>
+              )}
             </h2>
             
             <div className="grid grid-cols-5 gap-3">
@@ -611,6 +570,9 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {/* Action Buttons Row */}
+          <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
+
           {/* Live Streams Section - White Card */}
           <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
             <h2 className="text-gray-800 font-bold text-lg mb-4">Fallar</h2>
@@ -663,7 +625,14 @@ export default function HomePage() {
 
           {/* Fortune Types Section - White Card */}
           <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
-            <h2 className="text-gray-800 font-bold text-lg mb-4">Fallar</h2>
+            <h2 className="text-gray-800 font-bold text-lg mb-4">
+              Fallar
+              {sectionCounts.fortunes > 0 && (
+                <span className="text-red-500 text-xs font-bold ml-2 animate-pulse">
+                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                </span>
+              )}
+            </h2>
             
             <div className="grid grid-cols-4 gap-4">
               {FORTUNE_CARDS.slice(0, 8).map((fortune) => (
@@ -710,6 +679,11 @@ export default function HomePage() {
 
       {/* Content area with proper top padding */}
       <div className="pt-28">
+
+        {/* Action Buttons Row */}
+        <div className="px-4 pb-4">
+          <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="cosmic" />
+        </div>
 
         {/* Live Tellers Section */}
         <div className="px-4 pb-4">
@@ -820,6 +794,11 @@ export default function HomePage() {
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Sparkles className={`w-5 h-5 ${accentColor}`} />
               {language === 'tr' ? 'Fallar' : 'Fortunes'}
+              {sectionCounts.fortunes > 0 && (
+                <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
+                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                </span>
+              )}
             </h2>
             <div className="grid grid-cols-4 gap-4">
               {FORTUNE_CARDS.map((fortune) => (
