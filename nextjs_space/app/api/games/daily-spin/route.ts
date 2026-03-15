@@ -32,9 +32,9 @@ export async function POST() {
       }
     }
 
-    // Spin rewards (weighted)
-    const rewards = [5, 10, 15, 20, 25, 30, 50, 100]
-    const weights = [30, 25, 15, 10, 8, 6, 4, 2]
+    // Spin rewards (weighted) - 0-5 CFC
+    const rewards = [0, 1, 2, 3, 4, 5]
+    const weights = [20, 25, 25, 15, 10, 5]
     const totalWeight = weights.reduce((a, b) => a + b, 0)
     let rand = Math.random() * totalWeight
     let reward = rewards[0]
@@ -52,10 +52,10 @@ export async function POST() {
       },
     })
 
-    // Add jetons
+    // Add CFC (credits)
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { jetonBalance: { increment: reward } },
+      data: { credits: { increment: reward } },
     })
 
     // Update game profile
@@ -64,12 +64,12 @@ export async function POST() {
       data: { totalJetons: { increment: reward } },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { jetonBalance: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,
       reward,
-      newBalance: updatedUser?.jetonBalance || 0,
+      newBalance: updatedUser?.credits || 0,
     })
   } catch (error: any) {
     console.error('Daily spin error:', error)

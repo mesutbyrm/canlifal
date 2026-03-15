@@ -567,7 +567,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
 
   // Mini Game Center - Default Games
   const defaultGames = [
-    { slug: 'fal-carki', title: 'Fal Çarkı', description: 'Çarkı çevir, şansını dene!', icon: '🎡', sortOrder: 1, minReward: 5, maxReward: 100, entryFee: 0 },
+    { slug: 'fal-carki', title: 'Fal Çarkı', description: 'Çarkı çevir, şansını dene!', icon: '🎡', sortOrder: 1, minReward: 0, maxReward: 5, entryFee: 0 },
     { slug: 'tarot-sec', title: 'Tarot Kartı Seç', description: 'Kapalı tarot kartlarından birini seç ve ödülünü kazan!', icon: '🃏', sortOrder: 2, minReward: 5, maxReward: 75, entryFee: 0 },
     { slug: 'memory', title: 'Kahve Falı Memory', description: 'Kahve falı temalı kart eşleştirme oyunu', icon: '☕', sortOrder: 3, minReward: 10, maxReward: 60, entryFee: 0 },
     { slug: 'quiz', title: 'Astroloji Quiz', description: 'Burçlar ve astroloji hakkında bilgini test et!', icon: '⭐', sortOrder: 4, minReward: 5, maxReward: 50, entryFee: 0 },

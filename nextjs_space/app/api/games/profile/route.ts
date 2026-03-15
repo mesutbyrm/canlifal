@@ -22,12 +22,12 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true, name: true, username: true, image: true, referralCode: true },
+      select: { credits: true, name: true, username: true, image: true, referralCode: true },
     })
 
     return NextResponse.json({
       ...profile,
-      jetonBalance: user?.jetonBalance || 0,
+      cfcBalance: user?.credits || 0,
       name: user?.name || '',
       username: user?.username || null,
       image: user?.image || null,

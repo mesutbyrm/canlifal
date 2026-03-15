@@ -106,15 +106,15 @@ export async function POST(req: NextRequest) {
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { jetonBalance: { increment: quest.reward } },
+      data: { credits: { increment: quest.reward } },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { jetonBalance: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,
       reward: quest.reward,
-      newBalance: updatedUser?.jetonBalance || 0,
+      newBalance: updatedUser?.credits || 0,
     })
   } catch (error: any) {
     console.error('Quest claim error:', error)

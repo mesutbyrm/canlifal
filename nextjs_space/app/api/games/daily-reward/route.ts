@@ -97,10 +97,10 @@ export async function POST() {
       },
     })
 
-    // Add jetons to user
+    // Add CFC to user
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { jetonBalance: { increment: reward } },
+      data: { credits: { increment: reward } },
     })
 
     // Also create/update daily_login quest
@@ -125,13 +125,13 @@ export async function POST() {
       },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { jetonBalance: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,
       reward,
       streak: newStreak,
-      newBalance: updatedUser?.jetonBalance || 0,
+      newBalance: updatedUser?.credits || 0,
     })
   } catch (error: any) {
     console.error('Daily reward claim error:', error)

@@ -5,7 +5,7 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// POST: Record a game play and reward jetons
+// POST: Record a game play and reward CFC (credits)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oyun bulunamadı veya aktif değil' }, { status: 404 })
     }
 
-    // Check entry fee
+    // Check entry fee (CFC)
     if (game.entryFee > 0) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { jetonBalance: true } })
-      if (!user || user.jetonBalance < game.entryFee) {
-        return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
+      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+      if (!user || user.credits < game.entryFee) {
+        return NextResponse.json({ error: 'Yetersiz CFC' }, { status: 400 })
       }
     }
 
@@ -45,11 +45,11 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Update user jeton balance (reward - entry fee)
-    const netJetons = reward - game.entryFee
+    // Update user CFC balance (reward - entry fee)
+    const netCfc = reward - game.entryFee
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { jetonBalance: { increment: netJetons } },
+      data: { credits: { increment: netCfc } },
     })
 
     // Update or create game profile
@@ -108,15 +108,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get updated balance
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { jetonBalance: true } })
+    // Get updated CFC balance
+    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,
       reward,
       entryFee: game.entryFee,
-      netJetons,
-      newBalance: updatedUser?.jetonBalance || 0,
+      netCfc,
+      newBalance: updatedUser?.credits || 0,
       playId: play.id,
     })
   } catch (error: any) {

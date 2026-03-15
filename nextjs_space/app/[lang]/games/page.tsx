@@ -54,7 +54,7 @@ interface GameProfile {
   totalGames: number
   level: number
   levelTitle: string
-  jetonBalance: number
+  cfcBalance: number
   userReferralCode: string | null
 }
 
@@ -163,7 +163,7 @@ export default function GameCenterPage() {
       const data = await res.json()
       if (data.success) {
         setRewardAnimation(data.reward)
-        setProfile(prev => prev ? { ...prev, jetonBalance: data.newBalance, totalGames: prev.totalGames + 1, totalJetons: prev.totalJetons + data.reward } : prev)
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance, totalGames: prev.totalGames + 1, totalJetons: prev.totalJetons + data.reward } : prev)
         setTimeout(() => setRewardAnimation(null), 2500)
         return data
       }
@@ -178,7 +178,7 @@ export default function GameCenterPage() {
       const data = await res.json()
       if (data.success) {
         setDailyReward({ claimed: true, currentStreak: data.streak, nextReward: 0, todayReward: data.reward })
-        setProfile(prev => prev ? { ...prev, jetonBalance: data.newBalance } : prev)
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
         setRewardAnimation(data.reward)
         setTimeout(() => setRewardAnimation(null), 2500)
         // Refresh quests
@@ -198,7 +198,7 @@ export default function GameCenterPage() {
       })
       const data = await res.json()
       if (data.success) {
-        setProfile(prev => prev ? { ...prev, jetonBalance: data.newBalance } : prev)
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
         setRewardAnimation(data.reward)
         setTimeout(() => setRewardAnimation(null), 2500)
         // Refresh quests
@@ -217,7 +217,7 @@ export default function GameCenterPage() {
     setSpinDegree(prev => prev + degree)
     setTimeout(async () => {
       const result = await recordPlay('fal-carki')
-      if (result) setResultMessage(`🎉 ${result.reward} jeton kazandınız!`)
+      if (result) setResultMessage(`🎉 ${result.reward} CFC kazandınız!`)
       setIsSpinning(false)
     }, 3500)
   }
@@ -228,7 +228,7 @@ export default function GameCenterPage() {
     setSelectedTarot(index)
     setTarotRevealed(true)
     const result = await recordPlay('tarot-sec')
-    if (result) setResultMessage(`🃏 Tarot kartı ${result.reward} jeton getirdi!`)
+    if (result) setResultMessage(`🃏 Tarot kartı ${result.reward} CFC getirdi!`)
   }
 
   const resetTarot = () => {
@@ -272,7 +272,7 @@ export default function GameCenterPage() {
         if (newCards.every(c => c.matched)) {
           setMemoryComplete(true)
           recordPlay('memory', memoryMoves + 1).then(result => {
-            if (result) setResultMessage(`☕ Tebrikler! ${result.reward} jeton kazandınız!`)
+            if (result) setResultMessage(`☕ Tebrikler! ${result.reward} CFC kazandınız!`)
           })
         }
       } else {
@@ -310,7 +310,7 @@ export default function GameCenterPage() {
         setQuizFinished(true)
         const finalScore = quizScore + (correct ? 1 : 0)
         recordPlay('quiz', finalScore).then(result => {
-          if (result) setResultMessage(`⭐ Quiz bitti! ${finalScore}/5 doğru - ${result.reward} jeton!`)
+          if (result) setResultMessage(`⭐ Quiz bitti! ${finalScore}/5 doğru - ${result.reward} CFC!`)
         })
       }
     }, 1000)
@@ -324,7 +324,7 @@ export default function GameCenterPage() {
       setLuckyBoxOpened(true)
       setLuckyBoxOpening(false)
       const result = await recordPlay('sans-kutusu')
-      if (result) setResultMessage(`🎁 Kutuda ${result.reward} jeton vardı!`)
+      if (result) setResultMessage(`🎁 Kutuda ${result.reward} CFC vardı!`)
     }, 1500)
   }
 
@@ -358,7 +358,7 @@ export default function GameCenterPage() {
       setGuessWon(true)
       setGuessHint(`🎯 Tebrikler! ${newAttempts} denemede buldunuz!`)
       const result = await recordPlay('sayi-tahmin', newAttempts)
-      if (result) setResultMessage(`🔢 ${result.reward} jeton kazandınız!`)
+      if (result) setResultMessage(`🔢 ${result.reward} CFC kazandınız!`)
     } else if (num < guessTarget) {
       setGuessHint(`⬆️ Daha yüksek! (${newAttempts}. deneme)`)
     } else {
@@ -404,10 +404,10 @@ export default function GameCenterPage() {
                   transition: isSpinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
                 }}
               >
-                {[5, 10, 15, 20, 25, 50, 75, 100].map((val, i) => (
+                {[0, 1, 2, 3, 4, 5, 0, 3].map((val, i) => (
                   <div
                     key={i}
-                    className="absolute text-white font-bold text-xs sm:text-sm"
+                    className="absolute text-white font-bold text-sm sm:text-base"
                     style={{
                       top: '50%', left: '50%',
                       transform: `rotate(${i * 45 + 22.5}deg) translateY(-${90}px)`,
@@ -653,8 +653,8 @@ export default function GameCenterPage() {
               <>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
                   <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-300 font-bold text-sm">{profile.jetonBalance}</span>
-                  <span className="text-fuchsia-400/60 text-xs">jeton</span>
+                  <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
+                  <span className="text-fuchsia-400/60 text-xs">CFC</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 rounded-full border border-purple-500/30">
                   <Crown className="w-4 h-4 text-amber-400" />
@@ -683,7 +683,7 @@ export default function GameCenterPage() {
               <Calendar className="w-8 h-8 text-amber-400" />
               <div>
                 <p className="text-amber-300 font-bold text-sm">Günlük Giriş Ödülü</p>
-                <p className="text-amber-200/60 text-xs">Seri: {dailyReward.currentStreak} gün • Ödül: {dailyReward.nextReward} jeton</p>
+                <p className="text-amber-200/60 text-xs">Seri: {dailyReward.currentStreak} gün • Ödül: {dailyReward.nextReward} CFC</p>
               </div>
             </div>
             <button
@@ -828,7 +828,7 @@ export default function GameCenterPage() {
                       <Crown className="w-5 h-5 text-amber-400" />
                       <span className="text-white font-bold text-sm">Seviye {profile.level} - {profile.levelTitle}</span>
                     </div>
-                    <span className="text-fuchsia-300/60 text-xs">{profile.totalJetons} toplam jeton</span>
+                    <span className="text-fuchsia-300/60 text-xs">{profile.totalJetons} toplam CFC</span>
                   </div>
                   <div className="w-full bg-purple-900/50 rounded-full h-2.5">
                     <div className="bg-gradient-to-r from-fuchsia-500 to-amber-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${getLevelProgress()}%` }} />
