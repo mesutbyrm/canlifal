@@ -8,6 +8,8 @@ import { useSectionPresence } from '@/hooks/use-section-presence'
 import { useButtonOrder } from '@/hooks/use-button-order'
 import { useSiteTheme } from '@/lib/theme-context'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import BanaOzelPopup from '@/components/bana-ozel-popup'
 
 interface ActionButtonsRowProps {
   isTeller?: boolean
@@ -30,7 +32,9 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
   const { counts } = useSectionPresence()
   const buttonOrder = useButtonOrder()
   const { theme } = useSiteTheme()
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [showBanaOzel, setShowBanaOzel] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -133,23 +137,54 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     return <div className="flex flex-wrap gap-3 min-h-[40px]" />
   }
 
+  const handleButtonClick = (btn: typeof orderedButtons[0]) => {
+    if (btn.key === 'bana-ozel') {
+      if (!session?.user) {
+        router.push(`/${language}/login`)
+      } else {
+        setShowBanaOzel(true)
+      }
+      return true
+    }
+    return false
+  }
+
   return (
-    <div className="flex flex-wrap gap-3">
-      {orderedButtons.map((btn) => (
-        <Link
-          key={btn.key}
-          href={btn.href}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
-            getButtonStyle(btn.key)
-          }`}
-        >
-          {btn.icon}
-          <span className="text-sm font-medium">
-            {language === 'tr' ? btn.labelTr : btn.labelEn}
-          </span>
-          <LiveBadge count={btn.badgeCount} />
-        </Link>
-      ))}
-    </div>
+    <>
+      <div className="flex flex-wrap gap-3">
+        {orderedButtons.map((btn) =>
+          btn.key === 'bana-ozel' ? (
+            <button
+              key={btn.key}
+              onClick={() => handleButtonClick(btn)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
+                getButtonStyle(btn.key)
+              }`}
+            >
+              {btn.icon}
+              <span className="text-sm font-medium">
+                {language === 'tr' ? btn.labelTr : btn.labelEn}
+              </span>
+              <LiveBadge count={btn.badgeCount} />
+            </button>
+          ) : (
+            <Link
+              key={btn.key}
+              href={btn.href}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
+                getButtonStyle(btn.key)
+              }`}
+            >
+              {btn.icon}
+              <span className="text-sm font-medium">
+                {language === 'tr' ? btn.labelTr : btn.labelEn}
+              </span>
+              <LiveBadge count={btn.badgeCount} />
+            </Link>
+          )
+        )}
+      </div>
+      <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
+    </>
   )
 }
