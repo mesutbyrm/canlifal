@@ -90,8 +90,12 @@ function parseCSVLine(line: string): string[] {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const userRole = ((session.user as any).role || '').toLowerCase()
+    if (userRole !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
     
     const formData = await request.formData()

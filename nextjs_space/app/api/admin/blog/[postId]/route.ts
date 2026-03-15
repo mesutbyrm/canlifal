@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function PATCH(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { postId: st
 export async function DELETE(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
