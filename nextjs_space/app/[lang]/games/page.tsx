@@ -127,6 +127,16 @@ export default function GameCenterPage() {
   const [guessWon, setGuessWon] = useState(false)
   const [copiedRef, setCopiedRef] = useState(false)
 
+  // ========== LAMBA CİNİ STATES ==========
+  const [lambaPhase, setLambaPhase] = useState<'idle' | 'rubbing' | 'smoke' | 'genie' | 'chests' | 'reveal'>('idle')
+  const [lambaReward, setLambaReward] = useState<{ type: string; amount: number; label: string; emoji: string } | null>(null)
+  const [lambaChestPicked, setLambaChestPicked] = useState<number | null>(null)
+  const [lambaPlaysRemaining, setLambaPlaysRemaining] = useState<number>(3)
+  const [lambaPlaysUsed, setLambaPlaysUsed] = useState<number>(0)
+  const [lambaDailyLimit, setLambaDailyLimit] = useState<number>(3)
+  const [lambaLoading, setLambaLoading] = useState(false)
+  const [lambaGenieMsg, setLambaGenieMsg] = useState('')
+
   // ========== DATA FETCHING ==========
   const fetchAll = useCallback(async () => {
     try {
@@ -376,6 +386,97 @@ export default function GameCenterPage() {
     setTimeout(() => setCopiedRef(false), 2000)
   }
 
+  // ========== LAMBA CİNİ GAME ==========
+  const GENIE_MESSAGES = [
+    'Hoş geldin yolcu! Kaderini görmek ister misin? 🌟',
+    'Bir sandık seç ve kaderini öğren! ✨',
+    'Cesur ol! Bir hazine seni bekliyor... 💎',
+    'Ben Cin-i Lamba! Sana bir sürprizim var! 🧞',
+    'Üç sandıktan biri senin şansını değiştirecek! 🎁',
+  ]
+
+  const fetchLambaStatus = useCallback(async () => {
+    if (!session?.user) return
+    try {
+      const res = await fetch('/api/games/lamba-cini')
+      if (res.ok) {
+        const data = await res.json()
+        setLambaPlaysRemaining(data.playsRemaining)
+        setLambaPlaysUsed(data.playsUsed)
+        setLambaDailyLimit(data.dailyLimit)
+      }
+    } catch {}
+  }, [session?.user])
+
+  const initLambaCini = () => {
+    setLambaPhase('idle')
+    setLambaReward(null)
+    setLambaChestPicked(null)
+    setLambaGenieMsg('')
+    setResultMessage(null)
+    fetchLambaStatus()
+  }
+
+  const rubLamp = () => {
+    if (lambaPhase !== 'idle' || !session?.user || lambaPlaysRemaining <= 0) return
+    setLambaPhase('rubbing')
+    setLambaGenieMsg('')
+    setTimeout(() => {
+      setLambaPhase('smoke')
+      setTimeout(() => {
+        setLambaPhase('genie')
+        setLambaGenieMsg(GENIE_MESSAGES[Math.floor(Math.random() * GENIE_MESSAGES.length)])
+        setTimeout(() => {
+          setLambaPhase('chests')
+        }, 2000)
+      }, 1500)
+    }, 1200)
+  }
+
+  const pickChest = async (index: number) => {
+    if (lambaPhase !== 'chests' || lambaLoading || lambaChestPicked !== null) return
+    setLambaChestPicked(index)
+    setLambaLoading(true)
+    try {
+      const res = await fetch('/api/games/lamba-cini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chestIndex: index }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setLambaReward(data.reward)
+        setLambaPlaysRemaining(data.playsRemaining)
+        setLambaPlaysUsed(data.playsUsed)
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance, totalGames: prev.totalGames + 1, totalJetons: prev.totalJetons + (data.reward?.amount || 0) } : prev)
+        setTimeout(() => {
+          setLambaPhase('reveal')
+          if (data.reward.type === 'empty' || (data.reward.type === 'cfc' && data.reward.amount === 0)) {
+            setLambaGenieMsg('Bu sefer şansın yaver gitmedi... Tekrar dene! 😔')
+          } else if (data.reward.type === 'free_fortune') {
+            setLambaGenieMsg('✨ Tebrikler! Ücretsiz bir fal hakkı kazandın! 🔮')
+            setResultMessage('🔮 Ücretsiz Fal kazandınız! (+5 CFC)')
+          } else {
+            setLambaGenieMsg(`🎉 Tebrikler! ${data.reward.amount} CFC kazandın!`)
+            setResultMessage(`🎉 ${data.reward.label} kazandınız!`)
+          }
+          if (data.reward.amount > 0) {
+            setRewardAnimation(data.reward.amount)
+            setTimeout(() => setRewardAnimation(null), 2500)
+          }
+        }, 800)
+      } else {
+        setResultMessage(data.error || 'Bir hata oluştu')
+        setLambaPhase('idle')
+      }
+    } catch {
+      setResultMessage('Bağlantı hatası')
+      setLambaPhase('idle')
+    } finally {
+      setLambaLoading(false)
+    }
+  }
+
   // ========== LEVEL PROGRESS ==========
   const getLevelProgress = () => {
     if (!profile) return 0
@@ -603,6 +704,262 @@ export default function GameCenterPage() {
           </div>
         )
 
+      case 'lamba-cini':
+        return (
+          <div className="flex flex-col items-center gap-3 relative overflow-hidden">
+            {/* CSS Animations */}
+            <style jsx>{`
+              @keyframes lampGlow {
+                0%, 100% { filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 20px #f59e0b); }
+                50% { filter: drop-shadow(0 0 20px #fbbf24) drop-shadow(0 0 40px #f59e0b) drop-shadow(0 0 60px #d97706); }
+              }
+              @keyframes lampRub {
+                0%, 100% { transform: rotate(0deg) scale(1); }
+                10% { transform: rotate(-8deg) scale(1.05); }
+                20% { transform: rotate(8deg) scale(1.05); }
+                30% { transform: rotate(-6deg) scale(1.03); }
+                40% { transform: rotate(6deg) scale(1.03); }
+                50% { transform: rotate(-4deg) scale(1.02); }
+                60% { transform: rotate(4deg) scale(1.02); }
+                70% { transform: rotate(-2deg) scale(1.01); }
+                80% { transform: rotate(2deg) scale(1.01); }
+                90% { transform: rotate(0deg) scale(1); }
+              }
+              @keyframes smokeRise {
+                0% { opacity: 0; transform: translateY(20px) scale(0.3); }
+                30% { opacity: 0.8; }
+                70% { opacity: 0.6; transform: translateY(-60px) scale(1.5); }
+                100% { opacity: 0; transform: translateY(-120px) scale(2); }
+              }
+              @keyframes genieAppear {
+                0% { opacity: 0; transform: translateY(40px) scale(0.2); }
+                50% { opacity: 1; transform: translateY(-10px) scale(1.1); }
+                70% { transform: translateY(5px) scale(0.95); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+              }
+              @keyframes chestBounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-8px); }
+              }
+              @keyframes chestOpen {
+                0% { transform: scale(1) rotate(0deg); }
+                30% { transform: scale(1.2) rotate(-5deg); }
+                60% { transform: scale(1.3) rotate(5deg); }
+                100% { transform: scale(1.15) rotate(0deg); }
+              }
+              @keyframes sparkle {
+                0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+                50% { opacity: 1; transform: scale(1) rotate(180deg); }
+              }
+              @keyframes bubbleIn {
+                0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+                100% { opacity: 1; transform: scale(1) translateY(0); }
+              }
+              @keyframes floatParticle {
+                0% { opacity: 1; transform: translateY(0) translateX(0); }
+                100% { opacity: 0; transform: translateY(-80px) translateX(var(--tx, 20px)); }
+              }
+              .lamp-glow { animation: lampGlow 2s ease-in-out infinite; }
+              .lamp-rub { animation: lampRub 1.2s ease-in-out; }
+              .smoke-particle { animation: smokeRise 1.5s ease-out forwards; }
+              .genie-appear { animation: genieAppear 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+              .chest-bounce { animation: chestBounce 1.5s ease-in-out infinite; }
+              .chest-open { animation: chestOpen 0.6s ease-out forwards; }
+              .sparkle-anim { animation: sparkle 0.8s ease-in-out; }
+              .bubble-in { animation: bubbleIn 0.5s ease-out; }
+            `}</style>
+
+            {/* Daily plays indicator */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-fuchsia-300/70">Günlük Hak:</span>
+              <div className="flex gap-1">
+                {Array.from({ length: lambaDailyLimit }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] ${
+                      i < lambaPlaysUsed
+                        ? 'bg-amber-500/30 border-amber-400/50 text-amber-300'
+                        : 'bg-purple-900/50 border-fuchsia-500/30 text-fuchsia-400/50'
+                    }`}
+                  >
+                    {i < lambaPlaysUsed ? '✓' : '○'}
+                  </div>
+                ))}
+              </div>
+              <span className="text-amber-400/80 font-medium">{lambaPlaysRemaining} kaldı</span>
+            </div>
+
+            {/* PHASE: IDLE - Golden Lamp */}
+            {(lambaPhase === 'idle' || lambaPhase === 'rubbing') && (
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className={`text-7xl sm:text-8xl cursor-pointer select-none transition-all ${
+                    lambaPhase === 'rubbing' ? 'lamp-rub' : 'lamp-glow hover:scale-110'
+                  } ${lambaPlaysRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  onClick={rubLamp}
+                  role="button"
+                  aria-label="Lambayı ov"
+                >
+                  🪔
+                </div>
+                <p className="text-fuchsia-300/80 text-sm text-center">
+                  {lambaPlaysRemaining > 0
+                    ? 'Lambayı ovarak cin\'i çağır!'
+                    : 'Bugünkü hakların doldu, yarın tekrar gel!'}
+                </p>
+                {lambaPlaysRemaining > 0 && (
+                  <button
+                    onClick={rubLamp}
+                    disabled={lambaPhase === 'rubbing' || !session?.user}
+                    className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full hover:scale-105 transition disabled:opacity-50 shadow-lg shadow-amber-500/30 text-sm"
+                  >
+                    {lambaPhase === 'rubbing' ? '✨ Ovuluyor...' : '🪔 Lambayı Ov'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* PHASE: SMOKE */}
+            {lambaPhase === 'smoke' && (
+              <div className="relative flex flex-col items-center gap-2 h-48">
+                <div className="text-6xl">🪔</div>
+                {/* Smoke particles */}
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute smoke-particle"
+                    style={{
+                      left: `${40 + Math.random() * 20}%`,
+                      bottom: '60px',
+                      animationDelay: `${i * 0.15}s`,
+                      fontSize: `${20 + Math.random() * 15}px`,
+                      opacity: 0,
+                    }}
+                  >
+                    {['💨', '💜', '✨', '🌀'][i % 4]}
+                  </div>
+                ))}
+                <p className="text-fuchsia-300 text-sm mt-auto animate-pulse">Cin ortaya çıkıyor...</p>
+              </div>
+            )}
+
+            {/* PHASE: GENIE APPEARS */}
+            {(lambaPhase === 'genie' || lambaPhase === 'chests') && (
+              <div className="flex flex-col items-center gap-3">
+                {/* Genie Character */}
+                <div className="genie-appear relative">
+                  <div className="text-7xl sm:text-8xl">🧞</div>
+                  {/* Sparkle effects around genie */}
+                  {lambaPhase === 'genie' && [...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute text-lg sparkle-anim"
+                      style={{
+                        top: `${10 + Math.random() * 60}%`,
+                        left: `${-20 + Math.random() * 140}%`,
+                        animationDelay: `${i * 0.3}s`,
+                      }}
+                    >
+                      ✨
+                    </div>
+                  ))}
+                </div>
+
+                {/* Speech Bubble */}
+                {lambaGenieMsg && (
+                  <div className="bubble-in relative bg-gradient-to-br from-indigo-900/90 to-purple-900/90 border border-fuchsia-400/40 rounded-2xl px-4 py-3 max-w-xs text-center shadow-lg shadow-purple-500/20">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-900/90 border-l border-t border-fuchsia-400/40 transform rotate-45" />
+                    <p className="text-fuchsia-100 text-sm font-medium relative z-10">{lambaGenieMsg}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PHASE: TREASURE CHESTS */}
+            {lambaPhase === 'chests' && (
+              <div className="flex flex-col items-center gap-3 mt-2">
+                <p className="text-amber-300 text-sm font-medium animate-pulse">Bir sandık seç!</p>
+                <div className="flex gap-4 sm:gap-6">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.15, y: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`chest-bounce cursor-pointer flex flex-col items-center gap-1 ${
+                        lambaChestPicked !== null && lambaChestPicked !== i ? 'opacity-30' : ''
+                      }`}
+                      style={{ animationDelay: `${i * 0.3}s` }}
+                      onClick={() => pickChest(i)}
+                    >
+                      <div className={`text-5xl sm:text-6xl transition-all ${
+                        lambaChestPicked === i ? 'chest-open' : ''
+                      }`}>
+                        {lambaChestPicked === i ? '✨' : '🎁'}
+                      </div>
+                      <span className="text-fuchsia-300/60 text-xs">Sandık {i + 1}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PHASE: REVEAL */}
+            {lambaPhase === 'reveal' && lambaReward && (
+              <div className="flex flex-col items-center gap-3">
+                {/* Genie with result */}
+                <div className="text-6xl">🧞</div>
+                {lambaGenieMsg && (
+                  <div className="bubble-in bg-gradient-to-br from-indigo-900/90 to-purple-900/90 border border-fuchsia-400/40 rounded-2xl px-4 py-3 max-w-xs text-center relative shadow-lg shadow-purple-500/20">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-900/90 border-l border-t border-fuchsia-400/40 transform rotate-45" />
+                    <p className="text-fuchsia-100 text-sm font-medium relative z-10">{lambaGenieMsg}</p>
+                  </div>
+                )}
+
+                {/* Reward Display */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  className={`px-6 py-4 rounded-2xl border-2 text-center ${
+                    lambaReward.type === 'empty' || (lambaReward.type === 'cfc' && lambaReward.amount === 0)
+                      ? 'bg-gray-800/50 border-gray-500/40'
+                      : lambaReward.type === 'free_fortune'
+                        ? 'bg-gradient-to-br from-purple-800/60 to-indigo-800/60 border-purple-400/50'
+                        : 'bg-gradient-to-br from-amber-900/50 to-yellow-900/50 border-amber-400/50'
+                  }`}
+                >
+                  <div className="text-4xl mb-1">{lambaReward.emoji}</div>
+                  <p className={`font-bold text-lg ${
+                    lambaReward.type === 'empty' || (lambaReward.type === 'cfc' && lambaReward.amount === 0)
+                      ? 'text-gray-300'
+                      : 'text-amber-300'
+                  }`}>
+                    {lambaReward.label}
+                  </p>
+                  {lambaReward.type === 'cfc' && lambaReward.amount > 0 && (
+                    <p className="text-yellow-400 text-sm">+{lambaReward.amount} CFC</p>
+                  )}
+                  {lambaReward.type === 'free_fortune' && (
+                    <p className="text-purple-300 text-sm">+5 CFC (Fal Hakkı)</p>
+                  )}
+                </motion.div>
+
+                {/* Play Again */}
+                {lambaPlaysRemaining > 0 ? (
+                  <button
+                    onClick={initLambaCini}
+                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full hover:scale-105 transition shadow-lg shadow-amber-500/30 text-sm"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Tekrar Oyna ({lambaPlaysRemaining} hak)
+                  </button>
+                ) : (
+                  <p className="text-fuchsia-300/60 text-sm">Bugünkü hakların doldu! Yarın tekrar gel 🌙</p>
+                )}
+              </div>
+            )}
+          </div>
+        )
+
       default:
         return <p className="text-fuchsia-300">Oyun yükleniyor...</p>
     }
@@ -784,6 +1141,7 @@ export default function GameCenterPage() {
                       if (game.slug === 'quiz') initQuiz()
                       if (game.slug === 'sans-kutusu') resetLuckyBox()
                       if (game.slug === 'sayi-tahmin') initGuess()
+                      if (game.slug === 'lamba-cini') initLambaCini()
                     }}
                   >
                     <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">{game.icon}</div>
