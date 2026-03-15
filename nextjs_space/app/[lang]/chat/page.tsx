@@ -51,7 +51,8 @@ export default function ChatRoomsPage() {
   useEffect(() => {
     fetchRooms()
     fetchRoomCost()
-    const interval = setInterval(fetchRooms, 10000)
+    // Daha sık güncelleme - 5 saniyede bir
+    const interval = setInterval(fetchRooms, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -111,18 +112,18 @@ export default function ChatRoomsPage() {
   const totalOnline = rooms.reduce((sum, r) => sum + r.onlineCount, 0)
 
   const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
-  const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/80 to-[#1a0a2e]/80 border-fuchsia-500/30 hover:border-fuchsia-400/50'
-    : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-indigo-500/30 hover:border-indigo-400/50'
-    : isCosmic ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/50'
-    : 'bg-gradient-to-br from-[#2d1b4e]/80 to-[#1a0b2e]/80 border-purple-500/30 hover:border-purple-400/50'
-  const titleColor = isFalclub ? 'text-fuchsia-200' : isFalci ? 'text-indigo-200' : isCosmic ? 'text-blue-200' : 'text-gold-300'
-  const descColor = isFalclub ? 'text-fuchsia-200/80' : isFalci ? 'text-indigo-200/80' : isCosmic ? 'text-slate-300' : 'text-purple-200/70'
+  const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/90 to-[#1a0a2e]/90 border-fuchsia-500/30 hover:border-fuchsia-400/60'
+    : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/90 to-[#1a0b2e]/90 border-indigo-500/30 hover:border-indigo-400/60'
+    : isCosmic ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/60'
+    : 'bg-gradient-to-br from-[#2d1b4e]/90 to-[#1a0b2e]/90 border-purple-500/30 hover:border-purple-400/60'
+  const titleColor = isFalclub ? 'text-fuchsia-100' : isFalci ? 'text-indigo-100' : isCosmic ? 'text-blue-100' : 'text-gold-200'
+  const descColor = isFalclub ? 'text-fuchsia-200/70' : isFalci ? 'text-indigo-200/70' : isCosmic ? 'text-slate-300' : 'text-purple-200/60'
   const borderAccent = isFalclub ? 'border-fuchsia-500/20' : isFalci ? 'border-indigo-500/20' : isCosmic ? 'border-blue-500/20' : 'border-gold-500/20'
   const spinnerColor = isFalclub ? 'border-fuchsia-400' : isFalci ? 'border-indigo-400' : isCosmic ? 'border-blue-400' : 'border-gold-400'
-  const msgCountColor = isFalclub ? 'text-fuchsia-300/70' : isFalci ? 'text-indigo-300/70' : isCosmic ? 'text-slate-400' : 'text-purple-300/70'
+  const msgCountColor = isFalclub ? 'text-fuchsia-300/60' : isFalci ? 'text-indigo-300/60' : isCosmic ? 'text-slate-400' : 'text-purple-300/60'
   const joinColor = isFalclub ? 'text-fuchsia-300 group-hover:text-fuchsia-200' : isFalci ? 'text-indigo-300 group-hover:text-indigo-200' : isCosmic ? 'text-amber-300 group-hover:text-amber-200' : 'text-gold-400 group-hover:text-gold-300'
   const sectionIconColor = isFalclub ? 'text-fuchsia-400' : isFalci ? 'text-indigo-400' : isCosmic ? 'text-blue-400' : 'text-gold-400'
-  const hoverShadow = isFalclub ? 'hover:shadow-fuchsia-500/10' : isFalci ? 'hover:shadow-indigo-500/10' : isCosmic ? 'hover:shadow-blue-500/10' : 'hover:shadow-gold-500/10'
+  const hoverShadow = isFalclub ? 'hover:shadow-fuchsia-500/20' : isFalci ? 'hover:shadow-indigo-500/20' : isCosmic ? 'hover:shadow-blue-500/20' : 'hover:shadow-gold-500/20'
   const onlineBadgeBg = isFalclub ? 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/30'
     : isFalci ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30'
     : isCosmic ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
@@ -138,46 +139,47 @@ export default function ChatRoomsPage() {
     : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white'
 
   return (
-    <div className={`min-h-screen ${bgColor} pt-14 pb-28 px-4`}>
-      <div className="max-w-5xl mx-auto">
+    <div className={`min-h-screen ${bgColor} pt-14 pb-28 px-3 sm:px-4`}>
+      <div className="max-w-6xl mx-auto">
         {/* Section Title */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-3 pb-2">
-          <div className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-3 pb-3 sm:pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles className={`w-5 h-5 ${sectionIconColor}`} />
                 {language === 'tr' ? 'Fal Sohbet Odaları' : 'Fortune Chat Rooms'}
               </h1>
-              <p className={`${descColor} text-sm mt-1`}>
+              <p className={`${descColor} text-xs sm:text-sm mt-1`}>
                 {language === 'tr' ? 'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun' : 'Join chat rooms and talk with other users'}
               </p>
             </div>
-            {session?.user && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${btnPrimary}`}
-              >
-                <Plus className="w-4 h-4" />
-                {language === 'tr' ? 'Oda Oluştur' : 'Create Room'}
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Total Online Badge */}
+              {totalOnline > 0 && (
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${onlineBadgeBg} text-xs sm:text-sm font-medium`}>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  <span className="hidden sm:inline">
+                    {language === 'tr' ? `${totalOnline} çevrimiçi` : `${totalOnline} online`}
+                  </span>
+                  <span className="sm:hidden">{totalOnline}</span>
+                </div>
+              )}
+              {session?.user && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${btnPrimary}`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">{language === 'tr' ? 'Oda Oluştur' : 'Create Room'}</span>
+                  <span className="sm:hidden">{language === 'tr' ? 'Oluştur' : 'Create'}</span>
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
-
-        {/* Total Online Users Banner */}
-        {totalOnline > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${onlineBadgeBg} text-sm font-medium`}>
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-              </span>
-              {language === 'tr'
-                ? `Fal ve sohbette şuan ${totalOnline} çevrimiçi kullanıcı`
-                : `${totalOnline} users online in fortune & chat`}
-            </div>
-          </motion.div>
-        )}
 
         {/* Rooms Grid */}
         {loading ? (
@@ -192,74 +194,92 @@ export default function ChatRoomsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-4">
             {rooms.map((room, index) => (
               <motion.div
                 key={room.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.03 }}
               >
                 <Link href={`/${language}/chat/${room.slug}`}>
-                  <div className={`rounded-xl p-5 border ${cardBg} transition-all duration-300 hover:shadow-lg ${hoverShadow} group cursor-pointer h-full`}>
-                    <div className="text-4xl mb-3 transform group-hover:scale-110 transition-transform">
-                      {room.icon}
-                    </div>
-                    <h2 className={`text-lg font-bold ${titleColor} mb-1.5`}>
-                      {language === 'tr' ? room.nameTr : room.nameEn}
-                    </h2>
-                    <p className={`${descColor} text-sm mb-3`}>
-                      {language === 'tr' ? room.descTr : room.descEn}
-                    </p>
-                    {room.owner && (
-                      <p className={`${msgCountColor} text-xs mb-2`}>
-                        {language === 'tr' ? 'Sahip' : 'Owner'}: {room.owner.name}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1 text-green-400">
-                        <Users className="w-4 h-4" />
-                        <span>{room.onlineCount} {t('chat.online')}</span>
-                      </div>
-                      <div className={`flex items-center gap-1 ${msgCountColor}`}>
-                        <MessageCircle className="w-4 h-4" />
-                        <span>{room.messageCount}</span>
+                  <div className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-4 border ${cardBg} transition-all duration-300 hover:shadow-xl ${hoverShadow} hover:scale-[1.02] group cursor-pointer h-full flex flex-col`}>
+                    
+                    {/* Online Count Badge - Üstte belirgin */}
+                    <div className="absolute -top-2 -right-2 sm:-top-2.5 sm:-right-2.5 z-10">
+                      <div className={`flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-lg ${
+                        room.onlineCount > 0 
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                          : 'bg-gray-600/80 text-gray-300'
+                      }`}>
+                        <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+                          {room.onlineCount > 0 && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                          )}
+                          <span className={`relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 ${room.onlineCount > 0 ? 'bg-white' : 'bg-gray-400'}`} />
+                        </span>
+                        <span>{room.onlineCount}</span>
+                        <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                     </div>
 
-                    {/* Recent Users */}
+                    {/* Icon */}
+                    <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 transform group-hover:scale-110 transition-transform text-center">
+                      {room.icon}
+                    </div>
+
+                    {/* Room Name */}
+                    <h2 className={`text-sm sm:text-base font-bold ${titleColor} mb-1 line-clamp-2 text-center`}>
+                      {language === 'tr' ? room.nameTr : room.nameEn}
+                    </h2>
+
+                    {/* Description - sadece büyük ekranlarda */}
+                    <p className={`${descColor} text-[10px] sm:text-xs mb-2 line-clamp-2 text-center hidden sm:block flex-1`}>
+                      {language === 'tr' ? room.descTr : room.descEn}
+                    </p>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs mt-auto">
+                      <div className={`flex items-center gap-1 ${msgCountColor}`}>
+                        <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span>{room.messageCount}</span>
+                      </div>
+                      {room.owner && (
+                        <div className={`${msgCountColor} truncate max-w-[60px] sm:max-w-[80px]`}>
+                          @{room.owner.username || room.owner.name?.split(' ')[0]}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recent Users - sadece büyük ekranlarda */}
                     {room.recentUsers && room.recentUsers.length > 0 && (
-                      <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
-                        <p className={`${msgCountColor} text-xs mb-2`}>
-                          {language === 'tr' ? 'Son girenler:' : 'Recently joined:'}
-                        </p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {room.recentUsers.map((user) => (
-                            <div key={user.id} className="flex items-center gap-1.5 bg-white/5 rounded-full pl-1 pr-2.5 py-0.5">
-                              <div className="w-5 h-5 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
-                                {user.image ? (
-                                  <Image src={user.image} alt={user.name || ''} width={20} height={20} className="w-full h-full object-cover" />
-                                ) : (
-                                  <span className="text-[9px] font-bold text-white">{user.name?.[0]?.toUpperCase()}</span>
-                                )}
-                              </div>
-                              <span className="text-white/80 text-[11px] truncate max-w-[60px]">
-                                {user.name?.split(' ')[0]}
-                              </span>
+                      <div className={`mt-2 sm:mt-3 pt-2 sm:pt-3 border-t ${borderAccent} hidden sm:block`}>
+                        <div className="flex items-center justify-center -space-x-2">
+                          {room.recentUsers.slice(0, 4).map((user) => (
+                            <div key={user.id} className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-[#1a0a2e] flex items-center justify-center">
+                              {user.image ? (
+                                <Image src={user.image} alt={user.name || ''} width={24} height={24} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[8px] font-bold text-white">{user.name?.[0]?.toUpperCase()}</span>
+                              )}
                             </div>
                           ))}
+                          {room.recentUsers.length > 4 && (
+                            <div className="w-6 h-6 rounded-full bg-white/10 border-2 border-[#1a0a2e] flex items-center justify-center">
+                              <span className="text-[8px] font-bold text-white/70">+{room.recentUsers.length - 4}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {(!room.recentUsers || room.recentUsers.length === 0) && (
-                      <div className={`mt-3 pt-3 border-t ${borderAccent}`}>
-                        <span className={`${joinColor} flex items-center gap-2 font-medium text-sm`}>
-                          {t('chat.join')}
-                          <span className="group-hover:translate-x-1 transition-transform">→</span>
-                        </span>
-                      </div>
-                    )}
+                    {/* Join CTA - mobilde küçük */}
+                    <div className={`mt-2 pt-2 border-t ${borderAccent} sm:hidden`}>
+                      <span className={`${joinColor} flex items-center justify-center gap-1 font-medium text-[10px]`}>
+                        {language === 'tr' ? 'Katıl' : 'Join'}
+                        <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                      </span>
+                    </div>
                   </div>
                 </Link>
               </motion.div>
