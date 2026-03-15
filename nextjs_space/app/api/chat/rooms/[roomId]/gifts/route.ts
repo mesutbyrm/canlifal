@@ -236,18 +236,18 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     })
 
     // Get sender details
-    const senderIds = [...new Set(gifts.map(g => g.senderId))]
+    const senderIds = [...new Set(gifts.map((g: any) => g.senderId))]
     const users = senderIds.length > 0 ? await prisma.user.findMany({
       where: { id: { in: senderIds } },
       select: { id: true, name: true, username: true, image: true }
     }) : []
-    const userMap = new Map(users.map(u => [u.id, u]))
+    const userMap = new Map(users.map((u: any) => [u.id, u]))
 
     // Combine jeton and cfc amounts per sender
     const leaderboardMap = new Map<string, { userId: string; name: string; username: string | null; image: string | null; jetonTotal: number; cfcTotal: number }>()
     
     for (const g of gifts) {
-      const user = userMap.get(g.senderId)
+      const user = userMap.get(g.senderId) as any
       if (!user) continue
       const existing = leaderboardMap.get(g.senderId) || {
         userId: user.id,
@@ -290,7 +290,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       take: 20
     })
 
-    const recentGiftsFormatted = recentGifts.map(g => ({
+    const recentGiftsFormatted = recentGifts.map((g: any) => ({
       id: g.id,
       senderId: g.senderId,
       senderName: g.sender.username || g.sender.name,

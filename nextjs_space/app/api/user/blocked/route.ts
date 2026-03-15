@@ -29,28 +29,28 @@ export async function GET() {
       where: { userId: session.user.id },
       select: { id: true, title: true }
     })
-    const streamIds = userStreams.map(s => s.id)
-    const streamMap = new Map(userStreams.map(s => [s.id, s.title]))
+    const streamIds = userStreams.map((s: any) => s.id)
+    const streamMap = new Map(userStreams.map((s: any) => [s.id, s.title]))
 
     const streamBans = await prisma.streamBan.findMany({
       where: { streamId: { in: streamIds } }
     })
 
     // Get user details for stream bans
-    const bannedUserIds = streamBans.map(b => b.bannedUserId)
+    const bannedUserIds = streamBans.map((b: any) => b.bannedUserId)
     const bannedUsers = await prisma.user.findMany({
       where: { id: { in: bannedUserIds } },
       select: { id: true, name: true, username: true, image: true }
     })
 
-    const streamBansWithUsers = streamBans.map(ban => ({
+    const streamBansWithUsers = streamBans.map((ban: any) => ({
       ...ban,
       streamTitle: streamMap.get(ban.streamId) || 'Yayın',
-      user: bannedUsers.find(u => u.id === ban.bannedUserId)
+      user: bannedUsers.find((u: any) => u.id === ban.bannedUserId)
     }))
 
     return NextResponse.json({
-      chatBans: chatBans.map(ban => ({
+      chatBans: chatBans.map((ban: any) => ({
         id: ban.id,
         roomId: ban.roomId,
         roomName: ban.room.nameTr,
@@ -63,7 +63,7 @@ export async function GET() {
         createdAt: ban.createdAt,
         expiresAt: ban.expiresAt
       })),
-      streamBans: streamBansWithUsers.map(ban => ({
+      streamBans: streamBansWithUsers.map((ban: any) => ({
         id: ban.id,
         streamId: ban.streamId,
         streamTitle: ban.streamTitle,

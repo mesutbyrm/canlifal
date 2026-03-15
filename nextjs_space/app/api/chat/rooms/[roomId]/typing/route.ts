@@ -34,7 +34,7 @@ export async function GET(
       }
     })
 
-    const typingUsers = typingPresences.map(p => ({
+    const typingUsers = typingPresences.map((p: any) => ({
       id: p.user.id,
       name: p.user.username || p.user.name || 'Misafir'
     }))

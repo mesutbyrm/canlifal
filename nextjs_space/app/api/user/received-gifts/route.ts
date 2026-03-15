@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     })
 
     return NextResponse.json({
-      gifts: chatGifts.map(g => ({
+      gifts: chatGifts.map((g: any) => ({
         id: g.id,
         senderName: g.sender.name,
         senderUsername: g.sender.username,

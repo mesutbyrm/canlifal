@@ -71,7 +71,7 @@ export async function GET(
       rewardCredits: number;
       sortOrder: number;
     }) => {
-      const userAch = userAchievementMap.get(achievement.id)
+      const userAch = userAchievementMap.get(achievement.id) as { achievementId: string; progress: number; isCompleted: boolean; earnedAt: Date } | undefined
       let currentProgress = userAch?.progress || 0
 
       // Calculate real-time progress based on category

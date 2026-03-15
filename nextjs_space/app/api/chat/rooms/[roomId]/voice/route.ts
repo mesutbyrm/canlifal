@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     })
 
-    const voiceUsers = voiceSessions.map(s => ({
+    const voiceUsers = voiceSessions.map((s: any) => ({
       id: s.userId,
       name: s.userName,
       joinedAt: s.joinedAt.getTime()
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         orderBy: { createdAt: 'asc' }
       })
 
-      userSignals = signals.map(s => ({
+      userSignals = signals.map((s: any) => ({
         id: s.id,
         fromUserId: s.fromUserId,
         fromUserName: s.fromUserName,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (signals.length > 0) {
         await prisma.voiceSignal.updateMany({
           where: {
-            id: { in: signals.map(s => s.id) }
+            id: { in: signals.map((s: any) => s.id) }
           },
           data: { processed: true }
         })

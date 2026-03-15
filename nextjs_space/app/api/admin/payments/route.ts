@@ -39,11 +39,11 @@ export async function GET(req: NextRequest) {
       totalJetonLoaded: await prisma.paymentNotification.aggregate({
         where: { status: 'approved' },
         _sum: { jetonLoaded: true }
-      }).then(r => r._sum.jetonLoaded || 0),
+      }).then((r: any) => r._sum.jetonLoaded || 0),
       totalAmountReceived: await prisma.paymentNotification.aggregate({
         where: { status: 'approved' },
         _sum: { amount: true }
-      }).then(r => r._sum.amount || 0)
+      }).then((r: any) => r._sum.amount || 0)
     }
 
     return NextResponse.json({ notifications, stats })

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }) : []
 
     const userMap: Record<string, { name: string; image: string | null; username: string | null }> = {}
-    users.forEach(u => { userMap[u.id] = { name: u.name, image: u.image, username: u.username } })
+    users.forEach((u: any) => { userMap[u.id] = { name: u.name, image: u.image, username: u.username } })
 
     const result = Object.values(senderMap)
       .map(s => ({

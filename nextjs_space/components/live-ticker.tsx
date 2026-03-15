@@ -94,27 +94,14 @@ export default function LiveTicker() {
     return () => clearInterval(interval)
   }, [])
 
-  // Build ticker items
-  const tickerItems: JSX.Element[] = []
-
-  // Online count with blinking text
-  if (data.onlineCount > 0) {
-    tickerItems.push(
-      <div key="online-count" className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap bg-green-900/30 rounded-full border border-green-500/30">
-        <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
-        <span className="text-green-400 text-xs font-bold animate-pulse">online</span>
-        <span className="text-green-300 text-xs font-semibold">
-          {data.onlineCount} {language === 'tr' ? 'kişi' : 'people'}
-        </span>
-      </div>
-    )
-  }
+  // Build scrolling ticker items (users, purchases, gifts - NOT online count)
+  const scrollItems: JSX.Element[] = []
 
   // Online users
   data.onlineUsers.slice(0, 10).forEach((user, index) => {
     const isGuest = user.isGuest
     const displayName = isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullanıcı')
-    tickerItems.push(
+    scrollItems.push(
       <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
         <Circle className={`w-2 h-2 ${isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400'} animate-pulse`} />
         <span className={`text-[10px] font-medium ${isGuest ? guestColor : secondaryText}`}>{displayName}</span>
@@ -124,7 +111,7 @@ export default function LiveTicker() {
 
   // Recent purchasers
   data.recentPurchasers.slice(0, 5).forEach((purchase, index) => {
-    tickerItems.push(
+    scrollItems.push(
       <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
         <Coins className={`w-3 h-3 ${accentColor}`} />
         <span className={`${secondaryText} text-[10px] font-medium`}>
@@ -139,7 +126,7 @@ export default function LiveTicker() {
   data.bigGifts.slice(0, 3).forEach((gift, index) => {
     const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullanıcı'
     const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
-    tickerItems.push(
+    scrollItems.push(
       <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
         <Crown className={`w-3 h-3 ${'text-pink-400'}`} />
         <span className={`text-[10px] ${guestColor}`}>
@@ -151,22 +138,32 @@ export default function LiveTicker() {
     )
   })
 
-  const duplicatedItems = [...tickerItems, ...tickerItems]
+  const duplicatedItems = [...scrollItems, ...scrollItems]
 
   return (
     <div className={`w-full overflow-hidden ${bgGradient} py-1 border-b`}>
       <div className="flex items-center">
+        {/* LIVE label */}
         <div className={`flex-shrink-0 px-2 py-0.5 ${labelGradient} text-white text-[9px] font-bold rounded-r-full flex items-center gap-1 shadow-lg z-10`}>
           <Sparkles className="w-2.5 h-2.5" />
           LIVE
         </div>
+
+        {/* Fixed online count badge */}
+        <div className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap bg-green-900/30 rounded-full border border-green-500/30">
+          <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
+          <span className="text-green-400 text-xs font-bold animate-pulse">online</span>
+          <span className="text-green-300 text-xs font-semibold">
+            {data.onlineCount} {language === 'tr' ? 'kişi' : 'people'}
+          </span>
+        </div>
+
+        {/* Scrolling users/purchases/gifts */}
         <div className="flex-1 overflow-hidden" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex">
             {duplicatedItems.length > 0 ? duplicatedItems : (
               <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-                <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
-                <span className="text-green-400 text-xs font-bold animate-pulse">online</span>
-                <span className="text-green-300 text-xs">0 {language === 'tr' ? 'kişi' : 'people'}</span>
+                <span className="text-fuchsia-300/50 text-[10px]">{language === 'tr' ? 'Şu an aktif kullanıcı yok' : 'No active users'}</span>
               </div>
             )}
           </div>
