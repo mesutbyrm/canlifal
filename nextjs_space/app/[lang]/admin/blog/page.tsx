@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 
@@ -46,6 +46,8 @@ export default function AdminBlogPage() {
   const [newCatNameTr, setNewCatNameTr] = useState('')
   const [newCatNameEn, setNewCatNameEn] = useState('')
   const [filterCategory, setFilterCategory] = useState('all')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ success: number; errors: string[]; newCategories: string[] } | null>(null)
 
   const emptyPost: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'> = {
     slug: '',
@@ -272,6 +274,75 @@ export default function AdminBlogPage() {
     }
   }
 
+  // CSV Import
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setImporting(true)
+    setImportResult(null)
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const res = await fetch('/api/admin/blog/import', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        setImportResult({ success: 0, errors: [data.error || 'İçe aktarma hatası'], newCategories: [] })
+      } else {
+        setImportResult({
+          success: data.success || 0,
+          errors: data.errors || [],
+          newCategories: data.newCategories || [],
+        })
+        fetchPosts()
+        fetchCategories()
+      }
+    } catch (err) {
+      console.error(err)
+      setImportResult({ success: 0, errors: ['Bağlantı hatası'], newCategories: [] })
+    } finally {
+      setImporting(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const downloadTemplate = () => {
+    const headers = ['slug', 'category', 'titleTr', 'titleEn', 'descTr', 'descEn', 'contentTr', 'contentEn', 'keywords', 'isPublished']
+    const sampleRow = [
+      'ornek-blog-yazisi',
+      'tarot',
+      'Örnek Blog Yazısı',
+      'Sample Blog Post',
+      'Bu bir örnek açıklamadır.',
+      'This is a sample description.',
+      '<p>Bu örnek içerik HTML desteklidir.</p>',
+      '<p>This sample content supports HTML.</p>',
+      'tarot, fal, örnek',
+      'false'
+    ]
+    
+    const csvContent = [
+      headers.join(','),
+      sampleRow.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
+    ].join('\n')
+    
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'blog-import-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const getCategoryLabel = (slug: string) => {
     const cat = categories.find(c => c.slug === slug)
     return cat ? cat.nameTr : slug
@@ -371,6 +442,73 @@ export default function AdminBlogPage() {
                 )}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* CSV Import Section */}
+        {!showForm && (
+          <div className="bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border border-emerald-500/30 rounded-2xl p-5 mb-6">
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-emerald-400" /> Excel/CSV İçe Aktarma
+            </h3>
+            <p className="text-sm text-gray-400 mb-3">
+              Hazırladığınız CSV dosyasını yükleyerek toplu blog yazısı ekleyin. Aynı slug varsa güncellenir.
+            </p>
+            <div className="flex flex-wrap gap-3 items-center">
+              <label className={`flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium transition cursor-pointer ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
+                {importing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Yükleniyor...</>
+                ) : (
+                  <><Upload className="w-4 h-4" /> CSV Dosyası Seç</>
+                )}
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={handleCSVImport}
+                  className="hidden"
+                  disabled={importing}
+                />
+              </label>
+              <button
+                onClick={downloadTemplate}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium transition border border-white/10"
+              >
+                <Download className="w-4 h-4" /> Örnek Şablon İndir
+              </button>
+            </div>
+            
+            {/* Import Result */}
+            {importResult && (
+              <div className="mt-4 p-4 rounded-xl bg-black/30 border border-white/10">
+                {importResult.success > 0 && (
+                  <div className="flex items-center gap-2 text-green-400 mb-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">{importResult.success} yazı başarıyla içe aktarıldı</span>
+                  </div>
+                )}
+                {importResult.newCategories.length > 0 && (
+                  <p className="text-xs text-emerald-400 mb-2">
+                    Yeni kategoriler oluşturuldu: {importResult.newCategories.join(', ')}
+                  </p>
+                )}
+                {importResult.errors.length > 0 && (
+                  <div className="space-y-1">
+                    {importResult.errors.map((err, i) => (
+                      <div key={i} className="flex items-start gap-2 text-red-400">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs">{err}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setImportResult(null)}
+                  className="mt-3 text-xs text-gray-500 hover:text-gray-400"
+                >
+                  Kapat
+                </button>
+              </div>
+            )}
           </div>
         )}
 
