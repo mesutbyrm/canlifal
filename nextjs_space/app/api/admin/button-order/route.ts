@@ -6,7 +6,7 @@ import prisma from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 const SETTING_KEY = 'homepage_button_order';
-const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat'];
+const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat', 'bana-ozel'];
 
 // Get button order (public)
 export async function GET() {

@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
+import NavSearch from '@/components/nav-search'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
@@ -289,37 +290,15 @@ export default function Navbar() {
                 <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
               </Link>
               
-              {/* Sosyal (Social) - links to social feed page */}
-              <Link
-                href={`/${language}/social`}
-                className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg} relative`}
-              >
-                <div className="relative">
-                  <Users className="w-6 h-6" />
-                  {liveStreamCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center px-1">
-                      <span className="text-white text-[10px] font-bold">{liveStreamCount}</span>
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] font-medium">{language === 'tr' ? 'Sosyal' : 'Social'}</span>
-              </Link>
-              
               {/* Bildirimler (Notifications) */}
               <div className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg ${navHoverBg}`}>
                 <NotificationBell />
                 <span className={`text-[10px] font-medium ${navTextColor.split(' ')[0]}`}>{language === 'tr' ? 'Bildirim' : 'Alerts'}</span>
               </div>
 
-              {/* Fal Sohbet Odaları (Fortune Chat Rooms) */}
-              <Link
-                href={`/${language}/chat`}
-                className={`flex flex-col items-center gap-0.5 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
-              >
-                <MessageCircle className="w-6 h-6" />
-                <span className="text-[10px] font-medium text-center leading-tight">{language === 'tr' ? 'Fal Sohbet' : 'Chat Rooms'}</span>
-              </Link>
-              
+              {/* Search */}
+              <NavSearch />
+
               {/* Profile */}
               {session?.user ? (
                 <div className="relative">
