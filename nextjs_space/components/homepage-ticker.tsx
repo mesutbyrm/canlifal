@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useLanguage } from '@/lib/language-context'
-import { Sparkles } from 'lucide-react'
 
 interface CustomMessage {
   id: string
@@ -45,9 +44,6 @@ export default function HomepageTicker() {
 
   const messages = data.customMessages
 
-  // Don't render if no admin messages
-  if (messages.length === 0) return null
-
   // Rotation logic: show for 2 seconds, then rotate
   const rotate = useCallback(() => {
     if (messages.length <= 1) return
@@ -64,6 +60,9 @@ export default function HomepageTicker() {
     return () => clearInterval(timer)
   }, [rotate, messages.length])
 
+  // Don't render if no admin messages
+  if (messages.length === 0) return null
+
   const safeIndex = currentIndex % Math.max(messages.length, 1)
   const currentMsg = messages[safeIndex]
   const nextIndex = (safeIndex + 1) % messages.length
@@ -72,6 +71,10 @@ export default function HomepageTicker() {
   return (
     <div className="w-full overflow-hidden bg-gradient-to-r from-[#1a0a2e] via-fuchsia-900/30 to-[#1a0a2e] border-b border-fuchsia-400/40 py-1.5">
       <div className="flex items-center justify-center">
+        {/* Announcement icon */}
+        <div className="flex-shrink-0 pl-3 pr-1">
+          <span className="text-lg">📢</span>
+        </div>
         {/* 3D Cube Rotation Area */}
         <div className="flex-1 flex items-center justify-center overflow-hidden">
           <div
