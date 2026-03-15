@@ -4,6 +4,7 @@ import StarBackground from '@/components/star-background'
 import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
 import PresenceTracker from '@/components/presence-tracker'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
+import LoginAnnouncementBanner from '@/components/login-announcement-banner'
 import PushNotificationProvider from '@/components/push-notification-provider'
 import NotificationPermissionPrompt from '@/components/notification-permission-prompt'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
@@ -27,9 +28,10 @@ export default function LangLayout({
         {/* Navbar first */}
         <Navbar />
         
-        {/* Big gift notification banner - positioned below navbar, highest z-index */}
+        {/* Announcement banners - positioned below navbar */}
         <div className="fixed top-14 md:top-16 left-0 right-0" style={{ zIndex: 9999 }}>
           <GiftNotificationBanner />
+          <LoginAnnouncementBanner />
         </div>
         
         <main className="pt-16 pb-0 md:pb-0 relative z-10">

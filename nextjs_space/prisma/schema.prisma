@@ -1318,3 +1318,17 @@ model TellerGift {
   @@index([createdAt])
   @@map("teller_gifts")
 }
+model SiteAnnouncement {
+  id        String   @id @default(cuid())
+  type      String   // login, custom
+  message   String
+  color     String   @default("red") // red, gold, etc.
+  userId    String?
+  userName  String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("site_announcements")
+}

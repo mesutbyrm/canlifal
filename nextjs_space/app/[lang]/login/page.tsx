@@ -32,6 +32,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError(language === 'tr' ? 'Geçersiz e-posta veya şifre' : 'Invalid email or password')
       } else {
+        // Trigger login announcement for VIP/Staff users
+        fetch('/api/announcements', { method: 'POST' }).catch(() => {})
         router.push(`/${language}`)
       }
     } catch (err) {

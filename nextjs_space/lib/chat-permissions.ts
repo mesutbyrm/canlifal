@@ -34,14 +34,15 @@ export interface UserPermissions {
 }
 
 export async function getUserRole(roomId: string, userId: string): Promise<ChatRole> {
-  // Check if user is global admin (site admin)
+  // Check if user is global admin, moderator or site_manager
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { role: true }
   })
 
-  if (user?.role === 'admin') {
-    return 'founder' // Site admin has founder rights in all rooms
+  const staffRoles = ['admin', 'moderator', 'site_manager']
+  if (user?.role && staffRoles.includes(user.role)) {
+    return 'founder' // Staff has founder rights in all rooms
   }
 
   // Check if user is room owner - room owners have founder rights
@@ -69,7 +70,8 @@ export async function getUserPermissions(roomId: string, userId: string): Promis
     select: { role: true }
   })
 
-  const isGlobalAdmin = user?.role === 'admin'
+  const staffRoles2 = ['admin', 'moderator', 'site_manager']
+  const isGlobalAdmin = user?.role ? staffRoles2.includes(user.role) : false
   
   // Check if user is room owner
   const room = await prisma.chatRoom.findUnique({

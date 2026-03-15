@@ -6,6 +6,48 @@ import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissio
 
 export const dynamic = 'force-dynamic'
 
+// Auto-clean messages when room becomes empty (keep last 50)
+async function cleanEmptyRoom(roomId: string) {
+  try {
+    // Check if any user is active in the room (lastSeen within last 30 seconds)
+    const threshold = new Date(Date.now() - 30000)
+    const activeCount = await prisma.chatPresence.count({
+      where: {
+        roomId,
+        lastSeen: { gt: threshold }
+      }
+    })
+
+    if (activeCount === 0) {
+      // Room is empty - delete all messages except the last 50
+      const messages = await prisma.chatMessage.findMany({
+        where: { roomId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { id: true }
+      })
+
+      const keepIds = messages.map((m: { id: string }) => m.id)
+
+      if (keepIds.length > 0) {
+        await prisma.chatMessage.deleteMany({
+          where: {
+            roomId,
+            id: { notIn: keepIds }
+          }
+        })
+      } else {
+        // No messages to keep, delete all
+        await prisma.chatMessage.deleteMany({
+          where: { roomId }
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning empty room:', error)
+  }
+}
+
 // GET active users in a room with their roles
 export async function GET(
   request: NextRequest,
@@ -111,6 +153,8 @@ export async function POST(
           data: { lastSeen: new Date(0) }
         })
       } catch { /* ignore */ }
+      // Check if room is empty and auto-clean
+      cleanEmptyRoom(roomId).catch(() => {})
       return NextResponse.json({ success: true })
     }
 
@@ -269,6 +313,9 @@ export async function DELETE(
     } catch {
       // Presence record might not exist
     }
+
+    // Check if room is empty and auto-clean
+    cleanEmptyRoom(roomId).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (error) {

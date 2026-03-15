@@ -26,7 +26,47 @@ export async function POST(
 
     // Get target user's role for hierarchy check (only if targetUserId is provided)
     let targetRoleLevel = 0
+    let targetUserGlobal: { role: string } | null = null
     if (targetUserId) {
+      // Check if target is a protected user (admin, moderator, site_manager)
+      targetUserGlobal = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { role: true }
+      })
+      const protectedRoles = ['admin', 'moderator', 'site_manager']
+      const isTargetProtected = targetUserGlobal && protectedRoles.includes(targetUserGlobal.role)
+      const isActorProtected = protectedRoles.includes((session.user as any).role || '')
+
+      // If target is protected and actor is NOT protected, reverse the action
+      if (isTargetProtected && !isActorProtected) {
+        const reverseAction = action
+        if (reverseAction === 'kick_user') {
+          // Auto-kick the attacker from the room
+          await prisma.chatPresence.deleteMany({
+            where: { roomId, userId: session.user.id }
+          })
+          return NextResponse.json({ error: 'Bu kullanıcıyı atamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
+        }
+        if (reverseAction === 'mute_user') {
+          // Auto-mute the attacker
+          await prisma.chatMute.upsert({
+            where: { roomId_userId: { roomId, userId: session.user.id } },
+            update: { mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) },
+            create: { roomId, userId: session.user.id, mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) }
+          })
+          return NextResponse.json({ error: 'Bu kullanıcıyı susturamazsınız! Kendiniz susturuldunuz.', reversed: true, reverseAction: 'muted' }, { status: 403 })
+        }
+        if (reverseAction === 'ban_user') {
+          // Auto-kick the attacker and ban them
+          await prisma.chatPresence.deleteMany({
+            where: { roomId, userId: session.user.id }
+          })
+          return NextResponse.json({ error: 'Bu kullanıcıyı banlayamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
+        }
+        // For any other action on protected users, just deny
+        return NextResponse.json({ error: 'Bu kullanıcı üzerinde yetkiniz yok' }, { status: 403 })
+      }
+
       const targetRole = await prisma.chatUserRole.findUnique({
         where: { roomId_userId: { roomId, userId: targetUserId } }
       })
