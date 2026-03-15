@@ -110,7 +110,7 @@ export default function NavSearch() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
+          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg bg-fuchsia-900/60 hover:bg-fuchsia-800/60 text-fuchsia-300 transition-colors"
         >
           <Search className="w-6 h-6" />
           <span className="text-[10px] font-medium">{language === 'tr' ? 'Ara' : 'Search'}</span>
@@ -128,7 +128,7 @@ export default function NavSearch() {
               }}
               onKeyDown={handleKeyDown}
               placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
-              className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-red-900/40 border border-red-500/40 rounded-full text-white placeholder-red-300/60 focus:outline-none focus:border-red-400 transition-all"
+              className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-fuchsia-900/40 border border-fuchsia-500/40 rounded-full text-white placeholder-fuchsia-300/60 focus:outline-none focus:border-fuchsia-400 transition-all"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fuchsia-400/60" />
             {query && (
@@ -156,14 +156,14 @@ export default function NavSearch() {
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="absolute top-full right-0 mt-2 w-72 sm:w-80 max-h-[60vh] overflow-y-auto bg-[#1a0a2e]/98 backdrop-blur-xl border border-fuchsia-500/30 rounded-xl shadow-2xl shadow-purple-900/50 z-[100]"
+            className="absolute top-full right-0 mt-2 w-72 sm:w-80 max-h-[60vh] overflow-y-auto bg-purple-800/95 backdrop-blur-xl border border-purple-400/40 rounded-xl shadow-2xl shadow-purple-900/50 z-[100]"
           >
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="w-5 h-5 text-fuchsia-400 animate-spin" />
               </div>
             ) : results.length === 0 ? (
-              <div className="py-6 text-center text-fuchsia-400/60 text-sm">
+              <div className="py-6 text-center text-white/70 text-sm">
                 {language === 'tr' ? 'Sonu\u00e7 bulunamad\u0131' : 'No results found'}
               </div>
             ) : (
@@ -174,8 +174,8 @@ export default function NavSearch() {
                     onClick={() => handleSelect(result)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                       index === selectedIndex
-                        ? 'bg-fuchsia-500/20 text-white'
-                        : 'text-fuchsia-200 hover:bg-fuchsia-500/10'
+                        ? 'bg-purple-600/60 text-white'
+                        : 'text-white hover:bg-purple-600/40'
                     }`}
                   >
                     {result.image ? (
@@ -189,7 +189,7 @@ export default function NavSearch() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{result.title}</p>
-                      <p className="text-[10px] text-fuchsia-400/60">
+                      <p className="text-[10px] text-white/60">
                         {TYPE_LABELS[result.type]?.[language === 'tr' ? 'tr' : 'en'] || result.type}
                       </p>
                     </div>

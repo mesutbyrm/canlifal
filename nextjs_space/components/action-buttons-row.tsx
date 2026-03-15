@@ -128,7 +128,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       icon: <BookOpen className="w-4 h-4" />,
       labelTr: 'Blog',
       labelEn: 'Blog',
-      badgeCount: 0,
+      badgeCount: counts.blog,
     },
     'bana-ozel': {
       key: 'bana-ozel',

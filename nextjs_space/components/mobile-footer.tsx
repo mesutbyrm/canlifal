@@ -149,7 +149,7 @@ export default function MobileFooter() {
         {/* Background */}
         <div className={`relative h-16 overflow-visible ${bgGradient} border-t`}>
           {/* Navigation Items */}
-          <nav className="relative h-full flex items-center justify-around px-1">
+          <nav className="relative h-full grid grid-cols-5 items-center px-2">
             {navItems.map((item, index) => {
               const isActive = pathname === item.href || (item.href === `/${language}` && pathname === `/${language}/`)
               const Icon = item.icon
@@ -158,7 +158,7 @@ export default function MobileFooter() {
               if (item.isCenter) {
                 // Center CAMERA button - bigger, raised above footer
                 return (
-                  <div key={index} className="flex flex-col items-center w-18 relative">
+                  <div key={index} className="flex flex-col items-center justify-center relative">
                     <Link href={item.href} className="absolute -top-9 group">
                       <div 
                         className={`relative w-[72px] h-[72px] rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
@@ -175,7 +175,7 @@ export default function MobileFooter() {
                 <Link
                   key={index}
                   href={item.href}
-                  className="flex flex-col items-center justify-center w-14 py-1.5 group"
+                  className="flex flex-col items-center justify-center py-1.5 group"
                 >
                   <div className="relative w-8 h-8 flex items-center justify-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${

@@ -10,6 +10,7 @@ const SECTION_PATTERNS: Record<string, string[]> = {
   social: ['/social'],
   chat: ['/chat'],
   gifts: ['/gifts', '/gift'],
+  blog: ['/blog'],
 };
 
 function classifyPath(path: string | null): string | null {
@@ -38,6 +39,7 @@ export async function GET() {
       social: 0,
       chat: 0,
       gifts: 0,
+      blog: 0,
     };
 
     for (const presence of activePresences) {
@@ -50,6 +52,6 @@ export async function GET() {
     return NextResponse.json({ counts, total: activePresences.length });
   } catch (error) {
     console.error('Section presence error:', error);
-    return NextResponse.json({ counts: { games: 0, fortunes: 0, social: 0, chat: 0, gifts: 0 }, total: 0 });
+    return NextResponse.json({ counts: { games: 0, fortunes: 0, social: 0, chat: 0, gifts: 0, blog: 0 }, total: 0 });
   }
 }
