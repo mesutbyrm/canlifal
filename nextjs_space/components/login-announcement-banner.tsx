@@ -13,8 +13,35 @@ interface Announcement {
   expiresAt: string
 }
 
+// Canary SVG for Fenerbahçe (wings spread)
+const FenerbahceCanary = () => (
+  <svg width="24" height="24" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    {/* Body */}
+    <ellipse cx="32" cy="34" rx="10" ry="12" fill="#FFD700" />
+    {/* Head */}
+    <circle cx="32" cy="20" r="8" fill="#FFD700" />
+    {/* Eye */}
+    <circle cx="35" cy="18" r="1.5" fill="#1a1a6e" />
+    {/* Beak */}
+    <polygon points="40,20 46,22 40,24" fill="#FF8C00" />
+    {/* Left wing spread */}
+    <path d="M22,30 Q8,18 4,24 Q10,28 14,34 Q16,36 22,36 Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
+    <path d="M20,28 Q6,14 2,20 Q8,24 12,30" fill="none" stroke="#FFC107" strokeWidth="1" />
+    {/* Right wing spread */}
+    <path d="M42,30 Q56,18 60,24 Q54,28 50,34 Q48,36 42,36 Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
+    <path d="M44,28 Q58,14 62,20 Q56,24 52,30" fill="none" stroke="#FFC107" strokeWidth="1" />
+    {/* Tail */}
+    <path d="M28,46 Q26,54 22,58 Q32,54 42,58 Q38,54 36,46 Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
+    {/* Belly */}
+    <ellipse cx="32" cy="38" rx="6" ry="6" fill="#FFEC8B" opacity="0.6" />
+    {/* Feet */}
+    <line x1="28" y1="46" x2="26" y2="54" stroke="#FF8C00" strokeWidth="1.5" />
+    <line x1="36" y1="46" x2="38" y2="54" stroke="#FF8C00" strokeWidth="1.5" />
+  </svg>
+);
+
 // Turkish football team color schemes
-const TEAM_COLORS: Record<string, { bg: string; border: string; text: string; shimmer: string; emoji: string }> = {
+const TEAM_COLORS: Record<string, { bg: string; border: string; text: string; shimmer: string; emoji: React.ReactNode }> = {
   'Galatasaray': {
     bg: 'linear-gradient(90deg, #1a0000, #8b0000, #cc0000, #b8860b, #cc0000, #8b0000, #1a0000)',
     border: 'linear-gradient(90deg, transparent, #ff0000, #ffd700, #ff0000, transparent)',
@@ -27,7 +54,7 @@ const TEAM_COLORS: Record<string, { bg: string; border: string; text: string; sh
     border: 'linear-gradient(90deg, transparent, #0000cc, #ffd700, #0000cc, transparent)',
     text: 'linear-gradient(90deg, #4444ff, #ffd700, #4444ff, #ffee88, #4444ff)',
     shimmer: 'linear-gradient(90deg, transparent 0%, rgba(0,0,255,0.1) 20%, rgba(255,215,0,0.12) 50%, rgba(0,0,255,0.1) 80%, transparent 100%)',
-    emoji: '🐤'
+    emoji: <FenerbahceCanary />
   },
   'Beşiktaş': {
     bg: 'linear-gradient(90deg, #0a0a0a, #1a1a1a, #333333, #ffffff20, #333333, #1a1a1a, #0a0a0a)',
