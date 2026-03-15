@@ -250,37 +250,52 @@ export async function POST(
       }
     }
     
-    // If new join, create a system message
+    // If new join, create a system message (but only once per 5 minutes)
     if (isNewJoin) {
-      const displayName = nickname || session.user.name || 'Kullanıcı'
-      const specialRole = await getUserSpecialRole(roomId, session.user.id)
-      
-      // Create entry system message
-      let systemContent = `[SYSTEM_JOIN]${displayName}`
-      if (specialRole.isSpecial && specialRole.entryType) {
-        systemContent = `[SYSTEM_VIP_JOIN:${specialRole.entryType}]${displayName}`
-      }
-      
-      await prisma.chatMessage.create({
-        data: {
+      // Check if we already announced this user's entry in the last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+      const recentJoinMessage = await prisma.chatMessage.findFirst({
+        where: {
           roomId,
           userId: session.user.id,
-          content: systemContent
-        }
+          content: { startsWith: '[SYSTEM_' },
+          createdAt: { gte: fiveMinutesAgo }
+        },
+        orderBy: { createdAt: 'desc' }
       })
       
-      // Limit messages to 50 - delete older ones
-      const messageCount = await prisma.chatMessage.count({ where: { roomId } })
-      if (messageCount > 50) {
-        const oldMessages = await prisma.chatMessage.findMany({
-          where: { roomId },
-          orderBy: { createdAt: 'asc' },
-          take: messageCount - 50,
-          select: { id: true }
+      // Only create join message if no recent announcement exists
+      if (!recentJoinMessage) {
+        const displayName = nickname || session.user.name || 'Kullanıcı'
+        const specialRole = await getUserSpecialRole(roomId, session.user.id)
+        
+        // Create entry system message
+        let systemContent = `[SYSTEM_JOIN]${displayName}`
+        if (specialRole.isSpecial && specialRole.entryType) {
+          systemContent = `[SYSTEM_VIP_JOIN:${specialRole.entryType}]${displayName}`
+        }
+        
+        await prisma.chatMessage.create({
+          data: {
+            roomId,
+            userId: session.user.id,
+            content: systemContent
+          }
         })
-        await prisma.chatMessage.deleteMany({
-          where: { id: { in: oldMessages.map(m => m.id) } }
-        })
+        
+        // Limit messages to 50 - delete older ones
+        const messageCount = await prisma.chatMessage.count({ where: { roomId } })
+        if (messageCount > 50) {
+          const oldMessages = await prisma.chatMessage.findMany({
+            where: { roomId },
+            orderBy: { createdAt: 'asc' },
+            take: messageCount - 50,
+            select: { id: true }
+          })
+          await prisma.chatMessage.deleteMany({
+            where: { id: { in: oldMessages.map(m => m.id) } }
+          })
+        }
       }
     }
 
