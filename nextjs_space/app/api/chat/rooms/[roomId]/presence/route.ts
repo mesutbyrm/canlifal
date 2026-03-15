@@ -371,6 +371,9 @@ export async function DELETE(
     }
 
     const { roomId } = await params
+    
+    // Check if this is an intentional leave (via query param from sendBeacon)
+    const isIntentionalLeave = request.nextUrl.searchParams.get('leave') === '1'
 
     // Get the user's nickname before removing presence
     const presence = await prisma.chatPresence.findUnique({
@@ -397,14 +400,16 @@ export async function DELETE(
       // Presence record might not exist
     }
     
-    // Create exit system message
-    await prisma.chatMessage.create({
-      data: {
-        roomId,
-        userId: session.user.id,
-        content: `[SYSTEM_LEAVE]${displayName}`
-      }
-    })
+    // Only create exit message if this is an intentional leave (page close/navigate away)
+    if (isIntentionalLeave) {
+      await prisma.chatMessage.create({
+        data: {
+          roomId,
+          userId: session.user.id,
+          content: `[SYSTEM_LEAVE]${displayName}`
+        }
+      })
+    }
     
     // Messages are NOT auto-deleted - only deleted when room empties
 

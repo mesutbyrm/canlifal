@@ -410,10 +410,10 @@ export default function ChatRoomPage() {
 
       updatePresence()
 
-      // Remove presence when leaving page
+      // Remove presence when leaving page (intentional leave - show message)
       const handleBeforeUnload = () => {
         if (room?.id) {
-          navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1`, '')
+          navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1&leave=1`, '')
         }
       }
       window.addEventListener('beforeunload', handleBeforeUnload)
@@ -426,7 +426,7 @@ export default function ChatRoomPage() {
         clearInterval(voiceUsersInterval)
         clearInterval(typingInterval)
         window.removeEventListener('beforeunload', handleBeforeUnload)
-        // Also clean up presence on component unmount
+        // Clean up presence on component unmount (no leave message - might be re-render)
         if (room?.id) {
           fetch(`/api/chat/rooms/${room.id}/presence`, { method: 'DELETE' }).catch(() => {})
         }
@@ -1580,35 +1580,46 @@ export default function ChatRoomPage() {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-h-0 border-r border-purple-500/30">
           {/* Header */}
-          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-3">
-            <div className="flex items-center gap-2">
-              {/* Yönet Button */}
-              <button
-                onClick={() => hasManagePermission && setShowManagePopup(true)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${hasManagePermission ? 'bg-purple-600/30 text-purple-200 hover:bg-purple-600/50' : 'bg-gray-700/30 text-gray-500 cursor-not-allowed'}`}
+          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2 gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Home Button */}
+              <Link
+                href={`/${language}`}
+                className="flex items-center justify-center w-8 h-8 rounded bg-gold-500/20 text-gold-400 hover:bg-gold-500/40 transition-colors"
               >
-                <Settings className="w-4 h-4" />
-                {language === 'tr' ? 'Yönet' : 'Manage'}
-              </button>
+                <Home className="w-4 h-4" />
+              </Link>
               
               {/* Odalar Button */}
               <button
                 onClick={() => setShowRoomsPopup(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium bg-gold-600/30 text-gold-200 hover:bg-gold-600/50"
+                className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold-600/30 text-gold-200 hover:bg-gold-600/50"
               >
-                <DoorOpen className="w-4 h-4" />
-                {language === 'tr' ? 'Odalar' : 'Rooms'}
+                <DoorOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">{language === 'tr' ? 'Odalar' : 'Rooms'}</span>
               </button>
-              
-              {/* Voice Chat Button removed */}
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Room muted indicator only */}
+            {/* Room Name - Center */}
+            <div className="flex-1 min-w-0 flex items-center justify-center px-1">
+              <span className="text-white font-medium text-sm truncate">
+                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
+              </span>
               {roomMuted && (
-                <span className="flex items-center gap-1 text-red-400 text-xs">
-                  <VolumeX className="w-4 h-4" />
-                </span>
+                <VolumeX className="w-3 h-3 text-red-400 ml-1 flex-shrink-0" />
+              )}
+            </div>
+            
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Yönet Button */}
+              {hasManagePermission && (
+                <button
+                  onClick={() => setShowManagePopup(true)}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span className="hidden sm:inline">{language === 'tr' ? 'Yönet' : 'Manage'}</span>
+                </button>
               )}
 
               {/* Mobile Users Toggle */}
@@ -1616,8 +1627,8 @@ export default function ChatRoomPage() {
                 onClick={() => setShowMobileUsers(!showMobileUsers)}
                 className="md:hidden flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 relative"
               >
-                <Users className="w-4 h-4" />
-                <span className="bg-purple-500/50 px-1.5 rounded text-[10px]">{activeUsers.length}</span>
+                <Users className="w-3 h-3" />
+                <span className="bg-purple-500/50 px-1 rounded text-[10px]">{activeUsers.length}</span>
               </button>
             </div>
           </div>
@@ -2341,13 +2352,7 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* Home Button - Fixed Bottom Right (above input) */}
-      <Link
-        href={`/${language}`}
-        className="fixed bottom-20 right-4 z-40 w-10 h-10 bg-gold-500 hover:bg-gold-400 text-black rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
-      >
-        <Home className="w-5 h-5" />
-      </Link>
+
     </div>
   )
 }
