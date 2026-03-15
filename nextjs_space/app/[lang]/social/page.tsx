@@ -382,10 +382,10 @@ export default function SocialPage() {
         ))}
       </div>
 
-      <div className="pt-2 pb-20 sm:pb-24 px-3 sm:px-4 relative z-10 h-[calc(100vh-60px)] flex flex-col">
-        <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
+      <div className="pt-2 pb-24 sm:pb-28 px-3 sm:px-4 relative z-10">
+        <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5">
           {/* Page Header */}
-          <div className="text-center py-1 sm:py-2 flex-shrink-0">
+          <div className="text-center py-1 sm:py-2">
             <h1 className="falclub-section-title justify-center text-lg sm:text-xl">
               <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
               {language === 'tr' ? 'SOSYAL AKIŞ' : 'SOCIAL FEED'}
@@ -400,7 +400,7 @@ export default function SocialPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="falclub-card p-4 sm:p-5 flex-shrink-0 mb-3 sm:mb-4"
+              className="falclub-card p-4 sm:p-5"
             >
               <div className="flex gap-3 sm:gap-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 falclub-icon-circle">
@@ -515,8 +515,7 @@ export default function SocialPage() {
             </motion.div>
           )}
 
-          {/* Posts Feed - Scrollable */}
-          <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+          {/* Posts Feed */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 sm:py-16 gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
@@ -535,7 +534,7 @@ export default function SocialPage() {
           ) : (
             <div
               ref={containerRef}
-              className="space-y-3 sm:space-y-4 pb-4"
+              className="space-y-4 sm:space-y-5"
             >
               <AnimatePresence>
                 {posts.map((post, index) => {
@@ -872,7 +871,6 @@ export default function SocialPage() {
               </Link>
             </div>
           )}
-          </div>
         </div>
       </div>
 
