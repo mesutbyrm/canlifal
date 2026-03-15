@@ -71,7 +71,7 @@ interface Statistics {
   messaging?: { totalMessages: number; messagesThisWeek: number; totalConversations: number }
   community?: { totalFollows: number }
   streams?: { total: number; active: number; totalGiftsValue: number; totalLikes: number }
-  economy?: { creditsInCirculation: number; creditsSpent: number }
+  economy?: { creditsInCirculation: number; creditsSpent: number; cfcInCirculation?: number; jetonInCirculation?: number; jetonLoaded?: number; jetonGiftSent?: number; jetonGiftReceived?: number; jetonCommission?: number; jetonSpent?: number; chatGiftJetonTotal?: number; chatGiftCfcTotal?: number; chatGiftCommissionTotal?: number }
 }
 
 interface VisitorStats {
@@ -1185,6 +1185,8 @@ export default function AdminPage() {
              activeTab === 'chat' ? (language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management') :
              activeTab === 'ads' ? (language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management') :
              activeTab === 'visitors' ? (language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics') :
+             activeTab === 'economy' ? (language === 'tr' ? 'Ekonomi Yönetimi' : 'Economy Management') :
+             activeTab === 'gift-settings' ? (language === 'tr' ? 'Hediye Komisyon Ayarları' : 'Gift Commission Settings') :
              (language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics')}
           </h1>
           <p className={`${textMuted} text-sm mt-1`}>
@@ -1204,6 +1206,8 @@ export default function AdminPage() {
             {activeTab === 'ads' && renderAds()}
             {activeTab === 'visitors' && renderVisitors()}
             {activeTab === 'statistics' && renderStatistics()}
+            {activeTab === 'economy' && renderEconomy()}
+            {activeTab === 'gift-settings' && renderGiftSettings()}
           </motion.div>
         )}
       </main>
