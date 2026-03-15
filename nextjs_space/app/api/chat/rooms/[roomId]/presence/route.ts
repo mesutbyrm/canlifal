@@ -384,6 +384,14 @@ export async function DELETE(
 
     const { roomId } = await params
 
+    // Get the user's nickname before removing presence
+    const presence = await prisma.chatPresence.findUnique({
+      where: { roomId_userId: { roomId, userId: session.user.id } },
+      select: { nickname: true }
+    })
+    
+    const displayName = presence?.nickname || session.user.name || 'Kullanıcı'
+
     // Set lastSeen to past so user disappears from active list immediately
     try {
       await prisma.chatPresence.update({
@@ -399,6 +407,29 @@ export async function DELETE(
       })
     } catch {
       // Presence record might not exist
+    }
+    
+    // Create exit system message
+    await prisma.chatMessage.create({
+      data: {
+        roomId,
+        userId: session.user.id,
+        content: `[SYSTEM_LEAVE]${displayName}`
+      }
+    })
+    
+    // Limit messages to 50
+    const messageCount = await prisma.chatMessage.count({ where: { roomId } })
+    if (messageCount > 50) {
+      const oldMessages = await prisma.chatMessage.findMany({
+        where: { roomId },
+        orderBy: { createdAt: 'asc' },
+        take: messageCount - 50,
+        select: { id: true }
+      })
+      await prisma.chatMessage.deleteMany({
+        where: { id: { in: oldMessages.map(m => m.id) } }
+      })
     }
 
     // Check if room is empty and auto-clean

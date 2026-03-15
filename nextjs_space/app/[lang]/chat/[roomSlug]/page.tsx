@@ -116,6 +116,9 @@ export default function ChatRoomPage() {
   const [mentionNotification, setMentionNotification] = useState<{from: string, content: string} | null>(null)
   const mentionShownCountRef = useRef<Map<string, number>>(new Map()) // messageId -> show count
   
+  // VIP entry auto-hide (after 3 seconds)
+  const [hiddenVipEntries, setHiddenVipEntries] = useState<Set<string>>(new Set())
+  
   // Combined Management Popup
   const [showManagePopup, setShowManagePopup] = useState(false)
   const [manageTab, setManageTab] = useState<'chat' | 'users'>('chat')
@@ -1659,11 +1662,13 @@ export default function ChatRoomPage() {
                   // Check if this is a system message
                   const isSystemJoin = msg.content.startsWith('[SYSTEM_JOIN]')
                   const isVipJoin = msg.content.startsWith('[SYSTEM_VIP_JOIN:')
-                  const isSystemMessage = isSystemJoin || isVipJoin
+                  const isSystemLeave = msg.content.startsWith('[SYSTEM_LEAVE]')
+                  const isSystemMessage = isSystemJoin || isVipJoin || isSystemLeave
                   
                   // Parse VIP join type
                   let vipType: string | null = null
                   let joinName = ''
+                  let leaveName = ''
                   if (isVipJoin) {
                     const match = msg.content.match(/\[SYSTEM_VIP_JOIN:(\w+)\](.+)/)
                     if (match) {
@@ -1672,6 +1677,8 @@ export default function ChatRoomPage() {
                     }
                   } else if (isSystemJoin) {
                     joinName = msg.content.replace('[SYSTEM_JOIN]', '')
+                  } else if (isSystemLeave) {
+                    leaveName = msg.content.replace('[SYSTEM_LEAVE]', '')
                   }
                   
                   // Render system messages differently
@@ -1684,8 +1691,55 @@ export default function ChatRoomPage() {
                       'OP': { label: '✨ Operatör', labelEn: '✨ Operator', icon: '✨', color: 'text-green-400', bgColor: 'bg-gradient-to-r from-green-900/40 to-emerald-900/40 border-green-500/40' }
                     }
                     
+                    // Leave message
+                    if (isSystemLeave) {
+                      return (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="px-2 py-1 text-center"
+                        >
+                          <span className="text-gray-500/70 text-xs">
+                            ← <span className="text-gray-400">{leaveName}</span>{' '}
+                            {language === 'tr' ? 'odadan ayrıldı' : 'left the room'}
+                          </span>
+                        </motion.div>
+                      )
+                    }
+                    
+                    // VIP entry with auto-hide after 3 seconds
                     if (isVipJoin && vipType && vipLabels[vipType]) {
                       const vipInfo = vipLabels[vipType]
+                      const isHidden = hiddenVipEntries.has(msg.id)
+                      
+                      // Schedule auto-hide after 3 seconds
+                      if (!isHidden && !hiddenVipEntries.has(msg.id)) {
+                        setTimeout(() => {
+                          setHiddenVipEntries(prev => new Set([...prev, msg.id]))
+                        }, 3000)
+                      }
+                      
+                      // Show simple text after animation ends
+                      if (isHidden) {
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="px-2 py-1 text-center"
+                          >
+                            <span className={`text-xs ${vipInfo.color}`}>
+                              {vipInfo.icon} <span className="font-medium">{joinName}</span>{' '}
+                              <span className="text-white/60">
+                                {language === 'tr' ? 'odaya giriş yaptı' : 'entered the room'}
+                              </span>
+                            </span>
+                          </motion.div>
+                        )
+                      }
+                      
+                      // Show grand VIP entry animation
                       return (
                         <motion.div
                           key={msg.id}
