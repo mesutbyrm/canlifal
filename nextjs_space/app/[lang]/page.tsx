@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import HomepageTicker from '@/components/homepage-ticker'
@@ -267,6 +267,19 @@ export default function HomePage() {
         <div className="pt-[114px] pb-28 px-4 space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <div className="flex flex-wrap gap-3">
+            {/* Game Center Button */}
+            <Link
+              href={`/${language}/games`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 ${
+                isCosmic 
+                  ? 'bg-gradient-to-r from-indigo-900/40 to-violet-900/40 border-indigo-500/50 text-indigo-300 hover:border-indigo-400'
+                  : 'bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400'
+              }`}
+            >
+              <Gamepad2 className="w-4 h-4" />
+              <span className="text-sm font-medium">{language === 'tr' ? 'Oyun Merkezi' : 'Game Center'}</span>
+            </Link>
+
             {/* Gift Button */}
             <Link
               href={session?.user ? `/${language}/gifts` : `/${language}/login`}

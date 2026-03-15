@@ -565,6 +565,24 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Chat room settings seeded')
 
+  // Mini Game Center - Default Games
+  const defaultGames = [
+    { slug: 'fal-carki', title: 'Fal Çarkı', description: 'Çarkı çevir, şansını dene!', icon: '🎡', sortOrder: 1, minReward: 5, maxReward: 100, entryFee: 0 },
+    { slug: 'tarot-sec', title: 'Tarot Kartı Seç', description: 'Kapalı tarot kartlarından birini seç ve ödülünü kazan!', icon: '🃏', sortOrder: 2, minReward: 5, maxReward: 75, entryFee: 0 },
+    { slug: 'memory', title: 'Kahve Falı Memory', description: 'Kahve falı temalı kart eşleştirme oyunu', icon: '☕', sortOrder: 3, minReward: 10, maxReward: 60, entryFee: 0 },
+    { slug: 'quiz', title: 'Astroloji Quiz', description: 'Burçlar ve astroloji hakkında bilgini test et!', icon: '⭐', sortOrder: 4, minReward: 5, maxReward: 50, entryFee: 0 },
+    { slug: 'sans-kutusu', title: 'Şans Kutusu', description: 'Gizemli kutuyu aç, sürpriz ödül kazan!', icon: '🎁', sortOrder: 5, minReward: 3, maxReward: 80, entryFee: 0 },
+    { slug: 'sayi-tahmin', title: 'Sayı Tahmin', description: '1-100 arasında sayı tahmin et!', icon: '🔢', sortOrder: 6, minReward: 10, maxReward: 50, entryFee: 0 },
+  ]
+  for (const game of defaultGames) {
+    await prisma.miniGame.upsert({
+      where: { slug: game.slug },
+      update: { title: game.title, description: game.description, icon: game.icon, sortOrder: game.sortOrder },
+      create: game,
+    })
+  }
+  console.log('Mini games seeded')
+
   console.log('Seed completed successfully!')
 }
 

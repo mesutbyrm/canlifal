@@ -1332,3 +1332,100 @@ model SiteAnnouncement {
   @@index([expiresAt])
   @@map("site_announcements")
 }
+
+// ==========================================
+// MINI GAME CENTER MODELS
+// ==========================================
+
+// Game configurations managed by admin
+model MiniGame {
+  id          String   @id @default(cuid())
+  slug        String   @unique // fal-carki, tarot-sec, memory, quiz, sans-kutusu, sayi-tahmin
+  title       String
+  description String?
+  icon        String   @default("🎮")
+  isActive    Boolean  @default(true)
+  entryFee    Int      @default(0) // jeton cost to play
+  minReward   Int      @default(5)
+  maxReward   Int      @default(50)
+  sortOrder   Int      @default(0)
+  config      String?  // JSON config for game-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plays       GamePlay[]
+  @@index([slug])
+  @@index([isActive])
+  @@map("mini_games")
+}
+
+// Individual game play records
+model GamePlay {
+  id         String   @id @default(cuid())
+  userId     String
+  gameId     String
+  reward     Int      @default(0) // jetons earned
+  score      Int?     // optional score
+  result     String?  // JSON result data
+  playedAt   DateTime @default(now())
+
+  game       MiniGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([playedAt])
+  @@index([userId, gameId])
+  @@map("game_plays")
+}
+
+// Daily login rewards & streak tracking
+model DailyReward {
+  id            String   @id @default(cuid())
+  userId        String
+  rewardDate    DateTime @db.Date
+  streak        Int      @default(1)
+  jetonReward   Int      @default(5)
+  claimedAt     DateTime @default(now())
+
+  @@unique([userId, rewardDate])
+  @@index([userId])
+  @@map("daily_rewards")
+}
+
+// Daily quests tracking
+model DailyQuest {
+  id          String   @id @default(cuid())
+  userId      String
+  questDate   DateTime @db.Date
+  questType   String   // daily_login, play_3_games, buy_fortune
+  progress    Int      @default(0)
+  target      Int      @default(1)
+  reward      Int      @default(10)
+  claimed     Boolean  @default(false)
+  claimedAt   DateTime?
+
+  @@unique([userId, questDate, questType])
+  @@index([userId])
+  @@index([questDate])
+  @@map("daily_quests")
+}
+
+// User game level & XP tracking
+model UserGameProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  totalJetons    Int      @default(0) // lifetime jetons earned from games
+  totalGames     Int      @default(0)
+  level          Int      @default(1)
+  levelTitle     String   @default("Yeni Üye")
+  dailySpinsUsed Int      @default(0) // daily free spin count
+  lastSpinDate   DateTime? @db.Date
+  referralCode   String?  @unique
+  referralCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([totalJetons])
+  @@map("user_game_profiles")
+}
