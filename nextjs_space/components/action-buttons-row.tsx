@@ -145,7 +145,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     .map((key) => allButtons[key])
 
   if (!mounted) {
-    return <div className="flex flex-wrap gap-3 min-h-[40px]" />
+    return <div className="grid grid-cols-4 md:grid-cols-7 gap-2 min-h-[44px]" />
   }
 
   const handleButtonClick = (btn: typeof orderedButtons[0]) => {
@@ -162,18 +162,18 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-4 md:grid-cols-7 gap-1.5 sm:gap-2">
         {orderedButtons.map((btn) =>
           btn.key === 'bana-ozel' ? (
             <button
               key={btn.key}
               onClick={() => handleButtonClick(btn)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${
                 getButtonStyle(btn.key)
               }`}
             >
-              {btn.icon}
-              <span className="text-sm font-medium">
+              <span className="flex-shrink-0">{btn.icon}</span>
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
                 {language === 'tr' ? btn.labelTr : btn.labelEn}
               </span>
               <LiveBadge count={btn.badgeCount} />
@@ -182,12 +182,12 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
             <Link
               key={btn.key}
               href={btn.href}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105 relative ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${
                 getButtonStyle(btn.key)
               }`}
             >
-              {btn.icon}
-              <span className="text-sm font-medium">
+              <span className="flex-shrink-0">{btn.icon}</span>
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
                 {language === 'tr' ? btn.labelTr : btn.labelEn}
               </span>
               <LiveBadge count={btn.badgeCount} />
