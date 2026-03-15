@@ -382,10 +382,10 @@ export default function SocialPage() {
         ))}
       </div>
 
-      <div className="pt-2 pb-24 sm:pb-28 px-3 sm:px-4 relative z-10">
-        <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4">
+      <div className="pt-2 pb-20 sm:pb-24 px-3 sm:px-4 relative z-10 h-[calc(100vh-60px)] flex flex-col">
+        <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
           {/* Page Header */}
-          <div className="text-center py-1 sm:py-2">
+          <div className="text-center py-1 sm:py-2 flex-shrink-0">
             <h1 className="falclub-section-title justify-center text-lg sm:text-xl">
               <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
               {language === 'tr' ? 'SOSYAL AKIŞ' : 'SOCIAL FEED'}
@@ -400,14 +400,14 @@ export default function SocialPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="falclub-card p-3 sm:p-4"
+              className="falclub-card p-4 sm:p-5 flex-shrink-0 mb-3 sm:mb-4"
             >
-              <div className="flex gap-2 sm:gap-3">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden flex-shrink-0 falclub-icon-circle">
+              <div className="flex gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 falclub-icon-circle">
                   {session.user.image ? (
-                    <Image src={session.user.image} alt="" width={44} height={44} className="w-full h-full object-cover" />
+                    <Image src={session.user.image} alt="" width={48} height={48} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex items-center justify-center text-white font-bold text-sm sm:text-base">
+                    <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex items-center justify-center text-white font-bold text-base sm:text-lg">
                       {session.user.name?.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -420,8 +420,8 @@ export default function SocialPage() {
                     placeholder={selectedYoutubeUrl
                       ? (language === 'tr' ? 'Video hakkında bir şeyler yaz...' : 'Write something about this video...')
                       : (language === 'tr' ? 'Ne düşünüyorsun? ✨' : "What's on your mind? ✨")}
-                    className="w-full bg-transparent border-none outline-none text-white placeholder-fuchsia-300/40 resize-none text-xs sm:text-sm"
-                    rows={2}
+                    className="w-full bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl p-3 outline-none text-white placeholder-fuchsia-300/50 resize-none text-sm sm:text-base focus:border-fuchsia-400/40 transition-colors"
+                    rows={4}
                     maxLength={6000}
                   />
 
@@ -515,7 +515,8 @@ export default function SocialPage() {
             </motion.div>
           )}
 
-          {/* Posts Feed */}
+          {/* Posts Feed - Scrollable */}
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 sm:py-16 gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
@@ -534,7 +535,7 @@ export default function SocialPage() {
           ) : (
             <div
               ref={containerRef}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4 pb-4"
             >
               <AnimatePresence>
                 {posts.map((post, index) => {
@@ -871,6 +872,7 @@ export default function SocialPage() {
               </Link>
             </div>
           )}
+          </div>
         </div>
       </div>
 
