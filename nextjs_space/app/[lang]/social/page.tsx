@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink, Eye, Radio } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import YouTubeSearchModal from '@/components/youtube-search-modal'
 
 interface SocialPost {
@@ -73,6 +74,7 @@ const FORTUNE_LABELS: Record<string, Record<string, string>> = {
 }
 
 export default function SocialPage() {
+  const router = useRouter()
   const { language } = useLanguage()
   const { data: session } = useSession() || {}
   const [posts, setPosts] = useState<SocialPost[]>([])
@@ -601,9 +603,12 @@ export default function SocialPage() {
                       </div>
 
                       {/* Post Content */}
-                      <div className="px-4 pb-3">
+                      <div
+                        className="px-4 pb-3 cursor-pointer"
+                        onClick={() => router.push(`/${language}/profile/${post.user.id}`)}
+                      >
                         {(() => {
-                          const charLimit = post.isAuto ? 250 : 500;
+                          const charLimit = 250;
                           const needsTruncate = post.content.length > charLimit && !expandedContent[post.id];
                           if (needsTruncate) {
                             return (
@@ -612,7 +617,7 @@ export default function SocialPage() {
                                   {post.content.substring(0, charLimit)}...
                                 </p>
                                 <button
-                                  onClick={() => setExpandedContent({ ...expandedContent, [post.id]: true })}
+                                  onClick={(e) => { e.stopPropagation(); setExpandedContent({ ...expandedContent, [post.id]: true }); }}
                                   className="text-fuchsia-400 text-sm font-medium mt-1 hover:text-fuchsia-300 transition-colors"
                                 >
                                   {language === 'tr' ? 'devamını oku' : 'read more'}
@@ -625,7 +630,7 @@ export default function SocialPage() {
 
                         {/* Post Image */}
                         {post.imageUrl && (
-                          <div className="mt-3 rounded-xl overflow-hidden border border-fuchsia-500/20">
+                          <div className="mt-3 rounded-xl overflow-hidden border border-fuchsia-500/20" onClick={(e) => e.stopPropagation()}>
                             <Image
                               src={post.imageUrl}
                               alt="Post image"
@@ -638,7 +643,7 @@ export default function SocialPage() {
 
                         {/* YouTube Video Embed */}
                         {post.youtubeUrl && (
-                          <div className="mt-3 rounded-xl overflow-hidden border border-fuchsia-500/20">
+                          <div className="mt-3 rounded-xl overflow-hidden border border-fuchsia-500/20" onClick={(e) => e.stopPropagation()}>
                             <div className="relative aspect-video bg-black">
                               <iframe
                                 src={`https://www.youtube.com/embed/${extractYoutubeId(post.youtubeUrl)}?rel=0`}
