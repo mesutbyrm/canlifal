@@ -5,13 +5,13 @@ import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
-import { Moon, Sparkles, AlertCircle } from 'lucide-react'
+import { Moon, Sparkles, AlertCircle, RotateCcw } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
 import ShareToSocial from '@/components/share-to-social'
-import Image from 'next/image'
+import FortunePageLayout from '@/components/fortune-page-layout'
 
 export default function DreamFortunePage() {
   const { data: session } = useSession() || {}
@@ -40,7 +40,6 @@ export default function DreamFortunePage() {
         throw new Error(errorData?.error || 'Failed to generate fortune')
       }
 
-      // Handle streaming response
       const reader = response?.body?.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -64,147 +63,129 @@ export default function DreamFortunePage() {
                 fullText += content
                 setFortune(fullText)
               }
-            } catch (e) {
-              // Skip invalid JSON
-            }
+            } catch (e) {}
           }
         }
       }
-    } catch (err: any) {
-      setError(err?.message || t('message.error'))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('message.error'))
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-deep-purple-975 to-[#0a0118]">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="flex justify-center mb-4">
-            <Moon className="w-16 h-16 text-gold-500" />
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('dream.title')}
-          </h1>
-          <p className="text-deep-purple-200 text-lg">
-            {t('dream.prompt')}
-          </p>
-        </motion.div>
+  const resetForm = () => {
+    setFortune('')
+    setDreamDescription('')
+    router.refresh()
+  }
 
-        {/* Image */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8"
-        >
-          <div className="relative aspect-video rounded-lg overflow-hidden mystical-shadow">
-            <Image
-              src="/dream_interpretation_icon.jpg"
-              alt="Dream Interpretation"
-              fill
-              className="object-cover"
+  return (
+    <FortunePageLayout
+      title="Rüya Yorumu"
+      titleEn="Dream Interpretation"
+      subtitle="Rüyalarınızın gizli mesajlarını keşfedin"
+      subtitleEn="Discover the hidden messages in your dreams"
+      icon={Moon}
+      cost={5}
+    >
+      {!fortune ? (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Error */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {/* Dream Description */}
+          <div>
+            <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between mb-2">
+              <span>{language === 'tr' ? 'Rüyanızı anlatın' : 'Describe your dream'}</span>
+              <VoiceInput 
+                onTranscript={(text) => setDreamDescription(prev => prev + ' ' + text)}
+                disabled={isLoading}
+              />
+            </label>
+            <textarea
+              value={dreamDescription}
+              onChange={(e) => setDreamDescription(e?.target?.value ?? '')}
+              className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[120px] sm:min-h-[150px] text-sm sm:text-base resize-none"
+              placeholder={language === 'tr' ? 'Rüyanızda gördüklerinizi detaylıca anlatın. Kişileri, yerleri, duyguları ve olayları belirtin...' : 'Describe what you saw in your dream in detail. Mention people, places, emotions and events...'}
+              required
             />
           </div>
-        </motion.div>
 
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-mystical-card border border-mystical rounded-lg p-8 mystical-shadow"
-        >
-          {!fortune ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  {error}
-                </div>
-              )}
+          {/* Tips */}
+          <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
+            <p className="text-deep-purple-300 text-xs sm:text-sm">
+              🌙 {language === 'tr' 
+                ? 'Rüyanızı ne kadar detaylı anlatırsanız, yorum o kadar derin olur.' 
+                : 'The more detail you provide, the deeper the interpretation will be.'}
+            </p>
+          </div>
 
-              <div className="space-y-2">
-                <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    {t('dream.prompt')}
-                    <VoiceInput 
-                      onTranscript={(text) => setDreamDescription(prev => prev + ' ' + text)}
-                      disabled={isLoading}
-                    />
-                  </span>
-                  <span className="flex items-center gap-1 text-gold-500">
-                    <Sparkles className="w-4 h-4" />
-                    5 {t('nav.credits')}
-                  </span>
-                </label>
-                <textarea
-                  value={dreamDescription}
-                  onChange={(e) => setDreamDescription(e?.target?.value ?? '')}
-                  className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors min-h-[150px]"
-                  placeholder={language === 'tr' ? 'Rüyanızı anlatın... (Mikrofon ile de konuşabilirsiniz)' : 'Describe your dream... (You can also use the microphone)'}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading || !dreamDescription.trim()}
-                className="w-full py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed mystical-shadow"
-              >
-                {isLoading ? (
-                  <LoadingSpinner message={language === 'tr' ? 'Rüyanız yorumlanıyor...' : 'Interpreting your dream...'} />
-                ) : (
-                  language === 'tr' ? 'Rüyamı Yorumla' : 'Interpret My Dream'
-                )}
-              </button>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-gold-500 mb-4">
-                <Sparkles className="w-5 h-5" />
-                <h2 className="font-serif text-2xl">{t('message.fortune_generated')}</h2>
-              </div>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">
-                  {fortune}
-                </p>
-              </div>
-              
-              {/* Text to Speech */}
-              <div className="mb-4">
-                <TextToSpeech text={fortune} />
-              </div>
-              
-              <div className="flex flex-wrap gap-3">
-                <ShareToSocial fortuneType="dream" content={fortune} />
-                <SocialShare 
-                  title={language === 'tr' ? 'Rüya Tabirim' : 'My Dream Interpretation'} 
-                  text={fortune} 
-                />
-              </div>
-              
-              <button
-                onClick={() => {
-                  setFortune('')
-                  setDreamDescription('')
-                  router.refresh()
-                }}
-                className="w-full py-3 bg-deep-purple-800 text-gold-400 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium"
-              >
-                {language === 'tr' ? 'Yeni Rüya Yorumla' : 'Interpret Another Dream'}
-              </button>
-            </div>
-          )}
-        </motion.div>
-      </div>
-    </div>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading || !dreamDescription.trim()}
+            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            {isLoading ? (
+              <LoadingSpinner message={language === 'tr' ? 'Rüyanız yorumlanıyor...' : 'Interpreting your dream...'} />
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                {language === 'tr' ? 'Rüyamı Yorumla' : 'Interpret My Dream'}
+              </>
+            )}
+          </button>
+        </form>
+      ) : (
+        /* Fortune Result */
+        <div className="space-y-5">
+          {/* Success Header */}
+          <div className="flex items-center gap-2 text-gold-500">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="font-serif text-xl sm:text-2xl">
+              {language === 'tr' ? 'Rüya Yorumunuz Hazır' : 'Your Dream Interpretation is Ready'}
+            </h2>
+          </div>
+          
+          {/* Fortune Content */}
+          <div className="bg-deep-purple-900/30 rounded-xl p-4 sm:p-5 border border-deep-purple-700/30">
+            <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+              {fortune}
+            </p>
+          </div>
+          
+          {/* Text to Speech */}
+          <TextToSpeech text={fortune} />
+          
+          {/* Share Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <ShareToSocial fortuneType="dream" content={fortune} />
+            <SocialShare 
+              title={language === 'tr' ? 'Rüya Yorumum' : 'My Dream Interpretation'} 
+              text={fortune} 
+            />
+          </div>
+          
+          {/* New Fortune Button */}
+          <button
+            onClick={resetForm}
+            className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {language === 'tr' ? 'Yeni Rüya Yorumlat' : 'Interpret Another Dream'}
+          </button>
+        </div>
+      )}
+    </FortunePageLayout>
   )
 }

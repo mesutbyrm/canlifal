@@ -5,12 +5,12 @@ import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
-import { Star, Sparkles, AlertCircle } from 'lucide-react'
+import { Star, Sparkles, AlertCircle, RotateCcw } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
-import Image from 'next/image'
+import FortunePageLayout from '@/components/fortune-page-layout'
 
 export default function TarotFortunePage() {
   const { data: session } = useSession() || {}
@@ -40,7 +40,6 @@ export default function TarotFortunePage() {
         throw new Error(errorData?.error || 'Failed to generate fortune')
       }
 
-      // Handle streaming response
       const reader = response?.body?.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -64,151 +63,149 @@ export default function TarotFortunePage() {
                 fullText += content
                 setFortune(fullText)
               }
-            } catch (e) {
-              // Skip invalid JSON
-            }
+            } catch (e) {}
           }
         }
       }
-    } catch (err: any) {
-      setError(err?.message || t('message.error'))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('message.error'))
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-deep-purple-975 to-[#0a0118]">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="flex justify-center mb-4">
-            <Star className="w-16 h-16 text-gold-500" />
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {t('tarot.title')}
-          </h1>
-          <p className="text-deep-purple-200 text-lg">
-            {t('tarot.prompt')}
-          </p>
-        </motion.div>
+  const resetForm = () => {
+    setFortune('')
+    setQuestion('')
+    router.refresh()
+  }
 
-        {/* Image */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8"
-        >
-          <div className="relative aspect-video rounded-lg overflow-hidden mystical-shadow">
-            <Image
-              src="/tarot_reading_icon.jpg"
-              alt="Tarot Reading"
-              fill
-              className="object-cover"
+  return (
+    <FortunePageLayout
+      title="Tarot Falı"
+      titleEn="Tarot Reading"
+      subtitle="Kartların sırrını keşfedin"
+      subtitleEn="Discover the secrets of the cards"
+      icon={Star}
+      cost={7}
+    >
+      {!fortune ? (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Error */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {/* Question */}
+          <div>
+            <label className="text-deep-purple-200 text-sm font-medium block mb-2">
+              {language === 'tr' ? 'Sorunuz nedir?' : 'What is your question?'}
+            </label>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e?.target?.value ?? '')}
+              className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none"
+              placeholder={language === 'tr' ? 'Kartlara sormak istediğiniz soruyu yazın...' : 'Write the question you want to ask the cards...'}
+              required
             />
           </div>
-        </motion.div>
 
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-mystical-card border border-mystical rounded-lg p-8 mystical-shadow"
-        >
-          {!fortune ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between">
-                  {t('tarot.prompt')}
-                  <span className="flex items-center gap-1 text-gold-500">
-                    <Sparkles className="w-4 h-4" />
-                    7 {t('nav.credits')}
-                  </span>
-                </label>
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e?.target?.value ?? '')}
-                  className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors min-h-[120px]"
-                  placeholder={t('tarot.placeholder')}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-deep-purple-200 text-sm font-medium">
-                  {t('tarot.cards')}
-                </label>
-                <select
-                  value={cardCount}
-                  onChange={(e) => setCardCount(parseInt(e?.target?.value ?? '3'))}
-                  className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600 transition-colors"
+          {/* Card Count Selection */}
+          <div>
+            <label className="text-deep-purple-200 text-sm font-medium block mb-3">
+              {language === 'tr' ? 'Kaç kart çekilsin?' : 'How many cards?'}
+            </label>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {[1, 3, 5].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setCardCount(count)}
+                  className={`py-3 sm:py-4 rounded-xl font-medium transition-all flex flex-col items-center gap-1 ${
+                    cardCount === count
+                      ? 'bg-gold-500 text-deep-purple-950'
+                      : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
+                  }`}
                 >
-                  <option value={1}>1 {language === 'tr' ? 'Kart' : 'Card'}</option>
-                  <option value={3}>3 {language === 'tr' ? 'Kart' : 'Cards'}</option>
-                  <option value={5}>5 {language === 'tr' ? 'Kart' : 'Cards'}</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading || !question.trim()}
-                className="w-full py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed mystical-shadow"
-              >
-                {isLoading ? (
-                  <LoadingSpinner message={language === 'tr' ? 'Kartlar açılıyor...' : 'Drawing cards...'} />
-                ) : (
-                  language === 'tr' ? 'Kartları Çek' : 'Draw Cards'
-                )}
-              </button>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-gold-500 mb-4">
-                <Sparkles className="w-5 h-5" />
-                <h2 className="font-serif text-2xl">{t('message.fortune_generated')}</h2>
-              </div>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">
-                  {fortune}
-                </p>
-              </div>
-              
-              <div className="flex flex-wrap gap-3">
-                <ShareToSocial fortuneType="tarot" content={fortune} />
-                <SocialShare 
-                  title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
-                  text={fortune} 
-                />
-              </div>
-              
-              <button
-                onClick={() => {
-                  setFortune('')
-                  setQuestion('')
-                  router.refresh()
-                }}
-                className="w-full py-3 bg-deep-purple-800 text-gold-400 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium"
-              >
-                {language === 'tr' ? 'Yeni Okuma Yap' : 'New Reading'}
-              </button>
+                  <span className="text-lg sm:text-xl">{'\u2605'.repeat(Math.min(count, 3))}</span>
+                  <span className="text-sm">{count} {language === 'tr' ? 'Kart' : count === 1 ? 'Card' : 'Cards'}</span>
+                </button>
+              ))}
             </div>
-          )}
-        </motion.div>
-      </div>
-    </div>
+          </div>
+
+          {/* Tips */}
+          <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
+            <p className="text-deep-purple-300 text-xs sm:text-sm">
+              🌟 {language === 'tr' 
+                ? 'Sorunuzu açık ve net bir şekilde ifade edin. Tek bir konuya odaklanın.' 
+                : 'Express your question clearly. Focus on a single topic.'}
+            </p>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading || !question.trim()}
+            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            {isLoading ? (
+              <LoadingSpinner message={language === 'tr' ? 'Kartlar açılıyor...' : 'Drawing cards...'} />
+            ) : (
+              <>
+                <Star className="w-5 h-5" />
+                {language === 'tr' ? 'Kartları Çek' : 'Draw Cards'}
+              </>
+            )}
+          </button>
+        </form>
+      ) : (
+        /* Fortune Result */
+        <div className="space-y-5">
+          {/* Success Header */}
+          <div className="flex items-center gap-2 text-gold-500">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="font-serif text-xl sm:text-2xl">
+              {language === 'tr' ? 'Tarot Okumanız Hazır' : 'Your Tarot Reading is Ready'}
+            </h2>
+          </div>
+          
+          {/* Fortune Content */}
+          <div className="bg-deep-purple-900/30 rounded-xl p-4 sm:p-5 border border-deep-purple-700/30">
+            <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+              {fortune}
+            </p>
+          </div>
+          
+          {/* Text to Speech */}
+          <TextToSpeech text={fortune} />
+          
+          {/* Share Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <ShareToSocial fortuneType="tarot" content={fortune} />
+            <SocialShare 
+              title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
+              text={fortune} 
+            />
+          </div>
+          
+          {/* New Fortune Button */}
+          <button
+            onClick={resetForm}
+            className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {language === 'tr' ? 'Yeni Okuma Yap' : 'New Reading'}
+          </button>
+        </div>
+      )}
+    </FortunePageLayout>
   )
 }

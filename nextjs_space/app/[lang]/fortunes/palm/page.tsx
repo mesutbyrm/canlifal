@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Hand, Sparkles, Upload, X, Camera, RotateCcw } from 'lucide-react'
+import { Hand, Sparkles, Upload, X, Camera, RotateCcw, CheckCircle, AlertCircle, ImageIcon } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
 import TextToSpeech from '@/components/text-to-speech'
+import FortunePageLayout from '@/components/fortune-page-layout'
 import Image from 'next/image'
 
 export default function PalmReadingPage() {
@@ -23,6 +24,7 @@ export default function PalmReadingPage() {
   const [uploadProgress, setUploadProgress] = useState('')
   const [showCamera, setShowCamera] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
+  const [showSourceModal, setShowSourceModal] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -34,6 +36,7 @@ export default function PalmReadingPage() {
       })
       setStream(mediaStream)
       setShowCamera(true)
+      setShowSourceModal(false)
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream
@@ -85,6 +88,7 @@ export default function PalmReadingPage() {
     }
     reader.readAsDataURL(file)
     setError('')
+    setShowSourceModal(false)
   }
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -155,159 +159,294 @@ export default function PalmReadingPage() {
     }
   }
 
+  const resetForm = () => {
+    setResponse('')
+    setPalmImage(null)
+    setPalmPreview('')
+  }
+
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
-      <div className="max-w-4xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <div className="flex justify-center mb-4">
-            <Hand className="w-16 h-16 text-gold-500" />
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'El Falı' : 'Palm Reading'}
-          </h1>
-          <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Elinizin çizgileri kaderinizi açığa çıkarır' : 'The lines of your palm reveal your destiny'}
-          </p>
-          <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />8 {language === 'tr' ? 'CFC' : 'CFC'}
-          </p>
-        </motion.div>
-
-        {!response && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-deep-purple-200 mb-3 font-medium">
-                  {language === 'tr' ? 'Hangi Eliniz?' : 'Which Hand?'}
-                </label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setHand('right')}
-                    className={`flex-1 py-3 rounded-lg border transition-all ${hand === 'right' ? 'bg-gold-500/20 border-gold-500 text-gold-500' : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-300'}`}
-                  >
-                    {language === 'tr' ? 'Sağ El' : 'Right Hand'}
-                  </button>
-                  <button
-                    onClick={() => setHand('left')}
-                    className={`flex-1 py-3 rounded-lg border transition-all ${hand === 'left' ? 'bg-gold-500/20 border-gold-500 text-gold-500' : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-300'}`}
-                  >
-                    {language === 'tr' ? 'Sol El' : 'Left Hand'}
-                  </button>
-                </div>
+    <FortunePageLayout
+      title="El Falı"
+      titleEn="Palm Reading"
+      subtitle="Elinizin çizgileri kaderinizi açığa çıkarır"
+      subtitleEn="The lines of your palm reveal your destiny"
+      icon={Hand}
+      cost={8}
+    >
+      {/* Source Selection Modal */}
+      <AnimatePresence>
+        {showSourceModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" 
+            onClick={() => setShowSourceModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-deep-purple-900 border border-gold-500/30 rounded-2xl p-5 max-w-xs w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-gold-500 font-serif text-lg mb-4 text-center">
+                {language === 'tr' ? 'Fotoğraf Kaynağı' : 'Photo Source'}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={startCamera}
+                  className="flex flex-col items-center gap-2 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-xl border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                >
+                  <Camera className="w-8 h-8 text-gold-500" />
+                  <span className="text-deep-purple-100 text-sm font-medium">
+                    {language === 'tr' ? 'Kamera' : 'Camera'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  className="flex flex-col items-center gap-2 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-xl border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                >
+                  <ImageIcon className="w-8 h-8 text-gold-500" />
+                  <span className="text-deep-purple-100 text-sm font-medium">
+                    {language === 'tr' ? 'Galeri' : 'Gallery'}
+                  </span>
+                </button>
               </div>
-
-              <div>
-                <label className="block text-deep-purple-200 mb-3 font-medium">
-                  {language === 'tr' ? 'El Fotoğrafınız *' : 'Your Palm Photo *'}
-                </label>
-                
-                {/* Camera View */}
-                {showCamera && (
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-black">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-                    <canvas ref={canvasRef} className="hidden" />
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4">
-                      <button
-                        onClick={capturePhoto}
-                        className="p-4 bg-gold-500 rounded-full text-deep-purple-950 hover:bg-gold-400 transition-all shadow-lg"
-                      >
-                        <Camera className="w-8 h-8" />
-                      </button>
-                      <button
-                        onClick={stopCamera}
-                        className="p-4 bg-red-500 rounded-full text-white hover:bg-red-400 transition-all shadow-lg"
-                      >
-                        <X className="w-8 h-8" />
-                      </button>
-                    </div>
-                    <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                      {hand === 'right' 
-                        ? (language === 'tr' ? 'Sağ elinizi gösterin' : 'Show your right hand')
-                        : (language === 'tr' ? 'Sol elinizi gösterin' : 'Show your left hand')
-                      }
-                    </div>
-                  </div>
-                )}
-
-                {!showCamera && (
-                  <>
-                    <div
-                      onClick={() => inputRef.current?.click()}
-                      className={`relative aspect-video rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${palmPreview ? 'border-gold-500' : 'border-deep-purple-600 hover:border-gold-500/50'}`}
-                    >
-                      {palmPreview ? (
-                        <>
-                          <Image src={palmPreview} alt="Palm" fill className="object-cover" />
-                          <button onClick={(e) => { e.stopPropagation(); setPalmImage(null); setPalmPreview(''); }} className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                          <Upload className="w-12 h-12 mb-2" />
-                          <p className="text-sm text-center px-4">{language === 'tr' ? 'El içi fotoğrafınızı yükleyin' : 'Upload your palm photo'}</p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Camera Button */}
-                    {!palmPreview && (
-                      <button
-                        onClick={startCamera}
-                        className="mt-3 w-full py-3 flex items-center justify-center gap-2 bg-purple-600/30 border border-purple-500/50 text-purple-300 rounded-lg hover:bg-purple-600/50 transition-all"
-                      >
-                        <Camera className="w-5 h-5" />
-                        {language === 'tr' ? 'Kamera ile Çek' : 'Take Photo'}
-                      </button>
-                    )}
-                  </>
-                )}
-                
-                <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0])} />
-              </div>
-
-              {error && <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg">{error}</div>}
-
               <button
-                onClick={handleSubmit}
-                disabled={isLoading || !palmImage}
-                className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={() => setShowSourceModal(false)}
+                className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors text-sm"
               >
-                {isLoading ? <LoadingSpinner message={uploadProgress} /> : <><Hand className="w-5 h-5" />{language === 'tr' ? 'El Falıma Bak' : 'Read My Palm'}</>}
+                {language === 'tr' ? 'İptal' : 'Cancel'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Camera View */}
+      <AnimatePresence>
+        {showCamera && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-50 flex flex-col"
+          >
+            <div className="flex-1 relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-2 rounded-full text-sm">
+                {hand === 'right' 
+                  ? (language === 'tr' ? '🤚 Sağ elinizi gösterin' : '🤚 Show your right hand')
+                  : (language === 'tr' ? '🤛 Sol elinizi gösterin' : '🤛 Show your left hand')
+                }
+              </div>
+            </div>
+            <div className="bg-black/90 py-6 flex justify-center gap-6">
+              <button
+                onClick={stopCamera}
+                className="p-4 bg-red-500 rounded-full text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <button
+                onClick={capturePhoto}
+                className="p-5 bg-gold-500 rounded-full text-deep-purple-950"
+              >
+                <Camera className="w-8 h-8" />
               </button>
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {response && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-mystical-card border border-gold-500/30 rounded-xl p-8 mystical-shadow">
-            <div className="flex items-center gap-3 mb-6">
-              {palmPreview && <div className="relative w-20 h-20 rounded-lg overflow-hidden"><Image src={palmPreview} alt="Palm" fill className="object-cover" /></div>}
-              <div>
-                <h2 className="font-serif text-2xl text-gold-500">{language === 'tr' ? 'El Falınız' : 'Your Palm Reading'}</h2>
-                <p className="text-deep-purple-300 text-sm">{hand === 'right' ? (language === 'tr' ? 'Sağ El' : 'Right Hand') : (language === 'tr' ? 'Sol El' : 'Left Hand')}</p>
+      <input 
+        ref={inputRef} 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0])} 
+      />
+
+      {!response ? (
+        <div className="space-y-5">
+          {/* Hand Selection */}
+          <div>
+            <label className="block text-deep-purple-200 mb-3 text-sm font-medium">
+              {language === 'tr' ? 'Hangi Eliniz?' : 'Which Hand?'}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setHand('right')}
+                className={`py-3 sm:py-4 rounded-xl font-medium transition-all flex flex-col items-center gap-1 ${
+                  hand === 'right'
+                    ? 'bg-gold-500 text-deep-purple-950'
+                    : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
+                }`}
+              >
+                <span className="text-lg">🤚</span>
+                <span className="text-sm">{language === 'tr' ? 'Sağ El' : 'Right Hand'}</span>
+              </button>
+              <button
+                onClick={() => setHand('left')}
+                className={`py-3 sm:py-4 rounded-xl font-medium transition-all flex flex-col items-center gap-1 ${
+                  hand === 'left'
+                    ? 'bg-gold-500 text-deep-purple-950'
+                    : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
+                }`}
+              >
+                <span className="text-lg">🤛</span>
+                <span className="text-sm">{language === 'tr' ? 'Sol El' : 'Left Hand'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Palm Photo Upload */}
+          <div>
+            <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
+              {language === 'tr' ? 'El Fotoğrafınız' : 'Your Palm Photo'}
+              <span className="text-gold-500 ml-1">*</span>
+            </label>
+            <div
+              onClick={() => !palmPreview && setShowSourceModal(true)}
+              className={`relative aspect-[4/3] rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                palmPreview
+                  ? 'border-gold-500 bg-gold-500/5'
+                  : 'border-deep-purple-600 hover:border-gold-500/50 bg-deep-purple-900/30'
+              }`}
+            >
+              {palmPreview ? (
+                <>
+                  <Image src={palmPreview} alt="Palm" fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setPalmImage(null)
+                      setPalmPreview('')
+                    }}
+                    className="absolute top-3 right-3 p-2 bg-red-500 rounded-full text-white shadow-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="bg-green-500/90 text-white text-sm py-2 px-3 rounded-full flex items-center justify-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>{language === 'tr' ? 'Fotoğraf Yüklendi' : 'Photo Uploaded'}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-deep-purple-400 p-4">
+                  <div className="flex gap-3 mb-3">
+                    <Camera className="w-8 h-8" />
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                  <p className="text-sm text-center">
+                    {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {/* Tips */}
+          <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
+            <p className="text-deep-purple-300 text-xs sm:text-sm">
+              ✋ {language === 'tr' 
+                ? 'Avucıçinizi açık tutun ve iyi aydınlatılmış bir ortamda net bir fotoğraf çekin.' 
+                : 'Keep your palm open and take a clear photo in a well-lit environment.'}
+            </p>
+          </div>
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || !palmImage}
+            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            {isLoading ? (
+              <LoadingSpinner message={uploadProgress || (language === 'tr' ? 'El falınız hazırlanıyor...' : 'Preparing your palm reading...')} />
+            ) : (
+              <>
+                <Hand className="w-5 h-5" />
+                {language === 'tr' ? 'El Falıma Bak' : 'Read My Palm'}
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        /* Fortune Result */
+        <div className="space-y-5">
+          {/* Success Header */}
+          <div className="flex items-center gap-3">
+            {palmPreview && (
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-gold-500/30 flex-shrink-0">
+                <Image src={palmPreview} alt="Palm" fill className="object-cover" />
               </div>
+            )}
+            <div>
+              <div className="flex items-center gap-2 text-gold-500">
+                <Sparkles className="w-5 h-5" />
+                <h2 className="font-serif text-xl sm:text-2xl">
+                  {language === 'tr' ? 'El Falınız' : 'Your Palm Reading'}
+                </h2>
+              </div>
+              <p className="text-deep-purple-300 text-sm mt-1">
+                {hand === 'right' ? (language === 'tr' ? '🤚 Sağ El' : '🤚 Right Hand') : (language === 'tr' ? '🤛 Sol El' : '🤛 Left Hand')}
+              </p>
             </div>
-            <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            
-            {/* Text to Speech */}
-            <div className="mt-6 mb-4">
-              <TextToSpeech text={response} />
-            </div>
-            
-            <SocialShare title={language === 'tr' ? 'El Falım' : 'My Palm Reading'} text={response} />
-            <button onClick={() => { setResponse(''); setPalmImage(null); setPalmPreview(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
-              {language === 'tr' ? 'Yeni Fal Bak' : 'Get New Reading'}
-            </button>
-          </motion.div>
-        )}
-      </div>
-    </div>
+          </div>
+          
+          {/* Fortune Content */}
+          <div className="bg-deep-purple-900/30 rounded-xl p-4 sm:p-5 border border-deep-purple-700/30">
+            <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+              {response}
+            </p>
+          </div>
+          
+          {/* Text to Speech */}
+          <TextToSpeech text={response} />
+          
+          {/* Share Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <ShareToSocial fortuneType="palm" content={response} />
+            <SocialShare 
+              title={language === 'tr' ? 'El Falım' : 'My Palm Reading'} 
+              text={response} 
+            />
+          </div>
+          
+          {/* New Fortune Button */}
+          <button
+            onClick={resetForm}
+            className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {language === 'tr' ? 'Yeni El Falı Baktır' : 'Get Another Palm Reading'}
+          </button>
+        </div>
+      )}
+    </FortunePageLayout>
   )
 }

@@ -1,20 +1,20 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
-import { Coffee, Sparkles, AlertCircle, Upload, Camera, FileText, X, ImageIcon } from 'lucide-react'
+import { Coffee, Sparkles, AlertCircle, Camera, FileText, X, ImageIcon, CheckCircle, RotateCcw } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
 import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
+import FortunePageLayout from '@/components/fortune-page-layout'
 import Image from 'next/image'
 
 type InputMode = 'text' | 'image'
-type ImageSource = 'gallery' | 'camera'
 
 export default function CoffeeFortunePage() {
   const { data: session } = useSession() || {}
@@ -61,7 +61,6 @@ export default function CoffeeFortunePage() {
   }
 
   const uploadImage = async (file: File): Promise<string> => {
-    // Get presigned URL
     const presignedRes = await fetch('/api/upload/presigned', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,7 +77,6 @@ export default function CoffeeFortunePage() {
 
     const { uploadUrl, cloud_storage_path } = await presignedRes.json()
 
-    // Upload to S3
     const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': file.type },
@@ -131,7 +129,6 @@ export default function CoffeeFortunePage() {
 
       setUploadProgress('')
       
-      // Handle streaming response
       const reader = response?.body?.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -230,370 +227,367 @@ export default function CoffeeFortunePage() {
   }
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-deep-purple-975 to-[#0a0118]">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <div className="flex justify-center mb-4">
-            <Coffee className="w-16 h-16 text-gold-500" />
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Kahve Falı' : 'Coffee Fortune'}
-          </h1>
-          <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Fincanınızın sırlarını keşfedin' : 'Discover the secrets of your cup'}
-          </p>
-          <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />
-            5 {language === 'tr' ? 'CFC' : 'CFC'}
-          </p>
-        </motion.div>
-
-        {/* Mode Switcher */}
-        {!fortune && (
-          <motion.div
+    <FortunePageLayout
+      title="Kahve Falı"
+      titleEn="Coffee Fortune"
+      subtitle="Fincanınızın sırlarını keşfedin"
+      subtitleEn="Discover the secrets of your cup"
+      icon={Coffee}
+      cost={5}
+    >
+      {/* Image Source Selection Modal */}
+      <AnimatePresence>
+        {showImageSourceModal && (
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center gap-4 mb-8"
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" 
+            onClick={() => setShowImageSourceModal(null)}
           >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-deep-purple-900 border border-gold-500/30 rounded-2xl p-5 max-w-xs w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-gold-500 font-serif text-lg mb-4 text-center">
+                {language === 'tr' ? 'Fotoğraf Kaynağı' : 'Photo Source'}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    if (showImageSourceModal === 'cup') {
+                      cupCameraRef.current?.click()
+                    } else {
+                      saucerCameraRef.current?.click()
+                    }
+                    setShowImageSourceModal(null)
+                  }}
+                  className="flex flex-col items-center gap-2 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-xl border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                >
+                  <Camera className="w-8 h-8 text-gold-500" />
+                  <span className="text-deep-purple-100 text-sm font-medium">
+                    {language === 'tr' ? 'Kamera' : 'Camera'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (showImageSourceModal === 'cup') {
+                      cupInputRef.current?.click()
+                    } else {
+                      saucerInputRef.current?.click()
+                    }
+                    setShowImageSourceModal(null)
+                  }}
+                  className="flex flex-col items-center gap-2 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-xl border border-deep-purple-600 hover:border-gold-500/50 transition-all"
+                >
+                  <ImageIcon className="w-8 h-8 text-gold-500" />
+                  <span className="text-deep-purple-100 text-sm font-medium">
+                    {language === 'tr' ? 'Galeri' : 'Gallery'}
+                  </span>
+                </button>
+              </div>
+              <button
+                onClick={() => setShowImageSourceModal(null)}
+                className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors text-sm"
+              >
+                {language === 'tr' ? 'İptal' : 'Cancel'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!fortune ? (
+        <div className="space-y-5">
+          {/* Mode Switcher */}
+          <div className="flex gap-2 p-1 bg-deep-purple-900/50 rounded-xl">
             <button
               onClick={() => setInputMode('image')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 inputMode === 'image'
-                  ? 'bg-gold-500/20 border-gold-500 text-gold-500'
-                  : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
+                  ? 'bg-gold-500 text-deep-purple-950'
+                  : 'text-deep-purple-300 hover:text-white'
               }`}
             >
-              <Camera className="w-5 h-5" />
-              {language === 'tr' ? 'Fotoğraf Yükle' : 'Upload Photo'}
+              <Camera className="w-4 h-4" />
+              <span>{language === 'tr' ? 'Fotoğraf' : 'Photo'}</span>
             </button>
             <button
               onClick={() => setInputMode('text')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 inputMode === 'text'
-                  ? 'bg-gold-500/20 border-gold-500 text-gold-500'
-                  : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
+                  ? 'bg-gold-500 text-deep-purple-950'
+                  : 'text-deep-purple-300 hover:text-white'
               }`}
             >
-              <FileText className="w-5 h-5" />
-              {language === 'tr' ? 'Metin Yaz' : 'Write Text'}
+              <FileText className="w-4 h-4" />
+              <span>{language === 'tr' ? 'Metin' : 'Text'}</span>
             </button>
-          </motion.div>
-        )}
+          </div>
 
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-mystical-card border border-mystical rounded-xl p-8 mystical-shadow"
-        >
-          {!fortune ? (
-            <>
-              {/* Image Source Selection Modal */}
-              {showImageSourceModal && (
-                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowImageSourceModal(null)}>
-                  <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="bg-deep-purple-900 border border-gold-500/30 rounded-xl p-6 max-w-sm w-full"
-                    onClick={(e) => e.stopPropagation()}
+          {/* Error Message */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {/* Image Upload Mode */}
+          {inputMode === 'image' && (
+            <div className="space-y-4">
+              {/* Image Upload Grid */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {/* Cup Image */}
+                <div>
+                  <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
+                    {language === 'tr' ? 'Fincan İçi' : 'Cup Interior'}
+                    <span className="text-gold-500 ml-1">*</span>
+                  </label>
+                  <div
+                    onClick={() => setShowImageSourceModal('cup')}
+                    className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                      cupPreview
+                        ? 'border-gold-500 bg-gold-500/5'
+                        : 'border-deep-purple-600 hover:border-gold-500/50 bg-deep-purple-900/30'
+                    }`}
                   >
-                    <h3 className="text-gold-500 font-serif text-xl mb-4 text-center">
-                      {language === 'tr' ? 'Fotoğraf Kaynağı Seçin' : 'Select Photo Source'}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => {
-                          if (showImageSourceModal === 'cup') {
-                            cupCameraRef.current?.click()
-                          } else {
-                            saucerCameraRef.current?.click()
-                          }
-                          setShowImageSourceModal(null)
-                        }}
-                        className="flex flex-col items-center gap-3 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-lg border border-deep-purple-600 hover:border-gold-500/50 transition-all"
-                      >
-                        <Camera className="w-10 h-10 text-gold-500" />
-                        <span className="text-deep-purple-100 font-medium">
-                          {language === 'tr' ? 'Kamera' : 'Camera'}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (showImageSourceModal === 'cup') {
-                            cupInputRef.current?.click()
-                          } else {
-                            saucerInputRef.current?.click()
-                          }
-                          setShowImageSourceModal(null)
-                        }}
-                        className="flex flex-col items-center gap-3 p-4 bg-deep-purple-800 hover:bg-deep-purple-700 rounded-lg border border-deep-purple-600 hover:border-gold-500/50 transition-all"
-                      >
-                        <ImageIcon className="w-10 h-10 text-gold-500" />
-                        <span className="text-deep-purple-100 font-medium">
-                          {language === 'tr' ? 'Galeri' : 'Gallery'}
-                        </span>
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setShowImageSourceModal(null)}
-                      className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors"
-                    >
-                      {language === 'tr' ? 'İptal' : 'Cancel'}
-                    </button>
-                  </motion.div>
-                </div>
-              )}
-
-              {/* Image Upload Mode */}
-              {inputMode === 'image' && (
-                <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Cup Image Upload */}
-                    <div>
-                      <label className="block text-deep-purple-200 mb-3 font-medium">
-                        {language === 'tr' ? 'Fincan İçi *' : 'Cup Interior *'}
-                      </label>
-                      <div
-                        onClick={() => setShowImageSourceModal('cup')}
-                        className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
-                          cupPreview
-                            ? 'border-gold-500'
-                            : 'border-deep-purple-600 hover:border-gold-500/50'
-                        }`}
-                      >
-                        {cupPreview ? (
-                          <>
-                            <Image src={cupPreview} alt="Cup" fill className="object-cover" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setCupImage(null)
-                                setCupPreview('')
-                              }}
-                              className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                            <div className="flex gap-2 mb-2">
-                              <Camera className="w-8 h-8" />
-                              <ImageIcon className="w-8 h-8" />
-                            </div>
-                            <p className="text-sm text-center px-4">
-                              {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {/* Hidden file inputs for gallery */}
-                      <input
-                        ref={cupInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
-                      />
-                      {/* Hidden camera input */}
-                      <input
-                        ref={cupCameraRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
-                      />
-                    </div>
-
-                    {/* Saucer Image Upload */}
-                    <div>
-                      <label className="block text-deep-purple-200 mb-3 font-medium">
-                        {language === 'tr' ? 'Tabak (İsteğe Bağlı)' : 'Saucer (Optional)'}
-                      </label>
-                      <div
-                        onClick={() => setShowImageSourceModal('saucer')}
-                        className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
-                          saucerPreview
-                            ? 'border-gold-500'
-                            : 'border-deep-purple-600 hover:border-gold-500/50'
-                        }`}
-                      >
-                        {saucerPreview ? (
-                          <>
-                            <Image src={saucerPreview} alt="Saucer" fill className="object-cover" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSaucerImage(null)
-                                setSaucerPreview('')
-                              }}
-                              className="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-deep-purple-400">
-                            <div className="flex gap-2 mb-2">
-                              <Camera className="w-8 h-8" />
-                              <ImageIcon className="w-8 h-8" />
-                            </div>
-                            <p className="text-sm text-center px-4">
-                              {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {/* Hidden file inputs for gallery */}
-                      <input
-                        ref={saucerInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
-                      />
-                      {/* Hidden camera input */}
-                      <input
-                        ref={saucerCameraRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
-                      />
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5" />
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleImageSubmit}
-                    disabled={isLoading || !cupImage}
-                    className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <LoadingSpinner message={uploadProgress || (language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...')} />
-                    ) : (
+                    {cupPreview ? (
                       <>
-                        <Coffee className="w-5 h-5" />
-                        {language === 'tr' ? 'Falıma Baktır' : 'Read My Fortune'}
+                        <Image src={cupPreview} alt="Cup" fill className="object-cover" />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCupImage(null)
+                            setCupPreview('')
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full text-white shadow-lg"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <div className="bg-green-500/90 text-white text-xs py-1 px-2 rounded-full flex items-center justify-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>{language === 'tr' ? 'Yüklendi' : 'Uploaded'}</span>
+                          </div>
+                        </div>
                       </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Text Mode */}
-              {inputMode === 'text' && (
-                <form onSubmit={handleTextSubmit} className="space-y-6">
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5" />
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between">
-                      <span>{language === 'tr' ? 'Fincanda ne görüyorsunuz?' : 'What do you see in the cup?'}</span>
-                      <VoiceInput 
-                        onTranscript={(text) => setDescription(prev => prev + ' ' + text)}
-                        disabled={isLoading}
-                      />
-                    </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e?.target?.value ?? '')}
-                      className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors min-h-[150px]"
-                      placeholder={language === 'tr' ? 'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın... (Mikrofon ile de konuşabilirsiniz)' : 'Describe the shapes, patterns, and what you see in your cup in detail... (You can also use the microphone)'}
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || !description.trim()}
-                    className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <LoadingSpinner message={language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...'} />
                     ) : (
-                      <>
-                        <Coffee className="w-5 h-5" />
-                        {language === 'tr' ? 'Falımı Gör' : 'Read My Fortune'}
-                      </>
+                      <div className="flex flex-col items-center justify-center h-full text-deep-purple-400 p-3">
+                        <Camera className="w-8 h-8 mb-2" />
+                        <p className="text-xs text-center">
+                          {language === 'tr' ? 'Dokunun' : 'Tap here'}
+                        </p>
+                      </div>
                     )}
-                  </button>
-                </form>
-              )}
-            </>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-gold-500 mb-4">
-                <Sparkles className="w-5 h-5" />
-                <h2 className="font-serif text-2xl">
-                  {language === 'tr' ? 'Falınız Hazır' : 'Your Fortune is Ready'}
-                </h2>
+                  </div>
+                  <input
+                    ref={cupInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
+                  />
+                  <input
+                    ref={cupCameraRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'cup')}
+                  />
+                </div>
+
+                {/* Saucer Image */}
+                <div>
+                  <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
+                    {language === 'tr' ? 'Tabak' : 'Saucer'}
+                    <span className="text-deep-purple-500 ml-1 text-xs">({language === 'tr' ? 'opsiyonel' : 'optional'})</span>
+                  </label>
+                  <div
+                    onClick={() => setShowImageSourceModal('saucer')}
+                    className={`relative aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                      saucerPreview
+                        ? 'border-gold-500 bg-gold-500/5'
+                        : 'border-deep-purple-600 hover:border-gold-500/50 bg-deep-purple-900/30'
+                    }`}
+                  >
+                    {saucerPreview ? (
+                      <>
+                        <Image src={saucerPreview} alt="Saucer" fill className="object-cover" />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSaucerImage(null)
+                            setSaucerPreview('')
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full text-white shadow-lg"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <div className="bg-green-500/90 text-white text-xs py-1 px-2 rounded-full flex items-center justify-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>{language === 'tr' ? 'Yüklendi' : 'Uploaded'}</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-deep-purple-400 p-3">
+                        <ImageIcon className="w-8 h-8 mb-2" />
+                        <p className="text-xs text-center">
+                          {language === 'tr' ? 'Dokunun' : 'Tap here'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={saucerInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
+                  />
+                  <input
+                    ref={saucerCameraRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0], 'saucer')}
+                  />
+                </div>
               </div>
-              
-              {/* Show uploaded images if available */}
-              {(cupPreview || saucerPreview) && (
-                <div className="flex gap-4 mb-6">
-                  {cupPreview && (
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden">
-                      <Image src={cupPreview} alt="Cup" fill className="object-cover" />
-                    </div>
-                  )}
-                  {saucerPreview && (
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden">
-                      <Image src={saucerPreview} alt="Saucer" fill className="object-cover" />
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="prose prose-invert max-w-none">
-                <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">
-                  {fortune}
+
+              {/* Tips */}
+              <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
+                <p className="text-deep-purple-300 text-xs sm:text-sm">
+                  💡 {language === 'tr' 
+                    ? 'En iyi sonuç için fincanı iyi aydınlatılmış bir ortamda ve net bir şekilde çekin.' 
+                    : 'For best results, photograph the cup in a well-lit area with clear focus.'}
                 </p>
               </div>
-              
-              {/* Text to Speech */}
-              <div className="mb-4">
-                <TextToSpeech text={fortune} />
-              </div>
-              
-              <div className="flex flex-wrap gap-3">
-                <ShareToSocial fortuneType="coffee" content={fortune} />
-                <SocialShare 
-                  title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
-                  text={fortune} 
-                />
-              </div>
-              
+
+              {/* Submit Button */}
               <button
-                onClick={resetForm}
-                className="w-full py-3 bg-deep-purple-800 text-gold-400 rounded-lg hover:bg-deep-purple-700 transition-all duration-300 font-medium"
+                onClick={handleImageSubmit}
+                disabled={isLoading || !cupImage}
+                className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                {language === 'tr' ? 'Yeni Fal Baktır' : 'Get Another Reading'}
+                {isLoading ? (
+                  <LoadingSpinner message={uploadProgress || (language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...')} />
+                ) : (
+                  <>
+                    <Coffee className="w-5 h-5" />
+                    {language === 'tr' ? 'Falıma Baktır' : 'Read My Fortune'}
+                  </>
+                )}
               </button>
             </div>
           )}
-        </motion.div>
-      </div>
-    </div>
+
+          {/* Text Mode */}
+          {inputMode === 'text' && (
+            <form onSubmit={handleTextSubmit} className="space-y-4">
+              <div>
+                <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between mb-2">
+                  <span>{language === 'tr' ? 'Fincanda ne görüyorsunuz?' : 'What do you see in the cup?'}</span>
+                  <VoiceInput 
+                    onTranscript={(text) => setDescription(prev => prev + ' ' + text)}
+                    disabled={isLoading}
+                  />
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e?.target?.value ?? '')}
+                  className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[120px] sm:min-h-[150px] text-sm sm:text-base resize-none"
+                  placeholder={language === 'tr' ? 'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın...' : 'Describe the shapes, patterns, and what you see in your cup...'}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || !description.trim()}
+                className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                {isLoading ? (
+                  <LoadingSpinner message={language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...'} />
+                ) : (
+                  <>
+                    <Coffee className="w-5 h-5" />
+                    {language === 'tr' ? 'Falımı Gör' : 'Read My Fortune'}
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+      ) : (
+        /* Fortune Result */
+        <div className="space-y-5">
+          {/* Success Header */}
+          <div className="flex items-center gap-2 text-gold-500">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="font-serif text-xl sm:text-2xl">
+              {language === 'tr' ? 'Falınız Hazır' : 'Your Fortune is Ready'}
+            </h2>
+          </div>
+          
+          {/* Uploaded Images Preview */}
+          {(cupPreview || saucerPreview) && (
+            <div className="flex gap-3 pb-4 border-b border-deep-purple-700/50">
+              {cupPreview && (
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-gold-500/30">
+                  <Image src={cupPreview} alt="Cup" fill className="object-cover" />
+                </div>
+              )}
+              {saucerPreview && (
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-gold-500/30">
+                  <Image src={saucerPreview} alt="Saucer" fill className="object-cover" />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Fortune Content */}
+          <div className="bg-deep-purple-900/30 rounded-xl p-4 sm:p-5 border border-deep-purple-700/30">
+            <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+              {fortune}
+            </p>
+          </div>
+          
+          {/* Text to Speech */}
+          <TextToSpeech text={fortune} />
+          
+          {/* Share Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <ShareToSocial fortuneType="coffee" content={fortune} />
+            <SocialShare 
+              title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
+              text={fortune} 
+            />
+          </div>
+          
+          {/* New Fortune Button */}
+          <button
+            onClick={resetForm}
+            className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {language === 'tr' ? 'Yeni Fal Baktır' : 'Get Another Reading'}
+          </button>
+        </div>
+      )}
+    </FortunePageLayout>
   )
 }

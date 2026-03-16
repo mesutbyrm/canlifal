@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Star, Sparkles } from 'lucide-react'
+import { Star, Sparkles, AlertCircle, RotateCcw } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
+import FortunePageLayout from '@/components/fortune-page-layout'
 
 const ZODIAC_SIGNS = [
   { id: 'aries', emoji: '♈', en: 'Aries', tr: 'Koç' },
@@ -96,110 +97,130 @@ export default function HoroscopePage() {
 
   const selectedSignData = ZODIAC_SIGNS.find(s => s.id === selectedSign)
 
-  return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
-        >
-          <div className="flex justify-center mb-4">
-            <Star className="w-16 h-16 text-gold-500" />
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Günlük Burç Yorumu' : 'Daily Horoscope'}
-          </h1>
-          <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Burcunuzu seçin ve bugünün mesajını alın' : 'Select your sign and receive today\'s message'}
-          </p>
-          <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />
-            3 {language === 'tr' ? 'CFC' : 'CFC'}
-          </p>
-        </motion.div>
+  const resetForm = () => {
+    setResponse('')
+    setSelectedSign('')
+  }
 
-        {!response && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-mystical-card border border-mystical rounded-xl p-8"
-          >
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+  return (
+    <FortunePageLayout
+      title="Günlük Burç Yorumu"
+      titleEn="Daily Horoscope"
+      subtitle="Burcunuzu seçin ve bugünün mesajını alın"
+      subtitleEn="Select your sign and receive today's message"
+      icon={Star}
+      cost={3}
+    >
+      {!response ? (
+        <div className="space-y-5">
+          {/* Zodiac Sign Selection */}
+          <div>
+            <label className="block text-deep-purple-200 mb-3 text-sm font-medium">
+              {language === 'tr' ? 'Burcunuzu Seçin' : 'Select Your Sign'}
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {ZODIAC_SIGNS.map((sign) => (
                 <button
                   key={sign.id}
                   onClick={() => setSelectedSign(sign.id)}
-                  className={`p-4 rounded-lg border transition-all text-center ${
+                  className={`p-2 sm:p-3 rounded-xl transition-all text-center ${
                     selectedSign === sign.id
-                      ? 'bg-gold-500/20 border-gold-500 text-gold-500'
-                      : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-200 hover:border-gold-500/50'
+                      ? 'bg-gold-500 text-deep-purple-950'
+                      : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-200 hover:border-gold-500/50'
                   }`}
                 >
-                  <span className="text-2xl block mb-1">{sign.emoji}</span>
-                  <span className="text-sm">{language === 'tr' ? sign.tr : sign.en}</span>
+                  <span className="text-xl sm:text-2xl block mb-0.5">{sign.emoji}</span>
+                  <span className="text-[10px] sm:text-xs">{language === 'tr' ? sign.tr : sign.en}</span>
                 </button>
               ))}
             </div>
+          </div>
 
-            {error && (
-              <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-4">
-                {error}
-              </div>
-            )}
-
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading || !selectedSign}
-              className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          {/* Error */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
             >
-              {isLoading ? (
-                <LoadingSpinner />
-              ) : (
-                <>
-                  <Star className="w-5 h-5" />
-                  {language === 'tr' ? 'Burcumu Göster' : 'Show My Horoscope'}
-                </>
-              )}
-            </button>
-          </motion.div>
-        )}
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
 
-        {response && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-mystical-card border border-gold-500/30 rounded-xl p-8 mystical-shadow"
+          {/* Today's Date */}
+          {formattedDate && (
+            <div className="text-center text-deep-purple-300 text-sm">
+              📅 {formattedDate}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || !selectedSign}
+            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-4xl">{selectedSignData?.emoji}</span>
-              <div>
-                <h2 className="font-serif text-2xl text-gold-500">
+            {isLoading ? (
+              <LoadingSpinner message={language === 'tr' ? 'Burç yorumunuz hazırlanıyor...' : 'Preparing your horoscope...'} />
+            ) : (
+              <>
+                <Star className="w-5 h-5" />
+                {language === 'tr' ? 'Burcumu Göster' : 'Show My Horoscope'}
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        /* Fortune Result */
+        <div className="space-y-5">
+          {/* Header with Sign */}
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gold-500/20 border border-gold-500/50 flex items-center justify-center flex-shrink-0">
+              <span className="text-3xl sm:text-4xl">{selectedSignData?.emoji}</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 text-gold-500">
+                <Sparkles className="w-5 h-5" />
+                <h2 className="font-serif text-xl sm:text-2xl">
                   {language === 'tr' ? selectedSignData?.tr : selectedSignData?.en}
                 </h2>
-                <p className="text-deep-purple-300 text-sm">
-                  {formattedDate}
-                </p>
               </div>
+              <p className="text-deep-purple-300 text-sm mt-1">
+                {formattedDate}
+              </p>
             </div>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p>
-            </div>
-            
+          </div>
+          
+          {/* Fortune Content */}
+          <div className="bg-deep-purple-900/30 rounded-xl p-4 sm:p-5 border border-deep-purple-700/30">
+            <p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+              {response}
+            </p>
+          </div>
+          
+          {/* Text to Speech */}
+          <TextToSpeech text={response} />
+          
+          {/* Share Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <ShareToSocial fortuneType="horoscope" content={response} />
             <SocialShare 
               title={language === 'tr' ? `Günlük ${selectedSignData?.tr} Burcu` : `Daily ${selectedSignData?.en} Horoscope`}
               text={response}
             />
-
-            <button
-              onClick={() => { setResponse(''); setSelectedSign(''); }}
-              className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all"
-            >
-              {language === 'tr' ? 'Yeni Burç Bak' : 'Get Another Horoscope'}
-            </button>
-          </motion.div>
-        )}
-      </div>
-    </div>
+          </div>
+          
+          {/* New Fortune Button */}
+          <button
+            onClick={resetForm}
+            className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {language === 'tr' ? 'Yeni Burç Bak' : 'Get Another Horoscope'}
+          </button>
+        </div>
+      )}
+    </FortunePageLayout>
   )
 }
