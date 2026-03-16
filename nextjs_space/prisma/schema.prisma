@@ -897,22 +897,47 @@ model StreamModerator {
   @@map("stream_moderators")
 }
 
-// Fortune requests in video streams (sorted by gift amount)
+// Fortune request types (admin configurable)
+model FortuneRequestType {
+  id          String   @id @default(cuid())
+  name        String   // Turkish name
+  nameEn      String   // English name
+  icon        String   @default("☕") // Emoji icon
+  jetonCost   Int      // Required jetons
+  description String?  // Description
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  fortuneRequests StreamFortuneRequest[]
+  
+  @@map("fortune_request_types")
+}
+
+// Fortune requests in video streams (sorted by jeton amount)
 model StreamFortuneRequest {
   id               String    @id @default(cuid())
   streamId         String
   userId           String
+  typeId           String?   // Fortune request type
   nickname         String?   // Optional nickname to show instead of real name
   isHidden         Boolean   @default(false) // Whether user wants to be hidden
-  totalGiftAmount  Int       @default(0) // Total gifts sent (determines priority)
-  status           String    @default("pending") // pending, selected, completed, rejected
+  question         String?   @db.Text // User's custom question
+  jetonAmount      Int       @default(0) // Jetons spent for this request
+  status           String    @default("pending") // pending, selected, completed, refunded
+  refundedAt       DateTime? // When tokens were refunded (if applicable)
   createdAt        DateTime  @default(now())
   selectedAt       DateTime?
+  completedAt      DateTime?
+  
+  type             FortuneRequestType? @relation(fields: [typeId], references: [id])
   
   @@unique([streamId, userId])
   @@index([streamId])
   @@index([userId])
-  @@index([totalGiftAmount])
+  @@index([jetonAmount])
+  @@index([status])
   @@map("stream_fortune_requests")
 }
 

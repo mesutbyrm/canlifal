@@ -152,7 +152,33 @@ export default function BroadcastPage() {
   // Moderators (max 10)
   const [moderators, setModerators] = useState<{id: string; userId: string; user: {name: string; image: string | null}}[]>([])
   // Fortune requesters
-  const [fortuneRequesters, setFortuneRequesters] = useState<{id: string; userId: string; nickname: string | null; totalGiftAmount: number; user: {name: string; image: string | null}}[]>([])
+  const [fortuneRequesters, setFortuneRequesters] = useState<{
+    id: string
+    userId: string
+    typeId: string | null
+    typeName: string
+    typeNameEn: string
+    typeIcon: string
+    nickname: string | null
+    isHidden: boolean
+    question: string | null
+    jetonAmount: number
+    createdAt: string
+    user: {name: string; image: string | null}
+  }[]>([])
+  // Selected fortune request popup
+  const [selectedFortuneRequest, setSelectedFortuneRequest] = useState<{
+    id: string
+    userId: string
+    typeName: string
+    typeNameEn: string
+    typeIcon: string
+    nickname: string | null
+    isHidden: boolean
+    question: string | null
+    jetonAmount: number
+    user: {name: string; image: string | null}
+  } | null>(null)
   // Muted viewers
   const [mutedViewers, setMutedViewers] = useState<Set<string>>(new Set())
 
@@ -1081,7 +1107,7 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
-  // Fetch fortune requesters (sorted by gift amount)
+  // Fetch fortune requesters (sorted by jeton amount)
   const fetchFortuneRequesters = async () => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/fortune-requests`)
@@ -1089,7 +1115,12 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
-  // Select fortune requester (removes from list)
+  // Open fortune request popup (show details)
+  const handleOpenFortuneRequest = (request: typeof fortuneRequesters[0]) => {
+    setSelectedFortuneRequest(request)
+  }
+
+  // Select and complete fortune requester
   const handleSelectFortuneRequester = async (requestId: string) => {
     try {
       await fetch(`/api/video-streams/${streamId}/fortune-requests`, {
@@ -1097,7 +1128,56 @@ export default function BroadcastPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, action: 'select' })
       })
+      setSelectedFortuneRequest(null)
       fetchFortuneRequesters()
+    } catch (e) {}
+  }
+
+  // Complete fortune (after reading)
+  const handleCompleteFortuneRequest = async (requestId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/fortune-requests`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action: 'complete' })
+      })
+      setSelectedFortuneRequest(null)
+      fetchFortuneRequesters()
+      addToast('success', language === 'tr' ? 'Fal tamamlandı!' : 'Fortune completed!')
+    } catch (e) {}
+  }
+
+  // Refund fortune request
+  const handleRefundFortuneRequest = async (requestId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/fortune-requests`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action: 'refund' })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        addToast('info', language === 'tr' ? `${data.amount} jeton iade edildi` : `${data.amount} jetons refunded`)
+      }
+      setSelectedFortuneRequest(null)
+      fetchFortuneRequesters()
+    } catch (e) {}
+  }
+
+  // Refund all pending requests (when ending stream)
+  const handleRefundAllPending = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/fortune-requests?refundAll=true`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.refundedCount > 0) {
+          addToast('info', language === 'tr' 
+            ? `${data.refundedCount} kişiye toplam ${data.totalRefunded} jeton iade edildi` 
+            : `Refunded ${data.totalRefunded} jetons to ${data.refundedCount} users`)
+        }
+      }
     } catch (e) {}
   }
 
@@ -1172,7 +1252,9 @@ export default function BroadcastPage() {
     }).catch(() => {})
   }
 
-  const handleEndStream = () => {
+  const handleEndStream = async () => {
+    // Refund all pending fortune requests before ending
+    await handleRefundAllPending()
     cleanup()
     router.push(`/${language}`)
   }
@@ -1909,42 +1991,47 @@ export default function BroadcastPage() {
               </div>
             </div>
             
-            {/* Fortune Requesters Section (sorted by gift amount) */}
+            {/* Fortune Requesters Section (sorted by jeton amount) */}
             <div className="mb-4">
               <span className="text-white/80 text-sm flex items-center gap-1.5 mb-2">
                 <Crown className="w-4 h-4 text-yellow-400" />
                 {language === 'tr' ? 'Fal İsteyenler' : 'Fortune Requesters'} ({fortuneRequesters.length})
               </span>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
                 {fortuneRequesters.map((req, index) => (
                   <motion.div 
                     key={req.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-xl"
+                    className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-xl cursor-pointer hover:bg-white/10"
+                    onClick={() => handleOpenFortuneRequest(req)}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-400 text-xs font-bold">#{index + 1}</span>
-                      {req.user.image ? (
+                      <span className="text-lg">{req.typeIcon}</span>
+                      {!req.isHidden && req.user.image ? (
                         <Image src={req.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{(req.nickname || req.user.name)[0]}</span>
+                          <span className="text-white text-xs font-bold">{req.isHidden ? '?' : (req.nickname || req.user.name)[0]}</span>
                         </div>
                       )}
                       <div>
-                        <p className="text-white text-xs font-medium">{req.nickname || req.user.name}</p>
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-400 text-[10px]">🎁 {req.totalGiftAmount}</span>
+                        <p className="text-white text-xs font-medium">
+                          {req.isHidden ? (language === 'tr' ? 'Gizli Kullanıcı' : 'Hidden User') : (req.nickname || req.user.name)}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-400 text-[10px] font-bold">{req.jetonAmount} jeton</span>
+                          <span className="text-white/50 text-[10px]">{language === 'tr' ? req.typeName : req.typeNameEn}</span>
                         </div>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleSelectFortuneRequester(req.id)}
-                      className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full"
-                    >
-                      {language === 'tr' ? 'Seç' : 'Select'}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {req.question && (
+                        <span className="text-blue-400 text-lg">💬</span>
+                      )}
+                      <span className="text-white/50 text-lg">👁</span>
+                    </div>
                   </motion.div>
                 ))}
                 {fortuneRequesters.length === 0 && (
@@ -2012,6 +2099,113 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
+      {/* Fortune Request Detail Popup */}
+      <AnimatePresence>
+        {selectedFortuneRequest && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedFortuneRequest(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-amber-900/95 to-amber-950/95 backdrop-blur-xl rounded-3xl p-5 w-full max-w-sm border border-amber-500/30"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl">{selectedFortuneRequest.typeIcon}</span>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">
+                      {language === 'tr' ? selectedFortuneRequest.typeName : selectedFortuneRequest.typeNameEn}
+                    </h2>
+                    <p className="text-amber-400 font-bold">
+                      {selectedFortuneRequest.jetonAmount} jeton
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedFortuneRequest(null)}>
+                  <X className="w-6 h-6 text-white/70" />
+                </button>
+              </div>
+              
+              {/* User Info */}
+              <div className="bg-white/10 rounded-xl p-3 mb-4 flex items-center gap-3">
+                {!selectedFortuneRequest.isHidden && selectedFortuneRequest.user.image ? (
+                  <Image src={selectedFortuneRequest.user.image} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white text-xl font-bold">
+                      {selectedFortuneRequest.isHidden ? '?' : (selectedFortuneRequest.nickname || selectedFortuneRequest.user.name)[0]}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <p className="text-white font-medium">
+                    {selectedFortuneRequest.isHidden 
+                      ? (language === 'tr' ? 'Gizli Kullanıcı' : 'Hidden User')
+                      : (selectedFortuneRequest.nickname || selectedFortuneRequest.user.name)}
+                  </p>
+                  {selectedFortuneRequest.isHidden && (
+                    <p className="text-white/50 text-xs">
+                      {language === 'tr' ? 'Gerçek isim gizlenmiş' : 'Real name is hidden'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Question */}
+              {selectedFortuneRequest.question && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-4">
+                  <p className="text-blue-400 text-sm font-medium mb-2 flex items-center gap-2">
+                    <span>💬</span>
+                    {language === 'tr' ? 'Soru:' : 'Question:'}
+                  </p>
+                  <p className="text-white">{selectedFortuneRequest.question}</p>
+                </div>
+              )}
+              
+              {!selectedFortuneRequest.question && (
+                <div className="bg-white/5 rounded-xl p-4 mb-4 text-center">
+                  <p className="text-white/50 text-sm">
+                    {language === 'tr' ? 'Soru belirtilmemiş' : 'No specific question'}
+                  </p>
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleCompleteFortuneRequest(selectedFortuneRequest.id)}
+                  className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                >
+                  <span>✓</span>
+                  {language === 'tr' ? 'Fala Baktım - Tamamla' : 'Fortune Read - Complete'}
+                </button>
+                
+                <button
+                  onClick={() => handleRefundFortuneRequest(selectedFortuneRequest.id)}
+                  className="w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-white/10 text-white"
+                >
+                  <span>↩</span>
+                  {language === 'tr' ? 'İade Et (Bakamıyorum)' : 'Refund (Cannot Read)'}
+                </button>
+              </div>
+              
+              <p className="text-white/40 text-xs text-center mt-3">
+                {language === 'tr' 
+                  ? 'Tamamla butonu jetonu size aktarır. İade butonu kullanıcıya geri verir.' 
+                  : 'Complete button transfers jetons to you. Refund returns them to user.'}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* End Modal */}
       <AnimatePresence>
         {showEndConfirm && (
@@ -2025,6 +2219,13 @@ export default function BroadcastPage() {
                   <Coins className="w-4 h-4" />
                   <span className="font-bold">+{totalGiftJetons}</span>
                 </div>
+              )}
+              {fortuneRequesters.length > 0 && (
+                <p className="text-amber-400 text-xs mb-3">
+                  {language === 'tr' 
+                    ? `${fortuneRequesters.length} bekleyen fal isteği iade edilecek` 
+                    : `${fortuneRequesters.length} pending fortune requests will be refunded`}
+                </p>
               )}
               <div className="flex gap-3">
                 <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-white/10 text-white py-2.5 rounded-lg">{language === 'tr' ? 'Devam' : 'Continue'}</button>

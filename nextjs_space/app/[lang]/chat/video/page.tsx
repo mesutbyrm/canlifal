@@ -113,7 +113,7 @@ export default function VideoStreamPage() {
   const [streams, setStreams] = useState<VideoStream[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(true) // Start muted for browser autoplay policy
   const [showGifts, setShowGifts] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -152,6 +152,12 @@ export default function VideoStreamPage() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [broadcasterFollowers, setBroadcasterFollowers] = useState(0)
   const [requestingFortune, setRequestingFortune] = useState(false)
+  // Fortune request popup
+  const [showFortunePopup, setShowFortunePopup] = useState(false)
+  const [fortuneTypes, setFortuneTypes] = useState<{id: string; name: string; nameEn: string; icon: string; jetonCost: number; description?: string}[]>([])
+  const [selectedFortuneType, setSelectedFortuneType] = useState<string | null>(null)
+  const [fortuneQuestion, setFortuneQuestion] = useState('')
+  const [hasPendingFortune, setHasPendingFortune] = useState(false)
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -187,10 +193,19 @@ export default function VideoStreamPage() {
 
   const currentStream = streams[currentIndex]
 
+  // Fetch fortune request types
+  const fetchFortuneTypes = async () => {
+    try {
+      const res = await fetch('/api/fortune-request-types')
+      if (res.ok) setFortuneTypes(await res.json())
+    } catch (e) {}
+  }
+
   useEffect(() => {
     isUnmountedRef.current = false
     fetchStreams()
     fetchGiftTypes()
+    fetchFortuneTypes()
     
     if (session?.user) {
       fetchCredits()
@@ -500,10 +515,34 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
-  // Handle fortune request
-  const handleFortuneRequest = async () => {
+  // Open fortune request popup
+  const handleFortuneRequest = () => {
     if (!currentStream || !session?.user) {
       alert(language === 'tr' ? 'Fal istemek için giriş yapmalısınız!' : 'Please login to request fortune!')
+      return
+    }
+    
+    if (hasPendingFortune) {
+      alert(language === 'tr' ? 'Zaten bekleyen bir fal isteğiniz var!' : 'You already have a pending fortune request!')
+      return
+    }
+    
+    setSelectedFortuneType(null)
+    setFortuneQuestion('')
+    setShowFortunePopup(true)
+  }
+  
+  // Submit fortune request
+  const submitFortuneRequest = async () => {
+    if (!currentStream || !session?.user || !selectedFortuneType) return
+    
+    const selectedType = fortuneTypes.find(t => t.id === selectedFortuneType)
+    if (!selectedType) return
+    
+    if (userJetons < selectedType.jetonCost) {
+      alert(language === 'tr' 
+        ? `Yetersiz jeton! ${selectedType.jetonCost} jeton gerekli, mevcut: ${userJetons}` 
+        : `Insufficient jetons! ${selectedType.jetonCost} required, available: ${userJetons}`)
       return
     }
     
@@ -513,16 +552,22 @@ export default function VideoStreamPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          typeId: selectedFortuneType,
           nickname: viewerSettings.nickname || null,
-          isHidden: viewerSettings.isHidden
+          isHidden: viewerSettings.isHidden,
+          question: fortuneQuestion || null
         })
       })
       
       if (res.ok) {
-        alert(language === 'tr' ? 'Fal talebiniz gönderildi! ☕' : 'Fortune request sent! ☕')
+        const data = await res.json()
+        setUserJetons(data.newBalance)
+        setHasPendingFortune(true)
+        setShowFortunePopup(false)
+        alert(language === 'tr' ? 'Fal talebiniz gönderildi! ☕ Sıranız geldiğinde falcı size bakacak.' : 'Fortune request sent! ☕ The fortune teller will attend to you when your turn comes.')
       } else {
         const data = await res.json()
-        alert(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+        alert(data.error || data.errorEn || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
       }
     } catch (e) {
       console.error('Error requesting fortune:', e)
@@ -1780,6 +1825,131 @@ export default function VideoStreamPage() {
                   ))
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fortune Request Popup */}
+      <AnimatePresence>
+        {showFortunePopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowFortunePopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-amber-900/90 to-amber-950/90 backdrop-blur-xl rounded-3xl p-5 w-full max-w-sm border border-amber-500/20 max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">☕</span>
+                  <h2 className="text-lg font-bold text-white">
+                    {language === 'tr' ? 'Fal İste' : 'Request Fortune'}
+                  </h2>
+                </div>
+                <button onClick={() => setShowFortunePopup(false)}>
+                  <X className="w-5 h-5 text-white/70" />
+                </button>
+              </div>
+              
+              {/* Jeton Balance */}
+              <div className="bg-amber-500/20 rounded-xl p-3 mb-4 flex items-center justify-between">
+                <span className="text-amber-200 text-sm">
+                  {language === 'tr' ? 'Mevcut Jeton' : 'Available Jetons'}
+                </span>
+                <span className="text-amber-400 font-bold">{userJetons} <Coins className="w-4 h-4 inline" /></span>
+              </div>
+              
+              {/* Fortune Types */}
+              <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                {fortuneTypes.length === 0 ? (
+                  <p className="text-white/50 text-center py-8 text-sm">
+                    {language === 'tr' ? 'Fal türleri yükleniyor...' : 'Loading fortune types...'}
+                  </p>
+                ) : (
+                  fortuneTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setSelectedFortuneType(type.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                        selectedFortuneType === type.id
+                          ? 'bg-amber-500/30 border-amber-500'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="text-2xl">{type.icon}</span>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-medium">{language === 'tr' ? type.name : type.nameEn}</p>
+                        {type.description && (
+                          <p className="text-white/50 text-xs">{type.description}</p>
+                        )}
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                        userJetons >= type.jetonCost 
+                          ? 'bg-amber-500/30 text-amber-400' 
+                          : 'bg-red-500/30 text-red-400'
+                      }`}>
+                        {type.jetonCost} <Coins className="w-3 h-3 inline" />
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              
+              {/* Question Input */}
+              {selectedFortuneType && (
+                <div className="mb-4">
+                  <label className="text-white/70 text-sm mb-2 block">
+                    {language === 'tr' ? 'Sorunuzu yazın (opsiyonel)' : 'Write your question (optional)'}
+                  </label>
+                  <textarea
+                    value={fortuneQuestion}
+                    onChange={(e) => setFortuneQuestion(e.target.value)}
+                    placeholder={language === 'tr' ? 'Sorunuzu buraya yazın...' : 'Write your question here...'}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500 resize-none"
+                  />
+                </div>
+              )}
+              
+              {/* Submit Button */}
+              <button
+                onClick={submitFortuneRequest}
+                disabled={!selectedFortuneType || requestingFortune || (!!selectedFortuneType && userJetons < (fortuneTypes.find(t => t.id === selectedFortuneType)?.jetonCost || 0))}
+                className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                  selectedFortuneType && userJetons >= (fortuneTypes.find(t => t.id === selectedFortuneType)?.jetonCost || 0)
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                    : 'bg-white/10 text-white/40 cursor-not-allowed'
+                }`}
+              >
+                {requestingFortune ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-lg">☕</span>
+                    {language === 'tr' ? 'Fal İste' : 'Request Fortune'}
+                    {selectedFortuneType && (
+                      <span className="ml-1">
+                        ({fortuneTypes.find(t => t.id === selectedFortuneType)?.jetonCost} jeton)
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+              
+              {/* Info text */}
+              <p className="text-white/40 text-xs text-center mt-3">
+                {language === 'tr' 
+                  ? 'Falınıza bakılmazsa jetonunuz iade edilir.' 
+                  : 'Your jetons will be refunded if your fortune is not read.'}
+              </p>
             </motion.div>
           </motion.div>
         )}

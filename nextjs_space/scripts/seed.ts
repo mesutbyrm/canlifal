@@ -584,6 +584,35 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Mini games seeded')
 
+  // Fortune Request Types for Live Streams
+  const defaultFortuneTypes = [
+    { name: 'Tek Soru', nameEn: 'Single Question', icon: '❓', jetonCost: 5, description: 'Tek bir soruya yanıt', sortOrder: 1 },
+    { name: 'Evet/Hayır', nameEn: 'Yes/No', icon: '✅', jetonCost: 10, description: 'Evet veya hayır cevaplı soru', sortOrder: 2 },
+    { name: 'Detaylı Fal', nameEn: 'Detailed Reading', icon: '☕', jetonCost: 50, description: 'Detaylı kahve falı yorumu', sortOrder: 3 },
+    { name: 'Genel Bakış', nameEn: 'General Overview', icon: '🔮', jetonCost: 100, description: 'Genel hayat ve gelecek bakışı', sortOrder: 4 },
+    { name: 'Aşk Falı', nameEn: 'Love Reading', icon: '💕', jetonCost: 75, description: 'Aşk ve ilişkiler hakkında', sortOrder: 5 },
+    { name: 'Premium VIP', nameEn: 'Premium VIP', icon: '👑', jetonCost: 500, description: 'Özel ve kapsamlı fal bakımı', sortOrder: 6 },
+  ]
+  for (const type of defaultFortuneTypes) {
+    await prisma.fortuneRequestType.upsert({
+      where: { id: type.name.toLowerCase().replace(/\s/g, '-').replace(/\//g, '-') },
+      update: { 
+        name: type.name,
+        nameEn: type.nameEn,
+        icon: type.icon,
+        jetonCost: type.jetonCost,
+        description: type.description,
+        sortOrder: type.sortOrder
+      },
+      create: {
+        id: type.name.toLowerCase().replace(/\s/g, '-').replace(/\//g, '-'),
+        ...type,
+        isActive: true
+      },
+    })
+  }
+  console.log('Fortune request types seeded')
+
   console.log('Seed completed successfully!')
 }
 
