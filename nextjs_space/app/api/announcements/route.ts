@@ -62,6 +62,21 @@ function detectSection(path: string | null): string | null {
   return null
 }
 
+// Determine user category for announcement settings
+function getUserCategory(user: { role: string; membership: string | null }): string | null {
+  // Check role first (staff)
+  if (user.role === 'admin') return 'admin'
+  if (user.role === 'moderator') return 'moderator'
+  if (user.role === 'site_manager') return 'site_manager'
+  
+  // Check membership
+  if (user.membership === 'diamond') return 'diamond'
+  if (user.membership === 'gold') return 'gold'
+  if (user.membership === 'premium') return 'premium'
+  
+  return null
+}
+
 // POST - create login or section entry announcement
 export async function POST(request: NextRequest) {
   try {
@@ -108,18 +123,23 @@ export async function POST(request: NextRequest) {
     const detectedSection = section || detectSection(path)
     const sectionInfo = detectedSection ? SECTION_NAMES[detectedSection] : null
     
-    // Check if this section is enabled in admin settings
-    if (detectedSection) {
-      const sectionSettings = await prisma.platformSettings.findUnique({
-        where: { key: 'announcement_sections' }
+    // Determine user's category for checking settings
+    const userCategory = getUserCategory({ role: user.role, membership: user.membership })
+    
+    // Check if this section is enabled for this user category
+    if (detectedSection && userCategory) {
+      const categorySettings = await prisma.platformSettings.findUnique({
+        where: { key: 'announcement_category_sections' }
       })
       
-      if (sectionSettings) {
+      if (categorySettings) {
         try {
-          const sections = JSON.parse(sectionSettings.value)
-          // If the section is explicitly disabled, don't announce
-          if (sections[detectedSection] === false) {
-            return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled' })
+          const settings = JSON.parse(categorySettings.value)
+          const categoryConfig = settings[userCategory]
+          
+          // If category settings exist and section is explicitly disabled, don't announce
+          if (categoryConfig && categoryConfig[detectedSection] === false) {
+            return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled_for_category' })
           }
         } catch {
           // If parsing fails, continue with announcement

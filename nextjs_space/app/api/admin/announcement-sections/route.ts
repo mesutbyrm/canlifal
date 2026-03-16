@@ -5,6 +5,16 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
+// Default settings for each category
+const DEFAULT_SETTINGS: Record<string, Record<string, boolean>> = {
+  admin: { home: true, chat: true, fortunes: true, games: true, social: true, gifts: true, blog: true, 'live-tellers': true, memberships: true, profile: true, dashboard: true },
+  moderator: { home: true, chat: true, fortunes: true, games: true, social: true, gifts: true, blog: true, 'live-tellers': true, memberships: true, profile: true, dashboard: true },
+  site_manager: { home: true, chat: true, fortunes: true, games: true, social: true, gifts: true, blog: true, 'live-tellers': true, memberships: true, profile: true, dashboard: true },
+  diamond: { home: true, chat: false, fortunes: false, games: false, social: false, gifts: false, blog: false, 'live-tellers': false, memberships: false, profile: false, dashboard: false },
+  gold: { home: true, chat: false, fortunes: false, games: false, social: false, gifts: false, blog: false, 'live-tellers': false, memberships: false, profile: false, dashboard: false },
+  premium: { home: true, chat: false, fortunes: false, games: false, social: false, gifts: false, blog: false, 'live-tellers': false, memberships: false, profile: false, dashboard: false },
+}
+
 // GET - fetch current announcement section settings
 export async function GET() {
   try {
@@ -23,20 +33,20 @@ export async function GET() {
     }
 
     const setting = await prisma.platformSettings.findUnique({
-      where: { key: 'announcement_sections' }
+      where: { key: 'announcement_category_sections' }
     })
 
     if (setting) {
       try {
-        const sections = JSON.parse(setting.value)
-        return NextResponse.json({ sections })
+        const categorySettings = JSON.parse(setting.value)
+        return NextResponse.json({ categorySettings })
       } catch {
-        return NextResponse.json({ sections: {} })
+        return NextResponse.json({ categorySettings: DEFAULT_SETTINGS })
       }
     }
 
-    // Default: all sections enabled
-    return NextResponse.json({ sections: {} })
+    // Return default settings
+    return NextResponse.json({ categorySettings: DEFAULT_SETTINGS })
   } catch (error) {
     console.error('Error fetching announcement sections:', error)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
@@ -61,22 +71,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { sections } = body
+    const { categorySettings } = body
 
-    if (!sections || typeof sections !== 'object') {
-      return NextResponse.json({ error: 'Invalid sections data' }, { status: 400 })
+    if (!categorySettings || typeof categorySettings !== 'object') {
+      return NextResponse.json({ error: 'Invalid categorySettings data' }, { status: 400 })
     }
 
     await prisma.platformSettings.upsert({
-      where: { key: 'announcement_sections' },
+      where: { key: 'announcement_category_sections' },
       update: {
-        value: JSON.stringify(sections),
-        description: 'Announcement section visibility settings'
+        value: JSON.stringify(categorySettings),
+        description: 'Per-category announcement section visibility settings'
       },
       create: {
-        key: 'announcement_sections',
-        value: JSON.stringify(sections),
-        description: 'Announcement section visibility settings'
+        key: 'announcement_category_sections',
+        value: JSON.stringify(categorySettings),
+        description: 'Per-category announcement section visibility settings'
       }
     })
 
