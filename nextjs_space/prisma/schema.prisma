@@ -1542,3 +1542,17 @@ model UserGameProfile {
   @@index([totalJetons])
   @@map("user_game_profiles")
 }
+
+// Admin-uploaded images for broadcasters to use as screen capture
+model BroadcastImage {
+  id          String   @id @default(cuid())
+  name        String   // Display name for the image
+  imageUrl    String   // URL to the image
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("broadcast_images")
+}

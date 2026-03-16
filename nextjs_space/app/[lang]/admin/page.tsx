@@ -9,7 +9,8 @@ import {
   Crown, Shield, Mic, Ban, UserMinus, VolumeX, Volume2, MoreVertical,
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
-  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare
+  DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
+  Image as ImageIcon
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -104,6 +105,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
   { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
   { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
+  { href: `/${lang}/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
   { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
   { href: `/${lang}/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
   { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },

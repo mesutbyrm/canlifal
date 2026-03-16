@@ -78,6 +78,12 @@ interface FloatingHeart {
   side?: 'left' | 'right'
 }
 
+interface AdminBroadcastImage {
+  id: string
+  name: string
+  imageUrl: string
+}
+
 interface ToastMessage {
   id: string
   type: 'success' | 'error' | 'info'
@@ -147,6 +153,7 @@ export default function BroadcastPage() {
   const [isImageMode, setIsImageMode] = useState(false)
   const [broadcastImage, setBroadcastImage] = useState<string | null>(null)
   const [showImageUpload, setShowImageUpload] = useState(false)
+  const [adminBroadcastImages, setAdminBroadcastImages] = useState<AdminBroadcastImage[]>([])
   // Panel mode
   const [showPanel, setShowPanel] = useState(false)
   // Moderators (max 10)
@@ -279,6 +286,24 @@ export default function BroadcastPage() {
       fetchLiveBroadcasters()
     }
   }, [showLiveBroadcasters])
+
+  // Fetch admin broadcast images when image selection modal opens
+  useEffect(() => {
+    if (showImageUpload) {
+      const fetchAdminImages = async () => {
+        try {
+          const res = await fetch('/api/broadcast-images')
+          if (res.ok) {
+            const data = await res.json()
+            setAdminBroadcastImages(data)
+          }
+        } catch (e) {
+          console.error('Error fetching broadcast images:', e)
+        }
+      }
+      fetchAdminImages()
+    }
+  }, [showImageUpload])
 
 
 
@@ -1181,43 +1206,42 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
-  // Toggle image mode
+  // Toggle image mode - show selection modal or toggle off
   const handleToggleImageMode = () => {
-    if (!isImageMode && !broadcastImage) {
+    if (!isImageMode) {
+      // Opening image selection modal
       setShowImageUpload(true)
     } else {
-      setIsImageMode(!isImageMode)
+      // Turn off image mode
+      setIsImageMode(false)
+      // Update database
+      fetch(`/api/video-streams/${streamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isImageMode: false })
+      }).catch(() => {})
     }
   }
 
-  // Handle image upload for broadcast
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // Handle selecting an admin-uploaded image
+  const handleSelectAdminImage = async (image: AdminBroadcastImage) => {
+    setBroadcastImage(image.imageUrl)
+    setIsImageMode(true)
+    setShowImageUpload(false)
     
-    // Create a data URL for preview and save to database
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      const imageData = reader.result as string
-      setBroadcastImage(imageData)
-      setIsImageMode(true)
-      setShowImageUpload(false)
-      
-      // Save to database
-      try {
-        await fetch(`/api/video-streams/${streamId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            broadcastImage: imageData,
-            isImageMode: true
-          })
+    // Save to database
+    try {
+      await fetch(`/api/video-streams/${streamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          broadcastImage: image.imageUrl,
+          isImageMode: true
         })
-      } catch (error) {
-        console.error('Error saving broadcast image:', error)
-      }
+      })
+    } catch (error) {
+      console.error('Error saving broadcast image:', error)
     }
-    reader.readAsDataURL(file)
   }
 
   const cleanup = () => {
@@ -2107,43 +2131,83 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* Image Upload Modal */}
+      {/* Image Selection Modal - Admin uploaded images only */}
       <AnimatePresence>
         {showImageUpload && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageUpload(false)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+              onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-xl rounded-3xl p-5 w-full max-w-md text-center border border-white/10 max-h-[80vh] flex flex-col"
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4">
-                <ImageIcon className="w-8 h-8 text-white" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-3">
+                <ImageIcon className="w-7 h-7 text-white" />
               </div>
               
-              <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Resim ile Yayın' : 'Broadcast with Image'}
+              <h2 className="text-lg font-bold text-white mb-1">
+                {language === 'tr' ? 'Ekran Görüntüsü Seç' : 'Select Screen Image'}
               </h2>
               
-              <p className="text-white/70 text-sm mb-6">
+              <p className="text-white/60 text-xs mb-4">
                 {language === 'tr' 
                   ? 'Kamera yerine gösterilecek bir resim seçin'
                   : 'Select an image to show instead of camera'}
               </p>
               
-              <label className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer mb-3">
-                <ImageIcon className="w-5 h-5" />
-                {language === 'tr' ? 'Resim Seç' : 'Choose Image'}
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
+              {/* Image Grid */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {adminBroadcastImages.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <ImageIcon className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                    <p className="text-white/40 text-sm">
+                      {language === 'tr' ? 'Henüz resim eklenmemiş' : 'No images available'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {adminBroadcastImages.map((image) => (
+                      <motion.button
+                        key={image.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSelectAdminImage(image)}
+                        className={`relative aspect-video rounded-xl overflow-hidden border-2 transition ${
+                          broadcastImage === image.imageUrl 
+                            ? 'border-green-500 ring-2 ring-green-500/50' 
+                            : 'border-white/10 hover:border-purple-500/50'
+                        }`}
+                      >
+                        <Image
+                          src={image.imageUrl}
+                          alt={image.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                          <p className="text-white text-xs font-medium truncate">{image.name}</p>
+                        </div>
+                        {broadcastImage === image.imageUrl && (
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               <button
                 onClick={() => setShowImageUpload(false)}
-                className="w-full bg-white/10 text-white py-3 rounded-xl font-semibold"
+                className="w-full bg-white/10 text-white py-2.5 rounded-xl font-semibold mt-4 text-sm"
               >
                 {language === 'tr' ? 'İptal' : 'Cancel'}
               </button>
