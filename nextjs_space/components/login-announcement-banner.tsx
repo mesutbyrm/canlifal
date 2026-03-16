@@ -230,11 +230,11 @@ export default function LoginAnnouncementBanner() {
     setIsAnimating(true)
   }, [trigger, isAnimating])
 
-  // Handle animation passes - 2 passes
+  // Handle animation passes - 1 pass only
   useEffect(() => {
     if (!isAnimating || !currentAnnouncement) return
 
-    if (passCount >= 2) {
+    if (passCount >= 1) {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
       animationTimerRef.current = setTimeout(() => {
         queueRef.current = queueRef.current.filter(a => a.id !== currentAnnouncement.id)
@@ -265,7 +265,7 @@ export default function LoginAnnouncementBanner() {
     return () => clearInterval(cleanup)
   }, [])
 
-  if (!currentAnnouncement || passCount >= 2) return null
+  if (!currentAnnouncement || passCount >= 1) return null
 
   const colors = getTeamColors(currentAnnouncement.color)
 

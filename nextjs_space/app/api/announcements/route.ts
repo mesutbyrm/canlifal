@@ -150,18 +150,18 @@ export async function POST(request: NextRequest) {
     // Announcement type: section entry or login
     const announcementType = sectionInfo ? 'section_entry' : 'login'
 
-    // Prevent duplicate announcements within last 24 hours for same section (only once per day)
+    // Prevent duplicate announcements within last 5 minutes for same section
     const recentAnnouncement = await prisma.siteAnnouncement.findFirst({
       where: {
         userId: user.id,
         type: announcementType,
-        createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) },
         ...(sectionInfo ? { message: { contains: sectionInfo.tr } } : {})
       }
     })
 
     if (recentAnnouncement) {
-      return NextResponse.json({ ok: true, announced: false, reason: 'already_announced_today' })
+      return NextResponse.json({ ok: true, announced: false, reason: 'recent' })
     }
 
     const displayName = user.username || user.name || 'Kullanıcı'
