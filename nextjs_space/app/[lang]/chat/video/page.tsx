@@ -790,6 +790,15 @@ export default function VideoStreamPage() {
     )
   }
 
+  // Get user badge based on their membership/role
+  const getUserBadge = (userName: string) => {
+    // This is simplified - in real app you'd get user tier from comment data
+    if (userName.toLowerCase().includes('vip')) return { icon: '💎', color: 'text-cyan-400', bg: 'bg-cyan-500/20' }
+    if (userName.toLowerCase().includes('gold')) return { icon: '⭐', color: 'text-yellow-400', bg: 'bg-yellow-500/20' }
+    if (userName.toLowerCase().includes('efsane')) return { icon: '✨', color: 'text-purple-400', bg: 'bg-purple-500/20' }
+    return null
+  }
+
   return (
     <div 
       className="relative w-full h-full bg-black overflow-hidden" 
@@ -868,18 +877,24 @@ export default function VideoStreamPage() {
               </div>
 
               {/* Comments floating above input - Grid Mode */}
-              <div className="absolute left-3 bottom-24 right-3 max-h-20 overflow-hidden z-20 space-y-0.5">
-                {comments.slice(0, 3).map(c => (
-                  <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2 py-0.5">
-                    <span className="text-white/70 text-[10px] font-medium">{c.user.name}: </span>
-                    <span className="text-white text-[10px]">{c.content}</span>
-                  </motion.div>
-                ))}
+              <div className="absolute left-3 bottom-24 right-20 max-h-32 overflow-hidden z-20 space-y-1">
+                {comments.slice(0, 4).map(c => {
+                  const badge = getUserBadge(c.user.name)
+                  return (
+                    <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-1.5 w-fit max-w-[85%]">
+                      <div className="flex items-center gap-1.5">
+                        {badge && <span className={`text-sm ${badge.color}`}>{badge.icon}</span>}
+                        <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/70'}`}>{c.user.name}:</span>
+                        <span className="text-white text-xs">{c.content}</span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </div>
 
               {/* Bottom input and actions - Grid Mode */}
               <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-                <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
+                <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
                   <input
                     ref={commentInputRef}
                     value={newComment}
@@ -887,22 +902,24 @@ export default function VideoStreamPage() {
                     onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                     onClick={(e) => e.stopPropagation()}
                     placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
-                    className="flex-1 bg-transparent text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none"
+                    className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/50 focus:outline-none"
                   />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
-                    disabled={!newComment.trim()}
-                    className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-semibold rounded-full mr-1 flex items-center gap-1 disabled:opacity-40"
-                  >
-                    <Send className="w-3 h-3" />
-                  </button>
+                  <div className="pr-3 text-white/50">▼</div>
                 </div>
                 
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-                  className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
+                  onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
+                  className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold rounded-full flex-shrink-0"
                 >
-                  <Gift className="w-4 h-4 text-white" />
+                  {language === 'tr' ? 'Fal iste' : 'Fortune'}
+                </button>
+                
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
+                  className="px-3 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium rounded-full flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <span className="text-base">🎁</span>
+                  <span>{language === 'tr' ? 'Hediye' : 'Gift'}</span>
                 </button>
               </div>
             </div>
@@ -918,9 +935,9 @@ export default function VideoStreamPage() {
           {connectionStatus !== 'connected' && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-10">
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 overflow-hidden">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 overflow-hidden border-4 border-pink-400/50">
                   {currentStream?.user?.image ? (
-                    <Image src={currentStream.user.image} alt="" width={80} height={80} className="w-full h-full object-cover" />
+                    <Image src={currentStream.user.image} alt="" width={96} height={96} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl text-white font-bold">{currentStream?.user?.name?.[0]}</span>
                   )}
@@ -943,14 +960,14 @@ export default function VideoStreamPage() {
           {/* Gradients (non-VS mode only) */}
           {!isSplitMode && (
             <>
-              <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-              <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+              <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-black/95 to-transparent pointer-events-none" />
             </>
           )}
 
           {/* Guest countdown badge */}
           {!session?.user && guestCountdown > 0 && !showGuestModal && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -979,23 +996,23 @@ export default function VideoStreamPage() {
                   className="text-center"
                 >
                   <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ repeat: 2, duration: 0.5 }}
-                    className="text-8xl mb-4"
+                    animate={{ scale: [1, 1.3, 1], rotate: [0, 5, -5, 0] }}
+                    transition={{ repeat: 3, duration: 0.4 }}
+                    className="text-8xl mb-4 drop-shadow-2xl"
                   >
                     {centerGift.icon}
                   </motion.div>
-                  <div className="flex items-center justify-center gap-3 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full">
+                  <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-purple-900/90 to-pink-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-pink-500/30">
                     {centerGift.senderImage ? (
-                      <Image src={centerGift.senderImage} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                      <Image src={centerGift.senderImage} alt="" width={44} height={44} className="w-11 h-11 rounded-full object-cover border-2 border-pink-400" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <span className="text-white font-bold">{centerGift.senderName[0]}</span>
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-pink-400">
+                        <span className="text-white font-bold text-lg">{centerGift.senderName[0]}</span>
                       </div>
                     )}
                     <div className="text-left">
                       <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                      <p className="text-yellow-400 text-sm">{centerGift.giftName} {language === 'tr' ? 'gönderdi' : 'sent'}</p>
+                      <p className="text-pink-300 text-sm">{centerGift.giftName} {language === 'tr' ? 'gönderdi' : 'sent'} ✨</p>
                     </div>
                   </div>
                 </motion.div>
@@ -1003,85 +1020,219 @@ export default function VideoStreamPage() {
             )}
           </AnimatePresence>
 
-
-
-          {/* Top bar - Broadcaster Profile (like broadcaster view) */}
-          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-            <div className="flex items-center gap-3">
-              {/* Profile */}
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-2 py-1.5 rounded-full">
-                {currentStream?.user?.image ? (
-                  <Image src={currentStream.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{currentStream?.user?.name?.[0]?.toUpperCase()}</span>
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-white text-xs font-medium">{currentStream?.user?.name}</span>
-                  <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded w-fit">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    <span className="text-white text-[10px] font-bold">LIVE</span>
-                  </div>
-                </div>
+          {/* ============== NEW DESIGN: TOP SECTION ============== */}
+          
+          {/* Broadcaster Profile Card - Top Left - Fancy Design */}
+          <div className="absolute top-3 left-3 z-20" data-no-tap>
+            <div className="relative">
+              {/* Decorative rose border */}
+              <div className="absolute -top-1 -left-1 -right-1 -bottom-1 rounded-2xl border-2 border-pink-500/50 overflow-hidden">
+                <div className="absolute top-0 left-0 text-pink-500 text-xs">🌹</div>
+                <div className="absolute top-0 right-0 text-pink-500 text-xs">🌹</div>
+                <div className="absolute bottom-0 left-1 text-pink-500 text-xs">🌹</div>
+                <div className="absolute bottom-0 right-1 text-pink-500 text-xs">🌹</div>
               </div>
               
-              {/* Stats */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full">
-                  <Users className="w-3.5 h-3.5 text-white" />
-                  <span className="text-white text-xs">{viewerCount}</span>
-                </div>
-                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-full relative">
-                  <div className="relative flex items-center justify-center" style={{ width: heartLevelText ? '28px' : '16px', height: heartLevelText ? '28px' : '16px' }}>
-                    <Heart className={heartLevelText ? "w-7 h-7" : "w-4 h-4"} fill="#fe2c55" stroke="#fe2c55" />
-                    {heartLevelText && (
-                      <span className="absolute inset-0 flex items-center justify-center text-white text-[7px] font-bold drop-shadow-md">
-                        {heartLevelText}
-                      </span>
-                    )}
+              <div className="relative bg-gradient-to-r from-black/80 to-black/60 backdrop-blur-md px-3 py-2 rounded-xl border border-pink-500/30">
+                <div className="flex items-center gap-2.5">
+                  {/* Avatar with gold ring */}
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-2 border-amber-400 p-0.5 bg-gradient-to-br from-amber-400 to-amber-600">
+                      {currentStream?.user?.image ? (
+                        <Image src={currentStream.user.image} alt="" width={48} height={48} className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">{currentStream?.user?.name?.[0]?.toUpperCase()}</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Floating hearts around avatar */}
+                    <motion.div 
+                      animate={{ y: [-2, 2, -2], scale: [1, 1.1, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute -top-1 -right-1 text-pink-500 text-sm"
+                    >💗</motion.div>
+                    <motion.div 
+                      animate={{ y: [2, -2, 2], scale: [1, 1.1, 1] }}
+                      transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                      className="absolute -bottom-0 -left-1 text-pink-500 text-xs"
+                    >💕</motion.div>
                   </div>
-                  <span className="text-white text-xs">{formatCount(likeCount)}</span>
+                  
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white font-bold text-sm">{currentStream?.user?.name}</span>
+                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-white text-[10px] font-bold rounded">VIP</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                      <span>⭐</span>
+                      <span>{formatCount(viewerCount * 100 + 1200)} {language === 'tr' ? 'Takipçi' : 'Followers'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <button onClick={() => router.push(`/${language}`)} className="bg-black/60 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-1">
-              <X className="w-4 h-4" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
-            </button>
           </div>
-
-          {/* Big Gift Scrolling Banner */}
-          <div className="absolute top-[60px] left-2 right-2 z-30 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,215,0,0.3)]">
+          
+          {/* User Stats - Top Right */}
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-2" data-no-tap>
+            {/* Hearts received */}
+            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-pink-500/30">
+              <Heart className="w-4 h-4 text-pink-500" fill="#ec4899" />
+              <span className="text-pink-400 text-xs font-semibold">+{formatCount(likeCount)}</span>
+            </div>
+            
+            {/* Jeton balance with add button */}
+            <div className="flex items-center bg-black/60 backdrop-blur-md rounded-full border border-amber-500/30 overflow-hidden">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5">
+                <span className="text-lg">🪙</span>
+                <span className="text-amber-400 text-xs font-bold">{formatCount(userJetons)}</span>
+              </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); router.push(`/${language}/credits`); }}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 w-7 h-7 flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Gift Animation Banner - Below profile */}
+          <div className="absolute top-[72px] left-2 right-2 z-25">
             <GiftNotificationBanner />
           </div>
 
-          {/* Gifters - Small badges below top bar */}
-          {gifters.length > 0 && (
-            <div className="absolute top-20 left-4 z-20">
-              <div className="flex flex-wrap gap-1 max-w-[200px]">
-                {gifters.slice(0, 3).map((viewer) => (
-                  <motion.div
-                    key={viewer.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full"
-                  >
-                    {viewer.image ? (
-                      <Image src={viewer.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
+          {/* ============== RIGHT SIDEBAR ACTIONS ============== */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-4" data-no-tap>
+            {/* Heart/Like Button with count */}
+            <div className="flex flex-col items-center">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { e.stopPropagation(); handleLike(); }}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30"
+              >
+                <Heart className="w-7 h-7 text-white" fill="white" />
+              </motion.button>
+              <span className="text-white text-xs font-bold mt-1">{formatCount(likeCount)}</span>
+            </div>
+            
+            {/* Gift Button */}
+            <div className="flex flex-col items-center">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30"
+              >
+                <span className="text-2xl">🎁</span>
+              </motion.button>
+              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
+            </div>
+            
+            {/* Fortune Request Button */}
+            <div className="flex flex-col items-center">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30"
+              >
+                <span className="text-2xl">🔮</span>
+              </motion.button>
+              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Fal İste' : 'Fortune'}</span>
+            </div>
+            
+            {/* Sound Toggle */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+              className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+            >
+              {isMuted ? <VolumeX className="w-5 h-5 text-white/70" /> : <Volume2 className="w-5 h-5 text-white" />}
+            </motion.button>
+            
+            {/* Exit Button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); router.push(`/${language}`); }}
+              className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+            >
+              <X className="w-5 h-5 text-white/70" />
+            </motion.button>
+          </div>
+
+          {/* ============== CHAT MESSAGES ============== */}
+          <div className="absolute left-3 bottom-28 right-20 max-h-44 overflow-hidden z-10 space-y-1.5">
+            {comments.slice(0, 6).map(c => {
+              const badge = getUserBadge(c.user.name)
+              return (
+                <motion.div 
+                  key={c.id} 
+                  initial={{ opacity: 0, x: -30 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-2 w-fit max-w-[90%]"
+                >
+                  <div className="flex items-start gap-2">
+                    {badge ? (
+                      <span className={`text-base ${badge.color}`}>{badge.icon}</span>
                     ) : (
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                        <span className="text-white text-[8px] font-bold">{viewer.name[0]}</span>
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-[8px] font-bold">{c.user.name?.[0]}</span>
                       </div>
                     )}
-                    <span className="text-yellow-400 text-[10px]">🎁{viewer.totalGiftAmount}</span>
-                  </motion.div>
-                ))}
-              </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/80'}`}>{c.user.name}: </span>
+                      <span className="text-white text-xs">{c.content}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* ============== BOTTOM ANIMATIONS ============== */}
+          
+          {/* Gold Coins Animation - Bottom Left */}
+          <div className="absolute bottom-24 left-4 z-5 pointer-events-none">
+            <motion.div
+              animate={{ y: [0, -5, 0], rotate: [0, 5, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="relative"
+            >
+              <span className="text-5xl drop-shadow-lg">🪙</span>
+              <motion.span 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }}
+                className="absolute -top-2 -right-2 text-3xl"
+              >🪙</motion.span>
+              <motion.span 
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
+                className="absolute top-4 -left-3 text-2xl"
+              >🪙</motion.span>
+            </motion.div>
+          </div>
+
+          {/* Special Gift Animation - Bottom Right (Coffee example) */}
+          {centerGift && (
+            <div className="absolute bottom-24 right-16 z-15 pointer-events-none">
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                className="bg-gradient-to-br from-amber-900/90 to-orange-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-500/30"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-4xl">☕</span>
+                  <div>
+                    <div className="text-amber-300 text-sm font-bold">KAHVE</div>
+                    <div className="text-white text-xs">{centerGift.senderName}</div>
+                    <div className="text-amber-400 text-xs">{language === 'tr' ? 'Kahve ikramı!' : 'Coffee treat!'}</div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )}
 
-          {/* Floating Hearts Animation - All over screen */}
+          {/* Floating Hearts Animation */}
           <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
             <AnimatePresence>
               {floatingHearts.map(heart => (
@@ -1090,61 +1241,24 @@ export default function VideoStreamPage() {
                   initial={{ opacity: 1, y: 0, scale: 0.5 }} 
                   animate={{ 
                     opacity: 0, 
-                    y: -200, 
-                    scale: 1.2,
-                    x: Math.random() * 40 - 20
+                    y: -250, 
+                    scale: 1.3,
+                    x: Math.random() * 60 - 30
                   }} 
-                  transition={{ duration: 2, ease: 'easeOut' }}
-                  style={{ left: `${heart.x}%`, bottom: '30%' }}
+                  transition={{ duration: 2.5, ease: 'easeOut' }}
+                  style={{ left: `${heart.x}%`, bottom: '25%' }}
                   className="absolute"
                 >
-                  <Heart className="w-8 h-8" fill={heart.color} stroke={heart.color} />
+                  <Heart className="w-9 h-9 drop-shadow-lg" fill={heart.color} stroke={heart.color} />
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
 
-          {/* Mute button - top right corner below exit */}
-          <div className="absolute top-16 right-4 z-20">
-            <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }} className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
-              {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-            </button>
-          </div>
-
-          {/* Comments floating above input */}
-          <div className="absolute left-3 bottom-24 right-3 max-h-32 overflow-hidden z-10 space-y-1">
-            {comments.slice(0, 5).map(c => (
-              <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
-                <span className="text-white/70 text-xs font-medium">{c.user.name}: </span>
-                <span className="text-white text-xs">{c.content}</span>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Bottom input and actions - Layout: [co-broadcast] [input] [gift] [share] */}
-          <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-            {/* Co-broadcast request button - Only for viewers (not the broadcaster) */}
-            {session?.user && currentStream?.user?.id !== session.user.id && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleRequestCoBroadcast(); }}
-                disabled={requestingCoBroadcast || coBroadcastRequested}
-                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  coBroadcastRequested 
-                    ? 'bg-green-500/50' 
-                    : 'bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400'
-                }`}
-                title={language === 'tr' ? 'Ortak Yayın İste' : 'Request Co-Broadcast'}
-              >
-                {requestingCoBroadcast ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : (
-                  <UserPlus className="w-5 h-5 text-white" />
-                )}
-              </button>
-            )}
-            
-            {/* Comment input */}
-            <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden">
+          {/* ============== BOTTOM INPUT BAR ============== */}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+            {/* Message Input */}
+            <div className="flex-1 flex items-center bg-white/10 backdrop-blur-md rounded-full overflow-hidden border border-white/20">
               <input
                 ref={commentInputRef}
                 value={newComment}
@@ -1152,31 +1266,32 @@ export default function VideoStreamPage() {
                 onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                 onClick={(e) => e.stopPropagation()}
                 placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
-                className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
+                className="flex-1 bg-transparent text-white text-sm px-4 py-3 placeholder:text-white/50 focus:outline-none"
               />
-              <button
-                onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
-                disabled={!newComment.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full mr-1 flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
-              >
-                <Send className="w-4 h-4" />
-                <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
-              </button>
+              <div className="pr-4 text-white/40">▼</div>
             </div>
             
-            {/* Gift button */}
+            {/* Fortune Request Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
+              className="px-5 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold rounded-full flex-shrink-0 shadow-lg shadow-pink-500/30"
+            >
+              {language === 'tr' ? 'Fal iste' : 'Fortune'}
+            </button>
+            
+            {/* Gift Button */}
             <button
               onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0"
-              title={language === 'tr' ? 'Hediye Gönder' : 'Send Gift'}
+              className="px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium rounded-full flex items-center gap-2 flex-shrink-0"
             >
-              <Gift className="w-5 h-5 text-white" />
+              <span className="text-lg">🎁</span>
+              <span>{language === 'tr' ? 'Hediye' : 'Gift'}</span>
             </button>
           </div>
 
           {/* Stream navigation indicators */}
           {streams.length > 1 && (
-            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-10">
+            <div className="absolute left-1 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-10">
               {streams.map((_, idx) => (
                 <div key={idx} className={`w-1 rounded-full transition-all ${idx === currentIndex ? 'h-6 bg-white' : 'h-2 bg-white/40'}`} />
               ))}
