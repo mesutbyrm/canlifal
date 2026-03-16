@@ -13,22 +13,20 @@ export async function POST(
     const viewerId = session?.user?.id || `guest_${Date.now()}`
     const viewerName = session?.user?.name || 'Misafir'
 
-    // Check if already viewing
-    const existing = await prisma.videoStreamViewer.findFirst({
+    // Upsert viewer record - handles re-joining after leaving
+    const viewer = await prisma.videoStreamViewer.upsert({
       where: {
-        streamId: params.streamId,
-        viewerId,
-        leftAt: null
-      }
-    })
-
-    if (existing) {
-      return NextResponse.json({ viewerId: existing.id, alreadyJoined: true })
-    }
-
-    // Create viewer record
-    const viewer = await prisma.videoStreamViewer.create({
-      data: {
+        streamId_viewerId: {
+          streamId: params.streamId,
+          viewerId
+        }
+      },
+      update: {
+        leftAt: null,
+        viewerName,
+        joinedAt: new Date()
+      },
+      create: {
         streamId: params.streamId,
         viewerId,
         viewerName
