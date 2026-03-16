@@ -202,13 +202,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/user/statistics').then(r => r.json()),
-      fetch('/api/user/achievements').then(r => r.json()),
-      fetch('/api/leaderboards').then(r => r.json())
+      fetch('/api/user/statistics').then(r => { if (!r.ok) throw new Error('Failed to fetch statistics'); return r.json(); }),
+      fetch('/api/user/achievements').then(r => { if (!r.ok) throw new Error('Failed to fetch achievements'); return r.json(); }),
+      fetch('/api/leaderboards').then(r => { if (!r.ok) throw new Error('Failed to fetch leaderboards'); return r.json(); })
     ]).then(([stats, ach, lb]) => {
-      setStatistics(stats)
-      setAchievements(ach)
-      setLeaderboards(lb)
+      if (stats && stats.user) {
+        setStatistics(stats)
+      }
+      if (ach && !ach.error) {
+        setAchievements(ach)
+      }
+      if (lb && !lb.error) {
+        setLeaderboards(lb)
+      }
       setIsLoading(false)
     }).catch(e => {
       console.error('Failed to load statistics:', e)
