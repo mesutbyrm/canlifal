@@ -106,6 +106,12 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
+        {/* Google AdSense */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7118653507313494"
+          crossOrigin="anonymous"
+        />
         {/* Organization Structured Data for Google */}
         <script
           type="application/ld+json"

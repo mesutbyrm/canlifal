@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
   
   return {
     rules: [
@@ -27,6 +27,14 @@ export default function robots(): MetadataRoute.Robots {
           '/dashboard/',
           '/live-room/',
         ],
+      },
+      {
+        userAgent: 'Mediapartners-Google',
+        allow: '/',
+      },
+      {
+        userAgent: 'AdsBot-Google',
+        allow: '/',
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
