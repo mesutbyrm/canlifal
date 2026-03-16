@@ -141,17 +141,20 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
-          style={{ background: 'rgba(10, 1, 24, 0.92)' }}
+          className="fixed left-0 right-0 bottom-0 z-[10000] flex items-start sm:items-center justify-center overflow-y-auto"
+          style={{ 
+            top: '48px', // Start below the announcement banner
+            background: 'rgba(10, 1, 24, 0.95)' 
+          }}
           onClick={() => { if (!modalLoading) { if (selectedItem) handleBack(); else onClose(); } }}
         >
           <motion.div
-            initial={{ y: 100, opacity: 0 }}
+            initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
+            exit={{ y: 50, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl relative"
+            className="w-full sm:w-[95%] md:w-[90%] max-w-lg mx-2 sm:mx-4 my-2 sm:my-4 max-h-[calc(100vh-64px)] sm:max-h-[85vh] overflow-y-auto rounded-2xl relative"
             style={{
               background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
               border: '2px solid rgba(168, 85, 247, 0.5)',
