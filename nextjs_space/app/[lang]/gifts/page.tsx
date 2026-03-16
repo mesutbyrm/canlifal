@@ -7,8 +7,10 @@ import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
-  Gift, Coins, Search, Send, Check, Loader2, X, Sparkles, UserPlus
+  Gift, Coins, Search, Send, Check, Loader2, X, Sparkles, UserPlus,
+  ArrowLeft, Heart, Wallet, ChevronRight, Star, Zap
 } from 'lucide-react'
 
 interface GiftType {
@@ -55,23 +57,9 @@ export default function GiftsPage() {
     amount: number
   } | null>(null)
 
-  // Theme
-  const isFalclub = theme === 'falclub' || theme === 'falci'
-  const isCosmic = theme === 'cosmic'
+  // Theme - simplified for dark theme focus
   const isFacebook = theme === 'facebook'
-
-  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0f0520]'
-  const cardBg = isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-white/5 border-blue-500/20' : 'bg-[#1a0a2e]/80 border-fuchsia-500/20'
-  const textPrimary = isFacebook ? 'text-gray-900' : 'text-white'
-  const textSecondary = isFacebook ? 'text-gray-500' : isCosmic ? 'text-blue-200' : 'text-purple-200'
-  const accentColor = isFacebook ? 'text-blue-600' : isCosmic ? 'text-blue-400' : 'text-fuchsia-400'
-  const btnGradient = isFacebook ? 'from-blue-500 to-blue-600' : isCosmic ? 'from-blue-500 to-cyan-500' : 'from-fuchsia-500 to-purple-600'
-  const inputBg = isFacebook ? 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-400' : isCosmic ? 'bg-blue-900/30 border-blue-500/30 text-white placeholder-blue-300' : 'bg-purple-900/30 border-fuchsia-500/30 text-white placeholder-purple-300'
-  const tabActive = isFacebook ? 'bg-blue-500 text-white' : isCosmic ? 'bg-blue-500 text-white' : 'bg-fuchsia-500 text-white'
-  const tabInactive = isFacebook ? 'bg-gray-200 text-gray-600' : isCosmic ? 'bg-blue-900/30 text-blue-300' : 'bg-purple-900/30 text-purple-300'
-  const giftItemBg = isFacebook ? 'bg-blue-50 border-blue-200 hover:border-blue-400' : isCosmic ? 'bg-blue-900/20 border-blue-500/20 hover:border-blue-400/50' : 'bg-purple-900/20 border-fuchsia-500/20 hover:border-fuchsia-400/50'
-  const giftItemSelected = isFacebook ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-300' : isCosmic ? 'bg-blue-500/20 border-blue-400 ring-2 ring-blue-400/30' : 'bg-fuchsia-500/20 border-fuchsia-400 ring-2 ring-fuchsia-400/30'
-  const avatarBorder = isFacebook ? 'from-blue-400 to-blue-600' : isCosmic ? 'from-blue-400 to-cyan-500' : 'from-fuchsia-500 to-purple-600'
+  const isCosmic = theme === 'cosmic'
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -114,8 +102,8 @@ export default function GiftsPage() {
   }, [searchQuery, searchUsers])
 
   const handleSend = async () => {
-    if (!selectedUser) { setErrorMsg(language === 'tr' ? 'L\u00fctfen bir kullan\u0131c\u0131 se\u00e7in' : 'Please select a user'); return }
-    if (selectedTab === 'gift' && !selectedGift) { setErrorMsg(language === 'tr' ? 'L\u00fctfen bir hediye se\u00e7in' : 'Please select a gift'); return }
+    if (!selectedUser) { setErrorMsg(language === 'tr' ? 'Lütfen bir kullanıcı seçin' : 'Please select a user'); return }
+    if (selectedTab === 'gift' && !selectedGift) { setErrorMsg(language === 'tr' ? 'Lütfen bir hediye seçin' : 'Please select a gift'); return }
     if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5)) { setErrorMsg(language === 'tr' ? 'Minimum 5 jeton gönderebilirsiniz' : 'Minimum 5 jetons required'); return }
     if (selectedTab === 'jeton' && parseInt(jetonAmount) > 100000) { setErrorMsg(language === 'tr' ? 'Maksimum 100.000 jeton gönderebilirsiniz' : 'Maximum 100,000 jetons allowed'); return }
 
@@ -145,12 +133,10 @@ export default function GiftsPage() {
         setSelectedUser(null)
         setSearchQuery('')
         fetchBalance()
-        // Show big gift celebration popup
         if (data.bigGift) {
           setBigGiftPopup(data.bigGift)
         }
       } else if (data.error === 'reciprocal_blocked') {
-        // Show the fun block popup
         setShowBlockPopup(true)
         setTimeout(() => setShowBlockPopup(false), 5000)
       } else {
@@ -164,224 +150,358 @@ export default function GiftsPage() {
     }
   }
 
+  const totalCost = selectedTab === 'gift' ? (selectedGift?.price || 0) : (parseInt(jetonAmount) || 0)
+  const canSend = selectedUser && ((selectedTab === 'gift' && selectedGift) || (selectedTab === 'jeton' && jetonAmount && parseInt(jetonAmount) >= 5 && parseInt(jetonAmount) <= 100000))
+
   if (loading) {
     return (
-      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
-        <Loader2 className={`w-8 h-8 ${accentColor} animate-spin`} />
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#150525] to-[#0a0118] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center"
+          >
+            <Gift className="w-8 h-8 text-white" />
+          </motion.div>
+          <p className="text-purple-300 text-sm">{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen ${bgColor} py-20 px-4 pb-32`}>
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#150525] to-[#0a0118] pt-16 sm:pt-20 px-3 sm:px-4 pb-32">
       <div className="max-w-lg mx-auto">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${btnGradient} flex items-center justify-center mx-auto mb-4`}>
-            <Gift className="w-8 h-8 text-white" />
-          </div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${textPrimary} mb-2`}>
-            {language === 'tr' ? 'Arkada\u015flar\u0131na Hediye G\u00f6nder' : 'Send Gifts to Friends'}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
+          <motion.div 
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/30"
+            animate={{ boxShadow: ['0 0 20px rgba(236,72,153,0.3)', '0 0 40px rgba(236,72,153,0.5)', '0 0 20px rgba(236,72,153,0.3)'] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Gift className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+          </motion.div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            {language === 'tr' ? '🎁 Hediye Gönder' : '🎁 Send Gift'}
           </h1>
-          <p className={textSecondary}>
-            {language === 'tr' ? 'Hediye veya jeton g\u00f6ndererek arkada\u015flar\u0131n\u0131 mutlu et' : 'Make your friends happy with gifts or jetons'}
+          <p className="text-purple-200/70 text-sm sm:text-base">
+            {language === 'tr' ? 'Arkadaşlarını mutlu et!' : 'Make your friends happy!'}
           </p>
+        </motion.div>
+
+        {/* Balance Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border border-amber-500/30 rounded-xl sm:rounded-2xl"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
+                <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-amber-200/70 text-xs sm:text-sm">{language === 'tr' ? 'Bakiyeniz' : 'Your Balance'}</p>
+                <p className="text-white font-bold text-lg sm:text-xl">{userJetonBalance.toLocaleString()} <span className="text-amber-400 text-sm">Jeton</span></p>
+              </div>
+            </div>
+            <Link 
+              href={`/${language}/credits`}
+              className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold rounded-lg sm:rounded-xl text-xs sm:text-sm hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-1"
+            >
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+              {language === 'tr' ? 'Yükle' : 'Top Up'}
+            </Link>
+          </div>
         </motion.div>
 
         {/* Success/Error Messages */}
         <AnimatePresence>
           {successMsg && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="mb-4 p-4 bg-green-500/20 border border-green-500/40 rounded-xl flex items-center gap-3">
-              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-green-300 text-sm flex-1">{successMsg}</p>
-              <button onClick={() => setSuccessMsg('')}><X className="w-4 h-4 text-green-400" /></button>
+            <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-xl sm:rounded-2xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-emerald-400" />
+              </div>
+              <p className="text-emerald-200 text-sm flex-1">{successMsg}</p>
+              <button onClick={() => setSuccessMsg('')} className="p-1"><X className="w-4 h-4 text-emerald-400" /></button>
             </motion.div>
           )}
           {errorMsg && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-xl flex items-center gap-3">
-              <X className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-300 text-sm flex-1">{errorMsg}</p>
-              <button onClick={() => setErrorMsg('')}><X className="w-4 h-4 text-red-400" /></button>
+            <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-xl sm:rounded-2xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center flex-shrink-0">
+                <X className="w-5 h-5 text-red-400" />
+              </div>
+              <p className="text-red-200 text-sm flex-1">{errorMsg}</p>
+              <button onClick={() => setErrorMsg('')} className="p-1"><X className="w-4 h-4 text-red-400" /></button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Step 1: Search User */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className={`rounded-2xl p-5 border mb-4 ${cardBg}`}>
-          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
-            <UserPlus className={`w-5 h-5 ${accentColor}`} />
-            {language === 'tr' ? '1. Ki\u015fi Se\u00e7' : '1. Select Person'}
+          className="bg-gradient-to-br from-purple-900/40 to-fuchsia-900/40 border border-purple-500/30 rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-3 sm:mb-4">
+          <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-fuchsia-500 flex items-center justify-center text-xs font-bold">1</div>
+            <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400" />
+            {language === 'tr' ? 'Kişi Seç' : 'Select Person'}
           </h3>
 
           {selectedUser ? (
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br ${avatarBorder} flex-shrink-0`}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-3 p-3 bg-fuchsia-500/20 border border-fuchsia-500/40 rounded-xl"
+            >
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-gradient-to-br from-fuchsia-500 to-purple-600 flex-shrink-0 ring-2 ring-fuchsia-400/50">
                 {selectedUser.image ? (
-                  <Image src={selectedUser.image} alt={selectedUser.name} width={48} height={48} className="w-full h-full object-cover" />
+                  <Image src={selectedUser.image} alt={selectedUser.name} width={56} height={56} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg">{selectedUser.name.charAt(0).toUpperCase()}</div>
+                  <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg sm:text-xl">{selectedUser.name.charAt(0).toUpperCase()}</div>
                 )}
               </div>
-              <div className="flex-1">
-                <p className={`${textPrimary} font-medium`}>{selectedUser.name}</p>
-                <p className={`${textSecondary} text-sm`}>@{selectedUser.username || 'user'}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate text-sm sm:text-base">{selectedUser.name}</p>
+                <p className="text-fuchsia-300 text-xs sm:text-sm truncate">@{selectedUser.username || 'user'}</p>
               </div>
               <button onClick={() => { setSelectedUser(null); setSearchQuery('') }}
-                className={`p-2 rounded-lg ${isFacebook ? 'bg-gray-100 text-gray-500' : 'bg-white/5 text-gray-400'}`}>
+                className="p-2 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 transition-colors">
                 <X className="w-4 h-4" />
               </button>
-            </div>
+            </motion.div>
           ) : (
             <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${textSecondary}`} />
+              <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={language === 'tr' ? 'Kullan\u0131c\u0131 ad\u0131 veya isim ara...' : 'Search username or name...'}
-                className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm ${inputBg} focus:outline-none`}
+                placeholder={language === 'tr' ? 'Kullanıcı adı veya isim ara...' : 'Search username or name...'}
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-300/50 focus:outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 text-sm sm:text-base transition-all"
               />
-              {searching && <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 ${accentColor} animate-spin`} />}
+              {searching && <Loader2 className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400 animate-spin" />}
 
               {/* Search Results Dropdown */}
-              {searchResults.length > 0 && !selectedUser && (
-                <div className={`absolute z-20 w-full mt-2 rounded-xl border shadow-xl overflow-hidden ${isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-[#0d1f3c] border-blue-500/30' : 'bg-[#1a0a2e] border-fuchsia-500/30'}`}>
-                  {searchResults.map(user => (
-                    <button key={user.id} onClick={() => { setSelectedUser(user); setSearchResults([]) }}
-                      className={`w-full flex items-center gap-3 p-3 ${isFacebook ? 'hover:bg-gray-50' : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'} transition-colors`}>
-                      <div className={`w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${avatarBorder}`}>
-                        {user.image ? (
-                          <Image src={user.image} alt={user.name} width={40} height={40} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white font-bold">{user.name.charAt(0).toUpperCase()}</div>
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <p className={`${textPrimary} text-sm font-medium`}>{user.name}</p>
-                        <p className={`${textSecondary} text-xs`}>@{user.username || 'user'}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {searchResults.length > 0 && !selectedUser && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute z-30 w-full mt-2 rounded-xl border border-purple-500/30 shadow-2xl overflow-hidden bg-[#1a0a2e] max-h-60 overflow-y-auto"
+                  >
+                    {searchResults.map((user, i) => (
+                      <motion.button 
+                        key={user.id} 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        onClick={() => { setSelectedUser(user); setSearchResults([]) }}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/50 transition-colors border-b border-purple-500/10 last:border-b-0"
+                      >
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-fuchsia-500 to-purple-600">
+                          {user.image ? (
+                            <Image src={user.image} alt={user.name} width={48} height={48} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold">{user.name.charAt(0).toUpperCase()}</div>
+                          )}
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                          <p className="text-purple-300 text-xs truncate">@{user.username || 'user'}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </motion.div>
 
         {/* Step 2: Choose Type */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className={`rounded-2xl p-5 border mb-4 ${cardBg}`}>
-          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
-            <Sparkles className={`w-5 h-5 ${accentColor}`} />
-            {language === 'tr' ? '2. G\u00f6nderim T\u00fcr\u00fc' : '2. Gift Type'}
+          className="bg-gradient-to-br from-purple-900/40 to-fuchsia-900/40 border border-purple-500/30 rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-3 sm:mb-4">
+          <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-fuchsia-500 flex items-center justify-center text-xs font-bold">2</div>
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400" />
+            {language === 'tr' ? 'Ne Göndermek İstiyorsun?' : 'What to Send?'}
           </h3>
 
-          <div className="flex gap-2 mb-4">
+          {/* Tab Buttons */}
+          <div className="flex gap-2 mb-4 p-1 bg-purple-900/50 rounded-xl">
             <button onClick={() => setSelectedTab('gift')}
-              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all ${selectedTab === 'gift' ? tabActive : tabInactive}`}>
+              className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                selectedTab === 'gift' 
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg' 
+                  : 'text-purple-300 hover:text-white'
+              }`}>
               🎁 {language === 'tr' ? 'Hediye' : 'Gift'}
             </button>
             <button onClick={() => setSelectedTab('jeton')}
-              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all ${selectedTab === 'jeton' ? tabActive : tabInactive}`}>
+              className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                selectedTab === 'jeton' 
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg' 
+                  : 'text-purple-300 hover:text-white'
+              }`}>
               🪙 {language === 'tr' ? 'Jeton' : 'Jeton'}
             </button>
           </div>
 
-          {selectedTab === 'gift' ? (
-            <div className="grid grid-cols-4 gap-2">
-              {giftTypes.map(gift => (
-                <button key={gift.id} onClick={() => setSelectedGift(gift.id === selectedGift?.id ? null : gift)}
-                  className={`flex flex-col items-center p-3 rounded-xl border transition-all ${
-                    selectedGift?.id === gift.id ? giftItemSelected : giftItemBg
-                  }`}>
-                  <span className="text-2xl mb-1">{gift.icon}</span>
-                  <span className={`text-[10px] ${textPrimary} font-medium`}>
-                    {language === 'tr' ? gift.name : gift.nameEn}
-                  </span>
-                  <span className={`text-[10px] ${accentColor} font-bold mt-0.5`}>{gift.price} Jeton</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className={`${textSecondary} text-sm`}>
-                  {language === 'tr' ? 'Gönderilecek jeton miktarı:' : 'Jeton amount to send:'}
-                </label>
-                <span className={`text-xs ${accentColor} font-medium`}>
-                  {language === 'tr' ? 'Bakiye:' : 'Balance:'} {userJetonBalance.toLocaleString()} Jeton
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="5"
-                  max="100000"
-                  value={jetonAmount}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 100000)) {
-                      setJetonAmount(val)
-                    }
-                  }}
-                  placeholder={language === 'tr' ? 'Min 5, Max 100.000' : 'Min 5, Max 100,000'}
-                  className={`flex-1 px-4 py-3 rounded-xl border text-sm ${inputBg} focus:outline-none`}
-                />
-              </div>
-              {jetonAmount && parseInt(jetonAmount) > 0 && (
-                <div className={`mt-2 text-sm ${parseInt(jetonAmount) > userJetonBalance ? 'text-red-400' : 'text-green-400'}`}>
-                  {parseInt(jetonAmount) > userJetonBalance ? (
-                    <div className="flex items-center justify-between">
-                      <span>⚠️ {language === 'tr' ? `Yetersiz bakiye! ${(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jeton eksik.` : `Insufficient balance! ${(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jetons short.`}</span>
-                      <button 
-                        onClick={() => router.push(`/${language}/credits`)}
-                        className={`ml-2 px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r ${btnGradient} text-white`}
+          <AnimatePresence mode="wait">
+            {selectedTab === 'gift' ? (
+              <motion.div
+                key="gifts"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3"
+              >
+                {giftTypes.map((gift, i) => (
+                  <motion.button 
+                    key={gift.id} 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    onClick={() => setSelectedGift(gift.id === selectedGift?.id ? null : gift)}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative flex flex-col items-center p-2.5 sm:p-3 rounded-xl border transition-all ${
+                      selectedGift?.id === gift.id 
+                        ? 'bg-gradient-to-br from-pink-500/30 to-purple-500/30 border-pink-500 ring-2 ring-pink-400/30 shadow-lg shadow-pink-500/20' 
+                        : 'bg-purple-900/30 border-purple-500/30 hover:border-fuchsia-500/50'
+                    }`}
+                  >
+                    {selectedGift?.id === gift.id && (
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center"
                       >
-                        {language === 'tr' ? 'Jeton Yükle' : 'Buy Jeton'}
-                      </button>
-                    </div>
-                  ) : (
-                    <span>✅ {language === 'tr' ? `${parseInt(jetonAmount).toLocaleString()} jeton gönderilecek` : `${parseInt(jetonAmount).toLocaleString()} jetons will be sent`}</span>
-                  )}
-                </div>
-              )}
-              {jetonAmount && parseInt(jetonAmount) > 0 && parseInt(jetonAmount) < 5 && (
-                <p className="text-red-400 text-xs mt-1">{language === 'tr' ? 'Minimum 5 jeton gönderebilirsiniz' : 'Minimum 5 jetons required'}</p>
-              )}
-              <div className="flex gap-2 mt-3 flex-wrap">
-                {[5, 10, 25, 50, 100, 500, 1000].map(amt => (
-                  <button key={amt} onClick={() => setJetonAmount(String(amt))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      jetonAmount === String(amt) ? tabActive : tabInactive
-                    }`}>
-                    {amt}
-                  </button>
+                        <Check className="w-3 h-3 text-white" />
+                      </motion.div>
+                    )}
+                    <span className="text-2xl sm:text-3xl mb-1">{gift.icon}</span>
+                    <span className="text-white text-[10px] sm:text-xs font-medium text-center leading-tight">
+                      {language === 'tr' ? gift.name : gift.nameEn}
+                    </span>
+                    <span className="text-fuchsia-400 text-[10px] sm:text-xs font-bold mt-0.5">{gift.price}</span>
+                  </motion.button>
                 ))}
-              </div>
-            </div>
-          )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="jeton"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <div className="relative mb-3">
+                  <Coins className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
+                  <input
+                    type="number"
+                    min="5"
+                    max="100000"
+                    value={jetonAmount}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 100000)) {
+                        setJetonAmount(val)
+                      }
+                    }}
+                    placeholder={language === 'tr' ? 'Jeton miktarı girin...' : 'Enter jeton amount...'}
+                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-300/50 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-lg font-medium"
+                  />
+                </div>
+
+                {/* Quick Amount Buttons */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {[10, 25, 50, 100, 250, 500, 1000].map(amt => (
+                    <button 
+                      key={amt} 
+                      onClick={() => setJetonAmount(String(amt))}
+                      className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                        jetonAmount === String(amt) 
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white' 
+                          : 'bg-purple-900/50 text-purple-300 hover:bg-purple-800/50'
+                      }`}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Balance Check */}
+                {jetonAmount && parseInt(jetonAmount) > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-xl text-sm ${
+                      parseInt(jetonAmount) > userJetonBalance 
+                        ? 'bg-red-500/20 border border-red-500/40' 
+                        : parseInt(jetonAmount) < 5
+                        ? 'bg-amber-500/20 border border-amber-500/40'
+                        : 'bg-emerald-500/20 border border-emerald-500/40'
+                    }`}
+                  >
+                    {parseInt(jetonAmount) > userJetonBalance ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-red-300">⚠️ {(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jeton eksik</span>
+                        <Link 
+                          href={`/${language}/credits`}
+                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-bold"
+                        >
+                          {language === 'tr' ? 'Yükle' : 'Top Up'}
+                        </Link>
+                      </div>
+                    ) : parseInt(jetonAmount) < 5 ? (
+                      <span className="text-amber-300">⚠️ {language === 'tr' ? 'Minimum 5 jeton' : 'Minimum 5 jetons'}</span>
+                    ) : (
+                      <span className="text-emerald-300">✅ {parseInt(jetonAmount).toLocaleString()} jeton gönderilecek</span>
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Send Button */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <button
             onClick={handleSend}
-            disabled={sending || !selectedUser || (selectedTab === 'gift' && !selectedGift) || (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5 || parseInt(jetonAmount) > 100000))}
-            className={`w-full py-4 rounded-2xl font-bold text-white bg-gradient-to-r ${btnGradient} flex items-center justify-center gap-3 hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-lg`}
+            disabled={sending || !canSend || totalCost > userJetonBalance}
+            className={`w-full py-4 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-white flex items-center justify-center gap-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-base sm:text-lg shadow-lg ${
+              selectedTab === 'gift' 
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 shadow-pink-500/30 hover:shadow-pink-500/50' 
+                : 'bg-gradient-to-r from-amber-500 to-yellow-500 shadow-amber-500/30 hover:shadow-amber-500/50'
+            }`}
           >
             {sending ? (
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                {language === 'tr' ? 'G\u00f6nder' : 'Send'}
+                {language === 'tr' ? 'Gönder' : 'Send'}
+                {canSend && totalCost > 0 && (
+                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-sm">
+                    {totalCost.toLocaleString()} Jeton
+                  </span>
+                )}
               </>
             )}
           </button>
         </motion.div>
+
+        {/* Back Link */}
+        <div className="text-center mt-6">
+          <Link href={`/${language}`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            {language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home'}
+          </Link>
+        </div>
       </div>
 
       {/* Reciprocal Block Popup */}
@@ -562,7 +682,7 @@ export default function GiftsPage() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.65 }}
                 onClick={() => setBigGiftPopup(null)}
-                className={`w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r ${btnGradient} hover:opacity-90 transition-all`}
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-all"
               >
                 {language === 'tr' ? 'Harika! ✨' : 'Awesome! ✨'}
               </motion.button>
