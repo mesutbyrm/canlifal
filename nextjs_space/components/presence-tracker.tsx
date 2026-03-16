@@ -28,6 +28,32 @@ function detectSection(path: string | null): string | null {
   return null
 }
 
+// Helper to get announced sections from sessionStorage
+function getAnnouncedSections(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const stored = sessionStorage.getItem('falci_announced_sections')
+    if (stored) {
+      return new Set(JSON.parse(stored))
+    }
+  } catch {
+    // Ignore parsing errors
+  }
+  return new Set()
+}
+
+// Helper to save announced section to sessionStorage
+function saveAnnouncedSection(section: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const sections = getAnnouncedSections()
+    sections.add(section)
+    sessionStorage.setItem('falci_announced_sections', JSON.stringify([...sections]))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 // This component silently tracks user presence across all pages
 export default function PresenceTracker() {
   const pathname = usePathname()
@@ -77,17 +103,28 @@ export default function PresenceTracker() {
   }, [getVisitorId, pathname])
 
   // Create section entry announcement for logged-in VIP/staff users
+  // Each section only announces ONCE per browser session
   const announceSectionEntry = useCallback(async () => {
     if (!session?.user) return
     
     const currentSection = detectSection(pathname)
     if (!currentSection) return
     
-    // Don't announce the same section again
+    // Don't announce the same section again (in-memory check)
     if (lastAnnouncedSectionRef.current === currentSection) return
     
-    // Update last announced section
+    // Check sessionStorage - only announce each section ONCE per browser session
+    const announcedSections = getAnnouncedSections()
+    if (announcedSections.has(currentSection)) {
+      lastAnnouncedSectionRef.current = currentSection
+      return
+    }
+    
+    // Update last announced section (in-memory)
     lastAnnouncedSectionRef.current = currentSection
+    
+    // Save to sessionStorage so it persists across page navigations
+    saveAnnouncedSection(currentSection)
     
     try {
       await fetch('/api/announcements', {
