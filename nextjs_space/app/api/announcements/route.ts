@@ -23,13 +23,55 @@ export async function GET() {
   }
 }
 
-// POST - create login announcement (called after login)
+// Section names mapping
+const SECTION_NAMES: Record<string, { tr: string; en: string; icon: string }> = {
+  'chat': { tr: 'Fal Sohbet', en: 'Fortune Chat', icon: '💬' },
+  'fortunes': { tr: 'Fallar', en: 'Fortunes', icon: '🔮' },
+  'games': { tr: 'Oyun Merkezi', en: 'Game Center', icon: '🎮' },
+  'social': { tr: 'Sosyal', en: 'Social', icon: '👥' },
+  'gifts': { tr: 'Hediyeler', en: 'Gifts', icon: '🎁' },
+  'blog': { tr: 'Blog', en: 'Blog', icon: '📝' },
+  'live-tellers': { tr: 'Canlı Falcı', en: 'Live Tellers', icon: '✨' },
+  'memberships': { tr: 'Üyelik', en: 'Memberships', icon: '👑' },
+  'profile': { tr: 'Profil', en: 'Profile', icon: '👤' },
+  'dashboard': { tr: 'Panel', en: 'Dashboard', icon: '📊' },
+  'home': { tr: 'Ana Sayfa', en: 'Home', icon: '🏠' },
+}
+
+// Detect section from path
+function detectSection(path: string | null): string | null {
+  if (!path) return null
+  const lowerPath = path.toLowerCase()
+  
+  if (lowerPath.includes('/chat')) return 'chat'
+  if (lowerPath.includes('/fortune') || lowerPath.includes('/fal') || lowerPath.includes('/tarot') || 
+      lowerPath.includes('/coffee') || lowerPath.includes('/dream') || lowerPath.includes('/palm') ||
+      lowerPath.includes('/horoscope') || lowerPath.includes('/numerology') || lowerPath.includes('/aura') ||
+      lowerPath.includes('/angel') || lowerPath.includes('/katina') || lowerPath.includes('/yesno') ||
+      lowerPath.includes('/love') || lowerPath.includes('/birthchart')) return 'fortunes'
+  if (lowerPath.includes('/game')) return 'games'
+  if (lowerPath.includes('/social')) return 'social'
+  if (lowerPath.includes('/gift')) return 'gifts'
+  if (lowerPath.includes('/blog')) return 'blog'
+  if (lowerPath.includes('/live-teller')) return 'live-tellers'
+  if (lowerPath.includes('/membership')) return 'memberships'
+  if (lowerPath.includes('/profile')) return 'profile'
+  if (lowerPath.includes('/dashboard')) return 'dashboard'
+  if (lowerPath === '/tr' || lowerPath === '/en' || lowerPath === '/tr/' || lowerPath === '/en/') return 'home'
+  
+  return null
+}
+
+// POST - create login or section entry announcement
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const body = await request.json().catch(() => ({}))
+    const { section, path } = body
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -48,7 +90,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user qualifies for login announcement
+    // Check if user qualifies for announcement
     const isAdmin = user.role === 'admin'
     const isModerator = user.role === 'moderator'
     const isSiteManager = user.role === 'site_manager'
@@ -62,12 +104,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, announced: false })
     }
 
-    // Prevent duplicate announcements within last 5 minutes
+    // Detect section from path or use provided section
+    const detectedSection = section || detectSection(path)
+    const sectionInfo = detectedSection ? SECTION_NAMES[detectedSection] : null
+    
+    // Announcement type: section entry or login
+    const announcementType = sectionInfo ? 'section_entry' : 'login'
+
+    // Prevent duplicate announcements within last 5 minutes for same section
     const recentAnnouncement = await prisma.siteAnnouncement.findFirst({
       where: {
         userId: user.id,
-        type: 'login',
-        createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) }
+        type: announcementType,
+        createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) },
+        ...(sectionInfo ? { message: { contains: sectionInfo.tr } } : {})
       }
     })
 
@@ -84,7 +134,13 @@ export async function POST(request: NextRequest) {
     else if (user.membership === 'gold') badge = '🥇 Gold'
     else if (user.membership === 'premium') badge = '⭐ Premium'
 
-    const message = `${badge} ${displayName} giriş yaptı!`
+    // Create message based on section
+    let message: string
+    if (sectionInfo) {
+      message = `${badge} ${displayName} ${sectionInfo.icon} ${sectionInfo.tr} bölümüne giriş yaptı!`
+    } else {
+      message = `${badge} ${displayName} giriş yaptı!`
+    }
 
     // Users with a specific favorite team get team colors; 'Diğer' or no team gets red
     const hasTeam = user.favoriteTeam && user.favoriteTeam !== 'Diğer'
@@ -92,7 +148,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.siteAnnouncement.create({
       data: {
-        type: 'login',
+        type: announcementType,
         message,
         color: announcementColor,
         userId: user.id,
@@ -106,7 +162,7 @@ export async function POST(request: NextRequest) {
       where: { expiresAt: { lt: new Date(Date.now() - 10 * 60 * 1000) } }
     }).catch(() => {})
 
-    return NextResponse.json({ ok: true, announced: true })
+    return NextResponse.json({ ok: true, announced: true, section: detectedSection })
   } catch (error) {
     console.error('Error creating announcement:', error)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })

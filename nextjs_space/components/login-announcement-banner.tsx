@@ -201,7 +201,7 @@ export default function LoginAnnouncementBanner() {
       const res = await fetch('/api/announcements')
       if (res.ok) {
         const data: Announcement[] = await res.json()
-        const loginAnnouncements = data.filter(a => a.type === 'login')
+        const loginAnnouncements = data.filter(a => a.type === 'login' || a.type === 'section_entry')
         const newOnes = loginAnnouncements.filter(a => !seenIdsRef.current.has(a.id))
         if (newOnes.length > 0) {
           queueRef.current = [...queueRef.current, ...newOnes]
