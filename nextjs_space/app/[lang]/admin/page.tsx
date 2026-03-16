@@ -109,6 +109,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
   { href: `/${lang}/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
   { href: `/${lang}/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
+  { href: `/${lang}/admin/announcement-settings`, icon: Bell, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
   { href: `/${lang}/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
   { href: `/${lang}/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
   { href: `/${lang}/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },

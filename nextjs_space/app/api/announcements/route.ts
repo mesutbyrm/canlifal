@@ -108,6 +108,25 @@ export async function POST(request: NextRequest) {
     const detectedSection = section || detectSection(path)
     const sectionInfo = detectedSection ? SECTION_NAMES[detectedSection] : null
     
+    // Check if this section is enabled in admin settings
+    if (detectedSection) {
+      const sectionSettings = await prisma.platformSettings.findUnique({
+        where: { key: 'announcement_sections' }
+      })
+      
+      if (sectionSettings) {
+        try {
+          const sections = JSON.parse(sectionSettings.value)
+          // If the section is explicitly disabled, don't announce
+          if (sections[detectedSection] === false) {
+            return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled' })
+          }
+        } catch {
+          // If parsing fails, continue with announcement
+        }
+      }
+    }
+    
     // Announcement type: section entry or login
     const announcementType = sectionInfo ? 'section_entry' : 'login'
 

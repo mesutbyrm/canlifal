@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Coins, Flame, Gift, Loader2, ChevronRight, Sparkles } from 'lucide-react'
+import { X, Coins, Flame, Gift, Loader2, Sparkles } from 'lucide-react'
 
 interface BanaOzelItem {
   id: string
@@ -22,6 +22,16 @@ interface StreakInfo {
   currentStreak: number
   longestStreak: number
   totalFortunes: number
+}
+
+// Color schemes for different item categories
+const ITEM_COLORS: Record<string, { gradient: string; border: string; glow: string }> = {
+  'daily': { gradient: 'from-amber-600/30 to-orange-600/30', border: 'border-amber-400/50', glow: 'rgba(251, 191, 36, 0.3)' },
+  'tarot': { gradient: 'from-purple-600/30 to-fuchsia-600/30', border: 'border-purple-400/50', glow: 'rgba(168, 85, 247, 0.3)' },
+  'love': { gradient: 'from-pink-600/30 to-rose-600/30', border: 'border-pink-400/50', glow: 'rgba(236, 72, 153, 0.3)' },
+  'career': { gradient: 'from-blue-600/30 to-cyan-600/30', border: 'border-blue-400/50', glow: 'rgba(59, 130, 246, 0.3)' },
+  'health': { gradient: 'from-green-600/30 to-emerald-600/30', border: 'border-green-400/50', glow: 'rgba(34, 197, 94, 0.3)' },
+  'default': { gradient: 'from-violet-600/30 to-indigo-600/30', border: 'border-violet-400/50', glow: 'rgba(139, 92, 246, 0.3)' },
 }
 
 export default function BanaOzelSection() {
@@ -118,95 +128,138 @@ export default function BanaOzelSection() {
     }
   }
 
+  const getItemColors = (category: string) => {
+    return ITEM_COLORS[category] || ITEM_COLORS.default
+  }
+
   if (!session?.user || loading) return null
   if (items.length === 0) return null
 
   return (
     <>
       {/* BANA ÖZEL Section */}
-      <div className="falclub-card p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="falclub-section-title">
-            <Sparkles className="w-5 h-5" />
-            {language === 'tr' ? 'BANA ÖZEL' : 'PERSONALIZED'}
+      <div className="falclub-card p-3 sm:p-4">
+        {/* Header - Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <h2 className="falclub-section-title flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-fuchsia-400" />
+            <span>{language === 'tr' ? 'BANA ÖZEL' : 'PERSONALIZED'}</span>
           </h2>
           <div className="flex items-center gap-2">
             {/* Streak badge */}
             {streak.currentStreak > 0 && (
-              <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-400/40 rounded-full px-2 py-0.5">
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-1 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/40 rounded-full px-2.5 py-1"
+              >
                 <Flame className="w-3.5 h-3.5 text-orange-400" />
                 <span className="text-orange-300 text-xs font-bold">{streak.currentStreak}</span>
-              </div>
+                <span className="text-orange-300/60 text-[10px] hidden sm:inline">{language === 'tr' ? 'gün' : 'days'}</span>
+              </motion.div>
             )}
             {/* Jeton balance */}
-            <div className="flex items-center gap-1 bg-yellow-500/20 border border-yellow-400/40 rounded-full px-2.5 py-0.5">
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/40 rounded-full px-2.5 py-1">
               <Coins className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="text-yellow-300 text-xs font-bold">{jetonBalance}</span>
+              <span className="text-yellow-300 text-sm font-bold">{jetonBalance}</span>
+              <span className="text-yellow-300/60 text-[10px] hidden sm:inline">Jeton</span>
             </div>
           </div>
         </div>
 
         {/* Subtitle */}
-        <p className="text-fuchsia-300/70 text-xs mb-3 flex items-center gap-1">
-          <span>✨</span>
+        <p className="text-fuchsia-300/70 text-xs mb-4 flex items-center gap-1.5">
+          <span className="text-sm">✨</span>
           {language === 'tr' ? 'Rehberinize Özel Öneriler' : 'Personalized Recommendations'}
-          <span>✨</span>
+          <span className="text-sm">✨</span>
         </p>
 
-        {/* Daily Login Bonus */}
+        {/* Daily Login Bonus - Enhanced */}
         {!loginBonusClaimed && (
-          <button
+          <motion.button
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleClaimLoginBonus}
             disabled={claimingBonus}
-            className="w-full mb-3 flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-400/40 hover:border-green-300/60 transition-all"
+            className="w-full mb-4 flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gradient-to-r from-green-600/20 via-emerald-600/25 to-green-600/20 border-2 border-green-400/50 hover:border-green-300/70 transition-all shadow-lg"
+            style={{ boxShadow: '0 0 20px rgba(34, 197, 94, 0.2)' }}
           >
-            <div className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-green-400" />
-              <span className="text-green-200 text-sm font-medium">
-                {language === 'tr' ? 'Günlük Giriş Bonusu' : 'Daily Login Bonus'}
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-green-500/40 to-emerald-500/40 border border-green-400/60 flex items-center justify-center">
+                <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-green-300" />
+              </div>
+              <div className="text-left">
+                <span className="text-green-100 text-sm sm:text-base font-bold block">
+                  {language === 'tr' ? 'Günlük Giriş Bonusu' : 'Daily Login Bonus'}
+                </span>
+                <span className="text-green-300/70 text-[10px] sm:text-xs">
+                  {language === 'tr' ? 'Hemen al!' : 'Claim now!'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 bg-yellow-500/30 rounded-full px-3 py-1.5">
               {claimingBonus ? (
                 <Loader2 className="w-4 h-4 text-green-300 animate-spin" />
               ) : (
                 <>
                   <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-300 text-sm font-bold">+5</span>
+                  <span className="text-yellow-200 text-sm sm:text-base font-bold">+5</span>
                 </>
               )}
             </div>
-          </button>
+          </motion.button>
         )}
 
-        {/* Items Grid - 2 columns like the reference image */}
-        <div className="space-y-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleOpenItem(item)}
-              className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-purple-900/20 border border-purple-500/30 hover:border-fuchsia-400/50 hover:bg-purple-800/30 transition-all group"
-            >
-              {/* Round icon */}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600/40 to-fuchsia-600/40 border border-purple-400/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"
-                style={{ boxShadow: '0 0 10px rgba(168, 85, 247, 0.2)' }}
+        {/* Items Grid - Responsive 2x2 on mobile, 3x on tablet, 4x on desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+          {items.map((item, index) => {
+            const colors = getItemColors(item.category)
+            return (
+              <motion.button
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleOpenItem(item)}
+                className={`relative flex flex-col items-center p-3 sm:p-4 rounded-xl bg-gradient-to-br ${colors.gradient} border ${colors.border} hover:shadow-lg transition-all duration-300 group overflow-hidden`}
+                style={{ boxShadow: `0 0 15px ${colors.glow}` }}
               >
-                <span className="text-lg">{item.icon}</span>
-              </div>
-              {/* Name */}
-              <span className="flex-1 text-left text-white text-sm font-medium truncate">
-                {language === 'tr' ? item.nameTr : item.nameEn}
-              </span>
-              {/* Jeton cost */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-yellow-300 text-xs font-bold">{item.jetonCost}</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-fuchsia-400/50 flex-shrink-0" />
-            </button>
-          ))}
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full" 
+                  style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
+                />
+                
+                {/* Icon */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-2xl sm:text-3xl">{item.icon}</span>
+                </div>
+                
+                {/* Name */}
+                <span className="text-white text-xs sm:text-sm font-medium text-center line-clamp-2 mb-2 min-h-[2.5rem]">
+                  {language === 'tr' ? item.nameTr : item.nameEn}
+                </span>
+                
+                {/* Jeton cost badge */}
+                <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-0.5">
+                  <Coins className="w-3 h-3 text-yellow-400" />
+                  <span className="text-yellow-300 text-[10px] sm:text-xs font-bold">{item.jetonCost}</span>
+                </div>
+              </motion.button>
+            )
+          })}
         </div>
+
+        {/* Shimmer animation style */}
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
       </div>
 
       {/* Modal */}
