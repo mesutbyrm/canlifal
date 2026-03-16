@@ -27,7 +27,13 @@ import {
   Ban,
   MoreVertical,
   Phone,
-  PhoneOff
+  PhoneOff,
+  ImageIcon,
+  Settings,
+  Crown,
+  Shield,
+  UserCheck,
+  UserX
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
@@ -137,6 +143,18 @@ export default function BroadcastPage() {
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [liveBroadcasters, setLiveBroadcasters] = useState<{id: string; userId: string; title: string | null; category: string | null; user: {id: string; name: string | null; image: string | null}; viewerCount: number}[]>([])
   const [showLiveBroadcasters, setShowLiveBroadcasters] = useState(false)
+  // Image broadcast mode
+  const [isImageMode, setIsImageMode] = useState(false)
+  const [broadcastImage, setBroadcastImage] = useState<string | null>(null)
+  const [showImageUpload, setShowImageUpload] = useState(false)
+  // Panel mode
+  const [showPanel, setShowPanel] = useState(false)
+  // Moderators (max 10)
+  const [moderators, setModerators] = useState<{id: string; userId: string; user: {name: string; image: string | null}}[]>([])
+  // Fortune requesters
+  const [fortuneRequesters, setFortuneRequesters] = useState<{id: string; userId: string; nickname: string | null; totalGiftAmount: number; user: {name: string; image: string | null}}[]>([])
+  // Muted viewers
+  const [mutedViewers, setMutedViewers] = useState<Set<string>>(new Set())
 
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
@@ -193,12 +211,37 @@ export default function BroadcastPage() {
         pollViewerSignals()
         pollCoBroadcasterSignals()
         fetchNotifications()
+        fetchModerators()
+        fetchFortuneRequesters()
       }
     }, 1000)
+
+    // Handle visibility change to fix audio/video when navigating away and back
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Page became visible - try to play video again
+        if (localVideoRef.current && localStreamRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current
+          localVideoRef.current.play().catch(() => {})
+        }
+        if (broadcasterVideoRef.current && broadcasterVideoRef.current.srcObject) {
+          broadcasterVideoRef.current.play().catch(() => {})
+        }
+        // Check all guest video refs
+        guestVideoRefs.current.forEach((videoEl) => {
+          if (videoEl.srcObject) {
+            videoEl.play().catch(() => {})
+          }
+        })
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       isUnmountedRef.current = true
       clearInterval(durationInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
       cleanup()
     }
@@ -974,6 +1017,114 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
+  // Mute a viewer
+  const handleMuteViewer = async (viewerId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/mute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewerId })
+      })
+      setMutedViewers(prev => new Set([...prev, viewerId]))
+    } catch (e) {}
+  }
+
+  // Unmute a viewer
+  const handleUnmuteViewer = async (viewerId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/mute`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewerId })
+      })
+      setMutedViewers(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(viewerId)
+        return newSet
+      })
+    } catch (e) {}
+  }
+
+  // Add moderator (max 10)
+  const handleAddModerator = async (userId: string) => {
+    if (moderators.length >= 10) {
+      alert(language === 'tr' ? 'En fazla 10 moderatör ekleyebilirsiniz!' : 'Maximum 10 moderators allowed!')
+      return
+    }
+    try {
+      await fetch(`/api/video-streams/${streamId}/moderators`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      })
+      fetchModerators()
+    } catch (e) {}
+  }
+
+  // Remove moderator
+  const handleRemoveModerator = async (userId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/moderators`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      })
+      fetchModerators()
+    } catch (e) {}
+  }
+
+  // Fetch moderators
+  const fetchModerators = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/moderators`)
+      if (res.ok) setModerators(await res.json())
+    } catch (e) {}
+  }
+
+  // Fetch fortune requesters (sorted by gift amount)
+  const fetchFortuneRequesters = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/fortune-requests`)
+      if (res.ok) setFortuneRequesters(await res.json())
+    } catch (e) {}
+  }
+
+  // Select fortune requester (removes from list)
+  const handleSelectFortuneRequester = async (requestId: string) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/fortune-requests`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action: 'select' })
+      })
+      fetchFortuneRequesters()
+    } catch (e) {}
+  }
+
+  // Toggle image mode
+  const handleToggleImageMode = () => {
+    if (!isImageMode && !broadcastImage) {
+      setShowImageUpload(true)
+    } else {
+      setIsImageMode(!isImageMode)
+    }
+  }
+
+  // Handle image upload for broadcast
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // Create a data URL for preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setBroadcastImage(reader.result as string)
+      setIsImageMode(true)
+      setShowImageUpload(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
   const cleanup = () => {
     // Close viewer connections
     peerConnectionsRef.current.forEach(pc => pc.close())
@@ -1494,7 +1645,41 @@ export default function BroadcastPage() {
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
                       <DropdownMenu.Content className="bg-[#1a1a1a] border border-white/10 rounded-lg p-1 min-w-[160px] z-50" sideOffset={5}>
-
+                        {/* Mute/Unmute */}
+                        <DropdownMenu.Item
+                          onClick={() => viewer.odUserId && (mutedViewers.has(viewer.odUserId) ? handleUnmuteViewer(viewer.odUserId) : handleMuteViewer(viewer.odUserId))}
+                          className="flex items-center gap-2 px-3 py-2 text-white text-sm rounded cursor-pointer hover:bg-white/10"
+                        >
+                          {viewer.odUserId && mutedViewers.has(viewer.odUserId) ? (
+                            <><Volume2 className="w-4 h-4" /> {language === 'tr' ? 'Sesi Aç' : 'Unmute'}</>
+                          ) : (
+                            <><VolumeX className="w-4 h-4" /> {language === 'tr' ? 'Sessize Al' : 'Mute'}</>
+                          )}
+                        </DropdownMenu.Item>
+                        
+                        {/* Add/Remove Moderator */}
+                        {viewer.odUserId && (
+                          moderators.some(m => m.userId === viewer.odUserId) ? (
+                            <DropdownMenu.Item
+                              onClick={() => handleRemoveModerator(viewer.odUserId!)}
+                              className="flex items-center gap-2 px-3 py-2 text-orange-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                            >
+                              <UserX className="w-4 h-4" />
+                              {language === 'tr' ? 'Moderatörlükten Çıkar' : 'Remove Moderator'}
+                            </DropdownMenu.Item>
+                          ) : (
+                            <DropdownMenu.Item
+                              onClick={() => handleAddModerator(viewer.odUserId!)}
+                              className="flex items-center gap-2 px-3 py-2 text-green-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                              disabled={moderators.length >= 10}
+                            >
+                              <Shield className="w-4 h-4" />
+                              {language === 'tr' ? 'Moderatör Yap' : 'Make Moderator'}
+                            </DropdownMenu.Item>
+                          )
+                        )}
+                        
+                        {/* Ban */}
                         <DropdownMenu.Item
                           onClick={() => viewer.odUserId && handleBanUser(viewer.odUserId)}
                           className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
@@ -1552,7 +1737,16 @@ export default function BroadcastPage() {
         </div>
         
         {/* Control buttons */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-3">
+          {/* Panel Button */}
+          <button 
+            onClick={() => setShowPanel(!showPanel)} 
+            className={`px-4 py-2.5 rounded-full flex items-center gap-2 ${showPanel ? 'bg-purple-600' : 'bg-white/20'}`}
+          >
+            <Settings className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">Panel</span>
+          </button>
+          
           <button onClick={toggleVideo} className={`w-12 h-12 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
             {isVideoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
           </button>
@@ -1562,6 +1756,16 @@ export default function BroadcastPage() {
           <button onClick={switchCamera} className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
+          
+          {/* Image Mode Toggle */}
+          <button 
+            onClick={handleToggleImageMode} 
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${isImageMode ? 'bg-green-500' : 'bg-white/20'}`}
+            title={language === 'tr' ? 'Resim ile Yayın' : 'Broadcast with Image'}
+          >
+            <ImageIcon className="w-5 h-5 text-white" />
+          </button>
+          
           {/* Enable remote audio button - shows when co-broadcast is active and audio not enabled */}
           {(activeCoBroadcaster || isCohost) && !remoteAudioEnabled && (
             <button 
@@ -1636,6 +1840,158 @@ export default function BroadcastPage() {
                   {language === 'tr' ? 'Kabul Et' : 'Accept'}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Panel Modal (Broadcaster Management) */}
+      <AnimatePresence>
+        {showPanel && !isCohost && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="absolute left-3 right-3 bottom-48 z-30 bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-xl rounded-2xl p-4 border border-white/10 max-h-[50vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Panel
+              </h3>
+              <button onClick={() => setShowPanel(false)} className="text-white/60 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Moderators Section */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/80 text-sm flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-green-400" />
+                  {language === 'tr' ? 'Moderatörler' : 'Moderators'} ({moderators.length}/10)
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {moderators.map(mod => (
+                  <div key={mod.id} className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full">
+                    {mod.user.image ? (
+                      <Image src={mod.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <span className="text-white text-[8px] font-bold">{mod.user.name[0]}</span>
+                      </div>
+                    )}
+                    <span className="text-green-400 text-xs">{mod.user.name}</span>
+                    <button onClick={() => handleRemoveModerator(mod.userId)} className="text-red-400 hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {moderators.length === 0 && (
+                  <span className="text-white/40 text-xs">{language === 'tr' ? 'Henüz moderatör yok' : 'No moderators yet'}</span>
+                )}
+              </div>
+            </div>
+            
+            {/* Fortune Requesters Section (sorted by gift amount) */}
+            <div className="mb-4">
+              <span className="text-white/80 text-sm flex items-center gap-1.5 mb-2">
+                <Crown className="w-4 h-4 text-yellow-400" />
+                {language === 'tr' ? 'Fal İsteyenler' : 'Fortune Requesters'} ({fortuneRequesters.length})
+              </span>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {fortuneRequesters.map((req, index) => (
+                  <motion.div 
+                    key={req.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-xl"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 text-xs font-bold">#{index + 1}</span>
+                      {req.user.image ? (
+                        <Image src={req.user.image} alt="" width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">{(req.nickname || req.user.name)[0]}</span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-white text-xs font-medium">{req.nickname || req.user.name}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-400 text-[10px]">🎁 {req.totalGiftAmount}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleSelectFortuneRequester(req.id)}
+                      className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full"
+                    >
+                      {language === 'tr' ? 'Seç' : 'Select'}
+                    </button>
+                  </motion.div>
+                ))}
+                {fortuneRequesters.length === 0 && (
+                  <p className="text-white/40 text-xs text-center py-4">{language === 'tr' ? 'Henüz fal isteyen yok' : 'No fortune requests yet'}</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={handleToggleImageMode}
+                className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 ${isImageMode ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}
+              >
+                <ImageIcon className="w-4 h-4" />
+                {language === 'tr' ? 'Resim Modu' : 'Image Mode'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Upload Modal */}
+      <AnimatePresence>
+        {showImageUpload && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+            >
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4">
+                <ImageIcon className="w-8 h-8 text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Resim ile Yayın' : 'Broadcast with Image'}
+              </h2>
+              
+              <p className="text-white/70 text-sm mb-6">
+                {language === 'tr' 
+                  ? 'Kamera yerine gösterilecek bir resim seçin'
+                  : 'Select an image to show instead of camera'}
+              </p>
+              
+              <label className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer mb-3">
+                <ImageIcon className="w-5 h-5" />
+                {language === 'tr' ? 'Resim Seç' : 'Choose Image'}
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+              
+              <button
+                onClick={() => setShowImageUpload(false)}
+                className="w-full bg-white/10 text-white py-3 rounded-xl font-semibold"
+              >
+                {language === 'tr' ? 'İptal' : 'Cancel'}
+              </button>
             </motion.div>
           </motion.div>
         )}

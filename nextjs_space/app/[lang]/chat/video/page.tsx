@@ -25,7 +25,12 @@ import {
   Send,
   UserPlus,
   Phone,
-  LogIn
+  LogIn,
+  EyeOff,
+  Eye,
+  User,
+  Settings,
+  Check
 } from 'lucide-react'
 
 interface VideoStream {
@@ -64,6 +69,11 @@ interface Viewer {
   image?: string | null
   hasGifted: boolean
   totalGiftAmount: number
+}
+
+interface ViewerSettings {
+  isHidden: boolean
+  nickname: string
 }
 
 interface FloatingHeart {
@@ -134,6 +144,10 @@ export default function VideoStreamPage() {
     userId: string
     user: { id: string; name: string; image: string | null }
   } | null>(null)
+  // Viewer settings (hide/nickname)
+  const [viewerSettings, setViewerSettings] = useState<ViewerSettings>({ isHidden: false, nickname: '' })
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [tempNickname, setTempNickname] = useState('')
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -182,10 +196,35 @@ export default function VideoStreamPage() {
     const inviteInterval = setInterval(checkCoBroadcastInvite, 10000)
     const streamInterval = setInterval(fetchStreams, 15000)
     
+    // Handle visibility change to fix audio/video when navigating away and back
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentStreamIdRef.current) {
+        // Page became visible - check if connection is still good
+        if (pcRef.current) {
+          const state = pcRef.current.connectionState
+          if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+            // Reconnect
+            retryConnection()
+          } else {
+            // Try to play video again (might have been paused)
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.play().catch(() => {})
+            }
+          }
+        } else if (currentStreamIdRef.current) {
+          // No connection - reconnect
+          retryConnection()
+        }
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
     return () => {
       isUnmountedRef.current = true
       clearInterval(inviteInterval)
       clearInterval(streamInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       cleanup()
     }
   }, [session?.user])
@@ -924,8 +963,17 @@ export default function VideoStreamPage() {
               </div>
             </div>
           ) : (
-            /* Normal Solo Broadcast View */
-            <video ref={remoteVideoRef} autoPlay playsInline muted={isMuted} className="absolute inset-0 w-full h-full object-cover bg-black" />
+            /* Normal Solo Broadcast View - TikTok 9:16 style */
+            <div className="absolute inset-0 flex items-center justify-center bg-black">
+              <video 
+                ref={remoteVideoRef} 
+                autoPlay 
+                playsInline 
+                muted={isMuted} 
+                className="h-full w-auto max-w-full object-contain bg-black"
+                style={{ aspectRatio: '9/16' }}
+              />
+            </div>
           )}
           
           {/* Hidden co-broadcaster video for non-VS mode */}
@@ -1116,29 +1164,44 @@ export default function VideoStreamPage() {
               <span className="text-white text-xs font-bold mt-1">{formatCount(likeCount)}</span>
             </div>
             
-            {/* Gift Button */}
-            <div className="flex flex-col items-center">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30"
-              >
-                <span className="text-2xl">🎁</span>
-              </motion.button>
-              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
-            </div>
+            {/* Hide Yourself Button */}
+            {session?.user && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setViewerSettings(prev => ({ ...prev, isHidden: !prev.isHidden }));
+                  }}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${
+                    viewerSettings.isHidden 
+                      ? 'bg-gradient-to-br from-gray-600 to-gray-700 shadow-gray-500/30' 
+                      : 'bg-gradient-to-br from-purple-500 to-violet-600 shadow-purple-500/30'
+                  }`}
+                >
+                  {viewerSettings.isHidden ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
+                </motion.button>
+                <span className="text-white text-xs font-medium mt-1">{viewerSettings.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (language === 'tr' ? 'Görünür' : 'Visible')}</span>
+              </div>
+            )}
             
-            {/* Fortune Request Button */}
-            <div className="flex flex-col items-center">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30"
-              >
-                <span className="text-2xl">🔮</span>
-              </motion.button>
-              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Fal İste' : 'Fortune'}</span>
-            </div>
+            {/* Nickname/Settings Button */}
+            {session?.user && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setTempNickname(viewerSettings.nickname);
+                    setShowSettingsModal(true);
+                  }}
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30"
+                >
+                  <User className="w-6 h-6 text-white" />
+                </motion.button>
+                <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || (language === 'tr' ? 'Rumuz' : 'Nickname')}</span>
+              </div>
+            )}
             
             {/* Sound Toggle */}
             <motion.button
@@ -1159,33 +1222,35 @@ export default function VideoStreamPage() {
             </motion.button>
           </div>
 
-          {/* ============== CHAT MESSAGES ============== */}
-          <div className="absolute left-3 bottom-28 right-20 max-h-44 overflow-hidden z-10 space-y-1.5">
-            {comments.slice(0, 6).map(c => {
-              const badge = getUserBadge(c.user.name)
-              return (
-                <motion.div 
-                  key={c.id} 
-                  initial={{ opacity: 0, x: -30 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-2 w-fit max-w-[90%]"
-                >
-                  <div className="flex items-start gap-2">
-                    {badge ? (
-                      <span className={`text-base ${badge.color}`}>{badge.icon}</span>
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[8px] font-bold">{c.user.name?.[0]}</span>
+          {/* ============== CHAT MESSAGES - TikTok style (newest at bottom) ============== */}
+          <div className="absolute left-3 bottom-28 right-20 max-h-44 overflow-hidden z-10 flex flex-col-reverse">
+            <div className="space-y-1.5">
+              {comments.slice(0, 6).reverse().map(c => {
+                const badge = getUserBadge(c.user.name)
+                return (
+                  <motion.div 
+                    key={c.id} 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-2 w-fit max-w-[90%]"
+                  >
+                    <div className="flex items-start gap-2">
+                      {badge ? (
+                        <span className={`text-base ${badge.color}`}>{badge.icon}</span>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-[8px] font-bold">{c.user.name?.[0]}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/80'}`}>{c.user.name}: </span>
+                        <span className="text-white text-xs">{c.content}</span>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/80'}`}>{c.user.name}: </span>
-                      <span className="text-white text-xs">{c.content}</span>
                     </div>
-                  </div>
-                </motion.div>
-              )
-            })}
+                  </motion.div>
+                )
+              })}
+            </div>
           </div>
 
           {/* ============== BOTTOM ANIMATIONS ============== */}
@@ -1257,7 +1322,7 @@ export default function VideoStreamPage() {
 
           {/* ============== BOTTOM INPUT BAR ============== */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-            {/* Message Input */}
+            {/* Message Input with Send Button */}
             <div className="flex-1 flex items-center bg-white/10 backdrop-blur-md rounded-full overflow-hidden border border-white/20">
               <input
                 ref={commentInputRef}
@@ -1268,25 +1333,15 @@ export default function VideoStreamPage() {
                 placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
                 className="flex-1 bg-transparent text-white text-sm px-4 py-3 placeholder:text-white/50 focus:outline-none"
               />
-              <div className="pr-4 text-white/40">▼</div>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
+                disabled={!newComment.trim() || !session?.user}
+                className="mr-1.5 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
+              >
+                <Send className="w-4 h-4" />
+                <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
+              </button>
             </div>
-            
-            {/* Fortune Request Button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
-              className="px-5 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold rounded-full flex-shrink-0 shadow-lg shadow-pink-500/30"
-            >
-              {language === 'tr' ? 'Fal iste' : 'Fortune'}
-            </button>
-            
-            {/* Gift Button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-              className="px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium rounded-full flex items-center gap-2 flex-shrink-0"
-            >
-              <span className="text-lg">🎁</span>
-              <span>{language === 'tr' ? 'Hediye' : 'Gift'}</span>
-            </button>
           </div>
 
           {/* Stream navigation indicators */}
@@ -1497,6 +1552,66 @@ export default function VideoStreamPage() {
                   className="text-white/50 text-sm hover:text-white/70"
                 >
                   {language === 'tr' ? 'Daha sonra' : 'Later'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Nickname Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-white/10"
+            >
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-white" />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Rumuz Seç' : 'Choose Nickname'}
+              </h2>
+              
+              <p className="text-white/70 text-sm mb-4">
+                {language === 'tr' 
+                  ? 'Yayında görünmek istediğin ismi gir. Boş bırakırsan gerçek ismin gösterilir.'
+                  : 'Enter the name you want to appear as in the stream. Leave empty to show your real name.'}
+              </p>
+              
+              <input
+                value={tempNickname}
+                onChange={(e) => setTempNickname(e.target.value)}
+                placeholder={session?.user?.name || (language === 'tr' ? 'Rumuz...' : 'Nickname...')}
+                maxLength={20}
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-center placeholder:text-white/40 focus:outline-none focus:border-purple-500 mb-6"
+              />
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <X className="w-5 h-5" />
+                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    setViewerSettings(prev => ({ ...prev, nickname: tempNickname }));
+                    setShowSettingsModal(false);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  {language === 'tr' ? 'Kaydet' : 'Save'}
                 </button>
               </div>
             </motion.div>
