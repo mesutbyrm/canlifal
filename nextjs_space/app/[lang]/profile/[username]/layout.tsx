@@ -39,11 +39,11 @@ async function getUser(username: string) {
 export async function generateMetadata({ params }: LayoutProps): Promise<Metadata> {
   const user = await getUser(params.username)
   const lang = params.lang || 'tr'
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
 
   if (!user) {
     return {
-      title: lang === 'tr' ? 'Kullanıcı Bulunamadı | Falcı' : 'User Not Found | Falci',
+      title: lang === 'tr' ? 'Kullanıcı Bulunamadı | Canlifal' : 'User Not Found | Canlifal',
       description: lang === 'tr' ? 'Aradığınız kullanıcı bulunamadı.' : 'The user you are looking for was not found.'
     }
   }
@@ -53,12 +53,12 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   const ogImage = user.image || `${baseUrl}/og-profile.jpg`
 
   const title = lang === 'tr'
-    ? `${user.name} (@${displayUsername}) | Falcı`
-    : `${user.name} (@${displayUsername}) | Falci`
+    ? `${user.name} (@${displayUsername}) | Canlifal`
+    : `${user.name} (@${displayUsername}) | Canlifal`
 
   const description = lang === 'tr'
-    ? `${user.name} - ${user._count.socialPosts} paylaşım. Falcı platformunda fallarını keşfet.`
-    : `${user.name} - ${user._count.socialPosts} posts. Discover fortunes on Falci platform.`
+    ? `${user.name} - ${user._count.socialPosts} paylaşım. Canlifal platformunda fallarını keşfet.`
+    : `${user.name} - ${user._count.socialPosts} posts. Discover fortunes on Canlifal platform.`
 
   return {
     title,
@@ -69,11 +69,11 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
       lang === 'tr' ? 'fal' : 'fortune',
       lang === 'tr' ? 'falcı' : 'fortune teller',
       lang === 'tr' ? 'profil' : 'profile',
-      'Falcı',
+      'Canlifal',
     ].join(', '),
     authors: [{ name: user.name }],
     creator: user.name,
-    publisher: 'Falcı',
+    publisher: 'Canlifal',
     alternates: {
       canonical: canonicalUrl,
       languages: {
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
       title,
       description,
       url: canonicalUrl,
-      siteName: 'Falcı - Online Fal Platformu',
+      siteName: 'Canlifal - Online Fal Platformu',
       images: [
         {
           url: ogImage,
@@ -102,7 +102,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
       title,
       description,
       images: [ogImage],
-      creator: '@falciapp',
+      creator: '@canlifal',
     },
     robots: {
       index: true,

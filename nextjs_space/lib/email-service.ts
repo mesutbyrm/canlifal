@@ -9,8 +9,8 @@ interface SendEmailParams {
 
 export async function sendNotificationEmail(params: SendEmailParams): Promise<{ success: boolean; message?: string }> {
   try {
-    const appUrl = process.env.NEXTAUTH_URL || 'https://falci.abacusai.app';
-    const appName = 'Falcı - Fortune Platform';
+    const appUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com';
+    const appName = 'Canlifal - Fortune Platform';
     const hostname = new URL(appUrl).hostname;
 
     const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {

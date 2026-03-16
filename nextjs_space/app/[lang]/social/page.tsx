@@ -316,7 +316,7 @@ export default function SocialPage() {
     const url = `${window.location.origin}/${language}/fal/${post.id}`
     const fortuneLabel = FORTUNE_LABELS[post.fortuneType || 'text']?.[language] || ''
     const shortText = post.content.substring(0, 80) + (post.content.length > 80 ? '...' : '')
-    const tiktokText = `${fortuneLabel} ${shortText} #falci #fal #keşfet #fortune #tarot #burç`
+    const tiktokText = `${fortuneLabel} ${shortText} #canlifal #fal #keşfet #fortune #tarot #burç`
     const text = `${fortuneLabel}: ${post.content.substring(0, 100)}` + (post.content.length > 100 ? '...' : '')
 
     switch (platform) {

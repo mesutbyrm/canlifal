@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Send reset email
-    const resetLink = `${process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'}/tr/reset-password?token=${token}`;
+    const resetLink = `${process.env.NEXTAUTH_URL || 'https://canlifal.com'}/tr/reset-password?token=${token}`;
     
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); color: #fff; border-radius: 12px;">
-        <h1 style="color: #d4af37; text-align: center; font-size: 28px; margin-bottom: 20px;">🔮 FALCI</h1>
+        <h1 style="color: #d4af37; text-align: center; font-size: 28px; margin-bottom: 20px;">🔮 Canlifal</h1>
         <h2 style="color: #d4af37; text-align: center;">Şifre Sıfırlama</h2>
         <p style="color: #e0d6eb; text-align: center; font-size: 16px;">Merhaba ${user.name},</p>
         <p style="color: #e0d6eb; text-align: center; font-size: 16px;">Şifrenizi sıfırlamak için aşağıdaki butona tıklayın:</p>
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         <p style="color: #9f8bb8; text-align: center; font-size: 14px;">Bu link 1 saat içinde geçerliliğini yitirecektir.</p>
         <p style="color: #9f8bb8; text-align: center; font-size: 14px;">Eğer bu isteği siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
         <hr style="border: none; border-top: 1px solid #3d2b5e; margin: 30px 0;" />
-        <p style="color: #9f8bb8; text-align: center; font-size: 12px;">© 2024 FALCI - Tüm hakları saklıdır.</p>
+        <p style="color: #9f8bb8; text-align: center; font-size: 12px;">© 2024 Canlifal - Tüm hakları saklıdır.</p>
       </div>
     `;
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       await sendNotificationEmail({
         notificationId: process.env.NOTIF_ID_IFRE_SFRLAMA || '',
         recipientEmail: user.email,
-        subject: 'FALCI - Şifre Sıfırlama',
+        subject: 'Canlifal - Şifre Sıfırlama',
         htmlBody: emailHtml
       });
     } catch (emailError) {

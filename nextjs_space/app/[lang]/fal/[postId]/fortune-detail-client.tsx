@@ -128,8 +128,8 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
 
   const handleShareTwitter = () => {
     const text = lang === 'tr' 
-      ? `${fortuneLabel} - Falcı'da keşfet!` 
-      : `${fortuneLabel} - Discover on Falci!`
+      ? `${fortuneLabel} - Canlifal'da keşfet!` 
+      : `${fortuneLabel} - Discover on Canlifal!`
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, '_blank')
   }
 

@@ -3,7 +3,7 @@ import prisma from '@/lib/db'
 import { BLOG_POSTS, SEO_PAGES } from '@/lib/seo-config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
   
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

@@ -1,7 +1,7 @@
 // Centralized SEO configuration for the fortune telling platform
 
 export const SITE_NAME = 'Canlifal'
-export const SITE_URL = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+export const SITE_URL = process.env.NEXTAUTH_URL || 'https://canlifal.com'
 export const SITE_DESCRIPTION_TR = 'Gerçek falcılarla canlı fal deneyimi. Kahve falı, tarot falı, el falı, rüya tabiri ve astroloji yorumları ile geleceğinizi keşfedin.'
 export const SITE_DESCRIPTION_EN = 'Live fortune telling experience with real fortune tellers. Discover your future with coffee reading, tarot, palm reading, dream interpretation and astrology.'
 

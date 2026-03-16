@@ -83,11 +83,11 @@ async function getPost(postId: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const post = await getPost(params.postId)
   const lang = params.lang || 'tr'
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
   
   if (!post) {
     return {
-      title: lang === 'tr' ? 'Fal Bulunamadı | Falcı' : 'Fortune Not Found | Falci',
+      title: lang === 'tr' ? 'Fal Bulunamadı | Canlifal' : 'Fortune Not Found | Canlifal',
       description: lang === 'tr' ? 'Aradığınız fal bulunamadı.' : 'The fortune you are looking for was not found.'
     }
   }
@@ -104,8 +104,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .trim() + '...'
 
   const title = lang === 'tr' 
-    ? `${fortuneLabel} - ${post.user.name} | Falcı`
-    : `${fortuneLabel} by ${post.user.name} | Falci`
+    ? `${fortuneLabel} - ${post.user.name} | Canlifal`
+    : `${fortuneLabel} by ${post.user.name} | Canlifal`
 
   const description = contentExcerpt.length > 50 
     ? contentExcerpt 
@@ -124,12 +124,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       lang === 'tr' ? 'burç yorumu' : 'horoscope',
       lang === 'tr' ? 'rüya tabiri' : 'dream interpretation',
       fortuneLabel,
-      'Falcı',
+      'Canlifal',
       'online fal',
     ].join(', '),
-    authors: [{ name: post.user.name || 'Falcı User' }],
-    creator: post.user.name || 'Falcı',
-    publisher: 'Falcı',
+    authors: [{ name: post.user.name || 'Canlifal User' }],
+    creator: post.user.name || 'Canlifal',
+    publisher: 'Canlifal',
     alternates: {
       canonical: canonicalUrl,
       languages: {
@@ -154,7 +154,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'article',
       publishedTime: post.createdAt.toISOString(),
       modifiedTime: (post.updatedAt || post.createdAt).toISOString(),
-      authors: [post.user.name || 'Falcı User'],
+      authors: [post.user.name || 'Canlifal User'],
       tags: [
         fortuneLabel,
         lang === 'tr' ? 'fal' : 'fortune',
@@ -167,7 +167,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       images: [ogImage],
-      creator: '@falciapp',
+      creator: '@canlifal',
     },
     robots: {
       index: true,
@@ -183,7 +183,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     other: {
       'article:published_time': post.createdAt.toISOString(),
       'article:modified_time': (post.updatedAt || post.createdAt).toISOString(),
-      'article:author': post.user.name || 'Falcı User',
+      'article:author': post.user.name || 'Canlifal User',
       'article:section': fortuneLabel,
     },
   }
@@ -197,7 +197,7 @@ export default async function FortuneDetailPage({ params }: PageProps) {
   }
 
   const lang = params.lang || 'tr'
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://falci.kulaktan.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
   const fortuneType = post.fortuneType || 'text'
   const fortuneLabel = FORTUNE_LABELS[fortuneType]?.[lang] || FORTUNE_LABELS['text'][lang]
 
@@ -212,12 +212,12 @@ export default async function FortuneDetailPage({ params }: PageProps) {
     dateModified: (post.updatedAt || post.createdAt).toISOString(),
     author: {
       '@type': 'Person',
-      name: post.user.name || 'Falcı User',
+      name: post.user.name || 'Canlifal User',
       image: post.user.image,
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Falcı',
+      name: 'Canlifal',
       logo: {
         '@type': 'ImageObject',
         url: `${baseUrl}/logo.png`,
@@ -259,7 +259,7 @@ export default async function FortuneDetailPage({ params }: PageProps) {
     inLanguage: lang === 'tr' ? 'tr-TR' : 'en-US',
     isPartOf: {
       '@type': 'WebSite',
-      name: 'Falcı',
+      name: 'Canlifal',
       url: baseUrl,
     },
     about: {

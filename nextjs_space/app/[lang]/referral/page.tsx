@@ -63,10 +63,10 @@ export default function ReferralPage() {
     if (data?.referralLink && navigator.share) {
       try {
         await navigator.share({
-          title: language === 'tr' ? 'FALCI - Davet' : 'FALCI - Invitation',
+          title: language === 'tr' ? 'Canlifal - Davet' : 'Canlifal - Invitation',
           text: language === 'tr' 
-            ? 'Falcı\'ya katıl ve 50 ücretsiz CFC kazan!' 
-            : 'Join Falcı and get 50 free credits!',
+            ? 'Canlifal\'a katıl ve 50 ücretsiz CFC kazan!' 
+            : 'Join Canlifal and get 50 free credits!',
           url: data.referralLink
         })
       } catch (err) {
