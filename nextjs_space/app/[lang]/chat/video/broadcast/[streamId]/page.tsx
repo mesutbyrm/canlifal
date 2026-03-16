@@ -1575,16 +1575,8 @@ export default function BroadcastPage() {
               {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
             </button>
           </div>
-          
-          {/* Stream Category Badge - Below Profile */}
-          {streamCategory && (
-            <div className={`mt-2 flex items-center gap-1.5 bg-gradient-to-r ${streamCategory.color} px-3 py-1.5 rounded-full w-fit shadow-lg`}>
-              <span className="text-base">{streamCategory.icon}</span>
-              <span className="text-white font-semibold text-xs">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
-            </div>
-          )}
 
-          {/* Big Gift Banner - Below Category Badge */}
+          {/* Big Gift Banner */}
           <div className="mt-2 w-[90vw] max-w-[400px] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,215,0,0.3)]">
             <GiftNotificationBanner />
           </div>
@@ -1604,9 +1596,17 @@ export default function BroadcastPage() {
         </div>
       )}
 
-      {/* Right Side - Co-Broadcasters & Fortune Requests */}
+      {/* Right Side - Category, Co-Broadcasters & Fortune Requests */}
       {!isCohost && (
         <div className="absolute right-3 top-20 z-20 space-y-3">
+          {/* Stream Category Badge - Fixed at top right */}
+          {streamCategory && (
+            <div className={`flex items-center gap-1.5 bg-gradient-to-r ${streamCategory.color} px-3 py-1.5 rounded-full w-fit shadow-lg`}>
+              <span className="text-base">{streamCategory.icon}</span>
+              <span className="text-white font-semibold text-xs">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+            </div>
+          )}
+          
           {/* Active Co-Broadcasters (as circles, old style) */}
           {activeCoBroadcasters.map(cb => (
             <motion.div

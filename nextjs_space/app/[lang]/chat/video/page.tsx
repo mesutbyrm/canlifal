@@ -599,12 +599,17 @@ export default function VideoStreamPage() {
 
   // Poll fortune request status (to detect refunds)
   const pollFortuneRequestStatus = async (streamId: string) => {
-    if (!session?.user || !hasPendingFortune) return
+    if (!session?.user) return
     
     try {
       const res = await fetch(`/api/video-streams/${streamId}/fortune-requests/my-status`)
       if (res.ok) {
         const data = await res.json()
+        
+        // Update hasPendingFortune based on API response
+        if (data.hasPendingRequest) {
+          setHasPendingFortune(true)
+        }
         
         // Check if status changed to refunded
         if (data.status === 'refunded' && lastFortuneStatusRef.current !== 'refunded') {
@@ -619,7 +624,7 @@ export default function VideoStreamPage() {
           const coinIds = Array.from({ length: 8 }, (_, i) => Date.now() + i)
           setJetonAnimationCoins(coinIds)
           
-          // Refresh user balance
+          // Refresh user balance immediately
           fetchCredits()
           
           // Clear animation after 2 seconds
@@ -632,7 +637,7 @@ export default function VideoStreamPage() {
         
         lastFortuneStatusRef.current = data.status
         
-        if (!data.hasPendingRequest) {
+        if (!data.hasPendingRequest && data.status !== 'refunded') {
           setHasPendingFortune(false)
         }
       }
@@ -1396,42 +1401,26 @@ export default function VideoStreamPage() {
               </div>
             )}
             
-            {/* Hide Yourself Button */}
-            {session?.user && (
-              <div className="flex flex-col items-center">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setViewerSettings(prev => ({ ...prev, isHidden: !prev.isHidden }));
-                  }}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                    viewerSettings.isHidden 
-                      ? 'bg-gradient-to-br from-gray-600 to-gray-700 shadow-gray-500/30' 
-                      : 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-purple-500/30'
-                  }`}
-                >
-                  {viewerSettings.isHidden ? <EyeOff className="w-5 h-5 text-white" /> : <Eye className="w-5 h-5 text-white" />}
-                </motion.button>
-              </div>
-            )}
-            
-            {/* Sound Toggle */}
+            {/* Sound Toggle - Red if muted, Green if unmuted */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+              className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg ${
+                isMuted 
+                  ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30' 
+                  : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30'
+              }`}
             >
-              {isMuted ? <VolumeX className="w-4 h-4 text-white/70" /> : <Volume2 className="w-4 h-4 text-white" />}
+              {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
             </motion.button>
             
-            {/* Exit Button */}
+            {/* Exit Button - "Yayından Çık" */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); router.push(`/${language}`); }}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+              className="px-3 py-2 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border border-white/20 shadow-lg"
             >
-              <X className="w-4 h-4 text-white/70" />
+              <span className="text-white text-xs font-medium">{language === 'tr' ? 'Çık' : 'Exit'}</span>
             </motion.button>
           </div>
 
