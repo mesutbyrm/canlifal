@@ -69,7 +69,7 @@ export async function POST(
     const { nickname, isHidden, giftAmount = 0 } = await request.json()
     
     // Upsert fortune request
-    const fortuneRequest = await db.streamFortuneRequest.upsert({
+    const fortuneRequest = await prisma.streamFortuneRequest.upsert({
       where: {
         streamId_userId: {
           streamId: params.streamId,
@@ -109,7 +109,7 @@ export async function PATCH(
     }
     
     // Check if user is the broadcaster or a moderator
-    const stream = await db.videoStream.findUnique({
+    const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId }
     })
     
@@ -123,7 +123,7 @@ export async function PATCH(
     
     if (action === 'select') {
       // Mark as selected and remove from list
-      await db.streamFortuneRequest.update({
+      await prisma.streamFortuneRequest.update({
         where: { id: requestId },
         data: { 
           status: 'selected',
@@ -131,7 +131,7 @@ export async function PATCH(
         }
       })
     } else if (action === 'reject') {
-      await db.streamFortuneRequest.update({
+      await prisma.streamFortuneRequest.update({
         where: { id: requestId },
         data: { status: 'rejected' }
       })

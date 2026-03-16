@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
-import { db } from '@/lib/db'
+import prisma from '@/lib/db'
 
 // POST - Mute a viewer
 export async function POST(
@@ -15,12 +15,12 @@ export async function POST(
     }
     
     // Check if user is the broadcaster or a moderator
-    const stream = await db.videoStream.findUnique({
+    const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId }
     })
     
     const isBroadcaster = stream?.userId === session.user.id
-    const isModerator = await db.streamModerator.findUnique({
+    const isModerator = await prisma.streamModerator.findUnique({
       where: {
         streamId_userId: {
           streamId: params.streamId,
@@ -36,7 +36,7 @@ export async function POST(
     const { viewerId, reason, expiresAt } = await request.json()
     
     // Create mute record
-    const mutedViewer = await db.streamMutedViewer.upsert({
+    const mutedViewer = await prisma.streamMutedViewer.upsert({
       where: {
         streamId_viewerId: {
           streamId: params.streamId,
@@ -77,12 +77,12 @@ export async function DELETE(
     }
     
     // Check if user is the broadcaster or a moderator
-    const stream = await db.videoStream.findUnique({
+    const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId }
     })
     
     const isBroadcaster = stream?.userId === session.user.id
-    const isModerator = await db.streamModerator.findUnique({
+    const isModerator = await prisma.streamModerator.findUnique({
       where: {
         streamId_userId: {
           streamId: params.streamId,
@@ -98,7 +98,7 @@ export async function DELETE(
     const { viewerId } = await request.json()
     
     // Remove mute record
-    await db.streamMutedViewer.deleteMany({
+    await prisma.streamMutedViewer.deleteMany({
       where: {
         streamId: params.streamId,
         viewerId
@@ -118,7 +118,7 @@ export async function GET(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const mutedViewers = await db.streamMutedViewer.findMany({
+    const mutedViewers = await prisma.streamMutedViewer.findMany({
       where: { 
         streamId: params.streamId,
         OR: [
@@ -128,7 +128,7 @@ export async function GET(
       }
     })
     
-    return NextResponse.json(mutedViewers.map(m => m.viewerId))
+    return NextResponse.json(mutedViewers.map((m: { viewerId: string }) => m.viewerId))
   } catch (error) {
     console.error('Error fetching muted viewers:', error)
     return NextResponse.json({ error: 'Failed to fetch muted viewers' }, { status: 500 })
