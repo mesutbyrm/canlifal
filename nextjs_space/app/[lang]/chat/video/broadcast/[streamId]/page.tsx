@@ -1835,13 +1835,19 @@ export default function BroadcastPage() {
         
         {/* Control buttons */}
         <div className="flex justify-center gap-3">
-          {/* Panel Button */}
+          {/* Panel Button with Fortune Request Badge */}
           <button 
             onClick={() => setShowPanel(!showPanel)} 
-            className={`px-4 py-2.5 rounded-full flex items-center gap-2 ${showPanel ? 'bg-purple-600' : 'bg-white/20'}`}
+            className={`px-4 py-2.5 rounded-full flex items-center gap-2 relative ${showPanel ? 'bg-purple-600' : 'bg-white/20'}`}
           >
             <Settings className="w-5 h-5 text-white" />
             <span className="text-white text-sm font-medium">Panel</span>
+            {/* Red badge showing fortune request count */}
+            {fortuneRequesters.length > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                {fortuneRequesters.length}
+              </span>
+            )}
           </button>
           
           <button onClick={toggleVideo} className={`w-12 h-12 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
@@ -2206,30 +2212,85 @@ export default function BroadcastPage() {
         )}
       </AnimatePresence>
 
-      {/* End Modal */}
+      {/* End Modal with Fortune Requests Section */}
       <AnimatePresence>
         {showEndConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-6">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#1a1a1a] rounded-2xl p-6 w-full max-w-xs text-center">
-              <Radio className="w-12 h-12 text-[#fe2c55] mx-auto mb-4" />
-              <h2 className="text-lg font-bold text-white mb-2">{language === 'tr' ? 'Yayını bitir?' : 'End stream?'}</h2>
-              <p className="text-white/60 text-sm mb-3">{formatDuration(duration)}</p>
-              {totalGiftJetons > 0 && (
-                <div className="flex items-center justify-center gap-2 mb-4 text-yellow-400">
-                  <Coins className="w-4 h-4" />
-                  <span className="font-bold">+{totalGiftJetons}</span>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#1a1a1a] rounded-2xl p-5 w-full max-w-sm">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <Radio className="w-10 h-10 text-[#fe2c55] mx-auto mb-3" />
+                <h2 className="text-lg font-bold text-white mb-1">{language === 'tr' ? 'Yayını Kapat' : 'End Live Stream'}</h2>
+                <p className="text-white/60 text-sm">{formatDuration(duration)}</p>
+                {totalGiftJetons > 0 && (
+                  <div className="flex items-center justify-center gap-2 mt-2 text-yellow-400">
+                    <Coins className="w-4 h-4" />
+                    <span className="font-bold">+{totalGiftJetons}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Fortune Requests Section */}
+              {fortuneRequesters.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/80 text-sm flex items-center gap-1.5">
+                      <Crown className="w-4 h-4 text-amber-400" />
+                      {language === 'tr' ? 'Fal İstekleri' : 'Fortune Requests'}
+                    </span>
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                      {fortuneRequesters.length}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white/5 rounded-xl max-h-48 overflow-y-auto divide-y divide-white/10">
+                    {fortuneRequesters.map((req, index) => (
+                      <div 
+                        key={req.id}
+                        className="p-2.5 flex items-center justify-between cursor-pointer hover:bg-white/5"
+                        onClick={() => { setShowEndConfirm(false); handleOpenFortuneRequest(req); }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-400 text-xs font-bold">#{index + 1}</span>
+                          <span className="text-lg">{req.typeIcon}</span>
+                          {!req.isHidden && req.user.image ? (
+                            <Image src={req.user.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold">{req.isHidden ? '?' : (req.nickname || req.user.name)[0]}</span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white text-xs font-medium truncate max-w-24">
+                              {req.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (req.nickname || req.user.name)}
+                            </p>
+                            <p className="text-amber-400 text-[10px] font-bold">{req.jetonAmount} jeton</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {req.question && <span className="text-blue-400 text-sm">💬</span>}
+                          <span className="text-white/40 text-sm">→</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <p className="text-amber-400 text-xs text-center mt-2">
+                    ⚠️ {language === 'tr' 
+                      ? 'Yayını bitirirsen tüm bekleyen istekler iade edilecek!' 
+                      : 'All pending requests will be refunded if you end!'}
+                  </p>
                 </div>
               )}
-              {fortuneRequesters.length > 0 && (
-                <p className="text-amber-400 text-xs mb-3">
-                  {language === 'tr' 
-                    ? `${fortuneRequesters.length} bekleyen fal isteği iade edilecek` 
-                    : `${fortuneRequesters.length} pending fortune requests will be refunded`}
-                </p>
-              )}
+              
+              {/* Action Buttons */}
               <div className="flex gap-3">
-                <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-white/10 text-white py-2.5 rounded-lg">{language === 'tr' ? 'Devam' : 'Continue'}</button>
-                <button onClick={handleEndStream} className="flex-1 bg-[#fe2c55] text-white py-2.5 rounded-lg">{language === 'tr' ? 'Bitir' : 'End'}</button>
+                <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-medium">
+                  {language === 'tr' ? 'Devam Et' : 'Continue'}
+                </button>
+                <button onClick={handleEndStream} className="flex-1 bg-[#fe2c55] text-white py-2.5 rounded-lg font-medium">
+                  {language === 'tr' ? 'Bitir' : 'End'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

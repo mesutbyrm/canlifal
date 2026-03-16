@@ -158,8 +158,15 @@ export default function VideoStreamPage() {
   const [selectedFortuneType, setSelectedFortuneType] = useState<string | null>(null)
   const [fortuneQuestion, setFortuneQuestion] = useState('')
   const [hasPendingFortune, setHasPendingFortune] = useState(false)
+  // Refund popup state
+  const [showRefundPopup, setShowRefundPopup] = useState(false)
+  const [refundedAmount, setRefundedAmount] = useState(0)
+  const [refundedTypeName, setRefundedTypeName] = useState('')
+  const [refundedTypeIcon, setRefundedTypeIcon] = useState('')
+  const [jetonAnimationCoins, setJetonAnimationCoins] = useState<number[]>([])
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastFortuneStatusRef = useRef<string | null>(null)
   
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
@@ -258,6 +265,9 @@ export default function VideoStreamPage() {
       hasJoinedRef.current = false
       setConnectionStatus('connecting')
       pendingCandidatesRef.current = []
+      // Reset fortune request state when switching streams
+      lastFortuneStatusRef.current = null
+      setHasPendingFortune(false)
       joinStream(currentStream.id)
       setLikeCount(currentStream.likeCount)
       setViewerCount(currentStream.viewerCount)
@@ -387,6 +397,7 @@ export default function VideoStreamPage() {
           fetchViewers(streamId)
           fetchComments(streamId)
           fetchCoBroadcasters(streamId)
+          pollFortuneRequestStatus(streamId)
         }
       }
 
@@ -574,6 +585,48 @@ export default function VideoStreamPage() {
     } finally {
       setRequestingFortune(false)
     }
+  }
+
+  // Poll fortune request status (to detect refunds)
+  const pollFortuneRequestStatus = async (streamId: string) => {
+    if (!session?.user || !hasPendingFortune) return
+    
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/fortune-requests/my-status`)
+      if (res.ok) {
+        const data = await res.json()
+        
+        // Check if status changed to refunded
+        if (data.status === 'refunded' && lastFortuneStatusRef.current !== 'refunded') {
+          // Show refund popup
+          setRefundedAmount(data.jetonAmount)
+          setRefundedTypeName(language === 'tr' ? data.typeName : data.typeNameEn)
+          setRefundedTypeIcon(data.typeIcon)
+          setHasPendingFortune(false)
+          setShowRefundPopup(true)
+          
+          // Start jeton animation
+          const coinIds = Array.from({ length: 8 }, (_, i) => Date.now() + i)
+          setJetonAnimationCoins(coinIds)
+          
+          // Refresh user balance
+          fetchCredits()
+          
+          // Clear animation after 2 seconds
+          setTimeout(() => {
+            setJetonAnimationCoins([])
+          }, 2000)
+        } else if (data.status === 'completed') {
+          setHasPendingFortune(false)
+        }
+        
+        lastFortuneStatusRef.current = data.status
+        
+        if (!data.hasPendingRequest) {
+          setHasPendingFortune(false)
+        }
+      }
+    } catch (e) {}
   }
 
   // Fetch co-broadcasters for split screen mode
@@ -1956,6 +2009,131 @@ export default function VideoStreamPage() {
       </AnimatePresence>
 
       <CfcJetonInfoPopup isOpen={showCfcPopup} onClose={() => setShowCfcPopup(false)} />
+
+      {/* Refund Popup with Jeton Animation */}
+      <AnimatePresence>
+        {showRefundPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
+            onClick={() => setShowRefundPopup(false)}
+          >
+            {/* Jeton Animation - Falling coins */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {jetonAnimationCoins.map((coinId, index) => (
+                <motion.div
+                  key={coinId}
+                  initial={{ 
+                    y: -50, 
+                    x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 300), 
+                    scale: 0,
+                    rotate: 0
+                  }}
+                  animate={{ 
+                    y: typeof window !== 'undefined' ? window.innerHeight + 100 : 800,
+                    scale: [0, 1.5, 1],
+                    rotate: 360 * 3
+                  }}
+                  transition={{ 
+                    duration: 2 + Math.random() * 0.5,
+                    delay: index * 0.1,
+                    ease: 'easeIn'
+                  }}
+                  className="absolute text-4xl"
+                >
+                  🪙
+                </motion.div>
+              ))}
+            </div>
+            
+            <motion.div
+              initial={{ scale: 0.5, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.5, y: 50 }}
+              transition={{ type: 'spring', damping: 15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-red-900/95 to-red-950/95 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm border border-red-500/30 text-center relative overflow-hidden"
+            >
+              {/* Sparkle effect background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+                    style={{
+                      left: `${20 + Math.random() * 60}%`,
+                      top: `${20 + Math.random() * 60}%`
+                    }}
+                    animate={{
+                      scale: [0, 1, 0],
+                      opacity: [0, 1, 0]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.2
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {/* Icon */}
+              <motion.div 
+                className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mx-auto mb-4"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 0.5, repeat: 2 }}
+              >
+                <span className="text-4xl">{refundedTypeIcon || '☕'}</span>
+              </motion.div>
+              
+              {/* Message */}
+              <h2 className="text-xl font-bold text-white mb-2">
+                {language === 'tr' ? 'Falınıza Bakılamadı' : 'Fortune Could Not Be Read'}
+              </h2>
+              
+              <p className="text-white/70 text-sm mb-4">
+                {refundedTypeName}
+              </p>
+              
+              {/* Refund Amount with Animation */}
+              <motion.div 
+                className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl p-4 mb-4"
+                animate={{ boxShadow: ['0 0 0 0 rgba(234,179,8,0)', '0 0 20px 5px rgba(234,179,8,0.3)', '0 0 0 0 rgba(234,179,8,0)'] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <p className="text-white/60 text-sm mb-1">
+                  {language === 'tr' ? 'İade Edilen Jeton' : 'Refunded Jetons'}
+                </p>
+                <motion.div 
+                  className="flex items-center justify-center gap-2"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', damping: 10, delay: 0.3 }}
+                >
+                  <Coins className="w-8 h-8 text-yellow-400" />
+                  <span className="text-4xl font-bold text-yellow-400">+{refundedAmount}</span>
+                </motion.div>
+              </motion.div>
+              
+              <p className="text-white/50 text-xs mb-4">
+                {language === 'tr' 
+                  ? 'Jetonlarınız hesabınıza iade edildi.' 
+                  : 'Your jetons have been refunded to your account.'}
+              </p>
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowRefundPopup(false)}
+                className="w-full py-3 rounded-xl font-bold bg-white/10 text-white hover:bg-white/20 transition-colors"
+              >
+                {language === 'tr' ? 'Tamam' : 'OK'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   )
