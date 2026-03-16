@@ -32,7 +32,7 @@ export async function GET() {
     yearStart.setHours(0, 0, 0, 0);
 
     // Get statistics
-    const [todayTotal, todayUnique, weekTotal, weekUnique, monthTotal, monthUnique, yearTotal, yearUnique, countryStats, cityStats] = await Promise.all([
+    const [todayTotal, todayUnique, weekTotal, weekUnique, monthTotal, monthUnique, yearTotal, yearUnique, countryStats, cityStats, deviceStats, botStats, recentBots, activePresences] = await Promise.all([
       // Today - Total visits
       prisma.siteVisit.count({
         where: { visitedAt: { gte: todayStart } }
@@ -93,6 +93,51 @@ export async function GET() {
         _count: { city: true },
         orderBy: { _count: { city: 'desc' } },
         take: 10
+      }),
+
+      // Device type breakdown (last 30 days)
+      prisma.siteVisit.groupBy({
+        by: ['deviceType'],
+        where: { visitedAt: { gte: monthStart }, isBot: false },
+        _count: { deviceType: true },
+        orderBy: { _count: { deviceType: 'desc' } }
+      }),
+
+      // Bot breakdown (last 30 days)
+      prisma.siteVisit.groupBy({
+        by: ['botName'],
+        where: { visitedAt: { gte: monthStart }, isBot: true },
+        _count: { botName: true },
+        orderBy: { _count: { botName: 'desc' } },
+        take: 15
+      }),
+
+      // Recent bots currently active
+      prisma.sitePresence.findMany({
+        where: {
+          isBot: true,
+          lastSeen: { gte: new Date(now.getTime() - 5 * 60 * 1000) }
+        },
+        select: { botName: true, path: true, lastSeen: true, deviceType: true },
+        orderBy: { lastSeen: 'desc' },
+        take: 20
+      }),
+
+      // All currently active presences with details
+      prisma.sitePresence.findMany({
+        where: { lastSeen: { gte: new Date(now.getTime() - 2 * 60 * 1000) } },
+        select: {
+          visitorId: true,
+          userId: true,
+          path: true,
+          lastSeen: true,
+          deviceType: true,
+          isBot: true,
+          botName: true,
+          userAgent: true
+        },
+        orderBy: { lastSeen: 'desc' },
+        take: 50
       })
     ]);
 
@@ -107,12 +152,50 @@ export async function GET() {
       count: c._count.city
     }));
 
+    // Format device stats
+    const devices = deviceStats.map((d: any) => ({
+      deviceType: d.deviceType || 'unknown',
+      count: d._count.deviceType
+    }));
+
+    // Format bot stats
+    const bots = botStats.map((b: any) => ({
+      botName: b.botName || 'Bilinmeyen Bot',
+      count: b._count.botName
+    }));
+
+    // Format active presences with user names
+    const userIds = activePresences.filter((p: any) => p.userId).map((p: any) => p.userId);
+    let userMap = new Map();
+    if (userIds.length > 0) {
+      const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, username: true }
+      });
+      userMap = new Map(users.map((u: any) => [u.id, u]));
+    }
+
+    const activeVisitors = activePresences.map((p: any) => ({
+      visitorId: p.visitorId,
+      userId: p.userId,
+      userName: p.userId ? (userMap.get(p.userId)?.username || userMap.get(p.userId)?.name || 'Kullanıcı') : null,
+      path: p.path,
+      lastSeen: p.lastSeen,
+      deviceType: p.deviceType,
+      isBot: p.isBot,
+      botName: p.botName,
+    }));
+
     return NextResponse.json({
       today: { total: todayTotal, unique: todayUnique },
       week: { total: weekTotal, unique: weekUnique },
       month: { total: monthTotal, unique: monthUnique },
       year: { total: yearTotal, unique: yearUnique },
-      geo: { countries, cities }
+      geo: { countries, cities },
+      devices,
+      bots,
+      recentBots,
+      activeVisitors
     });
   } catch (error) {
     console.error('Visitor stats error:', error);

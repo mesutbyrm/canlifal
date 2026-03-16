@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import crypto from 'crypto';
+import { parseUserAgent } from '@/lib/ua-parser';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,9 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
 
+    // Parse user-agent for device type and bot detection
+    const uaInfo = parseUserAgent(userAgent);
+
     // Upsert presence record
     await prisma.sitePresence.upsert({
       where: { visitorId },
@@ -54,6 +58,9 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id || null,
         path: path || null,
         userAgent,
+        deviceType: uaInfo.deviceType,
+        isBot: uaInfo.isBot,
+        botName: uaInfo.botName,
       },
       create: {
         visitorId,
@@ -61,6 +68,9 @@ export async function POST(request: NextRequest) {
         lastSeen: new Date(),
         path: path || null,
         userAgent,
+        deviceType: uaInfo.deviceType,
+        isBot: uaInfo.isBot,
+        botName: uaInfo.botName,
       },
     });
 
@@ -99,6 +109,9 @@ export async function POST(request: NextRequest) {
             country: geoInfo.country,
             city: geoInfo.city,
             ipHash: hashIP(ip),
+            deviceType: uaInfo.deviceType,
+            isBot: uaInfo.isBot,
+            botName: uaInfo.botName,
           }
         });
       }

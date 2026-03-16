@@ -13,6 +13,9 @@ interface OnlineUser {
   username: string | null
   image: string | null
   isGuest?: boolean
+  isBot?: boolean
+  botName?: string | null
+  deviceType?: string
 }
 
 interface RecentPurchaser {
@@ -101,14 +104,34 @@ export default function LiveTicker() {
   // Build scrolling ticker items
   const scrollItems: JSX.Element[] = []
 
+  // Device type emoji helper
+  const getDeviceEmoji = (deviceType?: string) => {
+    switch (deviceType) {
+      case 'mobile': return '\ud83d\udcf1'
+      case 'tablet': return '\ud83d\udcdf'
+      case 'desktop': return '\ud83d\udcbb'
+      default: return '\ud83d\udcbb'
+    }
+  }
+
   // Online users - show all with names for registered, anonymous for guests
   data.onlineUsers.slice(0, 20).forEach((user, index) => {
     const isGuest = user.isGuest
-    const displayName = isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullan\u0131c\u0131')
+    const isBot = user.isBot
+    const displayName = isBot ? (user.botName || user.name) : (isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'))
+    const deviceIcon = getDeviceEmoji(user.deviceType)
+    const dotColor = isBot ? 'text-orange-400 fill-orange-400' : (isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400')
+    const nameColor = isBot ? 'text-orange-300' : (isGuest ? guestColor : secondaryText)
+    
     scrollItems.push(
-      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
-        <Circle className={`w-2.5 h-2.5 ${isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400'} animate-pulse`} />
-        <span className={`text-xs sm:text-sm font-medium ${isGuest ? guestColor : secondaryText}`}>{displayName}</span>
+      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 mx-1 whitespace-nowrap">
+        {isBot ? (
+          <span className="text-xs">\ud83e\udd16</span>
+        ) : (
+          <Circle className={`w-2.5 h-2.5 ${dotColor} animate-pulse`} />
+        )}
+        <span className="text-xs opacity-70">{deviceIcon}</span>
+        <span className={`text-xs sm:text-sm font-medium ${nameColor}`}>{displayName}</span>
       </div>
     )
   })

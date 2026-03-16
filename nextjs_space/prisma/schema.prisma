@@ -571,27 +571,33 @@ model AnonymousFortune {
 }
 
 model SitePresence {
-  id        String   @id @default(cuid())
-  visitorId String   @unique
-  userId    String?
-  lastSeen  DateTime @default(now())
-  userAgent String?
-  path      String?
+  id         String   @id @default(cuid())
+  visitorId  String   @unique
+  userId     String?
+  lastSeen   DateTime @default(now())
+  userAgent  String?
+  path       String?
+  deviceType String?  // mobile, tablet, desktop
+  isBot      Boolean  @default(false)
+  botName    String?
 
   @@index([lastSeen])
   @@map("site_presences")
 }
 
 model SiteVisit {
-  id        String   @id @default(cuid())
-  visitorId String
-  userId    String?
-  visitedAt DateTime @default(now())
-  path      String?
-  userAgent String?
-  country   String?
-  city      String?
-  ipHash    String?
+  id         String   @id @default(cuid())
+  visitorId  String
+  userId     String?
+  visitedAt  DateTime @default(now())
+  path       String?
+  userAgent  String?
+  country    String?
+  city       String?
+  ipHash     String?
+  deviceType String?
+  isBot      Boolean  @default(false)
+  botName    String?
 
   @@index([visitedAt])
   @@index([visitorId])

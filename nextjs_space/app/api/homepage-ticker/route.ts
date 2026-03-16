@@ -50,7 +50,10 @@ export async function GET() {
       },
       select: {
         visitorId: true,
-        lastSeen: true
+        lastSeen: true,
+        deviceType: true,
+        isBot: true,
+        botName: true
       },
       take: 30,
       orderBy: {
@@ -58,21 +61,40 @@ export async function GET() {
       }
     })
 
-    // Create guest user entries as "faluser"
-    const guestUsers = guestPresences.map((guest: { visitorId: string }, index: number) => ({
+    // Create guest/bot user entries
+    const guestUsers = guestPresences.map((guest: { visitorId: string; deviceType: string | null; isBot: boolean; botName: string | null }, index: number) => ({
       id: `guest-${guest.visitorId}`,
-      name: `faluser${index + 1}`,
+      name: guest.isBot && guest.botName ? guest.botName : `canlifal${index + 1}`,
       username: null,
       image: null,
-      isGuest: true
+      isGuest: !guest.isBot,
+      isBot: guest.isBot,
+      botName: guest.botName,
+      deviceType: guest.deviceType || 'desktop'
     }))
 
     // Total online count includes both registered users and guests
     const onlineCount = onlineRegisteredCount + guestPresences.length
 
+    // Get device info for registered users from SitePresence
+    const registeredPresences = await prisma.sitePresence.findMany({
+      where: {
+        userId: { in: onlineUsers.map((u: { id: string }) => u.id) },
+        lastSeen: { gte: twoMinutesAgo }
+      },
+      select: { userId: true, deviceType: true }
+    })
+    const deviceMap = new Map(registeredPresences.map((p: { userId: string | null; deviceType: string | null }) => [p.userId, p.deviceType]))
+
     // Combine registered users and guests for display
     const allOnlineUsers = [
-      ...onlineUsers.map((u: { id: string; name: string | null; username: string | null; image: string | null }) => ({ ...u, isGuest: false })),
+      ...onlineUsers.map((u: { id: string; name: string | null; username: string | null; image: string | null }) => ({
+        ...u,
+        isGuest: false,
+        isBot: false,
+        botName: null,
+        deviceType: deviceMap.get(u.id) || 'desktop'
+      })),
       ...guestUsers
     ]
 

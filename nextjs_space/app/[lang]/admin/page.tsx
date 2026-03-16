@@ -10,7 +10,7 @@ import {
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
-  Image as ImageIcon
+  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -75,6 +75,17 @@ interface Statistics {
   economy?: { creditsInCirculation: number; creditsSpent: number; cfcInCirculation?: number; jetonInCirculation?: number; jetonLoaded?: number; jetonGiftSent?: number; jetonGiftReceived?: number; jetonCommission?: number; jetonSpent?: number; chatGiftJetonTotal?: number; chatGiftCfcTotal?: number; chatGiftCommissionTotal?: number }
 }
 
+interface ActiveVisitor {
+  visitorId: string
+  userId: string | null
+  userName: string | null
+  path: string | null
+  lastSeen: string
+  deviceType: string | null
+  isBot: boolean
+  botName: string | null
+}
+
 interface VisitorStats {
   today: { total: number; unique: number }
   week: { total: number; unique: number }
@@ -84,6 +95,10 @@ interface VisitorStats {
     countries: { country: string; count: number }[]
     cities: { city: string; count: number }[]
   }
+  devices?: { deviceType: string; count: number }[]
+  bots?: { botName: string; count: number }[]
+  recentBots?: { botName: string; path: string; lastSeen: string }[]
+  activeVisitors?: ActiveVisitor[]
 }
 
 type AdminTab = 'dashboard' | 'users' | 'chat' | 'economy' | 'gift-settings' | 'ads' | 'visitors' | 'statistics'
@@ -740,8 +755,18 @@ export default function AdminPage() {
     </div>
   )
 
+  const getDeviceIcon = (deviceType: string | null) => {
+    switch (deviceType) {
+      case 'mobile': return <Smartphone className="w-4 h-4 text-blue-400" />
+      case 'tablet': return <Tablet className="w-4 h-4 text-green-400" />
+      case 'desktop': return <Monitor className="w-4 h-4 text-purple-400" />
+      default: return <Monitor className="w-4 h-4 text-gray-400" />
+    }
+  }
+
   const renderVisitors = () => (
     <div className="space-y-6">
+      {/* Visit counts */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <VisitorCard label={language === 'tr' ? 'Bugün' : 'Today'} unique={visitorStats?.today?.unique ?? 0} total={visitorStats?.today?.total ?? 0} color="text-blue-500" icon={Eye} />
         <VisitorCard label={language === 'tr' ? 'Bu Hafta' : 'This Week'} unique={visitorStats?.week?.unique ?? 0} total={visitorStats?.week?.total ?? 0} color="text-green-500" icon={TrendingUp} />
@@ -749,6 +774,48 @@ export default function AdminPage() {
         <VisitorCard label={language === 'tr' ? 'Bu Yıl' : 'This Year'} unique={visitorStats?.year?.unique ?? 0} total={visitorStats?.year?.total ?? 0} color={accentColor} icon={Sparkles} />
       </div>
 
+      {/* Device & Bot breakdown */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Device Types */}
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
+            <Monitor className="w-4 h-4" /> {language === 'tr' ? 'Cihaz Dağılımı (Son 30 Gün)' : 'Device Breakdown (Last 30 Days)'}
+          </h3>
+          <div className="space-y-3">
+            {visitorStats?.devices?.length ? visitorStats.devices.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {getDeviceIcon(item.deviceType)}
+                  <span className={`${textSecondary} text-sm capitalize`}>
+                    {item.deviceType === 'mobile' ? (language === 'tr' ? 'Mobil' : 'Mobile') :
+                     item.deviceType === 'tablet' ? 'Tablet' :
+                     item.deviceType === 'desktop' ? (language === 'tr' ? 'Masaüstü' : 'Desktop') :
+                     (language === 'tr' ? 'Bilinmiyor' : 'Unknown')}
+                  </span>
+                </div>
+                <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
+              </div>
+            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+          </div>
+        </div>
+
+        {/* Bot Traffic */}
+        <div className={`${cardBg} rounded-xl p-5`}>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
+            <Bot className="w-4 h-4" /> {language === 'tr' ? 'Bot Trafiği (Son 30 Gün)' : 'Bot Traffic (Last 30 Days)'}
+          </h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {visitorStats?.bots?.length ? visitorStats.bots.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className={`${textSecondary} text-sm`}>🤖 {item.botName}</span>
+                <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
+              </div>
+            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Bot tespit edilmedi' : 'No bots detected'}</p>)}
+          </div>
+        </div>
+      </div>
+
+      {/* Geo stats */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className={`${cardBg} rounded-xl p-5`}>
           <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🌍 {language === 'tr' ? 'Ülkelere Göre (Son 30 Gün)' : 'By Country (Last 30 Days)'}</h3>
@@ -771,6 +838,68 @@ export default function AdminPage() {
               </div>
             )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
           </div>
+        </div>
+      </div>
+
+      {/* Active Visitors - Real-time */}
+      <div className={`${cardBg} rounded-xl p-5`}>
+        <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
+          <Activity className="w-4 h-4 text-green-400 animate-pulse" /> {language === 'tr' ? 'Şu An Aktif Ziyaretçiler' : 'Currently Active Visitors'}
+          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${isFacebook ? 'bg-blue-100 text-blue-800' : 'bg-green-500/20 text-green-400'}`}>
+            {visitorStats?.activeVisitors?.length ?? 0}
+          </span>
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className={`${textMuted} text-xs border-b ${isFacebook ? 'border-gray-200' : 'border-white/10'}`}>
+                <th className="text-left py-2 px-2">{language === 'tr' ? 'Tür' : 'Type'}</th>
+                <th className="text-left py-2 px-2">{language === 'tr' ? 'İsim' : 'Name'}</th>
+                <th className="text-left py-2 px-2">{language === 'tr' ? 'Cihaz' : 'Device'}</th>
+                <th className="text-left py-2 px-2">{language === 'tr' ? 'Sayfa' : 'Page'}</th>
+                <th className="text-left py-2 px-2">{language === 'tr' ? 'Son Görülme' : 'Last Seen'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visitorStats?.activeVisitors?.length ? visitorStats.activeVisitors.map((v, idx) => (
+                <tr key={idx} className={`border-b ${isFacebook ? 'border-gray-100' : 'border-white/5'} hover:${isFacebook ? 'bg-gray-50' : 'bg-white/5'}`}>
+                  <td className="py-2 px-2">
+                    {v.isBot ? (
+                      <span className="text-orange-400 text-xs font-medium">🤖 Bot</span>
+                    ) : v.userId ? (
+                      <span className="text-green-400 text-xs font-medium">👤 {language === 'tr' ? 'Üye' : 'User'}</span>
+                    ) : (
+                      <span className={`${textMuted} text-xs`}>👻 {language === 'tr' ? 'Misafir' : 'Guest'}</span>
+                    )}
+                  </td>
+                  <td className={`py-2 px-2 ${textSecondary} text-sm font-medium`}>
+                    {v.isBot ? v.botName : (v.userName || (language === 'tr' ? 'Anonim' : 'Anonymous'))}
+                  </td>
+                  <td className="py-2 px-2">
+                    <span className="flex items-center gap-1">
+                      {getDeviceIcon(v.deviceType)}
+                      <span className={`${textMuted} text-xs capitalize`}>{v.deviceType || '-'}</span>
+                    </span>
+                  </td>
+                  <td className={`py-2 px-2 ${textMuted} text-xs max-w-[200px] truncate`}>{v.path || '/'}</td>
+                  <td className={`py-2 px-2 ${textMuted} text-xs`}>
+                    {(() => {
+                      try {
+                        const d = new Date(v.lastSeen)
+                        return format(d, 'HH:mm:ss')
+                      } catch { return '-' }
+                    })()}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className={`py-4 text-center ${textMuted} text-sm`}>
+                    {language === 'tr' ? 'Aktif ziyaretçi yok' : 'No active visitors'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

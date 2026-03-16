@@ -21,7 +21,7 @@ interface TierAvatarWrapperProps {
 
 const TIER_CONFIG = {
   faluser: {
-    label: 'FalUser',
+    label: 'Canlifal',
     icon: User,
     gradient: 'from-gray-400 to-gray-600',
     bgGradient: 'from-gray-500/20 to-gray-700/20',
