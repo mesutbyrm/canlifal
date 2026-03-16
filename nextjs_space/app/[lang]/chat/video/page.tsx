@@ -208,6 +208,16 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  // Reset connection state when component mounts (user re-enters)
+  useEffect(() => {
+    // Reset all connection refs on mount to ensure fresh connection
+    currentStreamIdRef.current = ''
+    hasJoinedRef.current = false
+    pcRef.current = null
+    pendingCandidatesRef.current = []
+    setConnectionStatus('connecting')
+  }, [])
+
   useEffect(() => {
     isUnmountedRef.current = false
     fetchStreams()

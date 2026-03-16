@@ -1576,63 +1576,6 @@ export default function BroadcastPage() {
             </button>
           </div>
           
-          {/* Fortune Requests Section - Below End Button */}
-          {fortuneRequesters.length > 0 && (
-            <div className="mt-3 bg-black/60 backdrop-blur-sm rounded-xl p-3 w-[90vw] max-w-[320px]">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-bold text-sm flex items-center gap-1.5">
-                  <Crown className="w-4 h-4 text-amber-400" />
-                  {language === 'tr' ? 'Fal İstekleri' : 'Fortune Requests'}
-                </h3>
-                <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
-                  {fortuneRequesters.length}
-                </span>
-              </div>
-              
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                {fortuneRequesters.slice(0, 5).map((req, index) => (
-                  <motion.div 
-                    key={req.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => handleOpenFortuneRequest(req)}
-                    className="flex items-center justify-between bg-white/10 rounded-lg p-2 cursor-pointer hover:bg-white/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-[10px] font-bold text-black">
-                        {index + 1}
-                      </span>
-                      <span className="text-base">{req.typeIcon}</span>
-                      {!req.isHidden && req.user.image ? (
-                        <Image src={req.user.image} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white text-[9px] font-bold">{req.isHidden ? '?' : (req.nickname || req.user.name)[0]}</span>
-                        </div>
-                      )}
-                      <span className="text-white text-xs font-medium truncate max-w-20">
-                        {req.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (req.nickname || req.user.name)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {req.question && <span className="text-blue-400 text-xs">💬</span>}
-                      <div className="flex items-center gap-0.5 bg-amber-500/30 px-1.5 py-0.5 rounded-full">
-                        <Coins className="w-3 h-3 text-amber-400" />
-                        <span className="text-amber-400 text-[10px] font-bold">{req.jetonAmount}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-                {fortuneRequesters.length > 5 && (
-                  <p className="text-white/60 text-[10px] text-center">
-                    +{fortuneRequesters.length - 5} {language === 'tr' ? 'daha' : 'more'}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-          
           {/* Stream Category Badge - Below Profile */}
           {streamCategory && (
             <div className={`mt-2 flex items-center gap-1.5 bg-gradient-to-r ${streamCategory.color} px-3 py-1.5 rounded-full w-fit shadow-lg`}>
@@ -1661,9 +1604,9 @@ export default function BroadcastPage() {
         </div>
       )}
 
-      {/* Right Side - Co-Broadcasters & Viewer List */}
+      {/* Right Side - Co-Broadcasters & Fortune Requests */}
       {!isCohost && (
-        <div className="absolute right-3 top-20 z-20 space-y-2">
+        <div className="absolute right-3 top-20 z-20 space-y-3">
           {/* Active Co-Broadcasters (as circles, old style) */}
           {activeCoBroadcasters.map(cb => (
             <motion.div
@@ -1714,6 +1657,53 @@ export default function BroadcastPage() {
               <p className="text-white text-[10px] text-center mt-1 truncate max-w-16">{cb.user.name}</p>
             </motion.div>
           ))}
+          
+          {/* Fortune Requests Section - Right Side */}
+          {fortuneRequesters.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-black/70 backdrop-blur-sm rounded-xl p-2.5 w-44"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-white font-bold text-xs flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  {language === 'tr' ? 'Fal İstekleri' : 'Requests'}
+                </h3>
+                <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                  {fortuneRequesters.length}
+                </span>
+              </div>
+              
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {fortuneRequesters.map((req, index) => (
+                  <motion.div 
+                    key={req.id}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleOpenFortuneRequest(req)}
+                    className="flex items-center gap-1.5 bg-white/10 rounded-lg p-1.5 cursor-pointer hover:bg-white/20 transition-colors"
+                  >
+                    <span className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[9px] font-bold text-black shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm shrink-0">{req.typeIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-[10px] font-medium truncate">
+                        {req.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (req.nickname || req.user.name)}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Coins className="w-2.5 h-2.5 text-amber-400" />
+                        <span className="text-amber-400 text-[9px] font-bold">{req.jetonAmount}</span>
+                        {req.question && <span className="text-blue-400 text-[9px]">💬</span>}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
       )}
 
