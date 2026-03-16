@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
           type: 'user',
           id: u.id,
           title: u.name || u.username || 'User',
-          href: `/social/profile/${u.id}`,
+          href: `/profile/${u.id}`,
           icon: '👤',
           image: u.image || undefined,
         }));

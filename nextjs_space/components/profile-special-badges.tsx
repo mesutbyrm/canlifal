@@ -11,6 +11,7 @@ export type SpecialBadgeType =
   | 'vip' | 'beta_tester' | 'early_supporter' | 'verified'
   | 'top_spender' | 'top_gifter' | 'streamer_star' | 'fortune_master'
   | 'social_king' | 'loyal_member' | 'event_winner' | 'moderator'
+  | 'diamond'
 
 interface SpecialBadge {
   type: SpecialBadgeType
@@ -125,6 +126,14 @@ const BADGE_CONFIG: Record<SpecialBadgeType, {
     gradient: 'from-green-400 via-emerald-500 to-teal-500',
     glow: 'shadow-green-500/50',
     animation: 'badge-pulse'
+  },
+  diamond: {
+    nameTr: 'Elmas Üye',
+    nameEn: 'Diamond Member',
+    icon: Gem,
+    gradient: 'from-cyan-300 via-blue-400 to-purple-500',
+    glow: 'shadow-cyan-500/50',
+    animation: 'badge-sparkle'
   }
 }
 
@@ -137,6 +146,7 @@ const SIZE_CONFIG = {
 export function SpecialBadge({ type, size = 'md' }: { type: SpecialBadgeType; size?: 'sm' | 'md' | 'lg' }) {
   const { language } = useLanguage()
   const config = BADGE_CONFIG[type]
+  if (!config) return null
   const sizeConfig = SIZE_CONFIG[size]
   const Icon = config.icon
 
