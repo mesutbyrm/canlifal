@@ -142,33 +142,33 @@ export default function LiveTicker() {
     )
   })
 
-  const duplicatedItems = [...scrollItems, ...scrollItems]
-
+  // Only show items once - no duplication
   return (
     <div className={`w-full overflow-hidden ${bgGradient} border-b`}>
       {/* Row 1: Canlı Falcı button + Online count + scrolling ticker */}
-      <div className="flex items-center h-8">
+      <div className="flex items-center h-7 sm:h-8">
         <Link
           href={`/${language}/live-tellers`}
-          className="flex-shrink-0 flex items-center gap-1 px-3 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-[11px] font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
+          className="flex-shrink-0 flex items-center gap-1 px-2 sm:px-3 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-[10px] sm:text-[11px] font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
         >
           <Sparkles className="w-3 h-3" />
-          <span>{language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}</span>
+          <span className="hidden xs:inline">{language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}</span>
+          <span className="xs:hidden">{language === 'tr' ? 'Canlı' : 'Live'}</span>
           {data.onlineTellerCount > 0 && (
-            <span className="ml-0.5 px-1.5 py-0 rounded-full bg-green-500 text-white text-[10px] font-bold animate-pulse">
+            <span className="ml-0.5 px-1 sm:px-1.5 py-0 rounded-full bg-green-500 text-white text-[9px] sm:text-[10px] font-bold animate-pulse">
               {data.onlineTellerCount}
             </span>
           )}
         </Link>
-        <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-full bg-green-900/40">
-          <Circle className="w-2.5 h-2.5 text-green-400 fill-green-400 animate-pulse" />
-          <span className="text-green-400 text-[11px] font-bold">{data.onlineCount}</span>
-          <span className="text-green-300 text-[10px]">{language === 'tr' ? 'ki\u015fi' : 'online'}</span>
+        <div className="flex-shrink-0 inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-full bg-green-900/40">
+          <Circle className="w-2 sm:w-2.5 h-2 sm:h-2.5 text-green-400 fill-green-400 animate-pulse" />
+          <span className="text-green-400 text-[10px] sm:text-[11px] font-bold">{data.onlineCount}</span>
+          <span className="text-green-300 text-[9px] sm:text-[10px] hidden sm:inline">{language === 'tr' ? 'ki\u015fi' : 'online'}</span>
         </div>
-        {/* Scrolling ticker fills remaining space */}
+        {/* Scrolling ticker fills remaining space - items shown once */}
         <div className="flex-1 overflow-hidden h-full flex items-center" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex">
-            {duplicatedItems.length > 0 ? duplicatedItems : (
+            {scrollItems.length > 0 ? scrollItems : (
               <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
                 <span className="text-fuchsia-300/50 text-[10px]">{language === 'tr' ? '\u015eu an aktif kullan\u0131c\u0131 yok' : 'No active users'}</span>
               </div>
@@ -178,11 +178,11 @@ export default function LiveTicker() {
       </div>
       <style jsx>{`
         @keyframes live-ticker-rtl {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
         }
         .live-ticker-scroll {
-          animation: live-ticker-rtl 25s linear infinite;
+          animation: live-ticker-rtl 20s linear infinite;
           will-change: transform;
         }
       `}</style>

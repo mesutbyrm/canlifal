@@ -266,8 +266,8 @@ export default function HomePage() {
           <LiveTicker />
         </div>
 
-        {/* Main Content */}
-        <div className="pt-[114px] pb-28 px-4 space-y-4 relative z-10">
+        {/* Main Content - no gap between ticker and content */}
+        <div className="pt-[100px] sm:pt-[106px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
 
@@ -544,8 +544,8 @@ export default function HomePage() {
           <LiveTicker />
         </div>
 
-        {/* Main Content */}
-        <div className="pt-32 pb-28 px-4 space-y-4 relative z-10">
+        {/* Main Content - no gap between ticker and content */}
+        <div className="pt-[100px] sm:pt-[106px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
 
@@ -653,11 +653,11 @@ export default function HomePage() {
         <LiveTicker />
       </div>
 
-      {/* Content area with proper top padding */}
-      <div className="pt-28">
+      {/* Content area with proper top padding - no gap */}
+      <div className="pt-[100px] sm:pt-[106px]">
 
         {/* Action Buttons Row */}
-        <div className="px-4 pb-4">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4">
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="cosmic" />
         </div>
 
