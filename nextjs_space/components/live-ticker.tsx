@@ -106,9 +106,9 @@ export default function LiveTicker() {
     const isGuest = user.isGuest
     const displayName = isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullan\u0131c\u0131')
     scrollItems.push(
-      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
-        <Circle className={`w-2 h-2 ${isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400'} animate-pulse`} />
-        <span className={`text-[10px] font-medium ${isGuest ? guestColor : secondaryText}`}>{displayName}</span>
+      <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
+        <Circle className={`w-2.5 h-2.5 ${isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400'} animate-pulse`} />
+        <span className={`text-xs sm:text-sm font-medium ${isGuest ? guestColor : secondaryText}`}>{displayName}</span>
       </div>
     )
   })
@@ -116,12 +116,12 @@ export default function LiveTicker() {
   // Recent purchasers
   data.recentPurchasers.slice(0, 5).forEach((purchase, index) => {
     scrollItems.push(
-      <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
-        <Coins className={`w-3 h-3 ${accentColor}`} />
-        <span className={`${secondaryText} text-[10px] font-medium`}>
+      <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
+        <Coins className={`w-4 h-4 ${accentColor}`} />
+        <span className={`${secondaryText} text-xs sm:text-sm font-medium`}>
           {purchase.user.username || purchase.user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'}
         </span>
-        <span className={`${accentColor} text-[10px] font-bold`}>+{purchase.amount}\ud83d\udcb0</span>
+        <span className={`${accentColor} text-xs sm:text-sm font-bold`}>+{purchase.amount}\ud83d\udcb0</span>
       </div>
     )
   })
@@ -131,11 +131,11 @@ export default function LiveTicker() {
     const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullan\u0131c\u0131'
     const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'
     scrollItems.push(
-      <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-1.5 px-2 py-1 mx-1 whitespace-nowrap">
-        <Crown className={`w-3 h-3 text-pink-400`} />
-        <span className={`text-[10px] ${guestColor}`}>
+      <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
+        <Crown className={`w-4 h-4 text-pink-400`} />
+        <span className={`text-xs sm:text-sm ${guestColor}`}>
           <span className="text-white font-medium">{senderName}</span>\u2192
-          <span className="text-lg">{gift.giftType.icon}</span>\u2192
+          <span className="text-xl">{gift.giftType.icon}</span>\u2192
           <span className="text-white font-medium">{receiverName}</span>
         </span>
       </div>
@@ -146,31 +146,31 @@ export default function LiveTicker() {
   return (
     <div className={`w-full overflow-hidden ${bgGradient} border-b`}>
       {/* Row 1: Canlı Falcı button + Online count + scrolling ticker */}
-      <div className="flex items-center h-7 sm:h-8">
+      <div className="flex items-center h-10 sm:h-12">
         <Link
           href={`/${language}/live-tellers`}
-          className="flex-shrink-0 flex items-center gap-1 px-2 sm:px-3 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-[10px] sm:text-[11px] font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-xs sm:text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
         >
-          <Sparkles className="w-3 h-3" />
+          <Sparkles className="w-4 h-4" />
           <span className="hidden xs:inline">{language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}</span>
           <span className="xs:hidden">{language === 'tr' ? 'Canlı' : 'Live'}</span>
           {data.onlineTellerCount > 0 && (
-            <span className="ml-0.5 px-1 sm:px-1.5 py-0 rounded-full bg-green-500 text-white text-[9px] sm:text-[10px] font-bold animate-pulse">
+            <span className="ml-0.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-green-500 text-white text-[10px] sm:text-xs font-bold animate-pulse">
               {data.onlineTellerCount}
             </span>
           )}
         </Link>
-        <div className="flex-shrink-0 inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-full bg-green-900/40">
-          <Circle className="w-2 sm:w-2.5 h-2 sm:h-2.5 text-green-400 fill-green-400 animate-pulse" />
-          <span className="text-green-400 text-[10px] sm:text-[11px] font-bold">{data.onlineCount}</span>
-          <span className="text-green-300 text-[9px] sm:text-[10px] hidden sm:inline">{language === 'tr' ? 'ki\u015fi' : 'online'}</span>
+        <div className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-full bg-green-900/40">
+          <Circle className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-green-400 fill-green-400 animate-pulse" />
+          <span className="text-green-400 text-xs sm:text-sm font-bold">{data.onlineCount}</span>
+          <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">{language === 'tr' ? 'ki\u015fi' : 'online'}</span>
         </div>
         {/* Scrolling ticker fills remaining space - items shown once */}
         <div className="flex-1 overflow-hidden h-full flex items-center" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex">
             {scrollItems.length > 0 ? scrollItems : (
               <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-                <span className="text-fuchsia-300/50 text-[10px]">{language === 'tr' ? '\u015eu an aktif kullan\u0131c\u0131 yok' : 'No active users'}</span>
+                <span className="text-fuchsia-300/50 text-xs">{language === 'tr' ? '\u015eu an aktif kullan\u0131c\u0131 yok' : 'No active users'}</span>
               </div>
             )}
           </div>

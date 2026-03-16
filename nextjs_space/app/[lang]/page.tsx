@@ -267,7 +267,7 @@ export default function HomePage() {
         </div>
 
         {/* Main Content - minimal gap between ticker and content */}
-        <div className="pt-[88px] sm:pt-[94px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
+        <div className="pt-[108px] sm:pt-[118px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
 
@@ -545,7 +545,7 @@ export default function HomePage() {
         </div>
 
         {/* Main Content - minimal gap between ticker and content */}
-        <div className="pt-[88px] sm:pt-[94px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
+        <div className="pt-[108px] sm:pt-[118px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
 
@@ -654,7 +654,7 @@ export default function HomePage() {
       </div>
 
       {/* Content area with proper top padding - minimal gap */}
-      <div className="pt-[88px] sm:pt-[94px]">
+      <div className="pt-[108px] sm:pt-[118px]">
 
         {/* Action Buttons Row */}
         <div className="px-3 sm:px-4 pb-3 sm:pb-4">

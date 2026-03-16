@@ -69,11 +69,11 @@ export default function HomepageTicker() {
   const nextMsg = messages[nextIndex]
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-[#1a0a2e] via-fuchsia-900/30 to-[#1a0a2e] border-b border-fuchsia-400/40 py-1 sm:py-1.5">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-[#1a0a2e] via-fuchsia-900/30 to-[#1a0a2e] border-b border-fuchsia-400/40 py-2 sm:py-2.5">
       <div className="flex items-center justify-center">
         {/* Announcement icon */}
-        <div className="flex-shrink-0 pl-2 sm:pl-3 pr-1">
-          <span className="text-base sm:text-lg">📢</span>
+        <div className="flex-shrink-0 pl-3 sm:pl-4 pr-2">
+          <span className="text-xl sm:text-2xl">📢</span>
         </div>
         {/* 3D Cube Rotation Area */}
         <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -81,7 +81,7 @@ export default function HomepageTicker() {
             className="cube-wrapper"
             style={{
               perspective: '400px',
-              height: '24px',
+              height: '36px',
               width: '100%',
               display: 'flex',
               alignItems: 'center',
@@ -95,7 +95,7 @@ export default function HomepageTicker() {
                 transition: isRotating ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                 transform: isRotating ? 'rotateX(-90deg)' : 'rotateX(0deg)',
                 position: 'relative',
-                height: '24px',
+                height: '36px',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
@@ -112,7 +112,7 @@ export default function HomepageTicker() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   backfaceVisibility: 'hidden',
-                  transform: 'rotateX(0deg) translateZ(12px)',
+                  transform: 'rotateX(0deg) translateZ(18px)',
                 }}
               >
                 <TickerFace message={currentMsg} />
@@ -128,7 +128,7 @@ export default function HomepageTicker() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   backfaceVisibility: 'hidden',
-                  transform: 'rotateX(90deg) translateZ(12px)',
+                  transform: 'rotateX(90deg) translateZ(18px)',
                 }}
               >
                 <TickerFace message={nextMsg} />
@@ -149,9 +149,9 @@ function TickerFace({
   if (!message) return null
 
   return (
-    <div className="inline-flex items-center gap-1.5 sm:gap-2 whitespace-nowrap">
-      <span className="text-base sm:text-lg">{message.icon}</span>
-      <span className="text-fuchsia-200 text-xs sm:text-sm font-medium">{message.text}</span>
+    <div className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap">
+      <span className="text-lg sm:text-xl">{message.icon}</span>
+      <span className="text-fuchsia-200 text-sm sm:text-base font-medium">{message.text}</span>
     </div>
   )
 }
