@@ -1,11 +1,11 @@
-const CACHE_NAME = 'falci-v1';
+const CACHE_NAME = 'falci-v2';
 const urlsToCache = [
   '/',
   '/tr',
   '/en',
   '/manifest.json',
-  '/favicon.svg',
-  '/og-image.png'
+  '/favicon.png',
+  '/canlifal-logo.png'
 ];
 
 // Install event
