@@ -760,6 +760,8 @@ model VideoStreamComment {
   streamId    String
   userId      String
   content     String
+  nickname    String?     // Optional custom nickname for the comment
+  isHidden    Boolean     @default(false) // Whether viewer is hidden in this stream
   createdAt   DateTime    @default(now())
   stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -789,10 +791,13 @@ model VideoStreamViewer {
   streamId   String
   viewerId   String
   viewerName String?
+  nickname   String?     // Custom nickname for this stream
+  isHidden   Boolean     @default(false) // Whether viewer wants to be hidden
   joinedAt   DateTime    @default(now())
   leftAt     DateTime?
   stream     VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
 
+  @@unique([streamId, viewerId])
   @@index([streamId])
   @@map("video_stream_viewers")
 }

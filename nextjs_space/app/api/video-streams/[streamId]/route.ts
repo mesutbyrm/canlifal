@@ -43,7 +43,9 @@ export async function GET(
       ...stream,
       viewerCount: activeViewerCount,
       likeCount: stream.likeCount,  // Use direct field, not _count.likes
-      commentCount: stream._count.comments
+      commentCount: stream._count.comments,
+      broadcastImage: stream.broadcastImage,
+      isImageMode: stream.isImageMode
     })
   } catch (error) {
     console.error('Error fetching stream:', error)
@@ -61,7 +63,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { status, title, description } = await request.json()
+    const { status, title, description, broadcastImage, isImageMode } = await request.json()
 
     // Verify ownership
     const stream = await prisma.videoStream.findUnique({
@@ -77,7 +79,9 @@ export async function PATCH(
       data: {
         ...(status && { status, endedAt: status === 'ended' ? new Date() : undefined }),
         ...(title !== undefined && { title }),
-        ...(description !== undefined && { description })
+        ...(description !== undefined && { description }),
+        ...(broadcastImage !== undefined && { broadcastImage }),
+        ...(isImageMode !== undefined && { isImageMode })
       }
     })
 

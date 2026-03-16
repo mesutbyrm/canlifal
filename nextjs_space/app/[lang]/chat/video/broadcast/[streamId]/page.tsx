@@ -1115,12 +1115,27 @@ export default function BroadcastPage() {
     const file = e.target.files?.[0]
     if (!file) return
     
-    // Create a data URL for preview
+    // Create a data URL for preview and save to database
     const reader = new FileReader()
-    reader.onloadend = () => {
-      setBroadcastImage(reader.result as string)
+    reader.onloadend = async () => {
+      const imageData = reader.result as string
+      setBroadcastImage(imageData)
       setIsImageMode(true)
       setShowImageUpload(false)
+      
+      // Save to database
+      try {
+        await fetch(`/api/video-streams/${streamId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            broadcastImage: imageData,
+            isImageMode: true
+          })
+        })
+      } catch (error) {
+        console.error('Error saving broadcast image:', error)
+      }
     }
     reader.readAsDataURL(file)
   }

@@ -39,7 +39,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { content } = await request.json()
+    const { content, nickname, isHidden } = await request.json()
 
     if (!content?.trim()) {
       return NextResponse.json({ error: 'Content required' }, { status: 400 })
@@ -49,7 +49,9 @@ export async function POST(
       data: {
         streamId: params.streamId,
         userId: session.user.id,
-        content: content.trim()
+        content: content.trim(),
+        nickname: nickname || null,
+        isHidden: isHidden || false
       },
       include: {
         user: {
@@ -61,7 +63,15 @@ export async function POST(
       }
     })
 
-    return NextResponse.json(comment)
+    // Return comment with display name (nickname if set, otherwise real name)
+    const displayName = comment.nickname || comment.user.name
+    return NextResponse.json({
+      ...comment,
+      user: {
+        ...comment.user,
+        name: displayName
+      }
+    })
   } catch (error) {
     console.error('Error creating comment:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

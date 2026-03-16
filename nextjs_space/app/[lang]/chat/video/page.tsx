@@ -148,6 +148,10 @@ export default function VideoStreamPage() {
   const [viewerSettings, setViewerSettings] = useState<ViewerSettings>({ isHidden: false, nickname: '' })
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [tempNickname, setTempNickname] = useState('')
+  const [showViewersList, setShowViewersList] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [broadcasterFollowers, setBroadcasterFollowers] = useState(0)
+  const [requestingFortune, setRequestingFortune] = useState(false)
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -244,6 +248,7 @@ export default function VideoStreamPage() {
       setViewerCount(currentStream.viewerCount)
       checkIfLiked(currentStream.id)
       fetchComments(currentStream.id)
+      fetchBroadcasterInfo(currentStream.user.id)
       
       // Start guest timer if not logged in
       if (!session?.user) {
@@ -469,6 +474,63 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  // Fetch broadcaster's follower info
+  const fetchBroadcasterInfo = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/user/${userId}/follow-status`)
+      if (res.ok) {
+        const data = await res.json()
+        setBroadcasterFollowers(data.followersCount || 0)
+        setIsFollowing(data.isFollowing || false)
+      }
+    } catch (e) {}
+  }
+
+  // Handle follow/unfollow broadcaster
+  const handleFollowBroadcaster = async () => {
+    if (!currentStream || !session?.user) return
+    try {
+      const res = await fetch(`/api/user/${currentStream.user.id}/follow`, {
+        method: isFollowing ? 'DELETE' : 'POST'
+      })
+      if (res.ok) {
+        setIsFollowing(!isFollowing)
+        setBroadcasterFollowers(prev => isFollowing ? prev - 1 : prev + 1)
+      }
+    } catch (e) {}
+  }
+
+  // Handle fortune request
+  const handleFortuneRequest = async () => {
+    if (!currentStream || !session?.user) {
+      alert(language === 'tr' ? 'Fal istemek için giriş yapmalısınız!' : 'Please login to request fortune!')
+      return
+    }
+    
+    setRequestingFortune(true)
+    try {
+      const res = await fetch(`/api/video-streams/${currentStream.id}/fortune-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nickname: viewerSettings.nickname || null,
+          isHidden: viewerSettings.isHidden
+        })
+      })
+      
+      if (res.ok) {
+        alert(language === 'tr' ? 'Fal talebiniz gönderildi! ☕' : 'Fortune request sent! ☕')
+      } else {
+        const data = await res.json()
+        alert(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+      }
+    } catch (e) {
+      console.error('Error requesting fortune:', e)
+    } finally {
+      setRequestingFortune(false)
+    }
+  }
+
   // Fetch co-broadcasters for split screen mode
   const fetchCoBroadcasters = async (streamId: string) => {
     try {
@@ -622,7 +684,11 @@ export default function VideoStreamPage() {
       const res = await fetch(`/api/video-streams/${currentStream.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment })
+        body: JSON.stringify({ 
+          content: newComment,
+          nickname: viewerSettings.nickname || null,
+          isHidden: viewerSettings.isHidden
+        })
       })
       if (res.ok) {
         const comment = await res.json()
@@ -1112,9 +1178,23 @@ export default function VideoStreamPage() {
                       <span className="text-white font-bold text-sm">{currentStream?.user?.name}</span>
                       <span className="px-1.5 py-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-white text-[10px] font-bold rounded">VIP</span>
                     </div>
-                    <div className="flex items-center gap-1 text-yellow-400 text-xs">
-                      <span>⭐</span>
-                      <span>{formatCount(viewerCount * 100 + 1200)} {language === 'tr' ? 'Takipçi' : 'Followers'}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                        <span>⭐</span>
+                        <span>{formatCount(broadcasterFollowers)} {language === 'tr' ? 'Takipçi' : 'Followers'}</span>
+                      </div>
+                      {session?.user && currentStream?.user?.id !== session.user.id && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleFollowBroadcaster(); }}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            isFollowing 
+                              ? 'bg-gray-600 text-white' 
+                              : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                          }`}
+                        >
+                          {isFollowing ? (language === 'tr' ? 'Takipte' : 'Following') : (language === 'tr' ? 'Takip Et' : 'Follow')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1151,37 +1231,42 @@ export default function VideoStreamPage() {
           </div>
 
           {/* ============== RIGHT SIDEBAR ACTIONS ============== */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-4" data-no-tap>
-            {/* Heart/Like Button with count */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3" data-no-tap>
+            {/* Viewers Button with count */}
             <div className="flex flex-col items-center">
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={(e) => { e.stopPropagation(); handleLike(); }}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/30"
+                onClick={(e) => { e.stopPropagation(); setShowViewersList(!showViewersList); }}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30"
               >
-                <Heart className="w-7 h-7 text-white" fill="white" />
+                <Users className="w-6 h-6 text-white" />
               </motion.button>
-              <span className="text-white text-xs font-bold mt-1">{formatCount(likeCount)}</span>
+              <span className="text-white text-xs font-bold mt-1">{formatCount(viewerCount)}</span>
             </div>
             
-            {/* Hide Yourself Button */}
+            {/* Gift Button */}
+            <div className="flex flex-col items-center">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30"
+              >
+                <Gift className="w-6 h-6 text-white" />
+              </motion.button>
+              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
+            </div>
+            
+            {/* Fortune Request Button - Coffee Cup Icon */}
             {session?.user && (
               <div className="flex flex-col items-center">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setViewerSettings(prev => ({ ...prev, isHidden: !prev.isHidden }));
-                  }}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${
-                    viewerSettings.isHidden 
-                      ? 'bg-gradient-to-br from-gray-600 to-gray-700 shadow-gray-500/30' 
-                      : 'bg-gradient-to-br from-purple-500 to-violet-600 shadow-purple-500/30'
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); handleFortuneRequest(); }}
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center shadow-lg shadow-amber-700/30"
                 >
-                  {viewerSettings.isHidden ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
+                  <span className="text-2xl">☕</span>
                 </motion.button>
-                <span className="text-white text-xs font-medium mt-1">{viewerSettings.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (language === 'tr' ? 'Görünür' : 'Visible')}</span>
+                <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Fal İste' : 'Fortune'}</span>
               </div>
             )}
             
@@ -1199,7 +1284,27 @@ export default function VideoStreamPage() {
                 >
                   <User className="w-6 h-6 text-white" />
                 </motion.button>
-                <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || (language === 'tr' ? 'Rumuz' : 'Nickname')}</span>
+                <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || (language === 'tr' ? 'Rumuz' : 'Nick')}</span>
+              </div>
+            )}
+            
+            {/* Hide Yourself Button */}
+            {session?.user && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setViewerSettings(prev => ({ ...prev, isHidden: !prev.isHidden }));
+                  }}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                    viewerSettings.isHidden 
+                      ? 'bg-gradient-to-br from-gray-600 to-gray-700 shadow-gray-500/30' 
+                      : 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-purple-500/30'
+                  }`}
+                >
+                  {viewerSettings.isHidden ? <EyeOff className="w-5 h-5 text-white" /> : <Eye className="w-5 h-5 text-white" />}
+                </motion.button>
               </div>
             )}
             
@@ -1207,18 +1312,18 @@ export default function VideoStreamPage() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-              className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
             >
-              {isMuted ? <VolumeX className="w-5 h-5 text-white/70" /> : <Volume2 className="w-5 h-5 text-white" />}
+              {isMuted ? <VolumeX className="w-4 h-4 text-white/70" /> : <Volume2 className="w-4 h-4 text-white" />}
             </motion.button>
             
             {/* Exit Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); router.push(`/${language}`); }}
-              className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
+              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20"
             >
-              <X className="w-5 h-5 text-white/70" />
+              <X className="w-4 h-4 text-white/70" />
             </motion.button>
           </div>
 
@@ -1613,6 +1718,67 @@ export default function VideoStreamPage() {
                   <Check className="w-5 h-5" />
                   {language === 'tr' ? 'Kaydet' : 'Save'}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Viewers List Modal */}
+      <AnimatePresence>
+        {showViewersList && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowViewersList(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-purple-900/90 to-indigo-900/90 backdrop-blur-xl rounded-3xl p-4 w-full max-w-sm border border-white/10 max-h-[70vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <h2 className="text-lg font-bold text-white">
+                    {language === 'tr' ? 'İzleyiciler' : 'Viewers'} ({viewerCount})
+                  </h2>
+                </div>
+                <button onClick={() => setShowViewersList(false)}>
+                  <X className="w-5 h-5 text-white/70" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {viewers.length === 0 ? (
+                  <p className="text-white/50 text-center py-8 text-sm">
+                    {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
+                  </p>
+                ) : (
+                  viewers.map((viewer) => (
+                    <div key={viewer.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                        {viewer.image ? (
+                          <Image src={viewer.image} alt="" width={40} height={40} className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          <span className="text-white font-bold">{viewer.name?.[0]?.toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium truncate">{viewer.name}</p>
+                        {viewer.hasGifted && (
+                          <div className="flex items-center gap-1 text-amber-400 text-xs">
+                            <Gift className="w-3 h-3" />
+                            <span>{viewer.totalGiftAmount} jeton</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </motion.div>
