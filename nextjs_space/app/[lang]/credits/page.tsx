@@ -312,7 +312,7 @@ export default function CreditsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
             onClick={closeAllPopups}
           >
             <motion.div
@@ -320,91 +320,187 @@ export default function CreditsPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className={`${modalBg} rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto border-t sm:border ${modalBorder}`}
+              className={`${modalBg} rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-hidden border-t sm:border ${modalBorder} flex flex-col`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className={`text-lg font-bold ${textPrimary}`}>
-                  {language === 'tr' ? 'Ödeme Yöntemi Seçin' : 'Select Payment Method'}
-                </h2>
-                <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Selected Package Summary */}
-              <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
+              {/* Header - Fixed */}
+              <div className={`px-4 sm:px-6 pt-4 pb-3 sm:pt-5 sm:pb-4 border-b ${isFacebook ? 'border-gray-200' : 'border-white/10'}`}>
+                {/* Drag indicator for mobile */}
+                <div className="w-12 h-1 bg-gray-400/50 rounded-full mx-auto mb-3 sm:hidden" />
+                
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${iconBgGold} flex items-center justify-center`}>
-                      <Coins className={`w-5 h-5 ${isFacebook ? 'text-white' : 'text-black'}`} />
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${iconBgGold} flex items-center justify-center shadow-lg`}>
+                      <CreditCard className={`w-5 h-5 sm:w-6 sm:h-6 ${isFacebook ? 'text-white' : 'text-black'}`} />
                     </div>
                     <div>
-                      <div className={`${textPrimary} font-bold`}>
-                        {selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}
+                      <h2 className={`text-base sm:text-lg font-bold ${textPrimary}`}>
+                        {language === 'tr' ? 'Ödeme Yöntemi' : 'Payment Method'}
+                      </h2>
+                      <p className={`text-xs sm:text-sm ${textSecondary}`}>
+                        {language === 'tr' ? 'Güvenli ödeme seçenekleri' : 'Secure payment options'}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={closeAllPopups} 
+                    className={`p-2 rounded-full transition-colors ${isFacebook ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}
+                  >
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+                {/* Selected Package Summary - Compact Card */}
+                <div className={`rounded-2xl p-4 sm:p-5 mb-4 border-2 ${
+                  isFacebook 
+                    ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300' 
+                    : isCosmic 
+                    ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-400/40' 
+                    : 'bg-gradient-to-r from-amber-500/10 to-fuchsia-500/10 border-amber-500/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${iconBgGold} flex items-center justify-center shadow-lg`}>
+                        <Coins className={`w-6 h-6 sm:w-7 sm:h-7 ${isFacebook ? 'text-white' : 'text-black'}`} />
                       </div>
-                      {selectedPackage.bonusCredits > 0 && (
-                        <div className="text-green-400 text-xs">+{selectedPackage.bonusCredits} bonus</div>
+                      <div>
+                        <div className={`text-xl sm:text-2xl font-extrabold ${goldColor}`}>
+                          {selectedPackage.credits}
+                          <span className={`text-sm sm:text-base font-medium ml-1 ${textSecondary}`}>
+                            {language === 'tr' ? 'Jeton' : 'Jetons'}
+                          </span>
+                        </div>
+                        {selectedPackage.bonusCredits > 0 && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Gift className="w-3.5 h-3.5 text-green-400" />
+                            <span className="text-green-400 text-xs sm:text-sm font-semibold">+{selectedPackage.bonusCredits} bonus</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xl sm:text-2xl font-extrabold ${textPrimary}`}>
+                        {formatPrice(selectedPackage.price, selectedPackage.currency)}
+                      </div>
+                      {session?.user && (
+                        <div className={`text-xs sm:text-sm ${textSecondary} mt-0.5 flex items-center justify-end gap-1`}>
+                          <User className="w-3 h-3" />
+                          <span className="truncate max-w-[80px] sm:max-w-[120px]">{username}</span>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className={`text-xl font-bold ${goldColor}`}>
-                    {formatPrice(selectedPackage.price, selectedPackage.currency)}
+                </div>
+
+                {/* Section Title */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={`h-px flex-1 ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`} />
+                  <span className={`text-xs sm:text-sm ${textSecondary} font-medium px-2`}>
+                    {language === 'tr' ? 'Ödeme Yöntemleri' : 'Payment Methods'}
+                  </span>
+                  <div className={`h-px flex-1 ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`} />
+                </div>
+
+                {/* Payment Methods Grid */}
+                <div className="space-y-3">
+                  {/* WhatsApp - Featured */}
+                  {whatsappSettings?.enabled && whatsappSettings?.number && (
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => openPaymentDetail('whatsapp')}
+                      className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all"
+                    >
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/20 flex items-center justify-center">
+                        <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7" />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="font-bold text-base sm:text-lg flex items-center gap-2">
+                          WhatsApp
+                          <span className="bg-white/20 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">
+                            {language === 'tr' ? 'Önerilen' : 'Recommended'}
+                          </span>
+                        </div>
+                        <div className="text-xs sm:text-sm opacity-80 truncate">{language === 'tr' ? 'Hızlı ve kolay ödeme' : 'Fast and easy payment'}</div>
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center">
+                        <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+                      </div>
+                    </motion.button>
+                  )}
+
+                  {/* Other Payment Methods */}
+                  {paymentMethods.map((method) => (
+                    <motion.button
+                      key={method.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => openPaymentDetail(method.type)}
+                      className={`w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all ${cardBg} ${
+                        isFacebook 
+                          ? 'hover:border-gray-300 hover:shadow-md' 
+                          : isCosmic 
+                          ? 'hover:border-blue-400/50 hover:bg-blue-500/10' 
+                          : 'hover:border-fuchsia-400/50 hover:bg-fuchsia-500/10'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-white shadow-lg ${
+                        method.type === 'papara' 
+                          ? 'bg-gradient-to-br from-purple-500 to-purple-700' 
+                          : 'bg-gradient-to-br from-blue-500 to-blue-700'
+                      }`}>
+                        {method.type === 'papara' 
+                          ? <Wallet className="w-6 h-6 sm:w-7 sm:h-7" />
+                          : <Building2 className="w-6 h-6 sm:w-7 sm:h-7" />
+                        }
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className={`${textPrimary} font-bold text-base sm:text-lg`}>
+                          {language === 'tr' ? method.name : (method.nameEn || method.name)}
+                        </div>
+                        <div className={`${textSecondary} text-xs sm:text-sm truncate`}>
+                          {language === 'tr' ? method.description : (method.descriptionEn || method.description)}
+                        </div>
+                      </div>
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
+                        isFacebook ? 'bg-gray-100' : 'bg-white/5'
+                      }`}>
+                        <ExternalLink className={`w-4 h-4 sm:w-5 sm:h-5 ${textSecondary}`} />
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+
+                {/* Security Note */}
+                <div className={`mt-4 p-3 sm:p-4 rounded-xl flex items-start gap-2 sm:gap-3 ${
+                  isFacebook ? 'bg-green-50 border border-green-200' : 'bg-green-500/10 border border-green-500/20'
+                }`}>
+                  <div className="text-green-500 mt-0.5">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <div className={`text-xs sm:text-sm font-medium ${isFacebook ? 'text-green-800' : 'text-green-400'}`}>
+                      {language === 'tr' ? 'Güvenli Ödeme' : 'Secure Payment'}
+                    </div>
+                    <div className={`text-[10px] sm:text-xs ${isFacebook ? 'text-green-600' : 'text-green-400/70'}`}>
+                      {language === 'tr' ? 'Tüm işlemleriniz güvence altında' : 'All your transactions are protected'}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* User Info */}
-              {session?.user && (
-                <div className={`rounded-xl p-3 mb-4 border ${cardBg}`}>
-                  <div className="flex items-center gap-2">
-                    <User className={`w-4 h-4 ${accentColor}`} />
-                    <span className={textSecondary}>{language === 'tr' ? 'Kullanıcı:' : 'User:'}</span>
-                    <span className={`${textPrimary} font-medium`}>{username}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Methods */}
-              <div className="space-y-3">
-                {/* WhatsApp */}
-                {whatsappSettings?.enabled && whatsappSettings?.number && (
-                  <button
-                    onClick={() => openPaymentDetail('whatsapp')}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium transition-all active:scale-98 hover:opacity-90"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                      <MessageCircle className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-bold text-lg">WhatsApp</div>
-                      <div className="text-sm opacity-80">{language === 'tr' ? 'Hızlı ve kolay ödeme' : 'Fast and easy payment'}</div>
-                    </div>
-                    <ExternalLink className="w-5 h-5 opacity-70" />
-                  </button>
-                )}
-
-                {/* Other Payment Methods */}
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => openPaymentDetail(method.type)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all active:scale-98 ${cardBg} hover:opacity-80`}
-                  >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${
-                      method.type === 'papara' ? 'bg-gradient-to-br from-purple-500 to-purple-700' : 'bg-gradient-to-br from-blue-500 to-blue-700'
-                    }`}>
-                      {getMethodIcon(method.type)}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className={`${textPrimary} font-bold text-lg`}>
-                        {language === 'tr' ? method.name : (method.nameEn || method.name)}
-                      </div>
-                      <div className={`${textSecondary} text-sm`}>
-                        {language === 'tr' ? method.description : (method.descriptionEn || method.description)}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+              {/* Footer - Fixed on mobile */}
+              <div className={`px-4 sm:px-6 py-3 sm:py-4 border-t ${isFacebook ? 'border-gray-200 bg-gray-50' : 'border-white/10 bg-black/20'}`}>
+                <button
+                  onClick={closeAllPopups}
+                  className={`w-full py-3 sm:py-3.5 rounded-xl font-medium transition-all ${
+                    isFacebook 
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                      : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                  }`}
+                >
+                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
