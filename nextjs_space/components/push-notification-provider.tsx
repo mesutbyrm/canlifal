@@ -7,7 +7,6 @@ import {
   isPushSupported,
   getPermissionStatus,
   requestNotificationPermission,
-  registerServiceWorker,
   showBrowserNotification,
   playNotificationSound
 } from '@/lib/push-notifications'
@@ -45,28 +44,14 @@ export default function PushNotificationProvider({ children }: { children: React
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
   const [unreadCount, setUnreadCount] = useState(0)
   const [lastNotificationId, setLastNotificationId] = useState<string | null>(null)
-  const [serviceWorkerReady, setServiceWorkerReady] = useState(false)
 
-  // Initialize on mount
+  // Initialize on mount - no service worker registration here, OneSignal handles its own
   useEffect(() => {
     const supported = isPushSupported()
     setIsSupported(supported)
     
     if (supported) {
       setPermission(getPermissionStatus())
-      
-      // Register service worker after a short delay to ensure page is ready
-      const timer = setTimeout(() => {
-        registerServiceWorker().then((registration) => {
-          if (registration) {
-            setServiceWorkerReady(true)
-          }
-        }).catch(() => {
-          // Silently ignore registration errors
-        })
-      }, 2000)
-      
-      return () => clearTimeout(timer)
     }
   }, [])
 
