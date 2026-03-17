@@ -163,7 +163,7 @@ export function isMobileDevice(): boolean {
  * - Ön kamera için facingMode: 'user' kullanılır (ultra-wide lens'ten kaçınır)
  * - Arka kamera için facingMode: { exact: 'environment' } kullanılır
  * - Mobilde frameRate daha düşük tutulur (pil tasarrufu)
- * - resizeMode: 'crop-and-scale' ile zoom-out sorunu önlenir
+ * - resizeMode: 'none' ile gereksiz zoom-in önlenir
  */
 export function getMediaConstraints(
   quality: VideoQuality = 'high',
@@ -191,9 +191,9 @@ export function getMediaConstraints(
     facingMode: facingMode === 'environment' 
       ? { exact: 'environment' } 
       : 'user',
-    // resizeMode: crop-and-scale mobilde zoom-out sorununu önler
-    // Kamera çıktısı talep edilen çözünürlüğe kırpılır, küçültülmez
-    ...(mobile ? { resizeMode: { ideal: 'crop-and-scale' } } : {}),
+    // resizeMode: 'none' - kamera çıktısını olduğu gibi kullan, kırpma yapma
+    // crop-and-scale bazı cihazlarda aşırı zoom-in'e sebep olur
+    ...(mobile ? { resizeMode: { ideal: 'none' } } : {}),
   };
 
   return {

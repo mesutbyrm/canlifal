@@ -1141,7 +1141,7 @@ export default function VideoStreamPage() {
                 autoPlay 
                 playsInline 
                 muted={isMuted} 
-                className="w-full h-full object-cover bg-black"
+                className="w-full h-full object-contain bg-black"
                 style={{ aspectRatio: '9/16' }}
               />
             </div>

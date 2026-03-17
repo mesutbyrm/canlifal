@@ -794,7 +794,7 @@ export default function LiveRoomPage() {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="absolute inset-0 w-full h-full object-cover bg-black"
+          className="absolute inset-0 w-full h-full object-contain bg-black"
         />
 
         {/* Local video (picture-in-picture) - draggable position */}

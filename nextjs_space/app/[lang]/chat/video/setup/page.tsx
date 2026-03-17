@@ -488,7 +488,7 @@ export default function StreamSetupPage() {
         {/* Canvas with effects */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover bg-black"
+          className="absolute inset-0 w-full h-full object-contain bg-black"
         />
 
         {!isVideoOn && (

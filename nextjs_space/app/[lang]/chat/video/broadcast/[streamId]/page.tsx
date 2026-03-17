@@ -1307,7 +1307,7 @@ export default function BroadcastPage() {
             ref={broadcasterVideoRef}
             autoPlay
             playsInline
-            className="absolute inset-0 w-full h-full object-cover bg-black"
+            className="absolute inset-0 w-full h-full object-contain bg-black"
           />
           
           {/* Co-host's own video as PiP popup */}
@@ -1355,7 +1355,7 @@ export default function BroadcastPage() {
             autoPlay
             playsInline
             muted
-            className="absolute inset-0 w-full h-full object-cover bg-black"
+            className="absolute inset-0 w-full h-full object-contain bg-black"
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
 
