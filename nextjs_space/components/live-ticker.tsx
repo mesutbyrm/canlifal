@@ -7,6 +7,13 @@ import { useSiteTheme } from '@/lib/theme-context'
 import { useSession } from 'next-auth/react'
 import { Circle, Coins, Crown, Sparkles } from 'lucide-react'
 
+interface TickerBadge {
+  name: string
+  icon: string
+  color: string
+  bgColor: string
+}
+
 interface OnlineUser {
   id: string
   name: string
@@ -16,6 +23,8 @@ interface OnlineUser {
   isBot?: boolean
   botName?: string | null
   deviceType?: string
+  membership?: string
+  customBadges?: TickerBadge[]
 }
 
 interface RecentPurchaser {
@@ -114,24 +123,52 @@ export default function LiveTicker() {
     }
   }
 
+  // Membership tier config for ticker display
+  const getMembershipDisplay = (membership?: string) => {
+    switch (membership) {
+      case 'gold': return { label: 'Gold Üye', emoji: '👑', color: 'text-yellow-400', bgClass: 'bg-yellow-500/20 border-yellow-500/40' }
+      case 'premium': return { label: 'Premium Üye', emoji: '⭐', color: 'text-purple-400', bgClass: 'bg-purple-500/20 border-purple-500/40' }
+      case 'diamond': return { label: 'Diamond Üye', emoji: '💎', color: 'text-cyan-300', bgClass: 'bg-cyan-500/20 border-cyan-500/40' }
+      default: return null
+    }
+  }
+
   // Online users - show all with names for registered, anonymous for guests
   data.onlineUsers.slice(0, 20).forEach((user, index) => {
     const isGuest = user.isGuest
     const isBot = user.isBot
-    const displayName = isBot ? (user.botName || user.name) : (isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'))
+    const displayName = isBot ? (user.botName || user.name) : (isGuest ? user.name : (user.username || user.name?.split(' ')[0] || 'Kullanıcı'))
     const deviceIcon = getDeviceEmoji(user.deviceType)
     const dotColor = isBot ? 'text-orange-400 fill-orange-400' : (isGuest ? guestColor + ' fill-current' : 'text-green-400 fill-green-400')
     const nameColor = isBot ? 'text-orange-300' : (isGuest ? guestColor : secondaryText)
+    const membershipDisplay = !isGuest && !isBot ? getMembershipDisplay(user.membership) : null
     
     scrollItems.push(
       <div key={`online-${user.id}-${index}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 mx-1 whitespace-nowrap">
         {isBot ? (
-          <span className="text-xs">\ud83e\udd16</span>
+          <span className="text-xs">🤖</span>
         ) : (
           <Circle className={`w-2.5 h-2.5 ${dotColor} animate-pulse`} />
         )}
         <span className="text-xs opacity-70">{deviceIcon}</span>
         <span className={`text-xs sm:text-sm font-medium ${nameColor}`}>{displayName}</span>
+        {membershipDisplay && (
+          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${membershipDisplay.bgClass} ${membershipDisplay.color}`}>
+            <span>{membershipDisplay.emoji}</span>
+            <span className="hidden sm:inline">{membershipDisplay.label}</span>
+          </span>
+        )}
+        {user.customBadges && user.customBadges.length > 0 && user.customBadges.map((badge, bi) => (
+          <span
+            key={`badge-${bi}`}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border"
+            style={{ color: badge.color, backgroundColor: badge.bgColor + '33', borderColor: badge.color + '66' }}
+            title={badge.name}
+          >
+            <span>{badge.icon}</span>
+            <span className="hidden sm:inline">{badge.name}</span>
+          </span>
+        ))}
       </div>
     )
   })

@@ -8,6 +8,15 @@ import {
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
   Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer
 } from 'lucide-react';
+import {
+  getRTCConfiguration,
+  getMediaConstraints,
+  setPreferredCodec,
+  applyInitialBitrate,
+  AdaptiveBitrateManager,
+  setupConnectionRecovery,
+  type VideoQuality,
+} from '@/lib/webrtc-config';
 
 interface RoomData {
   id: string;
@@ -129,20 +138,17 @@ export default function LiveRoomPage() {
     try {
       setConnectionStatus(language === 'tr' ? 'Kamera/mikrofon erişimi isteniyor...' : 'Requesting camera/microphone access...');
       
-      // Get local media stream with better resolution
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode,
-          width: { ideal: 720, max: 1280 },
-          height: { ideal: 1280, max: 1920 },
-          aspectRatio: { ideal: 9/16 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
+      // Optimize edilmiş getUserMedia - mobil cihazlarda zoom-out sorununu önler
+      const constraints = getMediaConstraints('high', facingMode);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (mediaErr) {
+        // Yüksek kalite başarısız olursa düşük kaliteyle dene
+        console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr);
+        const fallback = getMediaConstraints('medium', facingMode);
+        stream = await navigator.mediaDevices.getUserMedia(fallback);
+      }
       localStreamRef.current = stream;
       
       if (localVideoRef.current) {
@@ -151,18 +157,8 @@ export default function LiveRoomPage() {
 
       setConnectionStatus(language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...');
 
-      // Create peer connection with more STUN/TURN servers
-      const configuration: RTCConfiguration = {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' }
-        ],
-        iceCandidatePoolSize: 10
-      };
-
+      // STUN + TURN sunucuları ile RTCPeerConnection
+      const configuration = getRTCConfiguration();
       const pc = new RTCPeerConnection(configuration);
       peerConnectionRef.current = pc;
 
@@ -170,6 +166,9 @@ export default function LiveRoomPage() {
       stream.getTracks().forEach(track => {
         pc.addTrack(track, stream);
       });
+
+      // H264 codec tercihini ayarla (mobilde donanım hızlandırma desteği)
+      setPreferredCodec(pc, 'video/H264');
 
       // Handle remote stream
       pc.ontrack = (event) => {
@@ -198,15 +197,23 @@ export default function LiveRoomPage() {
         }
       };
 
+      // Otomatik bağlantı kurtarma (ICE restart)
+      const cleanupRecovery = setupConnectionRecovery(
+        pc,
+        () => setConnectionStatus(language === 'tr' ? 'Bağlantı kesildi, yeniden bağlanılıyor...' : 'Disconnected, reconnecting...'),
+        () => {
+          setIsConnected(true);
+          setConnectionStatus('');
+        },
+        () => setConnectionStatus(language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed'),
+        3
+      );
+
       pc.oniceconnectionstatechange = () => {
         console.log('ICE connection state:', pc.iceConnectionState);
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           setIsConnected(true);
           setConnectionStatus('');
-        } else if (pc.iceConnectionState === 'disconnected') {
-          setConnectionStatus(language === 'tr' ? 'Bağlantı kesildi, yeniden bağlanılıyor...' : 'Disconnected, reconnecting...');
-        } else if (pc.iceConnectionState === 'failed') {
-          setConnectionStatus(language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed');
         }
       };
 
@@ -215,6 +222,15 @@ export default function LiveRoomPage() {
         if (pc.connectionState === 'connected') {
           setIsConnected(true);
           setConnectionStatus('');
+          // Bağlantı kurulduğunda başlangıç bitrate ve adaptif yönetim başlat
+          applyInitialBitrate(pc, 'high');
+          const abm = new AdaptiveBitrateManager(pc, (quality) => {
+            console.log('📊 Video kalitesi değişti:', quality);
+          });
+          abm.start(3000);
+          // Cleanup'a ekle (pc kapanırken durdurulacak)
+          const origClose = pc.close.bind(pc);
+          pc.close = () => { abm.stop(); cleanupRecovery(); origClose(); };
         } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
           setIsConnected(false);
         }
@@ -528,14 +544,11 @@ export default function LiveRoomPage() {
         currentVideoTrack.stop();
       }
       
-      // Get new video stream with different facing mode
+      // Optimize edilmiş kamera değiştirme
+      const switchConstraints = getMediaConstraints('high', newFacingMode);
+      // Sadece video al, audio mevcut olanı kullan
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: newFacingMode,
-          width: { ideal: 720, max: 1280 },
-          height: { ideal: 1280, max: 1920 },
-          aspectRatio: { ideal: 9/16 }
-        },
+        video: (switchConstraints.video as MediaTrackConstraints),
         audio: false
       });
       
@@ -781,7 +794,7 @@ export default function LiveRoomPage() {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="absolute inset-0 w-full h-full object-contain bg-black"
+          className="absolute inset-0 w-full h-full object-cover bg-black"
         />
 
         {/* Local video (picture-in-picture) - draggable position */}
@@ -791,7 +804,7 @@ export default function LiveRoomPage() {
             autoPlay
             playsInline
             muted
-            className={`w-full h-full object-contain bg-black ${!isVideoEnabled ? 'hidden' : ''}`}
+            className={`w-full h-full object-cover bg-black ${!isVideoEnabled ? 'hidden' : ''}`}
           />
           {!isVideoEnabled && (
             <div className="w-full h-full flex items-center justify-center bg-gray-800">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { getMediaConstraints } from '@/lib/webrtc-config'
 import {
   Video,
   VideoOff,
@@ -155,15 +156,13 @@ export default function StreamSetupPage() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode,
-          width: { ideal: 720 },
-          height: { ideal: 1280 },
-          aspectRatio: { ideal: 9/16 }
-        },
-        audio: true
-      })
+      const constraints = getMediaConstraints('high', facingMode)
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints)
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia(getMediaConstraints('medium', facingMode))
+      }
       
       streamRef.current = stream
       if (videoRef.current) {
@@ -256,14 +255,7 @@ export default function StreamSetupPage() {
     stopCamera()
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: newFacing,
-          width: { ideal: 720 },
-          height: { ideal: 1280 }
-        },
-        audio: true
-      })
+      const stream = await navigator.mediaDevices.getUserMedia(getMediaConstraints('high', newFacing))
       
       streamRef.current = stream
       if (videoRef.current) {
@@ -496,7 +488,7 @@ export default function StreamSetupPage() {
         {/* Canvas with effects */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-contain bg-black"
+          className="absolute inset-0 w-full h-full object-cover bg-black"
         />
 
         {!isVideoOn && (

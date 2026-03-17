@@ -8,6 +8,14 @@ import GiftNotificationBanner from '@/components/gift-notification-banner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
+  getRTCConfiguration,
+  getMediaConstraints,
+  setPreferredCodec,
+  applyInitialBitrate,
+  AdaptiveBitrateManager,
+  setupConnectionRecovery,
+} from '@/lib/webrtc-config'
+import {
   Heart,
   MessageCircle,
   X,
@@ -102,13 +110,6 @@ interface StreamCategory {
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
 const MAX_GUESTS = 4 // Maximum co-broadcasters allowed
-const ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' }
-]
 const RECONNECT_DELAY = 2000 // ms before attempting reconnect
 const MAX_RECONNECT_ATTEMPTS = 5
 
@@ -309,19 +310,14 @@ export default function BroadcastPage() {
 
   const startBroadcast = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode,
-          width: { ideal: 720, max: 1280 },
-          height: { ideal: 1280, max: 1920 },
-          aspectRatio: { ideal: 9/16 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      })
+      const constraints = getMediaConstraints('high', facingMode)
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints)
+      } catch (mediaErr) {
+        console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr)
+        stream = await navigator.mediaDevices.getUserMedia(getMediaConstraints('medium', facingMode))
+      }
       
       localStreamRef.current = stream
       if (localVideoRef.current) {
@@ -355,7 +351,7 @@ export default function BroadcastPage() {
           if (!broadcasterPcRef.current) {
             console.log('🎤 Co-host: Creating peer connection for broadcaster', broadcasterId)
             
-            const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
+            const pc = new RTCPeerConnection(getRTCConfiguration())
             broadcasterPcRef.current = pc
 
             // Add our local tracks to send video/audio to broadcaster
@@ -363,6 +359,7 @@ export default function BroadcastPage() {
               console.log('🎤 Co-host: Adding track to PC:', track.kind)
               pc.addTrack(track, localStreamRef.current!)
             })
+            setPreferredCodec(pc, 'video/H264')
             
             // Handle incoming broadcaster stream
             pc.ontrack = (event) => {
@@ -508,12 +505,13 @@ export default function BroadcastPage() {
   const createConnectionForViewer = async (viewerId: string) => {
     if (!localStreamRef.current || isUnmountedRef.current) return
     
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 })
+    const pc = new RTCPeerConnection(getRTCConfiguration())
     peerConnectionsRef.current.set(viewerId, pc)
 
     localStreamRef.current.getTracks().forEach(track => {
       if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
     })
+    setPreferredCodec(pc, 'video/H264')
 
     pc.onicecandidate = async (event) => {
       if (event.candidate && !isUnmountedRef.current) {
@@ -674,11 +672,7 @@ export default function BroadcastPage() {
     
     console.log('🎬 Broadcaster: Setting up connection with guest', guestId)
     
-    const pc = new RTCPeerConnection({ 
-      iceServers: ICE_SERVERS, 
-      iceCandidatePoolSize: 10,
-      iceTransportPolicy: 'all'
-    })
+    const pc = new RTCPeerConnection(getRTCConfiguration())
     guestPcRefs.current.set(guestId, pc)
 
     // Add our local tracks to send video/audio to guest
@@ -686,6 +680,7 @@ export default function BroadcastPage() {
       console.log('🎬 Broadcaster: Adding track to guest PC:', track.kind)
       pc.addTrack(track, localStreamRef.current!)
     })
+    setPreferredCodec(pc, 'video/H264')
 
     // Handle incoming tracks from guest
     pc.ontrack = (event) => {
@@ -959,10 +954,8 @@ export default function BroadcastPage() {
     const newFacing = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newFacing)
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: { ideal: 720, max: 1280 }, height: { ideal: 1280, max: 1920 }, aspectRatio: { ideal: 9/16 } },
-        audio: { echoCancellation: true, noiseSuppression: true }
-      })
+      const switchConstraints = getMediaConstraints('high', newFacing)
+      const newStream = await navigator.mediaDevices.getUserMedia(switchConstraints)
       
       localStreamRef.current?.getTracks().forEach(t => t.stop())
       localStreamRef.current = newStream
@@ -1314,7 +1307,7 @@ export default function BroadcastPage() {
             ref={broadcasterVideoRef}
             autoPlay
             playsInline
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="absolute inset-0 w-full h-full object-cover bg-black"
           />
           
           {/* Co-host's own video as PiP popup */}
@@ -1328,7 +1321,7 @@ export default function BroadcastPage() {
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-contain bg-black"
+              className="w-full h-full object-cover bg-black"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             {/* My info bar */}
@@ -1362,7 +1355,7 @@ export default function BroadcastPage() {
             autoPlay
             playsInline
             muted
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="absolute inset-0 w-full h-full object-cover bg-black"
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
 
@@ -1397,7 +1390,7 @@ export default function BroadcastPage() {
                     }}
                     autoPlay
                     playsInline
-                    className="w-full h-full object-contain bg-black"
+                    className="w-full h-full object-cover bg-black"
                   />
                   
                   {/* Connection status overlay */}

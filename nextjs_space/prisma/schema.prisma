@@ -1562,3 +1562,45 @@ model BroadcastImage {
   @@index([isActive, sortOrder])
   @@map("broadcast_images")
 }
+
+// Custom Badges - admin can create badges and assign to tiers or users
+model CustomBadge {
+  id          String   @id @default(cuid())
+  name        String   // Badge display name
+  icon        String   // Emoji or icon identifier
+  color       String   @default("#fbbf24") // Badge color (hex)
+  bgColor     String   @default("#78350f") // Background color (hex)
+  description String?  // Description of badge
+  tier        String?  // If set, auto-assigned to this membership tier (basic, premium, gold, diamond)
+  userId      String?  // If set, assigned to specific user
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier])
+  @@index([userId])
+  @@index([isActive])
+  @@map("custom_badges")
+}
+
+// Site Pages - admin managed pages (About, Privacy, etc.)
+model SitePage {
+  id          String   @id @default(cuid())
+  title       String   // Page title
+  titleEn     String?  // English title
+  slug        String   @unique // URL slug
+  content     String   @db.Text // HTML content
+  contentEn   String?  @db.Text // English content
+  isPublished Boolean  @default(true)
+  showInFooter Boolean @default(true)
+  showInHeader Boolean @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@map("site_pages")
+}

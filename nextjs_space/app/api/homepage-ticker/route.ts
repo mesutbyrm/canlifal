@@ -31,7 +31,9 @@ export async function GET() {
         id: true,
         name: true,
         username: true,
-        image: true
+        image: true,
+        membership: true,
+        specialBadges: true
       },
       take: 20,
       orderBy: {
@@ -86,14 +88,47 @@ export async function GET() {
     })
     const deviceMap = new Map(registeredPresences.map((p: { userId: string | null; deviceType: string | null }) => [p.userId, p.deviceType]))
 
+    // Get custom badges for these users (by tier or userId)
+    const userMemberships = onlineUsers.map((u: any) => u.membership).filter(Boolean)
+    const userIds = onlineUsers.map((u: any) => u.id)
+    const customBadges = await prisma.customBadge.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { tier: { in: userMemberships } },
+          { userId: { in: userIds } }
+        ]
+      },
+      orderBy: { sortOrder: 'asc' }
+    })
+
+    // Build badge maps
+    const tierBadgeMap = new Map<string, any[]>()
+    const userBadgeMap = new Map<string, any[]>()
+    customBadges.forEach((b: any) => {
+      if (b.userId) {
+        const existing = userBadgeMap.get(b.userId) || []
+        existing.push({ name: b.name, icon: b.icon, color: b.color, bgColor: b.bgColor })
+        userBadgeMap.set(b.userId, existing)
+      } else if (b.tier) {
+        const existing = tierBadgeMap.get(b.tier) || []
+        existing.push({ name: b.name, icon: b.icon, color: b.color, bgColor: b.bgColor })
+        tierBadgeMap.set(b.tier, existing)
+      }
+    })
+
     // Combine registered users and guests for display
     const allOnlineUsers = [
-      ...onlineUsers.map((u: { id: string; name: string | null; username: string | null; image: string | null }) => ({
+      ...onlineUsers.map((u: { id: string; name: string | null; username: string | null; image: string | null; membership: string; specialBadges: string | null }) => ({
         ...u,
         isGuest: false,
         isBot: false,
         botName: null,
-        deviceType: deviceMap.get(u.id) || 'desktop'
+        deviceType: deviceMap.get(u.id) || 'desktop',
+        customBadges: [
+          ...(tierBadgeMap.get(u.membership) || []),
+          ...(userBadgeMap.get(u.id) || [])
+        ]
       })),
       ...guestUsers
     ]

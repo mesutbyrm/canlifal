@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import { getRTCConfiguration } from '@/lib/webrtc-config'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -442,33 +443,8 @@ export default function ChatRoomPage() {
     }
   }, [messages])
 
-  // WebRTC Configuration with TURN servers for NAT traversal
-  const rtcConfig: RTCConfiguration = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' },
-      // Free TURN servers for NAT traversal
-      {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      }
-    ],
-    iceCandidatePoolSize: 10
-  }
+  // WebRTC Configuration - STUN + TURN sunucuları merkezi yapılandırmadan
+  const rtcConfig: RTCConfiguration = getRTCConfiguration()
 
   // Create peer connection for a user
   const createPeerConnection = useCallback((userId: string, isInitiator: boolean) => {

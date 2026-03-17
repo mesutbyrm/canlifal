@@ -10,7 +10,7 @@ import {
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
-  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity
+  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -133,6 +133,8 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/${lang}/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
   { href: `/${lang}/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
   { href: `/${lang}/admin/button-order`, icon: LayoutDashboard, trLabel: 'Buton Sıralaması', enLabel: 'Button Order' },
+  { href: `/${lang}/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
+  { href: `/${lang}/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
 ]
 
 export default function AdminPage() {

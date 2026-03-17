@@ -8,6 +8,7 @@ import GiftNotificationBanner from '@/components/gift-notification-banner'
 import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { getRTCConfiguration } from '@/lib/webrtc-config'
 import {
   Heart,
   MessageCircle,
@@ -97,13 +98,7 @@ const getHeartLevelText = (count: number): string => {
   if (level > 100) return '100k+'
   return `${level}k`
 }
-const ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' }
-]
+// ICE sunucuları merkezi yapılandırmadan alınıyor (webrtc-config.ts)
 
 export default function VideoStreamPage() {
   const { data: session } = useSession() || {}
@@ -341,10 +336,7 @@ export default function VideoStreamPage() {
     try {
       await fetch(`/api/video-streams/${streamId}/join`, { method: 'POST' })
 
-      const pc = new RTCPeerConnection({ 
-        iceServers: ICE_SERVERS,
-        iceCandidatePoolSize: 10
-      })
+      const pc = new RTCPeerConnection(getRTCConfiguration())
       pcRef.current = pc
 
       pc.addTransceiver('video', { direction: 'recvonly' })
@@ -1149,7 +1141,7 @@ export default function VideoStreamPage() {
                 autoPlay 
                 playsInline 
                 muted={isMuted} 
-                className="h-full w-auto max-w-full object-contain bg-black"
+                className="w-full h-full object-cover bg-black"
                 style={{ aspectRatio: '9/16' }}
               />
             </div>
