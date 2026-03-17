@@ -1410,6 +1410,7 @@ model SiteAnnouncement {
   color     String   @default("red") // red, gold, etc.
   userId    String?
   userName  String?
+  maxPasses Int      @default(1) // how many times banner scrolls across screen
   createdAt DateTime @default(now())
   expiresAt DateTime
 

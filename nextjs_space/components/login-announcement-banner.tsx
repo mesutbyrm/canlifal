@@ -9,6 +9,7 @@ interface Announcement {
   color: string
   userId: string | null
   userName: string | null
+  maxPasses: number
   createdAt: string
   expiresAt: string
 }
@@ -230,11 +231,12 @@ export default function LoginAnnouncementBanner() {
     setIsAnimating(true)
   }, [trigger, isAnimating])
 
-  // Handle animation passes - 1 pass only
+  // Handle animation passes - uses maxPasses from announcement
   useEffect(() => {
     if (!isAnimating || !currentAnnouncement) return
 
-    if (passCount >= 1) {
+    const maxP = currentAnnouncement.maxPasses || 1
+    if (passCount >= maxP) {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
       animationTimerRef.current = setTimeout(() => {
         queueRef.current = queueRef.current.filter(a => a.id !== currentAnnouncement.id)
@@ -265,7 +267,7 @@ export default function LoginAnnouncementBanner() {
     return () => clearInterval(cleanup)
   }, [])
 
-  if (!currentAnnouncement || passCount >= 1) return null
+  if (!currentAnnouncement || passCount >= (currentAnnouncement.maxPasses || 1)) return null
 
   const colors = getTeamColors(currentAnnouncement.color)
 

@@ -126,8 +126,9 @@ export async function POST(request: NextRequest) {
     // Determine user's category for checking settings
     const userCategory = getUserCategory({ role: user.role, membership: user.membership })
     
-    // Check if this section is enabled for this user category
-    if (detectedSection && userCategory) {
+    // Check category settings (approved, section visibility, maxPasses)
+    let maxPasses = 1
+    if (userCategory) {
       const categorySettings = await prisma.platformSettings.findUnique({
         where: { key: 'announcement_category_sections' }
       })
@@ -137,9 +138,22 @@ export async function POST(request: NextRequest) {
           const settings = JSON.parse(categorySettings.value)
           const categoryConfig = settings[userCategory]
           
-          // If category settings exist and section is explicitly disabled, don't announce
-          if (categoryConfig && categoryConfig[detectedSection] === false) {
-            return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled_for_category' })
+          if (categoryConfig) {
+            // New format: { approved, maxPasses, sections }
+            if ('approved' in categoryConfig) {
+              if (categoryConfig.approved === false) {
+                return NextResponse.json({ ok: true, announced: false, reason: 'category_not_approved' })
+              }
+              maxPasses = categoryConfig.maxPasses ?? 1
+              if (detectedSection && categoryConfig.sections && categoryConfig.sections[detectedSection] === false) {
+                return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled_for_category' })
+              }
+            } else {
+              // Old flat format
+              if (detectedSection && categoryConfig[detectedSection] === false) {
+                return NextResponse.json({ ok: true, announced: false, reason: 'section_disabled_for_category' })
+              }
+            }
           }
         } catch {
           // If parsing fails, continue with announcement
@@ -192,6 +206,7 @@ export async function POST(request: NextRequest) {
         color: announcementColor,
         userId: user.id,
         userName: displayName,
+        maxPasses,
         expiresAt: new Date(Date.now() + 2 * 60 * 1000) // expires in 2 minutes
       }
     })
