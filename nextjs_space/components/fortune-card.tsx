@@ -85,7 +85,7 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
                 <span className="text-gold-400 font-medium text-xs sm:text-sm md:text-base">{cost} CFC</span>
               </div>
               <span className="text-deep-purple-300 text-xs sm:text-sm group-hover:text-gold-400 transition-colors">
-                {lang === 'tr' ? 'Keşfet →' : 'Explore →'}
+                {'Keşfet →'}
               </span>
             </div>
           </div>

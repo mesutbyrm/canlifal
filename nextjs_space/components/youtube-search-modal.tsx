@@ -269,8 +269,7 @@ export default function YouTubeSearchModal({
                   </button>
                 </div>
                 <p className="text-xs text-purple-400/50 mt-3 text-center">
-                  {'Örnek
-                    : 'Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
+                  {'Örnek: https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
                 </p>
               </div>
             )}

@@ -466,7 +466,7 @@ export default function TellerDetailPage() {
                     {'Lütfen Bekleyiniz...'}
                   </h3>
                   <p className="text-purple-200 mb-4">
-                    {`${teller.displayName} randevunuzu onayladığında otomatik olarak odaya bağlanacaksınız.`} accepts your request.`}
+                    {`${teller.displayName} randevunuzu onayladığında otomatik olarak odaya bağlanacaksınız.`}
                   </p>
                   
                   <div className="flex items-center justify-center gap-2 text-purple-300 mb-6">
@@ -545,8 +545,7 @@ export default function TellerDetailPage() {
                     })}
                   </div>
                   <p className="text-xs text-purple-400 mt-2 text-center">
-                    {`10 jeton/dakika • Toplam} jeton`
-                      : `10 credits/min • Total: ${totalCost} credits`}
+                    {`10 jeton/dakika • Toplam: ${totalCost} jeton`}
                   </p>
                 </div>
 

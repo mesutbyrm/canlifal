@@ -958,9 +958,7 @@ export default function LiveRoomPage() {
                 {`${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`}
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {`Kullanıcının jetonu}`
-                  : `User jetons: ${userJetons}`
-                }
+                {`Kullanıcının jetonu: ${userJetons}`}
               </p>
             </div>
 
@@ -1025,9 +1023,7 @@ export default function LiveRoomPage() {
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {`Kullanıcının jetonu}`
-                  : `User jetons: ${userJetons}`
-                }
+                {`Kullanıcının jetonu: ${userJetons}`}
               </p>
             </div>
 
@@ -1080,9 +1076,7 @@ export default function LiveRoomPage() {
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {`Mevcut Jetonunuz}`
-                  : `Your Jetons: ${myJetons}`
-                }
+                {`Mevcut Jetonunuz: ${myJetons}`}
               </p>
             </div>
 

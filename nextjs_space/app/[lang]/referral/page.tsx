@@ -178,8 +178,7 @@ export default function ReferralPage() {
             </div>
           </div>
           <p className="text-deep-purple-400 text-sm mt-3">
-            {`Referans Kodun}` 
-              : `Your Code: ${data?.referralCode || ''}`}
+            {`Referans Kodun: ${data?.referralCode || ''}`}
           </p>
         </motion.div>
 

@@ -331,7 +331,7 @@ export default function SocialPage() {
         break
       case 'tiktok':
         navigator.clipboard.writeText(tiktokText + '\n\n' + url)
-        alert('📋 TikTok için metin kopyalandı!\n\nTikTok uygulamasını açın ve bu metni yapıştırın.'
+        alert('📋 TikTok için metin kopyalandı!\n\nTikTok uygulamasını açın ve bu metni yapıştırın.')
         break
       case 'copy':
         navigator.clipboard.writeText(url)
@@ -664,7 +664,7 @@ export default function SocialPage() {
                             {post.fortuneCount && post.fortuneCount > 0 && (
                               <div className="inline-flex items-center gap-1 text-xs text-amber-300/80 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
                                 <User className="w-3 h-3" />
-                                {`Bu kullanıcı ile birlikte ${post.fortuneCount} kişi bu fala baktırdı`} people including this user viewed this fortune`}
+                                {`Bu kullanıcı ile birlikte ${post.fortuneCount} kişi bu fala baktırdı`}
                               </div>
                             )}
                           </div>

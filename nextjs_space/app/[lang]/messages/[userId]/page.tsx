@@ -400,7 +400,7 @@ export default function ChatPage() {
                 </button>
               </div>
               <p className="text-white/70 text-sm mb-3">
-                {`${user.name} sadece takip\u00E7ilerinden mesaj kabul ediyor. Bir mesaj iste\u011Fi g\u00F6nderin.`} only accepts messages from followers. Send a message request.`}
+                {`${user.name} sadece takipçilerinden mesaj kabul ediyor. Bir mesaj isteği gönderin.`}
               </p>
               <textarea
                 value={requestMessage}
