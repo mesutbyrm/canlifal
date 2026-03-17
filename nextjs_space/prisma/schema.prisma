@@ -1605,3 +1605,29 @@ model SitePage {
   @@index([sortOrder])
   @@map("site_pages")
 }
+
+// Push Notification Log - tracks all notifications sent via admin panel
+model PushNotificationLog {
+  id              String   @id @default(cuid())
+  onesignalId     String?  // OneSignal notification ID for tracking
+  title           String
+  message         String   @db.Text
+  url             String?
+  imageUrl        String?
+  targetType      String   // all, segment, tag, player_id, quick_action
+  targetValue     String?  // segment name, tag filter, player_id, etc.
+  scheduledAt     DateTime? // null = sent immediately
+  status          String   @default("sent") // sent, scheduled, failed, cancelled
+  recipientCount  Int      @default(0)
+  deliveredCount  Int      @default(0)
+  clickedCount    Int      @default(0)
+  errorMessage    String?
+  createdBy       String   // admin user id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([targetType])
+  @@map("push_notification_logs")
+}
