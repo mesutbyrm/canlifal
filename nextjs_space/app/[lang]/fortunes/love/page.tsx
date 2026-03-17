@@ -210,14 +210,14 @@ export default function LoveCompatibilityPage() {
               <div className="text-center">
                 <span className="text-4xl block">{yourSignData?.emoji}</span>
                 <span className="text-deep-purple-200 text-sm">
-                  {yourName || (yourSignData?.tr}
+                  {yourName || yourSignData?.tr}
                 </span>
               </div>
               <Heart className="w-8 h-8 text-pink-500 animate-pulse" />
               <div className="text-center">
                 <span className="text-4xl block">{partnerSignData?.emoji}</span>
                 <span className="text-deep-purple-200 text-sm">
-                  {partnerName || (partnerSignData?.tr}
+                  {partnerName || partnerSignData?.tr}
                 </span>
               </div>
             </div>

@@ -675,8 +675,7 @@ export default function CreditsPage() {
                 <p className="text-yellow-500 font-medium flex items-start gap-2">
                   <span className="text-xl">⚠️</span>
                   <span>
-                    {`Açıklama kısmına kullanıcı adınızı yazın}"`
-                      : `Write your username in description: "${username}"`}
+                    {`Açıklama kısmına kullanıcı adınızı yazın: "${username}"`}
                   </span>
                 </p>
               </div>
@@ -782,8 +781,7 @@ export default function CreditsPage() {
                 <p className="text-yellow-500 font-medium flex items-start gap-2">
                   <span className="text-xl">⚠️</span>
                   <span>
-                    {`Açıklama kısmına kullanıcı adınızı yazın}"`
-                      : `Write your username in description: "${username}"`}
+                    {`Açıklama kısmına kullanıcı adınızı yazın: "${username}"`}
                   </span>
                 </p>
               </div>

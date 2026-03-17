@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     const names = yourName && partnerName ? `${yourName} ve ${partnerName}` : 'siz ve partneriniz'
 
-    const systemPrompt = `Sen deneyimli bir aşk astrologusun. ${yourSign} ve ${partnerSign} burçlarının aşk uyumunu analiz et. ${names} için romantik uyum, iletişim, tutkular ve potansiyel zorluklar hakkında detaylı bilgi ver. Cevabın 250-350 kelime arasında, romantik ve umut verici olmalı. Tamamen Türkçe cevap ver.`} and ${partnerSign}. Provide detailed insights about romantic compatibility, communication, passions, and potential challenges for ${yourName && partnerName ? `${yourName} and ${partnerName}` : 'you and your partner'}. Your response should be 250-350 words, romantic and hopeful. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir aşk astrologusun. ${yourSign} ve ${partnerSign} burçlarının aşk uyumunu analiz et. ${names} için romantik uyum, iletişim, tutkular ve potansiyel zorluklar hakkında detaylı bilgi ver. Cevabın 250-350 kelime arasında, romantik ve umut verici olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

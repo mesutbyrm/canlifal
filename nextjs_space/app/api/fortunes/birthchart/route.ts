@@ -28,8 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = `Sen deneyimli bir astrologsun ve doğum haritası analizi yapıyorsun. Kullanıcının bilgileri}, Doğum Saati: ${birthTime || 'bilinmiyor'}, Doğum Yeri: ${birthPlace}. Detaylı bir doğum haritası analizi yap. Güneş burcu, Yükselen burç, Ay burcu, gezegen pozisyonları ve evler hakkında bilgi ver. Kişilik özellikleri, güçlü yönler, zorluklar, kariyer eğilimleri, ilişki dinamiği ve yaşam amacı hakkında detaylı yorum yap. Cevabın 450-550 kelime arasında olmalı. Tamamen Türkçe cevap ver.`
-      : `You are an experienced astrologer performing birth chart analysis. User's information: Birth Date: ${birthDate}, Birth Time: ${birthTime || 'unknown'}, Birth Place: ${birthPlace}. Provide a detailed birth chart analysis. Include information about Sun sign, Rising sign, Moon sign, planetary positions, and houses. Provide detailed interpretations about personality traits, strengths, challenges, career tendencies, relationship dynamics, and life purpose. Your response should be 450-550 words. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir astrologsun ve doğum haritası analizi yapıyorsun. Kullanıcının bilgileri: Doğum Tarihi: ${birthDate}, Doğum Saati: ${birthTime || 'bilinmiyor'}, Doğum Yeri: ${birthPlace}. Detaylı bir doğum haritası analizi yap. Güneş burcu, Yükselen burç, Ay burcu, gezegen pozisyonları ve evler hakkında bilgi ver. Kişilik özellikleri, güçlü yönler, zorluklar, kariyer eğilimleri, ilişki dinamiği ve yaşam amacı hakkında detaylı yorum yap. Cevabın 450-550 kelime arasında olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

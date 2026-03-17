@@ -82,13 +82,13 @@ interface Teller {
   };
 }
 
-const SPECIALTY_NAMES: Record<string, { en: string; tr: string }> = {
-  coffee: { en: 'Coffee', tr: 'Kahve' },
-  tarot: { en: 'Tarot', tr: 'Tarot' },
-  astrology: { en: 'Astrology', tr: 'Astroloji' },
-  palmistry: { en: 'Palmistry', tr: 'El Falı' },
-  dream: { en: 'Dream', tr: 'Rüya' },
-  numerology: { en: 'Numerology', tr: 'Numeroloji' },
+const SPECIALTY_NAMES: Record<string, string> = {
+  coffee: 'Kahve',
+  tarot: 'Tarot',
+  astrology: 'Astroloji',
+  palmistry: 'El Falı',
+  dream: 'Rüya',
+  numerology: 'Numeroloji',
 };
 
 export default function AdminLiveTellersPage() {
@@ -574,7 +574,7 @@ export default function AdminLiveTellersPage() {
                             <h4 className="font-semibold text-gold-400">{'Detaylar'}</h4>
                             <div className="text-sm space-y-2">
                               <p><span className="text-gray-400">{'Biyografi:'}</span> <span className="text-white">{teller.bio || '-'}</span></p>
-                              <p><span className="text-gray-400">{'Uzmanlık:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s]?.[language] || s).join(', ') || '-'}</span></p>
+                              <p><span className="text-gray-400">{'Uzmanlık:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s] || s).join(', ') || '-'}</span></p>
                               <p><span className="text-gray-400">{'Seans Ücreti:'}</span> <span className="text-gold-400">{teller.pricePerSession} jeton</span></p>
                               <p><span className="text-gray-400">{'Kayıt:'}</span> <span className="text-white">{new Date(teller.createdAt).toLocaleDateString()}</span></p>
                             </div>

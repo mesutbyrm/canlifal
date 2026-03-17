@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = `Sen deneyimli bir numerologsun. Kullanıcının ismi "${name}" ve doğum tarihi "${birthDate}" bilgilerine göre numerolojik analiz yap. Yaşam yolu sayısı, kader sayısı, kişilik özellikleri ve gelecek hakkında bilgi ver. Cevabın 250-350 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`}" and birth date "${birthDate}". Include life path number, destiny number, personality traits, and insights about the future. Your response should be 250-350 words, mystical and enlightening. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir numerologsun. Kullanıcının ismi "${name}" ve doğum tarihi "${birthDate}" bilgilerine göre numerolojik analiz yap. Yaşam yolu sayısı, kader sayısı, kişilik özellikleri ve gelecek hakkında bilgi ver. Cevabın 250-350 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

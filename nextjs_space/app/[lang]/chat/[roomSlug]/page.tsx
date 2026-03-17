@@ -807,7 +807,7 @@ export default function ChatRoomPage() {
       if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
         alert('Mikrofon erişimi reddedildi')
       } else {
-        alert('Sesli sohbet başlatılamadı
+        alert('Sesli sohbet başlatılamadı')
       }
     }
   }

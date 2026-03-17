@@ -228,9 +228,9 @@ export default function DashboardPage() {
     const mins = minutes % 60
     
     if (days > 0) {
-      return `${days} gün ${hours} saat`}d ${hours}h`
+      return `${days} gün ${hours} saat`
     } else if (hours > 0) {
-      return `${hours} saat ${mins} dk`}h ${mins}m`
+      return `${hours} saat ${mins} dk`
     }
     return `${mins} dakika`
   }
@@ -953,7 +953,7 @@ export default function DashboardPage() {
                 </div>
                 <ProgressBar progress={achievements.completionPercentage} color="amber" />
                 <p className="text-white/50 text-xs mt-2">
-                  {`%${achievements.completionPercentage} tamamlandı`}% completed`}
+                  {`%${achievements.completionPercentage} tamamlandı`}
                 </p>
               </div>
 
@@ -966,9 +966,7 @@ export default function DashboardPage() {
                     {category === 'stream' && <Radio className="h-4 w-4 text-red-400" />}
                     {category === 'coin' && <Coins className="h-4 w-4 text-yellow-400" />}
                     {category === 'activity' && <Activity className="h-4 w-4 text-blue-400" />}
-                    {{ fortune}[category]
-                      : { fortune: 'Fortune', social: 'Social', stream: 'Stream', coin: 'Coin', activity: 'Activity' }[category]
-                    }
+                    {{ fortune: 'Fal', social: 'Sosyal', stream: 'Yayın', coin: 'Jeton', activity: 'Aktivite' }[category]}
                   </h5>
                   <div className="space-y-3">
                     {categoryAchievements.map((achievement: Achievement) => (

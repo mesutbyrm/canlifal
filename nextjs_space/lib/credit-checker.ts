@@ -103,25 +103,23 @@ export async function sendFortuneSummaryEmail(
 
     if (!user) return
 
-    const fortuneNames: Record<string, { en: string; tr: string }> = {
-      coffee: { en: 'Coffee Fortune', tr: 'Kahve Falı' },
-      tarot: { en: 'Tarot Reading', tr: 'Tarot Falı' },
-      dream: { en: 'Dream Interpretation', tr: 'Rüya Yorumu' },
-      horoscope: { en: 'Daily Horoscope', tr: 'Günlük Burç' },
-      numerology: { en: 'Numerology', tr: 'Numeroloji' },
-      love: { en: 'Love Compatibility', tr: 'Aşk Uyumu' },
-      yesno: { en: 'Yes/No Oracle', tr: 'Evet/Hayır Kâhini' },
-      kursundokme: { en: 'Lead Pouring Fortune', tr: 'Kurşun Dökme Falı' },
+    const fortuneNames: Record<string, string> = {
+      coffee: 'Kahve Falı',
+      tarot: 'Tarot Falı',
+      dream: 'Rüya Yorumu',
+      horoscope: 'Günlük Burç',
+      numerology: 'Numeroloji',
+      love: 'Aşk Uyumu',
+      yesno: 'Evet/Hayır Kâhini',
+      kursundokme: 'Kurşun Dökme Falı',
     }
 
-    const fortuneName = fortuneNames[fortuneType]?.tr || fortuneType
+    const fortuneName = fortuneNames[fortuneType] || fortuneType
 
     await sendNotificationEmail({
       notificationId: process.env.NOTIF_ID_FORTUNE_READING_SUMMARY || '',
       recipientEmail: user.email,
-      subject: language === 'tr' 
-        ? `✨ ${fortuneName} Sonucunuz` 
-        : `✨ Your ${fortuneName} Result`,
+      subject: `✨ ${fortuneName} Sonucunuz`,
       htmlBody: getFortuneReadingSummaryHtml(user.name || 'User', fortuneType, summary, language),
     })
   } catch (error) {

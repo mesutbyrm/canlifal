@@ -49,41 +49,38 @@ export async function sendNotificationEmail(params: SendEmailParams): Promise<{ 
 // Email Templates
 
 export function getWelcomeEmailHtml(name: string, language: string): string {
-  const isTr = language === 'tr';
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); padding: 40px; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #d4af37; font-size: 32px; margin: 0;">✨ ${isTr ? 'Hoş Geldiniz!' : 'Welcome!'} ✨</h1>
+        <h1 style="color: #d4af37; font-size: 32px; margin: 0;">✨ Hoş Geldiniz! ✨</h1>
       </div>
       <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3);">
         <p style="color: #e8e0f0; font-size: 18px; margin: 0 0 20px;">
-          ${isTr ? 'Sevgili' : 'Dear'} <strong style="color: #d4af37;">${name}</strong>,
+          Sevgili <strong style="color: #d4af37;">${name}</strong>,
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
-          ${isTr 
-            ? 'Falcı platformuna hoş geldiniz! Geleceğinizi keşfetmeye hazır mısınız? Size <strong style="color: #ffd700;">10 ücretsiz CFC</strong> hediye ettik.' 
-            : 'Welcome to Falcı platform! Ready to discover your future? We have gifted you <strong style="color: #ffd700;">10 free credits</strong>.'}
+          Falcı platformuna hoş geldiniz! Geleceğinizi keşfetmeye hazır mısınız? Size <strong style="color: #ffd700;">10 ücretsiz CFC</strong> hediye ettik.
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
-          ${isTr ? 'Sunduğumuz fallar:' : 'Our fortune types:'}
+          Sunduğumuz fallar:
         </p>
         <ul style="color: #c9b8e0; font-size: 15px; line-height: 2; padding-left: 20px;">
-          <li>☕ ${isTr ? 'Kahve Falı' : 'Coffee Fortune'}</li>
-          <li>🔮 ${isTr ? 'Tarot Falı' : 'Tarot Reading'}</li>
-          <li>🌙 ${isTr ? 'Rüya Yorumu' : 'Dream Interpretation'}</li>
-          <li>⭐ ${isTr ? 'Günlük Burç' : 'Daily Horoscope'}</li>
-          <li>🔢 ${isTr ? 'Numeroloji' : 'Numerology'}</li>
-          <li>💕 ${isTr ? 'Aşk Uyumu' : 'Love Compatibility'}</li>
-          <li>🎱 ${isTr ? 'Evet/Hayır Kâhini' : 'Yes/No Oracle'}</li>
+          <li>☕ Kahve Falı</li>
+          <li>🔮 Tarot Falı</li>
+          <li>🌙 Rüya Yorumu</li>
+          <li>⭐ Günlük Burç</li>
+          <li>🔢 Numeroloji</li>
+          <li>💕 Aşk Uyumu</li>
+          <li>🎱 Evet/Hayır Kâhini</li>
         </ul>
       </div>
       <div style="text-align: center; margin-top: 30px;">
         <a href="${process.env.NEXTAUTH_URL}/fortunes" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
-          ${isTr ? 'Falınıza Bakın' : 'Get Your Fortune'}
+          Falınıza Bakın
         </a>
       </div>
       <p style="color: #8b7aa8; font-size: 12px; text-align: center; margin-top: 30px;">
-        © 2026 Falcı - Fortune Platform
+        © 2026 Canlifal
       </p>
     </div>
   `;
@@ -121,25 +118,22 @@ export function getContactFormEmailHtml(name: string, email: string, message: st
 }
 
 export function getLowCreditsEmailHtml(name: string, credits: number, language: string): string {
-  const isTr = language === 'tr';
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); padding: 40px; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #ff9500; font-size: 28px; margin: 0;">⚠️ ${isTr ? 'Düşük CFC Uyarısı' : 'Low CFC Warning'}</h1>
+        <h1 style="color: #ff9500; font-size: 28px; margin: 0;">⚠️ Düşük CFC Uyarısı</h1>
       </div>
       <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,149,0,0.3);">
         <p style="color: #e8e0f0; font-size: 18px; margin: 0 0 20px;">
-          ${isTr ? 'Sevgili' : 'Dear'} <strong style="color: #d4af37;">${name}</strong>,
+          Sevgili <strong style="color: #d4af37;">${name}</strong>,
         </p>
         <p style="color: #c9b8e0; font-size: 16px; line-height: 1.8; margin: 0 0 20px;">
-          ${isTr 
-            ? `Kalan CFC: <strong style="color: #ff9500;">${credits}</strong>. Fal bakmaya devam etmek için CFC satın almayı düşünün.`
-            : `Your remaining credits: <strong style="color: #ff9500;">${credits}</strong>. Consider purchasing more credits to continue your fortune readings.`}
+          Kalan CFC: <strong style="color: #ff9500;">${credits}</strong>. Fal bakmaya devam etmek için CFC satın almayı düşünün.
         </p>
       </div>
       <div style="text-align: center; margin-top: 30px;">
         <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
-          ${isTr ? 'CFC Al' : 'Get CFC'}
+          CFC Al
         </a>
       </div>
     </div>
@@ -152,34 +146,31 @@ export function getFortuneReadingSummaryHtml(
   summary: string, 
   language: string
 ): string {
-  const isTr = language === 'tr';
-  const fortuneNames: Record<string, { en: string; tr: string; emoji: string }> = {
-    coffee: { en: 'Coffee Fortune', tr: 'Kahve Falı', emoji: '☕' },
-    tarot: { en: 'Tarot Reading', tr: 'Tarot Falı', emoji: '🔮' },
-    dream: { en: 'Dream Interpretation', tr: 'Rüya Yorumu', emoji: '🌙' },
-    horoscope: { en: 'Daily Horoscope', tr: 'Günlük Burç', emoji: '⭐' },
-    numerology: { en: 'Numerology', tr: 'Numeroloji', emoji: '🔢' },
-    love: { en: 'Love Compatibility', tr: 'Aşk Uyumu', emoji: '💕' },
-    yesno: { en: 'Yes/No Oracle', tr: 'Evet/Hayır Kâhini', emoji: '🎱' },
+  const fortuneNames: Record<string, { name: string; emoji: string }> = {
+    coffee: { name: 'Kahve Falı', emoji: '☕' },
+    tarot: { name: 'Tarot Falı', emoji: '🔮' },
+    dream: { name: 'Rüya Yorumu', emoji: '🌙' },
+    horoscope: { name: 'Günlük Burç', emoji: '⭐' },
+    numerology: { name: 'Numeroloji', emoji: '🔢' },
+    love: { name: 'Aşk Uyumu', emoji: '💕' },
+    yesno: { name: 'Evet/Hayır Kâhini', emoji: '🎱' },
   };
   
-  const fortune = fortuneNames[fortuneType] || { en: fortuneType, tr: fortuneType, emoji: '✨' };
-  const fortuneName = isTr ? fortune.tr : fortune.en;
+  const fortune = fortuneNames[fortuneType] || { name: fortuneType, emoji: '✨' };
   
-  // Truncate summary if too long
   const truncatedSummary = summary.length > 500 ? summary.substring(0, 500) + '...' : summary;
   
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); padding: 40px; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #d4af37; font-size: 28px; margin: 0;">${fortune.emoji} ${fortuneName}</h1>
+        <h1 style="color: #d4af37; font-size: 28px; margin: 0;">${fortune.emoji} ${fortune.name}</h1>
       </div>
       <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; border: 1px solid rgba(212,175,55,0.3);">
         <p style="color: #e8e0f0; font-size: 18px; margin: 0 0 20px;">
-          ${isTr ? 'Sevgili' : 'Dear'} <strong style="color: #d4af37;">${name}</strong>,
+          Sevgili <strong style="color: #d4af37;">${name}</strong>,
         </p>
         <p style="color: #c9b8e0; font-size: 14px; margin: 0 0 15px;">
-          ${isTr ? 'İşte falınızın özeti:' : 'Here is your fortune reading summary:'}
+          İşte falınızın özeti:
         </p>
         <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border-left: 4px solid #d4af37;">
           <p style="color: #e8e0f0; font-size: 15px; line-height: 1.8; margin: 0; white-space: pre-wrap;">${truncatedSummary}</p>
@@ -187,11 +178,11 @@ export function getFortuneReadingSummaryHtml(
       </div>
       <div style="text-align: center; margin-top: 30px;">
         <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
-          ${isTr ? 'Geçmiş Fallarım' : 'My Fortune History'}
+          Geçmiş Fallarım
         </a>
       </div>
       <p style="color: #8b7aa8; font-size: 12px; text-align: center; margin-top: 30px;">
-        ${new Date().toLocaleString(isTr ? 'tr-TR' : 'en-US')}
+        ${new Date().toLocaleString('tr-TR')}
       </p>
     </div>
   `;

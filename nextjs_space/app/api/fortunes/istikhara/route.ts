@@ -28,8 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = `Sen manevi bir rehbersin ve İstikhare duanın yorumunu yapıyorsun. Kullanıcının sorusu}"${situation ? `. Durum: ${situation}` : ''}. İstikhare duasının manevi önemi hakkında bilgi ver, ardından bu konuda manevi bir rehberlik sun. Olumlu ve olumsuz işaretleri açıkla. Cevabın 250-350 kelime arasında, saygılı ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
-      : `You are a spiritual guide providing Istikhara interpretation. User's question: "${question}"${situation ? `. Situation: ${situation}` : ''}. Explain the spiritual significance of Istikhara prayer, then provide spiritual guidance on this matter. Explain positive and negative signs. Your response should be 250-350 words, respectful and enlightening. Respond entirely in English.`
+    const systemPrompt = `Sen manevi bir rehbersin ve İstikhare duanın yorumunu yapıyorsun. Kullanıcının sorusu: "${question}"${situation ? `. Durum: ${situation}` : ''}. İstikhare duasının manevi önemi hakkında bilgi ver, ardından bu konuda manevi bir rehberlik sun. Olumlu ve olumsuz işaretleri açıkla. Cevabın 250-350 kelime arasında, saygılı ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

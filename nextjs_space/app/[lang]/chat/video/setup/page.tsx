@@ -378,9 +378,7 @@ export default function StreamSetupPage() {
         case 'not_applied':
           return {
             title: 'Canlı Falcı Ol',
-            message: language === 'tr' 
-              ? 'Canlı yayın açabilmek için önce canlı falcı başvurusu yapmanız gerekmektedir.'
-              : 'You need to apply as a live fortune teller before you can start streaming.',
+            message: 'Canlı yayın açabilmek için önce canlı falcı başvurusu yapmanız gerekmektedir.',
             buttonText: 'Başvuru Yap',
             buttonLink: `/live-tellers/apply`,
             icon: '✨'
@@ -388,9 +386,7 @@ export default function StreamSetupPage() {
         case 'pending':
           return {
             title: 'Başvurunuz İnceleniyor',
-            message: language === 'tr' 
-              ? 'Canlı falcı başvurunuz henüz onaylanmadı. Onaylandıktan sonra yayın açabilirsiniz.'
-              : 'Your live fortune teller application is still pending. You can start streaming after approval.',
+            message: 'Canlı falcı başvurunuz henüz onaylanmadı. Onaylandıktan sonra yayın açabilirsiniz.',
             buttonText: 'Ana Sayfaya Dön',
             buttonLink: `/`,
             icon: '⏳'
@@ -398,9 +394,7 @@ export default function StreamSetupPage() {
         case 'rejected':
           return {
             title: 'Başvurunuz Reddedildi',
-            message: language === 'tr' 
-              ? 'Canlı falcı başvurunuz reddedildi. Yeni bir başvuru yapabilirsiniz.'
-              : 'Your live fortune teller application was rejected. You can submit a new application.',
+            message: 'Canlı falcı başvurunuz reddedildi. Yeni bir başvuru yapabilirsiniz.',
             buttonText: 'Tekrar Başvur',
             buttonLink: `/live-tellers/apply`,
             icon: '❌'
@@ -408,9 +402,7 @@ export default function StreamSetupPage() {
         case 'restricted':
           return {
             title: 'Hesabınız Kısıtlandı',
-            message: language === 'tr' 
-              ? 'Canlı falcı hesabınız şu anda kısıtlanmış durumda. Destek ile iletişime geçin.'
-              : 'Your live fortune teller account is currently restricted. Please contact support.',
+            message: 'Canlı falcı hesabınız şu anda kısıtlanmış durumda. Destek ile iletişime geçin.',
             buttonText: 'Ana Sayfaya Dön',
             buttonLink: `/`,
             icon: '🚫'

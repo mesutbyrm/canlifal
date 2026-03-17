@@ -955,8 +955,7 @@ export default function LiveRoomPage() {
                 {'Seansı Başlat'}
               </h3>
               <p className="text-gray-300 text-sm">
-                {`${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`} is connected. Click below to start the timer or select duration first.`
-                }
+                {`${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`}
               </p>
               <p className="text-gold-400 text-sm mt-2">
                 {`Kullanıcının jetonu}`

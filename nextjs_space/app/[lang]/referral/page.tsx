@@ -64,9 +64,7 @@ export default function ReferralPage() {
       try {
         await navigator.share({
           title: 'Canlifal - Davet',
-          text: language === 'tr' 
-            ? 'Canlifal\'a katıl ve 50 ücretsiz CFC kazan!' 
-            : 'Join Canlifal and get 50 free credits!',
+          text: 'Canlifal\'a katıl ve 50 ücretsiz CFC kazan!',
           url: data.referralLink
         })
       } catch (err) {

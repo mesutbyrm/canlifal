@@ -553,8 +553,7 @@ export default function VideoStreamPage() {
     if (!selectedType) return
     
     if (userJetons < selectedType.jetonCost) {
-      alert(`Yetersiz jeton! ${selectedType.jetonCost} jeton gerekli, mevcut}` 
-        : `Insufficient jetons! ${selectedType.jetonCost} required, available: ${userJetons}`)
+      alert(`Yetersiz jeton! ${selectedType.jetonCost} jeton gerekli, mevcut: ${userJetons}`)
       return
     }
     
@@ -606,7 +605,7 @@ export default function VideoStreamPage() {
         if (data.status === 'refunded' && lastFortuneStatusRef.current !== 'refunded') {
           // Show refund popup
           setRefundedAmount(data.jetonAmount)
-          setRefundedTypeName(data.typeName
+          setRefundedTypeName(data.typeName)
           setRefundedTypeIcon(data.typeIcon)
           setHasPendingFortune(false)
           setShowRefundPopup(true)
@@ -843,7 +842,7 @@ export default function VideoStreamPage() {
     if (!currentStream) return
     
     const shareUrl = `${window.location.origin}/chat/video`
-    const shareText = `${currentStream.user.name} canlı yayında! Hemen katıl 🔴`} is live! Join now 🔴`
+    const shareText = `${currentStream.user.name} canlı yayında! Hemen katıl 🔴`
     
     if (navigator.share) {
       try {

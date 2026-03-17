@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-    const systemPrompt = `Sen deneyimli bir astrologsun. Bugün ${today} için ${zodiacSign} burcunun günlük yorumunu yap. Aşk, kariyer, sağlık ve genel enerji hakkında bilgi ver. Cevabın 200-300 kelime arasında, ilham verici ve kişiselleştirilmiş olmalı. Tamamen Türkçe cevap ver.`} for ${today}. Include insights about love, career, health, and general energy. Your response should be 200-300 words, inspiring and personalized. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir astrologsun. Bugün ${today} için ${zodiacSign} burcunun günlük yorumunu yap. Aşk, kariyer, sağlık ve genel enerji hakkında bilgi ver. Cevabın 200-300 kelime arasında, ilham verici ve kişiselleştirilmiş olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

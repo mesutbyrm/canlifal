@@ -1191,7 +1191,7 @@ export default function BroadcastPage() {
       if (res.ok) {
         const data = await res.json()
         if (data.refundedCount > 0) {
-          addToast('info', `${data.refundedCount} kişiye toplam ${data.totalRefunded} jeton iade edildi`} jetons to ${data.refundedCount} users`)
+          addToast('info', `${data.refundedCount} kişiye toplam ${data.totalRefunded} jeton iade edildi`)
         }
       }
     } catch (e) {}

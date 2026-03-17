@@ -37,8 +37,7 @@ export async function POST(request: Request) {
     const saucerImageUrl = saucerImagePath ? await getFileUrl(saucerImagePath, false) : null
 
     // System prompt for coffee fortune with images
-    const systemPrompt = `Sen çok deneyimli bir kahve falcısısın. Kullanıcının yüklediği fincan${saucerImageUrl ? ' ve tabak'} görsellerini analiz et ve detaylı bir kahve falı yorumu yap. Fincan içindeki şekilleri, sembolleri ve desenleri yorumla. Cevabın 300-400 kelime arasında, mistik, duygusal ve kişiselleştirilmiş olmalı. Gelecekle ilgili kehanetlerde bulun, aşk, kariyer, sağlık ve şans hakkında bilgi ver. Tamamen Türkçe cevap ver.`
-      : `You are a highly experienced coffee fortune teller. Analyze the user's uploaded coffee cup${saucerImageUrl ? ' and saucer' : ''} images and provide a detailed coffee fortune reading. Interpret the shapes, symbols, and patterns inside the cup. Your response should be 300-400 words, mystical, emotional, and personalized. Make predictions about the future, provide insights about love, career, health, and luck. Respond entirely in English.`
+    const systemPrompt = `Sen çok deneyimli bir kahve falcısısın. Kullanıcının yüklediği fincan${saucerImageUrl ? ' ve tabak' : ''} görsellerini analiz et ve detaylı bir kahve falı yorumu yap. Fincan içindeki şekilleri, sembolleri ve desenleri yorumla. Cevabın 300-400 kelime arasında, mistik, duygusal ve kişiselleştirilmiş olmalı. Gelecekle ilgili kehanetlerde bulun, aşk, kariyer, sağlık ve şans hakkında bilgi ver. Tamamen Türkçe cevap ver.`
 
     const imageContents = [
       {
