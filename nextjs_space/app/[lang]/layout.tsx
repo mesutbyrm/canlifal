@@ -9,6 +9,7 @@ import PushNotificationProvider from '@/components/push-notification-provider'
 import NotificationPermissionPrompt from '@/components/notification-permission-prompt'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
 import DeviceGuard from '@/components/device-guard'
+import OneSignalInitializer from '@/components/onesignal-initializer'
 
 export default function LangLayout({
   children,
@@ -45,6 +46,9 @@ export default function LangLayout({
         
         {/* Single device session enforcement */}
         <DeviceGuard />
+        
+        {/* OneSignal Web Push */}
+        <OneSignalInitializer />
       </div>
     </ProfilePopupProvider>
     </PushNotificationProvider>
