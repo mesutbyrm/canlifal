@@ -128,7 +128,7 @@ export default function IncomingCallModal() {
     if (!incomingSession) return;
     stopRingtone();
     setIsVisible(false);
-    router.push(`/${language}/live-room/${incomingSession.id}`);
+    router.push(`/live-room/${incomingSession.id}`);
   };
 
   const handleDecline = async () => {

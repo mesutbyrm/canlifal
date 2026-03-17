@@ -128,7 +128,7 @@ export default function StreamSetupPage() {
 
   useEffect(() => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     // Only start camera if teller is approved
@@ -308,7 +308,7 @@ export default function StreamSetupPage() {
       if (res.ok) {
         const data = await res.json()
         stopCamera()
-        router.push(`/${language}/chat/video/broadcast/${data.id}`)
+        router.push(`/chat/video/broadcast/${data.id}`)
       } else {
         console.error('Failed to create stream')
         setIsStarting(false)
@@ -382,7 +382,7 @@ export default function StreamSetupPage() {
               ? 'Canlı yayın açabilmek için önce canlı falcı başvurusu yapmanız gerekmektedir.'
               : 'You need to apply as a live fortune teller before you can start streaming.',
             buttonText: language === 'tr' ? 'Başvuru Yap' : 'Apply Now',
-            buttonLink: `/${language}/live-tellers/apply`,
+            buttonLink: `/live-tellers/apply`,
             icon: '✨'
           }
         case 'pending':
@@ -392,7 +392,7 @@ export default function StreamSetupPage() {
               ? 'Canlı falcı başvurunuz henüz onaylanmadı. Onaylandıktan sonra yayın açabilirsiniz.'
               : 'Your live fortune teller application is still pending. You can start streaming after approval.',
             buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
-            buttonLink: `/${language}`,
+            buttonLink: `/`,
             icon: '⏳'
           }
         case 'rejected':
@@ -402,7 +402,7 @@ export default function StreamSetupPage() {
               ? 'Canlı falcı başvurunuz reddedildi. Yeni bir başvuru yapabilirsiniz.'
               : 'Your live fortune teller application was rejected. You can submit a new application.',
             buttonText: language === 'tr' ? 'Tekrar Başvur' : 'Apply Again',
-            buttonLink: `/${language}/live-tellers/apply`,
+            buttonLink: `/live-tellers/apply`,
             icon: '❌'
           }
         case 'restricted':
@@ -412,7 +412,7 @@ export default function StreamSetupPage() {
               ? 'Canlı falcı hesabınız şu anda kısıtlanmış durumda. Destek ile iletişime geçin.'
               : 'Your live fortune teller account is currently restricted. Please contact support.',
             buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
-            buttonLink: `/${language}`,
+            buttonLink: `/`,
             icon: '🚫'
           }
         default:
@@ -420,7 +420,7 @@ export default function StreamSetupPage() {
             title: language === 'tr' ? 'Hata' : 'Error',
             message: language === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.',
             buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
-            buttonLink: `/${language}`,
+            buttonLink: `/`,
             icon: '⚠️'
           }
       }

@@ -126,7 +126,7 @@ export default function AdminBadgesPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/${language}/admin`} className={`p-2 rounded-lg ${cardBg} border`}>
+          <Link href={`/admin`} className={`p-2 rounded-lg ${cardBg} border`}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>

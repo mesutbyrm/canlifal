@@ -58,21 +58,21 @@ export default function SitePageView({ params }: { params: { slug: string; lang:
     return (
       <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} flex flex-col items-center justify-center gap-4`}>
         <p className={`text-xl ${textColor}`}>{language === 'tr' ? 'Sayfa bulunamad\u0131' : 'Page not found'}</p>
-        <Link href={`/${language}`} className={`text-sm ${subText} underline`}>
+        <Link href={`/`} className={`text-sm ${subText} underline`}>
           {language === 'tr' ? 'Ana Sayfaya D\u00f6n' : 'Back to Home'}
         </Link>
       </div>
     )
   }
 
-  const title = language === 'en' && page.titleEn ? page.titleEn : page.title
-  const content = language === 'en' && page.contentEn ? page.contentEn : page.content
+  const title = page.title
+  const content = page.content
 
   return (
     <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} p-4 sm:p-6`}>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/${language}`} className={`p-2 rounded-lg ${cardBg} border`}>
+          <Link href={`/`} className={`p-2 rounded-lg ${cardBg} border`}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <h1 className={`text-2xl sm:text-3xl font-bold ${textColor}`}>{title}</h1>

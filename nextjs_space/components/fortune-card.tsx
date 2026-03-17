@@ -60,7 +60,7 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
       transition={{ duration: 0.3 }}
       className="group"
     >
-      <Link href={`/${language}/fortunes/${type}`}>
+      <Link href={`/fortunes/${type}`}>
         <div className="relative bg-mystical-card border border-mystical rounded-lg overflow-hidden mystical-shadow hover:shadow-2xl transition-all duration-300">
           {/* Image */}
           <div className="relative aspect-[4/3] sm:aspect-square bg-deep-purple-900">

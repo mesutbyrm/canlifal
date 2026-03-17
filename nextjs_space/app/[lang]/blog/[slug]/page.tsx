@@ -85,7 +85,7 @@ export default function BlogPostPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <p className="text-white text-xl mb-4">{isTr ? 'Yazı bulunamadı' : 'Post not found'}</p>
-          <button onClick={() => router.push(`/${lang}/blog`)} className="text-purple-400 hover:text-purple-300">
+          <button onClick={() => router.push(`/blog`)} className="text-purple-400 hover:text-purple-300">
             {isTr ? "Blog'a Dön" : 'Back to Blog'}
           </button>
         </div>
@@ -102,9 +102,9 @@ export default function BlogPostPage() {
     '@type': 'BlogPosting',
     headline: title,
     description: desc,
-    url: `${SITE_URL}/${lang}/blog/${displayPost.slug}`,
+    url: `${SITE_URL}/blog/${displayPost.slug}`,
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/${lang}/blog/${displayPost.slug}` },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${displayPost.slug}` },
     keywords: displayPost.keywords.join(', '),
   }
 
@@ -122,7 +122,7 @@ export default function BlogPostPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-3xl mx-auto px-4 py-8 pb-28">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.push(`/${lang}/blog`)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
+          <button onClick={() => router.push(`/blog`)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <span className="text-sm text-gray-400"><BookOpen className="w-4 h-4 inline mr-1" />Blog</span>
@@ -155,7 +155,7 @@ export default function BlogPostPage() {
             <h3 className="text-lg font-semibold text-white mb-4">{isTr ? 'Diğer Yazılar' : 'Other Posts'}</h3>
             <div className="space-y-3">
               {relatedPosts.map(p => (
-                <button key={p.slug} onClick={() => router.push(`/${lang}/blog/${p.slug}`)} className="w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                <button key={p.slug} onClick={() => router.push(`/blog/${p.slug}`)} className="w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
                   <h4 className="text-sm font-medium text-white">{isTr ? p.titleTr : p.titleEn}</h4>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-1">{isTr ? p.descTr : p.descEn}</p>
                 </button>

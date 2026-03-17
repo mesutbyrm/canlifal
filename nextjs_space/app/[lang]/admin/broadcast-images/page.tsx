@@ -54,7 +54,7 @@ export default function AdminBroadcastImagesPage() {
     if (status === 'authenticated') {
       fetchImages()
     } else if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
     }
   }, [status, fetchImages, router, language])
   
@@ -175,7 +175,7 @@ export default function AdminBroadcastImagesPage() {
       <div className="sticky top-0 z-50 bg-[#0a0118]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href={`/${language}/admin`} className="p-2 hover:bg-white/10 rounded-full transition">
+            <Link href={`/admin`} className="p-2 hover:bg-white/10 rounded-full transition">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-2">

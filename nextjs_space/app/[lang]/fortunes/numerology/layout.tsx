@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: seo.titleTr,
   description: seo.descTr,
   keywords: seo.keywords,
-  alternates: { canonical: `${SITE_URL}/tr/fortunes/numerology` },
+  alternates: { canonical: `${SITE_URL}/fortunes/numerology` },
   openGraph: { title: seo.titleTr, description: seo.descTr, siteName: SITE_NAME, type: 'website' },
   twitter: { card: 'summary_large_image', title: seo.titleTr, description: seo.descTr },
 }

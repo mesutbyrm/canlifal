@@ -137,7 +137,7 @@ export default function AdminSitePagesPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/${language}/admin`} className={`p-2 rounded-lg ${cardBg} border`}>
+          <Link href={`/admin`} className={`p-2 rounded-lg ${cardBg} border`}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -252,7 +252,7 @@ export default function AdminSitePagesPage() {
                     <button onClick={() => openEdit(page)} className="p-1.5 rounded-lg hover:bg-black/10">
                       <FileText className="w-4 h-4 text-blue-400" />
                     </button>
-                    <Link href={`/${language}/sayfa/${page.slug}`} target="_blank" className="p-1.5 rounded-lg hover:bg-black/10">
+                    <Link href={`/sayfa/${page.slug}`} target="_blank" className="p-1.5 rounded-lg hover:bg-black/10">
                       <ExternalLink className="w-4 h-4 text-fuchsia-400" />
                     </Link>
                     <button onClick={() => handleDelete(page.id)} className="p-1.5 rounded-lg hover:bg-red-500/20">

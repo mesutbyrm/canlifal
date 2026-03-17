@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   }
 
   const displayUsername = user.username || user.id
-  const canonicalUrl = `${baseUrl}/${lang}/profile/${displayUsername}`
+  const canonicalUrl = `${baseUrl}/profile/${displayUsername}`
   const ogImage = user.image || `${baseUrl}/og-profile.jpg`
 
   const title = lang === 'tr'
@@ -76,10 +76,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     publisher: 'Canlifal',
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        'tr': `${baseUrl}/tr/profile/${displayUsername}`,
-        'en': `${baseUrl}/en/profile/${displayUsername}`,
-      },
+
     },
     openGraph: {
       title,

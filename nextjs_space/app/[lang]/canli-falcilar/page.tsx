@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: 'Canlı Falcılar - Online Fal Baktır | ' + SITE_NAME,
   description: 'En iyi canlı falcılarla birebir görüşme. Online fal baktırın, geleceğinizi keşfedin.',
   keywords: ['canlı falcılar', 'online falcı', 'canlı fal', 'fal baktır'],
-  alternates: { canonical: `${SITE_URL}/tr/canli-falcilar` },
-  openGraph: { title: 'Canlı Falcılar | ' + SITE_NAME, description: 'En iyi canlı falcılarla online fal baktırın.', url: `${SITE_URL}/tr/canli-falcilar` },
+  alternates: { canonical: `${SITE_URL}/canli-falcilar` },
+  openGraph: { title: 'Canlı Falcılar | ' + SITE_NAME, description: 'En iyi canlı falcılarla online fal baktırın.', url: `${SITE_URL}/canli-falcilar` },
 }
 
 export default function CanlaFalcilar({ params }: { params: { lang: string } }) {

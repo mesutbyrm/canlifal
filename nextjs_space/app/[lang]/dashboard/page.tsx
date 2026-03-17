@@ -756,7 +756,7 @@ export default function DashboardPage() {
             {/* Most Liked & Commented Posts */}
             <div className="grid grid-cols-2 gap-3">
               {statistics.social.mostLikedPost && (
-                <Link href={`/${language}/feed?post=${statistics.social.mostLikedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                <Link href={`/feed?post=${statistics.social.mostLikedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
                   <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Beğenilen' : 'Most Liked'}</p>
                   <div className="flex items-center gap-2">
                     <Heart className="h-4 w-4 text-rose-400" />
@@ -765,7 +765,7 @@ export default function DashboardPage() {
                 </Link>
               )}
               {statistics.social.mostCommentedPost && (
-                <Link href={`/${language}/feed?post=${statistics.social.mostCommentedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                <Link href={`/feed?post=${statistics.social.mostCommentedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
                   <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Yorumlanan' : 'Most Commented'}</p>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-purple-400" />
@@ -849,7 +849,7 @@ export default function DashboardPage() {
             {statistics.streams.topGiftSender && (
               <div className="bg-white/5 rounded-xl p-4">
                 <p className="text-white/60 text-xs mb-2">{language === 'tr' ? 'En Çok Hediye Gönderen' : 'Top Gift Sender'}</p>
-                <Link href={`/${language}/profile/${statistics.streams.topGiftSender.username || statistics.streams.topGiftSender.id}`} className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2 -mx-2 transition-colors">
+                <Link href={`/profile/${statistics.streams.topGiftSender.username || statistics.streams.topGiftSender.id}`} className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2 -mx-2 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center overflow-hidden">
                     {statistics.streams.topGiftSender.image ? (
                       <img src={statistics.streams.topGiftSender.image} alt="" className="w-full h-full object-cover" />
@@ -930,7 +930,7 @@ export default function DashboardPage() {
                     ? 'Burç bilgin henüz eklenmemiş' 
                     : 'Your zodiac info is not set yet'}
                 </p>
-                <Link href={`/${language}/settings`} className="text-purple-400 text-sm mt-2 inline-block">
+                <Link href={`/settings`} className="text-purple-400 text-sm mt-2 inline-block">
                   {language === 'tr' ? 'Ayarlardan Ekle' : 'Add in Settings'} →
                 </Link>
               </div>
@@ -1068,7 +1068,7 @@ export default function DashboardPage() {
                     data.map((entry, index) => (
                       <Link
                         key={entry.id}
-                        href={`/${language}/profile/${entry.username || entry.id}`}
+                        href={`/profile/${entry.username || entry.id}`}
                         className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${

@@ -115,26 +115,26 @@ const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; e
 ]
 
 const MANAGEMENT_LINKS = (lang: string) => [
-  { href: `/${lang}/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
-  { href: `/${lang}/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
-  { href: `/${lang}/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
-  { href: `/${lang}/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
-  { href: `/${lang}/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
-  { href: `/${lang}/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
-  { href: `/${lang}/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
-  { href: `/${lang}/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
-  { href: `/${lang}/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
-  { href: `/${lang}/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
-  { href: `/${lang}/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
-  { href: `/${lang}/admin/announcement-settings`, icon: Bell, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
-  { href: `/${lang}/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
-  { href: `/${lang}/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
-  { href: `/${lang}/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
-  { href: `/${lang}/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
-  { href: `/${lang}/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
-  { href: `/${lang}/admin/button-order`, icon: LayoutDashboard, trLabel: 'Buton Sıralaması', enLabel: 'Button Order' },
-  { href: `/${lang}/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
-  { href: `/${lang}/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
+  { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
+  { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
+  { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
+  { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
+  { href: `/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
+  { href: `/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
+  { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
+  { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
+  { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
+  { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
+  { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
+  { href: `/admin/announcement-settings`, icon: Bell, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
+  { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
+  { href: `/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
+  { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
+  { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
+  { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
+  { href: `/admin/button-order`, icon: LayoutDashboard, trLabel: 'Buton Sıralaması', enLabel: 'Button Order' },
+  { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
+  { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
 ]
 
 export default function AdminPage() {
@@ -1305,7 +1305,7 @@ export default function AdminPage() {
 
         {/* Back to site */}
         <div className="px-3 mt-4">
-          <Link href={`/${language}`}
+          <Link href={`/`}
             className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${textSecondary} ${hoverRow} transition-colors`}>
             <Home className="w-4 h-4" />
             <span>{language === 'tr' ? 'Siteye Dön' : 'Back to Site'}</span>

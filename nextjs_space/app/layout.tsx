@@ -150,7 +150,7 @@ export default function RootLayout({
                 "@type": "SearchAction",
                 "target": {
                   "@type": "EntryPoint",
-                  "urlTemplate": "https://canlifal.com/tr/social?search={search_term_string}"
+                  "urlTemplate": "https://canlifal.com/social?search={search_term_string}"
                 },
                 "query-input": "required name=search_term_string"
               },

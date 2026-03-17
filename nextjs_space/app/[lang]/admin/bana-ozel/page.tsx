@@ -87,7 +87,7 @@ export default function AdminBanaOzelPage() {
       <div className="max-w-4xl mx-auto p-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/${lang}/admin`} className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 hover:bg-purple-800/40 transition-colors">
+          <Link href={`/admin`} className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 hover:bg-purple-800/40 transition-colors">
             <ArrowLeft className="w-5 h-5 text-fuchsia-300" />
           </Link>
           <div>

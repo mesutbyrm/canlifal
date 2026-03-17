@@ -1,9 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 
-type Language = 'en' | 'tr'
+type Language = 'tr'
 
 interface LanguageContextType {
   language: Language
@@ -16,10 +15,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const translations: Record<string, Record<string, string>> = {}
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en')
+  const [language] = useState<Language>('tr')
   const [isLoaded, setIsLoaded] = useState(false)
-  const pathname = usePathname()
-  const router = useRouter()
 
   // Load translations
   useEffect(() => {
@@ -39,35 +36,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     loadTranslations()
   }, [])
 
-  // Detect language from pathname
-  useEffect(() => {
-    const pathLang = pathname?.split('/')?.[1]
-    if (pathLang === 'en' || pathLang === 'tr') {
-      setLanguageState(pathLang)
-    } else {
-      // Default to English if no language in path
-      setLanguageState('en')
-    }
-  }, [pathname])
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
-    // Update pathname with new language
-    const currentPath = pathname || '/'
-    const pathParts = currentPath.split('/').filter(Boolean)
-    const newPath = pathParts?.[0] === 'en' || pathParts?.[0] === 'tr' 
-      ? `/${lang}/${pathParts.slice(1).join('/')}` 
-      : `/${lang}${currentPath}`
-    router.push(newPath)
+  const setLanguage = (_lang: Language) => {
+    // Single language mode - Turkish only
   }
 
   const t = (key: string): string => {
-    return translations?.[language]?.[key] || key
+    return translations?.['tr']?.[key] || key
   }
 
   if (!isLoaded) {
     return <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
-      <div className="text-gold-400 text-xl">Loading...</div>
+      <div className="text-gold-400 text-xl">Yükleniyor...</div>
     </div>
   }
 

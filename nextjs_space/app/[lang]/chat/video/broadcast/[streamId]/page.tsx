@@ -214,7 +214,7 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     
@@ -1273,7 +1273,7 @@ export default function BroadcastPage() {
     // Refund all pending fortune requests before ending
     await handleRefundAllPending()
     cleanup()
-    router.push(`/${language}`)
+    router.push(`/`)
   }
 
   const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`

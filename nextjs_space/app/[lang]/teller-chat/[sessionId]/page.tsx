@@ -67,7 +67,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchChatData()
@@ -93,7 +93,7 @@ export default function ChatPage() {
         setChatData(data)
         setMessages(data.messages)
       } else if (res.status === 404) {
-        router.push(`/${language}/teller-chat`)
+        router.push(`/teller-chat`)
       }
     } catch (err) {
       console.error('Fetch chat error:', err)
@@ -207,7 +207,7 @@ export default function ChatPage() {
       <div className="bg-deep-purple-900/80 backdrop-blur-sm border-b border-purple-500/20 p-4 sticky top-16 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           <Link
-            href={`/${language}/teller-chat`}
+            href={`/teller-chat`}
             className="p-2 hover:bg-purple-500/20 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-purple-400" />

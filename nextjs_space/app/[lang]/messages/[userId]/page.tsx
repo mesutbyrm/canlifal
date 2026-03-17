@@ -77,7 +77,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
     } else if (status === 'authenticated') {
       fetchChat()
       pollIntervalRef.current = setInterval(fetchChat, 3000)
@@ -104,7 +104,7 @@ export default function ChatPage() {
         setCanMessage(data.canMessage)
         setRequiresRequest(data.requiresRequest)
       } else if (res.status === 404) {
-        router.push(`/${language}/messages`)
+        router.push(`/messages`)
       }
     } catch (error) {
       console.error('Error fetching chat:', error)
@@ -222,11 +222,11 @@ export default function ChatPage() {
       {/* Header - compact */}
       <div className={`flex-shrink-0 ${headerBg} backdrop-blur-sm ${borderColor} border-b z-40`}>
         <div className="max-w-lg mx-auto px-3 py-2 flex items-center gap-2">
-          <button onClick={() => router.push(`/${language}/messages`)} className="p-1">
+          <button onClick={() => router.push(`/messages`)} className="p-1">
             <ChevronLeft className="w-5 h-5 text-white/80" />
           </button>
           <Link
-            href={`/${language}/profile/${user.username || user.id}`}
+            href={`/profile/${user.username || user.id}`}
             className="flex items-center gap-2 flex-1"
           >
             <div className="w-9 h-9 rounded-full overflow-hidden">

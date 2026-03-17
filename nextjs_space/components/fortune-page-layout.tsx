@@ -36,7 +36,7 @@ export default function FortunePageLayout({
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
           {showBackButton && (
             <Link
-              href={`/${language}`}
+              href={`/`}
               className="flex items-center gap-1.5 text-purple-300 hover:text-gold-400 transition-colors text-sm"
             >
               <ArrowLeft className="w-4 h-4" />

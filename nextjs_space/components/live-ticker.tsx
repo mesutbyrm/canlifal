@@ -208,7 +208,7 @@ export default function LiveTicker() {
       {/* Row 1: Canlı Falcı button + Online count + scrolling ticker */}
       <div className="flex items-center h-10 sm:h-12">
         <Link
-          href={`/${language}/live-tellers`}
+          href={`/live-tellers`}
           className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-xs sm:text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
         >
           <Sparkles className="w-4 h-4" />

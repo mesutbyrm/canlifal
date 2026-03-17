@@ -129,7 +129,7 @@ export default function SocialPage() {
         }, 300)
         setTimeout(() => {
           setHighlightedPostId(null)
-          window.history.replaceState({}, '', `/${language}/social`)
+          window.history.replaceState({}, '', `/social`)
         }, 3000)
       }
     }
@@ -313,7 +313,7 @@ export default function SocialPage() {
   }
 
   const handleShare = (platform: string, post: SocialPost) => {
-    const url = `${window.location.origin}/${language}/fal/${post.id}`
+    const url = `${window.location.origin}/fal/${post.id}`
     const fortuneLabel = FORTUNE_LABELS[post.fortuneType || 'text']?.[language] || ''
     const shortText = post.content.substring(0, 80) + (post.content.length > 80 ? '...' : '')
     const tiktokText = `${fortuneLabel} ${shortText} #canlifal #fal #keşfet #fortune #tarot #burç`
@@ -565,7 +565,7 @@ export default function SocialPage() {
                       {/* Post Header */}
                       <div className="p-3 sm:p-4 pb-2">
                         <div className="flex items-start justify-between gap-2">
-                          <Link href={`/${language}/profile/${post.user.id}`} className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1">
+                          <Link href={`/profile/${post.user.id}`} className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1">
                             <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden flex-shrink-0 border-2 border-fuchsia-500/50 group-hover:border-fuchsia-400 transition-colors">
                               {post.user.image ? (
                                 <Image src={post.user.image} alt="" width={44} height={44} className="w-full h-full object-cover" />
@@ -605,7 +605,7 @@ export default function SocialPage() {
                       {/* Post Content */}
                       <div
                         className="px-3 sm:px-4 pb-2 sm:pb-3 cursor-pointer"
-                        onClick={() => router.push(`/${language}/profile/${post.user.id}`)}
+                        onClick={() => router.push(`/profile/${post.user.id}`)}
                       >
                         {(() => {
                           const charLimit = 250;
@@ -708,7 +708,7 @@ export default function SocialPage() {
                           </button>
                         </div>
                         <Link
-                          href={`/${language}/fal/${post.id}`}
+                          href={`/fal/${post.id}`}
                           className="flex items-center gap-1 text-[10px] sm:text-xs text-fuchsia-400/40 hover:text-fuchsia-300 transition-colors"
                         >
                           <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -728,7 +728,7 @@ export default function SocialPage() {
                             <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                               {post.comments?.map(comment => (
                                 <div key={comment.id} className="flex gap-2">
-                                  <Link href={`/${language}/profile/${comment.user.id}`} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm flex-shrink-0 overflow-hidden border border-fuchsia-500/30 hover:border-fuchsia-400 transition-colors">
+                                  <Link href={`/profile/${comment.user.id}`} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm flex-shrink-0 overflow-hidden border border-fuchsia-500/30 hover:border-fuchsia-400 transition-colors">
                                     {comment.user.image ? (
                                       <Image src={comment.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />
                                     ) : (
@@ -738,7 +738,7 @@ export default function SocialPage() {
                                     )}
                                   </Link>
                                   <div className="bg-fuchsia-500/10 border border-fuchsia-500/15 rounded-xl p-2 sm:p-2.5 flex-1 min-w-0">
-                                    <Link href={`/${language}/profile/${comment.user.id}`} className="text-[10px] sm:text-xs text-fuchsia-300 font-medium hover:text-fuchsia-200">{comment.user.name}</Link>
+                                    <Link href={`/profile/${comment.user.id}`} className="text-[10px] sm:text-xs text-fuchsia-300 font-medium hover:text-fuchsia-200">{comment.user.name}</Link>
                                     <p className="text-xs sm:text-sm text-purple-100/80 mt-0.5 break-words">{comment.content}</p>
                                   </div>
                                 </div>
@@ -864,7 +864,7 @@ export default function SocialPage() {
                   : 'Login to post and interact'}
               </p>
               <Link
-                href={`/${language}/login`}
+                href={`/login`}
                 className="falclub-btn inline-block text-sm sm:text-base"
               >
                 {language === 'tr' ? 'Giriş Yap' : 'Login'}

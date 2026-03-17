@@ -131,7 +131,7 @@ export default function TellerIncomingRequest() {
         setIsVisible(false)
         setPendingRequest(null)
         // Redirect to live room
-        router.push(`/${language}/live-room/${pendingRequest.id}`)
+        router.push(`/live-room/${pendingRequest.id}`)
       }
     } catch (error) {
       console.error('Error accepting session:', error)

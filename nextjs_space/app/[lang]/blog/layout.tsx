@@ -6,13 +6,12 @@ export const metadata: Metadata = {
   description: 'Kahve falı, tarot, burç yorumları ve daha fazlası hakkında bilgilendirici yazılar. Fal dünyasının sırlarını keşfedin.',
   keywords: ['fal blog', 'astroloji yazıları', 'kahve falı rehber', 'tarot rehber', 'burç yorumları'],
   alternates: {
-    canonical: `${SITE_URL}/tr/blog`,
-    languages: { 'tr': '/tr/blog', 'en': '/en/blog' },
+    canonical: `${SITE_URL}/blog`,
   },
   openGraph: {
     title: 'Blog - Fal ve Astroloji Yazıları | ' + SITE_NAME,
     description: 'Kahve falı, tarot, burç yorumları ve daha fazlası hakkında bilgilendirici yazılar.',
-    url: `${SITE_URL}/tr/blog`,
+    url: `${SITE_URL}/blog`,
     siteName: SITE_NAME,
     type: 'website',
   },

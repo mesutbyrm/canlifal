@@ -1196,7 +1196,7 @@ export default function ChatRoomPage() {
         <div className="text-center">
           <Ban className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl text-red-400 mb-2">{language === 'tr' ? 'Bu odadan engellendiniz' : 'You are banned from this room'}</h1>
-          <Link href={`/${language}/chat`} className="text-gold-400 hover:text-gold-300">
+          <Link href={`/chat`} className="text-gold-400 hover:text-gold-300">
             {language === 'tr' ? 'Sohbet odalarına dön' : 'Back to chat rooms'}
           </Link>
         </div>
@@ -1488,7 +1488,7 @@ export default function ChatRoomPage() {
                   <button
                     key={r.id}
                     onClick={() => {
-                      router.push(`/${language}/chat/${r.slug}`)
+                      router.push(`/chat/${r.slug}`)
                       setShowRoomsPopup(false)
                     }}
                     className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${r.slug === roomSlug ? 'bg-purple-600/40 border border-purple-500' : 'bg-[#0d0520] hover:bg-purple-600/20'}`}
@@ -1560,7 +1560,7 @@ export default function ChatRoomPage() {
             <div className="flex items-center gap-1 flex-shrink-0">
               {/* Home Button */}
               <Link
-                href={`/${language}`}
+                href={`/`}
                 className="flex items-center justify-center w-8 h-8 rounded bg-gold-500/20 text-gold-400 hover:bg-gold-500/40 transition-colors"
               >
                 <Home className="w-4 h-4" />
@@ -1963,7 +1963,7 @@ export default function ChatRoomPage() {
           ) : (
             <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
               <Link
-                href={`/${language}/login`}
+                href={`/login`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500"
               >
                 <LogIn className="w-4 h-4" />

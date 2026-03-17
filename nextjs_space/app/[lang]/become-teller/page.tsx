@@ -58,7 +58,7 @@ export default function BecomeTellerPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user) {
-      router.push(`/${lang}/login`)
+      router.push(`/login`)
       return
     }
 
@@ -158,7 +158,7 @@ export default function BecomeTellerPage() {
                 : 'Go to your teller panel to start live streaming.'}
             </p>
             <Link
-              href={`/${lang}/live-tellers/dashboard`}
+              href={`/live-tellers/dashboard`}
               className="relative inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-xl sm:rounded-2xl hover:from-emerald-600 hover:to-green-600 transition-all shadow-lg shadow-emerald-500/30"
             >
               <Video className="w-5 h-5" />
@@ -230,7 +230,7 @@ export default function BecomeTellerPage() {
                 ? 'Maalesef başvurunuz şu an için onaylanamadı.'
                 : 'Unfortunately your application could not be approved.'}
             </p>
-            <Link href={`/${lang}`} className="relative inline-flex items-center gap-2 text-red-300 hover:text-white transition-colors">
+            <Link href={`/`} className="relative inline-flex items-center gap-2 text-red-300 hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />
               {lang === 'tr' ? 'Ana Sayfa' : 'Home'}
             </Link>
@@ -281,7 +281,7 @@ export default function BecomeTellerPage() {
                 : 'It will be reviewed and you will be notified shortly.'}
             </p>
             <Link
-              href={`/${lang}`}
+              href={`/`}
               className="relative inline-flex items-center gap-2 text-emerald-300 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -579,7 +579,7 @@ export default function BecomeTellerPage() {
 
         {/* Back to home */}
         <div className="text-center mt-6">
-          <Link href={`/${lang}`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
+          <Link href={`/`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />
             {lang === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home'}
           </Link>

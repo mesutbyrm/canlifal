@@ -180,7 +180,7 @@ export default function LiveTellersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/${language}/live-tellers/dashboard`}
+                  href={`/live-tellers/dashboard`}
                   className="px-4 py-2.5 rounded-lg font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30 transition-all flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-4 h-4" />
@@ -292,7 +292,7 @@ export default function LiveTellersPage() {
                       <span className="text-purple-400"> {language === 'tr' ? 'jeton' : 'jetons'}</span>
                     </div>
                     <Link
-                      href={session?.user ? `/${language}/live-tellers/${teller.id}` : `/${language}/login`}
+                      href={session?.user ? `/live-tellers/${teller.id}` : `/login`}
                       className="flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-bold rounded-lg transition-colors"
                     >
                       <Video className="w-4 h-4" />
@@ -441,7 +441,7 @@ export default function LiveTellersPage() {
                     <span className="text-deep-purple-400 text-sm"> {language === 'tr' ? 'jeton' : 'jetons'}</span>
                   </div>
                   <Link
-                    href={session?.user ? `/${language}/live-tellers/${teller.id}` : `/${language}/login`}
+                    href={session?.user ? `/live-tellers/${teller.id}` : `/login`}
                     className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
                       teller.isOnline
                         ? 'bg-green-600 text-white hover:bg-green-500'
@@ -484,7 +484,7 @@ export default function LiveTellersPage() {
                 : 'Share your talents and earn jetons. Apply to become a fortune teller!'}
             </p>
             <Link
-              href={session?.user ? `/${language}/live-tellers/apply` : `/${language}/login`}
+              href={session?.user ? `/live-tellers/apply` : `/login`}
               className="inline-block px-8 py-3 bg-gold-600 text-black rounded-lg font-semibold hover:bg-gold-500 transition-colors"
             >
               {language === 'tr' ? 'Başvur' : 'Apply Now'}

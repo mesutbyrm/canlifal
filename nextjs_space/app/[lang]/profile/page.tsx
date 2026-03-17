@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     if (session?.user?.id) {
@@ -418,7 +418,7 @@ export default function ProfilePage() {
               ) : users.length > 0 ? (
                 <div className="space-y-2">
                   {users.map(user => (
-                    <Link key={user.id} href={`/${language}/profile/${user.username || user.id}`}
+                    <Link key={user.id} href={`/profile/${user.username || user.id}`}
                       className={`flex items-center gap-3 p-3 rounded-xl ${isFacebook ? 'hover:bg-gray-100' : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'} transition-colors`}
                       onClick={onClose}>
                       <div className={`w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br ${avatarBorder}`}>
@@ -465,7 +465,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            <Link href={`/${language}/settings`}
+            <Link href={`/settings`}
               className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r ${isFacebook ? 'from-blue-500 to-blue-600' : isCosmic ? 'from-blue-500 to-cyan-500' : 'from-fuchsia-500 to-purple-500'} rounded-full flex items-center justify-center border-2 ${isFacebook ? 'border-[#f0f2f5]' : isCosmic ? 'border-[#0a1628]' : 'border-[#0f0520]'}`}>
               <Camera className="w-4 h-4 text-white" />
             </Link>
@@ -482,7 +482,7 @@ export default function ProfilePage() {
           {profile?.bio ? (
             <p className={`${textSecondary} text-sm px-8`}>{profile.bio}</p>
           ) : (
-            <Link href={`/${language}/settings`} className={`${accentColor} text-sm italic`}>
+            <Link href={`/settings`} className={`${accentColor} text-sm italic`}>
               + {language === 'tr' ? 'Bio ekle' : 'Add bio'}
             </Link>
           )}
@@ -508,12 +508,12 @@ export default function ProfilePage() {
 
         {/* Action Buttons */}
         <div className="flex gap-2 mt-6 px-2">
-          <Link href={`/${language}/dashboard`}
+          <Link href={`/dashboard`}
             className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
             <Sparkles className="w-4 h-4" />
             <span className="leading-tight">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
           </Link>
-          <Link href={`/${language}/settings`}
+          <Link href={`/settings`}
             className={`flex-1 ${btnOutline} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
             <Settings className="w-4 h-4" />
             <span>{language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}</span>
@@ -640,7 +640,7 @@ export default function ProfilePage() {
 
                       {/* Go to full dashboard */}
                       <Link
-                        href={`/${language}/live-tellers/dashboard`}
+                        href={`/live-tellers/dashboard`}
                         className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
                           isFacebook
                             ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
@@ -790,7 +790,7 @@ export default function ProfilePage() {
                             {sess.status === 'active' && (
                               <div className="flex gap-2 mt-2">
                                 <Link
-                                  href={`/${language}/live-room/${sess.id}`}
+                                  href={`/live-room/${sess.id}`}
                                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 ${
                                     isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white'
                                   }`}
@@ -982,7 +982,7 @@ export default function ProfilePage() {
           </h3>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {pinnedFortunes.map(fortune => (
-              <Link key={fortune.id} href={`/${language}/dashboard?fortune=${fortune.id}`}
+              <Link key={fortune.id} href={`/dashboard?fortune=${fortune.id}`}
                 className={`flex-shrink-0 w-32 rounded-xl p-3 border ${pinnedCardBg}`}>
                 <div className="text-2xl mb-2">{FORTUNE_ICONS[fortune.fortuneType] || '🔮'}</div>
                 <p className={`${textPrimary} text-xs font-medium truncate`}>
@@ -1020,7 +1020,7 @@ export default function ProfilePage() {
             {posts.length > 0 ? (
               <div className="grid grid-cols-3 gap-0.5">
                 {posts.map((post) => (
-                  <Link key={post.id} href={`/${language}/fal/${post.id}`}
+                  <Link key={post.id} href={`/fal/${post.id}`}
                     className="relative aspect-[3/4] bg-[#1a1a1a] overflow-hidden group">
                     {post.isPinned && (
                       <div className={`absolute top-1 left-1 z-10 ${isFacebook ? 'bg-blue-500' : 'bg-pink-500'} text-white text-[9px] px-1.5 py-0.5 rounded font-medium`}>
@@ -1081,7 +1081,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-700/30' : 'border-fuchsia-700/30'}`}>
-                      <Link href={`/${language}/dashboard?fortune=${fortune.id}`} className={`${accentColor} text-sm font-medium`}>
+                      <Link href={`/dashboard?fortune=${fortune.id}`} className={`${accentColor} text-sm font-medium`}>
                         {language === 'tr' ? 'Detayları Gör' : 'View Details'} →
                       </Link>
                       <div className="flex items-center gap-2">
@@ -1107,7 +1107,7 @@ export default function ProfilePage() {
                 </div>
                 <p className={`${textPrimary} text-xl font-semibold`}>{language === 'tr' ? 'Fallarınız' : 'Your Fortunes'}</p>
                 <p className={`${textSecondary} text-sm mt-1 text-center px-8`}>{language === 'tr' ? 'Baktırdığınız fallar burada görünecek' : 'Your fortune readings will appear here'}</p>
-                <Link href={`/${language}/fortunes`}
+                <Link href={`/fortunes`}
                   className={`mt-4 px-6 py-2 bg-gradient-to-r ${isFacebook ? 'from-blue-500 to-blue-600' : isCosmic ? 'from-blue-500 to-cyan-500' : 'from-fuchsia-500 to-purple-600'} text-white font-semibold rounded-md`}>
                   {language === 'tr' ? 'Fal Baktır' : 'Get Fortune'}
                 </Link>
@@ -1138,7 +1138,7 @@ export default function ProfilePage() {
                         {actionLoading === fortune.id + 'unsave' ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkMinus className="w-4 h-4" />}
                       </button>
                     </div>
-                    <Link href={`/${language}/dashboard?fortune=${fortune.id}`}
+                    <Link href={`/dashboard?fortune=${fortune.id}`}
                       className={`block mt-3 ${accentColor} text-sm font-medium`}>
                       {language === 'tr' ? 'Detayları Gör' : 'View Details'} →
                     </Link>

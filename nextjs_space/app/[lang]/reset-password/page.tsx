@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
       if (res.ok) {
         setSuccess(true)
         setTimeout(() => {
-          router.push(`/${language}/login`)
+          router.push(`/login`)
         }, 3000)
       } else {
         setError(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
               : 'This reset link is invalid or has expired.'}
           </p>
           <Link
-            href={`/${language}/forgot-password`}
+            href={`/forgot-password`}
             className="inline-block px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500"
           >
             {language === 'tr' ? 'Yeni Link Al' : 'Get New Link'}

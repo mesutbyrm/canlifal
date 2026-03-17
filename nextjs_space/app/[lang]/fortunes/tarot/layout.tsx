@@ -8,13 +8,12 @@ export const metadata: Metadata = {
   description: seo.descTr,
   keywords: seo.keywords,
   alternates: {
-    canonical: `${SITE_URL}/tr/fortunes/tarot`,
-    languages: { 'tr': '/tr/fortunes/tarot', 'en': '/en/fortunes/tarot' },
+    canonical: `${SITE_URL}/fortunes/tarot`,
   },
   openGraph: {
     title: seo.titleTr,
     description: seo.descTr,
-    url: `${SITE_URL}/tr/fortunes/tarot`,
+    url: `${SITE_URL}/fortunes/tarot`,
     siteName: SITE_NAME,
     images: [{ url: `${SITE_URL}/fortunes/tarot.jpg`, width: 800, height: 600, alt: seo.titleTr }],
     type: 'website',

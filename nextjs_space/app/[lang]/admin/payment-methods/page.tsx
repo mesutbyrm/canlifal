@@ -59,7 +59,7 @@ export default function PaymentMethodsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchData()
@@ -220,7 +220,7 @@ export default function PaymentMethodsPage() {
           className="mb-8"
         >
           <Link
-            href={`/${language}/admin`}
+            href={`/admin`}
             className="inline-flex items-center gap-2 text-purple-300 hover:text-purple-200 mb-6"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -70,7 +70,7 @@ export default function AdminCreditsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchNotifications()

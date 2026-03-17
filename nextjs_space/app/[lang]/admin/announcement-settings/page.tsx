@@ -70,7 +70,7 @@ export default function AnnouncementSettingsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || !['admin', 'moderator', 'site_manager'].includes((session.user as { role?: string }).role || '')) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     
@@ -160,7 +160,7 @@ export default function AnnouncementSettingsPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <Link
-              href={`/${language}/admin`}
+              href={`/admin`}
               className="p-2 rounded-lg bg-purple-800/30 border border-purple-500/30 hover:bg-purple-700/40 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-fuchsia-300" />

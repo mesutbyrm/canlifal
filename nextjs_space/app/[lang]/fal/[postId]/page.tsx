@@ -112,7 +112,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : fortuneDesc
 
   const ogImage = post.imageUrl || `${baseUrl}/og-fortune.jpg`
-  const canonicalUrl = `${baseUrl}/${lang}/fal/${post.id}`
+  const canonicalUrl = `${baseUrl}/fal/${post.id}`
 
   return {
     title,
@@ -132,10 +132,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     publisher: 'Canlifal',
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        'tr': `${baseUrl}/tr/fal/${post.id}`,
-        'en': `${baseUrl}/en/fal/${post.id}`,
-      },
+
     },
     openGraph: {
       title,
@@ -225,7 +222,7 @@ export default async function FortuneDetailPage({ params }: PageProps) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${baseUrl}/${lang}/fal/${post.id}`,
+      '@id': `${baseUrl}/fal/${post.id}`,
     },
     articleSection: fortuneLabel,
     keywords: [
@@ -255,7 +252,7 @@ export default async function FortuneDetailPage({ params }: PageProps) {
     '@type': 'WebPage',
     name: `${fortuneLabel} - ${post.user.name}`,
     description: post.content.replace(/<[^>]*>/g, '').slice(0, 160),
-    url: `${baseUrl}/${lang}/fal/${post.id}`,
+    url: `${baseUrl}/fal/${post.id}`,
     inLanguage: lang === 'tr' ? 'tr-TR' : 'en-US',
     isPartOf: {
       '@type': 'WebSite',
@@ -273,19 +270,19 @@ export default async function FortuneDetailPage({ params }: PageProps) {
           '@type': 'ListItem',
           position: 1,
           name: lang === 'tr' ? 'Ana Sayfa' : 'Home',
-          item: `${baseUrl}/${lang}`,
+          item: `${baseUrl}/`,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: lang === 'tr' ? 'Paylaşımlar' : 'Posts',
-          item: `${baseUrl}/${lang}/social`,
+          item: `${baseUrl}/social`,
         },
         {
           '@type': 'ListItem',
           position: 3,
           name: fortuneLabel,
-          item: `${baseUrl}/${lang}/fal/${post.id}`,
+          item: `${baseUrl}/fal/${post.id}`,
         },
       ],
     },

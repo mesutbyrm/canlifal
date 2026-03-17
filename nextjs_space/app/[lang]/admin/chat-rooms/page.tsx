@@ -56,7 +56,7 @@ export default function AdminChatRoomsPage() {
   
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
     }
   }, [status, router, language])
   

@@ -51,7 +51,7 @@ export default function TellerChatListPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     checkTellerStatus()
@@ -127,7 +127,7 @@ export default function TellerChatListPage() {
             </p>
             {!isTeller && (
               <Link
-                href={`/${language}/live-tellers`}
+                href={`/live-tellers`}
                 className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
               >
                 {language === 'tr' ? 'Falcılara Göz At' : 'Browse Fortune Tellers'}
@@ -206,7 +206,7 @@ function ChatSessionCard({
       transition={{ delay: index * 0.05 }}
     >
       <Link
-        href={`/${language}/teller-chat/${chat.id}`}
+        href={`/teller-chat/${chat.id}`}
         className="block bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-4 hover:border-purple-500/40 transition-all"
       >
         <div className="flex items-center gap-4">

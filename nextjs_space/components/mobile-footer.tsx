@@ -62,33 +62,33 @@ export default function MobileFooter() {
   
   const navItems = [
     {
-      href: session ? `/${language}/profile` : `/${language}/login`,
+      href: session ? `/profile` : `/login`,
       icon: User,
       label: language === 'tr' ? 'Profilim' : 'Profile',
       isCenter: false,
     },
     {
-      href: `/${language}/messages`,
+      href: `/messages`,
       icon: MessageCircle,
       label: language === 'tr' ? 'Mesajlar' : 'Messages',
       isCenter: false,
       badge: unreadCount,
     },
     {
-      href: session ? `/${language}/chat/video/setup` : `/${language}/login`,
+      href: session ? `/chat/video/setup` : `/login`,
       icon: Camera,
       label: language === 'tr' ? 'Yayın' : 'Stream',
       isCenter: true,
     },
     {
-      href: `/${language}/credits`,
+      href: `/credits`,
       icon: Coins,
       label: language === 'tr' ? 'Jeton Al' : 'Buy Jeton',
       isCenter: false,
       isJeton: true,
     },
     {
-      href: `/${language}`,
+      href: `/`,
       icon: Home,
       label: language === 'tr' ? 'Ana Sayfa' : 'Home',
       isCenter: false,
@@ -112,7 +112,7 @@ export default function MobileFooter() {
       {/* Floating Profile Button - above footer - HIDDEN on messages page */}
       {session?.user && !isMessagesPage && (
         <Link
-          href={`/${language}/profile/${session.user.id}`}
+          href={`/profile/${session.user.id}`}
           className="fixed bottom-[70px] right-3 z-[51] md:hidden"
         >
           <motion.div
@@ -151,7 +151,7 @@ export default function MobileFooter() {
           {/* Navigation Items */}
           <nav className="relative h-full grid grid-cols-5 items-center px-2">
             {navItems.map((item, index) => {
-              const isActive = pathname === item.href || (item.href === `/${language}` && pathname === `/${language}/`)
+              const isActive = pathname === item.href || (item.href === `/` && pathname === `/`)
               const Icon = item.icon
               const isJeton = 'isJeton' in item && item.isJeton
               

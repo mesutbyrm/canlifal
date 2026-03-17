@@ -8,8 +8,7 @@ export const metadata: Metadata = {
   description: seo.descTr,
   keywords: seo.keywords,
   alternates: {
-    canonical: `${SITE_URL}/tr/fortunes/love`,
-    languages: { 'tr': '/tr/fortunes/love', 'en': '/en/fortunes/love' },
+    canonical: `${SITE_URL}/fortunes/love`,
   },
   openGraph: { title: seo.titleTr, description: seo.descTr, siteName: SITE_NAME, type: 'website' },
   twitter: { card: 'summary_large_image', title: seo.titleTr, description: seo.descTr },

@@ -89,7 +89,7 @@ export default function ApplyTellerPage() {
           <h1 className="font-serif text-2xl text-gold-400 mb-4">
             {language === 'tr' ? 'Giriş Yapın' : 'Please Login'}
           </h1>
-          <Link href={`/${language}/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
+          <Link href={`/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
             {language === 'tr' ? 'Giriş Yap' : 'Login'}
           </Link>
         </div>
@@ -117,7 +117,7 @@ export default function ApplyTellerPage() {
               : 'Your application has been received. You can start as a fortune teller after approval.'}
           </p>
           <Link
-            href={`/${language}/live-tellers`}
+            href={`/live-tellers`}
             className="inline-block px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500"
           >
             {language === 'tr' ? 'Falcılar Sayfasına Dön' : 'Back to Fortune Tellers'}

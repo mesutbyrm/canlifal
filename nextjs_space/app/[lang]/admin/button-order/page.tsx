@@ -83,7 +83,7 @@ export default function AdminButtonOrderPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchOrder()
@@ -159,7 +159,7 @@ export default function AdminButtonOrderPage() {
       <div className="sticky top-0 z-50 bg-gray-900/90 backdrop-blur-lg border-b border-purple-500/20">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link
-            href={`/${language}/admin`}
+            href={`/admin`}
             className="p-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

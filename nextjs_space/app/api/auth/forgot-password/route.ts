@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send reset email
-    const resetLink = `${process.env.NEXTAUTH_URL || 'https://canlifal.com'}/tr/reset-password?token=${token}`;
+    const resetLink = `${process.env.NEXTAUTH_URL || 'https://canlifal.com'}/reset-password?token=${token}`;
     
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 100%); color: #fff; border-radius: 12px;">

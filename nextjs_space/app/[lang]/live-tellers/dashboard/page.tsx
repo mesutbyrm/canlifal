@@ -99,7 +99,7 @@ export default function TellerDashboard() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchTellerData()
@@ -195,7 +195,7 @@ export default function TellerDashboard() {
         <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
         <p className="text-white text-xl mb-4">{error}</p>
         <Link
-          href={`/${language}/live-tellers/apply`}
+          href={`/live-tellers/apply`}
           className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg"
         >
           {language === 'tr' ? 'Falcı Olarak Başvur' : 'Apply as Fortune Teller'}
@@ -485,7 +485,7 @@ export default function TellerDashboard() {
                       {sess.status === 'active' && (
                         <div className="flex gap-2">
                           <Link
-                            href={`/${language}/live-room/${sess.id}`}
+                            href={`/live-room/${sess.id}`}
                             className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-black rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                           >
                             <Video className="w-4 h-4" />

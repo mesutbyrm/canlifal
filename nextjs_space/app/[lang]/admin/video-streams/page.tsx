@@ -55,7 +55,7 @@ export default function AdminVideoStreamsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || session.user.role !== 'admin') {
-      router.push(`/${language}`)
+      router.push(`/`)
       return
     }
     fetchStreams()
@@ -149,7 +149,7 @@ export default function AdminVideoStreamsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href={`/${language}/admin`} className="text-purple-400 hover:text-purple-300">
+            <Link href={`/admin`} className="text-purple-400 hover:text-purple-300">
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">

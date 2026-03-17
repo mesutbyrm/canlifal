@@ -380,7 +380,7 @@ export default function GameCenterPage() {
   // ========== REFERRAL COPY ==========
   const copyReferral = () => {
     const code = profile?.userReferralCode || ''
-    const link = `${window.location.origin}/${lang}/register?ref=${code}`
+    const link = `${window.location.origin}/register?ref=${code}`
     navigator.clipboard.writeText(link)
     setCopiedRef(true)
     setTimeout(() => setCopiedRef(false), 2000)
@@ -994,7 +994,7 @@ export default function GameCenterPage() {
       <nav className="sticky top-0 z-40 bg-[#0f0520]/95 backdrop-blur-md border-b border-fuchsia-500/30 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href={`/${lang}`} className="text-fuchsia-400 hover:text-fuchsia-300 transition">
+            <Link href={`/`} className="text-fuchsia-400 hover:text-fuchsia-300 transition">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-2">
@@ -1020,7 +1020,7 @@ export default function GameCenterPage() {
               </>
             )}
             {!session?.user && (
-              <Link href={`/${lang}/login`} className="px-4 py-1.5 bg-fuchsia-600 rounded-full text-sm font-medium hover:bg-fuchsia-500 transition">
+              <Link href={`/login`} className="px-4 py-1.5 bg-fuchsia-600 rounded-full text-sm font-medium hover:bg-fuchsia-500 transition">
                 Giriş Yap
               </Link>
             )}
@@ -1132,7 +1132,7 @@ export default function GameCenterPage() {
                     transition={{ delay: i * 0.1 }}
                     className="bg-gradient-to-b from-[#1a0a2e] to-[#120822] border border-fuchsia-500/20 rounded-2xl p-4 hover:border-fuchsia-400/50 transition-all group cursor-pointer"
                     onClick={() => {
-                      if (!session?.user) { router.push(`/${lang}/login`); return }
+                      if (!session?.user) { router.push(`/login`); return }
                       setActiveGame(game.slug)
                       setResultMessage(null)
                       // Reset game state when opening
@@ -1211,7 +1211,7 @@ export default function GameCenterPage() {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1 px-3 py-2 bg-purple-900/40 rounded-xl text-xs text-fuchsia-300 truncate border border-fuchsia-500/20">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/${lang}/register?ref=${profile.userReferralCode}` : ''}
+                      {typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${profile.userReferralCode}` : ''}
                     </div>
                     <button
                       onClick={copyReferral}

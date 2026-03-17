@@ -130,7 +130,7 @@ export default function ProfilePage() {
         const data = await res.json()
         setProfile(data)
       } else {
-        router.push(`/${language}`)
+        router.push(`/`)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -155,7 +155,7 @@ export default function ProfilePage() {
 
   const handleFollow = async () => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     if (!profile) return
@@ -481,14 +481,14 @@ export default function ProfilePage() {
             {profile.isOwnProfile ? (
               <>
                 <Link
-                  href={`/${language}/dashboard`}
+                  href={`/dashboard`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Sparkles className="w-4 h-4 text-gold-400" />
                   {language === 'tr' ? 'İstatistikler' : 'Statistics'}
                 </Link>
                 <Link
-                  href={`/${language}/settings`}
+                  href={`/settings`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Settings className="w-4 h-4 text-gold-400" />
@@ -524,7 +524,7 @@ export default function ProfilePage() {
                 </button>
                 {/* Message Button */}
                 <Link
-                  href={`/${language}/messages/${profile.id}`}
+                  href={`/messages/${profile.id}`}
                   className="py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 rounded-lg border border-purple-700 flex items-center justify-center"
                 >
                   <MessageCircle className="w-5 h-5 text-purple-300" />
@@ -593,7 +593,7 @@ export default function ProfilePage() {
             </p>
             {profile.isOwnProfile && (
               <Link
-                href={`/${language}/fortunes`}
+                href={`/fortunes`}
                 className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-full"
               >
                 <Sparkles className="w-4 h-4" />
@@ -612,7 +612,7 @@ export default function ProfilePage() {
               return (
                 <Link
                   key={post.id}
-                  href={`/${language}/fal/${post.id}`}
+                  href={`/fal/${post.id}`}
                   className="relative aspect-[3/4] bg-[#0a0118] group"
                 >
                   {thumbnail ? (
@@ -696,7 +696,7 @@ export default function ProfilePage() {
                     {followers.map(user => (
                       <Link
                         key={user.id}
-                        href={`/${language}/profile/${user.username || user.id}`}
+                        href={`/profile/${user.username || user.id}`}
                         className="flex items-center gap-3 p-2 hover:bg-purple-900/50 rounded-xl transition-colors"
                         onClick={() => setShowFollowers(false)}
                       >
@@ -767,7 +767,7 @@ export default function ProfilePage() {
                     {following.map(user => (
                       <Link
                         key={user.id}
-                        href={`/${language}/profile/${user.username || user.id}`}
+                        href={`/profile/${user.username || user.id}`}
                         className="flex items-center gap-3 p-2 hover:bg-purple-900/50 rounded-xl transition-colors"
                         onClick={() => setShowFollowing(false)}
                       >

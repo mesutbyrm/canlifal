@@ -403,7 +403,7 @@ export default function KursunDokmePage() {
 
   const startFortune = async () => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
 

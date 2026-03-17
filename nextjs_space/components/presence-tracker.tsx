@@ -23,7 +23,7 @@ function detectSection(path: string | null): string | null {
   if (lowerPath.includes('/membership')) return 'memberships'
   if (lowerPath.includes('/profile')) return 'profile'
   if (lowerPath.includes('/dashboard')) return 'dashboard'
-  if (lowerPath === '/tr' || lowerPath === '/en' || lowerPath === '/tr/' || lowerPath === '/en/') return 'home'
+  if (lowerPath === '/' || lowerPath === '/tr' || lowerPath === '/en') return 'home'
   
   return null
 }

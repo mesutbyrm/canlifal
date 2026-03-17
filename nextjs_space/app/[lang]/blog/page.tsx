@@ -96,7 +96,7 @@ export default function BlogPage() {
             {displayPosts.map((post) => (
               <button
                 key={post.slug}
-                onClick={() => router.push(`/${lang}/blog/${post.slug}`)}
+                onClick={() => router.push(`/blog/${post.slug}`)}
                 className="w-full text-left p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all group"
               >
                 <div className="flex items-start justify-between gap-3">

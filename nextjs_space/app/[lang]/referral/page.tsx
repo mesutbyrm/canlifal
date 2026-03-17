@@ -96,7 +96,7 @@ export default function ReferralPage() {
           <p className="text-deep-purple-200 mb-6">
             {language === 'tr' ? 'Referans sistemini kullanmak için giriş yapın.' : 'Login to use the referral system.'}
           </p>
-          <Link href={`/${language}/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
+          <Link href={`/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
             {language === 'tr' ? 'Giriş Yap' : 'Login'}
           </Link>
         </div>

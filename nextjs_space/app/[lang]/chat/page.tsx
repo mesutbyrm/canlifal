@@ -202,7 +202,7 @@ export default function ChatRoomsPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <Link href={`/${language}/chat/${room.slug}`}>
+                <Link href={`/chat/${room.slug}`}>
                   <div className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-4 border ${cardBg} transition-all duration-300 hover:shadow-xl ${hoverShadow} hover:scale-[1.02] group cursor-pointer h-full flex flex-col`}>
                     
                     {/* Online Count Badge - Üstte belirgin */}

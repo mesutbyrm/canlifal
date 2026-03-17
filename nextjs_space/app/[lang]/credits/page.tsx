@@ -149,7 +149,7 @@ export default function CreditsPage() {
 
   const handleSelectPackage = (pkg: CreditPackage) => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     setSelectedPackage(pkg)
@@ -240,7 +240,7 @@ export default function CreditsPage() {
           className="mb-4"
         >
           <button
-            onClick={() => router.push(`/${language}/memberships`)}
+            onClick={() => router.push(`/memberships`)}
             className={`w-full py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-3 transition-all active:scale-98 ${
               isFacebook 
                 ? 'bg-amber-50 border-amber-400 hover:bg-amber-100' 

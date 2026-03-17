@@ -144,7 +144,7 @@ export default function AdminThemesPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchThemeSettings()
@@ -233,7 +233,7 @@ export default function AdminThemesPage() {
     <div className="min-h-screen bg-[#0a0118] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <Link
-          href={`/${language}/admin`}
+          href={`/admin`}
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />

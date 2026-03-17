@@ -98,15 +98,15 @@ export default function PushNotificationProvider({ children }: { children: React
   // Get notification URL based on type
   const getNotificationUrl = useCallback((notif: Notification): string => {
     if (notif.type === 'payment_notification' || notif.type === 'payment_approved' || notif.type === 'payment_rejected') {
-      return session?.user?.role === 'admin' ? `/${language}/admin/credits` : `/${language}/memberships`
+      return session?.user?.role === 'admin' ? `/admin/credits` : `/memberships`
     }
     if (notif.type === 'session_request' || notif.type === 'session_update') {
-      return `/${language}/dashboard`
+      return `/dashboard`
     }
     if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share') {
-      return `/${language}/social`
+      return `/social`
     }
-    return `/${language}/dashboard`
+    return `/dashboard`
   }, [language, session?.user?.role])
 
   // Poll for notifications and show browser notification for new ones

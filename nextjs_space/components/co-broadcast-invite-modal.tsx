@@ -140,7 +140,7 @@ export default function CoBroadcastInviteModal() {
         setIsVisible(false)
         setPendingInvite(null)
         // Redirect to broadcast page as co-host
-        router.push(`/${language}/chat/video/broadcast/${pendingInvite.streamId}?cohost=true`)
+        router.push(`/chat/video/broadcast/${pendingInvite.streamId}?cohost=true`)
       }
     } catch (error) {
       console.error('Error accepting co-broadcast:', error)

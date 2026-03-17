@@ -843,7 +843,7 @@ export default function VideoStreamPage() {
   const handleShareStream = async () => {
     if (!currentStream) return
     
-    const shareUrl = `${window.location.origin}/${language}/chat/video`
+    const shareUrl = `${window.location.origin}/chat/video`
     const shareText = language === 'tr' 
       ? `${currentStream.user.name} canlı yayında! Hemen katıl 🔴` 
       : `${currentStream.user.name} is live! Join now 🔴`
@@ -915,9 +915,9 @@ export default function VideoStreamPage() {
   }
 
   const handleStartStream = () => {
-    if (!session?.user) { router.push(`/${language}/login`); return }
+    if (!session?.user) { router.push(`/login`); return }
     // Go to setup page with camera preview and beauty effects
-    router.push(`/${language}/chat/video/setup`)
+    router.push(`/chat/video/setup`)
   }
 
   const checkCoBroadcastInvite = async () => {
@@ -964,7 +964,7 @@ export default function VideoStreamPage() {
       })
       if (res.ok) {
         // Navigate to broadcast page as co-broadcaster
-        router.push(`/${language}/chat/video/broadcast/${coBroadcastInvite.streamId}?cohost=true`)
+        router.push(`/chat/video/broadcast/${coBroadcastInvite.streamId}?cohost=true`)
       }
     } catch (e) {}
     setIsAcceptingInvite(false)
@@ -1023,7 +1023,7 @@ export default function VideoStreamPage() {
           </div>
           <h2 className="text-white text-xl font-bold mb-2 text-center">{language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}</h2>
           <p className="text-white/60 text-center text-sm mb-8">{language === 'tr' ? 'Sohbet sayfasından yayınları takip edebilirsin' : 'You can follow streams from the chat page'}</p>
-          <button onClick={() => router.push(`/${language}`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
+          <button onClick={() => router.push(`/`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
             <X className="w-5 h-5" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
           </button>
         </div>
@@ -1322,7 +1322,7 @@ export default function VideoStreamPage() {
                 <span className="text-amber-400 text-xs font-bold">{formatCount(userJetons)}</span>
               </div>
               <button 
-                onClick={(e) => { e.stopPropagation(); router.push(`/${language}/credits`); }}
+                onClick={(e) => { e.stopPropagation(); router.push(`/credits`); }}
                 className="bg-gradient-to-r from-green-500 to-emerald-500 w-7 h-7 flex items-center justify-center"
               >
                 <Plus className="w-4 h-4 text-white" />
@@ -1409,7 +1409,7 @@ export default function VideoStreamPage() {
             {/* Exit Button - "Yayından Çık" */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.stopPropagation(); router.push(`/${language}`); }}
+              onClick={(e) => { e.stopPropagation(); router.push(`/`); }}
               className="px-3 py-2 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border border-white/20 shadow-lg"
             >
               <span className="text-white text-xs font-medium">{language === 'tr' ? 'Çık' : 'Exit'}</span>
@@ -1670,7 +1670,7 @@ export default function VideoStreamPage() {
                       {language === 'tr' ? 'Kapat' : 'Close'}
                     </button>
                     <button
-                      onClick={() => router.push(`/${language}/login`)}
+                      onClick={() => router.push(`/login`)}
                       className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                     >
                       <LogIn className="w-5 h-5" />
@@ -1729,20 +1729,20 @@ export default function VideoStreamPage() {
               
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => router.push(`/${language}/register`)}
+                  onClick={() => router.push(`/register`)}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-5 h-5" />
                   {language === 'tr' ? 'Üye Ol' : 'Sign Up'}
                 </button>
                 <button
-                  onClick={() => router.push(`/${language}/login`)}
+                  onClick={() => router.push(`/login`)}
                   className="w-full bg-white/10 text-white py-3 rounded-xl font-semibold"
                 >
                   {language === 'tr' ? 'Zaten üyeyim, giriş yap' : 'Already a member? Sign In'}
                 </button>
                 <button
-                  onClick={() => router.push(`/${language}`)}
+                  onClick={() => router.push(`/`)}
                   className="text-white/50 text-sm hover:text-white/70"
                 >
                   {language === 'tr' ? 'Daha sonra' : 'Later'}

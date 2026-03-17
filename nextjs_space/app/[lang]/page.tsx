@@ -289,7 +289,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4 relative z-10">
               {/* Start Stream Button */}
               <Link
-                href={session ? `/${language}/chat/video/setup` : `/${language}/login`}
+                href={session ? `/chat/video/setup` : `/login`}
                 className="flex flex-col items-center"
               >
                 <div 
@@ -309,7 +309,7 @@ export default function HomePage() {
                   {liveStreams.slice(0, 4).map((stream) => (
                     <Link
                       key={stream.id}
-                      href={`/${language}/chat/video?watch=${stream.id}`}
+                      href={`/chat/video?watch=${stream.id}`}
                       className="flex flex-col items-center flex-shrink-0"
                     >
                       <div 
@@ -387,7 +387,7 @@ export default function HomePage() {
                 {sortedTellers.filter(t => t.isOnline).map((teller) => (
                   <Link
                     key={teller.id}
-                    href={`/${language}/live-tellers/${teller.id}`}
+                    href={`/live-tellers/${teller.id}`}
                     className="flex-shrink-0 w-28 rainbow-border rainbow-border-live rounded-2xl"
                   >
                     <div className="rounded-2xl overflow-hidden" style={{
@@ -433,7 +433,7 @@ export default function HomePage() {
               {sortedTellers.slice(0, 6).map((teller) => (
                 <Link
                   key={teller.id}
-                  href={`/${language}/live-tellers/${teller.id}`}
+                  href={`/live-tellers/${teller.id}`}
                   className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border rainbow-border-live' : 'opacity-50'}`}
                 >
                   <div className="rounded-2xl overflow-hidden" style={{
@@ -480,7 +480,7 @@ export default function HomePage() {
             
             <div className="flex justify-center mt-3">
               <Link
-                href={`/${language}/live-tellers`}
+                href={`/live-tellers`}
                 className="inline-block px-4 py-2 rounded-xl text-fuchsia-200 text-sm font-medium hover:text-white transition-colors"
                 style={{
                   border: '1.5px solid rgba(232, 121, 249, 0.5)',
@@ -503,7 +503,7 @@ export default function HomePage() {
               <p className="font-semibold text-white mb-1">Koç:</p>
               <p className="opacity-90">{language === 'tr' ? 'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.' : 'Your energy is high today. New opportunities may arise.'}</p>
               <Link 
-                href={`/${language}/fortunes/horoscope`}
+                href={`/fortunes/horoscope`}
                 className="inline-block mt-2 text-fuchsia-300 font-medium hover:text-fuchsia-200"
               >
                 [{language === 'tr' ? 'Detaylı Oku' : 'Read More'}]
@@ -556,7 +556,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               {/* Start Stream Button */}
               <Link
-                href={session ? `/${language}/chat/video/setup` : `/${language}/login`}
+                href={session ? `/chat/video/setup` : `/login`}
                 className="flex flex-col items-center"
               >
                 <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-indigo-400/50 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"
@@ -574,7 +574,7 @@ export default function HomePage() {
                   {liveStreams.slice(0, 5).map((stream) => (
                     <Link
                       key={stream.id}
-                      href={`/${language}/chat/video?watch=${stream.id}`}
+                      href={`/chat/video?watch=${stream.id}`}
                       className="flex flex-col items-center flex-shrink-0"
                     >
                       <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-500 relative">
@@ -675,7 +675,7 @@ export default function HomePage() {
               {sortedTellers.length > 0 ? sortedTellers.map((teller) => (
                 <Link
                   key={teller.id}
-                  href={`/${language}/live-tellers/${teller.id}`}
+                  href={`/live-tellers/${teller.id}`}
                   className="flex-shrink-0 flex flex-col items-center"
                 >
                   {/* Circular Avatar with Gradient Border */}
@@ -716,7 +716,7 @@ export default function HomePage() {
                     {language === 'tr' ? 'Şu an falcı yok' : 'No tellers right now'}
                   </p>
                   <Link
-                    href={`/${language}/live-tellers`}
+                    href={`/live-tellers`}
                     className={`inline-block mt-3 px-4 py-1.5 ${isCosmic ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500'} text-white rounded-full text-xs font-medium transition-colors`}
                   >
                     {language === 'tr' ? 'Tüm Falcıları Gör' : 'See All Tellers'}
@@ -733,7 +733,7 @@ export default function HomePage() {
                 <Sparkles className={`w-4 h-4 ${accentColor}`} />
                 {language === 'tr' ? 'Fal Kategorileri' : 'Fortune Categories'}
               </h2>
-              <Link href={`/${language}/fortunes`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
+              <Link href={`/fortunes`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
                 {language === 'tr' ? 'Tümünü Gör' : 'See All'}
                 <ChevronRight className="w-4 h-4" />
               </Link>

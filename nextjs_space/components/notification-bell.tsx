@@ -122,22 +122,22 @@ export default function NotificationBell() {
     if (notif.type === 'payment_notification' || notif.type === 'payment_approved' || notif.type === 'payment_rejected') {
       // Admin goes to credits management, user goes to memberships
       if (session?.user?.role === 'admin') {
-        router.push(`/${language}/admin/credits`)
+        router.push(`/admin/credits`)
       } else {
-        router.push(`/${language}/memberships`)
+        router.push(`/memberships`)
       }
     } else if (notif.type === 'session_update' || notif.type === 'session_request') {
       if (parsedData?.action === 'accept' && parsedData?.sessionId) {
-        router.push(`/${language}/live-room/${parsedData.sessionId}`)
+        router.push(`/live-room/${parsedData.sessionId}`)
       } else if (parsedData?.sessionId) {
-        router.push(`/${language}/live-room/${parsedData.sessionId}`)
+        router.push(`/live-room/${parsedData.sessionId}`)
       } else {
-        router.push(`/${language}/dashboard`)
+        router.push(`/dashboard`)
       }
     } else if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share' || notif.postId) {
-      router.push(`/${language}/social${notif.postId ? `?postId=${notif.postId}` : ''}`)
+      router.push(`/social${notif.postId ? `?postId=${notif.postId}` : ''}`)
     } else {
-      router.push(`/${language}/dashboard`)
+      router.push(`/dashboard`)
     }
   }
 

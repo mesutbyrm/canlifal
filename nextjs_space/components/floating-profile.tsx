@@ -135,7 +135,7 @@ export default function FloatingProfile() {
               <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 border-b border-purple-800">
                 <div className="flex items-center gap-3">
                   <Link
-                    href={`/${language}/profile/${profile?.username || user.id}`}
+                    href={`/profile/${profile?.username || user.id}`}
                     onClick={() => setIsOpen(false)}
                     className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-400/50"
                   >
@@ -186,7 +186,7 @@ export default function FloatingProfile() {
               {/* Menu Items */}
               <div className="p-2">
                 <Link
-                  href={`/${language}/profile/${profile?.username || user.id}`}
+                  href={`/profile/${profile?.username || user.id}`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -195,7 +195,7 @@ export default function FloatingProfile() {
                 </Link>
 
                 <Link
-                  href={`/${language}/messages`}
+                  href={`/messages`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -211,7 +211,7 @@ export default function FloatingProfile() {
                 </Link>
 
                 <Link
-                  href={`/${language}/dashboard`}
+                  href={`/dashboard`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -220,7 +220,7 @@ export default function FloatingProfile() {
                 </Link>
 
                 <Link
-                  href={`/${language}/credits`}
+                  href={`/credits`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -229,7 +229,7 @@ export default function FloatingProfile() {
                 </Link>
 
                 <Link
-                  href={`/${language}/chat/video/setup`}
+                  href={`/chat/video/setup`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -240,7 +240,7 @@ export default function FloatingProfile() {
                 <div className="border-t border-purple-800 my-2" />
 
                 <Link
-                  href={`/${language}/settings`}
+                  href={`/settings`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
@@ -251,7 +251,7 @@ export default function FloatingProfile() {
                 <button
                   onClick={() => {
                     setIsOpen(false)
-                    signOut({ callbackUrl: `/${language}/login` })
+                    signOut({ callbackUrl: `/login` })
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
                 >

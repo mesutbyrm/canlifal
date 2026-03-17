@@ -63,7 +63,7 @@ export default function GiftsPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchGiftTypes()
@@ -207,7 +207,7 @@ export default function GiftsPage() {
               </div>
             </div>
             <Link 
-              href={`/${language}/credits`}
+              href={`/credits`}
               className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold rounded-lg sm:rounded-xl text-xs sm:text-sm hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-1"
             >
               <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -450,7 +450,7 @@ export default function GiftsPage() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-red-300">⚠️ {(parseInt(jetonAmount) - userJetonBalance).toLocaleString()} jeton eksik</span>
                         <Link 
-                          href={`/${language}/credits`}
+                          href={`/credits`}
                           className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-bold"
                         >
                           {language === 'tr' ? 'Yükle' : 'Top Up'}
@@ -497,7 +497,7 @@ export default function GiftsPage() {
 
         {/* Back Link */}
         <div className="text-center mt-6">
-          <Link href={`/${language}`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
+          <Link href={`/`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />
             {language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home'}
           </Link>

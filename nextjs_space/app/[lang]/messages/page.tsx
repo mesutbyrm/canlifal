@@ -72,7 +72,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
     } else if (status === 'authenticated') {
       fetchMessages()
     }
@@ -197,7 +197,7 @@ export default function MessagesPage() {
               filteredConversations.map((conv) => (
                 <Link
                   key={conv.id}
-                  href={`/${language}/messages/${conv.user.id}`}
+                  href={`/messages/${conv.user.id}`}
                   className={`flex items-center gap-3 p-3 ${hoverBg} transition-colors`}
                 >
                   <div className="relative">
@@ -257,7 +257,7 @@ export default function MessagesPage() {
                   className="flex items-center gap-3 p-3"
                 >
                   <Link
-                    href={`/${language}/profile/${req.sender.username || req.sender.id}`}
+                    href={`/profile/${req.sender.username || req.sender.id}`}
                     className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
                   >
                     {req.sender.image ? (

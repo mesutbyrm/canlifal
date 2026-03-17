@@ -84,7 +84,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
   const allButtons: Record<string, { key: string; href: string; icon: React.ReactNode; labelTr: string; labelEn: string; badgeCount: number }> = {
     games: {
       key: 'games',
-      href: `/${language}/games`,
+      href: `/games`,
       icon: <Gamepad2 className="w-4 h-4" />,
       labelTr: 'Oyun Merkezi',
       labelEn: 'Game Center',
@@ -92,7 +92,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     gifts: {
       key: 'gifts',
-      href: session?.user ? `/${language}/gifts` : `/${language}/login`,
+      href: session?.user ? `/gifts` : `/login`,
       icon: <Gift className="w-4 h-4" />,
       labelTr: 'Hediye Gönder',
       labelEn: 'Send Gift',
@@ -100,7 +100,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     teller: {
       key: 'teller',
-      href: session?.user ? (isTeller ? `/${language}/profile` : `/${language}/become-teller`) : `/${language}/login`,
+      href: session?.user ? (isTeller ? `/profile` : `/become-teller`) : `/login`,
       icon: <Video className="w-4 h-4" />,
       labelTr: isTeller ? 'Falcı Paneli' : 'Canlı Falcı Ol',
       labelEn: isTeller ? 'Teller Panel' : 'Become Live Teller',
@@ -108,7 +108,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     social: {
       key: 'social',
-      href: `/${language}/social`,
+      href: `/social`,
       icon: <Users className="w-4 h-4" />,
       labelTr: 'Sosyal',
       labelEn: 'Social',
@@ -116,7 +116,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     chat: {
       key: 'chat',
-      href: `/${language}/chat`,
+      href: `/chat`,
       icon: <MessageCircle className="w-4 h-4" />,
       labelTr: 'Fal Sohbet',
       labelEn: 'Fortune Chat',
@@ -124,7 +124,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     blog: {
       key: 'blog',
-      href: `/${language}/blog`,
+      href: `/blog`,
       icon: <BookOpen className="w-4 h-4" />,
       labelTr: 'Blog',
       labelEn: 'Blog',
@@ -132,7 +132,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     },
     'bana-ozel': {
       key: 'bana-ozel',
-      href: session?.user ? `/${language}/bana-ozel` : `/${language}/login`,
+      href: session?.user ? `/bana-ozel` : `/login`,
       icon: <Sparkles className="w-4 h-4" />,
       labelTr: 'Bana Özel',
       labelEn: 'For Me',
@@ -151,7 +151,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
   const handleButtonClick = (btn: typeof orderedButtons[0]) => {
     if (btn.key === 'bana-ozel') {
       if (!session?.user) {
-        router.push(`/${language}/login`)
+        router.push(`/login`)
       } else {
         setShowBanaOzel(true)
       }

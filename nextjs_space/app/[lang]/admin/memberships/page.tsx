@@ -148,7 +148,7 @@ export default function AdminMembershipsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/${language}`)
+      router.push(`/`)
       return
     }
     fetchPlans()

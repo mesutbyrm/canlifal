@@ -55,7 +55,7 @@ export async function GET() {
 
     return NextResponse.json({
       referralCode: user.referralCode,
-      referralLink: `${process.env.NEXTAUTH_URL || 'https://canlifal.com'}/tr/register?ref=${user.referralCode}`,
+      referralLink: `${process.env.NEXTAUTH_URL || 'https://canlifal.com'}/register?ref=${user.referralCode}`,
       totalReferrals: referralCount,
       totalCreditsEarned: user.referralCreditsEarned,
       referrals: user.referrals,

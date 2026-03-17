@@ -140,7 +140,7 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
             {/* Footer */}
             <div className="px-6 py-4 border-t border-purple-500/20 flex gap-3">
               <Link
-                href={`/${language}/credits`}
+                href={`/credits`}
                 className="flex-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white py-2.5 rounded-xl text-center font-medium text-sm transition-all"
               >
                 🪙 {language === 'tr' ? 'Jeton Satın Al' : 'Buy Jetons'}

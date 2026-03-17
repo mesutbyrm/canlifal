@@ -34,7 +34,7 @@ export default function LoginPage() {
       } else {
         // Trigger login announcement for VIP/Staff users
         fetch('/api/announcements', { method: 'POST' }).catch(() => {})
-        router.push(`/${language}`)
+        router.push(`/`)
       }
     } catch (err) {
       setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
             <div className="flex justify-end">
               <Link
-                href={`/${language}/forgot-password`}
+                href={`/forgot-password`}
                 className="text-deep-purple-400 hover:text-gold-400 text-sm transition-colors"
               >
                 {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password?'}
@@ -130,7 +130,7 @@ export default function LoginPage() {
             <p className="text-deep-purple-300 text-sm">
               {language === 'tr' ? 'Hesabınız yok mu?' : "Don't have an account?"}{' '}
               <Link
-                href={`/${language}/register`}
+                href={`/register`}
                 className="text-gold-500 hover:text-gold-400 transition-colors font-medium"
               >
                 {language === 'tr' ? 'Kayıt Ol' : 'Register'}

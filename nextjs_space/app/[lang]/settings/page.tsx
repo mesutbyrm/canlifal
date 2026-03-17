@@ -105,7 +105,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
     fetchProfile()

@@ -503,7 +503,7 @@ export default function LiveRoomPage() {
 
       // Cleanup
       cleanup();
-      router.push(`/${language}/dashboard`);
+      router.push(`/dashboard`);
     } catch (err) {
       console.error('End session error:', err);
     }
@@ -639,7 +639,7 @@ export default function LiveRoomPage() {
               // Auto-end if time is up
               if (remaining <= 0) {
                 cleanup();
-                router.push(`/${language}/dashboard`);
+                router.push(`/dashboard`);
               }
               return newElapsed;
             });
@@ -695,7 +695,7 @@ export default function LiveRoomPage() {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <p className="text-white text-xl">{error}</p>
           <button
-            onClick={() => router.push(`/${language}/dashboard`)}
+            onClick={() => router.push(`/dashboard`)}
             className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             {language === 'tr' ? 'Panele Dön' : 'Back to Dashboard'}
@@ -714,7 +714,7 @@ export default function LiveRoomPage() {
             {language === 'tr' ? 'Bu seans aktif değil' : 'This session is not active'}
           </p>
           <button
-            onClick={() => router.push(`/${language}/dashboard`)}
+            onClick={() => router.push(`/dashboard`)}
             className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             {language === 'tr' ? 'Panele Dön' : 'Back to Dashboard'}

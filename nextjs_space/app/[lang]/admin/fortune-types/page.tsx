@@ -57,7 +57,7 @@ export default function FortuneTypesAdminPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${language}/auth/login`)
+      router.push(`/auth/login`)
     }
     fetchTypes()
   }, [status, language, router])
@@ -197,7 +197,7 @@ export default function FortuneTypesAdminPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href={`/${language}/admin`} className="p-2 bg-white/10 rounded-xl text-white hover:bg-white/20">
+          <Link href={`/admin`} className="p-2 bg-white/10 rounded-xl text-white hover:bg-white/20">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>

@@ -112,7 +112,7 @@ export default function Navbar() {
   }, [])
 
   const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'tr' : 'en')
+    // Turkish only - no language toggle needed
   }
 
   // Fetch payment methods when modal opens
@@ -283,7 +283,7 @@ export default function Navbar() {
             <div className="flex-1 flex justify-around items-center">
               {/* İstatistikler (Statistics) */}
               <Link
-                href={`/${language}/dashboard`}
+                href={`/dashboard`}
                 className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
               >
                 <Sparkles className="w-6 h-6" />
@@ -356,7 +356,7 @@ export default function Navbar() {
                       
                        {/* CFC display */}
                        <Link
-                         href={`/${language}/credits`}
+                         href={`/credits`}
                          className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                          onClick={() => setShowProfileMenu(false)}
                        >
@@ -368,7 +368,7 @@ export default function Navbar() {
                        </Link>
                        {/* Jeton display with TL */}
                        <Link
-                         href={`/${language}/credits`}
+                         href={`/credits`}
                          className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                          onClick={() => setShowProfileMenu(false)}
                        >
@@ -385,7 +385,7 @@ export default function Navbar() {
                       {/* Payment Notification / Admin Payment Orders */}
                       {session?.user?.role === 'admin' ? (
                         <Link
-                          href={`/${language}/admin/credits`}
+                          href={`/admin/credits`}
                           className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                           onClick={() => setShowProfileMenu(false)}
                         >
@@ -403,7 +403,7 @@ export default function Navbar() {
                       )}
                       
                       <Link
-                        href={`/${language}/profile/${session.user.id}`}
+                        href={`/profile/${session.user.id}`}
                         className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -412,7 +412,7 @@ export default function Navbar() {
                       </Link>
                       
                       <Link
-                        href={`/${language}/dashboard`}
+                        href={`/dashboard`}
                         className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -421,7 +421,7 @@ export default function Navbar() {
                       </Link>
                       
                       <Link
-                        href={`/${language}/settings`}
+                        href={`/settings`}
                         className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -431,7 +431,7 @@ export default function Navbar() {
 
                       {session?.user?.role === 'admin' && (
                         <Link
-                          href={`/${language}/admin`}
+                          href={`/admin`}
                           className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
                           onClick={() => setShowProfileMenu(false)}
                         >
@@ -440,17 +440,11 @@ export default function Navbar() {
                         </Link>
                       )}
                       
-                      <button
-                        onClick={toggleLanguage}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
-                      >
-                        <Globe className="w-5 h-5 text-fuchsia-400" />
-                        {language === 'tr' ? 'Dil' : 'Language'}
-                      </button>
+                      {/* Language toggle removed - Turkish only site */}
                       
                       <div className="border-t mt-2 pt-2 border-fuchsia-700/40">
                         <button
-                          onClick={() => signOut({ callbackUrl: `/${language}` })}
+                          onClick={() => signOut({ callbackUrl: `/` })}
                           className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-900/30 w-full"
                         >
                           <LogOut className="w-5 h-5" />
@@ -462,7 +456,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <Link
-                  href={`/${language}/login`}
+                  href={`/login`}
                   className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
                 >
                   <User className="w-6 h-6" />

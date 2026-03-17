@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if ((session?.user as any)?.role !== 'admin') {
-      router.push(`/${language}`)
+      router.push(`/`)
       return
     }
     fetchUsers()
@@ -471,7 +471,7 @@ export default function AdminUsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href={`/${language}/admin`} className="text-purple-400 hover:text-purple-300">
+            <Link href={`/admin`} className="text-purple-400 hover:text-purple-300">
               <ChevronLeft className="w-6 h-6" />
             </Link>
             <div>

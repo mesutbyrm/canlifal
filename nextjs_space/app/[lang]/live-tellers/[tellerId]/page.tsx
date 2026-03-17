@@ -138,7 +138,7 @@ export default function TellerDetailPage() {
       if (data.status === 'active' && data.roomId) {
         // Session accepted, redirect to room
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
-        router.push(`/${language}/live-room/${waitingSessionId}`)
+        router.push(`/live-room/${waitingSessionId}`)
       } else if (data.status === 'cancelled') {
         // Session was cancelled/rejected
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
@@ -205,7 +205,7 @@ export default function TellerDetailPage() {
 
   const handleBookSession = async () => {
     if (!session?.user) {
-      router.push(`/${language}/login`)
+      router.push(`/login`)
       return
     }
 
@@ -286,7 +286,7 @@ export default function TellerDetailPage() {
         <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
         <p className="text-white text-xl mb-4">{error || (language === 'tr' ? 'Falcı bulunamadı' : 'Fortune teller not found')}</p>
         <Link
-          href={`/${language}/live-tellers`}
+          href={`/live-tellers`}
           className="text-purple-400 hover:text-purple-300 flex items-center gap-2"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -305,7 +305,7 @@ export default function TellerDetailPage() {
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link
-          href={`/${language}/live-tellers`}
+          href={`/live-tellers`}
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />

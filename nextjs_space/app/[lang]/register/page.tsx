@@ -75,10 +75,10 @@ export default function RegisterPage() {
       })
 
       if (result?.error) {
-        router.push(`/${language}/login`)
+        router.push(`/login`)
       } else {
         // Redirect to homepage after successful registration
-        router.push(`/${language}`)
+        router.push(`/`)
       }
     } catch (err) {
       setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
@@ -280,7 +280,7 @@ export default function RegisterPage() {
             <p className="text-deep-purple-300 text-sm">
               {language === 'tr' ? 'Zaten hesabınız var mı?' : 'Already have an account?'}{' '}
               <Link
-                href={`/${language}/login`}
+                href={`/login`}
                 className="text-gold-500 hover:text-gold-400 transition-colors font-medium"
               >
                 {language === 'tr' ? 'Giriş Yap' : 'Sign In'}

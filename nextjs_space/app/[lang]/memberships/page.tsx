@@ -293,7 +293,7 @@ export default function MembershipsPage() {
                     <button
                       onClick={() => {
                         if (!session?.user) {
-                          router.push(`/${language}/login`)
+                          router.push(`/login`)
                           return
                         }
                         setSelectedPlan(plan)
@@ -400,7 +400,7 @@ export default function MembershipsPage() {
                     <p className="text-red-400 text-sm">
                       {language === 'tr' ? `Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi` : `Insufficient ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} balance`}
                     </p>
-                    <Link href={`/${language}/credits`} className="text-amber-400 text-sm underline">
+                    <Link href={`/credits`} className="text-amber-400 text-sm underline">
                       {language === 'tr' ? 'Bakiye yükle' : 'Top up balance'}
                     </Link>
                   </div>
