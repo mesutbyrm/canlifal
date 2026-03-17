@@ -189,12 +189,12 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-white font-bold text-lg">
-                          {language === 'tr' ? selectedItem.nameTr : selectedItem.nameEn}
+                          {selectedItem.nameTr}
                         </h3>
                         {modalContent && (
                           <div className="flex items-center gap-1">
                             <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                            <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} Jeton {language === 'tr' ? 'Harcandı' : 'Spent'}</span>
+                            <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} Jeton {'Harcandı'}</span>
                           </div>
                         )}
                       </div>
@@ -210,7 +210,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                           <Sparkles className="w-10 h-10 text-fuchsia-400" />
                         </motion.div>
                         <p className="text-fuchsia-300 text-sm mt-3 animate-pulse">
-                          {language === 'tr' ? 'Yıldızlar yorumlanıyor...' : 'Reading the stars...'}
+                          {'Yıldızlar yorumlanıyor...'}
                         </p>
                       </div>
                     )}
@@ -223,7 +223,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                           onClick={handleBack}
                           className="px-6 py-2 rounded-xl bg-purple-700/50 border border-purple-400/30 text-white text-sm font-medium hover:bg-purple-600/50 transition-colors"
                         >
-                          {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+                          {'Geri Dön'}
                         </button>
                       </div>
                     )}
@@ -300,7 +300,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                           className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-purple-700/50 to-fuchsia-700/50 border border-purple-400/40 text-white font-bold text-sm hover:from-purple-600/60 hover:to-fuchsia-600/60 transition-all"
                           style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.2)' }}
                         >
-                          {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+                          {'Geri Dön'}
                         </button>
                       </motion.div>
                     )}
@@ -317,7 +317,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-white font-bold text-lg flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-fuchsia-400" />
-                        {language === 'tr' ? 'Bana Özel' : 'Personalized'}
+                        {'Bana Özel'}
                       </h2>
                       <div className="flex items-center gap-2">
                         {streak.currentStreak > 0 && (
@@ -335,7 +335,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
 
                     <p className="text-fuchsia-300/70 text-xs mb-3 flex items-center gap-1">
                       <span>✨</span>
-                      {language === 'tr' ? 'Bir fal türü seçin' : 'Choose a fortune type'}
+                      {'Bir fal türü seçin'}
                       <span>✨</span>
                     </p>
 
@@ -356,7 +356,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                             <div className="flex items-center gap-2">
                               <Gift className="w-5 h-5 text-green-400" />
                               <span className="text-green-200 text-sm font-medium">
-                                {language === 'tr' ? 'Günlük Giriş Bonusu' : 'Daily Login Bonus'}
+                                {'Günlük Giriş Bonusu'}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -386,7 +386,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                                 <span className="text-lg">{item.icon}</span>
                               </div>
                               <span className="flex-1 text-left text-white text-sm font-medium truncate">
-                                {language === 'tr' ? item.nameTr : item.nameEn}
+                                {item.nameTr}
                               </span>
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 <Coins className="w-3.5 h-3.5 text-yellow-400" />
@@ -399,7 +399,7 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
 
                         {items.length === 0 && !loading && (
                           <p className="text-purple-300/60 text-sm text-center py-8">
-                            {language === 'tr' ? 'Henüz içerik yok' : 'No content yet'}
+                            {'Henüz içerik yok'}
                           </p>
                         )}
                       </>

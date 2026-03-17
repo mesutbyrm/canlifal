@@ -64,33 +64,33 @@ export default function MobileFooter() {
     {
       href: session ? `/profile` : `/login`,
       icon: User,
-      label: language === 'tr' ? 'Profilim' : 'Profile',
+      label: 'Profilim',
       isCenter: false,
     },
     {
       href: `/messages`,
       icon: MessageCircle,
-      label: language === 'tr' ? 'Mesajlar' : 'Messages',
+      label: 'Mesajlar',
       isCenter: false,
       badge: unreadCount,
     },
     {
       href: session ? `/chat/video/setup` : `/login`,
       icon: Camera,
-      label: language === 'tr' ? 'Yayın' : 'Stream',
+      label: 'Yayın',
       isCenter: true,
     },
     {
       href: `/credits`,
       icon: Coins,
-      label: language === 'tr' ? 'Jeton Al' : 'Buy Jeton',
+      label: 'Jeton Al',
       isCenter: false,
       isJeton: true,
     },
     {
       href: `/`,
       icon: Home,
-      label: language === 'tr' ? 'Ana Sayfa' : 'Home',
+      label: 'Ana Sayfa',
       isCenter: false,
     },
   ]

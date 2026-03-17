@@ -55,18 +55,16 @@ export default function ContactPage() {
           >
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="font-serif text-2xl text-gold-500 mb-4">
-              {language === 'tr' ? 'Mesajınız Gönderildi!' : 'Message Sent!'}
+              {'Mesajınız Gönderildi!'}
             </h2>
             <p className="text-deep-purple-200 mb-6">
-              {language === 'tr' 
-                ? 'En kısa sürede size dönüş yapacağız.' 
-                : 'We will get back to you as soon as possible.'}
+              {'En kısa sürede size dönüş yapacağız.'}
             </p>
             <button
               onClick={() => setSuccess(false)}
               className="px-6 py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all"
             >
-              {language === 'tr' ? 'Yeni Mesaj Gönder' : 'Send Another Message'}
+              {'Yeni Mesaj Gönder'}
             </button>
           </motion.div>
         </div>
@@ -86,12 +84,10 @@ export default function ContactPage() {
             <Mail className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'İletişim' : 'Contact Us'}
+            {'İletişim'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' 
-              ? 'Sorularınız için bize ulaşın' 
-              : 'Reach out to us with your questions'}
+            {'Sorularınız için bize ulaşın'}
           </p>
         </motion.div>
 
@@ -105,7 +101,7 @@ export default function ContactPage() {
             <div>
               <label className="block text-deep-purple-200 mb-2 flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {language === 'tr' ? 'İsminiz' : 'Your Name'}
+                {'İsminiz'}
               </label>
               <input
                 type="text"
@@ -113,14 +109,14 @@ export default function ContactPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:border-gold-500 focus:outline-none transition-colors"
-                placeholder={language === 'tr' ? 'Adınız Soyadınız' : 'John Doe'}
+                placeholder={'Adınız Soyadınız'}
               />
             </div>
 
             <div>
               <label className="block text-deep-purple-200 mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                {language === 'tr' ? 'E-posta' : 'Email'}
+                {'E-posta'}
               </label>
               <input
                 type="email"
@@ -135,7 +131,7 @@ export default function ContactPage() {
             <div>
               <label className="block text-deep-purple-200 mb-2 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
-                {language === 'tr' ? 'Mesajınız' : 'Your Message'}
+                {'Mesajınız'}
               </label>
               <textarea
                 value={message}
@@ -143,7 +139,7 @@ export default function ContactPage() {
                 required
                 rows={5}
                 className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:border-gold-500 focus:outline-none transition-colors resize-none"
-                placeholder={language === 'tr' ? 'Mesajınızı buraya yazın...' : 'Write your message here...'}
+                placeholder={'Mesajınızı buraya yazın...'}
               />
             </div>
 
@@ -163,7 +159,7 @@ export default function ContactPage() {
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  {language === 'tr' ? 'Gönder' : 'Send Message'}
+                  {'Gönder'}
                 </>
               )}
             </button>

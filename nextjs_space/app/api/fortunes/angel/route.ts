@@ -26,13 +26,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir melek kartı okuyucususun. ${count} melek kartı çek ve her kartın meleksel mesajını açıkla. ${question ? `Kullanıcının sorusu: "${question}".` : ''} Her kart için meleğin ismini, kartın anlamını ve mesajını belirt. Kartların kombinasyonundan genel bir meleksel rehberlik sun. Cevabın 300-400 kelime arasında, şefkatli ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen deneyimli bir melek kartı okuyucususun. ${count} melek kartı çek ve her kartın meleksel mesajını açıkla. ${question ? `Kullanıcının sorusu}".` : ''} Her kart için meleğin ismini, kartın anlamını ve mesajını belirt. Kartların kombinasyonundan genel bir meleksel rehberlik sun. Cevabın 300-400 kelime arasında, şefkatli ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
       : `You are an experienced angel card reader. Draw ${count} angel cards and explain each card's angelic message. ${question ? `User's question: "${question}".` : ''} For each card, state the angel's name, the card's meaning, and its message. Provide overall angelic guidance from the card combination. Your response should be 300-400 words, compassionate and enlightening. Respond entirely in English.`
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: question || (language === 'tr' ? 'Melek kartlarımdan rehberlik al' : 'Get guidance from my angel cards') },
+      { role: 'user', content: question || ('Melek kartlarımdan rehberlik al') },
     ]
 
     const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {

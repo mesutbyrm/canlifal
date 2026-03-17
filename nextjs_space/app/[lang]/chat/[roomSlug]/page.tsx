@@ -704,7 +704,7 @@ export default function ChatRoomPage() {
       } catch (micError) {
         console.error('Microphone error:', micError)
         setVoiceConnecting(false)
-        alert(language === 'tr' ? 'Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.' : 'Microphone access denied. Please allow microphone access in browser settings.')
+        alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.')
         return
       }
       
@@ -726,7 +726,7 @@ export default function ChatRoomPage() {
           
           const errData = await joinRes.json().catch(() => ({}))
           if (joinRes.status === 403) {
-            alert(language === 'tr' ? 'Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.' : 'You don\'t have voice permission. Room owner or admin must give you "+" (voice) role.')
+            alert('Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.')
             return
           }
           throw new Error(errData.error || 'Failed to join voice')
@@ -805,9 +805,9 @@ export default function ChatRoomPage() {
       setVoiceConnecting(false)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
-        alert(language === 'tr' ? 'Mikrofon erişimi reddedildi' : 'Microphone access denied')
+        alert('Mikrofon erişimi reddedildi')
       } else {
-        alert(language === 'tr' ? 'Sesli sohbet başlatılamadı: ' + errorMessage : 'Failed to start voice chat: ' + errorMessage)
+        alert('Sesli sohbet başlatılamadı
       }
     }
   }
@@ -935,11 +935,11 @@ export default function ChatRoomPage() {
       } else {
         const data = await res.json()
         if (data.error === 'muted') {
-          setError(language === 'tr' ? 'Bu odada susturuldunuz' : 'You are muted in this room')
+          setError('Bu odada susturuldunuz')
         } else if (data.error === 'banned') {
           setError('banned')
         } else if (data.error === 'room_muted') {
-          setError(language === 'tr' ? 'Oda şu anda sessiz modda' : 'Room is currently muted')
+          setError('Oda şu anda sessiz modda')
         }
       }
     } catch (error) {
@@ -1030,7 +1030,7 @@ export default function ChatRoomPage() {
 
   const clearAllMessages = async () => {
     if (!room) return
-    if (!confirm(language === 'tr' ? 'Tüm mesajları silmek istediğinize emin misiniz?' : 'Are you sure you want to clear all messages?')) return
+    if (!confirm('Tüm mesajları silmek istediğinize emin misiniz?')) return
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/moderation`, {
         method: 'POST',
@@ -1050,7 +1050,7 @@ export default function ChatRoomPage() {
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
+    return date.toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit'
     })
@@ -1195,9 +1195,9 @@ export default function ChatRoomPage() {
       <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0b2e] to-[#0a0118] flex items-center justify-center">
         <div className="text-center">
           <Ban className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-2xl text-red-400 mb-2">{language === 'tr' ? 'Bu odadan engellendiniz' : 'You are banned from this room'}</h1>
+          <h1 className="text-2xl text-red-400 mb-2">{'Bu odadan engellendiniz'}</h1>
           <Link href={`/chat`} className="text-gold-400 hover:text-gold-300">
-            {language === 'tr' ? 'Sohbet odalarına dön' : 'Back to chat rooms'}
+            {'Sohbet odalarına dön'}
           </Link>
         </div>
       </div>
@@ -1245,16 +1245,16 @@ export default function ChatRoomPage() {
             >
               <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                {language === 'tr' ? 'Takma Adınızı Seçin' : 'Choose Your Nickname'}
+                {'Takma Adınızı Seçin'}
               </h3>
               <p className="text-purple-200/70 text-sm mb-4">
-                {language === 'tr' ? 'Bu isim sohbette görünecek' : 'This name will be shown in chat'}
+                {'Bu isim sohbette görünecek'}
               </p>
               <input
                 type="text"
                 value={nicknameInput}
                 onChange={(e) => setNicknameInput(e.target.value)}
-                placeholder={session.user.name || (language === 'tr' ? 'Takma ad...' : 'Nickname...')}
+                placeholder={session.user.name || ('Takma ad...')}
                 maxLength={20}
                 className="w-full bg-[#2d1b4e]/50 border border-gold-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-400 mb-4"
                 onKeyDown={(e) => e.key === 'Enter' && saveNickname()}
@@ -1267,14 +1267,14 @@ export default function ChatRoomPage() {
                   }}
                   className="flex-1 px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30"
                 >
-                  {language === 'tr' ? 'Varsayılan Kullan' : 'Use Default'}
+                  {'Varsayılan Kullan'}
                 </button>
                 <button
                   onClick={saveNickname}
                   disabled={!nicknameInput.trim()}
                   className="flex-1 px-4 py-2 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
               </div>
             </motion.div>
@@ -1303,7 +1303,7 @@ export default function ChatRoomPage() {
               <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
                 <h3 className="text-lg font-semibold text-gold-400 flex items-center gap-2">
                   <Settings className="w-5 h-5" />
-                  {language === 'tr' ? 'Yönetim Paneli' : 'Management Panel'}
+                  {'Yönetim Paneli'}
                 </h3>
                 <button onClick={() => setShowManagePopup(false)} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -1316,13 +1316,13 @@ export default function ChatRoomPage() {
                   onClick={() => setManageTab('chat')}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'chat' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
                 >
-                  {language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management'}
+                  {'Sohbet Yönetimi'}
                 </button>
                 <button
                   onClick={() => setManageTab('users')}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'users' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
                 >
-                  {language === 'tr' ? 'Kullanıcı Yönetimi' : 'User Management'}
+                  {'Kullanıcı Yönetimi'}
                 </button>
               </div>
               
@@ -1337,7 +1337,7 @@ export default function ChatRoomPage() {
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${roomMuted ? 'bg-green-600/30 text-green-300 hover:bg-green-600/50' : 'bg-red-600/30 text-red-300 hover:bg-red-600/50'}`}
                       >
                         {roomMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                        {roomMuted ? (language === 'tr' ? 'Odayı Aç' : 'Unmute Room') : (language === 'tr' ? 'Odayı Sustur' : 'Mute Room')}
+                        {roomMuted ? ('Odayı Aç') : ('Odayı Sustur')}
                       </button>
                     )}
                     <button
@@ -1345,7 +1345,7 @@ export default function ChatRoomPage() {
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${soundEnabled ? 'bg-blue-600/30 text-blue-300 hover:bg-blue-600/50' : 'bg-gray-600/30 text-gray-300 hover:bg-gray-600/50'}`}
                     >
                       {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                      {soundEnabled ? (language === 'tr' ? 'Bildirim Sesi Açık' : 'Notification Sound On') : (language === 'tr' ? 'Bildirim Sesi Kapalı' : 'Notification Sound Off')}
+                      {soundEnabled ? ('Bildirim Sesi Açık') : ('Bildirim Sesi Kapalı')}
                     </button>
                     {/* Room owner, founder, op and global admin see clear messages option */}
                     {(myPermissions?.isRoomOwner || myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
@@ -1354,7 +1354,7 @@ export default function ChatRoomPage() {
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-600/30 text-red-300 hover:bg-red-600/50"
                       >
                         <Trash2 className="w-5 h-5" />
-                        {language === 'tr' ? 'Tüm Mesajları Temizle' : 'Clear All Messages'}
+                        {'Tüm Mesajları Temizle'}
                       </button>
                     )}
                     <button
@@ -1362,14 +1362,14 @@ export default function ChatRoomPage() {
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-purple-600/30 text-purple-300 hover:bg-purple-600/50"
                     >
                       <AtSign className="w-5 h-5" />
-                      {language === 'tr' ? 'Takma Adı Değiştir' : 'Change Nickname'}
+                      {'Takma Adı Değiştir'}
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {activeUsers.length === 0 ? (
                       <p className="text-purple-400/50 text-sm text-center py-4">
-                        {language === 'tr' ? 'Aktif kullanıcı yok' : 'No active users'}
+                        {'Aktif kullanıcı yok'}
                       </p>
                     ) : (
                       activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
@@ -1387,7 +1387,7 @@ export default function ChatRoomPage() {
                                 onClick={() => performModAction('mute_user', user.id, { duration: 30 })}
                                 className="px-2 py-1 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
                               >
-                                <MicOff className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Sustur' : 'Mute'}
+                                <MicOff className="w-3 h-3 inline mr-1" />{'Sustur'}
                               </button>
                             )}
                             {/* Kick users */}
@@ -1396,7 +1396,7 @@ export default function ChatRoomPage() {
                                 onClick={() => performModAction('kick_user', user.id)}
                                 className="px-2 py-1 bg-yellow-600/30 text-yellow-300 rounded text-xs hover:bg-yellow-600/50"
                               >
-                                <UserMinus className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'At' : 'Kick'}
+                                <UserMinus className="w-3 h-3 inline mr-1" />{'At'}
                               </button>
                             )}
                             {/* Ban users */}
@@ -1405,7 +1405,7 @@ export default function ChatRoomPage() {
                                 onClick={() => performModAction('ban_user', user.id)}
                                 className="px-2 py-1 bg-red-600/30 text-red-300 rounded text-xs hover:bg-red-600/50"
                               >
-                                <Ban className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Engelle' : 'Ban'}
+                                <Ban className="w-3 h-3 inline mr-1" />{'Engelle'}
                               </button>
                             )}
                             {/* Give voice */}
@@ -1413,9 +1413,9 @@ export default function ChatRoomPage() {
                               <button
                                 onClick={() => performModAction('set_role', user.id, { role: 'voice' })}
                                 className="px-2 py-1 bg-blue-600/30 text-blue-300 rounded text-xs hover:bg-blue-600/50"
-                                title={language === 'tr' ? 'Ses yetkisi ver' : 'Give voice permission'}
+                                title={'Ses yetkisi ver'}
                               >
-                                <Mic className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Ses Ver' : '+Voice'}
+                                <Mic className="w-3 h-3 inline mr-1" />{'Ses Ver'}
                               </button>
                             )}
                             {/* Give op */}
@@ -1442,7 +1442,7 @@ export default function ChatRoomPage() {
                                 onClick={() => performModAction('remove_role', user.id)}
                                 className="px-2 py-1 bg-gray-600/30 text-gray-300 rounded text-xs hover:bg-gray-600/50"
                               >
-                                {language === 'tr' ? 'Yetkiyi Kaldır' : 'Remove Role'}
+                                {'Yetkiyi Kaldır'}
                               </button>
                             )}
                           </div>
@@ -1477,7 +1477,7 @@ export default function ChatRoomPage() {
               <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
                 <h3 className="text-lg font-semibold text-gold-400 flex items-center gap-2">
                   <DoorOpen className="w-5 h-5" />
-                  {language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}
+                  {'Sohbet Odaları'}
                 </h3>
                 <button onClick={() => setShowRoomsPopup(false)} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -1496,10 +1496,10 @@ export default function ChatRoomPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{r.icon}</span>
                       <div className="text-left">
-                        <p className="text-white font-medium">{language === 'tr' ? r.nameTr : r.nameEn}</p>
+                        <p className="text-white font-medium">{r.nameTr}</p>
                         {r.owner && (
                           <p className="text-xs text-purple-400">
-                            {language === 'tr' ? 'Sahibi' : 'Owner'}: {r.owner.name}
+                            {'Sahibi'}: {r.owner.name}
                           </p>
                         )}
                       </div>
@@ -1511,7 +1511,7 @@ export default function ChatRoomPage() {
                       </span>
                       {r.slug === roomSlug && (
                         <span className="px-2 py-1 bg-gold-500/30 text-gold-300 rounded text-xs">
-                          {language === 'tr' ? 'Aktif' : 'Active'}
+                          {'Aktif'}
                         </span>
                       )}
                     </div>
@@ -1539,7 +1539,7 @@ export default function ChatRoomPage() {
               <div>
                 <p className="text-gold-300 font-medium">
                   <span className="text-gold-400">{mentionNotification.from}</span>
-                  {language === 'tr' ? ' senden bahsetti!' : ' mentioned you!'}
+                  {' senden bahsetti!'}
                 </p>
                 <p className="text-purple-200/70 text-sm mt-1">{mentionNotification.content}</p>
               </div>
@@ -1572,14 +1572,14 @@ export default function ChatRoomPage() {
                 className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold-600/30 text-gold-200 hover:bg-gold-600/50"
               >
                 <DoorOpen className="w-3 h-3" />
-                <span className="hidden sm:inline">{language === 'tr' ? 'Odalar' : 'Rooms'}</span>
+                <span className="hidden sm:inline">{'Odalar'}</span>
               </button>
             </div>
             
             {/* Room Name - Center */}
             <div className="flex-1 min-w-0 flex items-center justify-center px-1">
               <span className="text-white font-medium text-sm truncate">
-                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
+                {room.icon} {room.nameTr}
               </span>
               {roomMuted && (
                 <VolumeX className="w-3 h-3 text-red-400 ml-1 flex-shrink-0" />
@@ -1594,7 +1594,7 @@ export default function ChatRoomPage() {
                   className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50"
                 >
                   <Settings className="w-3 h-3" />
-                  <span className="hidden sm:inline">{language === 'tr' ? 'Yönet' : 'Manage'}</span>
+                  <span className="hidden sm:inline">{'Yönet'}</span>
                 </button>
               )}
 
@@ -1614,7 +1614,7 @@ export default function ChatRoomPage() {
             <div className="flex-shrink-0 bg-red-600/80 px-3 py-2 flex items-center gap-2">
               <Crown className="w-4 h-4 text-yellow-300" />
               <span className="text-white text-sm font-medium">
-                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+                {'Oda Sahibi'}
               </span>
               <span className="text-yellow-200 text-sm font-bold">
                 {room.owner.username || room.owner.name}
@@ -1629,7 +1629,7 @@ export default function ChatRoomPage() {
             {/* Watermark Room Name */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
               <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/10 whitespace-nowrap select-none">
-                {room.icon} {language === 'tr' ? room.nameTr : room.nameEn}
+                {room.icon} {room.nameTr}
               </span>
             </div>
             
@@ -1689,7 +1689,7 @@ export default function ChatRoomPage() {
                         >
                           <span className="text-gray-500/70 text-xs">
                             ← <span className="text-gray-400">{leaveName}</span>{' '}
-                            {language === 'tr' ? 'odadan ayrıldı' : 'left the room'}
+                            {'odadan ayrıldı'}
                           </span>
                         </motion.div>
                       )
@@ -1719,7 +1719,7 @@ export default function ChatRoomPage() {
                             <span className={`text-xs ${vipInfo.color}`}>
                               {vipInfo.icon} <span className="font-medium">{joinName}</span>{' '}
                               <span className="text-white/60">
-                                {language === 'tr' ? 'odaya giriş yaptı' : 'entered the room'}
+                                {'odaya giriş yaptı'}
                               </span>
                             </span>
                           </motion.div>
@@ -1753,7 +1753,7 @@ export default function ChatRoomPage() {
                             <div className="text-center">
                               <span className={`font-bold ${vipInfo.color}`}>{joinName}</span>
                               <span className="text-white/80 mx-2">
-                                {language === 'tr' ? 'odaya giriş yaptı!' : 'entered the room!'}
+                                {'odaya giriş yaptı!'}
                               </span>
                             </div>
                             <motion.span
@@ -1765,7 +1765,7 @@ export default function ChatRoomPage() {
                             </motion.span>
                           </div>
                           <div className="text-center text-xs mt-1 text-white/60">
-                            {language === 'tr' ? vipInfo.label : vipInfo.labelEn}
+                            {vipInfo.label}
                           </div>
                         </motion.div>
                       )
@@ -1781,7 +1781,7 @@ export default function ChatRoomPage() {
                       >
                         <span className="text-purple-400/70 text-xs">
                           ➜ <span className="text-purple-300">{joinName}</span>{' '}
-                          {language === 'tr' ? 'odaya katıldı' : 'joined the room'}
+                          {'odaya katıldı'}
                         </span>
                       </motion.div>
                     )
@@ -1854,7 +1854,7 @@ export default function ChatRoomPage() {
                 <span>
                   {typingUsers.slice(0, 3).join(', ')}
                   {typingUsers.length > 3 && ` +${typingUsers.length - 3}`}
-                  {language === 'tr' ? ' yazıyor...' : ' typing...'}
+                  {' yazıyor...'}
                 </span>
               </motion.div>
             )}
@@ -1924,7 +1924,7 @@ export default function ChatRoomPage() {
                       </button>
                     ))}
                     {activeUsers.filter(u => u.id !== session?.user?.id).length === 0 && !room?.owner && (
-                      <span className="text-purple-400/50 text-xs">{language === 'tr' ? 'Hediye gönderilecek kullanıcı yok' : 'No users to send gifts to'}</span>
+                      <span className="text-purple-400/50 text-xs">{'Hediye gönderilecek kullanıcı yok'}</span>
                     )}
                   </div>
                 </div>
@@ -1981,7 +1981,7 @@ export default function ChatRoomPage() {
           <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
             <span className="text-purple-300 text-sm font-medium flex items-center gap-1">
               <Users className="w-4 h-4" />
-              {language === 'tr' ? 'Kullanıcılar' : 'Users'}
+              {'Kullanıcılar'}
             </span>
             <div className="flex items-center gap-1">
               <span className="text-purple-400 text-xs bg-purple-600/30 px-2 py-0.5 rounded">({activeUsers.length})</span>
@@ -1995,7 +1995,7 @@ export default function ChatRoomPage() {
           {room.owner && (
             <div className="flex-shrink-0 bg-red-600/60 px-2 py-2 border-b border-red-500/30">
               <p className="text-[10px] text-red-200 uppercase tracking-wider mb-1">
-                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+                {'Oda Sahibi'}
               </p>
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-yellow-300" />
@@ -2019,7 +2019,7 @@ export default function ChatRoomPage() {
           <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520]">
             {activeUsers.length === 0 ? (
               <p className="text-purple-400/50 text-xs p-2 text-center">
-                {language === 'tr' ? 'Kimse yok' : 'No one here'}
+                {'Kimse yok'}
               </p>
             ) : (
               <div className="py-1">

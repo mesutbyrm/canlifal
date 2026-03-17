@@ -241,8 +241,8 @@ export default function ChatPage() {
                     otherPartyTeller.isOnline ? 'text-green-400' : 'text-gray-500'
                   }`} />
                   {otherPartyTeller.isOnline
-                    ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
-                    : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                    ? ('Çevrimiçi')
+                    : ('Çevrimdışı')}
                 </>
               )}
             </p>
@@ -250,7 +250,7 @@ export default function ChatPage() {
 
           {isClosed && (
             <span className="px-3 py-1 bg-gray-500/20 text-gray-400 text-sm rounded-full">
-              {language === 'tr' ? 'Sohbet Kapandı' : 'Chat Closed'}
+              {'Sohbet Kapandı'}
             </span>
           )}
         </div>
@@ -261,7 +261,7 @@ export default function ChatPage() {
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-16 text-purple-400">
-              {language === 'tr' ? 'Henüz mesaj yok. Sohbete başlayın!' : 'No messages yet. Start the conversation!'}
+              {'Henüz mesaj yok. Sohbete başlayın!'}
             </div>
           ) : (
             messages.map((msg, index) => {
@@ -321,7 +321,7 @@ export default function ChatPage() {
                     )}
                     <div className={`flex items-center gap-1 mt-1 text-xs text-purple-500 ${isMe ? 'justify-end' : ''}`}>
                       <span>
-                        {new Date(msg.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
+                        {new Date(msg.createdAt).toLocaleTimeString('tr-TR', {
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
@@ -367,7 +367,7 @@ export default function ChatPage() {
               type="text"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              placeholder={language === 'tr' ? 'Mesajınız...' : 'Your message...'}
+              placeholder={'Mesajınız...'}
               className="flex-1 px-4 py-3 bg-deep-purple-800/50 border border-purple-500/30 rounded-full text-white placeholder-purple-400 focus:outline-none focus:border-purple-500"
             />
 
@@ -387,7 +387,7 @@ export default function ChatPage() {
       ) : (
         <div className="bg-deep-purple-900/80 backdrop-blur-sm border-t border-purple-500/20 p-4">
           <p className="text-center text-purple-400">
-            {language === 'tr' ? 'Bu sohbet tamamlanmıştır.' : 'This chat has been completed.'}
+            {'Bu sohbet tamamlanmıştır.'}
           </p>
         </div>
       )}

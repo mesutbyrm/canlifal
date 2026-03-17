@@ -39,9 +39,7 @@ export async function POST(request: Request) {
     }
 
     // System prompt for tarot reading
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir tarot okuyucususun. ${cardCount} kartlık bir tarot okuması yap. Her kartın anlamını açıkla ve kullanıcının sorusuyla ilişkilendir. Cevabın 250-350 kelime arasında, derin, sembolik ve rehberlik edici olmalı. Gerçek tarot kartlarının isimlerini ve anlamlarını kullan. Tamamen Türkçe cevap ver.`
-      : `You are an experienced tarot reader. Perform a ${cardCount}-card tarot reading. Explain the meaning of each card and relate it to the user's question. Your response should be 250-350 words, profound, symbolic, and guiding. Use real tarot card names and meanings. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir tarot okuyucususun. ${cardCount} kartlık bir tarot okuması yap. Her kartın anlamını açıkla ve kullanıcının sorusuyla ilişkilendir. Cevabın 250-350 kelime arasında, derin, sembolik ve rehberlik edici olmalı. Gerçek tarot kartlarının isimlerini ve anlamlarını kullan. Tamamen Türkçe cevap ver.`}-card tarot reading. Explain the meaning of each card and relate it to the user's question. Your response should be 250-350 words, profound, symbolic, and guiding. Use real tarot card names and meanings. Respond entirely in English.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

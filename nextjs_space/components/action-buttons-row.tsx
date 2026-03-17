@@ -174,7 +174,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
             >
               <span className="flex-shrink-0">{btn.icon}</span>
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
-                {language === 'tr' ? btn.labelTr : btn.labelEn}
+                {btn.labelTr}
               </span>
               <LiveBadge count={btn.badgeCount} />
             </button>
@@ -188,7 +188,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
             >
               <span className="flex-shrink-0">{btn.icon}</span>
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
-                {language === 'tr' ? btn.labelTr : btn.labelEn}
+                {btn.labelTr}
               </span>
               <LiveBadge count={btn.badgeCount} />
             </Link>

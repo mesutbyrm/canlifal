@@ -102,10 +102,10 @@ export default function GiftsPage() {
   }, [searchQuery, searchUsers])
 
   const handleSend = async () => {
-    if (!selectedUser) { setErrorMsg(language === 'tr' ? 'Lütfen bir kullanıcı seçin' : 'Please select a user'); return }
-    if (selectedTab === 'gift' && !selectedGift) { setErrorMsg(language === 'tr' ? 'Lütfen bir hediye seçin' : 'Please select a gift'); return }
-    if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5)) { setErrorMsg(language === 'tr' ? 'Minimum 5 jeton gönderebilirsiniz' : 'Minimum 5 jetons required'); return }
-    if (selectedTab === 'jeton' && parseInt(jetonAmount) > 100000) { setErrorMsg(language === 'tr' ? 'Maksimum 100.000 jeton gönderebilirsiniz' : 'Maximum 100,000 jetons allowed'); return }
+    if (!selectedUser) { setErrorMsg('Lütfen bir kullanıcı seçin'); return }
+    if (selectedTab === 'gift' && !selectedGift) { setErrorMsg('Lütfen bir hediye seçin'); return }
+    if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5)) { setErrorMsg('Minimum 5 jeton gönderebilirsiniz'); return }
+    if (selectedTab === 'jeton' && parseInt(jetonAmount) > 100000) { setErrorMsg('Maksimum 100.000 jeton gönderebilirsiniz'); return }
 
     setSending(true)
     setErrorMsg('')
@@ -164,7 +164,7 @@ export default function GiftsPage() {
           >
             <Gift className="w-8 h-8 text-white" />
           </motion.div>
-          <p className="text-purple-300 text-sm">{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</p>
+          <p className="text-purple-300 text-sm">{'Yükleniyor...'}</p>
         </div>
       </div>
     )
@@ -183,10 +183,10 @@ export default function GiftsPage() {
             <Gift className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </motion.div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            {language === 'tr' ? '🎁 Hediye Gönder' : '🎁 Send Gift'}
+            {'🎁 Hediye Gönder'}
           </h1>
           <p className="text-purple-200/70 text-sm sm:text-base">
-            {language === 'tr' ? 'Arkadaşlarını mutlu et!' : 'Make your friends happy!'}
+            {'Arkadaşlarını mutlu et!'}
           </p>
         </motion.div>
 
@@ -202,7 +202,7 @@ export default function GiftsPage() {
                 <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <p className="text-amber-200/70 text-xs sm:text-sm">{language === 'tr' ? 'Bakiyeniz' : 'Your Balance'}</p>
+                <p className="text-amber-200/70 text-xs sm:text-sm">{'Bakiyeniz'}</p>
                 <p className="text-white font-bold text-lg sm:text-xl">{userJetonBalance.toLocaleString()} <span className="text-amber-400 text-sm">Jeton</span></p>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function GiftsPage() {
               className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold rounded-lg sm:rounded-xl text-xs sm:text-sm hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-1"
             >
               <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
-              {language === 'tr' ? 'Yükle' : 'Top Up'}
+              {'Yükle'}
             </Link>
           </div>
         </motion.div>
@@ -246,7 +246,7 @@ export default function GiftsPage() {
           <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
             <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-fuchsia-500 flex items-center justify-center text-xs font-bold">1</div>
             <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400" />
-            {language === 'tr' ? 'Kişi Seç' : 'Select Person'}
+            {'Kişi Seç'}
           </h3>
 
           {selectedUser ? (
@@ -278,7 +278,7 @@ export default function GiftsPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={language === 'tr' ? 'Kullanıcı adı veya isim ara...' : 'Search username or name...'}
+                placeholder={'Kullanıcı adı veya isim ara...'}
                 className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-300/50 focus:outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 text-sm sm:text-base transition-all"
               />
               {searching && <Loader2 className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400 animate-spin" />}
@@ -328,7 +328,7 @@ export default function GiftsPage() {
           <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
             <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-fuchsia-500 flex items-center justify-center text-xs font-bold">2</div>
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400" />
-            {language === 'tr' ? 'Ne Göndermek İstiyorsun?' : 'What to Send?'}
+            {'Ne Göndermek İstiyorsun?'}
           </h3>
 
           {/* Tab Buttons */}
@@ -339,7 +339,7 @@ export default function GiftsPage() {
                   ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg' 
                   : 'text-purple-300 hover:text-white'
               }`}>
-              🎁 {language === 'tr' ? 'Hediye' : 'Gift'}
+              🎁 {'Hediye'}
             </button>
             <button onClick={() => setSelectedTab('jeton')}
               className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
@@ -347,7 +347,7 @@ export default function GiftsPage() {
                   ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg' 
                   : 'text-purple-300 hover:text-white'
               }`}>
-              🪙 {language === 'tr' ? 'Jeton' : 'Jeton'}
+              🪙 {'Jeton'}
             </button>
           </div>
 
@@ -385,7 +385,7 @@ export default function GiftsPage() {
                     )}
                     <span className="text-2xl sm:text-3xl mb-1">{gift.icon}</span>
                     <span className="text-white text-[10px] sm:text-xs font-medium text-center leading-tight">
-                      {language === 'tr' ? gift.name : gift.nameEn}
+                      {gift.name}
                     </span>
                     <span className="text-fuchsia-400 text-[10px] sm:text-xs font-bold mt-0.5">{gift.price}</span>
                   </motion.button>
@@ -411,7 +411,7 @@ export default function GiftsPage() {
                         setJetonAmount(val)
                       }
                     }}
-                    placeholder={language === 'tr' ? 'Jeton miktarı girin...' : 'Enter jeton amount...'}
+                    placeholder={'Jeton miktarı girin...'}
                     className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-300/50 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-lg font-medium"
                   />
                 </div>
@@ -453,11 +453,11 @@ export default function GiftsPage() {
                           href={`/credits`}
                           className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-bold"
                         >
-                          {language === 'tr' ? 'Yükle' : 'Top Up'}
+                          {'Yükle'}
                         </Link>
                       </div>
                     ) : parseInt(jetonAmount) < 5 ? (
-                      <span className="text-amber-300">⚠️ {language === 'tr' ? 'Minimum 5 jeton' : 'Minimum 5 jetons'}</span>
+                      <span className="text-amber-300">⚠️ {'Minimum 5 jeton'}</span>
                     ) : (
                       <span className="text-emerald-300">✅ {parseInt(jetonAmount).toLocaleString()} jeton gönderilecek</span>
                     )}
@@ -484,7 +484,7 @@ export default function GiftsPage() {
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                {language === 'tr' ? 'Gönder' : 'Send'}
+                {'Gönder'}
                 {canSend && totalCost > 0 && (
                   <span className="px-2 py-0.5 bg-white/20 rounded-full text-sm">
                     {totalCost.toLocaleString()} Jeton
@@ -499,7 +499,7 @@ export default function GiftsPage() {
         <div className="text-center mt-6">
           <Link href={`/`} className="inline-flex items-center gap-2 text-purple-300/70 hover:text-fuchsia-300 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />
-            {language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home'}
+            {'Ana Sayfaya Dön'}
           </Link>
         </div>
       </div>
@@ -537,7 +537,7 @@ export default function GiftsPage() {
                 biz geleceği görürüz 😜
               </p>
               <div className={`text-sm ${isFacebook ? 'text-gray-500' : 'text-white/50'}`}>
-                {language === 'tr' ? '5 saniye sonra kapanacak...' : 'Closing in 5 seconds...'}
+                {'5 saniye sonra kapanacak...'}
               </div>
               {/* Progress bar */}
               <div className={`mt-4 h-1 rounded-full overflow-hidden ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`}>
@@ -632,7 +632,7 @@ export default function GiftsPage() {
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
-                  🎉 {language === 'tr' ? 'BÜYÜK HEDİYE!' : 'BIG GIFT!'} 🎉
+                  🎉 {'BÜYÜK HEDİYE!'} 🎉
                 </p>
               </motion.div>
 
@@ -684,7 +684,7 @@ export default function GiftsPage() {
                 onClick={() => setBigGiftPopup(null)}
                 className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-all"
               >
-                {language === 'tr' ? 'Harika! ✨' : 'Awesome! ✨'}
+                {'Harika! ✨'}
               </motion.button>
             </motion.div>
           </motion.div>

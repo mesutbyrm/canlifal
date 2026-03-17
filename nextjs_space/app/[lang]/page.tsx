@@ -283,7 +283,7 @@ export default function HomePage() {
             
             <h2 className="falclub-section-title mb-4 relative z-10">
               <Radio className="w-5 h-5" />
-              {language === 'tr' ? 'CANLI YAYINLAR' : 'LIVE STREAMS'}
+              {'CANLI YAYINLAR'}
             </h2>
             
             <div className="flex items-center gap-4 relative z-10">
@@ -299,7 +299,7 @@ export default function HomePage() {
                   <Plus className="w-10 h-10 text-fuchsia-300" />
                 </div>
                 <span className="text-fuchsia-200 text-xs mt-2 font-semibold">
-                  {language === 'tr' ? 'Yayın Başlat' : 'Start Stream'}
+                  {'Yayın Başlat'}
                 </span>
               </Link>
               
@@ -331,7 +331,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <p className="text-fuchsia-300/70 text-sm flex-1 text-center">
-                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                  {'Henüz canlı yayın yok'}
                 </p>
               )}
             </div>
@@ -341,10 +341,10 @@ export default function HomePage() {
           <div className="falclub-card p-4">
             <h2 className="falclub-section-title mb-4">
               <Sparkles className="w-5 h-5" />
-              {language === 'tr' ? 'FALLAR' : 'FORTUNES'}
+              {'FALLAR'}
               {sectionCounts.fortunes > 0 && (
                 <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
-                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                  🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}
             </h2>
@@ -361,14 +361,14 @@ export default function HomePage() {
                   >
                     <Image
                       src={fortune.image}
-                      alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                      alt={fortune.nameTr}
                       width={56}
                       height={56}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <span className="text-fuchsia-200 text-[10px] font-medium mt-1.5 text-center leading-tight">
-                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                    {fortune.nameTr}
                   </span>
                 </Link>
               ))}
@@ -380,7 +380,7 @@ export default function HomePage() {
             <div>
               <h2 className="falclub-section-title mb-3">
                 <Circle className="w-5 h-5 text-green-400 fill-green-400 animate-pulse" />
-                {language === 'tr' ? 'ONLINE FALCILAR' : 'ONLINE TELLERS'}
+                {'ONLINE FALCILAR'}
               </h2>
               
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
@@ -426,7 +426,7 @@ export default function HomePage() {
           <div>
             <h2 className="falclub-section-title mb-3">
               <Star className="w-5 h-5" />
-              {language === 'tr' ? 'POPÜLER FALCILAR' : 'POPULAR TELLERS'}
+              {'POPÜLER FALCILAR'}
             </h2>
             
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
@@ -456,7 +456,7 @@ export default function HomePage() {
                       </div>
                     ) : (
                       <div className="absolute top-1.5 left-1.5 bg-gray-600/80 text-gray-300 text-[8px] font-bold px-1.5 py-0.5 rounded">
-                        {language === 'tr' ? 'ÇEVRİMDIŞI' : 'OFFLINE'}
+                        {'ÇEVRİMDIŞI'}
                       </div>
                     )}
                   </div>
@@ -474,7 +474,7 @@ export default function HomePage() {
             
             {sortedTellers.length === 0 && (
               <p className="text-fuchsia-300/70 text-sm text-center py-4">
-                {language === 'tr' ? 'Henüz falcı bulunmuyor' : 'No fortune tellers yet'}
+                {'Henüz falcı bulunmuyor'}
               </p>
             )}
             
@@ -487,7 +487,7 @@ export default function HomePage() {
                   background: 'rgba(168, 85, 247, 0.15)',
                 }}
               >
-                {language === 'tr' ? 'Tüm Falcıları Gör →' : 'See All Tellers →'}
+                {'Tüm Falcıları Gör →'}
               </Link>
             </div>
           </div>
@@ -496,17 +496,17 @@ export default function HomePage() {
           <div className="falclub-card p-4">
             <h2 className="falclub-section-title mb-3">
               <Heart className="w-5 h-5" />
-              {language === 'tr' ? 'GÜNLÜK BURÇ' : 'DAILY HOROSCOPE'}
+              {'GÜNLÜK BURÇ'}
             </h2>
             
             <div className="text-fuchsia-200 text-sm">
               <p className="font-semibold text-white mb-1">Koç:</p>
-              <p className="opacity-90">{language === 'tr' ? 'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.' : 'Your energy is high today. New opportunities may arise.'}</p>
+              <p className="opacity-90">{'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.'}</p>
               <Link 
                 href={`/fortunes/horoscope`}
                 className="inline-block mt-2 text-fuchsia-300 font-medium hover:text-fuchsia-200"
               >
-                [{language === 'tr' ? 'Detaylı Oku' : 'Read More'}]
+                [{'Detaylı Oku'}]
               </Link>
             </div>
           </div>
@@ -564,7 +564,7 @@ export default function HomePage() {
                   <Plus className="w-8 h-8 text-indigo-400" />
                 </div>
                 <span className="text-gray-600 text-xs mt-2 font-medium">
-                  {language === 'tr' ? 'Yayın Başlat' : 'Start Stream'}
+                  {'Yayın Başlat'}
                 </span>
               </Link>
               
@@ -593,7 +593,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-sm flex-1">
-                  {language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}
+                  {'Henüz canlı yayın yok'}
                 </p>
               )}
             </div>
@@ -605,7 +605,7 @@ export default function HomePage() {
               Fallar
               {sectionCounts.fortunes > 0 && (
                 <span className="text-red-500 text-xs font-bold ml-2 animate-pulse">
-                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                  🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}
             </h2>
@@ -623,14 +623,14 @@ export default function HomePage() {
                   >
                     <Image
                       src={fortune.image}
-                      alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                      alt={fortune.nameTr}
                       width={70}
                       height={70}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <span className="text-gray-700 text-[11px] font-medium mt-2 text-center leading-tight">
-                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                    {fortune.nameTr}
                   </span>
                 </Link>
               ))}
@@ -667,7 +667,7 @@ export default function HomePage() {
           <div className={`mb-8 ${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Sparkles className={`w-5 h-5 ${accentColor}`} />
-              {language === 'tr' ? 'Canlı Falcılar' : 'Live Fortune Tellers'}
+              {'Canlı Falcılar'}
             </h2>
 
             {/* Horizontal Scroll Circular Teller Avatars - Online first, then Offline */}
@@ -713,13 +713,13 @@ export default function HomePage() {
               )) : (
                 <div className="flex-1 py-8 text-center w-full">
                   <p className={`${textSecondary} text-sm`}>
-                    {language === 'tr' ? 'Şu an falcı yok' : 'No tellers right now'}
+                    {'Şu an falcı yok'}
                   </p>
                   <Link
                     href={`/live-tellers`}
                     className={`inline-block mt-3 px-4 py-1.5 ${isCosmic ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500'} text-white rounded-full text-xs font-medium transition-colors`}
                   >
-                    {language === 'tr' ? 'Tüm Falcıları Gör' : 'See All Tellers'}
+                    {'Tüm Falcıları Gör'}
                   </Link>
                 </div>
               )}
@@ -731,10 +731,10 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Sparkles className={`w-4 h-4 ${accentColor}`} />
-                {language === 'tr' ? 'Fal Kategorileri' : 'Fortune Categories'}
+                {'Fal Kategorileri'}
               </h2>
               <Link href={`/fortunes`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
-                {language === 'tr' ? 'Tümünü Gör' : 'See All'}
+                {'Tümünü Gör'}
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -745,13 +745,13 @@ export default function HomePage() {
                   <div className={`relative aspect-square rounded-xl overflow-hidden ${isCosmic ? 'bg-blue-900/50 border-blue-500/30 hover:border-blue-400/50' : 'bg-purple-900/50 border-purple-500/30 hover:border-purple-400/50'} border transition-all`}>
                     <Image
                       src={card.image}
-                      alt={language === 'tr' ? card.nameTr : card.nameEn}
+                      alt={card.nameTr}
                       fill
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
-                      <h3 className="text-white font-medium text-xs">{language === 'tr' ? card.nameTr : card.nameEn}</h3>
+                      <h3 className="text-white font-medium text-xs">{card.nameTr}</h3>
                       <div className="flex items-center gap-1 mt-0.5">
                         <Star className={`w-2.5 h-2.5 ${accentColorFill}`} />
                         <span className={`${accentColor} text-[10px]`}>5.0</span>
@@ -769,10 +769,10 @@ export default function HomePage() {
           <div className={`${cardBg} rounded-xl p-4 border backdrop-blur-sm`}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Sparkles className={`w-5 h-5 ${accentColor}`} />
-              {language === 'tr' ? 'Fallar' : 'Fortunes'}
+              {'Fallar'}
               {sectionCounts.fortunes > 0 && (
                 <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
-                  🔮 {sectionCounts.fortunes} {language === 'tr' ? 'kişi fal baktırıyor' : 'people getting fortunes'}
+                  🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}
             </h2>
@@ -787,7 +787,7 @@ export default function HomePage() {
                     <div className="w-full h-full rounded-full overflow-hidden">
                       <Image
                         src={fortune.image}
-                        alt={language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                        alt={fortune.nameTr}
                         width={64}
                         height={64}
                         className="w-full h-full object-cover"
@@ -795,7 +795,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <p className={`${isCosmic ? 'text-blue-200' : 'text-purple-200'} text-[10px] font-medium mt-1.5 text-center w-16 leading-tight`}>
-                    {language === 'tr' ? fortune.nameTr : fortune.nameEn}
+                    {fortune.nameTr}
                   </p>
                 </Link>
               ))}

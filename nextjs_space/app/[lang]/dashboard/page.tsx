@@ -198,7 +198,7 @@ export default function DashboardPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ activity: true })
   const [activeLeaderboard, setActiveLeaderboard] = useState('popularity')
 
-  const dateLocale = language === 'tr' ? tr : enUS
+  const dateLocale = tr
 
   useEffect(() => {
     Promise.all([
@@ -228,15 +228,11 @@ export default function DashboardPage() {
     const mins = minutes % 60
     
     if (days > 0) {
-      return language === 'tr' 
-        ? `${days} gün ${hours} saat` 
-        : `${days}d ${hours}h`
+      return `${days} gün ${hours} saat`}d ${hours}h`
     } else if (hours > 0) {
-      return language === 'tr' 
-        ? `${hours} saat ${mins} dk` 
-        : `${hours}h ${mins}m`
+      return `${hours} saat ${mins} dk`}h ${mins}m`
     }
-    return language === 'tr' ? `${mins} dakika` : `${mins} minutes`
+    return `${mins} dakika`
   }
 
   const getHourPeriod = (hour: number): string => {
@@ -264,7 +260,7 @@ export default function DashboardPage() {
   if (!statistics) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0a2e] to-[#0a0118] flex items-center justify-center">
-        <p className="text-white/60">{language === 'tr' ? 'Veriler yüklenemedi' : 'Failed to load data'}</p>
+        <p className="text-white/60">{'Veriler yüklenemedi'}</p>
       </div>
     )
   }
@@ -343,10 +339,10 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">
-                {language === 'tr' ? 'İstatistikler' : 'Statistics'}
+                {'İstatistikler'}
               </h1>
               <p className="text-white/50 text-sm">
-                {language === 'tr' ? 'Tüm verileriniz ve başarılarınız' : 'All your data and achievements'}
+                {'Tüm verileriniz ve başarılarınız'}
               </p>
             </div>
           </div>
@@ -387,7 +383,7 @@ export default function DashboardPage() {
                 <Coins className="h-4 w-4" />
                 <span className="font-bold">{statistics.coins.currentBalance}</span>
               </div>
-              <p className="text-white/40 text-xs">{language === 'tr' ? 'CFC' : 'CFC'}</p>
+              <p className="text-white/40 text-xs">{'CFC'}</p>
             </div>
           </div>
 
@@ -395,19 +391,19 @@ export default function DashboardPage() {
           <div className="grid grid-cols-4 gap-2">
             <div className="text-center p-2 bg-white/5 rounded-lg">
               <p className="text-white font-bold">{statistics.fortune.total}</p>
-              <p className="text-white/50 text-xs">{language === 'tr' ? 'Fal' : 'Fortune'}</p>
+              <p className="text-white/50 text-xs">{'Fal'}</p>
             </div>
             <div className="text-center p-2 bg-white/5 rounded-lg">
               <p className="text-white font-bold">{statistics.social.followers}</p>
-              <p className="text-white/50 text-xs">{language === 'tr' ? 'Takipçi' : 'Followers'}</p>
+              <p className="text-white/50 text-xs">{'Takipçi'}</p>
             </div>
             <div className="text-center p-2 bg-white/5 rounded-lg">
               <p className="text-white font-bold">{statistics.social.likesReceived}</p>
-              <p className="text-white/50 text-xs">{language === 'tr' ? 'Beğeni' : 'Likes'}</p>
+              <p className="text-white/50 text-xs">{'Beğeni'}</p>
             </div>
             <div className="text-center p-2 bg-white/5 rounded-lg">
               <p className="text-white font-bold">{statistics.streams.totalHosted}</p>
-              <p className="text-white/50 text-xs">{language === 'tr' ? 'Yayın' : 'Streams'}</p>
+              <p className="text-white/50 text-xs">{'Yayın'}</p>
             </div>
           </div>
         </motion.div>
@@ -415,20 +411,20 @@ export default function DashboardPage() {
         {/* 1. USER ACTIVITY STATISTICS */}
         <Section
           id="activity"
-          title={language === 'tr' ? 'Aktivite İstatistikleri' : 'Activity Statistics'}
+          title={'Aktivite İstatistikleri'}
           icon={Activity}
           gradient="bg-gradient-to-r from-blue-600/40 to-cyan-600/30"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <StatCard 
-                label={language === 'tr' ? 'Toplam Giriş' : 'Total Logins'}
+                label={'Toplam Giriş'}
                 value={statistics.activity.totalLogins}
                 icon={Users}
                 color="blue"
               />
               <StatCard 
-                label={language === 'tr' ? 'Son Giriş' : 'Last Login'}
+                label={'Son Giriş'}
                 value={statistics.activity.lastLogin 
                   ? formatDistanceToNow(new Date(statistics.activity.lastLogin), { locale: dateLocale, addSuffix: true })
                   : '-'}
@@ -436,25 +432,25 @@ export default function DashboardPage() {
                 color="cyan"
               />
               <StatCard 
-                label={language === 'tr' ? 'Üyelik Süresi' : 'Member For'}
+                label={'Üyelik Süresi'}
                 value={formatDistanceToNow(new Date(statistics.activity.membershipDuration), { locale: dateLocale })}
                 icon={Calendar}
                 color="purple"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Süre' : 'Total Time'}
+                label={'Toplam Süre'}
                 value={formatDuration(statistics.activity.totalTimeSpentMinutes)}
                 icon={Timer}
                 color="pink"
               />
               <StatCard 
-                label={language === 'tr' ? 'Günlük Ort.' : 'Daily Avg.'}
-                value={`${statistics.activity.averageDailyMinutes} ${language === 'tr' ? 'dk' : 'min'}`}
+                label={'Günlük Ort.'}
+                value={`${statistics.activity.averageDailyMinutes} ${'dk'}`}
                 icon={TrendingUp}
                 color="emerald"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Oturum' : 'Total Sessions'}
+                label={'Toplam Oturum'}
                 value={statistics.activity.totalSessions}
                 icon={CircleDot}
                 color="violet"
@@ -465,7 +461,7 @@ export default function DashboardPage() {
             <div className="bg-white/5 rounded-xl p-4">
               <h4 className="text-white/80 text-sm mb-3 flex items-center gap-2">
                 <Flame className="h-4 w-4 text-orange-400" />
-                {language === 'tr' ? 'En Aktif Zamanlar' : 'Most Active Times'}
+                {'En Aktif Zamanlar'}
               </h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2 bg-orange-500/10 p-3 rounded-lg">
@@ -475,14 +471,14 @@ export default function DashboardPage() {
                     return <PeriodIcon className="h-5 w-5 text-orange-400" />
                   })()}
                   <div>
-                    <p className="text-white/60 text-xs">{language === 'tr' ? 'En Aktif Saat' : 'Most Active Hour'}</p>
+                    <p className="text-white/60 text-xs">{'En Aktif Saat'}</p>
                     <p className="text-white font-bold">{statistics.activity.mostActiveHour}:00</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 bg-orange-500/10 p-3 rounded-lg">
                   <Calendar className="h-5 w-5 text-orange-400" />
                   <div>
-                    <p className="text-white/60 text-xs">{language === 'tr' ? 'En Aktif Gün' : 'Most Active Day'}</p>
+                    <p className="text-white/60 text-xs">{'En Aktif Gün'}</p>
                     <p className="text-white font-bold">
                       {DAY_NAMES[statistics.activity.mostActiveDay]?.[language] || '-'}
                     </p>
@@ -495,7 +491,7 @@ export default function DashboardPage() {
             <div className="bg-white/5 rounded-xl p-4">
               <h4 className="text-white/80 text-sm mb-3 flex items-center gap-2">
                 <LineChart className="h-4 w-4 text-blue-400" />
-                {language === 'tr' ? '30 Günlük Aktivite' : '30-Day Activity'}
+                {'30 Günlük Aktivite'}
               </h4>
               <div className="flex items-end gap-0.5 h-20">
                 {statistics.activity.activityGraphData.map((day, i) => {
@@ -508,7 +504,7 @@ export default function DashboardPage() {
                       style={{ height: `${Math.max(height, 5)}%` }}
                     >
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 rounded text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        {day.date}: {day.minutes} {language === 'tr' ? 'dk' : 'min'}
+                        {day.date}: {day.minutes} {'dk'}
                       </div>
                     </div>
                   )
@@ -521,32 +517,32 @@ export default function DashboardPage() {
         {/* 2. FORTUNE TELLING STATISTICS */}
         <Section
           id="fortune"
-          title={language === 'tr' ? 'Fal İstatistikleri' : 'Fortune Statistics'}
+          title={'Fal İstatistikleri'}
           icon={Sparkles}
           gradient="bg-gradient-to-r from-purple-600/40 to-pink-600/30"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <StatCard 
-                label={language === 'tr' ? 'Toplam Fal' : 'Total Fortunes'}
+                label={'Toplam Fal'}
                 value={statistics.fortune.total}
                 icon={Sparkles}
                 color="purple"
               />
               <StatCard 
-                label={language === 'tr' ? 'Günlük Burç' : 'Daily Horoscopes'}
+                label={'Günlük Burç'}
                 value={statistics.fortune.dailyHoroscopes}
                 icon={Star}
                 color="pink"
               />
               <StatCard 
-                label={language === 'tr' ? 'Memnuniyet' : 'Satisfaction'}
+                label={'Memnuniyet'}
                 value={statistics.fortune.avgSatisfaction > 0 ? `${statistics.fortune.avgSatisfaction}/5 ⭐` : '-'}
                 icon={Heart}
                 color="rose"
               />
               <StatCard 
-                label={language === 'tr' ? 'Doğruluk' : 'Accuracy'}
+                label={'Doğruluk'}
                 value={statistics.fortune.avgAccuracy > 0 ? `${statistics.fortune.avgAccuracy}/5 🎯` : '-'}
                 icon={Target}
                 color="emerald"
@@ -556,7 +552,7 @@ export default function DashboardPage() {
             {/* Most Used Fortune */}
             {statistics.fortune.mostUsedType && (
               <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/20">
-                <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Çok Kullanılan' : 'Most Used'}</p>
+                <p className="text-white/60 text-xs mb-1">{'En Çok Kullanılan'}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{FORTUNE_NAMES[statistics.fortune.mostUsedType]?.icon || '🔮'}</span>
                   <span className="text-white font-bold">
@@ -570,7 +566,7 @@ export default function DashboardPage() {
             <div className="bg-white/5 rounded-xl p-4">
               <h4 className="text-white/80 text-sm mb-3 flex items-center gap-2">
                 <PieChart className="h-4 w-4 text-purple-400" />
-                {language === 'tr' ? 'Fal Dağılımı' : 'Fortune Breakdown'}
+                {'Fal Dağılımı'}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(statistics.fortune.byType).map(([type, count]) => (
@@ -589,7 +585,7 @@ export default function DashboardPage() {
             {/* Last Fortune */}
             {statistics.fortune.lastFortune && (
               <div className="bg-white/5 rounded-xl p-4">
-                <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'Son Fal' : 'Last Fortune'}</p>
+                <p className="text-white/60 text-xs mb-1">{'Son Fal'}</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{FORTUNE_NAMES[statistics.fortune.lastFortune.type]?.icon || '🔮'}</span>
@@ -609,44 +605,44 @@ export default function DashboardPage() {
         {/* 3. COIN/TOKEN ECONOMY STATISTICS */}
         <Section
           id="coins"
-          title={language === 'tr' ? 'Jeton Ekonomisi' : 'Coin Economy'}
+          title={'Jeton Ekonomisi'}
           icon={Coins}
           gradient="bg-gradient-to-r from-yellow-600/40 to-orange-600/30"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <StatCard 
-                label={language === 'tr' ? 'Mevcut Bakiye' : 'Current Balance'}
+                label={'Mevcut Bakiye'}
                 value={statistics.coins.currentBalance}
                 icon={Wallet}
                 color="yellow"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Satın Alınan' : 'Total Purchased'}
+                label={'Toplam Satın Alınan'}
                 value={statistics.coins.totalPurchased}
                 icon={DollarSign}
                 color="emerald"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Harcanan' : 'Total Spent'}
+                label={'Toplam Harcanan'}
                 value={statistics.coins.totalSpent}
                 icon={TrendingDown}
                 color="red"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Kazanılan' : 'Total Earned'}
+                label={'Toplam Kazanılan'}
                 value={statistics.coins.totalEarned}
                 icon={TrendingUp}
                 color="green"
               />
               <StatCard 
-                label={language === 'tr' ? 'Gönderilen Hediye' : 'Gifts Sent'}
+                label={'Gönderilen Hediye'}
                 value={statistics.coins.giftsSent}
                 icon={Gift}
                 color="pink"
               />
               <StatCard 
-                label={language === 'tr' ? 'Alınan Hediye' : 'Gifts Received'}
+                label={'Alınan Hediye'}
                 value={statistics.coins.giftsReceived}
                 icon={HandHeart}
                 color="rose"
@@ -656,11 +652,11 @@ export default function DashboardPage() {
             {/* Daily Average & Highest */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-orange-500/10 rounded-xl p-4">
-                <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'Günlük Ort. Harcama' : 'Avg. Daily Spending'}</p>
+                <p className="text-white/60 text-xs mb-1">{'Günlük Ort. Harcama'}</p>
                 <p className="text-white font-bold text-lg">{statistics.coins.avgDailySpending} 💰</p>
               </div>
               <div className="bg-red-500/10 rounded-xl p-4">
-                <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Yüksek Gün' : 'Highest Day'}</p>
+                <p className="text-white/60 text-xs mb-1">{'En Yüksek Gün'}</p>
                 <p className="text-white font-bold text-lg">{statistics.coins.highestSpendingDay.amount} 🔥</p>
                 <p className="text-white/50 text-xs">{statistics.coins.highestSpendingDay.day || '-'}</p>
               </div>
@@ -671,7 +667,7 @@ export default function DashboardPage() {
               <div className="bg-white/5 rounded-xl p-4">
                 <h4 className="text-white/80 text-sm mb-3 flex items-center gap-2">
                   <AreaChart className="h-4 w-4 text-yellow-400" />
-                  {language === 'tr' ? 'Aylık Harcama Grafiği' : 'Monthly Spending Graph'}
+                  {'Aylık Harcama Grafiği'}
                 </h4>
                 <div className="flex items-end gap-2 h-24">
                   {statistics.coins.monthlySpending.map((month, i) => {
@@ -696,44 +692,44 @@ export default function DashboardPage() {
         {/* 4. SOCIAL INTERACTION STATISTICS */}
         <Section
           id="social"
-          title={language === 'tr' ? 'Sosyal Etkileşim' : 'Social Interaction'}
+          title={'Sosyal Etkileşim'}
           icon={Users}
           gradient="bg-gradient-to-r from-pink-600/40 to-rose-600/30"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <StatCard 
-                label={language === 'tr' ? 'Paylaşımlar' : 'Posts'}
+                label={'Paylaşımlar'}
                 value={statistics.social.totalPosts}
                 icon={Share2}
                 color="pink"
               />
               <StatCard 
-                label={language === 'tr' ? 'Alınan Beğeni' : 'Likes Received'}
+                label={'Alınan Beğeni'}
                 value={statistics.social.likesReceived}
                 icon={Heart}
                 color="rose"
               />
               <StatCard 
-                label={language === 'tr' ? 'Alınan Yorum' : 'Comments'}
+                label={'Alınan Yorum'}
                 value={statistics.social.commentsReceived}
                 icon={MessageSquare}
                 color="purple"
               />
               <StatCard 
-                label={language === 'tr' ? 'Profil Görüntüleme' : 'Profile Views'}
+                label={'Profil Görüntüleme'}
                 value={statistics.social.profileViews}
                 icon={Eye}
                 color="blue"
               />
               <StatCard 
-                label={language === 'tr' ? 'Takipçi' : 'Followers'}
+                label={'Takipçi'}
                 value={statistics.social.followers}
                 icon={Users}
                 color="emerald"
               />
               <StatCard 
-                label={language === 'tr' ? 'Takip' : 'Following'}
+                label={'Takip'}
                 value={statistics.social.following}
                 icon={Users}
                 color="cyan"
@@ -744,7 +740,7 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-xl p-4 border border-pink-500/20">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-xs">{language === 'tr' ? 'Popülerlik Puanı' : 'Popularity Score'}</p>
+                  <p className="text-white/60 text-xs">{'Popülerlik Puanı'}</p>
                   <p className="text-white font-bold text-2xl">{statistics.social.popularityScore} ⭐</p>
                 </div>
                 <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center">
@@ -757,7 +753,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               {statistics.social.mostLikedPost && (
                 <Link href={`/feed?post=${statistics.social.mostLikedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                  <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Beğenilen' : 'Most Liked'}</p>
+                  <p className="text-white/60 text-xs mb-1">{'En Beğenilen'}</p>
                   <div className="flex items-center gap-2">
                     <Heart className="h-4 w-4 text-rose-400" />
                     <span className="text-white font-bold">{statistics.social.mostLikedPost.likes}</span>
@@ -766,7 +762,7 @@ export default function DashboardPage() {
               )}
               {statistics.social.mostCommentedPost && (
                 <Link href={`/feed?post=${statistics.social.mostCommentedPost.id}`} className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                  <p className="text-white/60 text-xs mb-1">{language === 'tr' ? 'En Yorumlanan' : 'Most Commented'}</p>
+                  <p className="text-white/60 text-xs mb-1">{'En Yorumlanan'}</p>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-purple-400" />
                     <span className="text-white font-bold">{statistics.social.mostCommentedPost.comments}</span>
@@ -780,44 +776,44 @@ export default function DashboardPage() {
         {/* 5. LIVE STREAM STATISTICS */}
         <Section
           id="streams"
-          title={language === 'tr' ? 'Canlı Yayın İstatistikleri' : 'Live Stream Statistics'}
+          title={'Canlı Yayın İstatistikleri'}
           icon={Radio}
           gradient="bg-gradient-to-r from-red-600/40 to-pink-600/30"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <StatCard 
-                label={language === 'tr' ? 'Toplam Yayın' : 'Total Streams'}
+                label={'Toplam Yayın'}
                 value={statistics.streams.totalHosted}
                 icon={Radio}
                 color="red"
               />
               <StatCard 
-                label={language === 'tr' ? 'Yayın Süresi' : 'Stream Duration'}
+                label={'Yayın Süresi'}
                 value={formatDuration(statistics.streams.totalDurationMinutes)}
                 icon={Clock}
                 color="pink"
               />
               <StatCard 
-                label={language === 'tr' ? 'Ort. İzleyici' : 'Avg. Viewers'}
+                label={'Ort. İzleyici'}
                 value={statistics.streams.avgViewers}
                 icon={Users}
                 color="orange"
               />
               <StatCard 
-                label={language === 'tr' ? 'Max İzleyici' : 'Max Viewers'}
+                label={'Max İzleyici'}
                 value={statistics.streams.maxViewers}
                 icon={TrendingUp}
                 color="yellow"
               />
               <StatCard 
-                label={language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}
+                label={'Toplam Kazanç'}
                 value={`${statistics.streams.totalEarnings} 💰`}
                 icon={Coins}
                 color="emerald"
               />
               <StatCard 
-                label={language === 'tr' ? 'Yayın Başına' : 'Per Stream'}
+                label={'Yayın Başına'}
                 value={`${statistics.streams.avgCoinsPerStream} 💰`}
                 icon={BarChart3}
                 color="cyan"
@@ -827,10 +823,10 @@ export default function DashboardPage() {
             {/* Most Successful Stream */}
             {statistics.streams.mostSuccessfulStream && (
               <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-xl p-4 border border-red-500/20">
-                <p className="text-white/60 text-xs mb-2">{language === 'tr' ? 'En Başarılı Yayın' : 'Most Successful Stream'}</p>
+                <p className="text-white/60 text-xs mb-2">{'En Başarılı Yayın'}</p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-bold">{statistics.streams.mostSuccessfulStream.title || language === 'tr' ? 'Başlıksız' : 'Untitled'}</p>
+                    <p className="text-white font-bold">{statistics.streams.mostSuccessfulStream.title || 'Başlıksız'}</p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-white/60 text-sm flex items-center gap-1">
                         <Users className="h-3 w-3" /> {statistics.streams.mostSuccessfulStream.viewers}
@@ -848,7 +844,7 @@ export default function DashboardPage() {
             {/* Top Gift Sender */}
             {statistics.streams.topGiftSender && (
               <div className="bg-white/5 rounded-xl p-4">
-                <p className="text-white/60 text-xs mb-2">{language === 'tr' ? 'En Çok Hediye Gönderen' : 'Top Gift Sender'}</p>
+                <p className="text-white/60 text-xs mb-2">{'En Çok Hediye Gönderen'}</p>
                 <Link href={`/profile/${statistics.streams.topGiftSender.username || statistics.streams.topGiftSender.id}`} className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2 -mx-2 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center overflow-hidden">
                     {statistics.streams.topGiftSender.image ? (
@@ -873,7 +869,7 @@ export default function DashboardPage() {
         {/* 6. ASTROLOGY STATISTICS */}
         <Section
           id="astrology"
-          title={language === 'tr' ? 'Astroloji İstatistikleri' : 'Astrology Statistics'}
+          title={'Astroloji İstatistikleri'}
           icon={Star}
           gradient="bg-gradient-to-r from-indigo-600/40 to-purple-600/30"
         >
@@ -886,10 +882,10 @@ export default function DashboardPage() {
                       <span className="text-3xl">{zodiacInfo.emoji}</span>
                     </div>
                     <div>
-                      <p className="text-white/60 text-xs">{language === 'tr' ? 'Güneş Burcun' : 'Your Sun Sign'}</p>
+                      <p className="text-white/60 text-xs">{'Güneş Burcun'}</p>
                       <p className="text-white font-bold text-xl">{zodiacInfo[language]}</p>
                       <p className="text-purple-300 text-sm mt-1">
-                        {language === 'tr' ? zodiacInfo.trComment : zodiacInfo.enComment}
+                        {zodiacInfo.trComment}
                       </p>
                     </div>
                   </div>
@@ -900,7 +896,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{risingInfo.emoji}</span>
                       <div>
-                        <p className="text-white/60 text-xs">{language === 'tr' ? 'Yükselen Burcun' : 'Rising Sign'}</p>
+                        <p className="text-white/60 text-xs">{'Yükselen Burcun'}</p>
                         <p className="text-white font-medium">{risingInfo[language]}</p>
                       </div>
                     </div>
@@ -912,7 +908,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-purple-400" />
                       <div>
-                        <p className="text-white/60 text-xs">{language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}</p>
+                        <p className="text-white/60 text-xs">{'Doğum Tarihi'}</p>
                         <p className="text-white font-medium">
                           {format(new Date(statistics.user.birthDate), 'dd MMMM yyyy', { locale: dateLocale })}
                           {statistics.user.birthTime && ` - ${statistics.user.birthTime}`}
@@ -926,12 +922,10 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Star className="h-12 w-12 text-white/20 mx-auto mb-3" />
                 <p className="text-white/60">
-                  {language === 'tr' 
-                    ? 'Burç bilgin henüz eklenmemiş' 
-                    : 'Your zodiac info is not set yet'}
+                  {'Burç bilgin henüz eklenmemiş'}
                 </p>
                 <Link href={`/settings`} className="text-purple-400 text-sm mt-2 inline-block">
-                  {language === 'tr' ? 'Ayarlardan Ekle' : 'Add in Settings'} →
+                  {'Ayarlardan Ekle'} →
                 </Link>
               </div>
             )}
@@ -941,7 +935,7 @@ export default function DashboardPage() {
         {/* 7. ACHIEVEMENT / BADGE SYSTEM */}
         <Section
           id="achievements"
-          title={language === 'tr' ? 'Başarılar & Rozetler' : 'Achievements & Badges'}
+          title={'Başarılar & Rozetler'}
           icon={Award}
           gradient="bg-gradient-to-r from-amber-600/40 to-yellow-600/30"
         >
@@ -951,7 +945,7 @@ export default function DashboardPage() {
               <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-xl p-4 border border-amber-500/20">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-white font-medium">
-                    {language === 'tr' ? 'Genel İlerleme' : 'Overall Progress'}
+                    {'Genel İlerleme'}
                   </p>
                   <span className="text-amber-300 font-bold">
                     {achievements.completedCount}/{achievements.totalCount}
@@ -959,9 +953,7 @@ export default function DashboardPage() {
                 </div>
                 <ProgressBar progress={achievements.completionPercentage} color="amber" />
                 <p className="text-white/50 text-xs mt-2">
-                  {language === 'tr' 
-                    ? `%${achievements.completionPercentage} tamamlandı`
-                    : `${achievements.completionPercentage}% completed`}
+                  {`%${achievements.completionPercentage} tamamlandı`}% completed`}
                 </p>
               </div>
 
@@ -974,8 +966,7 @@ export default function DashboardPage() {
                     {category === 'stream' && <Radio className="h-4 w-4 text-red-400" />}
                     {category === 'coin' && <Coins className="h-4 w-4 text-yellow-400" />}
                     {category === 'activity' && <Activity className="h-4 w-4 text-blue-400" />}
-                    {language === 'tr' 
-                      ? { fortune: 'Fal', social: 'Sosyal', stream: 'Yayın', coin: 'Jeton', activity: 'Aktivite' }[category]
+                    {{ fortune}[category]
                       : { fortune: 'Fortune', social: 'Social', stream: 'Stream', coin: 'Coin', activity: 'Activity' }[category]
                     }
                   </h5>
@@ -988,10 +979,10 @@ export default function DashboardPage() {
                         <span className="text-2xl">{achievement.icon}</span>
                         <div className="flex-1">
                           <p className={`font-medium ${achievement.isCompleted ? 'text-amber-300' : 'text-white/80'}`}>
-                            {language === 'tr' ? achievement.nameTr : achievement.nameEn}
+                            {achievement.nameTr}
                           </p>
                           <p className="text-white/50 text-xs">
-                            {language === 'tr' ? achievement.descriptionTr : achievement.descriptionEn}
+                            {achievement.descriptionTr}
                           </p>
                           {!achievement.isCompleted && (
                             <div className="mt-2">
@@ -1023,7 +1014,7 @@ export default function DashboardPage() {
         {/* 8. GLOBAL LEADERBOARDS */}
         <Section
           id="leaderboards"
-          title={language === 'tr' ? 'Sıralamalar' : 'Leaderboards'}
+          title={'Sıralamalar'}
           icon={Trophy}
           gradient="bg-gradient-to-r from-emerald-600/40 to-teal-600/30"
         >
@@ -1032,11 +1023,11 @@ export default function DashboardPage() {
               {/* Leaderboard Tabs */}
               <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
                 {[
-                  { id: 'popularity', label: language === 'tr' ? 'Popüler' : 'Popular', icon: Crown },
-                  { id: 'fortune', label: language === 'tr' ? 'Falcı' : 'Fortune', icon: Sparkles },
-                  { id: 'streamers', label: language === 'tr' ? 'Yayıncı' : 'Streamers', icon: Radio },
-                  { id: 'spenders', label: language === 'tr' ? 'Harcama' : 'Spenders', icon: Coins },
-                  { id: 'earners', label: language === 'tr' ? 'Kazanç' : 'Earners', icon: TrendingUp },
+                  { id: 'popularity', label: 'Popüler', icon: Crown },
+                  { id: 'fortune', label: 'Falcı', icon: Sparkles },
+                  { id: 'streamers', label: 'Yayıncı', icon: Radio },
+                  { id: 'spenders', label: 'Harcama', icon: Coins },
+                  { id: 'earners', label: 'Kazanç', icon: TrendingUp },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -1101,11 +1092,11 @@ export default function DashboardPage() {
                             {entry.totalEarned !== undefined && entry.totalEarned}
                           </p>
                           <p className="text-white/40 text-xs">
-                            {activeLeaderboard === 'popularity' && (language === 'tr' ? 'takipçi' : 'followers')}
-                            {activeLeaderboard === 'fortune' && (language === 'tr' ? 'fal' : 'fortunes')}
-                            {activeLeaderboard === 'streamers' && (language === 'tr' ? 'yayın' : 'streams')}
-                            {activeLeaderboard === 'spenders' && (language === 'tr' ? 'jeton' : 'coins')}
-                            {activeLeaderboard === 'earners' && (language === 'tr' ? 'jeton' : 'coins')}
+                            {activeLeaderboard === 'popularity' && ('takipçi')}
+                            {activeLeaderboard === 'fortune' && ('fal')}
+                            {activeLeaderboard === 'streamers' && ('yayın')}
+                            {activeLeaderboard === 'spenders' && ('jeton')}
+                            {activeLeaderboard === 'earners' && ('jeton')}
                           </p>
                         </div>
                       </Link>
@@ -1113,7 +1104,7 @@ export default function DashboardPage() {
                   ) : (
                     <div className="p-8 text-center">
                       <Trophy className="h-8 w-8 text-white/20 mx-auto mb-2" />
-                      <p className="text-white/50">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</p>
+                      <p className="text-white/50">{'Henüz veri yok'}</p>
                     </div>
                   )
                 })()}
@@ -1122,7 +1113,7 @@ export default function DashboardPage() {
               {/* Current User Rank */}
               {leaderboards.currentUserRanks && (
                 <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/20">
-                  <p className="text-white/60 text-xs mb-2">{language === 'tr' ? 'Senin Sıralamaların' : 'Your Rankings'}</p>
+                  <p className="text-white/60 text-xs mb-2">{'Senin Sıralamaların'}</p>
                   <div className="flex gap-2 flex-wrap">
                     {leaderboards.currentUserRanks.popularity && (
                       <span className="px-2 py-1 bg-white/10 rounded-lg text-sm text-white/80">

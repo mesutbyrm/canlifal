@@ -106,12 +106,12 @@ export default function TellerChatListPage() {
         >
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
             <MessageCircle className="w-8 h-8 text-purple-400" />
-            {language === 'tr' ? 'Sohbetlerim' : 'My Chats'}
+            {'Sohbetlerim'}
           </h1>
           <p className="text-purple-300 mt-2">
             {isTeller
-              ? (language === 'tr' ? 'Müşterilerinizle sohbetleriniz' : 'Your chats with clients')
-              : (language === 'tr' ? 'Falcılarla sohbetleriniz' : 'Your chats with fortune tellers')}
+              ? ('Müşterilerinizle sohbetleriniz')
+              : ('Falcılarla sohbetleriniz')}
           </p>
         </motion.div>
 
@@ -123,14 +123,14 @@ export default function TellerChatListPage() {
           >
             <Inbox className="w-16 h-16 text-purple-500/50 mx-auto mb-4" />
             <p className="text-purple-400 text-lg">
-              {language === 'tr' ? 'Henüz sohbetiniz yok' : 'No chats yet'}
+              {'Henüz sohbetiniz yok'}
             </p>
             {!isTeller && (
               <Link
                 href={`/live-tellers`}
                 className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
               >
-                {language === 'tr' ? 'Falcılara Göz At' : 'Browse Fortune Tellers'}
+                {'Falcılara Göz At'}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             )}
@@ -142,7 +142,7 @@ export default function TellerChatListPage() {
               <div>
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <Circle className="w-3 h-3 text-green-500 fill-green-500" />
-                  {language === 'tr' ? 'Aktif Sohbetler' : 'Active Chats'}
+                  {'Aktif Sohbetler'}
                 </h2>
                 <div className="space-y-3">
                   {activeSessions.map((chat, index) => (
@@ -163,7 +163,7 @@ export default function TellerChatListPage() {
               <div>
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <Circle className="w-3 h-3 text-gray-500" />
-                  {language === 'tr' ? 'Tamamlanan Sohbetler' : 'Completed Chats'}
+                  {'Tamamlanan Sohbetler'}
                 </h2>
                 <div className="space-y-3">
                   {closedSessions.map((chat, index) => (
@@ -255,12 +255,12 @@ function ChatSessionCard({
                 : 'bg-gray-500/20 text-gray-400'
             }`}>
               {chat.status === 'active'
-                ? (language === 'tr' ? 'Aktif' : 'Active')
-                : (language === 'tr' ? 'Tamamlandı' : 'Completed')}
+                ? ('Aktif')
+                : ('Tamamlandı')}
             </span>
             <p className="text-xs text-purple-500 mt-1 flex items-center justify-end gap-1">
               <Clock className="w-3 h-3" />
-              {new Date(chat.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}
+              {new Date(chat.createdAt).toLocaleDateString('tr-TR')}
             </p>
           </div>
         </div>

@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       ? shapes 
       : shapeTypes.sort(() => Math.random() - 0.5).slice(0, 4 + Math.floor(Math.random() * 3)).join(', ')
 
-    const systemPrompt = language === 'tr' ? `Sen deneyimli bir kurşun dökme falcısısın. Geleneksel Türk kurşun dökme ritüelini çok iyi biliyorsun.
+    const systemPrompt = `Sen deneyimli bir kurşun dökme falcısısın. Geleneksel Türk kurşun dökme ritüelini çok iyi biliyorsun.
 
 Kurşun dökme falı, erimiş kurşunun soğuk suya dökülerek oluşan şekillerin yorumlanmasıyla yapılır. Bu şekiller kişinin geleceği, kaderi ve hayatındaki önemli olaylar hakkında mesajlar taşır.
 
@@ -51,23 +51,9 @@ Oluşan şekillere göre detaylı ve mistik bir yorum yap:
 - Dikkat etmesi gereken uyarıları ver
 - Pozitif ve umut dolu bir kapanış yap
 
-Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.` 
-    : `You are an experienced lead pouring fortune teller. You deeply understand the traditional Turkish lead pouring ritual.
+Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
 
-Lead pouring fortune telling is done by interpreting the shapes formed when molten lead is poured into cold water. These shapes carry messages about a person's future, destiny, and important events in their life.
-
-Provide a detailed and mystical interpretation based on the shapes formed:
-- Explain the meaning of each shape
-- Interpret the relationship between shapes
-- Describe what developments the person will experience in love, work, health, and money
-- Give warnings they should pay attention to
-- End with a positive and hopeful closing
-
-Respond in English. Use mystical and poetic language.`
-
-    const userPrompt = language === 'tr'
-      ? `Kurşun döküldü ve şu şekiller oluştu: ${finalShapes}. Bu şekillerin anlamını yorumla ve falımı söyle.`
-      : `The lead was poured and these shapes formed: ${finalShapes}. Interpret the meaning of these shapes and tell my fortune.`
+    const userPrompt = `Kurşun döküldü ve şu şekiller oluştu: ${finalShapes}. Bu şekillerin anlamını yorumla ve falımı söyle.`
 
     // Call LLM API
     const llmResponse = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
@@ -92,7 +78,7 @@ Respond in English. Use mystical and poetic language.`
       const errorText = await llmResponse.text()
       console.error('LLM API error:', errorText)
       return NextResponse.json(
-        { error: language === 'tr' ? 'Fal yorumu alınamadı. Lütfen tekrar deneyin.' : 'Failed to get fortune interpretation. Please try again.' },
+        { error: 'Fal yorumu alınamadı. Lütfen tekrar deneyin.' },
         { status: 500 }
       )
     }
@@ -101,7 +87,7 @@ Respond in English. Use mystical and poetic language.`
     const reader = llmResponse.body?.getReader()
     if (!reader) {
       return NextResponse.json(
-        { error: language === 'tr' ? 'Yanıt alınamadı' : 'No response received' },
+        { error: 'Yanıt alınamadı' },
         { status: 500 }
       )
     }

@@ -69,13 +69,13 @@ export default function AngelCardsPage() {
             <Feather className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Melek Kartları' : 'Angel Cards'}
+            {'Melek Kartları'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Meleklerden ilahi mesajlar alın' : 'Receive divine messages from angels'}
+            {'Meleklerden ilahi mesajlar alın'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />5 {language === 'tr' ? 'CFC' : 'CFC'}
+            <Sparkles className="inline w-4 h-4 mr-1" />5 {'CFC'}
           </p>
         </motion.div>
 
@@ -83,18 +83,18 @@ export default function AngelCardsPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
             <div className="space-y-6">
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Sorunuz (İsteğe Bağlı)' : 'Your Question (Optional)'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Sorunuz (İsteğe Bağlı)'}</label>
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={language === 'tr' ? 'Meleklere sormak istediğiniz soruyu yazın veya boş bırakın...' : 'Write your question for the angels or leave empty...'}
+                  placeholder={'Meleklere sormak istediğiniz soruyu yazın veya boş bırakın...'}
                   rows={3}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Kart Sayısı' : 'Number of Cards'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Kart Sayısı'}</label>
                 <div className="flex gap-3">
                   {[1, 3, 5].map(num => (
                     <button
@@ -102,7 +102,7 @@ export default function AngelCardsPage() {
                       onClick={() => setCardCount(num)}
                       className={`flex-1 py-3 rounded-lg border transition-all ${cardCount === num ? 'bg-gold-500/20 border-gold-500 text-gold-500' : 'bg-deep-purple-900/50 border-deep-purple-700 text-deep-purple-300'}`}
                     >
-                      {num} {language === 'tr' ? 'Kart' : num === 1 ? 'Card' : 'Cards'}
+                      {num} {'Kart'}
                     </button>
                   ))}
                 </div>
@@ -115,7 +115,7 @@ export default function AngelCardsPage() {
                 disabled={isLoading}
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isLoading ? <LoadingSpinner /> : <><Feather className="w-5 h-5" />{language === 'tr' ? 'Kartları Çek' : 'Draw Cards'}</>}
+                {isLoading ? <LoadingSpinner /> : <><Feather className="w-5 h-5" />{'Kartları Çek'}</>}
               </button>
             </div>
           </motion.div>
@@ -125,12 +125,12 @@ export default function AngelCardsPage() {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-mystical-card border border-gold-500/30 rounded-xl p-8 mystical-shadow">
             <div className="flex items-center gap-3 mb-6">
               <Feather className="w-10 h-10 text-gold-500" />
-              <h2 className="font-serif text-2xl text-gold-500">{language === 'tr' ? 'Meleksel Mesajınız' : 'Your Angelic Message'}</h2>
+              <h2 className="font-serif text-2xl text-gold-500">{'Meleksel Mesajınız'}</h2>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            <SocialShare title={language === 'tr' ? 'Melek Kartı Okumam' : 'My Angel Card Reading'} text={response} />
+            <SocialShare title={'Melek Kartı Okumam'} text={response} />
             <button onClick={() => { setResponse(''); setQuestion(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
-              {language === 'tr' ? 'Yeni Okuma Yap' : 'Get New Reading'}
+              {'Yeni Okuma Yap'}
             </button>
           </motion.div>
         )}

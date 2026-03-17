@@ -84,7 +84,7 @@ export async function PATCH(
           }
         });
         
-        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Canlı sohbet odasına girin. / ${liveSession.teller.displayName} accepted your session request! Enter the live chat room.`;
+        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Canlı sohbet odasına girin.`;
         break;
 
       case 'complete':
@@ -119,7 +119,7 @@ export async function PATCH(
           data: { status: 'closed', closedAt: new Date() }
         });
         
-        notificationMessage = `${liveSession.teller.displayName} ile seansınız tamamlandı. Değerlendirmenizi bekliyoruz! / Your session with ${liveSession.teller.displayName} is complete. Please leave a review!`;
+        notificationMessage = `${liveSession.teller.displayName} ile seansınız tamamlandı. Değerlendirmenizi bekliyoruz!`;
         break;
 
       case 'cancel':
@@ -139,8 +139,8 @@ export async function PATCH(
         });
         
         notificationMessage = action === 'reject'
-          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Jetonlarınız iade edildi. / ${liveSession.teller.displayName} rejected your session request. Your jetons have been refunded.`
-          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Jetonlarınız iade edildi. / ${liveSession.teller.displayName} cancelled your session request. Your jetons have been refunded.`;
+          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Jetonlarınız iade edildi.`
+          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Jetonlarınız iade edildi.`;
         break;
     }
 
@@ -155,10 +155,10 @@ export async function PATCH(
       data: {
         userId: liveSession.userId,
         type: 'session_update',
-        title: action === 'accept' ? 'Randevu Kabul Edildi / Session Accepted' 
-             : action === 'complete' ? 'Seans Tamamlandı / Session Completed'
-             : action === 'reject' ? 'Randevu Reddedildi / Session Rejected'
-             : 'Randevu İptal Edildi / Session Cancelled',
+        title: action === 'accept' ? 'Randevu Kabul Edildi' 
+             : action === 'complete' ? 'Seans Tamamlandı'
+             : action === 'reject' ? 'Randevu Reddedildi'
+             : 'Randevu İptal Edildi',
         message: notificationMessage,
         fromUserId: session.user.id,
         fromUserName: liveSession.teller.displayName,

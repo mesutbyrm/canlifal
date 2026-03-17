@@ -140,7 +140,7 @@ export default function MembershipsPage() {
     if (!date) return null
     const d = new Date(date)
     if (d < new Date()) return null
-    return d.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')
+    return d.toLocaleDateString('tr-TR')
   }
 
   if (loading) {
@@ -160,10 +160,10 @@ export default function MembershipsPage() {
             <Crown className="w-8 h-8 text-black" />
           </div>
           <h1 className={`text-2xl font-bold ${textPrimary} mb-2`}>
-            {language === 'tr' ? 'Gold \u00dcyelikler' : 'Gold Memberships'}
+            {'Gold \u00dcyelikler'}
           </h1>
           <p className={textSecondary}>
-            {language === 'tr' ? 'Ayr\u0131cal\u0131kl\u0131 \u00f6zellikler i\u00e7in \u00fcyelik se\u00e7in' : 'Choose a membership for exclusive features'}
+            {'Ayr\u0131cal\u0131kl\u0131 \u00f6zellikler i\u00e7in \u00fcyelik se\u00e7in'}
           </p>
         </motion.div>
 
@@ -184,7 +184,7 @@ export default function MembershipsPage() {
                 </p>
                 {formatExpiry(userMembership.membershipExpiresAt) && (
                   <p className={`${textSecondary} text-sm`}>
-                    {language === 'tr' ? 'Biti\u015f:' : 'Expires:'} {formatExpiry(userMembership.membershipExpiresAt)}
+                    {'Biti\u015f:'} {formatExpiry(userMembership.membershipExpiresAt)}
                   </p>
                 )}
               </div>
@@ -201,13 +201,13 @@ export default function MembershipsPage() {
             className={`mb-6 p-3 rounded-xl border ${cardBg}`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className={textSecondary}>{language === 'tr' ? 'Jeton Bakiyeniz:' : 'Your Jetons:'}</span>
+              <span className={textSecondary}>{'Jeton Bakiyeniz:'}</span>
               <span className={`${goldColor} font-bold text-lg flex items-center gap-1`}>
                 <Coins className="w-4 h-4" /> {userMembership.jetonBalance}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{language === 'tr' ? 'CFC Bakiyeniz:' : 'Your CFC:'}</span>
+              <span className={textSecondary}>{'CFC Bakiyeniz:'}</span>
               <span className={`${accentColor} font-bold text-lg flex items-center gap-1`}>
                 <Sparkles className="w-4 h-4" /> {userMembership.credits}
               </span>
@@ -246,7 +246,7 @@ export default function MembershipsPage() {
             >
               {plan.isFeatured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Star className="w-3 h-3" /> {language === 'tr' ? 'Pop\u00fcler' : 'Popular'}
+                  <Star className="w-3 h-3" /> {'Pop\u00fcler'}
                 </div>
               )}
 
@@ -256,16 +256,16 @@ export default function MembershipsPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className={`${textPrimary} font-bold text-lg`}>
-                    {language === 'tr' ? plan.name : (plan.nameEn || plan.name)}
+                    {plan.name}
                   </h3>
                   <p className={`${textSecondary} text-sm mb-3`}>
-                    {language === 'tr' ? plan.description : (plan.descriptionEn || plan.description)}
+                    {plan.description}
                   </p>
 
                   {/* Features */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className={`bg-amber-500/20 ${goldColor} text-xs px-2 py-1 rounded-full flex items-center gap-1`}>
-                      <Clock className="w-3 h-3" /> {plan.durationDays} {language === 'tr' ? 'g\u00fcn' : 'days'}
+                      <Clock className="w-3 h-3" /> {plan.durationDays} {'g\u00fcn'}
                     </span>
                     {plan.bonusJetons > 0 && (
                       <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -301,7 +301,7 @@ export default function MembershipsPage() {
                       }}
                       className={`px-5 py-2 bg-gradient-to-r ${getTierGradient(plan.tier)} text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95`}
                     >
-                      {language === 'tr' ? 'Sat\u0131n Al' : 'Buy Now'}
+                      {'Sat\u0131n Al'}
                     </button>
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function MembershipsPage() {
             <div className="text-center py-12">
               <Crown className={`w-16 h-16 mx-auto mb-4 ${textSecondary} opacity-50`} />
               <p className={textSecondary}>
-                {language === 'tr' ? 'Hen\u00fcz \u00fcyelik plan\u0131 bulunmuyor' : 'No membership plans available yet'}
+                {'Hen\u00fcz \u00fcyelik plan\u0131 bulunmuyor'}
               </p>
             </div>
           )}
@@ -341,27 +341,27 @@ export default function MembershipsPage() {
                     <Crown className="w-8 h-8 text-black" />
                   </div>
                   <h3 className={`${textPrimary} text-xl font-bold mb-2`}>
-                    {language === 'tr' ? '\u00dcyeli\u011fi Onayla' : 'Confirm Membership'}
+                    {'\u00dcyeli\u011fi Onayla'}
                   </h3>
                   <p className={textSecondary}>
-                    {language === 'tr' ? selectedPlan.name : (selectedPlan.nameEn || selectedPlan.name)}
+                    {selectedPlan.name}
                   </p>
                 </div>
 
                 <div className={`${cardBg} rounded-xl p-4 mb-4 border`}>
                   <div className="flex justify-between mb-2">
-                    <span className={textSecondary}>{language === 'tr' ? 'Süre:' : 'Duration:'}</span>
-                    <span className={textPrimary}>{selectedPlan.durationDays} {language === 'tr' ? 'gün' : 'days'}</span>
+                    <span className={textSecondary}>{'Süre:'}</span>
+                    <span className={textPrimary}>{selectedPlan.durationDays} {'gün'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={textSecondary}>{language === 'tr' ? 'Fiyat:' : 'Price:'}</span>
+                    <span className={textSecondary}>{'Fiyat:'}</span>
                     <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'CFC' : 'Jeton'}</span>
                   </div>
                 </div>
 
                 {/* Payment Method Selection */}
                 <div className="mb-4">
-                  <p className={`${textSecondary} text-sm mb-2`}>{language === 'tr' ? 'Ödeme Yöntemi:' : 'Payment Method:'}</p>
+                  <p className={`${textSecondary} text-sm mb-2`}>{'Ödeme Yöntemi:'}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -372,7 +372,7 @@ export default function MembershipsPage() {
                       <span className={`${textPrimary} text-sm font-medium`}>Jeton</span>
                       {userMembership && (
                         <span className={`text-xs ${userMembership.jetonBalance >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
-                          {userMembership.jetonBalance} {language === 'tr' ? 'mevcut' : 'available'}
+                          {userMembership.jetonBalance} {'mevcut'}
                         </span>
                       )}
                     </button>
@@ -385,7 +385,7 @@ export default function MembershipsPage() {
                       <span className={`${textPrimary} text-sm font-medium`}>CFC</span>
                       {userMembership && (
                         <span className={`text-xs ${userMembership.credits >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
-                          {userMembership.credits} {language === 'tr' ? 'mevcut' : 'available'}
+                          {userMembership.credits} {'mevcut'}
                         </span>
                       )}
                     </button>
@@ -398,10 +398,10 @@ export default function MembershipsPage() {
                 ) && (
                   <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
                     <p className="text-red-400 text-sm">
-                      {language === 'tr' ? `Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi` : `Insufficient ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} balance`}
+                      {`Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi`}
                     </p>
                     <Link href={`/credits`} className="text-amber-400 text-sm underline">
-                      {language === 'tr' ? 'Bakiye yükle' : 'Top up balance'}
+                      {'Bakiye yükle'}
                     </Link>
                   </div>
                 )}
@@ -411,7 +411,7 @@ export default function MembershipsPage() {
                     onClick={() => setShowConfirm(false)}
                     className={`flex-1 py-3 border ${modalBorder} ${textSecondary} rounded-xl hover:opacity-80 transition-all`}
                   >
-                    {language === 'tr' ? 'İptal' : 'Cancel'}
+                    {'İptal'}
                   </button>
                   <button
                     onClick={handlePurchase}
@@ -422,7 +422,7 @@ export default function MembershipsPage() {
                     className={`flex-1 py-3 bg-gradient-to-r ${getTierGradient(selectedPlan.tier)} text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50`}
                   >
                     {purchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    {language === 'tr' ? 'Onayla' : 'Confirm'}
+                    {'Onayla'}
                   </button>
                 </div>
               </motion.div>

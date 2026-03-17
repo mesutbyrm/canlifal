@@ -212,8 +212,8 @@ export default function LiveTicker() {
           className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-xs sm:text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
         >
           <Sparkles className="w-4 h-4" />
-          <span className="hidden xs:inline">{language === 'tr' ? 'Canlı Falcı' : 'Live Teller'}</span>
-          <span className="xs:hidden">{language === 'tr' ? 'Canlı' : 'Live'}</span>
+          <span className="hidden xs:inline">{'Canlı Falcı'}</span>
+          <span className="xs:hidden">{'Canlı'}</span>
           {data.onlineTellerCount > 0 && (
             <span className="ml-0.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-green-500 text-white text-[10px] sm:text-xs font-bold animate-pulse">
               {data.onlineTellerCount}
@@ -223,14 +223,14 @@ export default function LiveTicker() {
         <div className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-full bg-green-900/40">
           <Circle className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-green-400 fill-green-400 animate-pulse" />
           <span className="text-green-400 text-xs sm:text-sm font-bold">{data.onlineCount}</span>
-          <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">{language === 'tr' ? 'ki\u015fi' : 'online'}</span>
+          <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">{'ki\u015fi'}</span>
         </div>
         {/* Scrolling ticker fills remaining space - items shown once */}
         <div className="flex-1 overflow-hidden h-full flex items-center" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex">
             {scrollItems.length > 0 ? scrollItems : (
               <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-                <span className="text-fuchsia-300/50 text-xs">{language === 'tr' ? '\u015eu an aktif kullan\u0131c\u0131 yok' : 'No active users'}</span>
+                <span className="text-fuchsia-300/50 text-xs">{'\u015eu an aktif kullan\u0131c\u0131 yok'}</span>
               </div>
             )}
           </div>

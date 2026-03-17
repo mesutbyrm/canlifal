@@ -63,7 +63,7 @@ export async function POST(
     })
 
     if (!user || (user.jetonBalance ?? 0) < totalPrice) {
-      return NextResponse.json({ error: 'Yetersiz jeton / Insufficient jetons' }, { status: 400 })
+      return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
     }
 
     // Get stream and broadcaster

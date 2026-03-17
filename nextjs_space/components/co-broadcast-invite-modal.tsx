@@ -179,7 +179,7 @@ export default function CoBroadcastInviteModal() {
 
   if (!isVisible || !pendingInvite) return null
 
-  const broadcasterName = pendingInvite.broadcaster.name || (language === 'tr' ? 'Yayıncı' : 'Broadcaster')
+  const broadcasterName = pendingInvite.broadcaster.name || ('Yayıncı')
   const categoryInfo = CATEGORY_NAMES[pendingInvite.streamCategory || 'chat'] || { tr: 'Canlı Yayın', en: 'Live Stream', icon: '📺' }
 
   return (
@@ -223,19 +223,17 @@ export default function CoBroadcastInviteModal() {
           {/* Invite info */}
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-white mb-2">
-              {language === 'tr' ? 'Ortak Yayın Daveti!' : 'Co-Broadcast Invite!'}
+              {'Ortak Yayın Daveti!'}
             </h2>
             <p className="text-pink-200 text-lg">
               <span className="text-pink-300 font-semibold">{broadcasterName}</span>
-              {language === 'tr' 
-                ? ' sizi canlı yayına davet ediyor'
-                : ' is inviting you to co-stream'
+              {' sizi canlı yayına davet ediyor'
               }
             </p>
             {/* Category badge */}
             <div className="flex items-center justify-center gap-2 mt-3 text-pink-200">
               <span className="text-xl">{categoryInfo.icon}</span>
-              <span>{language === 'tr' ? categoryInfo.tr : categoryInfo.en}</span>
+              <span>{categoryInfo.tr}</span>
             </div>
             {pendingInvite.streamTitle && (
               <p className="text-purple-300 text-sm mt-2 truncate">
@@ -245,7 +243,7 @@ export default function CoBroadcastInviteModal() {
             <div className="flex items-center justify-center gap-2 mt-2 text-purple-400 text-sm">
               <Clock className="w-4 h-4" />
               <span>
-                {new Date(pendingInvite.invitedAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
+                {new Date(pendingInvite.invitedAt).toLocaleTimeString('tr-TR', {
                   hour: '2-digit',
                   minute: '2-digit'
                 })}
@@ -262,7 +260,7 @@ export default function CoBroadcastInviteModal() {
               className="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <Video className="w-5 h-5" />
-              {language === 'tr' ? 'Kabul Et' : 'Accept'}
+              {'Kabul Et'}
             </button>
             
             {/* Wait */}
@@ -272,7 +270,7 @@ export default function CoBroadcastInviteModal() {
               className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <Clock className="w-5 h-5" />
-              {language === 'tr' ? 'Beklet' : 'Later'}
+              {'Beklet'}
             </button>
             
             {/* Reject */}
@@ -282,7 +280,7 @@ export default function CoBroadcastInviteModal() {
               className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <PhoneOff className="w-5 h-5" />
-              {language === 'tr' ? 'Reddet' : 'Decline'}
+              {'Reddet'}
             </button>
           </div>
         </motion.div>

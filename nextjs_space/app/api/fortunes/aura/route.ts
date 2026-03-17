@@ -28,13 +28,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir aura okuyucususun. Kullanıcı bilgileri: İsim: ${name}${birthDate ? `, Doğum Tarihi: ${birthDate}` : ''}${currentMood ? `, Mevcut Ruh Hali: ${currentMood}` : ''}${recentExperiences ? `, Son Yaşanan Deneyimler: ${recentExperiences}` : ''}. Kullanıcının aurasını oku ve analiz et. Ana aura rengi, ikincil renkler, aura tabakası, enerji yoğunluğu ve enerji blokajları hakkında bilgi ver. Duygusal, zihinsel ve ruhsal sağlık hakkında içgörüler sun. Enerjiyi dengelemek için öneriler ver. Cevabın 300-400 kelime arasında olmalı. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen deneyimli bir aura okuyucususun. Kullanıcı bilgileri}${birthDate ? `, Doğum Tarihi: ${birthDate}` : ''}${currentMood ? `, Mevcut Ruh Hali: ${currentMood}` : ''}${recentExperiences ? `, Son Yaşanan Deneyimler: ${recentExperiences}` : ''}. Kullanıcının aurasını oku ve analiz et. Ana aura rengi, ikincil renkler, aura tabakası, enerji yoğunluğu ve enerji blokajları hakkında bilgi ver. Duygusal, zihinsel ve ruhsal sağlık hakkında içgörüler sun. Enerjiyi dengelemek için öneriler ver. Cevabın 300-400 kelime arasında olmalı. Tamamen Türkçe cevap ver.`
       : `You are an experienced aura reader. User information: Name: ${name}${birthDate ? `, Birth Date: ${birthDate}` : ''}${currentMood ? `, Current Mood: ${currentMood}` : ''}${recentExperiences ? `, Recent Experiences: ${recentExperiences}` : ''}. Read and analyze the user's aura. Provide information about main aura color, secondary colors, aura layer, energy density, and energy blockages. Offer insights about emotional, mental, and spiritual health. Give recommendations to balance energy. Your response should be 300-400 words. Respond entirely in English.`
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: language === 'tr' ? 'Auramı oku' : 'Read my aura' },
+      { role: 'user', content: 'Auramı oku' },
     ]
 
     const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {

@@ -57,9 +57,9 @@ export default function SitePageView({ params }: { params: { slug: string; lang:
   if (notFound || !page) {
     return (
       <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} flex flex-col items-center justify-center gap-4`}>
-        <p className={`text-xl ${textColor}`}>{language === 'tr' ? 'Sayfa bulunamad\u0131' : 'Page not found'}</p>
+        <p className={`text-xl ${textColor}`}>{'Sayfa bulunamad\u0131'}</p>
         <Link href={`/`} className={`text-sm ${subText} underline`}>
-          {language === 'tr' ? 'Ana Sayfaya D\u00f6n' : 'Back to Home'}
+          {'Ana Sayfaya D\u00f6n'}
         </Link>
       </div>
     )

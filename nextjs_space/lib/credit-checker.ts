@@ -114,9 +114,7 @@ export async function sendFortuneSummaryEmail(
       kursundokme: { en: 'Lead Pouring Fortune', tr: 'Kurşun Dökme Falı' },
     }
 
-    const fortuneName = language === 'tr' 
-      ? fortuneNames[fortuneType]?.tr || fortuneType 
-      : fortuneNames[fortuneType]?.en || fortuneType
+    const fortuneName = fortuneNames[fortuneType]?.tr || fortuneType
 
     await sendNotificationEmail({
       notificationId: process.env.NOTIF_ID_FORTUNE_READING_SUMMARY || '',

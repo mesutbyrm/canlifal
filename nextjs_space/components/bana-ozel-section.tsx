@@ -143,7 +143,7 @@ export default function BanaOzelSection() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <h2 className="falclub-section-title flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-fuchsia-400" />
-            <span>{language === 'tr' ? 'BANA ÖZEL' : 'PERSONALIZED'}</span>
+            <span>{'BANA ÖZEL'}</span>
           </h2>
           <div className="flex items-center gap-2">
             {/* Streak badge */}
@@ -155,7 +155,7 @@ export default function BanaOzelSection() {
               >
                 <Flame className="w-3.5 h-3.5 text-orange-400" />
                 <span className="text-orange-300 text-xs font-bold">{streak.currentStreak}</span>
-                <span className="text-orange-300/60 text-[10px] hidden sm:inline">{language === 'tr' ? 'gün' : 'days'}</span>
+                <span className="text-orange-300/60 text-[10px] hidden sm:inline">{'gün'}</span>
               </motion.div>
             )}
             {/* Jeton balance */}
@@ -170,7 +170,7 @@ export default function BanaOzelSection() {
         {/* Subtitle */}
         <p className="text-fuchsia-300/70 text-xs mb-4 flex items-center gap-1.5">
           <span className="text-sm">✨</span>
-          {language === 'tr' ? 'Rehberinize Özel Öneriler' : 'Personalized Recommendations'}
+          {'Rehberinize Özel Öneriler'}
           <span className="text-sm">✨</span>
         </p>
 
@@ -192,10 +192,10 @@ export default function BanaOzelSection() {
               </div>
               <div className="text-left">
                 <span className="text-green-100 text-sm sm:text-base font-bold block">
-                  {language === 'tr' ? 'Günlük Giriş Bonusu' : 'Daily Login Bonus'}
+                  {'Günlük Giriş Bonusu'}
                 </span>
                 <span className="text-green-300/70 text-[10px] sm:text-xs">
-                  {language === 'tr' ? 'Hemen al!' : 'Claim now!'}
+                  {'Hemen al!'}
                 </span>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function BanaOzelSection() {
                 
                 {/* Name */}
                 <span className="text-white text-xs sm:text-sm font-medium text-center line-clamp-2 mb-2 min-h-[2.5rem]">
-                  {language === 'tr' ? item.nameTr : item.nameEn}
+                  {item.nameTr}
                 </span>
                 
                 {/* Jeton cost badge */}
@@ -304,11 +304,11 @@ export default function BanaOzelSection() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-white font-bold text-lg">
-                      {language === 'tr' ? selectedItem.nameTr : selectedItem.nameEn}
+                      {selectedItem.nameTr}
                     </h3>
                     <div className="flex items-center gap-1">
                       <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                      <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} Jeton {language === 'tr' ? 'Harcandı' : 'Spent'}</span>
+                      <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} Jeton {'Harcandı'}</span>
                     </div>
                   </div>
                 </div>
@@ -323,7 +323,7 @@ export default function BanaOzelSection() {
                       <Sparkles className="w-10 h-10 text-fuchsia-400" />
                     </motion.div>
                     <p className="text-fuchsia-300 text-sm mt-3 animate-pulse">
-                      {language === 'tr' ? 'Yıldızlar yorumlanıyor...' : 'Reading the stars...'}
+                      {'Yıldızlar yorumlanıyor...'}
                     </p>
                   </div>
                 )}
@@ -336,7 +336,7 @@ export default function BanaOzelSection() {
                       onClick={() => setSelectedItem(null)}
                       className="px-6 py-2 rounded-xl bg-purple-700/50 border border-purple-400/30 text-white text-sm font-medium hover:bg-purple-600/50 transition-colors"
                     >
-                      {language === 'tr' ? 'Tamam' : 'OK'}
+                      {'Tamam'}
                     </button>
                   </div>
                 )}
@@ -414,7 +414,7 @@ export default function BanaOzelSection() {
                       className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-purple-700/50 to-fuchsia-700/50 border border-purple-400/40 text-white font-bold text-sm hover:from-purple-600/60 hover:to-fuchsia-600/60 transition-all"
                       style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.2)' }}
                     >
-                      {language === 'tr' ? 'Tamam' : 'Done'}
+                      {'Tamam'}
                     </button>
                   </motion.div>
                 )}

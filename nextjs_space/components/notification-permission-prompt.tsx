@@ -72,12 +72,10 @@ export default function NotificationPermissionPrompt() {
           
           <div className="flex-1">
             <h3 className="text-white font-bold mb-1">
-              {language === 'tr' ? 'Bildirimleri Aç' : 'Enable Notifications'}
+              {'Bildirimleri Aç'}
             </h3>
             <p className="text-fuchsia-300/80 text-sm mb-3">
-              {language === 'tr' 
-                ? 'Yeni mesajlar, ödemeler ve falcı isteklerinden anında haberdar ol!'
-                : 'Get instant alerts for new messages, payments and session requests!'}
+              {'Yeni mesajlar, ödemeler ve falcı isteklerinden anında haberdar ol!'}
             </p>
             
             <div className="flex gap-2">
@@ -86,13 +84,13 @@ export default function NotificationPermissionPrompt() {
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 transition-all"
               >
                 <Check className="w-4 h-4" />
-                {language === 'tr' ? 'İzin Ver' : 'Allow'}
+                {'İzin Ver'}
               </button>
               <button
                 onClick={handleDismiss}
                 className="px-4 py-2 bg-fuchsia-900/40 hover:bg-fuchsia-900/60 rounded-lg text-fuchsia-300 text-sm font-medium transition-colors"
               >
-                {language === 'tr' ? 'Sonra' : 'Later'}
+                {'Sonra'}
               </button>
             </div>
           </div>

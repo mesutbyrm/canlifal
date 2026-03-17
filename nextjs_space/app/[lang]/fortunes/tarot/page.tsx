@@ -106,13 +106,13 @@ export default function TarotFortunePage() {
           {/* Question */}
           <div>
             <label className="text-deep-purple-200 text-sm font-medium block mb-2">
-              {language === 'tr' ? 'Sorunuz nedir?' : 'What is your question?'}
+              {'Sorunuz nedir?'}
             </label>
             <textarea
               value={question}
               onChange={(e) => setQuestion(e?.target?.value ?? '')}
               className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none"
-              placeholder={language === 'tr' ? 'Kartlara sormak istediğiniz soruyu yazın...' : 'Write the question you want to ask the cards...'}
+              placeholder={'Kartlara sormak istediğiniz soruyu yazın...'}
               required
             />
           </div>
@@ -120,7 +120,7 @@ export default function TarotFortunePage() {
           {/* Card Count Selection */}
           <div>
             <label className="text-deep-purple-200 text-sm font-medium block mb-3">
-              {language === 'tr' ? 'Kaç kart çekilsin?' : 'How many cards?'}
+              {'Kaç kart çekilsin?'}
             </label>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[1, 3, 5].map((count) => (
@@ -135,7 +135,7 @@ export default function TarotFortunePage() {
                   }`}
                 >
                   <span className="text-lg sm:text-xl">{'\u2605'.repeat(Math.min(count, 3))}</span>
-                  <span className="text-sm">{count} {language === 'tr' ? 'Kart' : count === 1 ? 'Card' : 'Cards'}</span>
+                  <span className="text-sm">{count} {'Kart'}</span>
                 </button>
               ))}
             </div>
@@ -144,9 +144,7 @@ export default function TarotFortunePage() {
           {/* Tips */}
           <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
             <p className="text-deep-purple-300 text-xs sm:text-sm">
-              🌟 {language === 'tr' 
-                ? 'Sorunuzu açık ve net bir şekilde ifade edin. Tek bir konuya odaklanın.' 
-                : 'Express your question clearly. Focus on a single topic.'}
+              🌟 {'Sorunuzu açık ve net bir şekilde ifade edin. Tek bir konuya odaklanın.'}
             </p>
           </div>
 
@@ -157,11 +155,11 @@ export default function TarotFortunePage() {
             className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
-              <LoadingSpinner message={language === 'tr' ? 'Kartlar açılıyor...' : 'Drawing cards...'} />
+              <LoadingSpinner message={'Kartlar açılıyor...'} />
             ) : (
               <>
                 <Star className="w-5 h-5" />
-                {language === 'tr' ? 'Kartları Çek' : 'Draw Cards'}
+                {'Kartları Çek'}
               </>
             )}
           </button>
@@ -173,7 +171,7 @@ export default function TarotFortunePage() {
           <div className="flex items-center gap-2 text-gold-500">
             <Sparkles className="w-5 h-5" />
             <h2 className="font-serif text-xl sm:text-2xl">
-              {language === 'tr' ? 'Tarot Okumanız Hazır' : 'Your Tarot Reading is Ready'}
+              {'Tarot Okumanız Hazır'}
             </h2>
           </div>
           
@@ -191,7 +189,7 @@ export default function TarotFortunePage() {
           <div className="flex flex-wrap gap-2">
             <ShareToSocial fortuneType="tarot" content={fortune} />
             <SocialShare 
-              title={language === 'tr' ? 'Tarot Okumam' : 'My Tarot Reading'} 
+              title={'Tarot Okumam'} 
               text={fortune} 
             />
           </div>
@@ -202,7 +200,7 @@ export default function TarotFortunePage() {
             className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <RotateCcw className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Okuma Yap' : 'New Reading'}
+            {'Yeni Okuma Yap'}
           </button>
         </div>
       )}

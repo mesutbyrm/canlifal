@@ -21,14 +21,14 @@ export default function FortunesPage() {
             <Star className="w-8 h-8 text-white" />
           </div>
           <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Fallar' : 'Fortunes'}
+            {'Fallar'}
           </h1>
           <p className="text-purple-300 max-w-2xl mx-auto">
-            {language === 'tr' ? 'Mistik dünyaya adım atın ve geleceğinizi keşfedin' : 'Step into the mystical world and discover your future'}
+            {'Mistik dünyaya adım atın ve geleceğinizi keşfedin'}
           </p>
           <div className="flex items-center justify-center gap-2 mt-3 text-purple-400 text-sm">
             <Camera className="w-4 h-4" />
-            {language === 'tr' ? 'Etkileşimli fallar: Kahve Falı, El Falı, Kurşun Dökme' : 'Interactive: Coffee, Palm, Lead Pouring'}
+            {'Etkileşimli fallar: Kahve Falı, El Falı, Kurşun Dökme'}
           </div>
         </motion.div>
 
@@ -41,7 +41,7 @@ export default function FortunesPage() {
         >
           <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
-            {language === 'tr' ? 'Etkileşimli & Görsel Fallar' : 'Interactive & Visual Fortunes'}
+            {'Etkileşimli & Görsel Fallar'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FortuneCard type="coffee" imageSrc="/coffee_fortune_icon.jpg" cost={5} />
@@ -58,7 +58,7 @@ export default function FortunesPage() {
           className="mb-8"
         >
           <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
-            {language === 'tr' ? 'Kart Falları' : 'Card Readings'}
+            {'Kart Falları'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <FortuneCard type="tarot" imageSrc="/tarot_reading_icon.jpg" cost={7} />
@@ -75,7 +75,7 @@ export default function FortunesPage() {
           className="mb-8"
         >
           <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
-            {language === 'tr' ? 'Astroloji & Numeroloji' : 'Astrology & Numerology'}
+            {'Astroloji & Numeroloji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <FortuneCard type="horoscope" imageSrc="/horoscope_icon.jpg" cost={3} />
@@ -92,7 +92,7 @@ export default function FortunesPage() {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
-            {language === 'tr' ? 'Ruhsal & Enerji' : 'Spiritual & Energy'}
+            {'Ruhsal & Enerji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <FortuneCard type="dream" imageSrc="/dream_interpretation_icon.jpg" cost={5} />

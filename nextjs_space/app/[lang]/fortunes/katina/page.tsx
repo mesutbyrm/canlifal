@@ -19,7 +19,7 @@ export default function KatinaPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!question.trim()) {
-      setError(language === 'tr' ? 'Lütfen bir soru yazın' : 'Please enter a question')
+      setError('Lütfen bir soru yazın')
       return
     }
 
@@ -80,14 +80,14 @@ export default function KatinaPage() {
             <Layers className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Katina Falı' : 'Katina Cards'}
+            {'Katina Falı'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? '32 Katina kartı ile geleceğinizi keşfedin' : 'Discover your future with 32 Katina cards'}
+            {'32 Katina kartı ile geleceğinizi keşfedin'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            6 {language === 'tr' ? 'CFC' : 'CFC'}
+            6 {'CFC'}
           </p>
         </motion.div>
 
@@ -100,12 +100,12 @@ export default function KatinaPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">
-                  {language === 'tr' ? 'Sorunuz' : 'Your Question'}
+                  {'Sorunuz'}
                 </label>
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={language === 'tr' ? 'Kartlara sormak istediğiniz soruyu yazın...' : 'Write the question you want to ask the cards...'}
+                  placeholder={'Kartlara sormak istediğiniz soruyu yazın...'}
                   rows={4}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
@@ -127,7 +127,7 @@ export default function KatinaPage() {
                 ) : (
                   <>
                     <Layers className="w-5 h-5" />
-                    {language === 'tr' ? 'Kartları Aç' : 'Draw Cards'}
+                    {'Kartları Aç'}
                   </>
                 )}
               </button>
@@ -144,7 +144,7 @@ export default function KatinaPage() {
             <div className="flex items-center gap-3 mb-6">
               <Layers className="w-10 h-10 text-gold-500" />
               <h2 className="font-serif text-2xl text-gold-500">
-                {language === 'tr' ? 'Katina Falınız' : 'Your Katina Reading'}
+                {'Katina Falınız'}
               </h2>
             </div>
             <div className="prose prose-invert max-w-none">
@@ -152,7 +152,7 @@ export default function KatinaPage() {
             </div>
             
             <SocialShare 
-              title={language === 'tr' ? 'Katina Falım' : 'My Katina Reading'}
+              title={'Katina Falım'}
               text={response}
             />
 
@@ -160,7 +160,7 @@ export default function KatinaPage() {
               onClick={() => { setResponse(''); setQuestion(''); }}
               className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all"
             >
-              {language === 'tr' ? 'Yeni Fal Bak' : 'Get New Reading'}
+              {'Yeni Fal Bak'}
             </button>
           </motion.div>
         )}

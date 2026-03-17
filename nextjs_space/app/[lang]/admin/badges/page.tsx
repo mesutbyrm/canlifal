@@ -98,7 +98,7 @@ export default function AdminBadgesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu rozeti silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this badge?')) return
+    if (!confirm('Bu rozeti silmek istediğinize emin misiniz?')) return
     setSaving(id)
     try {
       await fetch(`/api/admin/badges?id=${id}`, { method: 'DELETE' })
@@ -131,10 +131,10 @@ export default function AdminBadgesPage() {
           </Link>
           <div>
             <h1 className={`text-2xl font-bold ${textColor}`}>
-              {language === 'tr' ? '🏆 Rozet Yönetimi' : '🏆 Badge Management'}
+              {'🏆 Rozet Yönetimi'}
             </h1>
             <p className={`text-sm ${subText}`}>
-              {language === 'tr' ? 'Üyelik rozetlerini ve özel rozetleri yönetin' : 'Manage membership badges and custom badges'}
+              {'Üyelik rozetlerini ve özel rozetleri yönetin'}
             </p>
           </div>
           <button
@@ -142,7 +142,7 @@ export default function AdminBadgesPage() {
             className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg ${btnPrimary}`}
           >
             <Plus className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Rozet' : 'New Badge'}
+            {'Yeni Rozet'}
           </button>
         </div>
 
@@ -150,15 +150,15 @@ export default function AdminBadgesPage() {
         {showForm && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`${cardBg} border rounded-xl p-6 mb-6`}>
             <h3 className={`text-lg font-bold mb-4 ${textColor}`}>
-              {editBadge ? (language === 'tr' ? 'Rozet Düzenle' : 'Edit Badge') : (language === 'tr' ? 'Yeni Rozet Oluştur' : 'Create New Badge')}
+              {editBadge ? ('Rozet Düzenle') : ('Yeni Rozet Oluştur')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Rozet Adı' : 'Badge Name'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Rozet Adı'}</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder="VIP" />
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'İkon (Emoji)' : 'Icon (Emoji)'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'İkon (Emoji)'}</label>
                 <div className="flex items-center gap-2">
                   <input value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} className={`w-20 px-3 py-2 rounded-lg border ${inputBg} text-center text-lg`} />
                   <div className="flex flex-wrap gap-1">
@@ -169,40 +169,40 @@ export default function AdminBadgesPage() {
                 </div>
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Yazı Rengi' : 'Text Color'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Yazı Rengi'}</label>
                 <div className="flex items-center gap-2">
                   <input type="color" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} className="w-10 h-10 rounded cursor-pointer" />
                   <input value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} className={`flex-1 px-3 py-2 rounded-lg border ${inputBg}`} />
                 </div>
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Arkaplan Rengi' : 'Background Color'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Arkaplan Rengi'}</label>
                 <div className="flex items-center gap-2">
                   <input type="color" value={form.bgColor} onChange={e => setForm({ ...form, bgColor: e.target.value })} className="w-10 h-10 rounded cursor-pointer" />
                   <input value={form.bgColor} onChange={e => setForm({ ...form, bgColor: e.target.value })} className={`flex-1 px-3 py-2 rounded-lg border ${inputBg}`} />
                 </div>
               </div>
               <div className="sm:col-span-2">
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Açıklama' : 'Description'}</label>
-                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder={language === 'tr' ? 'Opsiyonel açıklama' : 'Optional description'} />
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Açıklama'}</label>
+                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder={'Opsiyonel açıklama'} />
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Üyelik Katmanı (Otomatik Atama)' : 'Membership Tier (Auto-assign)'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Üyelik Katmanı (Otomatik Atama)'}</label>
                 <select value={form.tier} onChange={e => setForm({ ...form, tier: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`}>
                   {TIER_OPTIONS.map(t => (
-                    <option key={t.value} value={t.value}>{language === 'tr' ? t.label : t.labelEn}</option>
+                    <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Kullanıcı ID (Bireysel Atama)' : 'User ID (Individual)'}</label>
-                <input value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder={language === 'tr' ? 'Boş bırakın veya kullanıcı ID girin' : 'Leave empty or enter user ID'} />
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Kullanıcı ID (Bireysel Atama)'}</label>
+                <input value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder={'Boş bırakın veya kullanıcı ID girin'} />
               </div>
             </div>
 
             {/* Preview */}
             <div className="mt-4 flex items-center gap-3">
-              <span className={`text-sm ${subText}`}>{language === 'tr' ? 'Önizleme:' : 'Preview:'}</span>
+              <span className={`text-sm ${subText}`}>{'Önizleme:'}</span>
               <span
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border"
                 style={{ color: form.color, backgroundColor: form.bgColor + '33', borderColor: form.color + '66' }}
@@ -215,10 +215,10 @@ export default function AdminBadgesPage() {
             <div className="flex gap-3 mt-4">
               <button onClick={handleSave} disabled={saving === 'new' || !form.name} className={`flex items-center gap-2 px-4 py-2 rounded-lg ${btnPrimary} disabled:opacity-50`}>
                 {saving === 'new' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {language === 'tr' ? 'Kaydet' : 'Save'}
+                {'Kaydet'}
               </button>
               <button onClick={() => { setShowForm(false); setEditBadge(null) }} className={`px-4 py-2 rounded-lg border ${cardBg} ${textColor}`}>
-                {language === 'tr' ? 'İptal' : 'Cancel'}
+                {'İptal'}
               </button>
             </div>
           </motion.div>
@@ -230,7 +230,7 @@ export default function AdminBadgesPage() {
         ) : badges.length === 0 ? (
           <div className={`${cardBg} border rounded-xl p-12 text-center`}>
             <Shield className={`w-12 h-12 mx-auto mb-3 ${subText}`} />
-            <p className={textColor}>{language === 'tr' ? 'Henüz rozet yok' : 'No badges yet'}</p>
+            <p className={textColor}>{'Henüz rozet yok'}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -250,17 +250,17 @@ export default function AdminBadgesPage() {
                   <div className="flex items-center gap-2">
                     {badge.tier && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${isMystical ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                        {badge.tier.charAt(0).toUpperCase() + badge.tier.slice(1)} {language === 'tr' ? 'Üyelik' : 'Tier'}
+                        {badge.tier.charAt(0).toUpperCase() + badge.tier.slice(1)} {'Üyelik'}
                       </span>
                     )}
                     {badge.userId && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${isMystical ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
-                        <Users className="w-3 h-3 inline mr-1" />{language === 'tr' ? 'Bireysel' : 'Individual'}
+                        <Users className="w-3 h-3 inline mr-1" />{'Bireysel'}
                       </span>
                     )}
                     {!badge.tier && !badge.userId && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${isMystical ? 'bg-gray-500/20 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                        {language === 'tr' ? 'Atanmamış' : 'Unassigned'}
+                        {'Atanmamış'}
                       </span>
                     )}
                   </div>

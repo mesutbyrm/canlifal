@@ -27,7 +27,7 @@ export default function VoiceInput({ onTranscript, disabled, className }: VoiceI
       recognitionRef.current = new SpeechRecognition()
       recognitionRef.current.continuous = true
       recognitionRef.current.interimResults = true
-      recognitionRef.current.lang = language === 'tr' ? 'tr-TR' : 'en-US'
+      recognitionRef.current.lang = 'tr-TR'
 
       recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = ''
@@ -68,7 +68,7 @@ export default function VoiceInput({ onTranscript, disabled, className }: VoiceI
       recognitionRef.current.stop()
       setIsListening(false)
     } else {
-      recognitionRef.current.lang = language === 'tr' ? 'tr-TR' : 'en-US'
+      recognitionRef.current.lang = 'tr-TR'
       recognitionRef.current.start()
       setIsListening(true)
     }
@@ -89,15 +89,15 @@ export default function VoiceInput({ onTranscript, disabled, className }: VoiceI
           : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 hover:text-gold-400'
       } disabled:opacity-50 disabled:cursor-not-allowed`}
       title={isListening 
-        ? (language === 'tr' ? 'Dinlemeyi durdur' : 'Stop listening')
-        : (language === 'tr' ? 'Sesli giriş' : 'Voice input')
+        ? ('Dinlemeyi durdur')
+        : ('Sesli giriş')
       }
     >
       {isListening ? (
         <div className="flex items-center gap-2">
           <MicOff className="w-5 h-5" />
           <span className="text-sm hidden sm:inline">
-            {language === 'tr' ? 'Dinliyor...' : 'Listening...'}
+            {'Dinliyor...'}
           </span>
         </div>
       ) : (

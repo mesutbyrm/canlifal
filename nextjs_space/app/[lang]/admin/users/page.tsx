@@ -197,7 +197,7 @@ export default function AdminUsersPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setMessage({ type: 'success', text: language === 'tr' ? 'Kullanıcı güncellendi' : 'User updated' })
+        setMessage({ type: 'success', text: 'Kullanıcı güncellendi' })
         setSelectedUser({ ...selectedUser, ...editData } as UserDetail)
         setEditMode(false)
         fetchUsers()
@@ -221,7 +221,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ action: 'reset_password', newPassword })
       })
       if (res.ok) {
-        setMessage({ type: 'success', text: language === 'tr' ? 'Şifre sıfırlandı' : 'Password reset' })
+        setMessage({ type: 'success', text: 'Şifre sıfırlandı' })
         setShowPasswordModal(false)
         setNewPassword('')
       }
@@ -350,7 +350,7 @@ export default function AdminUsersPage() {
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return
-    if (!confirm(language === 'tr' ? 'Bu kullanıcıyı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this user?')) return
+    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return
     
     setSaving(true)
     try {
@@ -450,7 +450,7 @@ export default function AdminUsersPage() {
         })
       })
       if (res.ok) {
-        setMessage({ type: 'success', text: language === 'tr' ? 'Rozet ve efektler güncellendi' : 'Badges and effects updated' })
+        setMessage({ type: 'success', text: 'Rozet ve efektler güncellendi' })
         setSelectedUser({ 
           ...selectedUser, 
           specialBadges: JSON.stringify(selectedBadges),
@@ -477,7 +477,7 @@ export default function AdminUsersPage() {
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                 <Users className="w-7 h-7 text-gold-400" />
-                {language === 'tr' ? 'Kullanıcı Yönetimi' : 'User Management'}
+                {'Kullanıcı Yönetimi'}
               </h1>
               <p className="text-purple-300 text-sm">{users.length} kullanıcı</p>
             </div>
@@ -496,7 +496,7 @@ export default function AdminUsersPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
-                placeholder={language === 'tr' ? 'İsim, email, kullanıcı adı...' : 'Name, email, username...'}
+                placeholder={'İsim, email, kullanıcı adı...'}
                 className="w-full bg-white/5 border border-purple-500/30 rounded-lg pl-10 pr-4 py-2 text-white placeholder:text-purple-400/50 focus:outline-none focus:border-purple-400"
               />
             </div>
@@ -506,7 +506,7 @@ export default function AdminUsersPage() {
             onChange={(e) => { setRoleFilter(e.target.value); setPage(1) }}
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
           >
-            <option value="all">{language === 'tr' ? 'Tüm Roller' : 'All Roles'}</option>
+            <option value="all">{'Tüm Roller'}</option>
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
@@ -515,7 +515,7 @@ export default function AdminUsersPage() {
             onChange={(e) => { setMembershipFilter(e.target.value); setPage(1) }}
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
           >
-            <option value="all">{language === 'tr' ? 'Tüm Üyelikler' : 'All Memberships'}</option>
+            <option value="all">{'Tüm Üyelikler'}</option>
             <option value="basic">Basic</option>
             <option value="premium">Premium</option>
             <option value="gold">Gold</option>
@@ -1187,13 +1187,13 @@ export default function AdminUsersPage() {
             <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-[#1a0b2e] rounded-2xl z-50 p-6">
               <Dialog.Title className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Award className="w-6 h-6 text-cyan-400" />
-                {language === 'tr' ? 'Rozet ve Efekt Yönetimi' : 'Badge & Effect Management'}
+                {'Rozet ve Efekt Yönetimi'}
               </Dialog.Title>
               
               {/* Badge Selection */}
               <div className="mb-6">
                 <label className="text-purple-300 text-sm mb-3 block font-medium">
-                  {language === 'tr' ? 'Rozetler (Birden fazla seçilebilir)' : 'Badges (Multiple selection)'}
+                  {'Rozetler (Birden fazla seçilebilir)'}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {(Object.keys(BADGE_CONFIG) as BadgeType[]).map((badge) => (
@@ -1227,7 +1227,7 @@ export default function AdminUsersPage() {
               {/* Effect Selection */}
               <div className="mb-6">
                 <label className="text-purple-300 text-sm mb-3 block font-medium">
-                  {language === 'tr' ? 'Profil Efekti' : 'Profile Effect'}
+                  {'Profil Efekti'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.keys(EFFECT_CONFIG) as EffectType[]).map((effect) => (
@@ -1243,7 +1243,7 @@ export default function AdminUsersPage() {
                       <div className="flex items-center justify-center gap-2">
                         {effect !== 'none' && <Sparkles className="w-4 h-4 text-purple-400" />}
                         <span className="text-white text-sm">
-                          {language === 'tr' ? EFFECT_CONFIG[effect].labelTr : EFFECT_CONFIG[effect].label}
+                          {EFFECT_CONFIG[effect].labelTr}
                         </span>
                       </div>
                     </button>
@@ -1253,7 +1253,7 @@ export default function AdminUsersPage() {
               
               {/* Preview */}
               <div className="mb-6 p-4 bg-white/5 rounded-xl">
-                <p className="text-purple-300 text-sm mb-3">{language === 'tr' ? 'Önizleme' : 'Preview'}</p>
+                <p className="text-purple-300 text-sm mb-3">{'Önizleme'}</p>
                 <div className="flex items-center gap-3">
                   <div 
                     className={`w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center ${
@@ -1283,7 +1283,7 @@ export default function AdminUsersPage() {
                         </div>
                       ))}
                       {selectedBadges.length === 0 && (
-                        <span className="text-purple-400 text-xs">{language === 'tr' ? 'Rozet yok' : 'No badges'}</span>
+                        <span className="text-purple-400 text-xs">{'Rozet yok'}</span>
                       )}
                     </div>
                   </div>
@@ -1298,10 +1298,10 @@ export default function AdminUsersPage() {
                   className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white py-2.5 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
                 <Dialog.Close className="px-6 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20">
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </Dialog.Close>
               </div>
             </Dialog.Content>

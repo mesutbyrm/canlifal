@@ -139,7 +139,7 @@ export default function SocialPage() {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+        alert('Dosya boyutu 5MB\'dan küçük olmalıdır')
         return
       }
       setSelectedImage(file)
@@ -331,9 +331,7 @@ export default function SocialPage() {
         break
       case 'tiktok':
         navigator.clipboard.writeText(tiktokText + '\n\n' + url)
-        alert(language === 'tr' 
-          ? '📋 TikTok için metin kopyalandı!\n\nTikTok uygulamasını açın ve bu metni yapıştırın.' 
-          : '📋 Text copied for TikTok!\n\nOpen TikTok app and paste this text.')
+        alert('📋 TikTok için metin kopyalandı!\n\nTikTok uygulamasını açın ve bu metni yapıştırın.'
         break
       case 'copy':
         navigator.clipboard.writeText(url)
@@ -356,11 +354,11 @@ export default function SocialPage() {
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
-    if (mins < 1) return language === 'tr' ? 'Şimdi' : 'Just now'
-    if (mins < 60) return `${mins} ${language === 'tr' ? 'dk' : 'min'}`
-    if (hours < 24) return `${hours} ${language === 'tr' ? 'saat' : 'h'}`
-    if (days < 7) return `${days} ${language === 'tr' ? 'gün' : 'd'}`
-    return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')
+    if (mins < 1) return 'Şimdi'
+    if (mins < 60) return `${mins} ${'dk'}`
+    if (hours < 24) return `${hours} ${'saat'}`
+    if (days < 7) return `${days} ${'gün'}`
+    return date.toLocaleDateString('tr-TR')
   }
 
   return (
@@ -388,10 +386,10 @@ export default function SocialPage() {
           <div className="text-center py-1 sm:py-2">
             <h1 className="falclub-section-title justify-center text-lg sm:text-xl">
               <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
-              {language === 'tr' ? 'SOSYAL AKIŞ' : 'SOCIAL FEED'}
+              {'SOSYAL AKIŞ'}
             </h1>
             <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-0.5 sm:mt-1">
-              {language === 'tr' ? 'Fallarını paylaş, keşfet ve etkileşimde bulun' : 'Share, discover and interact with fortunes'}
+              {'Fallarını paylaş, keşfet ve etkileşimde bulun'}
             </p>
           </div>
 
@@ -418,8 +416,8 @@ export default function SocialPage() {
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
                     placeholder={selectedYoutubeUrl
-                      ? (language === 'tr' ? 'Video hakkında bir şeyler yaz...' : 'Write something about this video...')
-                      : (language === 'tr' ? 'Ne düşünüyorsun? ✨' : "What's on your mind? ✨")}
+                      ? ('Video hakkında bir şeyler yaz...')
+                      : ('Ne düşünüyorsun? ✨')}
                     className="w-full bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl p-3 outline-none text-white placeholder-fuchsia-300/50 resize-none text-sm sm:text-base focus:border-fuchsia-400/40 transition-colors"
                     rows={4}
                     maxLength={6000}
@@ -479,7 +477,7 @@ export default function SocialPage() {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={!!selectedYoutubeUrl}
                         className="p-1.5 sm:p-2 text-fuchsia-300/70 hover:text-fuchsia-200 hover:bg-fuchsia-500/15 rounded-lg transition-colors disabled:opacity-40"
-                        title={language === 'tr' ? 'Resim ekle' : 'Add image'}
+                        title={'Resim ekle'}
                       >
                         <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
@@ -487,7 +485,7 @@ export default function SocialPage() {
                         onClick={() => setYoutubeModalOpen(true)}
                         disabled={!!selectedImage}
                         className="p-1.5 sm:p-2 text-fuchsia-300/70 hover:text-red-400 hover:bg-fuchsia-500/15 rounded-lg transition-colors disabled:opacity-40"
-                        title={language === 'tr' ? 'YouTube video ekle' : 'Add YouTube video'}
+                        title={'YouTube video ekle'}
                       >
                         <Youtube className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
@@ -506,8 +504,8 @@ export default function SocialPage() {
                         <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       )}
                       {uploadingImage
-                        ? (language === 'tr' ? 'Yükleniyor...' : 'Uploading...')
-                        : (language === 'tr' ? 'Paylaş' : 'Post')}
+                        ? ('Yükleniyor...')
+                        : ('Paylaş')}
                     </button>
                   </div>
                 </div>
@@ -519,16 +517,16 @@ export default function SocialPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10 sm:py-16 gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-fuchsia-300/60 text-xs sm:text-sm">{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</span>
+              <span className="text-fuchsia-300/60 text-xs sm:text-sm">{'Yükleniyor...'}</span>
             </div>
           ) : posts.length === 0 ? (
             <div className="falclub-card p-6 sm:p-8 text-center">
               <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-fuchsia-400/50 mx-auto mb-2 sm:mb-3" />
               <p className="text-fuchsia-300/70 text-sm sm:text-base">
-                {language === 'tr' ? 'Henüz paylaşım yok' : 'No posts yet'}
+                {'Henüz paylaşım yok'}
               </p>
               <p className="text-fuchsia-400/40 text-xs sm:text-sm mt-1">
-                {language === 'tr' ? 'İlk paylaşımı sen yap!' : 'Be the first to post!'}
+                {'İlk paylaşımı sen yap!'}
               </p>
             </div>
           ) : (
@@ -620,7 +618,7 @@ export default function SocialPage() {
                                   onClick={(e) => { e.stopPropagation(); setExpandedContent({ ...expandedContent, [post.id]: true }); }}
                                   className="text-fuchsia-400 text-xs sm:text-sm font-medium mt-1 hover:text-fuchsia-300 transition-colors"
                                 >
-                                  {language === 'tr' ? 'devamını oku' : 'read more'}
+                                  {'devamını oku'}
                                 </button>
                               </div>
                             );
@@ -661,14 +659,12 @@ export default function SocialPage() {
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <div className="inline-flex items-center gap-1 text-xs text-fuchsia-300/70 bg-fuchsia-500/10 px-2.5 py-1 rounded-full border border-fuchsia-500/20">
                               <Sparkles className="w-3 h-3" />
-                              {language === 'tr' ? 'Otomatik paylaşıldı' : 'Auto-shared'}
+                              {'Otomatik paylaşıldı'}
                             </div>
                             {post.fortuneCount && post.fortuneCount > 0 && (
                               <div className="inline-flex items-center gap-1 text-xs text-amber-300/80 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
                                 <User className="w-3 h-3" />
-                                {language === 'tr'
-                                  ? `Bu kullanıcı ile birlikte ${post.fortuneCount} kişi bu fala baktırdı`
-                                  : `${post.fortuneCount} people including this user viewed this fortune`}
+                                {`Bu kullanıcı ile birlikte ${post.fortuneCount} kişi bu fala baktırdı`} people including this user viewed this fortune`}
                               </div>
                             )}
                           </div>
@@ -712,7 +708,7 @@ export default function SocialPage() {
                           className="flex items-center gap-1 text-[10px] sm:text-xs text-fuchsia-400/40 hover:text-fuchsia-300 transition-colors"
                         >
                           <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          {language === 'tr' ? 'Detay' : 'Details'}
+                          {'Detay'}
                         </Link>
                       </div>
 
@@ -760,7 +756,7 @@ export default function SocialPage() {
                                       type="text"
                                       value={newComment[post.id] || ''}
                                       onChange={(e) => setNewComment({ ...newComment, [post.id]: e.target.value })}
-                                      placeholder={language === 'tr' ? 'Yorum yaz...' : 'Write a comment...'}
+                                      placeholder={'Yorum yaz...'}
                                       className="flex-1 min-w-0 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder-fuchsia-400/40 outline-none focus:border-fuchsia-400/50 transition-colors"
                                       onKeyDown={(e) => e.key === 'Enter' && handleComment(post.id)}
                                     />
@@ -798,7 +794,7 @@ export default function SocialPage() {
                               <div className="flex justify-between items-center mb-5">
                                 <h3 className="falclub-section-title text-base">
                                   <Share2 className="w-4 h-4" />
-                                  {language === 'tr' ? 'Paylaş' : 'Share'}
+                                  {'Paylaş'}
                                 </h3>
                                 <button onClick={() => setShareModal(null)} className="text-fuchsia-400/50 hover:text-fuchsia-300 transition-colors">
                                   <X className="w-5 h-5" />
@@ -840,7 +836,7 @@ export default function SocialPage() {
                                   className="flex items-center justify-center gap-2 p-3 bg-fuchsia-500/10 text-fuchsia-300 rounded-xl hover:bg-fuchsia-500/20 border border-fuchsia-500/20 transition-colors"
                                 >
                                   {copied ? <Check className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
-                                  {copied ? (language === 'tr' ? 'Kopyalandı' : 'Copied') : (language === 'tr' ? 'Link Kopyala' : 'Copy Link')}
+                                  {copied ? ('Kopyalandı') : ('Link Kopyala')}
                                 </button>
                               </div>
                             </motion.div>
@@ -859,15 +855,13 @@ export default function SocialPage() {
             <div className="falclub-card p-6 sm:p-8 text-center">
               <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-fuchsia-400/50 mx-auto mb-2 sm:mb-3" />
               <p className="text-fuchsia-300/70 text-sm sm:text-base mb-3 sm:mb-4">
-                {language === 'tr'
-                  ? 'Paylaşım yapmak ve etkileşimde bulunmak için giriş yapın'
-                  : 'Login to post and interact'}
+                {'Paylaşım yapmak ve etkileşimde bulunmak için giriş yapın'}
               </p>
               <Link
                 href={`/login`}
                 className="falclub-btn inline-block text-sm sm:text-base"
               >
-                {language === 'tr' ? 'Giriş Yap' : 'Login'}
+                {'Giriş Yap'}
               </Link>
             </div>
           )}

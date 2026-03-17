@@ -172,7 +172,7 @@ export default function StreamSetupPage() {
       }
     } catch (error) {
       console.error('Camera error:', error)
-      alert(language === 'tr' ? 'Kamera erişimi sağlanamadı' : 'Could not access camera')
+      alert('Kamera erişimi sağlanamadı')
     }
   }
 
@@ -365,7 +365,7 @@ export default function StreamSetupPage() {
       <div className="fixed inset-0 bg-gradient-to-b from-[#0a0118] to-[#1a0a2e] z-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-white/60">{language === 'tr' ? 'Kontrol ediliyor...' : 'Checking...'}</p>
+          <p className="text-white/60">{'Kontrol ediliyor...'}</p>
         </div>
       </div>
     )
@@ -377,49 +377,49 @@ export default function StreamSetupPage() {
       switch (tellerStatus) {
         case 'not_applied':
           return {
-            title: language === 'tr' ? 'Canlı Falcı Ol' : 'Become a Live Fortune Teller',
+            title: 'Canlı Falcı Ol',
             message: language === 'tr' 
               ? 'Canlı yayın açabilmek için önce canlı falcı başvurusu yapmanız gerekmektedir.'
               : 'You need to apply as a live fortune teller before you can start streaming.',
-            buttonText: language === 'tr' ? 'Başvuru Yap' : 'Apply Now',
+            buttonText: 'Başvuru Yap',
             buttonLink: `/live-tellers/apply`,
             icon: '✨'
           }
         case 'pending':
           return {
-            title: language === 'tr' ? 'Başvurunuz İnceleniyor' : 'Application Under Review',
+            title: 'Başvurunuz İnceleniyor',
             message: language === 'tr' 
               ? 'Canlı falcı başvurunuz henüz onaylanmadı. Onaylandıktan sonra yayın açabilirsiniz.'
               : 'Your live fortune teller application is still pending. You can start streaming after approval.',
-            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            buttonText: 'Ana Sayfaya Dön',
             buttonLink: `/`,
             icon: '⏳'
           }
         case 'rejected':
           return {
-            title: language === 'tr' ? 'Başvurunuz Reddedildi' : 'Application Rejected',
+            title: 'Başvurunuz Reddedildi',
             message: language === 'tr' 
               ? 'Canlı falcı başvurunuz reddedildi. Yeni bir başvuru yapabilirsiniz.'
               : 'Your live fortune teller application was rejected. You can submit a new application.',
-            buttonText: language === 'tr' ? 'Tekrar Başvur' : 'Apply Again',
+            buttonText: 'Tekrar Başvur',
             buttonLink: `/live-tellers/apply`,
             icon: '❌'
           }
         case 'restricted':
           return {
-            title: language === 'tr' ? 'Hesabınız Kısıtlandı' : 'Account Restricted',
+            title: 'Hesabınız Kısıtlandı',
             message: language === 'tr' 
               ? 'Canlı falcı hesabınız şu anda kısıtlanmış durumda. Destek ile iletişime geçin.'
               : 'Your live fortune teller account is currently restricted. Please contact support.',
-            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            buttonText: 'Ana Sayfaya Dön',
             buttonLink: `/`,
             icon: '🚫'
           }
         default:
           return {
-            title: language === 'tr' ? 'Hata' : 'Error',
-            message: language === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.',
-            buttonText: language === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home',
+            title: 'Hata',
+            message: 'Bir hata oluştu.',
+            buttonText: 'Ana Sayfaya Dön',
             buttonLink: `/`,
             icon: '⚠️'
           }
@@ -448,7 +448,7 @@ export default function StreamSetupPage() {
             onClick={() => router.back()}
             className="mt-4 text-white/50 hover:text-white/80 transition-colors"
           >
-            {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+            {'Geri Dön'}
           </button>
         </motion.div>
       </div>
@@ -465,10 +465,10 @@ export default function StreamSetupPage() {
             className="flex items-center gap-2 text-white"
           >
             <ChevronLeft className="w-6 h-6" />
-            <span>{language === 'tr' ? 'Geri' : 'Back'}</span>
+            <span>{'Geri'}</span>
           </button>
           <h1 className="text-white font-semibold">
-            {language === 'tr' ? 'Yayın Hazırlığı' : 'Stream Setup'}
+            {'Yayın Hazırlığı'}
           </h1>
           <div className="w-16" />
         </div>
@@ -496,7 +496,7 @@ export default function StreamSetupPage() {
             <div className="text-center">
               <VideoOff className="w-16 h-16 text-white/40 mx-auto mb-4" />
               <p className="text-white/60">
-                {language === 'tr' ? 'Kamera kapalı' : 'Camera off'}
+                {'Kamera kapalı'}
               </p>
             </div>
           </div>
@@ -519,7 +519,7 @@ export default function StreamSetupPage() {
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <h3 className="text-white font-semibold flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-pink-400" />
-                {language === 'tr' ? 'Efektler' : 'Effects'}
+                {'Efektler'}
               </h3>
               <button onClick={() => setShowEffects(false)} className="text-white/60 p-1">
                 <X className="w-5 h-5" />
@@ -531,20 +531,20 @@ export default function StreamSetupPage() {
               {/* Preset Buttons - Horizontal Scroll */}
               <div className="mb-6">
                 <p className="text-white/60 text-xs mb-3">
-                  {language === 'tr' ? 'Hazır Ayarlar' : 'Presets'}
+                  {'Hazır Ayarlar'}
                 </p>
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   <button
                     onClick={() => setBeautySettings({ smoothness: 0, brightness: 0, contrast: 0, saturation: 0 })}
                     className="flex-shrink-0 px-4 py-2 bg-white/10 text-white text-sm rounded-full hover:bg-white/20 whitespace-nowrap"
                   >
-                    ✨ {language === 'tr' ? 'Doğal' : 'Natural'}
+                    ✨ {'Doğal'}
                   </button>
                   <button
                     onClick={() => setBeautySettings({ smoothness: 40, brightness: 10, contrast: 5, saturation: 10 })}
                     className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-purple-500/40 to-pink-500/40 text-white text-sm rounded-full hover:from-purple-500/60 hover:to-pink-500/60 whitespace-nowrap"
                   >
-                    🌸 {language === 'tr' ? 'Yumuşak' : 'Soft'}
+                    🌸 {'Yumuşak'}
                   </button>
                   <button
                     onClick={() => setBeautySettings({ smoothness: 60, brightness: 15, contrast: 10, saturation: 15 })}
@@ -556,7 +556,7 @@ export default function StreamSetupPage() {
                     onClick={() => setBeautySettings({ smoothness: 20, brightness: 20, contrast: 15, saturation: 5 })}
                     className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 text-white text-sm rounded-full hover:from-yellow-500/60 hover:to-orange-500/60 whitespace-nowrap"
                   >
-                    ☀️ {language === 'tr' ? 'Parlak' : 'Bright'}
+                    ☀️ {'Parlak'}
                   </button>
                 </div>
               </div>
@@ -565,7 +565,7 @@ export default function StreamSetupPage() {
               <div className="space-y-4">
                 <SliderControl
                   icon={Droplet}
-                  label={language === 'tr' ? 'Pürüzsüzlük' : 'Smoothness'}
+                  label={'Pürüzsüzlük'}
                   value={beautySettings.smoothness}
                   min={0}
                   max={100}
@@ -574,7 +574,7 @@ export default function StreamSetupPage() {
 
                 <SliderControl
                   icon={Sun}
-                  label={language === 'tr' ? 'Parlaklık' : 'Brightness'}
+                  label={'Parlaklık'}
                   value={beautySettings.brightness}
                   min={-50}
                   max={50}
@@ -583,7 +583,7 @@ export default function StreamSetupPage() {
 
                 <SliderControl
                   icon={Contrast}
-                  label={language === 'tr' ? 'Kontrast' : 'Contrast'}
+                  label={'Kontrast'}
                   value={beautySettings.contrast}
                   min={-50}
                   max={50}
@@ -592,7 +592,7 @@ export default function StreamSetupPage() {
 
                 <SliderControl
                   icon={Sparkles}
-                  label={language === 'tr' ? 'Doygunluk' : 'Saturation'}
+                  label={'Doygunluk'}
                   value={beautySettings.saturation}
                   min={-50}
                   max={50}
@@ -607,7 +607,7 @@ export default function StreamSetupPage() {
                 onClick={() => setShowEffects(false)}
                 className="w-full py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20"
               >
-                {language === 'tr' ? 'Tamam' : 'Done'}
+                {'Tamam'}
               </button>
             </div>
           </div>
@@ -637,10 +637,10 @@ export default function StreamSetupPage() {
               <span className="text-xl">{selectedCategory.icon}</span>
             </div>
             <span className="text-white font-semibold flex-1 text-left">
-              {language === 'tr' ? selectedCategory.name : selectedCategory.nameEn}
+              {selectedCategory.name}
             </span>
             <span className="text-fuchsia-300 text-xs">
-              {language === 'tr' ? 'Değiştir' : 'Change'}
+              {'Değiştir'}
             </span>
           </button>
         )}
@@ -650,7 +650,7 @@ export default function StreamSetupPage() {
           <input
             value={streamTitle}
             onChange={(e) => setStreamTitle(e.target.value)}
-            placeholder={language === 'tr' ? 'Yayın başlığı (isteğe bağlı)' : 'Stream title (optional)'}
+            placeholder={'Yayın başlığı (isteğe bağlı)'}
             className="w-full bg-white/10 text-white placeholder:text-white/40 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500 border border-fuchsia-500/20"
           />
         </div>
@@ -701,17 +701,17 @@ export default function StreamSetupPage() {
           {isStarting ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
-              {language === 'tr' ? 'Başlatılıyor...' : 'Starting...'}
+              {'Başlatılıyor...'}
             </>
           ) : !selectedCategory ? (
             <>
               <Sparkles className="w-6 h-6" />
-              {language === 'tr' ? 'Yayın Türü Seçin' : 'Select Stream Type'}
+              {'Yayın Türü Seçin'}
             </>
           ) : (
             <>
               <Radio className="w-6 h-6" />
-              {language === 'tr' ? 'Canlı Yayını Başlat' : 'Go Live'}
+              {'Canlı Yayını Başlat'}
             </>
           )}
         </button>
@@ -732,7 +732,7 @@ export default function StreamSetupPage() {
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-white text-lg font-bold flex items-center gap-2">
                   <Radio className="w-5 h-5 text-fuchsia-400" />
-                  {language === 'tr' ? 'Yayın Türü Seçin' : 'Select Stream Type'}
+                  {'Yayın Türü Seçin'}
                 </h2>
                 {selectedCategory && (
                   <button 
@@ -744,7 +744,7 @@ export default function StreamSetupPage() {
                 )}
               </div>
               <p className="text-fuchsia-300/60 text-xs">
-                {language === 'tr' ? 'Hangi tür yayın yapacaksınız?' : 'What type of stream will you do?'}
+                {'Hangi tür yayın yapacaksınız?'}
               </p>
             </div>
 
@@ -754,7 +754,7 @@ export default function StreamSetupPage() {
               <div className="mb-5">
                 <h3 className="text-fuchsia-300 text-xs font-bold mb-3 flex items-center gap-2 uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" />
-                  {language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}
+                  {'Fal Türleri'}
                 </h3>
                 <div className="grid grid-cols-4 gap-x-3 gap-y-4">
                   {FORTUNE_TYPES.map((category) => (
@@ -795,7 +795,7 @@ export default function StreamSetupPage() {
                       <span className={`text-[10px] font-medium mt-1.5 text-center leading-tight transition-colors ${
                         selectedCategory?.id === category.id ? 'text-fuchsia-200' : 'text-fuchsia-300/80'
                       }`}>
-                        {language === 'tr' ? category.name : category.nameEn}
+                        {category.name}
                       </span>
                     </motion.button>
                   ))}
@@ -811,7 +811,7 @@ export default function StreamSetupPage() {
               <div>
                 <h3 className="text-fuchsia-300 text-xs font-bold mb-3 flex items-center gap-2 uppercase tracking-wider">
                   <Users className="w-3.5 h-3.5" />
-                  {language === 'tr' ? 'Diğer Kategoriler' : 'Other Categories'}
+                  {'Diğer Kategoriler'}
                 </h3>
                 <div className="grid grid-cols-3 gap-x-4 gap-y-4">
                   {OTHER_CATEGORIES.map((category) => (
@@ -852,7 +852,7 @@ export default function StreamSetupPage() {
                       <span className={`text-[10px] font-medium mt-1.5 text-center leading-tight transition-colors ${
                         selectedCategory?.id === category.id ? 'text-fuchsia-200' : 'text-fuchsia-300/80'
                       }`}>
-                        {language === 'tr' ? category.name : category.nameEn}
+                        {category.name}
                       </span>
                     </motion.button>
                   ))}
@@ -872,7 +872,7 @@ export default function StreamSetupPage() {
                   }}
                 >
                   <span className="text-2xl">{selectedCategory.icon}</span>
-                  {language === 'tr' ? `${selectedCategory.name} ile Devam Et` : `Continue with ${selectedCategory.nameEn}`}
+                  {`${selectedCategory.name} ile Devam Et`}
                 </button>
               </div>
             )}

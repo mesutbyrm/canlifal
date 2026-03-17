@@ -21,7 +21,7 @@ export default function BirthChartPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!birthDate || !birthPlace) {
-      setError(language === 'tr' ? 'Doğum tarihi ve yeri gereklidir' : 'Birth date and place are required')
+      setError('Doğum tarihi ve yeri gereklidir')
       return
     }
 
@@ -76,13 +76,13 @@ export default function BirthChartPage() {
             <Sun className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Doğum Haritası' : 'Birth Chart'}
+            {'Doğum Haritası'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Yıldızların doğduğunuz anda size anlattıkları' : 'What the stars told you at the moment of your birth'}
+            {'Yıldızların doğduğunuz anda size anlattıkları'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />10 {language === 'tr' ? 'CFC' : 'CFC'}
+            <Sparkles className="inline w-4 h-4 mr-1" />10 {'CFC'}
           </p>
         </motion.div>
 
@@ -91,7 +91,7 @@ export default function BirthChartPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Doğum Tarihi *' : 'Birth Date *'}</label>
+                  <label className="block text-deep-purple-200 mb-2">{'Doğum Tarihi *'}</label>
                   <input
                     type="date"
                     value={birthDate}
@@ -100,7 +100,7 @@ export default function BirthChartPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Doğum Saati (İsteğe Bağlı)' : 'Birth Time (Optional)'}</label>
+                  <label className="block text-deep-purple-200 mb-2">{'Doğum Saati (İsteğe Bağlı)'}</label>
                   <input
                     type="time"
                     value={birthTime}
@@ -111,12 +111,12 @@ export default function BirthChartPage() {
               </div>
 
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Doğum Yeri *' : 'Birth Place *'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Doğum Yeri *'}</label>
                 <input
                   type="text"
                   value={birthPlace}
                   onChange={(e) => setBirthPlace(e.target.value)}
-                  placeholder={language === 'tr' ? 'Şehir, Ülke' : 'City, Country'}
+                  placeholder={'Şehir, Ülke'}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors"
                 />
               </div>
@@ -128,7 +128,7 @@ export default function BirthChartPage() {
                 disabled={isLoading}
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isLoading ? <LoadingSpinner /> : <><Sun className="w-5 h-5" />{language === 'tr' ? 'Haritamı Oluştur' : 'Create My Chart'}</>}
+                {isLoading ? <LoadingSpinner /> : <><Sun className="w-5 h-5" />{'Haritamı Oluştur'}</>}
               </button>
             </form>
           </motion.div>
@@ -139,14 +139,14 @@ export default function BirthChartPage() {
             <div className="flex items-center gap-3 mb-6">
               <Sun className="w-10 h-10 text-gold-500" />
               <div>
-                <h2 className="font-serif text-2xl text-gold-500">{language === 'tr' ? 'Doğum Haritanız' : 'Your Birth Chart'}</h2>
+                <h2 className="font-serif text-2xl text-gold-500">{'Doğum Haritanız'}</h2>
                 <p className="text-deep-purple-300 text-sm">{birthDate} - {birthPlace}</p>
               </div>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            <SocialShare title={language === 'tr' ? 'Doğum Haritam' : 'My Birth Chart'} text={response} />
+            <SocialShare title={'Doğum Haritam'} text={response} />
             <button onClick={() => { setResponse(''); setBirthDate(''); setBirthTime(''); setBirthPlace(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
-              {language === 'tr' ? 'Yeni Harita Oluştur' : 'Create New Chart'}
+              {'Yeni Harita Oluştur'}
             </button>
           </motion.div>
         )}

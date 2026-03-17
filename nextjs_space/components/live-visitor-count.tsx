@@ -115,7 +115,7 @@ export function LiveVisitorCount({
           {isLoading ? '...' : count}
         </span>
         <span className="text-green-400/70 text-sm">
-          {language === 'tr' ? 'kişi şu an sitede' : 'people online now'}
+          {'kişi şu an sitede'}
         </span>
       </div>
     );

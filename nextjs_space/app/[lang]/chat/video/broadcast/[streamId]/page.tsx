@@ -325,7 +325,7 @@ export default function BroadcastPage() {
       }
     } catch (error) {
       console.error('Camera error:', error)
-      alert(language === 'tr' ? 'Kamera erişimi sağlanamadı' : 'Could not access camera')
+      alert('Kamera erişimi sağlanamadı')
       router.back()
     }
   }
@@ -868,8 +868,8 @@ export default function BroadcastPage() {
               addToast(
                 notif.type === 'co_broadcast_accepted' ? 'success' : 'info',
                 notif.type === 'co_broadcast_accepted' 
-                  ? (language === 'tr' ? 'ortak yayın davetini kabul etti!' : 'accepted co-broadcast invite!')
-                  : (language === 'tr' ? 'ortak yayın davetini reddetti.' : 'declined co-broadcast invite.'),
+                  ? ('ortak yayın davetini kabul etti!')
+                  : ('ortak yayın davetini reddetti.'),
                 data.userName,
                 data.userImage
               )
@@ -1092,7 +1092,7 @@ export default function BroadcastPage() {
   // Add moderator (max 10)
   const handleAddModerator = async (userId: string) => {
     if (moderators.length >= 10) {
-      alert(language === 'tr' ? 'En fazla 10 moderatör ekleyebilirsiniz!' : 'Maximum 10 moderators allowed!')
+      alert('En fazla 10 moderatör ekleyebilirsiniz!')
       return
     }
     try {
@@ -1161,7 +1161,7 @@ export default function BroadcastPage() {
       })
       setSelectedFortuneRequest(null)
       fetchFortuneRequesters()
-      addToast('success', language === 'tr' ? 'Fal tamamlandı!' : 'Fortune completed!')
+      addToast('success', 'Fal tamamlandı!')
     } catch (e) {}
   }
 
@@ -1175,7 +1175,7 @@ export default function BroadcastPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        addToast('info', language === 'tr' ? `${data.amount} jeton iade edildi` : `${data.amount} jetons refunded`)
+        addToast('info', `${data.amount} jeton iade edildi`)
       }
       setSelectedFortuneRequest(null)
       fetchFortuneRequesters()
@@ -1191,9 +1191,7 @@ export default function BroadcastPage() {
       if (res.ok) {
         const data = await res.json()
         if (data.refundedCount > 0) {
-          addToast('info', language === 'tr' 
-            ? `${data.refundedCount} kişiye toplam ${data.totalRefunded} jeton iade edildi` 
-            : `Refunded ${data.totalRefunded} jetons to ${data.refundedCount} users`)
+          addToast('info', `${data.refundedCount} kişiye toplam ${data.totalRefunded} jeton iade edildi`} jetons to ${data.refundedCount} users`)
         }
       }
     } catch (e) {}
@@ -1405,8 +1403,8 @@ export default function BroadcastPage() {
                       )}
                       <p className="text-white text-[10px] text-center px-2">
                         {isDisconnected 
-                          ? (language === 'tr' ? 'Yeniden bağlanıyor...' : 'Reconnecting...')
-                          : (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...')
+                          ? ('Yeniden bağlanıyor...')
+                          : ('Bağlanıyor...')
                         }
                       </p>
                       <div className="mt-1.5 w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1437,7 +1435,7 @@ export default function BroadcastPage() {
                   <button 
                     onClick={() => handleRemoveCoBroadcaster(guest.userId)}
                     className="absolute top-2 right-2 p-1.5 bg-red-500/70 rounded-full hover:bg-red-500 transition-colors z-10"
-                    title={language === 'tr' ? 'Çıkar' : 'Remove'}
+                    title={'Çıkar'}
                   >
                     <PhoneOff className="w-3 h-3 text-white" />
                   </button>
@@ -1529,7 +1527,7 @@ export default function BroadcastPage() {
                 )}
                 <div className="text-left">
                   <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                  <p className="text-yellow-400 text-sm">{centerGift.giftName} {language === 'tr' ? 'gönderdi' : 'sent'}</p>
+                  <p className="text-yellow-400 text-sm">{centerGift.giftName} {'gönderdi'}</p>
                 </div>
               </div>
             </motion.div>
@@ -1589,7 +1587,7 @@ export default function BroadcastPage() {
               className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
             >
               <X className="w-4 h-4" /> 
-              {language === 'tr' ? 'Canlı Yayını Kapat' : 'End Live'}
+              {'Canlı Yayını Kapat'}
             </button>
           </div>
 
@@ -1608,7 +1606,7 @@ export default function BroadcastPage() {
             className="bg-[#fe2c55] text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1"
           >
             <X className="w-4 h-4" /> 
-            {language === 'tr' ? 'Bitir' : 'End'}
+            {'Bitir'}
           </button>
         </div>
       )}
@@ -1620,7 +1618,7 @@ export default function BroadcastPage() {
           {streamCategory && (
             <div className={`flex items-center gap-1.5 bg-gradient-to-r ${streamCategory.color} px-3 py-1.5 rounded-full w-fit shadow-lg`}>
               <span className="text-base">{streamCategory.icon}</span>
-              <span className="text-white font-semibold text-xs">{language === 'tr' ? streamCategory.name : streamCategory.nameEn}</span>
+              <span className="text-white font-semibold text-xs">{streamCategory.name}</span>
             </div>
           )}
           
@@ -1685,7 +1683,7 @@ export default function BroadcastPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-white font-bold text-xs flex items-center gap-1">
                   <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  {language === 'tr' ? 'Fal İstekleri' : 'Requests'}
+                  {'Fal İstekleri'}
                 </h3>
                 <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold animate-pulse">
                   {fortuneRequesters.length}
@@ -1708,7 +1706,7 @@ export default function BroadcastPage() {
                     <span className="text-sm shrink-0">{req.typeIcon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-[10px] font-medium truncate">
-                        {req.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (req.nickname || req.user.name)}
+                        {req.isHidden ? ('Gizli') : (req.nickname || req.user.name)}
                       </p>
                       <div className="flex items-center gap-1">
                         <Coins className="w-2.5 h-2.5 text-amber-400" />
@@ -1776,7 +1774,7 @@ export default function BroadcastPage() {
           >
             <div className="p-3 border-b border-white/10 flex items-center justify-between">
               <h3 className="text-white font-medium text-sm flex items-center gap-2">
-                <Users className="w-4 h-4" /> {language === 'tr' ? 'İzleyiciler' : 'Viewers'} ({viewers.length})
+                <Users className="w-4 h-4" /> {'İzleyiciler'} ({viewers.length})
               </h3>
               <button onClick={() => setShowViewers(false)} className="text-white/60 hover:text-white">
                 <X className="w-4 h-4" />
@@ -1812,9 +1810,9 @@ export default function BroadcastPage() {
                           className="flex items-center gap-2 px-3 py-2 text-white text-sm rounded cursor-pointer hover:bg-white/10"
                         >
                           {viewer.odUserId && mutedViewers.has(viewer.odUserId) ? (
-                            <><Volume2 className="w-4 h-4" /> {language === 'tr' ? 'Sesi Aç' : 'Unmute'}</>
+                            <><Volume2 className="w-4 h-4" /> {'Sesi Aç'}</>
                           ) : (
-                            <><VolumeX className="w-4 h-4" /> {language === 'tr' ? 'Sessize Al' : 'Mute'}</>
+                            <><VolumeX className="w-4 h-4" /> {'Sessize Al'}</>
                           )}
                         </DropdownMenu.Item>
                         
@@ -1826,7 +1824,7 @@ export default function BroadcastPage() {
                               className="flex items-center gap-2 px-3 py-2 text-orange-400 text-sm rounded cursor-pointer hover:bg-white/10"
                             >
                               <UserX className="w-4 h-4" />
-                              {language === 'tr' ? 'Moderatörlükten Çıkar' : 'Remove Moderator'}
+                              {'Moderatörlükten Çıkar'}
                             </DropdownMenu.Item>
                           ) : (
                             <DropdownMenu.Item
@@ -1835,7 +1833,7 @@ export default function BroadcastPage() {
                               disabled={moderators.length >= 10}
                             >
                               <Shield className="w-4 h-4" />
-                              {language === 'tr' ? 'Moderatör Yap' : 'Make Moderator'}
+                              {'Moderatör Yap'}
                             </DropdownMenu.Item>
                           )
                         )}
@@ -1846,7 +1844,7 @@ export default function BroadcastPage() {
                           className="flex items-center gap-2 px-3 py-2 text-red-400 text-sm rounded cursor-pointer hover:bg-white/10"
                         >
                           <Ban className="w-4 h-4" />
-                          {language === 'tr' ? 'Engelle' : 'Ban'}
+                          {'Engelle'}
                         </DropdownMenu.Item>
                       </DropdownMenu.Content>
                     </DropdownMenu.Portal>
@@ -1855,7 +1853,7 @@ export default function BroadcastPage() {
               ))}
               {viewers.length === 0 && (
                 <p className="text-white/40 text-xs text-center py-6">
-                  {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
+                  {'Henüz izleyici yok'}
                 </p>
               )}
             </div>
@@ -1883,7 +1881,7 @@ export default function BroadcastPage() {
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSendComment()}
-              placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
+              placeholder={'Mesaj yaz...'}
               className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/40 focus:outline-none"
             />
             <button
@@ -1892,7 +1890,7 @@ export default function BroadcastPage() {
               className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full mr-1 flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
             >
               <Send className="w-4 h-4" />
-              <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
+              <span>{'Gönder'}</span>
             </button>
           </div>
         </div>
@@ -1928,7 +1926,7 @@ export default function BroadcastPage() {
           <button 
             onClick={handleToggleImageMode} 
             className={`w-12 h-12 rounded-full flex items-center justify-center ${isImageMode ? 'bg-green-500' : 'bg-white/20'}`}
-            title={language === 'tr' ? 'Resim ile Yayın' : 'Broadcast with Image'}
+            title={'Resim ile Yayın'}
           >
             <ImageIcon className="w-5 h-5 text-white" />
           </button>
@@ -1938,7 +1936,7 @@ export default function BroadcastPage() {
             <button 
               onClick={enableRemoteAudio} 
               className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center animate-pulse"
-              title={language === 'tr' ? 'Sesi Aç' : 'Enable Audio'}
+              title={'Sesi Aç'}
             >
               <Volume2 className="w-5 h-5 text-white" />
             </button>
@@ -1966,7 +1964,7 @@ export default function BroadcastPage() {
               </div>
               
               <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Ortak Yayın Talebi!' : 'Co-Broadcast Request!'}
+                {'Ortak Yayın Talebi!'}
               </h2>
               
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -1980,15 +1978,13 @@ export default function BroadcastPage() {
                 <div className="text-left">
                   <p className="text-white font-semibold">{pendingCoBroadcastRequest.user.name}</p>
                   <p className="text-white/60 text-sm">
-                    {language === 'tr' ? 'ortak yayın yapmak istiyor' : 'wants to co-stream with you'}
+                    {'ortak yayın yapmak istiyor'}
                   </p>
                 </div>
               </div>
               
               <p className="text-white/70 text-sm mb-6">
-                {language === 'tr' 
-                  ? 'Kabul ederseniz ekran ikiye bölünecek ve birlikte yayın yapacaksınız.'
-                  : 'If you accept, the screen will split and you will stream together.'}
+                {'Kabul ederseniz ekran ikiye bölünecek ve birlikte yayın yapacaksınız.'}
               </p>
               
               <div className="flex gap-3">
@@ -1997,14 +1993,14 @@ export default function BroadcastPage() {
                   className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-white/20"
                 >
                   <X className="w-5 h-5" />
-                  {language === 'tr' ? 'Reddet' : 'Decline'}
+                  {'Reddet'}
                 </button>
                 <button
                   onClick={handleAcceptCoBroadcastRequest}
                   className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-green-400 hover:to-green-500"
                 >
                   <Phone className="w-5 h-5" />
-                  {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                  {'Kabul Et'}
                 </button>
               </div>
             </motion.div>
@@ -2036,7 +2032,7 @@ export default function BroadcastPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white/80 text-sm flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-green-400" />
-                  {language === 'tr' ? 'Moderatörler' : 'Moderators'} ({moderators.length}/10)
+                  {'Moderatörler'} ({moderators.length}/10)
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -2056,7 +2052,7 @@ export default function BroadcastPage() {
                   </div>
                 ))}
                 {moderators.length === 0 && (
-                  <span className="text-white/40 text-xs">{language === 'tr' ? 'Henüz moderatör yok' : 'No moderators yet'}</span>
+                  <span className="text-white/40 text-xs">{'Henüz moderatör yok'}</span>
                 )}
               </div>
             </div>
@@ -2065,7 +2061,7 @@ export default function BroadcastPage() {
             <div className="mb-4">
               <span className="text-white/80 text-sm flex items-center gap-1.5 mb-2">
                 <Crown className="w-4 h-4 text-yellow-400" />
-                {language === 'tr' ? 'Fal İsteyenler' : 'Fortune Requesters'} ({fortuneRequesters.length})
+                {'Fal İsteyenler'} ({fortuneRequesters.length})
               </span>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {fortuneRequesters.map((req, index) => (
@@ -2088,11 +2084,11 @@ export default function BroadcastPage() {
                       )}
                       <div>
                         <p className="text-white text-xs font-medium">
-                          {req.isHidden ? (language === 'tr' ? 'Gizli Kullanıcı' : 'Hidden User') : (req.nickname || req.user.name)}
+                          {req.isHidden ? ('Gizli Kullanıcı') : (req.nickname || req.user.name)}
                         </p>
                         <div className="flex items-center gap-2">
                           <span className="text-amber-400 text-[10px] font-bold">{req.jetonAmount} jeton</span>
-                          <span className="text-white/50 text-[10px]">{language === 'tr' ? req.typeName : req.typeNameEn}</span>
+                          <span className="text-white/50 text-[10px]">{req.typeName}</span>
                         </div>
                       </div>
                     </div>
@@ -2105,7 +2101,7 @@ export default function BroadcastPage() {
                   </motion.div>
                 ))}
                 {fortuneRequesters.length === 0 && (
-                  <p className="text-white/40 text-xs text-center py-4">{language === 'tr' ? 'Henüz fal isteyen yok' : 'No fortune requests yet'}</p>
+                  <p className="text-white/40 text-xs text-center py-4">{'Henüz fal isteyen yok'}</p>
                 )}
               </div>
             </div>
@@ -2117,7 +2113,7 @@ export default function BroadcastPage() {
                 className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 ${isImageMode ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}
               >
                 <ImageIcon className="w-4 h-4" />
-                {language === 'tr' ? 'Resim Modu' : 'Image Mode'}
+                {'Resim Modu'}
               </button>
             </div>
           </motion.div>
@@ -2145,13 +2141,11 @@ export default function BroadcastPage() {
               </div>
               
               <h2 className="text-lg font-bold text-white mb-1">
-                {language === 'tr' ? 'Ekran Görüntüsü Seç' : 'Select Screen Image'}
+                {'Ekran Görüntüsü Seç'}
               </h2>
               
               <p className="text-white/60 text-xs mb-4">
-                {language === 'tr' 
-                  ? 'Kamera yerine gösterilecek bir resim seçin'
-                  : 'Select an image to show instead of camera'}
+                {'Kamera yerine gösterilecek bir resim seçin'}
               </p>
               
               {/* Image Grid */}
@@ -2160,7 +2154,7 @@ export default function BroadcastPage() {
                   <div className="py-8 text-center">
                     <ImageIcon className="w-12 h-12 text-white/20 mx-auto mb-3" />
                     <p className="text-white/40 text-sm">
-                      {language === 'tr' ? 'Henüz resim eklenmemiş' : 'No images available'}
+                      {'Henüz resim eklenmemiş'}
                     </p>
                   </div>
                 ) : (
@@ -2202,7 +2196,7 @@ export default function BroadcastPage() {
                 onClick={() => setShowImageUpload(false)}
                 className="w-full bg-white/10 text-white py-2.5 rounded-xl font-semibold mt-4 text-sm"
               >
-                {language === 'tr' ? 'İptal' : 'Cancel'}
+                {'İptal'}
               </button>
             </motion.div>
           </motion.div>
@@ -2231,7 +2225,7 @@ export default function BroadcastPage() {
                   <span className="text-3xl">{selectedFortuneRequest.typeIcon}</span>
                   <div>
                     <h2 className="text-lg font-bold text-white">
-                      {language === 'tr' ? selectedFortuneRequest.typeName : selectedFortuneRequest.typeNameEn}
+                      {selectedFortuneRequest.typeName}
                     </h2>
                     <p className="text-amber-400 font-bold">
                       {selectedFortuneRequest.jetonAmount} jeton
@@ -2257,12 +2251,12 @@ export default function BroadcastPage() {
                 <div>
                   <p className="text-white font-medium">
                     {selectedFortuneRequest.isHidden 
-                      ? (language === 'tr' ? 'Gizli Kullanıcı' : 'Hidden User')
+                      ? ('Gizli Kullanıcı')
                       : (selectedFortuneRequest.nickname || selectedFortuneRequest.user.name)}
                   </p>
                   {selectedFortuneRequest.isHidden && (
                     <p className="text-white/50 text-xs">
-                      {language === 'tr' ? 'Gerçek isim gizlenmiş' : 'Real name is hidden'}
+                      {'Gerçek isim gizlenmiş'}
                     </p>
                   )}
                 </div>
@@ -2273,7 +2267,7 @@ export default function BroadcastPage() {
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-4">
                   <p className="text-blue-400 text-sm font-medium mb-2 flex items-center gap-2">
                     <span>💬</span>
-                    {language === 'tr' ? 'Soru:' : 'Question:'}
+                    {'Soru:'}
                   </p>
                   <p className="text-white">{selectedFortuneRequest.question}</p>
                 </div>
@@ -2282,7 +2276,7 @@ export default function BroadcastPage() {
               {!selectedFortuneRequest.question && (
                 <div className="bg-white/5 rounded-xl p-4 mb-4 text-center">
                   <p className="text-white/50 text-sm">
-                    {language === 'tr' ? 'Soru belirtilmemiş' : 'No specific question'}
+                    {'Soru belirtilmemiş'}
                   </p>
                 </div>
               )}
@@ -2294,7 +2288,7 @@ export default function BroadcastPage() {
                   className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white"
                 >
                   <span>✓</span>
-                  {language === 'tr' ? 'Fala Baktım - Tamamla' : 'Fortune Read - Complete'}
+                  {'Fala Baktım - Tamamla'}
                 </button>
                 
                 <button
@@ -2302,14 +2296,12 @@ export default function BroadcastPage() {
                   className="w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-white/10 text-white"
                 >
                   <span>↩</span>
-                  {language === 'tr' ? 'İade Et (Bakamıyorum)' : 'Refund (Cannot Read)'}
+                  {'İade Et (Bakamıyorum)'}
                 </button>
               </div>
               
               <p className="text-white/40 text-xs text-center mt-3">
-                {language === 'tr' 
-                  ? 'Tamamla butonu jetonu size aktarır. İade butonu kullanıcıya geri verir.' 
-                  : 'Complete button transfers jetons to you. Refund returns them to user.'}
+                {'Tamamla butonu jetonu size aktarır. İade butonu kullanıcıya geri verir.'}
               </p>
             </motion.div>
           </motion.div>
@@ -2324,7 +2316,7 @@ export default function BroadcastPage() {
               {/* Header */}
               <div className="text-center mb-4">
                 <Radio className="w-10 h-10 text-[#fe2c55] mx-auto mb-3" />
-                <h2 className="text-lg font-bold text-white mb-1">{language === 'tr' ? 'Yayını Kapat' : 'End Live Stream'}</h2>
+                <h2 className="text-lg font-bold text-white mb-1">{'Yayını Kapat'}</h2>
                 <p className="text-white/60 text-sm">{formatDuration(duration)}</p>
                 {totalGiftJetons > 0 && (
                   <div className="flex items-center justify-center gap-2 mt-2 text-yellow-400">
@@ -2340,7 +2332,7 @@ export default function BroadcastPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white/80 text-sm flex items-center gap-1.5">
                       <Crown className="w-4 h-4 text-amber-400" />
-                      {language === 'tr' ? 'Fal İstekleri' : 'Fortune Requests'}
+                      {'Fal İstekleri'}
                     </span>
                     <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
                       {fortuneRequesters.length}
@@ -2366,7 +2358,7 @@ export default function BroadcastPage() {
                           )}
                           <div>
                             <p className="text-white text-xs font-medium truncate max-w-24">
-                              {req.isHidden ? (language === 'tr' ? 'Gizli' : 'Hidden') : (req.nickname || req.user.name)}
+                              {req.isHidden ? ('Gizli') : (req.nickname || req.user.name)}
                             </p>
                             <p className="text-amber-400 text-[10px] font-bold">{req.jetonAmount} jeton</p>
                           </div>
@@ -2380,9 +2372,7 @@ export default function BroadcastPage() {
                   </div>
                   
                   <p className="text-amber-400 text-xs text-center mt-2">
-                    ⚠️ {language === 'tr' 
-                      ? 'Yayını bitirirsen tüm bekleyen istekler iade edilecek!' 
-                      : 'All pending requests will be refunded if you end!'}
+                    ⚠️ {'Yayını bitirirsen tüm bekleyen istekler iade edilecek!'}
                   </p>
                 </div>
               )}
@@ -2390,10 +2380,10 @@ export default function BroadcastPage() {
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-medium">
-                  {language === 'tr' ? 'Devam Et' : 'Continue'}
+                  {'Devam Et'}
                 </button>
                 <button onClick={handleEndStream} className="flex-1 bg-[#fe2c55] text-white py-2.5 rounded-lg font-medium">
-                  {language === 'tr' ? 'Bitir' : 'End'}
+                  {'Bitir'}
                 </button>
               </div>
             </motion.div>

@@ -50,15 +50,15 @@ export default function LeaderboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
-        <LoadingSpinner message={language === 'tr' ? 'Yükleniyor...' : 'Loading...'} />
+        <LoadingSpinner message={'Yükleniyor...'} />
       </div>
     )
   }
 
   const tabs = [
-    { key: 'referrers', label: language === 'tr' ? 'En Çok Davet' : 'Top Referrers', icon: Users },
-    { key: 'fortunes', label: language === 'tr' ? 'En Çok Fal' : 'Most Fortunes', icon: Sparkles },
-    { key: 'sharers', label: language === 'tr' ? 'En Çok Paylaşım' : 'Top Sharers', icon: TrendingUp },
+    { key: 'referrers', label: 'En Çok Davet', icon: Users },
+    { key: 'fortunes', label: 'En Çok Fal', icon: Sparkles },
+    { key: 'sharers', label: 'En Çok Paylaşım', icon: TrendingUp },
   ] as const
 
   const currentData = activeTab === 'referrers' 
@@ -68,9 +68,9 @@ export default function LeaderboardPage() {
       : data?.topSharers
 
   const getCountLabel = () => {
-    if (activeTab === 'referrers') return language === 'tr' ? 'davet' : 'invites'
-    if (activeTab === 'fortunes') return language === 'tr' ? 'fal' : 'fortunes'
-    return language === 'tr' ? 'paylaşım' : 'shares'
+    if (activeTab === 'referrers') return 'davet'
+    if (activeTab === 'fortunes') return 'fal'
+    return 'paylaşım'
   }
 
   return (
@@ -84,12 +84,10 @@ export default function LeaderboardPage() {
         >
           <Trophy className="w-16 h-16 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-3xl sm:text-4xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Liderlik Tablosu' : 'Leaderboard'}
+            {'Liderlik Tablosu'}
           </h1>
           <p className="text-deep-purple-200">
-            {language === 'tr' 
-              ? 'En aktif kullanıcılarımız' 
-              : 'Our most active users'}
+            {'En aktif kullanıcılarımız'}
           </p>
         </motion.div>
 
@@ -207,7 +205,7 @@ export default function LeaderboardPage() {
               <div className="text-center py-8">
                 <Star className="w-12 h-12 text-deep-purple-600 mx-auto mb-3" />
                 <p className="text-deep-purple-400">
-                  {language === 'tr' ? 'Henüz veri yok' : 'No data yet'}
+                  {'Henüz veri yok'}
                 </p>
               </div>
             )}

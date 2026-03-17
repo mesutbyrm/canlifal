@@ -30,18 +30,16 @@ export async function POST(request: Request) {
     }
 
     const palmImageUrl = await getFileUrl(palmImagePath, false)
-    const handText = hand === 'left' ? (language === 'tr' ? 'sol el' : 'left hand') : (language === 'tr' ? 'sağ el' : 'right hand')
+    const handText = hand === 'left' ? ('sol el') : ('sağ el')
 
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir el falcısısın (palmist). Kullanıcının ${handText} görselini analiz et. Yaşam çizgisi, kalp çizgisi, kader çizgisi, akıl çizgisi ve diğer önemli çizgileri yorumla. Kişilik, aşk hayatı, kariyer, sağlık ve gelecek hakkında detaylı bilgi ver. Cevabın 350-450 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
-      : `You are an experienced palmist. Analyze the user's ${handText} image. Interpret the life line, heart line, fate line, head line, and other important lines. Provide detailed insights about personality, love life, career, health, and future. Your response should be 350-450 words, mystical and enlightening. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir el falcısısın (palmist). Kullanıcının ${handText} görselini analiz et. Yaşam çizgisi, kalp çizgisi, kader çizgisi, akıl çizgisi ve diğer önemli çizgileri yorumla. Kişilik, aşk hayatı, kariyer, sağlık ve gelecek hakkında detaylı bilgi ver. Cevabın 350-450 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`} image. Interpret the life line, heart line, fate line, head line, and other important lines. Provide detailed insights about personality, love life, career, health, and future. Your response should be 350-450 words, mystical and enlightening. Respond entirely in English.`
 
     const messages = [
       { role: 'system', content: systemPrompt },
       { 
         role: 'user', 
         content: [
-          { type: 'text', text: language === 'tr' ? 'Lütfen elimin fotoğrafını analiz et ve el falımı söyle.' : 'Please analyze my palm photo and tell me my palm reading.' },
+          { type: 'text', text: 'Lütfen elimin fotoğrafını analiz et ve el falımı söyle.' },
           { type: 'image_url', image_url: { url: palmImageUrl } }
         ]
       },

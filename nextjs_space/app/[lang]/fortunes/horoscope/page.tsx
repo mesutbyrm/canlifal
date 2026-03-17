@@ -36,7 +36,7 @@ export default function HoroscopePage() {
   const [formattedDate, setFormattedDate] = useState('')
 
   useEffect(() => {
-    setFormattedDate(new Date().toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { 
+    setFormattedDate(new Date().toLocaleDateString('tr-TR', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
@@ -46,7 +46,7 @@ export default function HoroscopePage() {
 
   const handleSubmit = async () => {
     if (!selectedSign) {
-      setError(language === 'tr' ? 'Lütfen burcunuzu seçin' : 'Please select your zodiac sign')
+      setError('Lütfen burcunuzu seçin')
       return
     }
 
@@ -116,7 +116,7 @@ export default function HoroscopePage() {
           {/* Zodiac Sign Selection */}
           <div>
             <label className="block text-deep-purple-200 mb-3 text-sm font-medium">
-              {language === 'tr' ? 'Burcunuzu Seçin' : 'Select Your Sign'}
+              {'Burcunuzu Seçin'}
             </label>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {ZODIAC_SIGNS.map((sign) => (
@@ -130,7 +130,7 @@ export default function HoroscopePage() {
                   }`}
                 >
                   <span className="text-xl sm:text-2xl block mb-0.5">{sign.emoji}</span>
-                  <span className="text-[10px] sm:text-xs">{language === 'tr' ? sign.tr : sign.en}</span>
+                  <span className="text-[10px] sm:text-xs">{sign.tr}</span>
                 </button>
               ))}
             </div>
@@ -162,11 +162,11 @@ export default function HoroscopePage() {
             className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
-              <LoadingSpinner message={language === 'tr' ? 'Burç yorumunuz hazırlanıyor...' : 'Preparing your horoscope...'} />
+              <LoadingSpinner message={'Burç yorumunuz hazırlanıyor...'} />
             ) : (
               <>
                 <Star className="w-5 h-5" />
-                {language === 'tr' ? 'Burcumu Göster' : 'Show My Horoscope'}
+                {'Burcumu Göster'}
               </>
             )}
           </button>
@@ -183,7 +183,7 @@ export default function HoroscopePage() {
               <div className="flex items-center gap-2 text-gold-500">
                 <Sparkles className="w-5 h-5" />
                 <h2 className="font-serif text-xl sm:text-2xl">
-                  {language === 'tr' ? selectedSignData?.tr : selectedSignData?.en}
+                  {selectedSignData?.tr}
                 </h2>
               </div>
               <p className="text-deep-purple-300 text-sm mt-1">
@@ -206,7 +206,7 @@ export default function HoroscopePage() {
           <div className="flex flex-wrap gap-2">
             <ShareToSocial fortuneType="horoscope" content={response} />
             <SocialShare 
-              title={language === 'tr' ? `Günlük ${selectedSignData?.tr} Burcu` : `Daily ${selectedSignData?.en} Horoscope`}
+              title={`Günlük ${selectedSignData?.tr} Burcu`}
               text={response}
             />
           </div>
@@ -217,7 +217,7 @@ export default function HoroscopePage() {
             className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <RotateCcw className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Burç Bak' : 'Get Another Horoscope'}
+            {'Yeni Burç Bak'}
           </button>
         </div>
       )}

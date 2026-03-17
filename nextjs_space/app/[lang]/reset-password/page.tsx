@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     if (!token) {
-      setError(language === 'tr' ? 'Geçersiz veya eksik token' : 'Invalid or missing token')
+      setError('Geçersiz veya eksik token')
     }
   }, [token, language])
 
@@ -30,12 +30,12 @@ export default function ResetPasswordPage() {
     setError('')
 
     if (password.length < 6) {
-      setError(language === 'tr' ? 'Şifre en az 6 karakter olmalı' : 'Password must be at least 6 characters')
+      setError('Şifre en az 6 karakter olmalı')
       return
     }
 
     if (password !== confirmPassword) {
-      setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match')
+      setError('Şifreler eşleşmiyor')
       return
     }
 
@@ -56,10 +56,10 @@ export default function ResetPasswordPage() {
           router.push(`/login`)
         }, 3000)
       } else {
-        setError(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+        setError(data.error || ('Bir hata oluştu'))
       }
     } catch {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -77,12 +77,10 @@ export default function ResetPasswordPage() {
             <Check className="w-8 h-8 text-green-400" />
           </div>
           <h1 className="font-serif text-2xl text-gold-400 mb-4">
-            {language === 'tr' ? 'Şifre Değiştirildi!' : 'Password Changed!'}
+            {'Şifre Değiştirildi!'}
           </h1>
           <p className="text-deep-purple-200 mb-6">
-            {language === 'tr' 
-              ? 'Şifreniz başarıyla değiştirildi. Giriş sayfasına yönlendiriliyorsunuz...' 
-              : 'Your password has been changed. Redirecting to login...'}
+            {'Şifreniz başarıyla değiştirildi. Giriş sayfasına yönlendiriliyorsunuz...'}
           </p>
         </motion.div>
       </div>
@@ -101,18 +99,16 @@ export default function ResetPasswordPage() {
             <X className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="font-serif text-2xl text-red-400 mb-4">
-            {language === 'tr' ? 'Geçersiz Link' : 'Invalid Link'}
+            {'Geçersiz Link'}
           </h1>
           <p className="text-deep-purple-200 mb-6">
-            {language === 'tr' 
-              ? 'Bu sıfırlama linki geçersiz veya süresi dolmuş.' 
-              : 'This reset link is invalid or has expired.'}
+            {'Bu sıfırlama linki geçersiz veya süresi dolmuş.'}
           </p>
           <Link
             href={`/forgot-password`}
             className="inline-block px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500"
           >
-            {language === 'tr' ? 'Yeni Link Al' : 'Get New Link'}
+            {'Yeni Link Al'}
           </Link>
         </motion.div>
       </div>
@@ -129,19 +125,17 @@ export default function ResetPasswordPage() {
         <div className="text-center mb-8">
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Yeni Şifre Belirle' : 'Set New Password'}
+            {'Yeni Şifre Belirle'}
           </h1>
           <p className="text-deep-purple-300 text-sm">
-            {language === 'tr' 
-              ? 'Yeni şifrenizi girin.' 
-              : 'Enter your new password.'}
+            {'Yeni şifrenizi girin.'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2">
-              {language === 'tr' ? 'Yeni Şifre' : 'New Password'}
+              {'Yeni Şifre'}
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -159,7 +153,7 @@ export default function ResetPasswordPage() {
 
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2">
-              {language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'}
+              {'Şifre Tekrar'}
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -185,8 +179,8 @@ export default function ResetPasswordPage() {
             className="w-full py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading 
-              ? (language === 'tr' ? 'Değiştiriliyor...' : 'Changing...') 
-              : (language === 'tr' ? 'Şifreyi Değiştir' : 'Change Password')}
+              ? ('Değiştiriliyor...') 
+              : ('Şifreyi Değiştir')}
           </button>
         </form>
       </motion.div>

@@ -193,7 +193,7 @@ export async function PATCH(
         });
 
         if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
-          return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok / User has insufficient jetons' }, { status: 400 });
+          return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok' }, { status: 400 });
         }
 
         // Deduct jetons and add time
@@ -239,7 +239,7 @@ export async function PATCH(
         });
 
         if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
-          return NextResponse.json({ error: 'Yetersiz jeton / Insufficient jetons' }, { status: 400 });
+          return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 });
         }
 
         // Deduct jetons and extend time
@@ -303,8 +303,8 @@ export async function PATCH(
           data: {
             userId: isUser ? liveSession.teller.userId : liveSession.userId,
             type: 'session_ended',
-            title: 'Seans Sona Erdi / Session Ended',
-            message: 'Canlı fal seansı tamamlandı. / Live fortune session completed.'
+            title: 'Seans Sona Erdi',
+            message: 'Canlı fal seansı tamamlandı.'
           }
         });
 

@@ -62,7 +62,7 @@ export default function ChatRoomReceivedGifts({ language, isFacebook, isCosmic, 
         <div className="flex items-center gap-2">
           <Gift className={`w-4 h-4 ${isFacebook ? 'text-yellow-500' : 'text-yellow-400'}`} />
           <span className={`text-sm font-semibold ${textPrimary}`}>
-            {language === 'tr' ? 'Sohbet Odası Hediyeleri' : 'Chat Room Gifts'}
+            {'Sohbet Odası Hediyeleri'}
           </span>
           <span className={`text-[10px] ${textSecondary}`}>
             ({gifts.length})
@@ -90,7 +90,7 @@ export default function ChatRoomReceivedGifts({ language, isFacebook, isCosmic, 
                           {g.senderName} <span className={textSecondary}>→</span> {g.giftName}
                         </p>
                         <p className={`text-[10px] ${textSecondary}`}>
-                          {g.roomName} • {new Date(g.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                          {g.roomName} • {new Date(g.createdAt).toLocaleDateString('tr-TR')}
                         </p>
                       </div>
                     </div>

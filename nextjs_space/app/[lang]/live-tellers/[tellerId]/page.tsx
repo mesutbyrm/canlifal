@@ -145,7 +145,7 @@ export default function TellerDetailPage() {
         setIsWaiting(false)
         setWaitingSessionId(null)
         setSessionStatus('cancelled')
-        setBookingError(language === 'tr' ? 'Falcı randevunuzu reddetti' : 'Fortune teller rejected your request')
+        setBookingError('Falcı randevunuzu reddetti')
       }
     } catch (error) {
       console.error('Error checking session status:', error)
@@ -175,14 +175,14 @@ export default function TellerDetailPage() {
     try {
       const res = await fetch(`/api/fortune-tellers/${tellerId}`)
       if (!res.ok) {
-        setError(language === 'tr' ? 'Falcı bulunamadı' : 'Fortune teller not found')
+        setError('Falcı bulunamadı')
         return
       }
       const data = await res.json()
       setTeller(data)
     } catch (err) {
       console.error('Fetch teller error:', err)
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setLoading(false)
     }
@@ -212,7 +212,7 @@ export default function TellerDetailPage() {
     if (!teller) return
 
     if (userJetons < totalCost) {
-      setBookingError(language === 'tr' ? 'Yetersiz jeton bakiyesi' : 'Insufficient jetons')
+      setBookingError('Yetersiz jeton bakiyesi')
       return
     }
 
@@ -284,13 +284,13 @@ export default function TellerDetailPage() {
     return (
       <div className="min-h-screen bg-[#0a0118] flex flex-col items-center justify-center p-4">
         <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
-        <p className="text-white text-xl mb-4">{error || (language === 'tr' ? 'Falcı bulunamadı' : 'Fortune teller not found')}</p>
+        <p className="text-white text-xl mb-4">{error || ('Falcı bulunamadı')}</p>
         <Link
           href={`/live-tellers`}
           className="text-purple-400 hover:text-purple-300 flex items-center gap-2"
         >
           <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+          {'Geri Dön'}
         </Link>
       </div>
     )
@@ -309,7 +309,7 @@ export default function TellerDetailPage() {
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Tüm Falcılar' : 'All Fortune Tellers'}
+          {'Tüm Falcılar'}
         </Link>
 
         <motion.div
@@ -361,8 +361,8 @@ export default function TellerDetailPage() {
                       : 'bg-gray-500/20 text-gray-400'
                   }`}>
                     {teller.isOnline
-                      ? (language === 'tr' ? '● Çevrimiçi' : '● Online')
-                      : (language === 'tr' ? '○ Çevrimdışı' : '○ Offline')}
+                      ? ('● Çevrimiçi')
+                      : ('○ Çevrimdışı')}
                   </span>
                   <span className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -370,7 +370,7 @@ export default function TellerDetailPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Video className="w-4 h-4" />
-                    {teller.totalSessions} {language === 'tr' ? 'seans' : 'sessions'}
+                    {teller.totalSessions} {'seans'}
                   </span>
                 </div>
 
@@ -390,7 +390,7 @@ export default function TellerDetailPage() {
                 <div className="flex items-center gap-2 text-lg">
                   <CreditCard className="w-5 h-5 text-gold-400" />
                   <span className="text-gold-400 font-semibold">
-                    {teller.pricePerSession} {language === 'tr' ? 'jeton/seans' : 'jetons/session'}
+                    {teller.pricePerSession} {'jeton/seans'}
                   </span>
                 </div>
               </div>
@@ -402,7 +402,7 @@ export default function TellerDetailPage() {
             <div className="p-6 md:p-8 border-b border-purple-500/20">
               <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-400" />
-                {language === 'tr' ? 'Hakkımda' : 'About Me'}
+                {'Hakkımda'}
               </h2>
               <p className="text-purple-200 leading-relaxed whitespace-pre-wrap">
                 {teller.bio}
@@ -414,7 +414,7 @@ export default function TellerDetailPage() {
           <div className="p-6 md:p-8 border-b border-purple-500/20">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-purple-400" />
-              {language === 'tr' ? 'Randevu Al' : 'Book a Session'}
+              {'Randevu Al'}
             </h2>
 
             {isWaiting ? (
@@ -435,12 +435,10 @@ export default function TellerDetailPage() {
                       <div className="text-center">
                         <Sparkles className="w-16 h-16 text-gold-400 mx-auto mb-4 animate-pulse" />
                         <h3 className="text-xl font-semibold text-white mb-2">
-                          {language === 'tr' ? 'Reklam' : 'Advertisement'}
+                          {'Reklam'}
                         </h3>
                         <p className="text-purple-200 mb-4">
-                          {language === 'tr' 
-                            ? 'Canlı fal deneyiminiz birazdan başlayacak!'
-                            : 'Your live fortune experience is about to begin!'}
+                          {'Canlı fal deneyiminiz birazdan başlayacak!'}
                         </p>
                         <div className="w-full max-w-xs mx-auto h-32 bg-gradient-to-r from-gold-600/20 to-purple-600/20 rounded-lg flex items-center justify-center border border-gold-500/30 mb-4">
                           <span className="text-gold-400 text-lg font-semibold">
@@ -448,7 +446,7 @@ export default function TellerDetailPage() {
                           </span>
                         </div>
                         <div className="text-purple-300 text-sm">
-                          {language === 'tr' ? 'Reklam' : 'Ad'}: {adCountdown}s
+                          {'Reklam'}: {adCountdown}s
                         </div>
                       </div>
                     </motion.div>
@@ -465,18 +463,16 @@ export default function TellerDetailPage() {
                   </div>
                   
                   <h3 className="text-xl font-semibold text-white mb-2">
-                    {language === 'tr' ? 'Lütfen Bekleyiniz...' : 'Please Wait...'}
+                    {'Lütfen Bekleyiniz...'}
                   </h3>
                   <p className="text-purple-200 mb-4">
-                    {language === 'tr'
-                      ? `${teller.displayName} randevunuzu onayladığında otomatik olarak odaya bağlanacaksınız.`
-                      : `You will be automatically connected when ${teller.displayName} accepts your request.`}
+                    {`${teller.displayName} randevunuzu onayladığında otomatik olarak odaya bağlanacaksınız.`} accepts your request.`}
                   </p>
                   
                   <div className="flex items-center justify-center gap-2 text-purple-300 mb-6">
                     <Clock className="w-4 h-4 animate-pulse" />
                     <span className="text-sm">
-                      {language === 'tr' ? 'Falcı bekleniyor...' : 'Waiting for fortune teller...'}
+                      {'Falcı bekleniyor...'}
                     </span>
                   </div>
                   
@@ -485,7 +481,7 @@ export default function TellerDetailPage() {
                     className="px-6 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
                   >
                     <X className="w-4 h-4" />
-                    {language === 'tr' ? 'İptal Et' : 'Cancel'}
+                    {'İptal Et'}
                   </button>
                 </div>
               </motion.div>
@@ -494,7 +490,7 @@ export default function TellerDetailPage() {
                 {/* Fortune Type Selection */}
                 <div>
                   <label className="block text-sm text-purple-300 mb-2">
-                    {language === 'tr' ? 'Fal Türü Seçin' : 'Select Fortune Type'}
+                    {'Fal Türü Seçin'}
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {filteredFortuneTypes.map(ft => (
@@ -516,7 +512,7 @@ export default function TellerDetailPage() {
                 {/* Duration Selection */}
                 <div>
                   <label className="block text-sm text-purple-300 mb-2">
-                    {language === 'tr' ? 'Süre Seçin' : 'Select Duration'}
+                    {'Süre Seçin'}
                   </label>
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                     {[
@@ -542,15 +538,14 @@ export default function TellerDetailPage() {
                           }`}
                         >
                           <div className="text-lg font-bold">{mins}</div>
-                          <div className="text-[10px] opacity-75">{language === 'tr' ? 'dakika' : 'min'}</div>
+                          <div className="text-[10px] opacity-75">{'dakika'}</div>
                           <div className="text-xs mt-1 text-yellow-400">{cost}₺</div>
                         </button>
                       )
                     })}
                   </div>
                   <p className="text-xs text-purple-400 mt-2 text-center">
-                    {language === 'tr' 
-                      ? `10 jeton/dakika • Toplam: ${totalCost} jeton`
+                    {`10 jeton/dakika • Toplam} jeton`
                       : `10 credits/min • Total: ${totalCost} credits`}
                   </p>
                 </div>
@@ -559,12 +554,12 @@ export default function TellerDetailPage() {
                 {session?.user && (
                   <div className="flex items-center justify-between p-4 bg-deep-purple-900/50 rounded-lg">
                     <span className="text-purple-300">
-                      {language === 'tr' ? 'Mevcut Jetonunuz:' : 'Your Jetons:'}
+                      {'Mevcut Jetonunuz:'}
                     </span>
                     <span className={`font-semibold ${
                       userJetons >= totalCost ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {userJetons} {language === 'tr' ? 'jeton' : 'jetons'}
+                      {userJetons} {'jeton'}
                     </span>
                     <button onClick={() => setShowCfcPopup(true)} className="text-purple-400 hover:text-purple-300 text-xs underline ml-1">?</button>
                   </div>
@@ -588,21 +583,19 @@ export default function TellerDetailPage() {
                     <>
                       <Send className="w-5 h-5" />
                       {!session?.user
-                        ? (language === 'tr' ? 'Giriş Yap & Randevu Al' : 'Login & Book Session')
+                        ? ('Giriş Yap & Randevu Al')
                         : !teller.isOnline
-                          ? (language === 'tr' ? 'Falcı Çevrimdışı' : 'Teller is Offline')
+                          ? ('Falcı Çevrimdışı')
                           : userJetons < totalCost
-                            ? (language === 'tr' ? 'Yetersiz Jeton' : 'Insufficient Jetons')
-                            : (language === 'tr' ? `Randevu Al (${totalCost} Jeton - ${selectedDuration} dk)` : `Book Session (${totalCost} Jetons - ${selectedDuration} min)`)}
+                            ? ('Yetersiz Jeton')
+                            : (`Randevu Al (${totalCost} Jeton - ${selectedDuration} dk)`)}
                     </>
                   )}
                 </button>
 
                 {!teller.isOnline && (
                   <p className="text-center text-sm text-purple-400">
-                    {language === 'tr'
-                      ? 'Falcı şu an çevrimdışı. Çevrimiçi olduğunda randevu alabilirsiniz.'
-                      : 'The fortune teller is currently offline. You can book when they come online.'}
+                    {'Falcı şu an çevrimdışı. Çevrimiçi olduğunda randevu alabilirsiniz.'}
                   </p>
                 )}
               </div>
@@ -613,7 +606,7 @@ export default function TellerDetailPage() {
           <div className="p-6 md:p-8">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-purple-400" />
-              {language === 'tr' ? 'Değerlendirmeler' : 'Reviews'}
+              {'Değerlendirmeler'}
               <span className="text-sm text-purple-400 font-normal">
                 ({teller.reviews.length})
               </span>
@@ -621,7 +614,7 @@ export default function TellerDetailPage() {
 
             {teller.reviews.length === 0 ? (
               <p className="text-purple-400 text-center py-8">
-                {language === 'tr' ? 'Henüz değerlendirme yok' : 'No reviews yet'}
+                {'Henüz değerlendirme yok'}
               </p>
             ) : (
               <div className="space-y-4">
@@ -632,7 +625,7 @@ export default function TellerDetailPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">
-                        {review.session.user.name || (language === 'tr' ? 'Anonim' : 'Anonymous')}
+                        {review.session.user.name || ('Anonim')}
                       </span>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
@@ -652,7 +645,7 @@ export default function TellerDetailPage() {
                     )}
                     <p className="text-purple-500 text-xs mt-2">
                       {new Date(review.createdAt).toLocaleDateString(
-                        language === 'tr' ? 'tr-TR' : 'en-US',
+                        'tr-TR',
                         { year: 'numeric', month: 'long', day: 'numeric' }
                       )}
                     </p>

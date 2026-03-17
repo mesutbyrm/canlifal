@@ -77,7 +77,7 @@ export async function POST(
         data: {
           userId: post.userId,
           type: 'comment',
-          message: 'commented on your post',
+          message: 'gönderinize yorum yaptı',
           postId: params.postId,
           fromUserId: session.user.id,
           fromUserName: session.user.name || 'Birisi'

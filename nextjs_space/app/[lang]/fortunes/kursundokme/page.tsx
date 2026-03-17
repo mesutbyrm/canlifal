@@ -368,14 +368,14 @@ export default function KursunDokmePage() {
       if (!response.ok) {
         if (contentType?.includes('application/json')) {
           const errData = await response.json()
-          throw new Error(errData.error || (language === 'tr' ? 'Fal yorumu alınamadı' : 'Failed to get fortune'))
+          throw new Error(errData.error || ('Fal yorumu alınamadı'))
         } else {
-          throw new Error(language === 'tr' ? 'Fal yorumu alınamadı' : 'Failed to get fortune')
+          throw new Error('Fal yorumu alınamadı')
         }
       }
 
       const reader = response.body?.getReader()
-      if (!reader) throw new Error(language === 'tr' ? 'Yanıt alınamadı' : 'No response')
+      if (!reader) throw new Error('Yanıt alınamadı')
 
       const decoder = new TextDecoder()
       let result = ''
@@ -388,14 +388,14 @@ export default function KursunDokmePage() {
       }
 
       if (result.length === 0) {
-        throw new Error(language === 'tr' ? 'Fal yorumu boş geldi. Lütfen tekrar deneyin.' : 'Fortune interpretation was empty. Please try again.')
+        throw new Error('Fal yorumu boş geldi. Lütfen tekrar deneyin.')
       }
 
       phaseRef.current = 'complete'
       setPhase('complete')
     } catch (err: any) {
       console.error('Fortune interpretation error:', err)
-      setError(err.message || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+      setError(err.message || ('Bir hata oluştu'))
       phaseRef.current = 'ready'
       setPhase('ready')
     }
@@ -427,7 +427,7 @@ export default function KursunDokmePage() {
         ctx.font = '20px serif'
         ctx.textAlign = 'center'
         ctx.fillText(
-          language === 'tr' ? 'Telefonu çevirin veya tıklayın...' : 'Flip phone or click...',
+          'Telefonu çevirin veya tıklayın...',
           canvas.width / 2,
           canvas.height / 2
         )
@@ -459,16 +459,14 @@ export default function KursunDokmePage() {
           className="text-center mb-8"
         >
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Kurşun Dökme' : 'Lead Pouring'}
+            {'Kurşun Dökme'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' 
-              ? 'Geleneksel Türk kurşun dökme ritüeli ile geleceğinizi keşfedin' 
-              : 'Discover your future with traditional Turkish lead pouring ritual'}
+            {'Geleneksel Türk kurşun dökme ritüeli ile geleceğinizi keşfedin'}
           </p>
           <div className="mt-3 flex items-center justify-center gap-2 text-gold-400">
             <Sparkles className="w-5 h-5" />
-            <span>6 {language === 'tr' ? 'CFC' : 'CFC'}</span>
+            <span>6 {'CFC'}</span>
           </div>
         </motion.div>
 
@@ -509,7 +507,7 @@ export default function KursunDokmePage() {
               className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 text-deep-purple-950 font-semibold rounded-lg hover:from-gold-500 hover:to-gold-400 transition-all flex items-center justify-center gap-3"
             >
               <Droplets className="w-6 h-6" />
-              {language === 'tr' ? 'Kurşun Dök' : 'Pour Lead'}
+              {'Kurşun Dök'}
             </motion.button>
           )}
 
@@ -523,15 +521,13 @@ export default function KursunDokmePage() {
                 <Smartphone className="w-16 h-16 text-gold-400 mx-auto transform rotate-180" />
               </div>
               <p className="text-gold-400 text-lg">
-                {language === 'tr' 
-                  ? 'Telefonu ters çevirin veya tıklayın!' 
-                  : 'Flip your phone or click!'}
+                {'Telefonu ters çevirin veya tıklayın!'}
               </p>
               <button
                 onClick={handleManualPour}
                 className="px-6 py-3 bg-deep-purple-800 text-gold-400 rounded-lg hover:bg-deep-purple-700 transition-colors"
               >
-                {language === 'tr' ? 'Tıklayarak Dök' : 'Click to Pour'}
+                {'Tıklayarak Dök'}
               </button>
             </motion.div>
           )}
@@ -539,7 +535,7 @@ export default function KursunDokmePage() {
           {phase === 'pouring' && (
             <div className="text-center">
               <p className="text-gold-400 text-lg animate-pulse">
-                {language === 'tr' ? 'Kurşun dökülüyor...' : 'Pouring lead...'}
+                {'Kurşun dökülüyor...'}
               </p>
             </div>
           )}
@@ -547,14 +543,14 @@ export default function KursunDokmePage() {
           {phase === 'settling' && (
             <div className="text-center">
               <p className="text-gold-400 text-lg animate-pulse">
-                {language === 'tr' ? 'Şekiller oluşuyor...' : 'Shapes forming...'}
+                {'Şekiller oluşuyor...'}
               </p>
             </div>
           )}
 
           {phase === 'interpreting' && (
             <LoadingSpinner 
-              message={language === 'tr' ? 'Şekiller yorumlanıyor...' : 'Interpreting shapes...'} 
+              message={'Şekiller yorumlanıyor...'} 
             />
           )}
         </div>
@@ -571,7 +567,7 @@ export default function KursunDokmePage() {
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-6 h-6 text-gold-500" />
                 <h2 className="font-serif text-2xl text-gold-400">
-                  {language === 'tr' ? 'Kurşun Falınız' : 'Your Lead Fortune'}
+                  {'Kurşun Falınız'}
                 </h2>
               </div>
               <div className="prose prose-invert max-w-none">
@@ -583,7 +579,7 @@ export default function KursunDokmePage() {
               {phase === 'complete' && (
                 <div className="mt-6 pt-6 border-t border-deep-purple-800">
                   <SocialShare
-                    title={language === 'tr' ? 'Kurşun Dökme Falım' : 'My Lead Pouring Fortune'}
+                    title={'Kurşun Dökme Falım'}
                     text={fortune.substring(0, 200) + '...'}
                   />
                 </div>
@@ -601,7 +597,7 @@ export default function KursunDokmePage() {
             className="w-full mt-6 py-3 bg-deep-purple-800 text-gold-400 rounded-lg hover:bg-deep-purple-700 transition-colors flex items-center justify-center gap-2"
           >
             <RotateCw className="w-5 h-5" />
-            {language === 'tr' ? 'Yeniden Dök' : 'Pour Again'}
+            {'Yeniden Dök'}
           </motion.button>
         )}
       </div>

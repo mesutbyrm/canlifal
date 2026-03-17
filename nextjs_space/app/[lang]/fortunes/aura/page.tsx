@@ -24,12 +24,12 @@ export default function AuraReadingPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const moods = language === 'tr' ? MOOD_OPTIONS.tr : MOOD_OPTIONS.en
+  const moods = MOOD_OPTIONS.tr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      setError(language === 'tr' ? 'İsminizi girin' : 'Please enter your name')
+      setError('İsminizi girin')
       return
     }
 
@@ -84,13 +84,13 @@ export default function AuraReadingPage() {
             <Eye className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Aura Okuma' : 'Aura Reading'}
+            {'Aura Okuma'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Enerji alanınızın renklerini keşfedin' : 'Discover the colors of your energy field'}
+            {'Enerji alanınızın renklerini keşfedin'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />6 {language === 'tr' ? 'CFC' : 'CFC'}
+            <Sparkles className="inline w-4 h-4 mr-1" />6 {'CFC'}
           </p>
         </motion.div>
 
@@ -99,17 +99,17 @@ export default function AuraReadingPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'İsminiz *' : 'Your Name *'}</label>
+                  <label className="block text-deep-purple-200 mb-2">{'İsminiz *'}</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={language === 'tr' ? 'İsminizi yazın' : 'Enter your name'}
+                    placeholder={'İsminizi yazın'}
                     className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Doğum Tarihi (İsteğe Bağlı)' : 'Birth Date (Optional)'}</label>
+                  <label className="block text-deep-purple-200 mb-2">{'Doğum Tarihi (İsteğe Bağlı)'}</label>
                   <input
                     type="date"
                     value={birthDate}
@@ -120,7 +120,7 @@ export default function AuraReadingPage() {
               </div>
 
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Mevcut Ruh Haliniz' : 'Current Mood'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Mevcut Ruh Haliniz'}</label>
                 <div className="flex flex-wrap gap-2">
                   {moods.map((mood) => (
                     <button
@@ -136,11 +136,11 @@ export default function AuraReadingPage() {
               </div>
 
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Son Deneyimler (İsteğe Bağlı)' : 'Recent Experiences (Optional)'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Son Deneyimler (İsteğe Bağlı)'}</label>
                 <textarea
                   value={recentExperiences}
                   onChange={(e) => setRecentExperiences(e.target.value)}
-                  placeholder={language === 'tr' ? 'Son zamanlarda yaşadığınız önemli olayları kısaca anlatın...' : 'Briefly describe any significant recent experiences...'}
+                  placeholder={'Son zamanlarda yaşadığınız önemli olayları kısaca anlatın...'}
                   rows={3}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
@@ -153,7 +153,7 @@ export default function AuraReadingPage() {
                 disabled={isLoading}
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isLoading ? <LoadingSpinner /> : <><Eye className="w-5 h-5" />{language === 'tr' ? 'Auramı Oku' : 'Read My Aura'}</>}
+                {isLoading ? <LoadingSpinner /> : <><Eye className="w-5 h-5" />{'Auramı Oku'}</>}
               </button>
             </form>
           </motion.div>
@@ -164,14 +164,14 @@ export default function AuraReadingPage() {
             <div className="flex items-center gap-3 mb-6">
               <Eye className="w-10 h-10 text-gold-500" />
               <div>
-                <h2 className="font-serif text-2xl text-gold-500">{language === 'tr' ? 'Aura Okumanız' : 'Your Aura Reading'}</h2>
+                <h2 className="font-serif text-2xl text-gold-500">{'Aura Okumanız'}</h2>
                 <p className="text-deep-purple-300 text-sm">{name}</p>
               </div>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            <SocialShare title={language === 'tr' ? 'Aura Okumam' : 'My Aura Reading'} text={response} />
+            <SocialShare title={'Aura Okumam'} text={response} />
             <button onClick={() => { setResponse(''); setName(''); setBirthDate(''); setCurrentMood(''); setRecentExperiences(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
-              {language === 'tr' ? 'Yeni Okuma Yap' : 'Get New Reading'}
+              {'Yeni Okuma Yap'}
             </button>
           </motion.div>
         )}

@@ -211,7 +211,7 @@ export async function POST(
       data: {
         userId: otherUserId,
         type: 'message',
-        message: `${session.user.name} sent you a message`,
+        message: `${session.user.name} size bir mesaj gönderdi`,
         data: JSON.stringify({ senderId: currentUserId })
       }
     })

@@ -117,7 +117,7 @@ export default function MessagesPage() {
   const formatTime = (date: string) => {
     return formatDistanceToNow(new Date(date), {
       addSuffix: true,
-      locale: language === 'tr' ? tr : enUS
+      locale: tr
     })
   }
 
@@ -142,7 +142,7 @@ export default function MessagesPage() {
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${accentColor}`} />
           <input
             type="text"
-            placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
+            placeholder={'Ara...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full ${inputBg} border rounded-lg py-2 pl-9 pr-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/50`}
@@ -187,10 +187,10 @@ export default function MessagesPage() {
                   <Mail className={`w-8 h-8 ${accentColor}`} />
                 </div>
                 <p className="text-white text-base">
-                  {language === 'tr' ? 'Hen\u00FCz mesaj yok' : 'No messages yet'}
+                  {'Hen\u00FCz mesaj yok'}
                 </p>
                 <p className="text-white/60 text-sm mt-1">
-                  {language === 'tr' ? 'Birini takip edip mesaj g\u00F6nderebilirsiniz' : 'Follow someone to start a conversation'}
+                  {'Birini takip edip mesaj g\u00F6nderebilirsiniz'}
                 </p>
               </div>
             ) : (
@@ -232,7 +232,7 @@ export default function MessagesPage() {
                       </span>
                     </div>
                     <p className={`text-xs truncate ${conv.unreadCount > 0 ? 'text-white/90 font-medium' : 'text-white/50'}`}>
-                      {conv.lastMessage || (language === 'tr' ? 'Mesaj ba\u015Flat' : 'Start a conversation')}
+                      {conv.lastMessage || ('Mesaj ba\u015Flat')}
                     </p>
                   </div>
                 </Link>
@@ -247,7 +247,7 @@ export default function MessagesPage() {
                   <UserPlus className={`w-8 h-8 ${accentColor}`} />
                 </div>
                 <p className="text-white text-base">
-                  {language === 'tr' ? 'Mesaj iste\u011Fi yok' : 'No message requests'}
+                  {'Mesaj iste\u011Fi yok'}
                 </p>
               </div>
             ) : (

@@ -204,7 +204,7 @@ export default function AdminThemesPage() {
 
   const toggleTheme = (themeId: string) => {
     if (themeId === defaultTheme) {
-      alert(language === 'tr' ? 'Varsayılan tema devre dışı bırakılamaz!' : 'Cannot disable the default theme!')
+      alert('Varsayılan tema devre dışı bırakılamaz!')
       return
     }
     setEnabledThemes(prev => 
@@ -237,7 +237,7 @@ export default function AdminThemesPage() {
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Admin Paneli' : 'Admin Panel'}
+          {'Admin Paneli'}
         </Link>
 
         <motion.div
@@ -249,12 +249,10 @@ export default function AdminThemesPage() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
                 <Palette className="w-8 h-8 text-purple-400" />
-                {language === 'tr' ? 'Tema Yönetimi' : 'Theme Management'}
+                {'Tema Yönetimi'}
               </h1>
               <p className="text-purple-300 mt-2">
-                {language === 'tr' 
-                  ? 'Site temalarını yönetin, aktif/pasif yapın ve varsayılan temayı seçin' 
-                  : 'Manage site themes, enable/disable and set default theme'}
+                {'Site temalarını yönetin, aktif/pasif yapın ve varsayılan temayı seçin'}
               </p>
             </div>
             <button
@@ -270,8 +268,8 @@ export default function AdminThemesPage() {
                 <Save className="w-5 h-5" />
               )}
               {saved 
-                ? (language === 'tr' ? 'Kaydedildi!' : 'Saved!') 
-                : (language === 'tr' ? 'Tümünü Kaydet' : 'Save All')}
+                ? ('Kaydedildi!') 
+                : ('Tümünü Kaydet')}
             </button>
           </div>
         </motion.div>
@@ -289,17 +287,15 @@ export default function AdminThemesPage() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-white">
-                {language === 'tr' ? 'Varsayılan Tema' : 'Default Theme'}
+                {'Varsayılan Tema'}
               </h3>
               <p className="text-purple-400">
-                {language === 'tr' 
-                  ? 'Yeni kullanıcılar ve misafirler için varsayılan tema' 
-                  : 'Default theme for new users and guests'}
+                {'Yeni kullanıcılar ve misafirler için varsayılan tema'}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="px-4 py-2 bg-purple-500/30 text-purple-200 rounded-lg font-medium">
-                {THEMES.find(t => t.id === defaultTheme)?.[language === 'tr' ? 'nameTr' : 'name'] || defaultTheme}
+                {THEMES.find(t => t.id === defaultTheme)?.['nameTr'] || defaultTheme}
               </span>
             </div>
           </div>
@@ -347,7 +343,7 @@ export default function AdminThemesPage() {
                     {isDefault && (
                       <span className="px-3 py-1 bg-yellow-500/90 text-black text-xs font-bold rounded-full flex items-center gap-1">
                         <Star className="w-3 h-3" />
-                        {language === 'tr' ? 'VARSAYILAN' : 'DEFAULT'}
+                        {'VARSAYILAN'}
                       </span>
                     )}
                     <span className={`px-3 py-1 text-xs font-bold rounded-full ${
@@ -356,8 +352,8 @@ export default function AdminThemesPage() {
                         : 'bg-red-500/90 text-white'
                     }`}>
                       {isEnabled 
-                        ? (language === 'tr' ? 'AKTİF' : 'ACTIVE') 
-                        : (language === 'tr' ? 'PASİF' : 'INACTIVE')}
+                        ? ('AKTİF') 
+                        : ('PASİF')}
                     </span>
                   </div>
                 </div>
@@ -373,10 +369,10 @@ export default function AdminThemesPage() {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-white">
-                          {language === 'tr' ? theme.nameTr : theme.name}
+                          {theme.nameTr}
                         </h3>
                         <p className="text-sm text-purple-400">
-                          {language === 'tr' ? theme.descriptionTr : theme.description}
+                          {theme.descriptionTr}
                         </p>
                       </div>
                     </div>
@@ -385,7 +381,7 @@ export default function AdminThemesPage() {
                   {/* Color Preview */}
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-xs text-purple-400">
-                      {language === 'tr' ? 'Renkler:' : 'Colors:'}
+                      {'Renkler:'}
                     </span>
                     <div className="flex gap-1">
                       {Object.values(theme.previewColors).map((color, i) => (
@@ -412,12 +408,12 @@ export default function AdminThemesPage() {
                       {isEnabled ? (
                         <>
                           <EyeOff className="w-4 h-4" />
-                          {language === 'tr' ? 'Devre Dışı Bırak' : 'Disable'}
+                          {'Devre Dışı Bırak'}
                         </>
                       ) : (
                         <>
                           <Eye className="w-4 h-4" />
-                          {language === 'tr' ? 'Etkinleştir' : 'Enable'}
+                          {'Etkinleştir'}
                         </>
                       )}
                     </button>
@@ -428,7 +424,7 @@ export default function AdminThemesPage() {
                         className="flex-1 py-2 px-4 rounded-lg bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 flex items-center justify-center gap-2 transition-colors"
                       >
                         <Star className="w-4 h-4" />
-                        {language === 'tr' ? 'Varsayılan Yap' : 'Set Default'}
+                        {'Varsayılan Yap'}
                       </button>
                     )}
                   </div>
@@ -451,24 +447,16 @@ export default function AdminThemesPage() {
             </div>
             <div>
               <h4 className="text-blue-300 font-medium mb-2">
-                {language === 'tr' ? 'Tema Ayarları Hakkında' : 'About Theme Settings'}
+                {'Tema Ayarları Hakkında'}
               </h4>
               <ul className="text-blue-200/80 text-sm space-y-1">
-                <li>• {language === 'tr' 
-                  ? 'Varsayılan tema, yeni kullanıcılar ve giriş yapmamış ziyaretçiler için uygulanır.' 
-                  : 'Default theme applies to new users and guests not logged in.'}
+                <li>• {'Varsayılan tema, yeni kullanıcılar ve giriş yapmamış ziyaretçiler için uygulanır.'}
                 </li>
-                <li>• {language === 'tr' 
-                  ? 'Devre dışı bırakılan temalar, kullanıcı ayarlarında görünmez.' 
-                  : 'Disabled themes will not appear in user settings.'}
+                <li>• {'Devre dışı bırakılan temalar, kullanıcı ayarlarında görünmez.'}
                 </li>
-                <li>• {language === 'tr' 
-                  ? 'Varsayılan tema devre dışı bırakılamaz.' 
-                  : 'The default theme cannot be disabled.'}
+                <li>• {'Varsayılan tema devre dışı bırakılamaz.'}
                 </li>
-                <li>• {language === 'tr' 
-                  ? 'Giriş yapmış kullanıcılar kendi tercihlerini korur.' 
-                  : 'Logged-in users keep their personal preferences.'}
+                <li>• {'Giriş yapmış kullanıcılar kendi tercihlerini korur.'}
                 </li>
               </ul>
             </div>

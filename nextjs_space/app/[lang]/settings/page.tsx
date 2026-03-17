@@ -200,7 +200,7 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
-      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      alert('Dosya boyutu 5MB\'dan küçük olmalıdır')
       return
     }
     setUploadingImage(true)
@@ -229,7 +229,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error('Upload error:', err)
-      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
+      alert('Yükleme başarısız oldu')
     } finally {
       setUploadingImage(false)
     }
@@ -264,20 +264,20 @@ export default function SettingsPage() {
       } else {
         const data = await res.json()
         if (data.error === 'username_taken') {
-          setError(language === 'tr' ? 'Bu kullanıcı adı zaten kullanılıyor' : 'This username is already taken')
+          setError('Bu kullanıcı adı zaten kullanılıyor')
         } else if (data.error === 'username_invalid') {
-          setError(language === 'tr' ? 'Kullanıcı adı 3-20 karakter, sadece harf, rakam ve alt çizgi içerebilir' : 'Username must be 3-20 characters, letters, numbers and underscore only')
+          setError('Kullanıcı adı 3-20 karakter, sadece harf, rakam ve alt çizgi içerebilir')
         } else if (data.error === 'email_taken') {
-          setError(language === 'tr' ? 'Bu email adresi zaten kullanılıyor' : 'This email is already taken')
+          setError('Bu email adresi zaten kullanılıyor')
         } else if (data.error === 'email_invalid') {
-          setError(language === 'tr' ? 'Geçerli bir email adresi girin' : 'Enter a valid email address')
+          setError('Geçerli bir email adresi girin')
         } else {
           setError(data.message || 'Kaydetme hatası')
         }
       }
     } catch (err) {
       console.error('Save error:', err)
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setSaving(false)
     }
@@ -320,7 +320,7 @@ export default function SettingsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
             <User className={`w-8 h-8 ${accentIcon}`} />
-            {language === 'tr' ? 'Profil Ayarları' : 'Profile Settings'}
+            {'Profil Ayarları'}
           </h1>
         </motion.div>
 
@@ -342,7 +342,7 @@ export default function SettingsPage() {
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
               </label>
             </div>
-            <p className={`${labelColor} text-sm`}>{language === 'tr' ? 'Profil resmini değiştir' : 'Change profile picture'}</p>
+            <p className={`${labelColor} text-sm`}>{'Profil resmini değiştir'}</p>
           </div>
 
           {/* Error Message */}
@@ -357,7 +357,7 @@ export default function SettingsPage() {
           <div>
             <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <User className="w-4 h-4" />
-              {language === 'tr' ? 'Ad Soyad' : 'Full Name'}
+              {'Ad Soyad'}
             </label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
@@ -367,22 +367,22 @@ export default function SettingsPage() {
           <div>
             <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <AtSign className="w-4 h-4" />
-              {language === 'tr' ? 'Kullanıcı Adı' : 'Username'}
+              {'Kullanıcı Adı'}
             </label>
             <div className="relative">
               <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${labelColor}`}>@</span>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                placeholder={language === 'tr' ? 'kullanici_adi' : 'your_username'}
+                placeholder={'kullanici_adi'}
                 className={`w-full text-white rounded-lg pl-8 pr-4 py-3 border focus:outline-none ${inputBg}`} />
             </div>
-            <p className={`${labelColor} opacity-60 text-xs mt-1`}>{language === 'tr' ? '3-20 karakter, harf, rakam ve alt çizgi' : '3-20 chars, letters, numbers, underscore'}</p>
+            <p className={`${labelColor} opacity-60 text-xs mt-1`}>{'3-20 karakter, harf, rakam ve alt çizgi'}</p>
           </div>
 
           {/* Email */}
           <div>
             <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <Mail className="w-4 h-4" />
-              {language === 'tr' ? 'Email Adresi' : 'Email Address'}
+              {'Email Adresi'}
             </label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
@@ -392,7 +392,7 @@ export default function SettingsPage() {
           <div>
             <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
               <Phone className="w-4 h-4" />
-              {language === 'tr' ? 'Telefon Numarası (opsiyonel)' : 'Phone Number (optional)'}
+              {'Telefon Numarası (opsiyonel)'}
             </label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               placeholder="+90 5XX XXX XX XX"
@@ -402,14 +402,14 @@ export default function SettingsPage() {
           <div className="border-t pt-6 border-fuchsia-500/20">
             <h3 className={`text-lg font-semibold text-white mb-4 flex items-center gap-2`}>
               <Sparkles className={`w-5 h-5 ${goldAccent}`} />
-              {language === 'tr' ? 'Fal Bilgileri' : 'Fortune Details'}
+              {'Fal Bilgileri'}
             </h3>
 
             {/* Birth Date */}
             <div className="mb-4">
               <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Calendar className="w-4 h-4" />
-                {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'}
+                {'Doğum Tarihi'}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <select value={birthDate ? new Date(birthDate).getDate() : ''}
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
                   className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Gün' : 'Day'}</option>
+                  <option value="">{'Gün'}</option>
                   {Array.from({length: 31}, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 <select value={birthDate ? new Date(birthDate).getMonth() : ''}
@@ -433,10 +433,8 @@ export default function SettingsPage() {
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
                   className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Ay' : 'Month'}</option>
-                  {(language === 'tr' 
-                    ? ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-                    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                  <option value="">{'Ay'}</option>
+                  {(['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
                   ).map((m, i) => <option key={i} value={i}>{m}</option>)}
                 </select>
                 <select value={birthDate ? new Date(birthDate).getFullYear() : ''}
@@ -448,7 +446,7 @@ export default function SettingsPage() {
                     setBirthDate(currentDate.toISOString().split('T')[0])
                   }}
                   className={`text-white rounded-lg px-3 py-3 border focus:outline-none text-center ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Yıl' : 'Year'}</option>
+                  <option value="">{'Yıl'}</option>
                   {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
@@ -458,11 +456,11 @@ export default function SettingsPage() {
             <div className="mb-4">
               <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Clock className="w-4 h-4" />
-                {language === 'tr' ? 'Doğum Saati (opsiyonel)' : 'Birth Time (optional)'}
+                {'Doğum Saati (opsiyonel)'}
               </label>
               <select value={birthTime} onChange={(e) => setBirthTime(e.target.value)}
                 className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
-                <option value="">{language === 'tr' ? 'Bilmiyorum' : "Don't know"}</option>
+                <option value="">{'Bilmiyorum'}</option>
                 {Array.from({length: 24}, (_, i) => {
                   const hour = i.toString().padStart(2, '0')
                   return <option key={i} value={`${hour}:00`}>{`${hour}:00`}</option>
@@ -477,10 +475,10 @@ export default function SettingsPage() {
                   <span className="text-4xl">{currentZodiac.emoji}</span>
                   <div>
                     <p className="text-white font-semibold">
-                      {language === 'tr' ? 'Burçunuz' : 'Your Zodiac'}: {currentZodiac[language as 'tr' | 'en']}
+                      {'Burçunuz'}: {currentZodiac[language as 'tr' | 'en']}
                     </p>
                     <p className={`${labelColor} text-sm`}>
-                      {language === 'tr' ? 'Doğum tarihinize göre otomatik hesaplandı' : 'Auto-calculated from your birth date'}
+                      {'Doğum tarihinize göre otomatik hesaplandı'}
                     </p>
                   </div>
                 </div>
@@ -492,11 +490,11 @@ export default function SettingsPage() {
               <div className="mb-4">
                 <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                   <Moon className="w-4 h-4" />
-                  {language === 'tr' ? 'Yükselen Burç' : 'Rising Sign'}
+                  {'Yükselen Burç'}
                 </label>
                 <select value={risingSign} onChange={(e) => setRisingSign(e.target.value)}
                   className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                  <option value="">{'Seçiniz...'}</option>
                   {ZODIAC_SIGNS.map(sign => (
                     <option key={sign.id} value={sign.id}>{sign.emoji} {sign[language as 'tr' | 'en']}</option>
                   ))}
@@ -508,11 +506,11 @@ export default function SettingsPage() {
             <div>
               <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
                 <Heart className="w-4 h-4" />
-                {language === 'tr' ? 'Tuttuğunuz Takım' : 'Favorite Team'}
+                {'Tuttuğunuz Takım'}
               </label>
               <select value={favoriteTeam} onChange={(e) => setFavoriteTeam(e.target.value)}
                 className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`}>
-                <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                <option value="">{'Seçiniz...'}</option>
                 {FOOTBALL_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
               </select>
             </div>
@@ -522,12 +520,12 @@ export default function SettingsPage() {
           <div className={`rounded-2xl p-6 space-y-4 border ${privacyCardBg}`}>
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <Shield className={`w-5 h-5 ${accentIcon}`} />
-              {language === 'tr' ? 'Gizlilik Ayarları' : 'Privacy Settings'}
+              {'Gizlilik Ayarları'}
             </h3>
 
             <div>
               <label className={`block text-sm ${labelColor} mb-3`}>
-                {language === 'tr' ? 'Kimler bana mesaj gönderebilir?' : 'Who can send me messages?'}
+                {'Kimler bana mesaj gönderebilir?'}
               </label>
               <div className="space-y-2">
                 <button type="button" onClick={() => setMessagePrivacy('everyone')}
@@ -536,8 +534,8 @@ export default function SettingsPage() {
                   }`}>
                   <Globe className="w-5 h-5" />
                   <div className="flex-1 text-left">
-                    <p className="font-medium">{language === 'tr' ? 'Herkes' : 'Everyone'}</p>
-                    <p className="text-xs opacity-70">{language === 'tr' ? 'Tüm kullanıcılar size mesaj gönderebilir' : 'All users can message you'}</p>
+                    <p className="font-medium">{'Herkes'}</p>
+                    <p className="text-xs opacity-70">{'Tüm kullanıcılar size mesaj gönderebilir'}</p>
                   </div>
                   {messagePrivacy === 'everyone' && <Check className="w-5 h-5 text-green-400" />}
                 </button>
@@ -548,8 +546,8 @@ export default function SettingsPage() {
                   }`}>
                   <Users className="w-5 h-5" />
                   <div className="flex-1 text-left">
-                    <p className="font-medium">{language === 'tr' ? 'Takipçilerim' : 'Followers Only'}</p>
-                    <p className="text-xs opacity-70">{language === 'tr' ? 'Sadece sizi takip edenler mesaj gönderebilir' : 'Only your followers can message you'}</p>
+                    <p className="font-medium">{'Takipçilerim'}</p>
+                    <p className="text-xs opacity-70">{'Sadece sizi takip edenler mesaj gönderebilir'}</p>
                   </div>
                   {messagePrivacy === 'followers' && <Check className="w-5 h-5 text-green-400" />}
                 </button>
@@ -560,8 +558,8 @@ export default function SettingsPage() {
                   }`}>
                   <Lock className="w-5 h-5" />
                   <div className="flex-1 text-left">
-                    <p className="font-medium">{language === 'tr' ? 'Hiç Kimse' : 'Nobody'}</p>
-                    <p className="text-xs opacity-70">{language === 'tr' ? 'Mesaj almayı tamamen kapatın' : 'Disable messaging completely'}</p>
+                    <p className="font-medium">{'Hiç Kimse'}</p>
+                    <p className="text-xs opacity-70">{'Mesaj almayı tamamen kapatın'}</p>
                   </div>
                   {messagePrivacy === 'nobody' && <Check className="w-5 h-5 text-green-400" />}
                 </button>
@@ -573,7 +571,7 @@ export default function SettingsPage() {
           <div className={`rounded-2xl p-6 space-y-4 border ${privacyCardBg}`}>
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <Ban className={`w-5 h-5 ${accentIcon}`} />
-              {language === 'tr' ? 'Engellenen Kullanıcılar' : 'Blocked Users'}
+              {'Engellenen Kullanıcılar'}
             </h3>
 
             {loadingBlocked ? (
@@ -582,7 +580,7 @@ export default function SettingsPage() {
               </div>
             ) : (blockedUsers.chatBans.length === 0 && blockedUsers.streamBans.length === 0) ? (
               <p className={`text-sm ${labelColor}`}>
-                {language === 'tr' ? 'Henüz kimseyi engellemediniz.' : 'You haven\'t blocked anyone yet.'}
+                {'Henüz kimseyi engellemediniz.'}
               </p>
             ) : (
               <div className="space-y-3">
@@ -591,7 +589,7 @@ export default function SettingsPage() {
                   <div>
                     <p className={`text-xs ${labelColor} mb-2 flex items-center gap-1`}>
                       <MessageCircle className="w-3 h-3" />
-                      {language === 'tr' ? 'Sohbet Odalarından' : 'From Chat Rooms'}
+                      {'Sohbet Odalarından'}
                     </p>
                     {blockedUsers.chatBans.map(ban => (
                       <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
@@ -608,7 +606,7 @@ export default function SettingsPage() {
                               {ban.userName || ban.userUsername || 'Kullanıcı'}
                             </p>
                             <p className={`text-xs ${labelColor}`}>
-                              {language === 'tr' ? 'Oda' : 'Room'}: {ban.roomName}
+                              {'Oda'}: {ban.roomName}
                             </p>
                           </div>
                         </div>
@@ -622,7 +620,7 @@ export default function SettingsPage() {
                           ) : (
                             <>
                               <Trash2 className="w-4 h-4" />
-                              {language === 'tr' ? 'Kaldır' : 'Remove'}
+                              {'Kaldır'}
                             </>
                           )}
                         </button>
@@ -636,7 +634,7 @@ export default function SettingsPage() {
                   <div>
                     <p className={`text-xs ${labelColor} mb-2 flex items-center gap-1`}>
                       <Video className="w-3 h-3" />
-                      {language === 'tr' ? 'Canlı Yayınlardan' : 'From Live Streams'}
+                      {'Canlı Yayınlardan'}
                     </p>
                     {blockedUsers.streamBans.map(ban => (
                       <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
@@ -653,7 +651,7 @@ export default function SettingsPage() {
                               {ban.userName || ban.userUsername || 'Kullanıcı'}
                             </p>
                             <p className={`text-xs ${labelColor}`}>
-                              {language === 'tr' ? 'Yayın' : 'Stream'}: {ban.streamTitle}
+                              {'Yayın'}: {ban.streamTitle}
                             </p>
                           </div>
                         </div>
@@ -667,7 +665,7 @@ export default function SettingsPage() {
                           ) : (
                             <>
                               <Trash2 className="w-4 h-4" />
-                              {language === 'tr' ? 'Kaldır' : 'Remove'}
+                              {'Kaldır'}
                             </>
                           )}
                         </button>
@@ -685,9 +683,9 @@ export default function SettingsPage() {
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : saved ? (
-              <><Check className="w-5 h-5" />{language === 'tr' ? 'Kaydedildi!' : 'Saved!'}</>
+              <><Check className="w-5 h-5" />{'Kaydedildi!'}</>
             ) : (
-              <><Save className="w-5 h-5" />{language === 'tr' ? 'Kaydet' : 'Save'}</>
+              <><Save className="w-5 h-5" />{'Kaydet'}</>
             )}
           </button>
         </motion.div>

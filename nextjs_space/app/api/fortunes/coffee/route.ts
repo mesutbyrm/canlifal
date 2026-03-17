@@ -39,9 +39,7 @@ export async function POST(request: Request) {
     }
 
     // System prompt for coffee fortune
-    const systemPrompt = language === 'tr'
-      ? 'Sen deneyimli bir kahve falcısısın. Kullanıcının fincanında gördüklerini mistik ve derinlemesine yorumla. Cevabın 200-300 kelime arasında, duygusal, kişiselleştirilmiş ve gizemli olmalı. Gelecekle ilgili sembolik yorumlar ve tavsiyelerde bulun. Tamamen Türkçe cevap ver.'
-      : 'You are an experienced coffee fortune teller. Interpret what the user sees in their coffee cup in a mystical and profound way. Your response should be 200-300 words, emotional, personalized, and mysterious. Provide symbolic interpretations about the future and advice. Respond entirely in English.'
+    const systemPrompt = 'Sen deneyimli bir kahve falcısısın. Kullanıcının fincanında gördüklerini mistik ve derinlemesine yorumla. Cevabın 200-300 kelime arasında, duygusal, kişiselleştirilmiş ve gizemli olmalı. Gelecekle ilgili sembolik yorumlar ve tavsiyelerde bulun. Tamamen Türkçe cevap ver.'
 
     const messages = [
       { role: 'system', content: systemPrompt },

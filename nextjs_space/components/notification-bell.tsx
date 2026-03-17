@@ -156,14 +156,14 @@ export default function NotificationBell() {
   }
 
   const getNotificationText = (notif: Notification) => {
-    const senderName = notif.fromUserName || (language === 'tr' ? 'Birisi' : 'Someone')
+    const senderName = notif.fromUserName || ('Birisi')
     if (notif.type === 'session_update' || notif.type === 'session_request') {
       return notif.title || notif.message
     }
     switch (notif.type) {
-      case 'like': return `${senderName} ${language === 'tr' ? 'payla\u015f\u0131m\u0131n\u0131 be\u011fendi' : 'liked your post'}`
-      case 'comment': return `${senderName} ${language === 'tr' ? 'yorum yapt\u0131' : 'commented on your post'}`
-      case 'share': return `${senderName} ${language === 'tr' ? 'payla\u015ft\u0131' : 'shared your post'}`
+      case 'like': return `${senderName} ${'payla\u015f\u0131m\u0131n\u0131 be\u011fendi'}`
+      case 'comment': return `${senderName} ${'yorum yapt\u0131'}`
+      case 'share': return `${senderName} ${'payla\u015ft\u0131'}`
       default: return notif.message
     }
   }
@@ -175,10 +175,10 @@ export default function NotificationBell() {
     const mins = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
-    if (mins < 1) return language === 'tr' ? '\u015eimdi' : 'Now'
-    if (mins < 60) return `${mins} ${language === 'tr' ? 'dk' : 'min'}`
-    if (hours < 24) return `${hours} ${language === 'tr' ? 'saat' : 'h'}`
-    return `${days} ${language === 'tr' ? 'g\u00fcn' : 'd'}`
+    if (mins < 1) return '\u015eimdi'
+    if (mins < 60) return `${mins} ${'dk'}`
+    if (hours < 24) return `${hours} ${'saat'}`
+    return `${days} ${'g\u00fcn'}`
   }
 
   if (!session?.user) return null
@@ -221,11 +221,11 @@ export default function NotificationBell() {
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-fuchsia-400" />
                   <h3 className="text-fuchsia-200 font-bold text-lg">
-                    {language === 'tr' ? 'Bildirimler' : 'Notifications'}
+                    {'Bildirimler'}
                   </h3>
                   {unreadCount > 0 && (
                     <span className="bg-pink-500/20 text-pink-300 text-xs px-2 py-0.5 rounded-full font-medium">
-                      {unreadCount} {language === 'tr' ? 'yeni' : 'new'}
+                      {unreadCount} {'yeni'}
                     </span>
                   )}
                 </div>
@@ -236,7 +236,7 @@ export default function NotificationBell() {
                       className="text-xs text-fuchsia-400/70 hover:text-fuchsia-300 transition-colors flex items-center gap-1"
                     >
                       <CheckCircle className="w-3.5 h-3.5" />
-                      {language === 'tr' ? 'Okundu' : 'Read all'}
+                      {'Okundu'}
                     </button>
                   )}
                   <button
@@ -255,14 +255,14 @@ export default function NotificationBell() {
                     <div className="flex items-center gap-2 text-green-400">
                       <BellRing className="w-4 h-4" />
                       <span className="text-sm">
-                        {language === 'tr' ? '🔔 Tarayıcı bildirimleri açık' : '🔔 Browser notifications enabled'}
+                        {'🔔 Tarayıcı bildirimleri açık'}
                       </span>
                     </div>
                   ) : permission === 'denied' ? (
                     <div className="flex items-center gap-2 text-red-400">
                       <BellOff className="w-4 h-4" />
                       <span className="text-sm">
-                        {language === 'tr' ? '🔕 Bildirimler tarayıcı ayarlarından kapatıldı' : '🔕 Notifications blocked in browser'}
+                        {'🔕 Bildirimler tarayıcı ayarlarından kapatıldı'}
                       </span>
                     </div>
                   ) : (
@@ -271,7 +271,7 @@ export default function NotificationBell() {
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-sm font-medium transition-all"
                     >
                       <BellRing className="w-4 h-4" />
-                      {language === 'tr' ? 'Tarayıcı Bildirimlerini Aç' : 'Enable Browser Notifications'}
+                      {'Tarayıcı Bildirimlerini Aç'}
                     </button>
                   )}
                 </div>
@@ -283,10 +283,10 @@ export default function NotificationBell() {
                   <div className="p-10 text-center">
                     <Bell className="w-10 h-10 text-fuchsia-500/30 mx-auto mb-3" />
                     <p className="text-fuchsia-400/60">
-                      {language === 'tr' ? 'Bildirim yok' : 'No notifications'}
+                      {'Bildirim yok'}
                     </p>
                     <p className="text-fuchsia-500/30 text-sm mt-1">
-                      {language === 'tr' ? 'Yeni bildirimler burada g\u00f6r\u00fcnecek' : 'New notifications will appear here'}
+                      {'Yeni bildirimler burada g\u00f6r\u00fcnecek'}
                     </p>
                   </div>
                 ) : (

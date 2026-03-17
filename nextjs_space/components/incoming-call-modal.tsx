@@ -190,11 +190,11 @@ export default function IncomingCallModal() {
             </h2>
             <p className="text-purple-300 mt-1 flex items-center gap-2">
               <Video className="w-4 h-4" />
-              {language === 'tr' ? 'Canlı Seans Başlatmak İstiyor' : 'Wants to Start Live Session'}
+              {'Canlı Seans Başlatmak İstiyor'}
             </p>
             <p className="text-sm text-purple-400 mt-2 flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {incomingSession.maxMinutes} {language === 'tr' ? 'dakika' : 'minutes'}
+              {incomingSession.maxMinutes} {'dakika'}
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export default function IncomingCallModal() {
               className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all transform hover:scale-105"
             >
               <Phone className="w-6 h-6" />
-              {language === 'tr' ? 'Kabul Et' : 'Accept'}
+              {'Kabul Et'}
             </button>
 
             {/* Later */}
@@ -215,7 +215,7 @@ export default function IncomingCallModal() {
               className="w-full py-4 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all"
             >
               <Clock className="w-6 h-6" />
-              {language === 'tr' ? 'Beklet' : 'Wait'}
+              {'Beklet'}
             </button>
 
             {/* Decline */}
@@ -224,14 +224,12 @@ export default function IncomingCallModal() {
               className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all"
             >
               <PhoneOff className="w-6 h-6" />
-              {language === 'tr' ? 'Kapat' : 'Decline'}
+              {'Kapat'}
             </button>
           </div>
 
           <p className="text-center text-sm text-purple-400 mt-4">
-            {language === 'tr' 
-              ? 'Falcı sizi bekliyor. Lütfen bir seçim yapın.'
-              : 'The fortune teller is waiting. Please make a choice.'}
+            {'Falcı sizi bekliyor. Lütfen bir seçim yapın.'}
           </p>
         </motion.div>
       </motion.div>

@@ -261,7 +261,7 @@ export default function AdminMembershipsPage() {
   }
 
   const handleCancelMembership = async (purchaseId: string) => {
-    if (!confirm(language === 'tr' ? 'Bu üyeliği iptal etmek istediğinize emin misiniz?' : 'Are you sure you want to cancel this membership?')) return
+    if (!confirm('Bu üyeliği iptal etmek istediğinize emin misiniz?')) return
     try {
       const res = await fetch('/api/admin/memberships/purchases', {
         method: 'PATCH',
@@ -317,7 +317,7 @@ export default function AdminMembershipsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu plan\u0131 silmek istedi\u011finize emin misiniz?' : 'Are you sure you want to delete this plan?')) return
+    if (!confirm('Bu plan\u0131 silmek istedi\u011finize emin misiniz?')) return
 
     try {
       const res = await fetch(`/api/admin/memberships?id=${id}`, { method: 'DELETE' })
@@ -398,10 +398,10 @@ export default function AdminMembershipsPage() {
             </div>
             <div>
               <h1 className={`text-xl font-bold ${textPrimary}`}>
-                {language === 'tr' ? 'Gold Üyelik Yönetimi' : 'Membership Management'}
+                {'Gold Üyelik Yönetimi'}
               </h1>
               <p className={`${textSecondary} text-sm`}>
-                {plans.length} {language === 'tr' ? 'plan' : 'plans'} • {purchases.length} {language === 'tr' ? 'satın alma' : 'purchases'}
+                {plans.length} {'plan'} • {purchases.length} {'satın alma'}
               </p>
             </div>
           </div>
@@ -414,14 +414,14 @@ export default function AdminMembershipsPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeTab === 'plans' ? tabActive : tabInactive}`}
           >
             <Crown className="w-4 h-4" />
-            {language === 'tr' ? 'Planlar' : 'Plans'}
+            {'Planlar'}
           </button>
           <button
             onClick={() => setActiveTab('purchases')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeTab === 'purchases' ? tabActive : tabInactive}`}
           >
             <Users className="w-4 h-4" />
-            {language === 'tr' ? 'Satın Alımlar' : 'Purchases'}
+            {'Satın Alımlar'}
           </button>
         </div>
 
@@ -434,7 +434,7 @@ export default function AdminMembershipsPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-600 text-black font-semibold rounded-xl hover:opacity-90 transition-all"
               >
                 <Plus className="w-4 h-4" />
-                {language === 'tr' ? 'Yeni Plan' : 'New Plan'}
+                {'Yeni Plan'}
               </button>
             </div>
             <div className="space-y-3">
@@ -460,12 +460,12 @@ export default function AdminMembershipsPage() {
                           <span className={`${textPrimary} font-semibold`}>{plan.name}</span>
                           {plan.isFeatured && (
                             <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Star className="w-3 h-3" /> {language === 'tr' ? 'Öne Çıkan' : 'Featured'}
+                              <Star className="w-3 h-3" /> {'Öne Çıkan'}
                             </span>
                           )}
                           {!plan.isActive && (
                             <span className="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">
-                              {language === 'tr' ? 'Pasif' : 'Inactive'}
+                              {'Pasif'}
                             </span>
                           )}
                         </div>
@@ -473,7 +473,7 @@ export default function AdminMembershipsPage() {
                           <span className={getTierColor(plan.tier)}>{plan.tier.toUpperCase()}</span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {plan.durationDays} {language === 'tr' ? 'gün' : 'days'}
+                            <Clock className="w-3 h-3" /> {plan.durationDays} {'gün'}
                           </span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
@@ -531,7 +531,7 @@ export default function AdminMembershipsPage() {
               {plans.length === 0 && (
                 <div className={`text-center py-12 ${textSecondary}`}>
                   <Crown className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>{language === 'tr' ? 'Henüz üyelik planı yok' : 'No membership plans yet'}</p>
+                  <p>{'Henüz üyelik planı yok'}</p>
                 </div>
               )}
             </div>
@@ -547,28 +547,28 @@ export default function AdminMembershipsPage() {
                 <div className={`${cardBg} border rounded-xl p-4`}>
                   <div className="flex items-center gap-2 mb-1">
                     <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className={`text-sm ${textSecondary}`}>{language === 'tr' ? 'Aktif' : 'Active'}</span>
+                    <span className={`text-sm ${textSecondary}`}>{'Aktif'}</span>
                   </div>
                   <p className={`text-xl font-bold ${textPrimary}`}>{purchaseStats.byStatus.active || 0}</p>
                 </div>
                 <div className={`${cardBg} border rounded-xl p-4`}>
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="w-4 h-4 text-orange-400" />
-                    <span className={`text-sm ${textSecondary}`}>{language === 'tr' ? 'Süresi Dolan' : 'Expired'}</span>
+                    <span className={`text-sm ${textSecondary}`}>{'Süresi Dolan'}</span>
                   </div>
                   <p className={`text-xl font-bold ${textPrimary}`}>{purchaseStats.byStatus.expired || 0}</p>
                 </div>
                 <div className={`${cardBg} border rounded-xl p-4`}>
                   <div className="flex items-center gap-2 mb-1">
                     <Coins className="w-4 h-4 text-amber-400" />
-                    <span className={`text-sm ${textSecondary}`}>{language === 'tr' ? 'Jeton Harcanan' : 'Jetons Spent'}</span>
+                    <span className={`text-sm ${textSecondary}`}>{'Jeton Harcanan'}</span>
                   </div>
                   <p className={`text-xl font-bold ${textPrimary}`}>{purchaseStats.totalJetonSpent.toLocaleString()}</p>
                 </div>
                 <div className={`${cardBg} border rounded-xl p-4`}>
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-green-400" />
-                    <span className={`text-sm ${textSecondary}`}>{language === 'tr' ? 'Toplam Gelir' : 'Revenue'}</span>
+                    <span className={`text-sm ${textSecondary}`}>{'Toplam Gelir'}</span>
                   </div>
                   <p className={`text-xl font-bold ${textPrimary}`}>{(purchaseStats.totalMoneyRevenue / 100).toLocaleString()} TL</p>
                 </div>
@@ -583,7 +583,7 @@ export default function AdminMembershipsPage() {
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-600 text-black font-semibold rounded-xl hover:opacity-90 transition-all"
                 >
                   <UserPlus className="w-4 h-4" />
-                  {language === 'tr' ? 'Üyelik Ver' : 'Grant Membership'}
+                  {'Üyelik Ver'}
                 </button>
                 <button
                   onClick={fetchPurchases}
@@ -601,10 +601,10 @@ export default function AdminMembershipsPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className={`${inputBg} border rounded-lg px-3 py-2 text-sm`}
                 >
-                  <option value="all">{language === 'tr' ? 'Tümü' : 'All'}</option>
-                  <option value="active">{language === 'tr' ? 'Aktif' : 'Active'}</option>
-                  <option value="expired">{language === 'tr' ? 'Süresi Dolan' : 'Expired'}</option>
-                  <option value="cancelled">{language === 'tr' ? 'İptal' : 'Cancelled'}</option>
+                  <option value="all">{'Tümü'}</option>
+                  <option value="active">{'Aktif'}</option>
+                  <option value="expired">{'Süresi Dolan'}</option>
+                  <option value="cancelled">{'İptal'}</option>
                 </select>
               </div>
             </div>
@@ -637,9 +637,9 @@ export default function AdminMembershipsPage() {
                             purchase.status === 'expired' ? 'bg-orange-500/20 text-orange-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
-                            {purchase.status === 'active' ? (language === 'tr' ? 'Aktif' : 'Active') :
-                             purchase.status === 'expired' ? (language === 'tr' ? 'Süresi Dolan' : 'Expired') :
-                             (language === 'tr' ? 'İptal' : 'Cancelled')}
+                            {purchase.status === 'active' ? ('Aktif') :
+                             purchase.status === 'expired' ? ('Süresi Dolan') :
+                             ('İptal')}
                           </span>
                         </div>
                         <div className={`flex items-center gap-3 text-sm ${textSecondary}`}>
@@ -668,14 +668,14 @@ export default function AdminMembershipsPage() {
                           <button
                             onClick={() => { setSelectedPurchase(purchase); setExtendDays(30); setShowExtendModal(true) }}
                             className={`p-2 ${isFacebook ? 'bg-blue-50 text-blue-600' : isCosmic ? 'bg-blue-500/20 text-blue-400' : 'bg-fuchsia-500/20 text-fuchsia-400'} rounded-lg hover:opacity-80 transition-all`}
-                            title={language === 'tr' ? 'Süre Uzat' : 'Extend'}
+                            title={'Süre Uzat'}
                           >
                             <Calendar className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleCancelMembership(purchase.id)}
                             className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all"
-                            title={language === 'tr' ? 'İptal Et' : 'Cancel'}
+                            title={'İptal Et'}
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
@@ -685,7 +685,7 @@ export default function AdminMembershipsPage() {
                         <button
                           onClick={() => handleReactivateMembership(purchase.id)}
                           className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all"
-                          title={language === 'tr' ? 'Yeniden Aktifleştir' : 'Reactivate'}
+                          title={'Yeniden Aktifleştir'}
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
@@ -698,7 +698,7 @@ export default function AdminMembershipsPage() {
               {purchases.length === 0 && (
                 <div className={`text-center py-12 ${textSecondary}`}>
                   <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>{language === 'tr' ? 'Henüz satın alma yok' : 'No purchases yet'}</p>
+                  <p>{'Henüz satın alma yok'}</p>
                 </div>
               )}
             </div>
@@ -725,7 +725,7 @@ export default function AdminMembershipsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
                     <Crown className="w-5 h-5 text-amber-400" />
-                    {editingPlan ? (language === 'tr' ? 'Planı Düzenle' : 'Edit Plan') : (language === 'tr' ? 'Yeni Plan' : 'New Plan')}
+                    {editingPlan ? ('Planı Düzenle') : ('Yeni Plan')}
                   </h2>
                   <button onClick={() => setShowForm(false)} className={`p-2 ${textSecondary} hover:${textPrimary}`}>
                     <X className="w-5 h-5" />
@@ -736,7 +736,7 @@ export default function AdminMembershipsPage() {
                   {/* Name */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Ad (TR)' : 'Name (TR)'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Ad (TR)'}</label>
                       <input
                         type="text"
                         value={formData.name}
@@ -746,7 +746,7 @@ export default function AdminMembershipsPage() {
                       />
                     </div>
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Ad (EN)' : 'Name (EN)'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Ad (EN)'}</label>
                       <input
                         type="text"
                         value={formData.nameEn}
@@ -760,7 +760,7 @@ export default function AdminMembershipsPage() {
                   {/* Tier & Duration */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Seviye' : 'Tier'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Seviye'}</label>
                       <select
                         value={formData.tier}
                         onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
@@ -772,7 +772,7 @@ export default function AdminMembershipsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Süre (gün)' : 'Duration (days)'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Süre (gün)'}</label>
                       <input
                         type="number"
                         value={formData.durationDays}
@@ -785,7 +785,7 @@ export default function AdminMembershipsPage() {
                   {/* Price Type & Price */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Ödeme Türü' : 'Payment Type'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Ödeme Türü'}</label>
                       <select
                         value={formData.priceType}
                         onChange={(e) => setFormData({ ...formData, priceType: e.target.value })}
@@ -798,7 +798,7 @@ export default function AdminMembershipsPage() {
                     </div>
                     <div>
                       <label className={`${textSecondary} text-sm mb-1 block`}>
-                        {language === 'tr' ? 'Fiyat' : 'Price'} ({formData.priceType === 'jeton' ? 'Jeton' : 'Kuruş'})
+                        {'Fiyat'} ({formData.priceType === 'jeton' ? 'Jeton' : 'Kuruş'})
                       </label>
                       <input
                         type="number"
@@ -812,7 +812,7 @@ export default function AdminMembershipsPage() {
                   {/* Bonus & Discount */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Bonus Jeton' : 'Bonus Jetons'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Bonus Jeton'}</label>
                       <input
                         type="number"
                         value={formData.bonusJetons}
@@ -821,7 +821,7 @@ export default function AdminMembershipsPage() {
                       />
                     </div>
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'İndirim %' : 'Discount %'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'İndirim %'}</label>
                       <input
                         type="number"
                         value={formData.discountPercent}
@@ -833,12 +833,12 @@ export default function AdminMembershipsPage() {
 
                   {/* Description */}
                   <div>
-                    <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                    <label className={`${textSecondary} text-sm mb-1 block`}>{'Açıklama'}</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className={`w-full ${inputBg} border rounded-lg px-3 py-2 h-20 resize-none`}
-                      placeholder={language === 'tr' ? 'Plan açıklaması...' : 'Plan description...'}
+                      placeholder={'Plan açıklaması...'}
                     />
                   </div>
 
@@ -851,7 +851,7 @@ export default function AdminMembershipsPage() {
                         onChange={(e) => setFormData({ ...formData, prioritySupport: e.target.checked })}
                         className="w-4 h-4 rounded"
                       />
-                      <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'VIP Destek' : 'Priority Support'}</span>
+                      <span className={`${textSecondary} text-sm`}>{'VIP Destek'}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -860,7 +860,7 @@ export default function AdminMembershipsPage() {
                         onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                         className="w-4 h-4 rounded"
                       />
-                      <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Öne Çıkan' : 'Featured'}</span>
+                      <span className={`${textSecondary} text-sm`}>{'Öne Çıkan'}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -869,14 +869,14 @@ export default function AdminMembershipsPage() {
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                         className="w-4 h-4 rounded"
                       />
-                      <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Aktif' : 'Active'}</span>
+                      <span className={`${textSecondary} text-sm`}>{'Aktif'}</span>
                     </label>
                   </div>
 
                   {/* Sort Order & Badge */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Sıra' : 'Sort Order'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Sıra'}</label>
                       <input
                         type="number"
                         value={formData.sortOrder}
@@ -885,7 +885,7 @@ export default function AdminMembershipsPage() {
                       />
                     </div>
                     <div>
-                      <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Rozet' : 'Badge'}</label>
+                      <label className={`${textSecondary} text-sm mb-1 block`}>{'Rozet'}</label>
                       <input
                         type="text"
                         value={formData.exclusiveBadge}
@@ -903,7 +903,7 @@ export default function AdminMembershipsPage() {
                     className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    {language === 'tr' ? 'Kaydet' : 'Save'}
+                    {'Kaydet'}
                   </button>
                 </div>
               </motion.div>
@@ -931,7 +931,7 @@ export default function AdminMembershipsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
                     <UserPlus className="w-5 h-5 text-amber-400" />
-                    {language === 'tr' ? 'Üyelik Ver' : 'Grant Membership'}
+                    {'Üyelik Ver'}
                   </h2>
                   <button onClick={() => setShowGrantModal(false)} className={`p-2 ${textSecondary}`}>
                     <X className="w-5 h-5" />
@@ -941,14 +941,14 @@ export default function AdminMembershipsPage() {
                 <div className="space-y-4">
                   {/* User Search */}
                   <div>
-                    <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Kullanıcı Ara' : 'Search User'}</label>
+                    <label className={`${textSecondary} text-sm mb-1 block`}>{'Kullanıcı Ara'}</label>
                     <div className="relative">
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); searchUsers(e.target.value) }}
                         className={`w-full ${inputBg} border rounded-lg px-3 py-2 pl-10`}
-                        placeholder={language === 'tr' ? 'İsim veya email...' : 'Name or email...'}
+                        placeholder={'İsim veya email...'}
                       />
                       <Search className={`w-4 h-4 ${textSecondary} absolute left-3 top-1/2 -translate-y-1/2`} />
                     </div>
@@ -972,22 +972,22 @@ export default function AdminMembershipsPage() {
                     )}
                     {grantData.userId && (
                       <p className={`mt-2 text-sm ${accentColor}`}>
-                        ✓ {language === 'tr' ? 'Seçili' : 'Selected'}: {grantData.userName}
+                        ✓ {'Seçili'}: {grantData.userName}
                       </p>
                     )}
                   </div>
 
                   {/* Plan Selection */}
                   <div>
-                    <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Plan (Opsiyonel)' : 'Plan (Optional)'}</label>
+                    <label className={`${textSecondary} text-sm mb-1 block`}>{'Plan (Opsiyonel)'}</label>
                     <select
                       value={grantData.planId}
                       onChange={(e) => setGrantData({ ...grantData, planId: e.target.value })}
                       className={`w-full ${inputBg} border rounded-lg px-3 py-2`}
                     >
-                      <option value="">{language === 'tr' ? 'Özel Süre' : 'Custom Duration'}</option>
+                      <option value="">{'Özel Süre'}</option>
                       {plans.filter(p => p.isActive).map(plan => (
-                        <option key={plan.id} value={plan.id}>{plan.name} - {plan.durationDays} {language === 'tr' ? 'gün' : 'days'}</option>
+                        <option key={plan.id} value={plan.id}>{plan.name} - {plan.durationDays} {'gün'}</option>
                       ))}
                     </select>
                   </div>
@@ -996,7 +996,7 @@ export default function AdminMembershipsPage() {
                   {!grantData.planId && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Seviye' : 'Tier'}</label>
+                        <label className={`${textSecondary} text-sm mb-1 block`}>{'Seviye'}</label>
                         <select
                           value={grantData.customTier}
                           onChange={(e) => setGrantData({ ...grantData, customTier: e.target.value })}
@@ -1008,7 +1008,7 @@ export default function AdminMembershipsPage() {
                         </select>
                       </div>
                       <div>
-                        <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Süre (gün)' : 'Duration (days)'}</label>
+                        <label className={`${textSecondary} text-sm mb-1 block`}>{'Süre (gün)'}</label>
                         <input
                           type="number"
                           value={grantData.durationDays}
@@ -1028,7 +1028,7 @@ export default function AdminMembershipsPage() {
                       className="w-4 h-4 rounded"
                     />
                     <span className={`${textSecondary} text-sm`}>
-                      {language === 'tr' ? 'Ücretsiz Ver (Jeton düşmez)' : 'Free Grant (No charge)'}
+                      {'Ücretsiz Ver (Jeton düşmez)'}
                     </span>
                   </label>
 
@@ -1039,7 +1039,7 @@ export default function AdminMembershipsPage() {
                     className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
-                    {language === 'tr' ? 'Üyelik Ver' : 'Grant Membership'}
+                    {'Üyelik Ver'}
                   </button>
                 </div>
               </motion.div>
@@ -1067,7 +1067,7 @@ export default function AdminMembershipsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
                     <Calendar className="w-5 h-5 text-amber-400" />
-                    {language === 'tr' ? 'Süre Uzat' : 'Extend Duration'}
+                    {'Süre Uzat'}
                   </h2>
                   <button onClick={() => setShowExtendModal(false)} className={`p-2 ${textSecondary}`}>
                     <X className="w-5 h-5" />
@@ -1076,14 +1076,14 @@ export default function AdminMembershipsPage() {
 
                 <div className="space-y-4">
                   <p className={textSecondary}>
-                    {language === 'tr' ? 'Kullanıcı:' : 'User:'} <span className={textPrimary}>{selectedPurchase.user?.name}</span>
+                    {'Kullanıcı:'} <span className={textPrimary}>{selectedPurchase.user?.name}</span>
                   </p>
                   <p className={textSecondary}>
-                    {language === 'tr' ? 'Mevcut Bitiş:' : 'Current Expiry:'} <span className={textPrimary}>{format(new Date(selectedPurchase.expiresAt), 'dd/MM/yyyy')}</span>
+                    {'Mevcut Bitiş:'} <span className={textPrimary}>{format(new Date(selectedPurchase.expiresAt), 'dd/MM/yyyy')}</span>
                   </p>
 
                   <div>
-                    <label className={`${textSecondary} text-sm mb-1 block`}>{language === 'tr' ? 'Eklenecek Gün' : 'Days to Add'}</label>
+                    <label className={`${textSecondary} text-sm mb-1 block`}>{'Eklenecek Gün'}</label>
                     <input
                       type="number"
                       value={extendDays}
@@ -1098,7 +1098,7 @@ export default function AdminMembershipsPage() {
                     className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
-                    {language === 'tr' ? 'Süre Uzat' : 'Extend'}
+                    {'Süre Uzat'}
                   </button>
                 </div>
               </motion.div>

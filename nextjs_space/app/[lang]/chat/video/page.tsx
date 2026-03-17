@@ -531,12 +531,12 @@ export default function VideoStreamPage() {
   // Open fortune request popup
   const handleFortuneRequest = () => {
     if (!currentStream || !session?.user) {
-      alert(language === 'tr' ? 'Fal istemek için giriş yapmalısınız!' : 'Please login to request fortune!')
+      alert('Fal istemek için giriş yapmalısınız!')
       return
     }
     
     if (hasPendingFortune) {
-      alert(language === 'tr' ? 'Zaten bekleyen bir fal isteğiniz var!' : 'You already have a pending fortune request!')
+      alert('Zaten bekleyen bir fal isteğiniz var!')
       return
     }
     
@@ -553,8 +553,7 @@ export default function VideoStreamPage() {
     if (!selectedType) return
     
     if (userJetons < selectedType.jetonCost) {
-      alert(language === 'tr' 
-        ? `Yetersiz jeton! ${selectedType.jetonCost} jeton gerekli, mevcut: ${userJetons}` 
+      alert(`Yetersiz jeton! ${selectedType.jetonCost} jeton gerekli, mevcut}` 
         : `Insufficient jetons! ${selectedType.jetonCost} required, available: ${userJetons}`)
       return
     }
@@ -577,10 +576,10 @@ export default function VideoStreamPage() {
         setUserJetons(data.newBalance)
         setHasPendingFortune(true)
         setShowFortunePopup(false)
-        alert(language === 'tr' ? 'Fal talebiniz gönderildi! ☕ Sıranız geldiğinde falcı size bakacak.' : 'Fortune request sent! ☕ The fortune teller will attend to you when your turn comes.')
+        alert('Fal talebiniz gönderildi! ☕ Sıranız geldiğinde falcı size bakacak.')
       } else {
         const data = await res.json()
-        alert(data.error || data.errorEn || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+        alert(data.error || data.errorEn || ('Bir hata oluştu'))
       }
     } catch (e) {
       console.error('Error requesting fortune:', e)
@@ -607,7 +606,7 @@ export default function VideoStreamPage() {
         if (data.status === 'refunded' && lastFortuneStatusRef.current !== 'refunded') {
           // Show refund popup
           setRefundedAmount(data.jetonAmount)
-          setRefundedTypeName(language === 'tr' ? data.typeName : data.typeNameEn)
+          setRefundedTypeName(data.typeName
           setRefundedTypeIcon(data.typeIcon)
           setHasPendingFortune(false)
           setShowRefundPopup(true)
@@ -806,7 +805,7 @@ export default function VideoStreamPage() {
   // Request co-broadcast with the streamer
   const handleRequestCoBroadcast = async () => {
     if (!currentStream || !session?.user) {
-      alert(language === 'tr' ? 'Giriş yapmanız gerekiyor!' : 'You need to log in!')
+      alert('Giriş yapmanız gerekiyor!')
       return
     }
     
@@ -825,11 +824,11 @@ export default function VideoStreamPage() {
       
       if (res.ok) {
         setCoBroadcastRequested(true)
-        alert(language === 'tr' ? 'Ortak yayın talebiniz gönderildi!' : 'Your co-broadcast request has been sent!')
+        alert('Ortak yayın talebiniz gönderildi!')
       } else {
         const data = await res.json()
         if (data.error === 'Already requested or co-broadcasting') {
-          alert(language === 'tr' ? 'Zaten talep gönderilmiş!' : 'Request already sent!')
+          alert('Zaten talep gönderilmiş!')
         }
       }
     } catch (e) {
@@ -844,14 +843,12 @@ export default function VideoStreamPage() {
     if (!currentStream) return
     
     const shareUrl = `${window.location.origin}/chat/video`
-    const shareText = language === 'tr' 
-      ? `${currentStream.user.name} canlı yayında! Hemen katıl 🔴` 
-      : `${currentStream.user.name} is live! Join now 🔴`
+    const shareText = `${currentStream.user.name} canlı yayında! Hemen katıl 🔴`} is live! Join now 🔴`
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: currentStream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream'),
+          title: currentStream.title || ('Canlı Yayın'),
           text: shareText,
           url: shareUrl
         })
@@ -862,7 +859,7 @@ export default function VideoStreamPage() {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
-        alert(language === 'tr' ? 'Bağlantı kopyalandı!' : 'Link copied!')
+        alert('Bağlantı kopyalandı!')
       } catch (e) {
         // Clipboard not available
       }
@@ -871,7 +868,7 @@ export default function VideoStreamPage() {
 
   const handleSendGift = async (gift: GiftType) => {
     if (!currentStream || !session?.user || userJetons < gift.price) {
-      if (userJetons < gift.price) alert(language === 'tr' ? 'Yetersiz jeton!' : 'Insufficient credits!')
+      if (userJetons < gift.price) alert('Yetersiz jeton!')
       return
     }
     setSendingGift(gift.id)
@@ -1021,10 +1018,10 @@ export default function VideoStreamPage() {
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 flex items-center justify-center mb-6 animate-pulse">
             <Video className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-white text-xl font-bold mb-2 text-center">{language === 'tr' ? 'Henüz canlı yayın yok' : 'No live streams yet'}</h2>
-          <p className="text-white/60 text-center text-sm mb-8">{language === 'tr' ? 'Sohbet sayfasından yayınları takip edebilirsin' : 'You can follow streams from the chat page'}</p>
+          <h2 className="text-white text-xl font-bold mb-2 text-center">{'Henüz canlı yayın yok'}</h2>
+          <p className="text-white/60 text-center text-sm mb-8">{'Sohbet sayfasından yayınları takip edebilirsin'}</p>
           <button onClick={() => router.push(`/`)} className="bg-white/10 text-white font-semibold px-8 py-3 rounded flex items-center gap-2">
-            <X className="w-5 h-5" /> {language === 'tr' ? 'Çıkış' : 'Exit'}
+            <X className="w-5 h-5" /> {'Çıkış'}
           </button>
         </div>
       ) : (
@@ -1111,7 +1108,7 @@ export default function VideoStreamPage() {
                     onChange={e => setNewComment(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                     onClick={(e) => e.stopPropagation()}
-                    placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
+                    placeholder={'Mesaj yaz...'}
                     className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/50 focus:outline-none"
                   />
                   <div className="pr-3 text-white/50">▼</div>
@@ -1121,7 +1118,7 @@ export default function VideoStreamPage() {
                   onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
                   className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold rounded-full flex-shrink-0"
                 >
-                  {language === 'tr' ? 'Fal iste' : 'Fortune'}
+                  {'Fal iste'}
                 </button>
                 
                 <button
@@ -1129,7 +1126,7 @@ export default function VideoStreamPage() {
                   className="px-3 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium rounded-full flex items-center gap-1.5 flex-shrink-0"
                 >
                   <span className="text-base">🎁</span>
-                  <span>{language === 'tr' ? 'Hediye' : 'Gift'}</span>
+                  <span>{'Hediye'}</span>
                 </button>
               </div>
             </div>
@@ -1163,13 +1160,13 @@ export default function VideoStreamPage() {
                 </div>
                 <p className="text-white font-bold text-lg">@{currentStream?.user?.name}</p>
                 <p className="text-white/60 text-sm mt-2">
-                  {connectionStatus === 'connecting' ? (language === 'tr' ? 'Bağlanıyor...' : 'Connecting...') : (language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed')}
+                  {connectionStatus === 'connecting' ? ('Bağlanıyor...') : ('Bağlantı başarısız')}
                 </p>
                 {connectionStatus === 'connecting' && <Loader2 className="w-6 h-6 text-white animate-spin mx-auto mt-4" />}
                 {connectionStatus === 'failed' && (
                   <button onClick={retryConnection} className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto">
                     <RefreshCw className="w-4 h-4" />
-                    {language === 'tr' ? 'Tekrar Dene' : 'Retry'}
+                    {'Tekrar Dene'}
                   </button>
                 )}
               </div>
@@ -1195,7 +1192,7 @@ export default function VideoStreamPage() {
                 <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
                   {guestCountdown}
                 </div>
-                <span>{language === 'tr' ? 'Misafir izleme' : 'Guest preview'}</span>
+                <span>{'Misafir izleme'}</span>
               </motion.div>
             </div>
           )}
@@ -1231,7 +1228,7 @@ export default function VideoStreamPage() {
                     )}
                     <div className="text-left">
                       <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                      <p className="text-pink-300 text-sm">{centerGift.giftName} {language === 'tr' ? 'gönderdi' : 'sent'} ✨</p>
+                      <p className="text-pink-300 text-sm">{centerGift.giftName} {'gönderdi'} ✨</p>
                     </div>
                   </div>
                 </motion.div>
@@ -1286,7 +1283,7 @@ export default function VideoStreamPage() {
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-yellow-400 text-xs">
                         <span>⭐</span>
-                        <span>{formatCount(broadcasterFollowers)} {language === 'tr' ? 'Takipçi' : 'Followers'}</span>
+                        <span>{formatCount(broadcasterFollowers)} {'Takipçi'}</span>
                       </div>
                       {session?.user && currentStream?.user?.id !== session.user.id && (
                         <button
@@ -1297,7 +1294,7 @@ export default function VideoStreamPage() {
                               : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
                           }`}
                         >
-                          {isFollowing ? (language === 'tr' ? 'Takipte' : 'Following') : (language === 'tr' ? 'Takip Et' : 'Follow')}
+                          {isFollowing ? ('Takipte') : ('Takip Et')}
                         </button>
                       )}
                     </div>
@@ -1358,7 +1355,7 @@ export default function VideoStreamPage() {
               >
                 <Gift className="w-6 h-6 text-white" />
               </motion.button>
-              <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Hediye' : 'Gift'}</span>
+              <span className="text-white text-xs font-medium mt-1">{'Hediye'}</span>
             </div>
             
             {/* Fortune Request Button - Coffee Cup Icon */}
@@ -1371,7 +1368,7 @@ export default function VideoStreamPage() {
                 >
                   <span className="text-2xl">☕</span>
                 </motion.button>
-                <span className="text-white text-xs font-medium mt-1">{language === 'tr' ? 'Fal İste' : 'Fortune'}</span>
+                <span className="text-white text-xs font-medium mt-1">{'Fal İste'}</span>
               </div>
             )}
             
@@ -1389,7 +1386,7 @@ export default function VideoStreamPage() {
                 >
                   <User className="w-6 h-6 text-white" />
                 </motion.button>
-                <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || (language === 'tr' ? 'Rumuz' : 'Nick')}</span>
+                <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || ('Rumuz')}</span>
               </div>
             )}
             
@@ -1412,7 +1409,7 @@ export default function VideoStreamPage() {
               onClick={(e) => { e.stopPropagation(); router.push(`/`); }}
               className="px-3 py-2 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border border-white/20 shadow-lg"
             >
-              <span className="text-white text-xs font-medium">{language === 'tr' ? 'Çık' : 'Exit'}</span>
+              <span className="text-white text-xs font-medium">{'Çık'}</span>
             </motion.button>
           </div>
 
@@ -1484,7 +1481,7 @@ export default function VideoStreamPage() {
                   <div>
                     <div className="text-amber-300 text-sm font-bold">KAHVE</div>
                     <div className="text-white text-xs">{centerGift.senderName}</div>
-                    <div className="text-amber-400 text-xs">{language === 'tr' ? 'Kahve ikramı!' : 'Coffee treat!'}</div>
+                    <div className="text-amber-400 text-xs">{'Kahve ikramı!'}</div>
                   </div>
                 </div>
               </motion.div>
@@ -1524,7 +1521,7 @@ export default function VideoStreamPage() {
                 onChange={e => setNewComment(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                 onClick={(e) => e.stopPropagation()}
-                placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Write a message...'}
+                placeholder={'Mesaj yaz...'}
                 className="flex-1 bg-transparent text-white text-sm px-4 py-3 placeholder:text-white/50 focus:outline-none"
               />
               <button
@@ -1533,7 +1530,7 @@ export default function VideoStreamPage() {
                 className="mr-1.5 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
               >
                 <Send className="w-4 h-4" />
-                <span>{language === 'tr' ? 'Gönder' : 'Send'}</span>
+                <span>{'Gönder'}</span>
               </button>
             </div>
           </div>
@@ -1556,7 +1553,7 @@ export default function VideoStreamPage() {
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-bold">{language === 'tr' ? 'Hediye Gönder' : 'Send a Gift'}</span>
+                  <span className="text-white font-bold">{'Hediye Gönder'}</span>
                   <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded-full">
                     <Coins className="w-3 h-3 text-yellow-400" />
                       <span className="text-yellow-400 text-xs font-semibold">{userJetons} Jeton</span>
@@ -1570,7 +1567,7 @@ export default function VideoStreamPage() {
                   <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userJetons < gift.price}
                     className={`flex flex-col items-center p-3 rounded-xl ${userJetons >= gift.price ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-50'}`}>
                     <span className="text-3xl mb-1">{gift.icon}</span>
-                    <span className="text-white text-xs font-medium">{language === 'tr' ? gift.name : gift.nameEn}</span>
+                    <span className="text-white text-xs font-medium">{gift.name}</span>
                     <div className="flex items-center gap-1 mt-1">
                       <Coins className="w-3 h-3 text-yellow-400" />
                       <span className="text-yellow-400 text-xs">{gift.price}</span>
@@ -1602,7 +1599,7 @@ export default function VideoStreamPage() {
               </div>
               
               <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Ortak Yayın Daveti!' : 'Co-Broadcast Invite!'}
+                {'Ortak Yayın Daveti!'}
               </h2>
               
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -1616,7 +1613,7 @@ export default function VideoStreamPage() {
                 <div className="text-left">
                   <p className="text-white font-semibold">{coBroadcastInvite.broadcasterName}</p>
                   <p className="text-white/60 text-sm">
-                    {language === 'tr' ? 'seni ortak yayına davet ediyor' : 'invites you to co-stream'}
+                    {'seni ortak yayına davet ediyor'}
                   </p>
                 </div>
               </div>
@@ -1624,9 +1621,7 @@ export default function VideoStreamPage() {
               {session?.user ? (
                 <>
                   <p className="text-white/70 text-sm mb-6">
-                    {language === 'tr' 
-                      ? 'Kabul ederseniz kameranız açılacak ve yayına katılacaksınız.'
-                      : 'If you accept, your camera will turn on and you will join the stream.'}
+                    {'Kabul ederseniz kameranız açılacak ve yayına katılacaksınız.'}
                   </p>
                   
                   <div className="flex gap-3">
@@ -1635,7 +1630,7 @@ export default function VideoStreamPage() {
                       className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                     >
                       <X className="w-5 h-5" />
-                      {language === 'tr' ? 'Reddet' : 'Decline'}
+                      {'Reddet'}
                     </button>
                     <button
                       onClick={handleAcceptCoBroadcast}
@@ -1647,7 +1642,7 @@ export default function VideoStreamPage() {
                       ) : (
                         <>
                           <Phone className="w-5 h-5" />
-                          {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                          {'Kabul Et'}
                         </>
                       )}
                     </button>
@@ -1656,9 +1651,7 @@ export default function VideoStreamPage() {
               ) : (
                 <>
                   <p className="text-white/70 text-sm mb-6">
-                    {language === 'tr' 
-                      ? 'Ortak yayına katılmak için üye olmanız gerekiyor.'
-                      : 'You need to sign up to join co-broadcast.'}
+                    {'Ortak yayına katılmak için üye olmanız gerekiyor.'}
                   </p>
                   
                   <div className="flex gap-3">
@@ -1667,14 +1660,14 @@ export default function VideoStreamPage() {
                       className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                     >
                       <X className="w-5 h-5" />
-                      {language === 'tr' ? 'Kapat' : 'Close'}
+                      {'Kapat'}
                     </button>
                     <button
                       onClick={() => router.push(`/login`)}
                       className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                     >
                       <LogIn className="w-5 h-5" />
-                      {language === 'tr' ? 'Giriş Yap' : 'Sign In'}
+                      {'Giriş Yap'}
                     </button>
                   </div>
                 </>
@@ -1701,28 +1694,26 @@ export default function VideoStreamPage() {
               </div>
               
               <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'İzlemeye Devam Et!' : 'Continue Watching!'}
+                {'İzlemeye Devam Et!'}
               </h2>
               
               <p className="text-white/70 text-sm mb-4">
-                {language === 'tr' 
-                  ? 'Canlı yayınları izlemeye devam etmek, yorum yapmak ve hediye göndermek için üye ol!'
-                  : 'Sign up to continue watching live streams, comment and send gifts!'}
+                {'Canlı yayınları izlemeye devam etmek, yorum yapmak ve hediye göndermek için üye ol!'}
               </p>
               
               <div className="bg-white/10 rounded-xl p-3 mb-6">
                 <div className="flex items-center justify-center gap-4 text-sm">
                   <div className="text-center">
                     <Gift className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-                    <span className="text-white/60">{language === 'tr' ? 'Hediye Gönder' : 'Send Gifts'}</span>
+                    <span className="text-white/60">{'Hediye Gönder'}</span>
                   </div>
                   <div className="text-center">
                     <MessageCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
-                    <span className="text-white/60">{language === 'tr' ? 'Yorum Yap' : 'Comment'}</span>
+                    <span className="text-white/60">{'Yorum Yap'}</span>
                   </div>
                   <div className="text-center">
                     <Heart className="w-5 h-5 text-red-400 mx-auto mb-1" />
-                    <span className="text-white/60">{language === 'tr' ? 'Beğen' : 'Like'}</span>
+                    <span className="text-white/60">{'Beğen'}</span>
                   </div>
                 </div>
               </div>
@@ -1733,19 +1724,19 @@ export default function VideoStreamPage() {
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-5 h-5" />
-                  {language === 'tr' ? 'Üye Ol' : 'Sign Up'}
+                  {'Üye Ol'}
                 </button>
                 <button
                   onClick={() => router.push(`/login`)}
                   className="w-full bg-white/10 text-white py-3 rounded-xl font-semibold"
                 >
-                  {language === 'tr' ? 'Zaten üyeyim, giriş yap' : 'Already a member? Sign In'}
+                  {'Zaten üyeyim, giriş yap'}
                 </button>
                 <button
                   onClick={() => router.push(`/`)}
                   className="text-white/50 text-sm hover:text-white/70"
                 >
-                  {language === 'tr' ? 'Daha sonra' : 'Later'}
+                  {'Daha sonra'}
                 </button>
               </div>
             </motion.div>
@@ -1772,19 +1763,17 @@ export default function VideoStreamPage() {
               </div>
               
               <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Rumuz Seç' : 'Choose Nickname'}
+                {'Rumuz Seç'}
               </h2>
               
               <p className="text-white/70 text-sm mb-4">
-                {language === 'tr' 
-                  ? 'Yayında görünmek istediğin ismi gir. Boş bırakırsan gerçek ismin gösterilir.'
-                  : 'Enter the name you want to appear as in the stream. Leave empty to show your real name.'}
+                {'Yayında görünmek istediğin ismi gir. Boş bırakırsan gerçek ismin gösterilir.'}
               </p>
               
               <input
                 value={tempNickname}
                 onChange={(e) => setTempNickname(e.target.value)}
-                placeholder={session?.user?.name || (language === 'tr' ? 'Rumuz...' : 'Nickname...')}
+                placeholder={session?.user?.name || ('Rumuz...')}
                 maxLength={20}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-center placeholder:text-white/40 focus:outline-none focus:border-purple-500 mb-6"
               />
@@ -1795,7 +1784,7 @@ export default function VideoStreamPage() {
                   className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <X className="w-5 h-5" />
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </button>
                 <button
                   onClick={() => {
@@ -1805,7 +1794,7 @@ export default function VideoStreamPage() {
                   className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <Check className="w-5 h-5" />
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
               </div>
             </motion.div>
@@ -1833,7 +1822,7 @@ export default function VideoStreamPage() {
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-400" />
                   <h2 className="text-lg font-bold text-white">
-                    {language === 'tr' ? 'İzleyiciler' : 'Viewers'} ({viewerCount})
+                    {'İzleyiciler'} ({viewerCount})
                   </h2>
                 </div>
                 <button onClick={() => setShowViewersList(false)}>
@@ -1844,7 +1833,7 @@ export default function VideoStreamPage() {
               <div className="flex-1 overflow-y-auto space-y-2">
                 {viewers.length === 0 ? (
                   <p className="text-white/50 text-center py-8 text-sm">
-                    {language === 'tr' ? 'Henüz izleyici yok' : 'No viewers yet'}
+                    {'Henüz izleyici yok'}
                   </p>
                 ) : (
                   viewers.map((viewer) => (
@@ -1894,7 +1883,7 @@ export default function VideoStreamPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">☕</span>
                   <h2 className="text-lg font-bold text-white">
-                    {language === 'tr' ? 'Fal İste' : 'Request Fortune'}
+                    {'Fal İste'}
                   </h2>
                 </div>
                 <button onClick={() => setShowFortunePopup(false)}>
@@ -1905,7 +1894,7 @@ export default function VideoStreamPage() {
               {/* Jeton Balance */}
               <div className="bg-amber-500/20 rounded-xl p-3 mb-4 flex items-center justify-between">
                 <span className="text-amber-200 text-sm">
-                  {language === 'tr' ? 'Mevcut Jeton' : 'Available Jetons'}
+                  {'Mevcut Jeton'}
                 </span>
                 <span className="text-amber-400 font-bold">{userJetons} <Coins className="w-4 h-4 inline" /></span>
               </div>
@@ -1914,7 +1903,7 @@ export default function VideoStreamPage() {
               <div className="flex-1 overflow-y-auto space-y-2 mb-4">
                 {fortuneTypes.length === 0 ? (
                   <p className="text-white/50 text-center py-8 text-sm">
-                    {language === 'tr' ? 'Fal türleri yükleniyor...' : 'Loading fortune types...'}
+                    {'Fal türleri yükleniyor...'}
                   </p>
                 ) : (
                   fortuneTypes.map((type) => (
@@ -1929,7 +1918,7 @@ export default function VideoStreamPage() {
                     >
                       <span className="text-2xl">{type.icon}</span>
                       <div className="flex-1 text-left">
-                        <p className="text-white font-medium">{language === 'tr' ? type.name : type.nameEn}</p>
+                        <p className="text-white font-medium">{type.name}</p>
                         {type.description && (
                           <p className="text-white/50 text-xs">{type.description}</p>
                         )}
@@ -1950,12 +1939,12 @@ export default function VideoStreamPage() {
               {selectedFortuneType && (
                 <div className="mb-4">
                   <label className="text-white/70 text-sm mb-2 block">
-                    {language === 'tr' ? 'Sorunuzu yazın (opsiyonel)' : 'Write your question (optional)'}
+                    {'Sorunuzu yazın (opsiyonel)'}
                   </label>
                   <textarea
                     value={fortuneQuestion}
                     onChange={(e) => setFortuneQuestion(e.target.value)}
-                    placeholder={language === 'tr' ? 'Sorunuzu buraya yazın...' : 'Write your question here...'}
+                    placeholder={'Sorunuzu buraya yazın...'}
                     maxLength={500}
                     rows={3}
                     className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500 resize-none"
@@ -1978,7 +1967,7 @@ export default function VideoStreamPage() {
                 ) : (
                   <>
                     <span className="text-lg">☕</span>
-                    {language === 'tr' ? 'Fal İste' : 'Request Fortune'}
+                    {'Fal İste'}
                     {selectedFortuneType && (
                       <span className="ml-1">
                         ({fortuneTypes.find(t => t.id === selectedFortuneType)?.jetonCost} jeton)
@@ -1990,9 +1979,7 @@ export default function VideoStreamPage() {
               
               {/* Info text */}
               <p className="text-white/40 text-xs text-center mt-3">
-                {language === 'tr' 
-                  ? 'Falınıza bakılmazsa jetonunuz iade edilir.' 
-                  : 'Your jetons will be refunded if your fortune is not read.'}
+                {'Falınıza bakılmazsa jetonunuz iade edilir.'}
               </p>
             </motion.div>
           </motion.div>
@@ -2081,7 +2068,7 @@ export default function VideoStreamPage() {
               
               {/* Message */}
               <h2 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Falınıza Bakılamadı' : 'Fortune Could Not Be Read'}
+                {'Falınıza Bakılamadı'}
               </h2>
               
               <p className="text-white/70 text-sm mb-4">
@@ -2095,7 +2082,7 @@ export default function VideoStreamPage() {
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 <p className="text-white/60 text-sm mb-1">
-                  {language === 'tr' ? 'İade Edilen Jeton' : 'Refunded Jetons'}
+                  {'İade Edilen Jeton'}
                 </p>
                 <motion.div 
                   className="flex items-center justify-center gap-2"
@@ -2109,9 +2096,7 @@ export default function VideoStreamPage() {
               </motion.div>
               
               <p className="text-white/50 text-xs mb-4">
-                {language === 'tr' 
-                  ? 'Jetonlarınız hesabınıza iade edildi.' 
-                  : 'Your jetons have been refunded to your account.'}
+                {'Jetonlarınız hesabınıza iade edildi.'}
               </p>
               
               {/* Close Button */}
@@ -2119,7 +2104,7 @@ export default function VideoStreamPage() {
                 onClick={() => setShowRefundPopup(false)}
                 className="w-full py-3 rounded-xl font-bold bg-white/10 text-white hover:bg-white/20 transition-colors"
               >
-                {language === 'tr' ? 'Tamam' : 'OK'}
+                {'Tamam'}
               </button>
             </motion.div>
           </motion.div>

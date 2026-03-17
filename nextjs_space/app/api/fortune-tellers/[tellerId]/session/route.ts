@@ -44,7 +44,7 @@ export async function POST(
     });
 
     if (!user || (user.jetonBalance ?? 0) < totalCost) {
-      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi / Insufficient jetons' }, { status: 400 });
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
     }
 
     // Get user info for notification
@@ -73,23 +73,23 @@ export async function POST(
     ]);
 
     // Send notification to the fortune teller
-    const fortuneTypeNames: Record<string, { tr: string; en: string }> = {
-      coffee: { tr: 'Kahve Falı', en: 'Coffee Reading' },
-      tarot: { tr: 'Tarot', en: 'Tarot Reading' },
-      astrology: { tr: 'Astroloji', en: 'Astrology' },
-      palmistry: { tr: 'El Falı', en: 'Palm Reading' },
-      numerology: { tr: 'Numeroloji', en: 'Numerology' },
-      general: { tr: 'Genel Danışmanlık', en: 'General Consultation' }
+    const fortuneTypeNames: Record<string, string> = {
+      coffee: 'Kahve Falı',
+      tarot: 'Tarot',
+      astrology: 'Astroloji',
+      palmistry: 'El Falı',
+      numerology: 'Numeroloji',
+      general: 'Genel Danışmanlık'
     };
 
-    const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames.general;
+    const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames['general'];
     
     await prisma.notification.create({
       data: {
         userId: teller.userId,
         type: 'session_request',
-        title: 'Yeni Randevu Talebi / New Session Request',
-        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName.tr} için ${duration} dakikalık randevu talep etti. / ${fullUser?.name || 'A user'} requested a ${duration} minute ${ftName.en} session with you.`,
+        title: 'Yeni Randevu Talebi',
+        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName} için ${duration} dakikalık randevu talep etti.`,
         data: JSON.stringify({
           sessionId: liveSession.id,
           fortuneType: fortuneType || 'general',

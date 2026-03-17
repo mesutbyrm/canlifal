@@ -185,7 +185,7 @@ export default function TellerIncomingRequest() {
 
   if (!isVisible || !pendingRequest) return null
 
-  const userName = pendingRequest.user.name || (language === 'tr' ? 'Misafir' : 'Guest')
+  const userName = pendingRequest.user.name || ('Misafir')
   const fortuneTypeName = FORTUNE_TYPE_NAMES[pendingRequest.fortuneType]?.[language] || pendingRequest.fortuneType
 
   return (
@@ -222,13 +222,11 @@ export default function TellerIncomingRequest() {
           {/* User info */}
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-white mb-2">
-              {language === 'tr' ? 'Canlı Fal İsteği' : 'Live Fortune Request'}
+              {'Canlı Fal İsteği'}
             </h2>
             <p className="text-purple-200 text-lg">
               <span className="text-gold-400 font-semibold">{userName}</span>
-              {language === 'tr' 
-                ? ' sizinle canlı fal için bağlanmak istiyor'
-                : ' wants to connect for a live fortune reading'
+              {' sizinle canlı fal için bağlanmak istiyor'
               }
             </p>
             <div className="flex items-center justify-center gap-2 mt-3 text-purple-300">
@@ -238,18 +236,18 @@ export default function TellerIncomingRequest() {
             {/* Duration selected by user */}
             <div className="flex items-center justify-center gap-4 mt-3 px-4 py-2 bg-purple-800/50 rounded-lg">
               <div className="text-center">
-                <p className="text-gold-400 font-bold text-lg">{pendingRequest.maxMinutes} {language === 'tr' ? 'dakika' : 'min'}</p>
-                <p className="text-purple-300 text-xs">{language === 'tr' ? 'Seçilen Süre' : 'Selected Duration'}</p>
+                <p className="text-gold-400 font-bold text-lg">{pendingRequest.maxMinutes} {'dakika'}</p>
+                <p className="text-purple-300 text-xs">{'Seçilen Süre'}</p>
               </div>
               <div className="text-center border-l border-purple-600 pl-4">
-                <p className="text-green-400 font-bold text-lg">{pendingRequest.creditsCharged} {language === 'tr' ? 'jeton' : 'jetons'}</p>
-                <p className="text-purple-300 text-xs">{language === 'tr' ? 'Toplam Tutar' : 'Total Cost'}</p>
+                <p className="text-green-400 font-bold text-lg">{pendingRequest.creditsCharged} {'jeton'}</p>
+                <p className="text-purple-300 text-xs">{'Toplam Tutar'}</p>
               </div>
             </div>
             <div className="flex items-center justify-center gap-2 mt-2 text-purple-400 text-sm">
               <Clock className="w-4 h-4" />
               <span>
-                {new Date(pendingRequest.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
+                {new Date(pendingRequest.createdAt).toLocaleTimeString('tr-TR', {
                   hour: '2-digit',
                   minute: '2-digit'
                 })}
@@ -266,7 +264,7 @@ export default function TellerIncomingRequest() {
               className="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <Phone className="w-5 h-5" />
-              {language === 'tr' ? 'Kabul Et' : 'Accept'}
+              {'Kabul Et'}
             </button>
             
             {/* Wait */}
@@ -276,7 +274,7 @@ export default function TellerIncomingRequest() {
               className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <Clock className="w-5 h-5" />
-              {language === 'tr' ? 'Beklet' : 'Wait'}
+              {'Beklet'}
             </button>
             
             {/* Reject */}
@@ -286,7 +284,7 @@ export default function TellerIncomingRequest() {
               className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               <PhoneOff className="w-5 h-5" />
-              {language === 'tr' ? 'Reddet' : 'Reject'}
+              {'Reddet'}
             </button>
           </div>
         </motion.div>

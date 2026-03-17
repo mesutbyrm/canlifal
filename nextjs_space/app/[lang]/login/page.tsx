@@ -30,14 +30,14 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError(language === 'tr' ? 'Geçersiz e-posta veya şifre' : 'Invalid email or password')
+        setError('Geçersiz e-posta veya şifre')
       } else {
         // Trigger login announcement for VIP/Staff users
         fetch('/api/announcements', { method: 'POST' }).catch(() => {})
         router.push(`/`)
       }
     } catch (err) {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -58,10 +58,10 @@ export default function LoginPage() {
               <Sparkles className="w-12 h-12 text-gold-500" />
             </div>
             <h1 className="font-serif text-3xl text-gold-500 gold-glow mb-2">
-              {language === 'tr' ? 'Giriş Yap' : 'Sign In'}
+              {'Giriş Yap'}
             </h1>
             <p className="text-deep-purple-300">
-              {language === 'tr' ? 'Hesabınıza giriş yapın' : 'Sign in to your account'}
+              {'Hesabınıza giriş yapın'}
             </p>
           </div>
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'E-posta' : 'Email'}
+                {'E-posta'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'Şifre' : 'Password'}
+                {'Şifre'}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -112,7 +112,7 @@ export default function LoginPage() {
                 href={`/forgot-password`}
                 className="text-deep-purple-400 hover:text-gold-400 text-sm transition-colors"
               >
-                {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password?'}
+                {'Şifremi Unuttum'}
               </Link>
             </div>
 
@@ -121,19 +121,19 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed mystical-shadow"
             >
-              {isLoading ? <LoadingSpinner /> : (language === 'tr' ? 'Giriş Yap' : 'Sign In')}
+              {isLoading ? <LoadingSpinner /> : ('Giriş Yap')}
             </button>
           </form>
 
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-deep-purple-300 text-sm">
-              {language === 'tr' ? 'Hesabınız yok mu?' : "Don't have an account?"}{' '}
+              {'Hesabınız yok mu?'}{' '}
               <Link
                 href={`/register`}
                 className="text-gold-500 hover:text-gold-400 transition-colors font-medium"
               >
-                {language === 'tr' ? 'Kayıt Ol' : 'Register'}
+                {'Kayıt Ol'}
               </Link>
             </p>
           </div>

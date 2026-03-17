@@ -140,21 +140,21 @@ export default function CreditPackagesPage() {
       if (res.ok) {
         fetchPackages()
         setShowModal(false)
-        showMessage('success', language === 'tr' ? 'Paket başarıyla kaydedildi!' : 'Package saved successfully!')
+        showMessage('success', 'Paket başarıyla kaydedildi!')
       } else {
         const data = await res.json()
-        showMessage('error', data.error || (language === 'tr' ? 'Kaydetme hatası' : 'Save error'))
+        showMessage('error', data.error || ('Kaydetme hatası'))
       }
     } catch (err) {
       console.error('Save error:', err)
-      showMessage('error', language === 'tr' ? 'Bağlantı hatası' : 'Connection error')
+      showMessage('error', 'Bağlantı hatası')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu paketi silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this package?')) {
+    if (!confirm('Bu paketi silmek istediğinize emin misiniz?')) {
       return
     }
 
@@ -164,14 +164,14 @@ export default function CreditPackagesPage() {
       })
       if (res.ok) {
         fetchPackages()
-        showMessage('success', language === 'tr' ? 'Paket silindi!' : 'Package deleted!')
+        showMessage('success', 'Paket silindi!')
       } else {
         const data = await res.json()
-        showMessage('error', data.error || (language === 'tr' ? 'Silme hatası' : 'Delete error'))
+        showMessage('error', data.error || ('Silme hatası'))
       }
     } catch (err) {
       console.error('Delete error:', err)
-      showMessage('error', language === 'tr' ? 'Bağlantı hatası' : 'Connection error')
+      showMessage('error', 'Bağlantı hatası')
     }
   }
 
@@ -185,8 +185,8 @@ export default function CreditPackagesPage() {
       if (res.ok) {
         fetchPackages()
         showMessage('success', pkg.isActive 
-          ? (language === 'tr' ? 'Paket devre dışı bırakıldı' : 'Package deactivated')
-          : (language === 'tr' ? 'Paket aktif edildi' : 'Package activated'))
+          ? ('Paket devre dışı bırakıldı')
+          : ('Paket aktif edildi'))
       }
     } catch (err) {
       console.error('Toggle error:', err)
@@ -221,7 +221,7 @@ export default function CreditPackagesPage() {
       fetchPackages()
     } catch (err) {
       console.error('Reorder error:', err)
-      showMessage('error', language === 'tr' ? 'Sıralama hatası' : 'Reorder error')
+      showMessage('error', 'Sıralama hatası')
     } finally {
       setReordering(false)
     }
@@ -243,17 +243,17 @@ export default function CreditPackagesPage() {
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Admin Paneli' : 'Admin Panel'}
+          {'Admin Paneli'}
         </Link>
 
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
               <Package className="w-8 h-8 text-gold-400" />
-              {language === 'tr' ? 'CFC Paketleri' : 'CFC Packages'}
+              {'CFC Paketleri'}
             </h1>
             <p className="text-purple-300 mt-2">
-              {language === 'tr' ? 'Satışa sunulan CFC paketlerini yönetin' : 'Manage CFC packages for sale'}
+              {'Satışa sunulan CFC paketlerini yönetin'}
             </p>
           </div>
           <button
@@ -261,7 +261,7 @@ export default function CreditPackagesPage() {
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg flex items-center gap-2 hover:from-purple-700 hover:to-pink-700 transition-all"
           >
             <Plus className="w-5 h-5" />
-            {language === 'tr' ? 'Yeni Paket' : 'New Package'}
+            {'Yeni Paket'}
           </button>
         </div>
 
@@ -283,7 +283,7 @@ export default function CreditPackagesPage() {
           <div className="text-center py-16">
             <Package className="w-16 h-16 text-purple-500/50 mx-auto mb-4" />
             <p className="text-purple-400">
-              {language === 'tr' ? 'Henüz paket oluşturulmamış' : 'No packages created yet'}
+              {'Henüz paket oluşturulmamış'}
             </p>
           </div>
         ) : (
@@ -301,13 +301,13 @@ export default function CreditPackagesPage() {
                 {pkg.isFeatured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-500 text-black text-xs font-bold rounded-full flex items-center gap-1">
                     <Star className="w-3 h-3" />
-                    {language === 'tr' ? 'ÖNE ÇIKAN' : 'FEATURED'}
+                    {'ÖNE ÇIKAN'}
                   </div>
                 )}
 
                 <div className="text-center mb-4">
                   <h3 className="text-xl font-bold text-white">
-                    {language === 'tr' ? pkg.name : (pkg.nameEn || pkg.name)}
+                    {pkg.name}
                   </h3>
                   <div className="text-3xl font-bold text-gold-400 mt-2">
                     {pkg.credits}
@@ -315,7 +315,7 @@ export default function CreditPackagesPage() {
                       <span className="text-lg text-green-400"> +{pkg.bonusCredits}</span>
                     )}
                   </div>
-                  <p className="text-purple-300 text-sm">{language === 'tr' ? 'CFC' : 'CFC'}</p>
+                  <p className="text-purple-300 text-sm">{'CFC'}</p>
                 </div>
 
                 <div className="text-center mb-4">
@@ -327,7 +327,7 @@ export default function CreditPackagesPage() {
                 {pkg.bonusCredits > 0 && (
                   <div className="flex items-center justify-center gap-1 mb-4 text-green-400 text-sm">
                     <Gift className="w-4 h-4" />
-                    +{pkg.bonusCredits} {language === 'tr' ? 'bonus' : 'bonus'}
+                    +{pkg.bonusCredits} {'bonus'}
                   </div>
                 )}
 
@@ -338,7 +338,7 @@ export default function CreditPackagesPage() {
                       onClick={() => movePackage(index, 'up')}
                       disabled={index === 0 || reordering}
                       className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={language === 'tr' ? 'Yukarı taşı' : 'Move up'}
+                      title={'Yukarı taşı'}
                     >
                       <ChevronUp className="w-4 h-4" />
                     </button>
@@ -346,7 +346,7 @@ export default function CreditPackagesPage() {
                       onClick={() => movePackage(index, 'down')}
                       disabled={index === packages.length - 1 || reordering}
                       className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={language === 'tr' ? 'Aşağı taşı' : 'Move down'}
+                      title={'Aşağı taşı'}
                     >
                       <ChevronDown className="w-4 h-4" />
                     </button>
@@ -357,7 +357,7 @@ export default function CreditPackagesPage() {
                     <button
                       onClick={() => openEditModal(pkg)}
                       className="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors"
-                      title={language === 'tr' ? 'Düzenle' : 'Edit'}
+                      title={'Düzenle'}
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
@@ -368,14 +368,14 @@ export default function CreditPackagesPage() {
                           ? 'text-green-400 hover:bg-green-500/20'
                           : 'text-gray-400 hover:bg-gray-500/20'
                       }`}
-                      title={pkg.isActive ? (language === 'tr' ? 'Devre dışı bırak' : 'Deactivate') : (language === 'tr' ? 'Aktif et' : 'Activate')}
+                      title={pkg.isActive ? ('Devre dışı bırak') : ('Aktif et')}
                     >
                       {pkg.isActive ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
                     </button>
                     <button
                       onClick={() => handleDelete(pkg.id)}
                       className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
-                      title={language === 'tr' ? 'Sil' : 'Delete'}
+                      title={'Sil'}
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -396,14 +396,14 @@ export default function CreditPackagesPage() {
             >
               <h2 className="text-xl font-bold text-white mb-6">
                 {editingPackage
-                  ? (language === 'tr' ? 'Paketi Düzenle' : 'Edit Package')
-                  : (language === 'tr' ? 'Yeni Paket Oluştur' : 'Create New Package')}
+                  ? ('Paketi Düzenle')
+                  : ('Yeni Paket Oluştur')}
               </h2>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-purple-300 mb-1">
-                    {language === 'tr' ? 'Paket Adı (Türkçe)' : 'Package Name (Turkish)'}
+                    {'Paket Adı (Türkçe)'}
                   </label>
                   <input
                     type="text"
@@ -416,7 +416,7 @@ export default function CreditPackagesPage() {
 
                 <div>
                   <label className="block text-sm text-purple-300 mb-1">
-                    {language === 'tr' ? 'Paket Adı (İngilizce)' : 'Package Name (English)'}
+                    {'Paket Adı (İngilizce)'}
                   </label>
                   <input
                     type="text"
@@ -430,7 +430,7 @@ export default function CreditPackagesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'CFC Miktarı' : 'CFC'}
+                      {'CFC Miktarı'}
                     </label>
                     <input
                       type="number"
@@ -441,7 +441,7 @@ export default function CreditPackagesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'Bonus CFC' : 'Bonus CFC'}
+                      {'Bonus CFC'}
                     </label>
                     <input
                       type="number"
@@ -455,7 +455,7 @@ export default function CreditPackagesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'Fiyat' : 'Price'}
+                      {'Fiyat'}
                     </label>
                     <input
                       type="number"
@@ -466,7 +466,7 @@ export default function CreditPackagesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {language === 'tr' ? 'Para Birimi' : 'Currency'}
+                      {'Para Birimi'}
                     </label>
                     <select
                       value={formData.currency}
@@ -489,7 +489,7 @@ export default function CreditPackagesPage() {
                       className="w-4 h-4 accent-gold-500"
                     />
                     <span className="text-purple-300">
-                      {language === 'tr' ? 'Öne Çıkan' : 'Featured'}
+                      {'Öne Çıkan'}
                     </span>
                   </label>
                 </div>
@@ -500,7 +500,7 @@ export default function CreditPackagesPage() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 text-purple-300 hover:text-white transition-colors"
                 >
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </button>
                 <button
                   onClick={handleSave}
@@ -508,7 +508,7 @@ export default function CreditPackagesPage() {
                   className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg flex items-center gap-2 transition-colors"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
               </div>
             </motion.div>

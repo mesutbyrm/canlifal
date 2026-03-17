@@ -96,7 +96,7 @@ export default function AdminSitePagesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu sayfayı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this page?')) return
+    if (!confirm('Bu sayfayı silmek istediğinize emin misiniz?')) return
     setSaving(id)
     try {
       await fetch(`/api/admin/site-pages?id=${id}`, { method: 'DELETE' })
@@ -142,10 +142,10 @@ export default function AdminSitePagesPage() {
           </Link>
           <div>
             <h1 className={`text-2xl font-bold ${textColor}`}>
-              {language === 'tr' ? '📄 Sayfa Yönetimi' : '📄 Page Management'}
+              {'📄 Sayfa Yönetimi'}
             </h1>
             <p className={`text-sm ${subText}`}>
-              {language === 'tr' ? 'Site sayfalarını ekleyin, düzenleyin ve sıralayın' : 'Add, edit, and reorder site pages'}
+              {'Site sayfalarını ekleyin, düzenleyin ve sıralayın'}
             </p>
           </div>
           <button
@@ -153,7 +153,7 @@ export default function AdminSitePagesPage() {
             className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg ${btnPrimary}`}
           >
             <Plus className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Sayfa' : 'New Page'}
+            {'Yeni Sayfa'}
           </button>
         </div>
 
@@ -161,15 +161,15 @@ export default function AdminSitePagesPage() {
         {showForm && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`${cardBg} border rounded-xl p-6 mb-6`}>
             <h3 className={`text-lg font-bold mb-4 ${textColor}`}>
-              {editPage ? (language === 'tr' ? 'Sayfa Düzenle' : 'Edit Page') : (language === 'tr' ? 'Yeni Sayfa Oluştur' : 'Create New Page')}
+              {editPage ? ('Sayfa Düzenle') : ('Yeni Sayfa Oluştur')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Sayfa Başlığı (TR)' : 'Page Title (TR)'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Sayfa Başlığı (TR)'}</label>
                 <input value={form.title} onChange={e => { setForm({ ...form, title: e.target.value, slug: form.slug || autoSlug(e.target.value) }) }} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder="Hakkımızda" />
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'Sayfa Başlığı (EN)' : 'Page Title (EN)'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'Sayfa Başlığı (EN)'}</label>
                 <input value={form.titleEn} onChange={e => setForm({ ...form, titleEn: e.target.value })} className={`w-full px-3 py-2 rounded-lg border ${inputBg}`} placeholder="About Us" />
               </div>
               <div className="sm:col-span-2">
@@ -180,25 +180,25 @@ export default function AdminSitePagesPage() {
                 </div>
               </div>
               <div className="sm:col-span-2">
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'İçerik (TR) - HTML desteklenir' : 'Content (TR) - HTML supported'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'İçerik (TR) - HTML desteklenir'}</label>
                 <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={8} className={`w-full px-3 py-2 rounded-lg border ${inputBg} font-mono text-sm`} placeholder="<h2>Hakkımızda</h2>\n<p>İçerik buraya...</p>" />
               </div>
               <div className="sm:col-span-2">
-                <label className={`block text-sm font-medium mb-1 ${subText}`}>{language === 'tr' ? 'İçerik (EN) - Opsiyonel' : 'Content (EN) - Optional'}</label>
+                <label className={`block text-sm font-medium mb-1 ${subText}`}>{'İçerik (EN) - Opsiyonel'}</label>
                 <textarea value={form.contentEn} onChange={e => setForm({ ...form, contentEn: e.target.value })} rows={4} className={`w-full px-3 py-2 rounded-lg border ${inputBg} font-mono text-sm`} placeholder="<h2>About Us</h2>\n<p>Content here...</p>" />
               </div>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.isPublished} onChange={e => setForm({ ...form, isPublished: e.target.checked })} className="rounded" />
-                  <span className={`text-sm ${textColor}`}>{language === 'tr' ? 'Yayında' : 'Published'}</span>
+                  <span className={`text-sm ${textColor}`}>{'Yayında'}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.showInFooter} onChange={e => setForm({ ...form, showInFooter: e.target.checked })} className="rounded" />
-                  <span className={`text-sm ${textColor}`}>{language === 'tr' ? 'Footer\'da Göster' : 'Show in Footer'}</span>
+                  <span className={`text-sm ${textColor}`}>{'Footer\'da Göster'}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.showInHeader} onChange={e => setForm({ ...form, showInHeader: e.target.checked })} className="rounded" />
-                  <span className={`text-sm ${textColor}`}>{language === 'tr' ? 'Header\'da Göster' : 'Show in Header'}</span>
+                  <span className={`text-sm ${textColor}`}>{'Header\'da Göster'}</span>
                 </label>
               </div>
             </div>
@@ -206,10 +206,10 @@ export default function AdminSitePagesPage() {
             <div className="flex gap-3 mt-4">
               <button onClick={handleSave} disabled={saving === 'new' || !form.title || !form.content} className={`flex items-center gap-2 px-4 py-2 rounded-lg ${btnPrimary} disabled:opacity-50`}>
                 {saving === 'new' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {language === 'tr' ? 'Kaydet' : 'Save'}
+                {'Kaydet'}
               </button>
               <button onClick={() => { setShowForm(false); setEditPage(null) }} className={`px-4 py-2 rounded-lg border ${cardBg} ${textColor}`}>
-                {language === 'tr' ? 'İptal' : 'Cancel'}
+                {'İptal'}
               </button>
             </div>
           </motion.div>
@@ -221,7 +221,7 @@ export default function AdminSitePagesPage() {
         ) : pages.length === 0 ? (
           <div className={`${cardBg} border rounded-xl p-12 text-center`}>
             <FileText className={`w-12 h-12 mx-auto mb-3 ${subText}`} />
-            <p className={textColor}>{language === 'tr' ? 'Henüz sayfa yok' : 'No pages yet'}</p>
+            <p className={textColor}>{'Henüz sayfa yok'}</p>
           </div>
         ) : (
           <Reorder.Group axis="y" values={pages} onReorder={handleReorder} className="space-y-3">

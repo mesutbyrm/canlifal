@@ -167,7 +167,7 @@ export default function AdminButtonOrderPage() {
           <div className="flex items-center gap-2">
             <LayoutList className="w-5 h-5 text-purple-400" />
             <h1 className="text-lg font-bold text-white">
-              {language === 'tr' ? 'Buton Sıralaması' : 'Button Order'}
+              {'Buton Sıralaması'}
             </h1>
           </div>
         </div>
@@ -176,9 +176,7 @@ export default function AdminButtonOrderPage() {
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <p className="text-purple-300/70 text-sm">
-          {language === 'tr'
-            ? 'Ana sayfadaki aksiyon butonlarının sıralamasını değiştirin. Yukarı/aşağı oklarını kullanarak butonları sıralayın.'
-            : 'Change the order of action buttons on the homepage. Use the up/down arrows to reorder buttons.'}
+          {'Ana sayfadaki aksiyon butonlarının sıralamasını değiştirin. Yukarı/aşağı oklarını kullanarak butonları sıralayın.'}
         </p>
 
         {/* Button List */}
@@ -195,7 +193,7 @@ export default function AdminButtonOrderPage() {
                 <GripVertical className="w-5 h-5 text-gray-500" />
                 <span className="text-purple-300">{info.icon}</span>
                 <span className="flex-1 text-white font-medium">
-                  {language === 'tr' ? info.labelTr : info.labelEn}
+                  {info.labelTr}
                 </span>
                 <span className="text-xs text-purple-400/60 mr-2">#{index + 1}</span>
                 <button
@@ -232,16 +230,16 @@ export default function AdminButtonOrderPage() {
               <Save className="w-5 h-5" />
             )}
             {saving
-              ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...')
+              ? ('Kaydediliyor...')
               : saved
-              ? (language === 'tr' ? 'Kaydedildi!' : 'Saved!')
-              : (language === 'tr' ? 'Kaydet' : 'Save')}
+              ? ('Kaydedildi!')
+              : ('Kaydet')}
           </button>
           <button
             onClick={resetToDefault}
             className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-purple-300 font-medium border border-purple-500/30 transition-colors"
           >
-            {language === 'tr' ? 'Sıfırla' : 'Reset'}
+            {'Sıfırla'}
           </button>
         </div>
       </div>

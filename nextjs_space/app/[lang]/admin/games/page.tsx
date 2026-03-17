@@ -113,7 +113,7 @@ export default function AdminGamesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu oyunu silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this game?')) return
+    if (!confirm('Bu oyunu silmek istediğinize emin misiniz?')) return
     setSaving(id)
     try {
       const res = await fetch('/api/admin/games', {
@@ -137,7 +137,7 @@ export default function AdminGamesPage() {
   if ((session?.user as any)?.role !== 'admin') {
     return (
       <div className={`min-h-screen ${bgMain} flex items-center justify-center`}>
-        <p className="text-red-400 text-lg">Yetkisiz erişim / Unauthorized</p>
+        <p className="text-red-400 text-lg">Yetkisiz erişim</p>
       </div>
     )
   }
@@ -153,7 +153,7 @@ export default function AdminGamesPage() {
             </button>
             <Gamepad2 className="w-6 h-6 text-amber-400" />
             <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-              {language === 'tr' ? 'Oyun Merkezi Yönetimi' : 'Game Center Management'}
+              {'Oyun Merkezi Yönetimi'}
             </h1>
           </div>
           <button
@@ -161,7 +161,7 @@ export default function AdminGamesPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl ${btnPrimary} text-sm font-medium transition-all hover:scale-105`}
           >
             <Plus className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Oyun' : 'New Game'}
+            {'Yeni Oyun'}
           </button>
         </div>
       </div>
@@ -177,7 +177,7 @@ export default function AdminGamesPage() {
               className={`rounded-2xl border ${cardBg} p-4 space-y-3 overflow-hidden`}
             >
               <h3 className="text-lg font-semibold text-amber-400">
-                {language === 'tr' ? '➕ Yeni Oyun Ekle' : '➕ Add New Game'}
+                {'➕ Yeni Oyun Ekle'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -190,7 +190,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Başlık' : 'Title'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Başlık'}</label>
                   <input
                     value={newGame.title}
                     onChange={e => setNewGame({ ...newGame, title: e.target.value })}
@@ -199,7 +199,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Açıklama'}</label>
                   <input
                     value={newGame.description}
                     onChange={e => setNewGame({ ...newGame, description: e.target.value })}
@@ -216,7 +216,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Giriş Ücreti (Jeton)' : 'Entry Fee'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Giriş Ücreti (Jeton)'}</label>
                   <input
                     type="number"
                     value={newGame.entryFee}
@@ -225,7 +225,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Min Ödül' : 'Min Reward'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Min Ödül'}</label>
                   <input
                     type="number"
                     value={newGame.minReward}
@@ -234,7 +234,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Max Ödül' : 'Max Reward'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Max Ödül'}</label>
                   <input
                     type="number"
                     value={newGame.maxReward}
@@ -243,7 +243,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Sıralama' : 'Sort Order'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Sıralama'}</label>
                   <input
                     type="number"
                     value={newGame.sortOrder}
@@ -263,7 +263,7 @@ export default function AdminGamesPage() {
               </div>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setShowAddForm(false)} className="px-4 py-2 rounded-lg text-sm text-purple-300 hover:bg-purple-500/20 transition">
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </button>
                 <button
                   onClick={handleAdd}
@@ -271,7 +271,7 @@ export default function AdminGamesPage() {
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium transition-all`}
                 >
                   {saving === 'add' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
               </div>
             </motion.div>
@@ -286,7 +286,7 @@ export default function AdminGamesPage() {
         ) : games.length === 0 ? (
           <div className={`rounded-2xl border ${cardBg} p-8 text-center`}>
             <Gamepad2 className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-            <p className={textSecondary}>{language === 'tr' ? 'Henüz oyun eklenmemiş' : 'No games added yet'}</p>
+            <p className={textSecondary}>{'Henüz oyun eklenmemiş'}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -301,7 +301,7 @@ export default function AdminGamesPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Başlık' : 'Title'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Başlık'}</label>
                         <input
                           value={editingGame.title}
                           onChange={e => setEditingGame({ ...editingGame, title: e.target.value })}
@@ -317,7 +317,7 @@ export default function AdminGamesPage() {
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Açıklama'}</label>
                         <input
                           value={editingGame.description}
                           onChange={e => setEditingGame({ ...editingGame, description: e.target.value })}
@@ -325,7 +325,7 @@ export default function AdminGamesPage() {
                         />
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Giriş Ücreti' : 'Entry Fee'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Giriş Ücreti'}</label>
                         <input
                           type="number"
                           value={editingGame.entryFee}
@@ -334,7 +334,7 @@ export default function AdminGamesPage() {
                         />
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Min Ödül' : 'Min Reward'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Min Ödül'}</label>
                         <input
                           type="number"
                           value={editingGame.minReward}
@@ -343,7 +343,7 @@ export default function AdminGamesPage() {
                         />
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Max Ödül' : 'Max Reward'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Max Ödül'}</label>
                         <input
                           type="number"
                           value={editingGame.maxReward}
@@ -352,7 +352,7 @@ export default function AdminGamesPage() {
                         />
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary} mb-1 block`}>{language === 'tr' ? 'Sıralama' : 'Sort Order'}</label>
+                        <label className={`text-xs ${textSecondary} mb-1 block`}>{'Sıralama'}</label>
                         <input
                           type="number"
                           value={editingGame.sortOrder}
@@ -385,7 +385,7 @@ export default function AdminGamesPage() {
                         className={`flex items-center gap-2 px-4 py-1.5 rounded-lg ${btnPrimary} text-sm font-medium`}
                       >
                         {saving === game.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        {language === 'tr' ? 'Güncelle' : 'Update'}
+                        {'Güncelle'}
                       </button>
                     </div>
                   </div>
@@ -398,14 +398,14 @@ export default function AdminGamesPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-white truncate">{game.title}</h3>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${game.isActive ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                            {game.isActive ? (language === 'tr' ? 'Aktif' : 'Active') : (language === 'tr' ? 'Pasif' : 'Inactive')}
+                            {game.isActive ? ('Aktif') : ('Pasif')}
                           </span>
                         </div>
                         <p className={`text-xs ${textSecondary} truncate`}>{game.description}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-amber-400">💰 {language === 'tr' ? 'Giriş' : 'Fee'}: {game.entryFee}</span>
-                          <span className="text-xs text-green-400">🎁 {language === 'tr' ? 'Ödül' : 'Reward'}: {game.minReward}-{game.maxReward}</span>
-                          <span className="text-xs text-purple-300">📋 {language === 'tr' ? 'Sıra' : 'Order'}: {game.sortOrder}</span>
+                          <span className="text-xs text-amber-400">💰 {'Giriş'}: {game.entryFee}</span>
+                          <span className="text-xs text-green-400">🎁 {'Ödül'}: {game.minReward}-{game.maxReward}</span>
+                          <span className="text-xs text-purple-300">📋 {'Sıra'}: {game.sortOrder}</span>
                         </div>
                       </div>
                     </div>

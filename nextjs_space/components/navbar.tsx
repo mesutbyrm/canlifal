@@ -156,7 +156,7 @@ export default function Navbar() {
     if (!file) return
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      alert('Dosya boyutu 5MB\'dan küçük olmalıdır')
       return
     }
 
@@ -205,7 +205,7 @@ export default function Navbar() {
       }
     } catch (err) {
       console.error('Upload error:', err)
-      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
+      alert('Yükleme başarısız oldu')
     } finally {
       setUploadingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -287,13 +287,13 @@ export default function Navbar() {
                 className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
               >
                 <Sparkles className="w-6 h-6" />
-                <span className="text-[10px] font-medium">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
+                <span className="text-[10px] font-medium">{'İstatistikler'}</span>
               </Link>
               
               {/* Bildirimler (Notifications) */}
               <div className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg ${navHoverBg}`}>
                 <NotificationBell />
-                <span className={`text-[10px] font-medium ${navTextColor.split(' ')[0]}`}>{language === 'tr' ? 'Bildirim' : 'Alerts'}</span>
+                <span className={`text-[10px] font-medium ${navTextColor.split(' ')[0]}`}>{'Bildirim'}</span>
               </div>
 
               {/* Search */}
@@ -348,7 +348,7 @@ export default function Navbar() {
                             <p className="text-xs truncate text-fuchsia-300">{session.user.email}</p>
                             <p className="text-[10px] mt-1 flex items-center gap-1 text-gold-400">
                               <Camera className="w-3 h-3" />
-                              {language === 'tr' ? 'Resmi değiştir' : 'Change photo'}
+                              {'Resmi değiştir'}
                             </p>
                           </div>
                         </div>
@@ -362,7 +362,7 @@ export default function Navbar() {
                        >
                          <div className="flex items-center gap-3">
                            <CfcCoin size={20} />
-                           {language === 'tr' ? "CFC'lerim" : 'My CFC'}
+                           {"CFC'lerim"}
                          </div>
                          <span className="font-bold text-gold-400">{credits} CFC</span>
                        </Link>
@@ -374,7 +374,7 @@ export default function Navbar() {
                        >
                          <div className="flex items-center gap-3">
                            <span className="w-5 h-5 text-center text-lg leading-5">🪙</span>
-                           {language === 'tr' ? 'Jetonlarım' : 'My Jetons'}
+                           {'Jetonlarım'}
                          </div>
                          <div className="text-right">
                            <span className="font-bold text-amber-400">{jetonBalance}</span>
@@ -390,7 +390,7 @@ export default function Navbar() {
                           onClick={() => setShowProfileMenu(false)}
                         >
                           <CreditCard className="w-5 h-5 text-gold-400" />
-                          {language === 'tr' ? 'Ödeme Emri' : 'Payment Orders'}
+                          {'Ödeme Emri'}
                         </Link>
                       ) : (
                         <button
@@ -398,7 +398,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
                         >
                           <Send className="w-5 h-5 text-green-400" />
-                          {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
+                          {'Ödeme Bildir'}
                         </button>
                       )}
                       
@@ -408,7 +408,7 @@ export default function Navbar() {
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <User className="w-5 h-5 text-fuchsia-400" />
-                        {language === 'tr' ? 'Profilim' : 'My Profile'}
+                        {'Profilim'}
                       </Link>
                       
                       <Link
@@ -417,7 +417,7 @@ export default function Navbar() {
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <LayoutGrid className="w-5 h-5 text-fuchsia-400" />
-                        {language === 'tr' ? 'İstatistiklerim' : 'My Statistics'}
+                        {'İstatistiklerim'}
                       </Link>
                       
                       <Link
@@ -426,7 +426,7 @@ export default function Navbar() {
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <Settings className="w-5 h-5 text-fuchsia-400" />
-                        {language === 'tr' ? 'Ayarlar' : 'Settings'}
+                        {'Ayarlar'}
                       </Link>
 
                       {session?.user?.role === 'admin' && (
@@ -448,7 +448,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-900/30 w-full"
                         >
                           <LogOut className="w-5 h-5" />
-                          {language === 'tr' ? 'Çıkış Yap' : 'Log Out'}
+                          {'Çıkış Yap'}
                         </button>
                       </div>
                     </div>
@@ -460,7 +460,7 @@ export default function Navbar() {
                   className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
                 >
                   <User className="w-6 h-6" />
-                  <span className="text-[11px] font-medium">{language === 'tr' ? 'Giriş' : 'Login'}</span>
+                  <span className="text-[11px] font-medium">{'Giriş'}</span>
                 </Link>
               )}
             </div>
@@ -505,10 +505,10 @@ export default function Navbar() {
                     <Send className="w-8 h-8 text-green-400" />
                   </div>
                   <h3 className="text-xl font-bold text-green-400 mb-2">
-                    {language === 'tr' ? 'Ödeme Bildirimi Gönderildi!' : 'Payment Notification Sent!'}
+                    {'Ödeme Bildirimi Gönderildi!'}
                   </h3>
                   <p className="text-purple-300 text-sm">
-                    {language === 'tr' ? 'Admin onayı bekleniyor.' : 'Waiting for admin approval.'}
+                    {'Admin onayı bekleniyor.'}
                   </p>
                 </div>
               ) : (
@@ -516,7 +516,7 @@ export default function Navbar() {
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-fuchsia-400 flex items-center gap-2">
                       <Send className="w-6 h-6" />
-                      {language === 'tr' ? 'Ödeme Bildir' : 'Notify Payment'}
+                      {'Ödeme Bildir'}
                     </h3>
                     <button
                       onClick={() => setShowPaymentModal(false)}
@@ -530,9 +530,7 @@ export default function Navbar() {
                     <div className="flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-purple-300">
-                        {language === 'tr' 
-                          ? 'Ödeme yaptıktan sonra bu formu doldurun. Admin onayladığında jetonlarınız hesabınıza yüklenecektir.'
-                          : 'Fill this form after making payment. Your jetons will be loaded when admin approves.'}
+                        {'Ödeme yaptıktan sonra bu formu doldurun. Admin onayladığında jetonlarınız hesabınıza yüklenecektir.'}
                       </p>
                     </div>
                   </div>
@@ -541,28 +539,28 @@ export default function Navbar() {
                     {/* Payment Method */}
                     <div>
                       <label className="block text-sm text-purple-300 mb-2">
-                        {language === 'tr' ? 'Ödeme Yöntemi *' : 'Payment Method *'}
+                        {'Ödeme Yöntemi *'}
                       </label>
                       <select
                         value={paymentForm.paymentMethod}
                         onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
                         className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
                       >
-                        <option value="">{language === 'tr' ? 'Seçiniz...' : 'Select...'}</option>
+                        <option value="">{'Seçiniz...'}</option>
                         {paymentMethods.map((method) => (
                           <option key={method.id} value={method.type}>
                             {method.name}
                           </option>
                         ))}
                         <option value="papara">Papara</option>
-                        <option value="bank_transfer">{language === 'tr' ? 'Banka Havalesi' : 'Bank Transfer'}</option>
+                        <option value="bank_transfer">{'Banka Havalesi'}</option>
                       </select>
                     </div>
                     
                     {/* Amount */}
                     <div>
                       <label className="block text-sm text-purple-300 mb-2">
-                        {language === 'tr' ? 'Ödenen Tutar (TL) *' : 'Amount Paid (TL) *'}
+                        {'Ödenen Tutar (TL) *'}
                       </label>
                       <input
                         type="number"
@@ -576,14 +574,14 @@ export default function Navbar() {
                     {/* Transaction ID */}
                     <div>
                       <label className="block text-sm text-purple-300 mb-2">
-                        {language === 'tr' ? 'İşlem No / Referans' : 'Transaction ID / Reference'}
+                        {'İşlem No / Referans'}
                       </label>
                       <input
                         type="text"
                         value={paymentForm.transactionId}
                         onChange={(e) => setPaymentForm({ ...paymentForm, transactionId: e.target.value })}
                         className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
-                        placeholder={language === 'tr' ? 'Varsa işlem numarası' : 'Transaction number if available'}
+                        placeholder={'Varsa işlem numarası'}
                       />
                     </div>
                     
@@ -591,14 +589,14 @@ export default function Navbar() {
                     {paymentForm.paymentMethod === 'bank_transfer' && (
                       <div>
                         <label className="block text-sm text-purple-300 mb-2">
-                          {language === 'tr' ? 'Gönderen Ad Soyad' : 'Sender Name'}
+                          {'Gönderen Ad Soyad'}
                         </label>
                         <input
                           type="text"
                           value={paymentForm.senderName}
                           onChange={(e) => setPaymentForm({ ...paymentForm, senderName: e.target.value })}
                           className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500"
-                          placeholder={language === 'tr' ? 'Havaleyi yapan kişinin adı' : 'Name of the person who made the transfer'}
+                          placeholder={'Havaleyi yapan kişinin adı'}
                         />
                       </div>
                     )}
@@ -606,13 +604,13 @@ export default function Navbar() {
                     {/* Notes */}
                     <div>
                       <label className="block text-sm text-purple-300 mb-2">
-                        {language === 'tr' ? 'Not (Opsiyonel)' : 'Note (Optional)'}
+                        {'Not (Opsiyonel)'}
                       </label>
                       <textarea
                         value={paymentForm.notes}
                         onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                         className="w-full px-4 py-3 bg-fuchsia-900/30 border border-fuchsia-500/30 rounded-lg text-white focus:outline-none focus:border-fuchsia-500 resize-none"
-                        placeholder={language === 'tr' ? 'Ek bilgi...' : 'Additional info...'}
+                        placeholder={'Ek bilgi...'}
                         rows={2}
                       />
                     </div>
@@ -627,7 +625,7 @@ export default function Navbar() {
                       ) : (
                         <Send className="w-5 h-5" />
                       )}
-                      {language === 'tr' ? 'Bildirimi Gönder' : 'Send Notification'}
+                      {'Bildirimi Gönder'}
                     </button>
                   </div>
                 </>

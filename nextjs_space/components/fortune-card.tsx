@@ -12,45 +12,43 @@ interface FortuneCardProps {
   cost: number
 }
 
-const FORTUNE_NAMES: Record<string, { en: string; tr: string }> = {
-  coffee: { en: 'Coffee Fortune', tr: 'Kahve Falı' },
-  tarot: { en: 'Tarot Reading', tr: 'Tarot Falı' },
-  dream: { en: 'Dream Interpretation', tr: 'Rüya Tabiri' },
-  horoscope: { en: 'Daily Horoscope', tr: 'Günlük Burç' },
-  numerology: { en: 'Numerology', tr: 'Numeroloji' },
-  love: { en: 'Love Compatibility', tr: 'Aşk Uyumu' },
-  yesno: { en: 'Yes/No Oracle', tr: 'Evet/Hayır Falı' },
-  katina: { en: 'Katina Cards', tr: 'Katina Falı' },
-  palm: { en: 'Palm Reading', tr: 'El Falı' },
-  istikhara: { en: 'Istikhara', tr: 'İstikhare' },
-  angel: { en: 'Angel Cards', tr: 'Melek Kartları' },
-  birthchart: { en: 'Birth Chart', tr: 'Doğum Haritası' },
-  aura: { en: 'Aura Reading', tr: 'Aura Okuma' },
-  kursundokme: { en: 'Lead Pouring', tr: 'Kurşun Dökme' },
+const FORTUNE_NAMES: Record<string, string> = {
+  coffee: 'Kahve Falı',
+  tarot: 'Tarot Falı',
+  dream: 'Rüya Tabiri',
+  horoscope: 'Günlük Burç',
+  numerology: 'Numeroloji',
+  love: 'Aşk Uyumu',
+  yesno: 'Evet/Hayır Falı',
+  katina: 'Katina Falı',
+  palm: 'El Falı',
+  istikhara: 'İstikhare',
+  angel: 'Melek Kartları',
+  birthchart: 'Doğum Haritası',
+  aura: 'Aura Okuma',
+  kursundokme: 'Kurşun Dökme',
 }
 
-const FORTUNE_DESCRIPTIONS: Record<string, { en: string; tr: string }> = {
-  coffee: { en: 'Upload cup photos for AI analysis', tr: 'Fincan fotoğrafı yükleyerek fal baktırın' },
-  tarot: { en: 'Let the cards reveal your path', tr: 'Kartlar yolunuzu aydınlatsın' },
-  dream: { en: 'Unlock the secrets of your dreams', tr: 'Rüyalarınızın sırlarını çözün' },
-  horoscope: { en: 'Your cosmic guidance for today', tr: 'Bugün için kozmik rehberliğiniz' },
-  numerology: { en: 'Your numbers reveal your destiny', tr: 'Sayılarınız kaderinizi açığa çıkarır' },
-  love: { en: 'Discover your cosmic connection', tr: 'Kozmik bağınızı keşfedin' },
-  yesno: { en: 'Quick answers from the universe', tr: 'Evrenden hızlı cevaplar' },
-  katina: { en: '32 Katina cards reveal your future', tr: '32 Katina kartı geleceğinizi açığa çıkarır' },
-  palm: { en: 'Upload palm photo for destiny reading', tr: 'El fotoğrafı yükleyerek kaderinizi okuyun' },
-  istikhara: { en: 'Spiritual guidance and inner peace', tr: 'Manevi rehberlik ve iç huzur' },
-  angel: { en: 'Receive divine angelic messages', tr: 'İlahi melek mesajları alın' },
-  birthchart: { en: 'Complete astrological analysis', tr: 'Detaylı astrolojik analiz' },
-  aura: { en: 'Discover your energy field colors', tr: 'Enerji alanınızın renklerini keşfedin' },
-  kursundokme: { en: 'Flip phone to pour mystical lead', tr: 'Telefonu çevirerek kurşun dökün' },
+const FORTUNE_DESCRIPTIONS: Record<string, string> = {
+  coffee: 'Fincan fotoğrafı yükleyerek fal baktırın',
+  tarot: 'Kartlar yolunuzu aydınlatsın',
+  dream: 'Rüyalarınızın sırlarını çözün',
+  horoscope: 'Bugün için kozmik rehberliğiniz',
+  numerology: 'Sayılarınız kaderinizi açığa çıkarır',
+  love: 'Kozmik bağınızı keşfedin',
+  yesno: 'Evrenden hızlı cevaplar',
+  katina: '32 Katina kartı geleceğinizi açığa çıkarır',
+  palm: 'El fotoğrafı yükleyerek kaderinizi okuyun',
+  istikhara: 'Manevi rehberlik ve iç huzur',
+  angel: 'İlahi melek mesajları alın',
+  birthchart: 'Detaylı astrolojik analiz',
+  aura: 'Enerji alanınızın renklerini keşfedin',
+  kursundokme: 'Telefonu çevirerek kurşun dökün',
 }
 
 export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) {
-  const { language } = useLanguage()
-  const lang = language === 'tr' ? 'tr' : 'en'
-  const fortuneName = FORTUNE_NAMES[type]?.[lang] || type
-  const fortuneDesc = FORTUNE_DESCRIPTIONS[type]?.[lang] || ''
+  const fortuneName = FORTUNE_NAMES[type] || type
+  const fortuneDesc = FORTUNE_DESCRIPTIONS[type] || ''
 
   return (
     <motion.div

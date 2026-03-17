@@ -78,7 +78,7 @@ export default function YouTubeSearchModal({
       onSelect(youtubeUrl, '', `https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijpy_g6TMZ4RrsB5N0c6SItE6518yZkTmod_YDJFaTA7eVUI8GrAhr0GMKT-7P81F741m8vbbhL9BfB4ZtUAC4QlX5ovc3QGX1AgN6hOlPJxnukiYcW0Bu2-wc_8XmJk-V_cO1scd4maA/?imgmax=800`)
       onClose()
     } else {
-      alert(language === 'tr' ? 'Geçersiz YouTube URL\'si' : 'Invalid YouTube URL')
+      alert('Geçersiz YouTube URL\'si')
     }
   }
 
@@ -122,7 +122,7 @@ export default function YouTubeSearchModal({
             <div className="flex items-center gap-2">
               <Youtube className="w-6 h-6 text-red-500" />
               <h2 className="text-xl font-semibold text-white">
-                {language === 'tr' ? 'YouTube Video Ekle' : 'Add YouTube Video'}
+                {'YouTube Video Ekle'}
               </h2>
             </div>
             <button
@@ -144,7 +144,7 @@ export default function YouTubeSearchModal({
               }`}
             >
               <Search className="w-4 h-4 inline mr-2" />
-              {language === 'tr' ? 'Ara' : 'Search'}
+              {'Ara'}
             </button>
             <button
               onClick={() => setActiveTab('url')}
@@ -155,7 +155,7 @@ export default function YouTubeSearchModal({
               }`}
             >
               <ExternalLink className="w-4 h-4 inline mr-2" />
-              {language === 'tr' ? 'URL Yapıştır' : 'Paste URL'}
+              {'URL Yapıştır'}
             </button>
           </div>
 
@@ -172,7 +172,7 @@ export default function YouTubeSearchModal({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      placeholder={language === 'tr' ? 'YouTube\'da ara...' : 'Search YouTube...'}
+                      placeholder={'YouTube\'da ara...'}
                       className="w-full pl-10 pr-4 py-3 bg-purple-900/30 border border-purple-500/30 rounded-xl text-white placeholder-purple-400/50 focus:outline-none focus:border-gold-500/50"
                     />
                   </div>
@@ -229,18 +229,16 @@ export default function YouTubeSearchModal({
                 ) : searched ? (
                   <div className="text-center py-12 text-purple-400">
                     <Youtube className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>{language === 'tr' ? 'Video bulunamadı' : 'No videos found'}</p>
+                    <p>{'Video bulunamadı'}</p>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-purple-400">
                     <Youtube className="w-16 h-16 mx-auto mb-4 opacity-30" />
                     <p className="text-lg mb-2">
-                      {language === 'tr' ? 'YouTube\'da Video Ara' : 'Search Videos on YouTube'}
+                      {'YouTube\'da Video Ara'}
                     </p>
                     <p className="text-sm opacity-70">
-                      {language === 'tr' 
-                        ? 'İstediğiniz videoyu arayın ve paylaşın'
-                        : 'Search for any video and share it'}
+                      {'İstediğiniz videoyu arayın ve paylaşın'}
                     </p>
                   </div>
                 )}
@@ -251,9 +249,7 @@ export default function YouTubeSearchModal({
                 <div className="text-center mb-6">
                   <Youtube className="w-16 h-16 mx-auto mb-4 text-red-500 opacity-70" />
                   <p className="text-purple-300">
-                    {language === 'tr' 
-                      ? 'YouTube video URL\'sini yapıştırın'
-                      : 'Paste YouTube video URL'}
+                    {'YouTube video URL\'sini yapıştırın'}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -269,12 +265,11 @@ export default function YouTubeSearchModal({
                     disabled={!directUrl.trim()}
                     className="px-6 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-[#1a0b2e] font-semibold rounded-xl disabled:opacity-50"
                   >
-                    {language === 'tr' ? 'Ekle' : 'Add'}
+                    {'Ekle'}
                   </button>
                 </div>
                 <p className="text-xs text-purple-400/50 mt-3 text-center">
-                  {language === 'tr' 
-                    ? 'Örnek: https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                  {'Örnek
                     : 'Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
                 </p>
               </div>

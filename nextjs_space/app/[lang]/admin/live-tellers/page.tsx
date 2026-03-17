@@ -316,7 +316,7 @@ export default function AdminLiveTellersPage() {
   };
 
   const handleDelete = async (tellerId: string) => {
-    if (!confirm(language === 'tr' ? 'Bu falcıyı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this teller?')) return;
+    if (!confirm('Bu falcıyı silmek istediğinize emin misiniz?')) return;
     try {
       await fetch(`/api/admin/live-tellers/${tellerId}`, { method: 'DELETE' });
       fetchTellers();
@@ -348,12 +348,12 @@ export default function AdminLiveTellersPage() {
   };
 
   const getStatusBadge = (teller: Teller) => {
-    if (teller.isBanned) return { color: 'bg-red-500/20 text-red-400 border-red-500/30', text: language === 'tr' ? 'Yasaklı' : 'Banned' };
-    if (teller.isFrozen) return { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', text: language === 'tr' ? 'Dondurulmuş' : 'Frozen' };
-    if (teller.applicationStatus === 'pending') return { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: language === 'tr' ? 'Beklemede' : 'Pending' };
-    if (teller.applicationStatus === 'rejected') return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: language === 'tr' ? 'Reddedildi' : 'Rejected' };
-    if (teller.isActive) return { color: 'bg-green-500/20 text-green-400 border-green-500/30', text: language === 'tr' ? 'Aktif' : 'Active' };
-    return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: language === 'tr' ? 'Pasif' : 'Inactive' };
+    if (teller.isBanned) return { color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Yasaklı' };
+    if (teller.isFrozen) return { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', text: 'Dondurulmuş' };
+    if (teller.applicationStatus === 'pending') return { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: 'Beklemede' };
+    if (teller.applicationStatus === 'rejected') return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: 'Reddedildi' };
+    if (teller.isActive) return { color: 'bg-green-500/20 text-green-400 border-green-500/30', text: 'Aktif' };
+    return { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', text: 'Pasif' };
   };
 
   return (
@@ -364,10 +364,10 @@ export default function AdminLiveTellersPage() {
           <div>
             <h1 className="text-3xl font-serif text-gold-400 flex items-center gap-3">
               <Users className="w-8 h-8" />
-              {language === 'tr' ? 'Canlı Falcı Yönetimi' : 'Live Teller Management'}
+              {'Canlı Falcı Yönetimi'}
             </h1>
             <p className="text-gray-400 mt-1">
-              {language === 'tr' ? 'Başvuruları onaylayın, falcıları yönetin' : 'Approve applications, manage tellers'}
+              {'Başvuruları onaylayın, falcıları yönetin'}
             </p>
           </div>
         </div>
@@ -375,11 +375,11 @@ export default function AdminLiveTellersPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
-            { label: language === 'tr' ? 'Toplam' : 'Total', value: stats.total, icon: Users, color: 'text-purple-400' },
-            { label: language === 'tr' ? 'Bekleyen' : 'Pending', value: stats.pending, icon: Clock, color: 'text-yellow-400' },
-            { label: language === 'tr' ? 'Onaylı' : 'Approved', value: stats.approved, icon: Check, color: 'text-green-400' },
-            { label: language === 'tr' ? 'Yasaklı' : 'Banned', value: stats.banned, icon: Ban, color: 'text-red-400' },
-            { label: language === 'tr' ? 'Dondurulmuş' : 'Frozen', value: stats.frozen, icon: Snowflake, color: 'text-blue-400' },
+            { label: 'Toplam', value: stats.total, icon: Users, color: 'text-purple-400' },
+            { label: 'Bekleyen', value: stats.pending, icon: Clock, color: 'text-yellow-400' },
+            { label: 'Onaylı', value: stats.approved, icon: Check, color: 'text-green-400' },
+            { label: 'Yasaklı', value: stats.banned, icon: Ban, color: 'text-red-400' },
+            { label: 'Dondurulmuş', value: stats.frozen, icon: Snowflake, color: 'text-blue-400' },
           ].map((stat, i) => (
             <div key={i} className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-4">
               <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ export default function AdminLiveTellersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder={language === 'tr' ? 'İsim veya e-posta ile ara...' : 'Search by name or email...'}
+              placeholder={'İsim veya e-posta ile ara...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gold-500/50"
@@ -405,11 +405,11 @@ export default function AdminLiveTellersPage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {[
-              { value: 'all', label: language === 'tr' ? 'Tümü' : 'All' },
-              { value: 'pending', label: language === 'tr' ? 'Bekleyen' : 'Pending' },
-              { value: 'approved', label: language === 'tr' ? 'Onaylı' : 'Approved' },
-              { value: 'banned', label: language === 'tr' ? 'Yasaklı' : 'Banned' },
-              { value: 'frozen', label: language === 'tr' ? 'Dondurulmuş' : 'Frozen' },
+              { value: 'all', label: 'Tümü' },
+              { value: 'pending', label: 'Bekleyen' },
+              { value: 'approved', label: 'Onaylı' },
+              { value: 'banned', label: 'Yasaklı' },
+              { value: 'frozen', label: 'Dondurulmuş' },
             ].map((f) => (
               <button
                 key={f.value}
@@ -433,7 +433,7 @@ export default function AdminLiveTellersPage() {
           </div>
         ) : filteredTellers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            {language === 'tr' ? 'Falcı bulunamadı' : 'No tellers found'}
+            {'Falcı bulunamadı'}
           </div>
         ) : (
           <div className="space-y-4">
@@ -476,9 +476,9 @@ export default function AdminLiveTellersPage() {
                             <Star className="w-3 h-3 text-yellow-500" />
                             {teller.rating.toFixed(1)}
                           </span>
-                          <span>{teller.totalSessions} {language === 'tr' ? 'seans' : 'sessions'}</span>
-                          <span>{teller.totalEarnings} {language === 'tr' ? 'kazanç' : 'earned'}</span>
-                          <span>{teller.bonusCredits} {language === 'tr' ? 'bonus' : 'bonus'}</span>
+                          <span>{teller.totalSessions} {'seans'}</span>
+                          <span>{teller.totalEarnings} {'kazanç'}</span>
+                          <span>{teller.bonusCredits} {'bonus'}</span>
                         </div>
                       </div>
                     </div>
@@ -491,62 +491,62 @@ export default function AdminLiveTellersPage() {
                           className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 flex items-center gap-1"
                         >
                           <Check className="w-4 h-4" />
-                          {language === 'tr' ? 'Onayla' : 'Approve'}
+                          {'Onayla'}
                         </button>
                       )}
                       <button
                         onClick={() => openModal('view', teller)}
                         className="p-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30"
-                        title={language === 'tr' ? 'Görüntüle' : 'View'}
+                        title={'Görüntüle'}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('edit', teller)}
                         className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"
-                        title={language === 'tr' ? 'Düzenle' : 'Edit'}
+                        title={'Düzenle'}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('permissions', teller)}
                         className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30"
-                        title={language === 'tr' ? 'Yetkiler' : 'Permissions'}
+                        title={'Yetkiler'}
                       >
                         <Settings className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('warning', teller)}
                         className="p-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30"
-                        title={language === 'tr' ? 'Uyarı Ver' : 'Warn'}
+                        title={'Uyarı Ver'}
                       >
                         <AlertTriangle className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('bonus', teller)}
                         className="p-2 bg-gold-500/20 text-gold-400 rounded-lg hover:bg-gold-500/30"
-                        title={language === 'tr' ? 'Ödül Ver' : 'Give Bonus'}
+                        title={'Ödül Ver'}
                       >
                         <Gift className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('freeze', teller)}
                         className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30"
-                        title={language === 'tr' ? 'Dondur' : 'Freeze'}
+                        title={'Dondur'}
                       >
                         <Snowflake className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openModal('ban', teller)}
                         className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
-                        title={language === 'tr' ? 'Yasakla' : 'Ban'}
+                        title={'Yasakla'}
                       >
                         <Ban className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(teller.id)}
                         className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20"
-                        title={language === 'tr' ? 'Sil' : 'Delete'}
+                        title={'Sil'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -571,12 +571,12 @@ export default function AdminLiveTellersPage() {
                         <div className="p-4 grid md:grid-cols-2 gap-4">
                           {/* Details */}
                           <div className="space-y-3">
-                            <h4 className="font-semibold text-gold-400">{language === 'tr' ? 'Detaylar' : 'Details'}</h4>
+                            <h4 className="font-semibold text-gold-400">{'Detaylar'}</h4>
                             <div className="text-sm space-y-2">
-                              <p><span className="text-gray-400">{language === 'tr' ? 'Biyografi:' : 'Bio:'}</span> <span className="text-white">{teller.bio || '-'}</span></p>
-                              <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s]?.[language] || s).join(', ') || '-'}</span></p>
-                              <p><span className="text-gray-400">{language === 'tr' ? 'Seans Ücreti:' : 'Price/Session:'}</span> <span className="text-gold-400">{teller.pricePerSession} jeton</span></p>
-                              <p><span className="text-gray-400">{language === 'tr' ? 'Kayıt:' : 'Registered:'}</span> <span className="text-white">{new Date(teller.createdAt).toLocaleDateString()}</span></p>
+                              <p><span className="text-gray-400">{'Biyografi:'}</span> <span className="text-white">{teller.bio || '-'}</span></p>
+                              <p><span className="text-gray-400">{'Uzmanlık:'}</span> <span className="text-white">{teller.specialties.map(s => SPECIALTY_NAMES[s]?.[language] || s).join(', ') || '-'}</span></p>
+                              <p><span className="text-gray-400">{'Seans Ücreti:'}</span> <span className="text-gold-400">{teller.pricePerSession} jeton</span></p>
+                              <p><span className="text-gray-400">{'Kayıt:'}</span> <span className="text-white">{new Date(teller.createdAt).toLocaleDateString()}</span></p>
                             </div>
                           </div>
 
@@ -584,10 +584,10 @@ export default function AdminLiveTellersPage() {
                           <div className="space-y-3">
                             <h4 className="font-semibold text-orange-400 flex items-center gap-2">
                               <AlertTriangle className="w-4 h-4" />
-                              {language === 'tr' ? 'Uyarılar' : 'Warnings'} ({teller.warnings.length})
+                              {'Uyarılar'} ({teller.warnings.length})
                             </h4>
                             {teller.warnings.length === 0 ? (
-                              <p className="text-sm text-gray-500">{language === 'tr' ? 'Uyarı yok' : 'No warnings'}</p>
+                              <p className="text-sm text-gray-500">{'Uyarı yok'}</p>
                             ) : (
                               <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {teller.warnings.map((w) => (
@@ -612,10 +612,10 @@ export default function AdminLiveTellersPage() {
                           {(teller.isBanned || teller.isFrozen) && (
                             <div className="md:col-span-2 p-3 bg-red-500/10 rounded-lg">
                               {teller.isBanned && (
-                                <p className="text-sm"><span className="text-red-400 font-semibold">{language === 'tr' ? 'Yasaklanma Sebebi:' : 'Ban Reason:'}</span> <span className="text-white">{teller.banReason || '-'}</span></p>
+                                <p className="text-sm"><span className="text-red-400 font-semibold">{'Yasaklanma Sebebi:'}</span> <span className="text-white">{teller.banReason || '-'}</span></p>
                               )}
                               {teller.isFrozen && (
-                                <p className="text-sm mt-1"><span className="text-blue-400 font-semibold">{language === 'tr' ? 'Dondurma Sebebi:' : 'Freeze Reason:'}</span> <span className="text-white">{teller.freezeReason || '-'}</span></p>
+                                <p className="text-sm mt-1"><span className="text-blue-400 font-semibold">{'Dondurma Sebebi:'}</span> <span className="text-white">{teller.freezeReason || '-'}</span></p>
                               )}
                             </div>
                           )}
@@ -655,20 +655,20 @@ export default function AdminLiveTellersPage() {
                     </h3>
                     <div className="space-y-3 text-sm">
                       <p><span className="text-gray-400">Email:</span> <span className="text-white">{selectedTeller.user.email}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Biyografi:' : 'Bio:'}</span> <span className="text-white">{selectedTeller.bio || '-'}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Uzmanlık:' : 'Specialties:'}</span> <span className="text-white">{selectedTeller.specialties.join(', ') || '-'}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Puan:' : 'Rating:'}</span> <span className="text-yellow-400">{selectedTeller.rating.toFixed(1)} ⭐</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Seans:' : 'Total Sessions:'}</span> <span className="text-white">{selectedTeller.totalSessions}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Toplam Kazanç:' : 'Total Earnings:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} jeton</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Bonus CFC:' : 'Bonus CFC:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Durum:' : 'Status:'}</span> <span className="text-white">{selectedTeller.applicationStatus}</span></p>
-                      <p><span className="text-gray-400">{language === 'tr' ? 'Onaylı:' : 'Verified:'}</span> <span className={selectedTeller.isVerified ? 'text-green-400' : 'text-gray-400'}>{selectedTeller.isVerified ? '✓' : '✗'}</span></p>
+                      <p><span className="text-gray-400">{'Biyografi:'}</span> <span className="text-white">{selectedTeller.bio || '-'}</span></p>
+                      <p><span className="text-gray-400">{'Uzmanlık:'}</span> <span className="text-white">{selectedTeller.specialties.join(', ') || '-'}</span></p>
+                      <p><span className="text-gray-400">{'Puan:'}</span> <span className="text-yellow-400">{selectedTeller.rating.toFixed(1)} ⭐</span></p>
+                      <p><span className="text-gray-400">{'Toplam Seans:'}</span> <span className="text-white">{selectedTeller.totalSessions}</span></p>
+                      <p><span className="text-gray-400">{'Toplam Kazanç:'}</span> <span className="text-gold-400">{selectedTeller.totalEarnings} jeton</span></p>
+                      <p><span className="text-gray-400">{'Bonus CFC:'}</span> <span className="text-green-400">{selectedTeller.bonusCredits}</span></p>
+                      <p><span className="text-gray-400">{'Durum:'}</span> <span className="text-white">{selectedTeller.applicationStatus}</span></p>
+                      <p><span className="text-gray-400">{'Onaylı:'}</span> <span className={selectedTeller.isVerified ? 'text-green-400' : 'text-gray-400'}>{selectedTeller.isVerified ? '✓' : '✗'}</span></p>
                     </div>
                     <button
                       onClick={closeModal}
                       className="mt-6 w-full py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                     >
-                      {language === 'tr' ? 'Kapat' : 'Close'}
+                      {'Kapat'}
                     </button>
                   </div>
                 )}
@@ -678,11 +678,11 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
                       <Edit className="w-5 h-5" />
-                      {language === 'tr' ? 'Düzenle' : 'Edit'}
+                      {'Düzenle'}
                     </h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Görünen İsim' : 'Display Name'}</label>
+                        <label className="text-sm text-gray-400">{'Görünen İsim'}</label>
                         <input
                           type="text"
                           value={editForm.displayName}
@@ -691,7 +691,7 @@ export default function AdminLiveTellersPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Biyografi' : 'Bio'}</label>
+                        <label className="text-sm text-gray-400">{'Biyografi'}</label>
                         <textarea
                           value={editForm.bio}
                           onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
@@ -700,7 +700,7 @@ export default function AdminLiveTellersPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Seans Ücreti' : 'Price Per Session'}</label>
+                        <label className="text-sm text-gray-400">{'Seans Ücreti'}</label>
                         <input
                           type="number"
                           value={editForm.pricePerSession}
@@ -716,7 +716,7 @@ export default function AdminLiveTellersPage() {
                             onChange={(e) => setEditForm({ ...editForm, isVerified: e.target.checked })}
                             className="w-4 h-4 accent-gold-500"
                           />
-                          <span className="text-sm text-white">{language === 'tr' ? 'Onaylı' : 'Verified'}</span>
+                          <span className="text-sm text-white">{'Onaylı'}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -725,7 +725,7 @@ export default function AdminLiveTellersPage() {
                             onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
                             className="w-4 h-4 accent-gold-500"
                           />
-                          <span className="text-sm text-white">{language === 'tr' ? 'Aktif' : 'Active'}</span>
+                          <span className="text-sm text-white">{'Aktif'}</span>
                         </label>
                       </div>
                     </div>
@@ -734,14 +734,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={handleEdit}
                         disabled={actionLoading}
                         className="flex-1 py-2 bg-gold-500 text-deep-purple-900 rounded-lg hover:bg-gold-400 disabled:opacity-50"
                       >
-                        {actionLoading ? '...' : language === 'tr' ? 'Kaydet' : 'Save'}
+                        {actionLoading ? '...' : 'Kaydet'}
                       </button>
                     </div>
                   </div>
@@ -752,18 +752,18 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
                       <Check className="w-5 h-5" />
-                      {language === 'tr' ? 'Başvuru Değerlendir' : 'Review Application'}
+                      {'Başvuru Değerlendir'}
                     </h3>
                     <p className="text-gray-300 mb-4">
-                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> {language === 'tr' ? 'başvurusu' : 'application'}
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> {'başvurusu'}
                     </p>
                     <div>
-                      <label className="text-sm text-gray-400">{language === 'tr' ? 'Not (opsiyonel)' : 'Note (optional)'}</label>
+                      <label className="text-sm text-gray-400">{'Not (opsiyonel)'}</label>
                       <textarea
                         value={approvalNote}
                         onChange={(e) => setApprovalNote(e.target.value)}
                         rows={2}
-                        placeholder={language === 'tr' ? 'Onay/Red notu...' : 'Approval/Rejection note...'}
+                        placeholder={'Onay/Red notu...'}
                         className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
                       />
                     </div>
@@ -773,14 +773,14 @@ export default function AdminLiveTellersPage() {
                         disabled={actionLoading}
                         className="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 disabled:opacity-50"
                       >
-                        {language === 'tr' ? 'Reddet' : 'Reject'}
+                        {'Reddet'}
                       </button>
                       <button
                         onClick={() => handleApprove('approve')}
                         disabled={actionLoading}
                         className="flex-1 py-2 bg-green-500 text-white rounded-lg hover:bg-green-400 disabled:opacity-50"
                       >
-                        {actionLoading ? '...' : language === 'tr' ? 'Onayla' : 'Approve'}
+                        {actionLoading ? '...' : 'Onayla'}
                       </button>
                     </div>
                   </div>
@@ -791,18 +791,18 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-orange-400 mb-4 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5" />
-                      {language === 'tr' ? 'Uyarı Ver' : 'Issue Warning'}
+                      {'Uyarı Ver'}
                     </h3>
                     <p className="text-gray-300 mb-4">
-                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({language === 'tr' ? 'mevcut uyarı sayısı' : 'current warnings'}: {selectedTeller.warnings.length})
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({'mevcut uyarı sayısı'}: {selectedTeller.warnings.length})
                     </p>
                     <div>
-                      <label className="text-sm text-gray-400">{language === 'tr' ? 'Uyarı Sebebi' : 'Warning Reason'}</label>
+                      <label className="text-sm text-gray-400">{'Uyarı Sebebi'}</label>
                       <textarea
                         value={warningReason}
                         onChange={(e) => setWarningReason(e.target.value)}
                         rows={3}
-                        placeholder={language === 'tr' ? 'Uyarı sebebini yazın...' : 'Enter warning reason...'}
+                        placeholder={'Uyarı sebebini yazın...'}
                         className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
                       />
                     </div>
@@ -811,14 +811,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={handleWarning}
                         disabled={actionLoading || !warningReason}
                         className="flex-1 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-400 disabled:opacity-50"
                       >
-                        {actionLoading ? '...' : language === 'tr' ? 'Uyarı Ver' : 'Issue Warning'}
+                        {actionLoading ? '...' : 'Uyarı Ver'}
                       </button>
                     </div>
                   </div>
@@ -829,26 +829,26 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-red-400 mb-4 flex items-center gap-2">
                       <Ban className="w-5 h-5" />
-                      {selectedTeller.isBanned ? (language === 'tr' ? 'Yasağı Kaldır' : 'Unban') : (language === 'tr' ? 'Yasakla' : 'Ban')}
+                      {selectedTeller.isBanned ? ('Yasağı Kaldır') : ('Yasakla')}
                     </h3>
                     <p className="text-gray-300 mb-4">
                       <span className="font-semibold text-white">{selectedTeller.displayName}</span>
                     </p>
                     {!selectedTeller.isBanned && (
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Yasaklama Sebebi' : 'Ban Reason'}</label>
+                        <label className="text-sm text-gray-400">{'Yasaklama Sebebi'}</label>
                         <textarea
                           value={banReason}
                           onChange={(e) => setBanReason(e.target.value)}
                           rows={3}
-                          placeholder={language === 'tr' ? 'Yasaklama sebebini yazın...' : 'Enter ban reason...'}
+                          placeholder={'Yasaklama sebebini yazın...'}
                           className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
                         />
                       </div>
                     )}
                     {selectedTeller.isBanned && (
                       <p className="text-sm text-gray-400 mb-4">
-                        {language === 'tr' ? 'Mevcut sebep:' : 'Current reason:'} <span className="text-white">{selectedTeller.banReason}</span>
+                        {'Mevcut sebep:'} <span className="text-white">{selectedTeller.banReason}</span>
                       </p>
                     )}
                     <div className="flex gap-3 mt-6">
@@ -856,14 +856,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={() => handleBan(selectedTeller.isBanned ? 'unban' : 'ban')}
                         disabled={actionLoading}
                         className={`flex-1 py-2 rounded-lg disabled:opacity-50 ${selectedTeller.isBanned ? 'bg-green-500 hover:bg-green-400 text-white' : 'bg-red-500 hover:bg-red-400 text-white'}`}
                       >
-                        {actionLoading ? '...' : selectedTeller.isBanned ? (language === 'tr' ? 'Yasağı Kaldır' : 'Unban') : (language === 'tr' ? 'Yasakla' : 'Ban')}
+                        {actionLoading ? '...' : selectedTeller.isBanned ? ('Yasağı Kaldır') : ('Yasakla')}
                       </button>
                     </div>
                   </div>
@@ -874,26 +874,26 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-cyan-400 mb-4 flex items-center gap-2">
                       <Snowflake className="w-5 h-5" />
-                      {selectedTeller.isFrozen ? (language === 'tr' ? 'Dondurma Kaldır' : 'Unfreeze') : (language === 'tr' ? 'Kazancı Dondur' : 'Freeze Earnings')}
+                      {selectedTeller.isFrozen ? ('Dondurma Kaldır') : ('Kazancı Dondur')}
                     </h3>
                     <p className="text-gray-300 mb-4">
                       <span className="font-semibold text-white">{selectedTeller.displayName}</span>
                     </p>
                     {!selectedTeller.isFrozen && (
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Dondurma Sebebi' : 'Freeze Reason'}</label>
+                        <label className="text-sm text-gray-400">{'Dondurma Sebebi'}</label>
                         <textarea
                           value={freezeReason}
                           onChange={(e) => setFreezeReason(e.target.value)}
                           rows={3}
-                          placeholder={language === 'tr' ? 'Dondurma sebebini yazın...' : 'Enter freeze reason...'}
+                          placeholder={'Dondurma sebebini yazın...'}
                           className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
                         />
                       </div>
                     )}
                     {selectedTeller.isFrozen && (
                       <p className="text-sm text-gray-400 mb-4">
-                        {language === 'tr' ? 'Mevcut sebep:' : 'Current reason:'} <span className="text-white">{selectedTeller.freezeReason}</span>
+                        {'Mevcut sebep:'} <span className="text-white">{selectedTeller.freezeReason}</span>
                       </p>
                     )}
                     <div className="flex gap-3 mt-6">
@@ -901,14 +901,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={() => handleFreeze(selectedTeller.isFrozen ? 'unfreeze' : 'freeze')}
                         disabled={actionLoading}
                         className={`flex-1 py-2 rounded-lg disabled:opacity-50 ${selectedTeller.isFrozen ? 'bg-green-500 hover:bg-green-400 text-white' : 'bg-cyan-500 hover:bg-cyan-400 text-white'}`}
                       >
-                        {actionLoading ? '...' : selectedTeller.isFrozen ? (language === 'tr' ? 'Dondurma Kaldır' : 'Unfreeze') : (language === 'tr' ? 'Dondur' : 'Freeze')}
+                        {actionLoading ? '...' : selectedTeller.isFrozen ? ('Dondurma Kaldır') : ('Dondur')}
                       </button>
                     </div>
                   </div>
@@ -919,14 +919,14 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-gold-400 mb-4 flex items-center gap-2">
                       <Gift className="w-5 h-5" />
-                      {language === 'tr' ? 'Bonus CFC Ver' : 'Give Bonus CFC'}
+                      {'Bonus CFC Ver'}
                     </h3>
                     <p className="text-gray-300 mb-4">
-                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({language === 'tr' ? 'mevcut bonus' : 'current bonus'}: {selectedTeller.bonusCredits})
+                      <span className="font-semibold text-white">{selectedTeller.displayName}</span> ({'mevcut bonus'}: {selectedTeller.bonusCredits})
                     </p>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Miktar' : 'Amount'}</label>
+                        <label className="text-sm text-gray-400">{'Miktar'}</label>
                         <input
                           type="number"
                           value={bonusAmount}
@@ -936,12 +936,12 @@ export default function AdminLiveTellersPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400">{language === 'tr' ? 'Sebep (opsiyonel)' : 'Reason (optional)'}</label>
+                        <label className="text-sm text-gray-400">{'Sebep (opsiyonel)'}</label>
                         <input
                           type="text"
                           value={bonusReason}
                           onChange={(e) => setBonusReason(e.target.value)}
-                          placeholder={language === 'tr' ? 'Bonus sebebi...' : 'Bonus reason...'}
+                          placeholder={'Bonus sebebi...'}
                           className="w-full mt-1 px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500"
                         />
                       </div>
@@ -951,14 +951,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={handleBonus}
                         disabled={actionLoading || bonusAmount <= 0}
                         className="flex-1 py-2 bg-gold-500 text-deep-purple-900 rounded-lg hover:bg-gold-400 disabled:opacity-50"
                       >
-                        {actionLoading ? '...' : language === 'tr' ? 'Bonus Ver' : 'Give Bonus'}
+                        {actionLoading ? '...' : 'Bonus Ver'}
                       </button>
                     </div>
                   </div>
@@ -969,7 +969,7 @@ export default function AdminLiveTellersPage() {
                   <div>
                     <h3 className="text-xl font-serif text-emerald-400 mb-4 flex items-center gap-2">
                       <Settings className="w-5 h-5" />
-                      {language === 'tr' ? 'Falcı Yetkileri' : 'Teller Permissions'}
+                      {'Falcı Yetkileri'}
                     </h3>
                     <p className="text-gray-300 mb-4">
                       <span className="font-semibold text-white">{selectedTeller.displayName}</span>
@@ -994,7 +994,7 @@ export default function AdminLiveTellersPage() {
                               onChange={(e) => setPermissionsForm(prev => ({ ...prev, [perm.key]: e.target.checked }))}
                               className="w-4 h-4 rounded border-purple-500 text-emerald-500 focus:ring-emerald-500 bg-deep-purple-900"
                             />
-                            <span className="text-sm text-gray-300">{language === 'tr' ? perm.tr : perm.en}</span>
+                            <span className="text-sm text-gray-300">{perm.tr}</span>
                           </label>
                         ))}
                       </div>
@@ -1003,7 +1003,7 @@ export default function AdminLiveTellersPage() {
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">
-                            {language === 'tr' ? 'Günlük Max Seans' : 'Max Sessions/Day'}
+                            {'Günlük Max Seans'}
                           </label>
                           <input
                             type="number"
@@ -1016,7 +1016,7 @@ export default function AdminLiveTellersPage() {
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">
-                            {language === 'tr' ? 'Komisyon Oranı (%)' : 'Commission Rate (%)'}
+                            {'Komisyon Oranı (%)'}
                           </label>
                           <input
                             type="number"
@@ -1032,13 +1032,13 @@ export default function AdminLiveTellersPage() {
                       {/* Admin Notes */}
                       <div className="mt-4">
                         <label className="text-sm text-gray-400 block mb-1">
-                          {language === 'tr' ? 'Admin Notları (Falcı göremez)' : 'Admin Notes (Hidden from teller)'}
+                          {'Admin Notları (Falcı göremez)'}
                         </label>
                         <textarea
                           value={permissionsForm.adminNotes}
                           onChange={(e) => setPermissionsForm(prev => ({ ...prev, adminNotes: e.target.value }))}
                           rows={2}
-                          placeholder={language === 'tr' ? 'Özel notlar...' : 'Private notes...'}
+                          placeholder={'Özel notlar...'}
                           className="w-full px-3 py-2 bg-deep-purple-800 border border-deep-purple-600 rounded-lg text-white placeholder-gray-500 resize-none"
                         />
                       </div>
@@ -1049,14 +1049,14 @@ export default function AdminLiveTellersPage() {
                         onClick={closeModal}
                         className="flex-1 py-2 bg-deep-purple-700 text-white rounded-lg hover:bg-deep-purple-600"
                       >
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button
                         onClick={handlePermissions}
                         disabled={actionLoading}
                         className="flex-1 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-400 disabled:opacity-50"
                       >
-                        {actionLoading ? '...' : language === 'tr' ? 'Kaydet' : 'Save'}
+                        {actionLoading ? '...' : 'Kaydet'}
                       </button>
                     </div>
                   </div>

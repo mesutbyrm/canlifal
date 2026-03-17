@@ -56,19 +56,17 @@ export default function DeviceGuard() {
               <Smartphone className="w-8 h-8 text-orange-400" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">
-              {language === 'tr' ? 'Ba\u015Fka Cihazda Oturum A\u00E7\u0131ld\u0131' : 'Session Opened on Another Device'}
+              {'Ba\u015Fka Cihazda Oturum A\u00E7\u0131ld\u0131'}
             </h2>
             <p className="text-orange-300 text-sm mb-6">
-              {language === 'tr'
-                ? 'Hesab\u0131n\u0131z ba\u015Fka bir telefonda/cihazda a\u00E7\u0131ld\u0131. Ayn\u0131 anda sadece bir cihazda oturum a\u00E7\u0131k olabilir.'
-                : 'Your account was opened on another phone/device. Only one device session is allowed at a time.'}
+              {'Hesabınız başka bir telefonda/cihazda açıldı. Aynı anda sadece bir cihazda oturum açık olabilir.'}
             </p>
             <button
               onClick={handleSignOut}
               className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
               <LogOut className="w-5 h-5" />
-              {language === 'tr' ? 'Giri\u015F Sayfas\u0131na D\u00F6n' : 'Back to Login'}
+              {'Giri\u015F Sayfas\u0131na D\u00F6n'}
             </button>
           </motion.div>
         </motion.div>

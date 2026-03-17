@@ -19,7 +19,7 @@ export default function YesNoOraclePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!question.trim()) {
-      setError(language === 'tr' ? 'Lütfen bir soru yazın' : 'Please enter a question')
+      setError('Lütfen bir soru yazın')
       return
     }
 
@@ -80,14 +80,14 @@ export default function YesNoOraclePage() {
             <HelpCircle className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Evet/Hayır Falı' : 'Yes/No Oracle'}
+            {'Evet/Hayır Falı'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Sorunuzu sorun, evren yanıtlayacak' : 'Ask your question, the universe will answer'}
+            {'Sorunuzu sorun, evren yanıtlayacak'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            2 {language === 'tr' ? 'CFC' : 'CFC'}
+            2 {'CFC'}
           </p>
         </motion.div>
 
@@ -100,23 +100,21 @@ export default function YesNoOraclePage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">
-                  {language === 'tr' ? 'Sorunuz' : 'Your Question'}
+                  {'Sorunuz'}
                 </label>
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={language === 'tr' ? 'Evet veya hayır ile yanıtlanabilecek bir soru sorun...' : 'Ask a question that can be answered with yes or no...'}
+                  placeholder={'Evet veya hayır ile yanıtlanabilecek bir soru sorun...'}
                   rows={4}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
               </div>
 
               <div className="text-center text-deep-purple-300 text-sm">
-                <p>{language === 'tr' ? 'Örnek sorular:' : 'Example questions:'}</p>
+                <p>{'Örnek sorular:'}</p>
                 <p className="text-deep-purple-400 italic mt-1">
-                  {language === 'tr' 
-                    ? '"Bu iş teklifini kabul etmeli miyim?" • "Onunla mutlu olabilir miyim?"'
-                    : '"Should I accept this job offer?" • "Can I be happy with them?"'}
+                  {'"Bu iş teklifini kabul etmeli miyim?" • "Onunla mutlu olabilir miyim?"'}
                 </p>
               </div>
 
@@ -136,7 +134,7 @@ export default function YesNoOraclePage() {
                 ) : (
                   <>
                     <HelpCircle className="w-5 h-5" />
-                    {language === 'tr' ? 'Cevabı Al' : 'Get Answer'}
+                    {'Cevabı Al'}
                   </>
                 )}
               </button>
@@ -151,7 +149,7 @@ export default function YesNoOraclePage() {
             className="bg-mystical-card border border-gold-500/30 rounded-xl p-8 mystical-shadow"
           >
             <div className="text-center mb-6">
-              <p className="text-deep-purple-300 text-sm mb-2">{language === 'tr' ? 'Sorunuz' : 'Your question'}</p>
+              <p className="text-deep-purple-300 text-sm mb-2">{'Sorunuz'}</p>
               <p className="text-gold-500 font-serif text-xl italic">"{question}"</p>
             </div>
             <div className="prose prose-invert max-w-none text-center">
@@ -159,7 +157,7 @@ export default function YesNoOraclePage() {
             </div>
             
             <SocialShare 
-              title={language === 'tr' ? 'Evet/Hayır Falı' : 'Yes/No Oracle'}
+              title={'Evet/Hayır Falı'}
               text={response}
             />
 
@@ -167,7 +165,7 @@ export default function YesNoOraclePage() {
               onClick={() => { setResponse(''); setQuestion(''); }}
               className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all"
             >
-              {language === 'tr' ? 'Başka Soru Sor' : 'Ask Another Question'}
+              {'Başka Soru Sor'}
             </button>
           </motion.div>
         )}

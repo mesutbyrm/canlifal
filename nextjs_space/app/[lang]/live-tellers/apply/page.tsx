@@ -41,7 +41,7 @@ export default function ApplyTellerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (specialties.length === 0) {
-      setError(language === 'tr' ? 'En az bir uzmanlık alanı seçin' : 'Select at least one specialty')
+      setError('En az bir uzmanlık alanı seçin')
       return
     }
 
@@ -64,10 +64,10 @@ export default function ApplyTellerPage() {
         setSuccess(true)
       } else {
         const data = await res.json()
-        setError(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+        setError(data.error || ('Bir hata oluştu'))
       }
     } catch {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -87,10 +87,10 @@ export default function ApplyTellerPage() {
         <div className="text-center">
           <Sparkles className="w-16 h-16 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-gold-400 mb-4">
-            {language === 'tr' ? 'Giriş Yapın' : 'Please Login'}
+            {'Giriş Yapın'}
           </h1>
           <Link href={`/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
-            {language === 'tr' ? 'Giriş Yap' : 'Login'}
+            {'Giriş Yap'}
           </Link>
         </div>
       </div>
@@ -109,18 +109,16 @@ export default function ApplyTellerPage() {
             <Check className="w-10 h-10 text-green-400" />
           </div>
           <h1 className="font-serif text-3xl text-gold-400 mb-4">
-            {language === 'tr' ? 'Başvurunuz Alındı!' : 'Application Submitted!'}
+            {'Başvurunuz Alındı!'}
           </h1>
           <p className="text-deep-purple-200 mb-6">
-            {language === 'tr' 
-              ? 'Başvurunuz incelenmek üzere alındı. Onaylandıktan sonra falcı olarak aktif olabilirsiniz.' 
-              : 'Your application has been received. You can start as a fortune teller after approval.'}
+            {'Başvurunuz incelenmek üzere alındı. Onaylandıktan sonra falcı olarak aktif olabilirsiniz.'}
           </p>
           <Link
             href={`/live-tellers`}
             className="inline-block px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500"
           >
-            {language === 'tr' ? 'Falcılar Sayfasına Dön' : 'Back to Fortune Tellers'}
+            {'Falcılar Sayfasına Dön'}
           </Link>
         </motion.div>
       </div>
@@ -137,12 +135,10 @@ export default function ApplyTellerPage() {
         >
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-3xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Falcı Olarak Başvur' : 'Apply as Fortune Teller'}
+            {'Falcı Olarak Başvur'}
           </h1>
           <p className="text-deep-purple-200">
-            {language === 'tr' 
-              ? 'Bilgilerinizi doldurun ve falcı olarak katılın' 
-              : 'Fill in your details and join as a fortune teller'}
+            {'Bilgilerinizi doldurun ve falcı olarak katılın'}
           </p>
         </motion.div>
 
@@ -163,7 +159,7 @@ export default function ApplyTellerPage() {
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2 flex items-center gap-2">
               <User className="w-4 h-4" />
-              {language === 'tr' ? 'Görünen Adı' : 'Display Name'}
+              {'Görünen Adı'}
             </label>
             <input
               type="text"
@@ -178,13 +174,13 @@ export default function ApplyTellerPage() {
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {language === 'tr' ? 'Hakkınızda' : 'About You'}
+              {'Hakkınızda'}
             </label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={4}
-              placeholder={language === 'tr' ? 'Kendinizi ve deneyimlerinizi anlatın...' : 'Tell us about yourself and your experience...'}
+              placeholder={'Kendinizi ve deneyimlerinizi anlatın...'}
               className="w-full px-4 py-3 bg-deep-purple-950 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600 resize-none"
             />
           </div>
@@ -192,7 +188,7 @@ export default function ApplyTellerPage() {
           {/* Specialties */}
           <div>
             <label className="block text-deep-purple-200 text-sm mb-3">
-              {language === 'tr' ? 'Uzmanlık Alanlarınız' : 'Your Specialties'}
+              {'Uzmanlık Alanlarınız'}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {FORTUNE_TYPES.map((type) => (
@@ -217,7 +213,7 @@ export default function ApplyTellerPage() {
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              {language === 'tr' ? 'Seans Başına Jeton' : 'Jetons per Session'}
+              {'Seans Başına Jeton'}
             </label>
             <input
               type="number"
@@ -228,7 +224,7 @@ export default function ApplyTellerPage() {
               className="w-full px-4 py-3 bg-deep-purple-950 border border-deep-purple-700 rounded-lg text-deep-purple-100 focus:outline-none focus:border-gold-600"
             />
             <p className="text-deep-purple-400 text-xs mt-1">
-              {language === 'tr' ? 'Minimum 50, maksimum 500 jeton' : 'Minimum 50, maximum 500 jetons'}
+              {'Minimum 50, maksimum 500 jeton'}
             </p>
           </div>
 
@@ -238,8 +234,8 @@ export default function ApplyTellerPage() {
             className="w-full py-4 bg-gold-600 text-black rounded-lg font-semibold hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading 
-              ? (language === 'tr' ? 'Gönderiliyor...' : 'Submitting...') 
-              : (language === 'tr' ? 'Başvuruyu Gönder' : 'Submit Application')}
+              ? ('Gönderiliyor...') 
+              : ('Başvuruyu Gönder')}
           </button>
         </motion.form>
       </div>

@@ -205,7 +205,7 @@ export default function ProfilePage() {
     if (!file || !profile?.isOwnProfile) return
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(language === 'tr' ? 'Dosya boyutu 5MB\'dan küçük olmalıdır' : 'File size must be less than 5MB')
+      alert('Dosya boyutu 5MB\'dan küçük olmalıdır')
       return
     }
 
@@ -247,7 +247,7 @@ export default function ProfilePage() {
       }
     } catch (err) {
       console.error('Upload error:', err)
-      alert(language === 'tr' ? 'Yükleme başarısız oldu' : 'Upload failed')
+      alert('Yükleme başarısız oldu')
     } finally {
       setUploadingImage(false)
     }
@@ -312,7 +312,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
         <p className="text-gray-400">
-          {language === 'tr' ? 'Kullanıcı bulunamadı' : 'User not found'}
+          {'Kullanıcı bulunamadı'}
         </p>
       </div>
     )
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                 <textarea
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value.slice(0, 150))}
-                  placeholder={language === 'tr' ? 'Kendinizi tanıtın...' : 'Tell us about yourself...'}
+                  placeholder={'Kendinizi tanıtın...'}
                   className="w-full bg-purple-900/30 border border-purple-700 rounded-lg px-3 py-2 text-white text-sm placeholder-purple-400 focus:outline-none focus:border-purple-500 resize-none"
                   rows={3}
                   maxLength={150}
@@ -413,7 +413,7 @@ export default function ProfilePage() {
                       onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }}
                       className="px-3 py-1 text-purple-300 text-sm hover:text-white"
                     >
-                      {language === 'tr' ? 'İptal' : 'Cancel'}
+                      {'İptal'}
                     </button>
                     <button
                       onClick={handleSaveBio}
@@ -421,7 +421,7 @@ export default function ProfilePage() {
                       className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-500 flex items-center gap-1"
                     >
                       {savingBio ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      {language === 'tr' ? 'Kaydet' : 'Save'}
+                      {'Kaydet'}
                     </button>
                   </div>
                 </div>
@@ -433,7 +433,7 @@ export default function ProfilePage() {
               >
                 {profile.bio || (profile.isOwnProfile ? (
                   <span className="text-purple-400 italic">
-                    {language === 'tr' ? '+ Bio ekle' : '+ Add bio'}
+                    {'+ Bio ekle'}
                   </span>
                 ) : null)}
               </div>
@@ -450,7 +450,7 @@ export default function ProfilePage() {
                 {formatNumber(profile.followingCount)}
               </p>
               <p className="text-xs text-purple-400">
-                {language === 'tr' ? 'Takipte' : 'Following'}
+                {'Takipte'}
               </p>
             </button>
             <div className="w-px h-8 bg-purple-800" />
@@ -462,7 +462,7 @@ export default function ProfilePage() {
                 {formatNumber(profile.followerCount)}
               </p>
               <p className="text-xs text-purple-400">
-                {language === 'tr' ? 'Takipçi' : 'Followers'}
+                {'Takipçi'}
               </p>
             </button>
             <div className="w-px h-8 bg-purple-800" />
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                 {formatNumber(profile.totalLikes)}
               </p>
               <p className="text-xs text-purple-400">
-                {language === 'tr' ? 'Beğeniler' : 'Likes'}
+                {'Beğeniler'}
               </p>
             </div>
           </div>
@@ -485,14 +485,14 @@ export default function ProfilePage() {
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Sparkles className="w-4 h-4 text-gold-400" />
-                  {language === 'tr' ? 'İstatistikler' : 'Statistics'}
+                  {'İstatistikler'}
                 </Link>
                 <Link
                   href={`/settings`}
                   className="flex-1 py-2.5 px-4 bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 font-medium rounded-lg text-center flex items-center justify-center gap-2 text-sm border border-purple-700"
                 >
                   <Settings className="w-4 h-4 text-gold-400" />
-                  {language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}
+                  {'Profili Düzenle'}
                 </Link>
               </>
             ) : (
@@ -512,13 +512,13 @@ export default function ProfilePage() {
                   ) : profile.isFollowing ? (
                     <>
                       <UserMinus className="w-5 h-5 group-hover:text-red-400" />
-                      <span className="group-hover:hidden">{language === 'tr' ? 'Takip Ediliyor' : 'Following'}</span>
-                      <span className="hidden group-hover:inline">{language === 'tr' ? 'Takibi Bırak' : 'Unfollow'}</span>
+                      <span className="group-hover:hidden">{'Takip Ediliyor'}</span>
+                      <span className="hidden group-hover:inline">{'Takibi Bırak'}</span>
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5" />
-                      {language === 'tr' ? 'Takip Et' : 'Follow'}
+                      {'Takip Et'}
                     </>
                   )}
                 </button>
@@ -588,8 +588,8 @@ export default function ProfilePage() {
             </div>
             <p className="text-purple-400 text-lg">
               {activeTab === 'fortunes'
-                ? (language === 'tr' ? 'Henüz paylaşılan fal yok' : 'No shared fortunes yet')
-                : (language === 'tr' ? 'Henüz paylaşım yok' : 'No posts yet')}
+                ? ('Henüz paylaşılan fal yok')
+                : ('Henüz paylaşım yok')}
             </p>
             {profile.isOwnProfile && (
               <Link
@@ -597,7 +597,7 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-full"
               >
                 <Sparkles className="w-4 h-4" />
-                {language === 'tr' ? 'Fal Baktır' : 'Get Fortune'}
+                {'Fal Baktır'}
               </Link>
             )}
           </div>
@@ -633,7 +633,7 @@ export default function ProfilePage() {
                   {/* Pinned badge */}
                   {isPinned && (
                     <div className="absolute top-1 left-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-                      {language === 'tr' ? 'Sabitlendi' : 'Pinned'}
+                      {'Sabitlendi'}
                     </div>
                   )}
 
@@ -680,7 +680,7 @@ export default function ProfilePage() {
             >
               <div className="p-4 border-b border-purple-800 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white">
-                  {language === 'tr' ? 'Takipçiler' : 'Followers'}
+                  {'Takipçiler'}
                 </h3>
                 <button onClick={() => setShowFollowers(false)} className="p-1 hover:bg-purple-900 rounded-full">
                   <X className="w-6 h-6 text-purple-400" />
@@ -689,7 +689,7 @@ export default function ProfilePage() {
               <div className="overflow-y-auto max-h-[60vh] p-4">
                 {followers.length === 0 ? (
                   <p className="text-center text-purple-400 py-8">
-                    {language === 'tr' ? 'Henüz takipçi yok' : 'No followers yet'}
+                    {'Henüz takipçi yok'}
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -720,7 +720,7 @@ export default function ProfilePage() {
                           <p className="text-sm text-purple-400">@{user.username || 'user'}</p>
                         </div>
                         <button className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg">
-                          {language === 'tr' ? 'Takip Et' : 'Follow'}
+                          {'Takip Et'}
                         </button>
                       </Link>
                     ))}
@@ -751,7 +751,7 @@ export default function ProfilePage() {
             >
               <div className="p-4 border-b border-purple-800 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white">
-                  {language === 'tr' ? 'Takip Edilenler' : 'Following'}
+                  {'Takip Edilenler'}
                 </h3>
                 <button onClick={() => setShowFollowing(false)} className="p-1 hover:bg-purple-900 rounded-full">
                   <X className="w-6 h-6 text-purple-400" />
@@ -760,7 +760,7 @@ export default function ProfilePage() {
               <div className="overflow-y-auto max-h-[60vh] p-4">
                 {following.length === 0 ? (
                   <p className="text-center text-purple-400 py-8">
-                    {language === 'tr' ? 'Henüz takip edilen yok' : 'Not following anyone yet'}
+                    {'Henüz takip edilen yok'}
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -791,7 +791,7 @@ export default function ProfilePage() {
                           <p className="text-sm text-purple-400">@{user.username || 'user'}</p>
                         </div>
                         <button className="px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg">
-                          {language === 'tr' ? 'Takip Ediliyor' : 'Following'}
+                          {'Takip Ediliyor'}
                         </button>
                       </Link>
                     ))}

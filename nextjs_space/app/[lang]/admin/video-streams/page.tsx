@@ -111,7 +111,7 @@ export default function AdminVideoStreamsPage() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US', {
+    return date.toLocaleString('tr-TR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -127,9 +127,9 @@ export default function AdminVideoStreamsPage() {
     const minutes = Math.floor(diffMs / 60000)
     const hours = Math.floor(minutes / 60)
     if (hours > 0) {
-      return `${hours}${language === 'tr' ? ' saat' : 'h'} ${minutes % 60}${language === 'tr' ? ' dk' : 'm'}`
+      return `${hours}${' saat'} ${minutes % 60}${' dk'}`
     }
-    return `${minutes} ${language === 'tr' ? 'dk' : 'min'}`
+    return `${minutes} ${'dk'}`
   }
 
   if (status === 'loading' || loading) {
@@ -154,12 +154,12 @@ export default function AdminVideoStreamsPage() {
             </Link>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <Video className="w-7 h-7 text-red-500" />
-              {language === 'tr' ? 'Canlı Yayın Yönetimi' : 'Live Stream Management'}
+              {'Canlı Yayın Yönetimi'}
             </h1>
           </div>
           <button onClick={fetchStreams} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
             <RefreshCw className="w-4 h-4" />
-            {language === 'tr' ? 'Yenile' : 'Refresh'}
+            {'Yenile'}
           </button>
         </div>
 
@@ -168,28 +168,28 @@ export default function AdminVideoStreamsPage() {
           <div className="bg-gradient-to-br from-red-600/20 to-red-900/20 rounded-xl p-4 border border-red-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Radio className="w-5 h-5 text-red-400" />
-              <span className="text-red-300 text-sm">{language === 'tr' ? 'Canlı' : 'Live Now'}</span>
+              <span className="text-red-300 text-sm">{'Canlı'}</span>
             </div>
             <p className="text-2xl font-bold text-white">{liveStreams.length}</p>
           </div>
           <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 rounded-xl p-4 border border-purple-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Video className="w-5 h-5 text-purple-400" />
-              <span className="text-purple-300 text-sm">{language === 'tr' ? 'Toplam' : 'Total'}</span>
+              <span className="text-purple-300 text-sm">{'Toplam'}</span>
             </div>
             <p className="text-2xl font-bold text-white">{streams.length}</p>
           </div>
           <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-900/20 rounded-xl p-4 border border-yellow-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Coins className="w-5 h-5 text-yellow-400" />
-              <span className="text-yellow-300 text-sm">{language === 'tr' ? 'Toplam Hediye' : 'Total Gifts'}</span>
+              <span className="text-yellow-300 text-sm">{'Toplam Hediye'}</span>
             </div>
             <p className="text-2xl font-bold text-white">{streams.reduce((sum, s) => sum + s.totalCredits, 0)}</p>
           </div>
           <div className="bg-gradient-to-br from-green-600/20 to-green-900/20 rounded-xl p-4 border border-green-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-5 h-5 text-green-400" />
-              <span className="text-green-300 text-sm">{language === 'tr' ? 'Toplam İzleyici' : 'Total Viewers'}</span>
+              <span className="text-green-300 text-sm">{'Toplam İzleyici'}</span>
             </div>
             <p className="text-2xl font-bold text-white">{streams.reduce((sum, s) => sum + s._count.viewers, 0)}</p>
           </div>
@@ -207,9 +207,9 @@ export default function AdminVideoStreamsPage() {
                   : 'bg-purple-600/20 text-purple-300 hover:bg-purple-600/30'
               }`}
             >
-              {f === 'all' ? (language === 'tr' ? 'Tümü' : 'All') :
-               f === 'live' ? (language === 'tr' ? 'Canlı' : 'Live') :
-               (language === 'tr' ? 'Biten' : 'Ended')}
+              {f === 'all' ? ('Tümü') :
+               f === 'live' ? ('Canlı') :
+               ('Biten')}
             </button>
           ))}
         </div>
@@ -218,7 +218,7 @@ export default function AdminVideoStreamsPage() {
         {streams.length === 0 ? (
           <div className="text-center py-12">
             <Video className="w-16 h-16 text-purple-400/30 mx-auto mb-4" />
-            <p className="text-purple-300">{language === 'tr' ? 'Henüz yayın yok' : 'No streams yet'}</p>
+            <p className="text-purple-300">{'Henüz yayın yok'}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -250,7 +250,7 @@ export default function AdminVideoStreamsPage() {
                         </span>
                       )}
                       <h3 className="text-white font-semibold truncate">
-                        {stream.title || (language === 'tr' ? 'Canlı Yayın' : 'Live Stream')}
+                        {stream.title || ('Canlı Yayın')}
                       </h3>
                     </div>
                     <p className="text-purple-300 text-sm">@{stream.user.name}</p>
@@ -274,35 +274,35 @@ export default function AdminVideoStreamsPage() {
                         <Users className="w-4 h-4" />
                         <span>{stream._count.viewers}</span>
                       </div>
-                      <p className="text-purple-400/60 text-xs">{language === 'tr' ? 'İzleyici' : 'Viewers'}</p>
+                      <p className="text-purple-400/60 text-xs">{'İzleyici'}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center gap-1 text-pink-400">
                         <Heart className="w-4 h-4" />
                         <span>{stream.likeCount}</span>
                       </div>
-                      <p className="text-purple-400/60 text-xs">{language === 'tr' ? 'Beğeni' : 'Likes'}</p>
+                      <p className="text-purple-400/60 text-xs">{'Beğeni'}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center gap-1 text-blue-400">
                         <MessageCircle className="w-4 h-4" />
                         <span>{stream._count.comments}</span>
                       </div>
-                      <p className="text-purple-400/60 text-xs">{language === 'tr' ? 'Yorum' : 'Comments'}</p>
+                      <p className="text-purple-400/60 text-xs">{'Yorum'}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center gap-1 text-yellow-400">
                         <Coins className="w-4 h-4" />
                         <span>{stream.totalCredits}</span>
                       </div>
-                      <p className="text-purple-400/60 text-xs">{language === 'tr' ? 'Hediye' : 'Gifts'}</p>
+                      <p className="text-purple-400/60 text-xs">{'Hediye'}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center gap-1 text-green-400">
                         <Gift className="w-4 h-4" />
                         <span>{stream.broadcasterEarnings}</span>
                       </div>
-                      <p className="text-purple-400/60 text-xs">{language === 'tr' ? 'Kazanç' : 'Earned'}</p>
+                      <p className="text-purple-400/60 text-xs">{'Kazanç'}</p>
                     </div>
                   </div>
 
@@ -319,7 +319,7 @@ export default function AdminVideoStreamsPage() {
                         ) : (
                           <StopCircle className="w-4 h-4" />
                         )}
-                        {language === 'tr' ? 'Bitir' : 'End'}
+                        {'Bitir'}
                       </button>
                     )}
                     <button
@@ -392,21 +392,19 @@ export default function AdminVideoStreamsPage() {
                   <AlertTriangle className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold">{language === 'tr' ? 'Yayını Sil' : 'Delete Stream'}</h3>
-                  <p className="text-purple-300 text-sm">{language === 'tr' ? 'Bu işlem geri alınamaz' : 'This action cannot be undone'}</p>
+                  <h3 className="text-white font-bold">{'Yayını Sil'}</h3>
+                  <p className="text-purple-300 text-sm">{'Bu işlem geri alınamaz'}</p>
                 </div>
               </div>
               <p className="text-purple-300 mb-6 text-sm">
-                {language === 'tr' 
-                  ? 'Tüm yorumlar, beğeniler ve hediyeler de silinecek. Emin misiniz?'
-                  : 'All comments, likes and gifts will also be deleted. Are you sure?'}
+                {'Tüm yorumlar, beğeniler ve hediyeler de silinecek. Emin misiniz?'}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteModal(null)}
                   className="flex-1 bg-white/10 text-white py-2.5 rounded-lg"
                 >
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </button>
                 <button
                   onClick={() => handleDeleteStream(showDeleteModal)}
@@ -418,7 +416,7 @@ export default function AdminVideoStreamsPage() {
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}
-                  {language === 'tr' ? 'Sil' : 'Delete'}
+                  {'Sil'}
                 </button>
               </div>
             </motion.div>

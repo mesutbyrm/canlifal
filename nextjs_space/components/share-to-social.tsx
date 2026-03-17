@@ -55,10 +55,10 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
         }, 1500)
       } else {
         const data = await res.json()
-        setError(data.error || (language === 'tr' ? 'Paylaşılamadı' : 'Failed to share'))
+        setError(data.error || ('Paylaşılamadı'))
       }
     } catch (err) {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setSharing(false)
     }
@@ -77,7 +77,7 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
         className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-colors"
       >
         <Share2 className="w-4 h-4" />
-        {language === 'tr' ? "Sosyal'de Paylaş" : 'Share on Social'}
+        {"Sosyal'de Paylaş"}
       </button>
 
       {/* Modal */}
@@ -100,7 +100,7 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
               {/* Header */}
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-serif text-gold-400">
-                  {language === 'tr' ? "Sosyal'de Paylaş" : 'Share on Social'}
+                  {"Sosyal'de Paylaş"}
                 </h3>
                 <button onClick={handleClose} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -114,16 +114,14 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
                     <Check className="w-8 h-8 text-green-400" />
                   </div>
                   <p className="text-green-400 text-lg">
-                    {language === 'tr' ? 'Başarıyla paylaşıldı!' : 'Shared successfully!'}
+                    {'Başarıyla paylaşıldı!'}
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Info */}
                   <p className="text-purple-300/70 text-sm mb-4">
-                    {language === 'tr'
-                      ? 'Fal yorumunuz sosyal akışta diğer kullanıcılarla paylaşılacak. İsterseniz metni düzenleyebilirsiniz.'
-                      : 'Your fortune reading will be shared with other users in the social feed. You can edit the text if you want.'}
+                    {'Fal yorumunuz sosyal akışta diğer kullanıcılarla paylaşılacak. İsterseniz metni düzenleyebilirsiniz.'}
                   </p>
 
                   {/* Content Editor */}
@@ -153,7 +151,7 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
                       onClick={handleClose}
                       className="flex-1 py-2 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-500/10"
                     >
-                      {language === 'tr' ? 'İptal' : 'Cancel'}
+                      {'İptal'}
                     </button>
                     <button
                       onClick={handleShare}
@@ -165,7 +163,7 @@ export default function ShareToSocial({ fortuneId, fortuneType, content, onClose
                       ) : (
                         <>
                           <Share2 className="w-4 h-4" />
-                          {language === 'tr' ? 'Paylaş' : 'Share'}
+                          {'Paylaş'}
                         </>
                       )}
                     </button>

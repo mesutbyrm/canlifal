@@ -106,7 +106,7 @@ export default function DreamFortunePage() {
           {/* Dream Description */}
           <div>
             <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between mb-2">
-              <span>{language === 'tr' ? 'Rüyanızı anlatın' : 'Describe your dream'}</span>
+              <span>{'Rüyanızı anlatın'}</span>
               <VoiceInput 
                 onTranscript={(text) => setDreamDescription(prev => prev + ' ' + text)}
                 disabled={isLoading}
@@ -116,7 +116,7 @@ export default function DreamFortunePage() {
               value={dreamDescription}
               onChange={(e) => setDreamDescription(e?.target?.value ?? '')}
               className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[120px] sm:min-h-[150px] text-sm sm:text-base resize-none"
-              placeholder={language === 'tr' ? 'Rüyanızda gördüklerinizi detaylıca anlatın. Kişileri, yerleri, duyguları ve olayları belirtin...' : 'Describe what you saw in your dream in detail. Mention people, places, emotions and events...'}
+              placeholder={'Rüyanızda gördüklerinizi detaylıca anlatın. Kişileri, yerleri, duyguları ve olayları belirtin...'}
               required
             />
           </div>
@@ -124,9 +124,7 @@ export default function DreamFortunePage() {
           {/* Tips */}
           <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
             <p className="text-deep-purple-300 text-xs sm:text-sm">
-              🌙 {language === 'tr' 
-                ? 'Rüyanızı ne kadar detaylı anlatırsanız, yorum o kadar derin olur.' 
-                : 'The more detail you provide, the deeper the interpretation will be.'}
+              🌙 {'Rüyanızı ne kadar detaylı anlatırsanız, yorum o kadar derin olur.'}
             </p>
           </div>
 
@@ -137,11 +135,11 @@ export default function DreamFortunePage() {
             className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
-              <LoadingSpinner message={language === 'tr' ? 'Rüyanız yorumlanıyor...' : 'Interpreting your dream...'} />
+              <LoadingSpinner message={'Rüyanız yorumlanıyor...'} />
             ) : (
               <>
                 <Moon className="w-5 h-5" />
-                {language === 'tr' ? 'Rüyamı Yorumla' : 'Interpret My Dream'}
+                {'Rüyamı Yorumla'}
               </>
             )}
           </button>
@@ -153,7 +151,7 @@ export default function DreamFortunePage() {
           <div className="flex items-center gap-2 text-gold-500">
             <Sparkles className="w-5 h-5" />
             <h2 className="font-serif text-xl sm:text-2xl">
-              {language === 'tr' ? 'Rüya Yorumunuz Hazır' : 'Your Dream Interpretation is Ready'}
+              {'Rüya Yorumunuz Hazır'}
             </h2>
           </div>
           
@@ -171,7 +169,7 @@ export default function DreamFortunePage() {
           <div className="flex flex-wrap gap-2">
             <ShareToSocial fortuneType="dream" content={fortune} />
             <SocialShare 
-              title={language === 'tr' ? 'Rüya Yorumum' : 'My Dream Interpretation'} 
+              title={'Rüya Yorumum'} 
               text={fortune} 
             />
           </div>
@@ -182,7 +180,7 @@ export default function DreamFortunePage() {
             className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <RotateCcw className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Rüya Yorumlat' : 'Interpret Another Dream'}
+            {'Yeni Rüya Yorumlat'}
           </button>
         </div>
       )}

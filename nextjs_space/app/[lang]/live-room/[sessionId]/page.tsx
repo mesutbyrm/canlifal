@@ -111,7 +111,7 @@ export default function LiveRoomPage() {
       const res = await fetch(`/api/room/${sessionId}`);
       if (!res.ok) {
         if (res.status === 404) {
-          setError(language === 'tr' ? 'Seans bulunamadı' : 'Session not found');
+          setError('Seans bulunamadı');
         } else {
           throw new Error('Failed to fetch room data');
         }
@@ -123,7 +123,7 @@ export default function LiveRoomPage() {
       return data;
     } catch (err) {
       console.error('Error fetching room:', err);
-      setError(language === 'tr' ? 'Oda bilgisi alınamadı' : 'Failed to get room info');
+      setError('Oda bilgisi alınamadı');
       return null;
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export default function LiveRoomPage() {
     isInitialized.current = true;
     
     try {
-      setConnectionStatus(language === 'tr' ? 'Kamera/mikrofon erişimi isteniyor...' : 'Requesting camera/microphone access...');
+      setConnectionStatus('Kamera/mikrofon erişimi isteniyor...');
       
       // Optimize edilmiş getUserMedia - mobil cihazlarda zoom-out sorununu önler
       const constraints = getMediaConstraints('high', facingMode);
@@ -155,7 +155,7 @@ export default function LiveRoomPage() {
         localVideoRef.current.srcObject = stream;
       }
 
-      setConnectionStatus(language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...');
+      setConnectionStatus('Bağlantı kuruluyor...');
 
       // STUN + TURN sunucuları ile RTCPeerConnection
       const configuration = getRTCConfiguration();
@@ -200,12 +200,12 @@ export default function LiveRoomPage() {
       // Otomatik bağlantı kurtarma (ICE restart)
       const cleanupRecovery = setupConnectionRecovery(
         pc,
-        () => setConnectionStatus(language === 'tr' ? 'Bağlantı kesildi, yeniden bağlanılıyor...' : 'Disconnected, reconnecting...'),
+        () => setConnectionStatus('Bağlantı kesildi, yeniden bağlanılıyor...'),
         () => {
           setIsConnected(true);
           setConnectionStatus('');
         },
-        () => setConnectionStatus(language === 'tr' ? 'Bağlantı başarısız' : 'Connection failed'),
+        () => setConnectionStatus('Bağlantı başarısız'),
         3
       );
 
@@ -263,7 +263,7 @@ export default function LiveRoomPage() {
     } catch (err) {
       console.error('WebRTC initialization error:', err);
       isInitialized.current = false;
-      setError(language === 'tr' ? 'Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.' : 'Could not access camera/microphone. Please check permissions.');
+      setError('Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.');
       return null;
     }
   }, [sessionId, language]);
@@ -488,9 +488,7 @@ export default function LiveRoomPage() {
   // End session
   const endSession = async () => {
     const confirm = window.confirm(
-      language === 'tr' 
-        ? 'Seansı sonlandırmak istediğinize emin misiniz?'
-        : 'Are you sure you want to end the session?'
+      'Seansı sonlandırmak istediğinize emin misiniz?'
     );
     if (!confirm) return;
 
@@ -698,7 +696,7 @@ export default function LiveRoomPage() {
             onClick={() => router.push(`/dashboard`)}
             className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
-            {language === 'tr' ? 'Panele Dön' : 'Back to Dashboard'}
+            {'Panele Dön'}
           </button>
         </div>
       </div>
@@ -711,13 +709,13 @@ export default function LiveRoomPage() {
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <p className="text-white text-xl">
-            {language === 'tr' ? 'Bu seans aktif değil' : 'This session is not active'}
+            {'Bu seans aktif değil'}
           </p>
           <button
             onClick={() => router.push(`/dashboard`)}
             className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
-            {language === 'tr' ? 'Panele Dön' : 'Back to Dashboard'}
+            {'Panele Dön'}
           </button>
         </div>
       </div>
@@ -739,8 +737,8 @@ export default function LiveRoomPage() {
             <h1 className="text-white font-semibold text-sm">{peerName}</h1>
             <p className="text-xs text-gray-300">
               {isConnected 
-                ? (language === 'tr' ? '● Bağlı' : '● Connected')
-                : (language === 'tr' ? '○ Bağlanıyor...' : '○ Connecting...')
+                ? ('● Bağlı')
+                : ('○ Bağlanıyor...')
               }
             </p>
           </div>
@@ -759,7 +757,7 @@ export default function LiveRoomPage() {
           ) : (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-yellow-600/80 text-white">
               <Timer className="w-4 h-4" />
-              {language === 'tr' ? 'Bekleniyor' : 'Waiting'}
+              {'Bekleniyor'}
             </div>
           )}
           
@@ -770,7 +768,7 @@ export default function LiveRoomPage() {
               className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500"
             >
               <Plus className="w-4 h-4" />
-              {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+              {'Süre Ekle'}
             </button>
           )}
 
@@ -781,7 +779,7 @@ export default function LiveRoomPage() {
               className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-semibold hover:bg-green-500"
             >
               <Plus className="w-4 h-4" />
-              {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+              {'Süre Ekle'}
             </button>
           )}
         </div>
@@ -816,7 +814,7 @@ export default function LiveRoomPage() {
           <button
             onClick={switchCamera}
             className="absolute bottom-2 right-2 p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-            title={language === 'tr' ? 'Kamera Çevir' : 'Switch Camera'}
+            title={'Kamera Çevir'}
           >
             <SwitchCamera className="w-4 h-4 text-white" />
           </button>
@@ -828,12 +826,10 @@ export default function LiveRoomPage() {
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gold-500 mx-auto mb-4"></div>
               <p className="text-white text-lg">
-                {connectionStatus || (language === 'tr' ? 'Bağlantı kuruluyor...' : 'Establishing connection...')}
+                {connectionStatus || ('Bağlantı kuruluyor...')}
               </p>
               <p className="text-gray-400 text-sm mt-2">
-                {language === 'tr' 
-                  ? 'Diğer tarafın odaya girmesini bekliyorsunuz'
-                  : 'Waiting for the other party to join'}
+                {'Diğer tarafın odaya girmesini bekliyorsunuz'}
               </p>
             </div>
           </div>
@@ -862,7 +858,7 @@ export default function LiveRoomPage() {
           <button
             onClick={switchCamera}
             className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors shadow-lg"
-            title={language === 'tr' ? 'Kamera Çevir' : 'Switch Camera'}
+            title={'Kamera Çevir'}
           >
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
@@ -888,7 +884,7 @@ export default function LiveRoomPage() {
           <div className="flex items-center gap-2">
             <MessageSquare className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
-              {language === 'tr' ? 'Sohbet' : 'Chat'}
+              {'Sohbet'}
               {messages.length > 0 && <span className="ml-1 text-gold-400">({messages.length})</span>}
             </span>
           </div>
@@ -906,7 +902,7 @@ export default function LiveRoomPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Type a message...'}
+                  placeholder={'Mesaj yaz...'}
                   className="flex-1 bg-deep-purple-800 text-white rounded-full px-3 py-1.5 text-xs border border-purple-700 focus:outline-none focus:border-gold-500"
                 />
                 <button
@@ -922,7 +918,7 @@ export default function LiveRoomPage() {
             <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1 min-h-0">
               {messages.length === 0 ? (
                 <p className="text-center text-gray-500 text-xs py-2">
-                  {language === 'tr' ? 'Henüz mesaj yok' : 'No messages yet'}
+                  {'Henüz mesaj yok'}
                 </p>
               ) : (
                 messages.map((msg, index) => (
@@ -956,17 +952,14 @@ export default function LiveRoomPage() {
                 <Play className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Seansı Başlat' : 'Start Session'}
+                {'Seansı Başlat'}
               </h3>
               <p className="text-gray-300 text-sm">
-                {language === 'tr' 
-                  ? `${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`
-                  : `${roomData.user.name} is connected. Click below to start the timer or select duration first.`
+                {`${roomData.user.name} bağlandı. Süreyi başlatmak için aşağıdaki butona tıklayın veya önce süre seçin.`} is connected. Click below to start the timer or select duration first.`
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {language === 'tr' 
-                  ? `Kullanıcının jetonu: ${userJetons}`
+                {`Kullanıcının jetonu}`
                   : `User jetons: ${userJetons}`
                 }
               </p>
@@ -978,13 +971,13 @@ export default function LiveRoomPage() {
               className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl mb-4 hover:from-green-600 hover:to-emerald-600 transition-all flex items-center justify-center gap-2"
             >
               <Play className="w-5 h-5" />
-              {language === 'tr' ? 'Şimdi Başlat' : 'Start Now'}
+              {'Şimdi Başlat'}
             </button>
 
             {/* Or select duration and add time first */}
             <div className="border-t border-purple-700 pt-4">
               <p className="text-gray-400 text-xs mb-3 text-center">
-                {language === 'tr' ? 'veya önce süre ekleyin:' : 'or add time first:'}
+                {'veya önce süre ekleyin:'}
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {[5, 10, 15].map((mins) => {
@@ -1026,17 +1019,14 @@ export default function LiveRoomPage() {
                 <Plus className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+                {'Süre Ekle'}
               </h3>
               <p className="text-gray-300 text-sm">
-                {language === 'tr' 
-                  ? 'Kullanıcının jetonundan düşülecek'
-                  : 'Will be deducted from user jetons'
+                {'Kullanıcının jetonundan düşülecek'
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {language === 'tr' 
-                  ? `Kullanıcının jetonu: ${userJetons}`
+                {`Kullanıcının jetonu}`
                   : `User jetons: ${userJetons}`
                 }
               </p>
@@ -1058,7 +1048,7 @@ export default function LiveRoomPage() {
                     }`}
                   >
                     <div className="text-lg font-bold">{mins}</div>
-                    <div className="text-xs opacity-80">{language === 'tr' ? 'dakika' : 'min'}</div>
+                    <div className="text-xs opacity-80">{'dakika'}</div>
                     <div className="text-xs mt-1 opacity-70">{cost} ₺</div>
                   </button>
                 );
@@ -1069,7 +1059,7 @@ export default function LiveRoomPage() {
               onClick={() => setShowAddTimePopup(false)}
               className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
             >
-              {language === 'tr' ? 'İptal' : 'Cancel'}
+              {'İptal'}
             </button>
           </div>
         </div>
@@ -1084,17 +1074,14 @@ export default function LiveRoomPage() {
                 <Plus className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                {language === 'tr' ? 'Süre Ekle' : 'Add Time'}
+                {'Süre Ekle'}
               </h3>
               <p className="text-gray-300 text-sm">
-                {language === 'tr' 
-                  ? 'Seansa ek süre ekleyin'
-                  : 'Add extra time to your session'
+                {'Seansa ek süre ekleyin'
                 }
               </p>
               <p className="text-gold-400 text-sm mt-2">
-                {language === 'tr' 
-                  ? `Mevcut Jetonunuz: ${myJetons}`
+                {`Mevcut Jetonunuz}`
                   : `Your Jetons: ${myJetons}`
                 }
               </p>
@@ -1122,7 +1109,7 @@ export default function LiveRoomPage() {
                     }`}
                   >
                     <div className="text-lg font-bold">{mins}</div>
-                    <div className="text-xs opacity-80">{language === 'tr' ? 'dakika' : 'min'}</div>
+                    <div className="text-xs opacity-80">{'dakika'}</div>
                     <div className="text-xs mt-1 font-semibold">{cost} ₺</div>
                   </button>
                 );
@@ -1133,7 +1120,7 @@ export default function LiveRoomPage() {
               onClick={() => setShowUserAddTimePopup(false)}
               className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
             >
-              {language === 'tr' ? 'İptal' : 'Cancel'}
+              {'İptal'}
             </button>
           </div>
         </div>

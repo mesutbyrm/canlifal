@@ -145,7 +145,7 @@ export default function FortuneTypesAdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu türü silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this type?')) return
+    if (!confirm('Bu türü silmek istediğinize emin misiniz?')) return
     
     setDeleting(id)
     try {
@@ -202,10 +202,10 @@ export default function FortuneTypesAdminPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-white">
-              {language === 'tr' ? 'Fal İstek Türleri' : 'Fortune Request Types'}
+              {'Fal İstek Türleri'}
             </h1>
             <p className="text-white/60 text-sm">
-              {language === 'tr' ? 'Canlı yayında kullanılacak fal türlerini yönetin' : 'Manage fortune types for live streams'}
+              {'Canlı yayında kullanılacak fal türlerini yönetin'}
             </p>
           </div>
         </div>
@@ -216,7 +216,7 @@ export default function FortuneTypesAdminPage() {
           className="w-full mb-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          {language === 'tr' ? 'Yeni Tür Ekle' : 'Add New Type'}
+          {'Yeni Tür Ekle'}
         </button>
 
         {/* Types List */}
@@ -225,7 +225,7 @@ export default function FortuneTypesAdminPage() {
             <div className="bg-white/10 rounded-xl p-8 text-center">
               <Coffee className="w-12 h-12 text-white/40 mx-auto mb-3" />
               <p className="text-white/60">
-                {language === 'tr' ? 'Henüz fal türü eklenmemiş' : 'No fortune types added yet'}
+                {'Henüz fal türü eklenmemiş'}
               </p>
             </div>
           ) : (
@@ -239,7 +239,7 @@ export default function FortuneTypesAdminPage() {
                   <div className="text-3xl">{type.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-white font-medium">{language === 'tr' ? type.name : type.nameEn}</p>
+                      <p className="text-white font-medium">{type.name}</p>
                       {type.isActive ? (
                         <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">Aktif</span>
                       ) : (
@@ -306,7 +306,7 @@ export default function FortuneTypesAdminPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white">
-                  {language === 'tr' ? 'Yeni Fal Türü' : 'New Fortune Type'}
+                  {'Yeni Fal Türü'}
                 </h2>
                 <button onClick={() => setShowAddModal(false)}>
                   <X className="w-5 h-5 text-white/60" />
@@ -381,7 +381,7 @@ export default function FortuneTypesAdminPage() {
                   className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {language === 'tr' ? 'Kaydet' : 'Save'}
+                  {'Kaydet'}
                 </button>
               </div>
             </motion.div>
@@ -407,7 +407,7 @@ export default function FortuneTypesAdminPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white">
-                  {language === 'tr' ? 'Türü Düzenle' : 'Edit Type'}
+                  {'Türü Düzenle'}
                 </h2>
                 <button onClick={() => setEditingType(null)}>
                   <X className="w-5 h-5 text-white/60" />
@@ -479,7 +479,7 @@ export default function FortuneTypesAdminPage() {
                   className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {language === 'tr' ? 'Güncelle' : 'Update'}
+                  {'Güncelle'}
                 </button>
               </div>
             </motion.div>

@@ -111,88 +111,88 @@ export default function AdminSettingsPage() {
   const settingItems = [
     {
       key: 'commission_rate',
-      label: language === 'tr' ? 'Komisyon Oranı (%)' : 'Commission Rate (%)',
-      description: language === 'tr' ? 'Falcı kazançlarından kesilecek komisyon oranı' : 'Commission rate deducted from teller earnings',
+      label: 'Komisyon Oranı (%)',
+      description: 'Falcı kazançlarından kesilecek komisyon oranı',
       icon: Percent,
       min: 0,
       max: 100
     },
     {
       key: 'min_withdrawal',
-      label: language === 'tr' ? 'Minimum Çekim Miktarı' : 'Minimum Withdrawal',
-      description: language === 'tr' ? 'Falcıların çekim yapabileceği minimum CFC' : 'Minimum CFC for teller withdrawal',
+      label: 'Minimum Çekim Miktarı',
+      description: 'Falcıların çekim yapabileceği minimum CFC',
       icon: CreditCard,
       min: 0,
       max: 10000
     },
     {
       key: 'referral_bonus',
-      label: language === 'tr' ? 'Referans Bonusu' : 'Referral Bonus',
-      description: language === 'tr' ? 'Davet eden ve edilen kişiye verilecek CFC' : 'CFC given to referrer and referred user',
+      label: 'Referans Bonusu',
+      description: 'Davet eden ve edilen kişiye verilecek CFC',
       icon: Gift,
       min: 0,
       max: 1000
     },
     {
       key: 'welcome_credits',
-      label: language === 'tr' ? 'Hoşgeldin CFC' : 'Welcome CFC',
-      description: language === 'tr' ? 'Yeni üyelere verilecek başlangıç CFC' : 'Starting CFC for new users',
+      label: 'Hoşgeldin CFC',
+      description: 'Yeni üyelere verilecek başlangıç CFC',
       icon: CreditCard,
       min: 0,
       max: 1000
     },
     {
       key: 'session_duration_minutes',
-      label: language === 'tr' ? 'Canlı Seans Süresi (dk)' : 'Live Session Duration (min)',
-      description: language === 'tr' ? 'Canlı falcı seanslarının varsayılan süresi' : 'Default duration for live fortune teller sessions',
+      label: 'Canlı Seans Süresi (dk)',
+      description: 'Canlı falcı seanslarının varsayılan süresi',
       icon: Clock,
       min: 1,
       max: 60
     },
     {
       key: 'credits_per_minute',
-      label: language === 'tr' ? 'Dakika Başı Jeton' : 'Jetons Per Minute',
-      description: language === 'tr' ? 'Süre uzatma için dakika başına alınacak jeton' : 'Jetons charged per minute for session extension',
+      label: 'Dakika Başı Jeton',
+      description: 'Süre uzatma için dakika başına alınacak jeton',
       icon: Coins,
       min: 1,
       max: 100
     },
     {
       key: 'ad_duration_seconds',
-      label: language === 'tr' ? 'Reklam Süresi (sn)' : 'Ad Duration (sec)',
-      description: language === 'tr' ? 'Canlı fal öncesi gösterilecek reklam süresi' : 'Ad display duration before live session starts',
+      label: 'Reklam Süresi (sn)',
+      description: 'Canlı fal öncesi gösterilecek reklam süresi',
       icon: Tv,
       min: 0,
       max: 30
     },
     {
       key: 'jeton_tl_rate',
-      label: language === 'tr' ? 'Jeton/TL Oranı' : 'Jeton/TL Rate',
-      description: language === 'tr' ? '1 jeton = kaç TL (örn: 0.5 = 1 jeton 0.50 TL)' : '1 jeton = how many TL (e.g., 0.5 = 1 jeton is 0.50 TL)',
+      label: 'Jeton/TL Oranı',
+      description: '1 jeton = kaç TL (örn: 0.5 = 1 jeton 0.50 TL)',
       icon: Coins,
       min: 0.01,
       max: 100
     },
     {
       key: 'site_email',
-      label: language === 'tr' ? 'Site E-postası' : 'Site Email',
-      description: language === 'tr' ? 'Kullanıcılara gösterilen ve şifre sıfırlama gibi maillerin gönderileceği adres' : 'Displayed to users and used for password reset emails',
+      label: 'Site E-postası',
+      description: 'Kullanıcılara gösterilen ve şifre sıfırlama gibi maillerin gönderileceği adres',
       icon: Mail,
       type: 'email' as const,
       placeholder: 'info@site.com'
     },
     {
       key: 'admin_email',
-      label: language === 'tr' ? 'Admin E-postası' : 'Admin Email',
-      description: language === 'tr' ? 'Yönetici bildirimleri ve sistem uyarıları için' : 'For admin notifications and system alerts',
+      label: 'Admin E-postası',
+      description: 'Yönetici bildirimleri ve sistem uyarıları için',
       icon: Mail,
       type: 'email' as const,
       placeholder: 'admin@site.com'
     },
     {
       key: 'support_email',
-      label: language === 'tr' ? 'Destek E-postası' : 'Support Email',
-      description: language === 'tr' ? 'Kullanıcı destek talepleri ve iletişim için' : 'For user support requests and contact',
+      label: 'Destek E-postası',
+      description: 'Kullanıcı destek talepleri ve iletişim için',
       icon: Mail,
       type: 'email' as const,
       placeholder: 'destek@site.com'
@@ -207,7 +207,7 @@ export default function AdminSettingsPage() {
           className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
-          {language === 'tr' ? 'Admin Paneli' : 'Admin Panel'}
+          {'Admin Paneli'}
         </Link>
 
         <motion.div
@@ -217,10 +217,10 @@ export default function AdminSettingsPage() {
         >
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
             <Settings className="w-8 h-8 text-purple-400" />
-            {language === 'tr' ? 'Platform Ayarları' : 'Platform Settings'}
+            {'Platform Ayarları'}
           </h1>
           <p className="text-purple-300 mt-2">
-            {language === 'tr' ? 'Komisyon, bonus ve CFC ayarlarını yönetin' : 'Manage commission, bonus and CFC settings'}
+            {'Komisyon, bonus ve CFC ayarlarını yönetin'}
           </p>
         </motion.div>
 
@@ -282,7 +282,7 @@ export default function AdminSettingsPage() {
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      {saved === item.key ? (language === 'tr' ? 'Kaydedildi' : 'Saved') : (language === 'tr' ? 'Kaydet' : 'Save')}
+                      {saved === item.key ? ('Kaydedildi') : ('Kaydet')}
                     </button>
                   </div>
                 </div>

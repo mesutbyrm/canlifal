@@ -224,7 +224,7 @@ export default function PaymentMethodsPage() {
             className="inline-flex items-center gap-2 text-purple-300 hover:text-purple-200 mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            {language === 'tr' ? 'Admin Panel' : 'Admin Panel'}
+            {'Admin Panel'}
           </Link>
 
           <div className="flex items-center gap-4">
@@ -233,10 +233,10 @@ export default function PaymentMethodsPage() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-white">
-                {language === 'tr' ? 'Ödeme Yöntemleri' : 'Payment Methods'}
+                {'Ödeme Yöntemleri'}
               </h1>
               <p className="text-purple-300">
-                {language === 'tr' ? 'Papara, IBAN ve WhatsApp ayarlarını yönetin' : 'Manage Papara, IBAN and WhatsApp settings'}
+                {'Papara, IBAN ve WhatsApp ayarlarını yönetin'}
               </p>
             </div>
           </div>
@@ -301,7 +301,7 @@ export default function PaymentMethodsPage() {
                       </div>
                       <div>
                         <label className="block text-purple-300 text-sm mb-1">
-                          {language === 'tr' ? 'Ad Soyad' : 'Account Holder'}
+                          {'Ad Soyad'}
                         </label>
                         <input
                           type="text"
@@ -324,7 +324,7 @@ export default function PaymentMethodsPage() {
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      {success === method.type ? (language === 'tr' ? 'Kaydedildi!' : 'Saved!') : (language === 'tr' ? 'Kaydet' : 'Save')}
+                      {success === method.type ? ('Kaydedildi!') : ('Kaydet')}
                     </button>
                   </div>
                 )}
@@ -334,7 +334,7 @@ export default function PaymentMethodsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-purple-300 text-sm mb-1">
-                          {language === 'tr' ? 'Banka Adı' : 'Bank Name'}
+                          {'Banka Adı'}
                         </label>
                         <input
                           type="text"
@@ -346,7 +346,7 @@ export default function PaymentMethodsPage() {
                       </div>
                       <div>
                         <label className="block text-purple-300 text-sm mb-1">
-                          {language === 'tr' ? 'Hesap Sahibi' : 'Account Holder'}
+                          {'Hesap Sahibi'}
                         </label>
                         <input
                           type="text"
@@ -379,7 +379,7 @@ export default function PaymentMethodsPage() {
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      {success === method.type ? (language === 'tr' ? 'Kaydedildi!' : 'Saved!') : (language === 'tr' ? 'Kaydet' : 'Save')}
+                      {success === method.type ? ('Kaydedildi!') : ('Kaydet')}
                     </button>
                   </div>
                 )}
@@ -404,7 +404,7 @@ export default function PaymentMethodsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-white">WhatsApp Destek</h3>
                   <p className="text-green-300 text-sm">
-                    {language === 'tr' ? 'Müşteri destek hattı' : 'Customer support line'}
+                    {'Müşteri destek hattı'}
                   </p>
                 </div>
               </div>
@@ -424,7 +424,7 @@ export default function PaymentMethodsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-green-300 text-sm mb-1">
-                  {language === 'tr' ? 'WhatsApp Numara (Başında + ile)' : 'WhatsApp Number (with + prefix)'}
+                  {'WhatsApp Numara (Başında + ile)'}
                 </label>
                 <input
                   type="text"
@@ -437,10 +437,10 @@ export default function PaymentMethodsPage() {
 
               <div>
                 <label className="block text-green-300 text-sm mb-1">
-                  {language === 'tr' ? 'Otomatik Mesaj Şablonu' : 'Auto Message Template'}
+                  {'Otomatik Mesaj Şablonu'}
                 </label>
                 <p className="text-gray-400 text-xs mb-2">
-                  {language === 'tr' ? '"{username}" kullanıcı adı, "{package}" seçili paket ile değiştirilir' : '"{username}" replaced with username, "{package}" with selected package'}
+                  {'"{username}" kullanıcı adı, "{package}" seçili paket ile değiştirilir'}
                 </p>
                 <textarea
                   value={whatsappMessage}
@@ -468,7 +468,7 @@ Not: Papara veya IBAN ile ödeme yapabilirsiniz.`}
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {success === 'whatsapp' ? (language === 'tr' ? 'Kaydedildi!' : 'Saved!') : (language === 'tr' ? 'Kaydet' : 'Save')}
+                  {success === 'whatsapp' ? ('Kaydedildi!') : ('Kaydet')}
                 </button>
 
                 {whatsappNumber && (
@@ -479,7 +479,7 @@ Not: Papara veya IBAN ile ödeme yapabilirsiniz.`}
                     className="flex items-center gap-2 text-green-400 hover:text-green-300"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    {language === 'tr' ? 'Test Et' : 'Test Link'}
+                    {'Test Et'}
                   </a>
                 )}
               </div>
@@ -494,13 +494,13 @@ Not: Papara veya IBAN ile ödeme yapabilirsiniz.`}
             className="bg-yellow-900/20 rounded-2xl p-6 border border-yellow-500/30"
           >
             <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
-              💡 {language === 'tr' ? 'Kullanım Bilgisi' : 'Usage Info'}
+              💡 {'Kullanım Bilgisi'}
             </h3>
             <ul className="text-yellow-200 space-y-2 text-sm">
-              <li>• {language === 'tr' ? 'Kullanıcılar jeton satın al sayfasında bu ödeme yöntemlerini görecek' : 'Users will see these payment methods on the jeton page'}</li>
-              <li>• {language === 'tr' ? 'Ödeme açıklamasına kullanıcı adı yazması isteniyor' : 'Users are asked to write their username in payment description'}</li>
-              <li>• {language === 'tr' ? 'WhatsApp linki tıklandığında otomatik mesaj gönderilecek' : 'WhatsApp link will send auto message when clicked'}</li>
-              <li>• {language === 'tr' ? 'Ödeme onayı sonrası manuel olarak jeton ekleyebilirsiniz' : 'You can manually add jetons after payment confirmation'}</li>
+              <li>• {'Kullanıcılar jeton satın al sayfasında bu ödeme yöntemlerini görecek'}</li>
+              <li>• {'Ödeme açıklamasına kullanıcı adı yazması isteniyor'}</li>
+              <li>• {'WhatsApp linki tıklandığında otomatik mesaj gönderilecek'}</li>
+              <li>• {'Ödeme onayı sonrası manuel olarak jeton ekleyebilirsiniz'}</li>
             </ul>
           </motion.div>
         </div>

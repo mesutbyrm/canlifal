@@ -40,13 +40,13 @@ export default function TextToSpeech({ text, autoPlay = false, className }: Text
     window.speechSynthesis.cancel()
 
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = language === 'tr' ? 'tr-TR' : 'en-US'
+    utterance.lang = 'tr-TR'
     utterance.rate = 0.9
     utterance.pitch = 1
 
     // Get available voices and select appropriate one
     const voices = window.speechSynthesis.getVoices()
-    const langVoice = voices.find(v => v.lang.startsWith(language === 'tr' ? 'tr' : 'en'))
+    const langVoice = voices.find(v => v.lang.startsWith('tr'))
     if (langVoice) {
       utterance.voice = langVoice
     }
@@ -119,11 +119,11 @@ export default function TextToSpeech({ text, autoPlay = false, className }: Text
         <button
           onClick={speak}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg"
-          title={language === 'tr' ? 'Sesli oku' : 'Read aloud'}
+          title={'Sesli oku'}
         >
           <Volume2 className="w-5 h-5" />
           <span className="text-sm">
-            {language === 'tr' ? 'Sesli Dinle' : 'Listen'}
+            {'Sesli Dinle'}
           </span>
         </button>
       ) : (
@@ -132,7 +132,7 @@ export default function TextToSpeech({ text, autoPlay = false, className }: Text
             <button
               onClick={resume}
               className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-all"
-              title={language === 'tr' ? 'Devam et' : 'Resume'}
+              title={'Devam et'}
             >
               <Play className="w-5 h-5" />
             </button>
@@ -140,7 +140,7 @@ export default function TextToSpeech({ text, autoPlay = false, className }: Text
             <button
               onClick={pause}
               className="p-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 transition-all"
-              title={language === 'tr' ? 'Duraklat' : 'Pause'}
+              title={'Duraklat'}
             >
               <Pause className="w-5 h-5" />
             </button>
@@ -148,7 +148,7 @@ export default function TextToSpeech({ text, autoPlay = false, className }: Text
           <button
             onClick={stop}
             className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
-            title={language === 'tr' ? 'Durdur' : 'Stop'}
+            title={'Durdur'}
           >
             <VolumeX className="w-5 h-5" />
           </button>

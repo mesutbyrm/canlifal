@@ -214,7 +214,7 @@ export default function CreditsPage() {
             <Coins className={`w-6 h-6 ${isFacebook ? 'text-white' : 'text-black'}`} />
           </div>
           <h1 className={`text-xl font-bold ${textPrimary} mb-1`}>
-            {language === 'tr' ? 'Jeton Satın Al' : 'Buy Credits'}
+            {'Jeton Satın Al'}
           </h1>
           {session?.user && (
             <div className="flex items-center gap-2 flex-wrap">
@@ -251,7 +251,7 @@ export default function CreditsPage() {
           >
             <Crown className={`w-5 h-5 ${goldColor}`} />
             <span className={`${goldColor} font-bold`}>
-              {language === 'tr' ? 'Gold Üyelikler' : 'Gold Memberships'}
+              {'Gold Üyelikler'}
             </span>
             <Star className={`w-4 h-4 ${goldColor}`} />
           </button>
@@ -273,7 +273,7 @@ export default function CreditsPage() {
               {pkg.isFeatured && (
                 <div className={`absolute -top-2 left-1/2 -translate-x-1/2 ${badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5`}>
                   <Star className="w-2.5 h-2.5" />
-                  {language === 'tr' ? 'Popüler' : 'Popular'}
+                  {'Popüler'}
                 </div>
               )}
 
@@ -282,7 +282,7 @@ export default function CreditsPage() {
                   {pkg.credits}
                 </div>
                 <div className={`text-xs ${textSecondary} mb-1`}>
-                  {language === 'tr' ? 'jeton' : 'jetons'}
+                  {'jeton'}
                 </div>
                 {pkg.bonusCredits > 0 && (
                   <div className="text-green-400 text-[10px] font-medium mb-1">
@@ -299,9 +299,7 @@ export default function CreditsPage() {
 
         {/* Info Note */}
         <div className={`text-center ${textSecondary} text-xs p-3 rounded-xl ${cardBg} border`}>
-          {language === 'tr'
-            ? '👆 Bir paket seçerek ödeme yöntemlerini görüntüleyin'
-            : '👆 Select a package to view payment methods'}
+          {'👆 Bir paket seçerek ödeme yöntemlerini görüntüleyin'}
         </div>
       </div>
 
@@ -334,10 +332,10 @@ export default function CreditsPage() {
                     </div>
                     <div>
                       <h2 className={`text-base sm:text-lg font-bold ${textPrimary}`}>
-                        {language === 'tr' ? 'Ödeme Yöntemi' : 'Payment Method'}
+                        {'Ödeme Yöntemi'}
                       </h2>
                       <p className={`text-xs sm:text-sm ${textSecondary}`}>
-                        {language === 'tr' ? 'Güvenli ödeme seçenekleri' : 'Secure payment options'}
+                        {'Güvenli ödeme seçenekleri'}
                       </p>
                     </div>
                   </div>
@@ -369,7 +367,7 @@ export default function CreditsPage() {
                         <div className={`text-xl sm:text-2xl font-extrabold ${goldColor}`}>
                           {selectedPackage.credits}
                           <span className={`text-sm sm:text-base font-medium ml-1 ${textSecondary}`}>
-                            {language === 'tr' ? 'Jeton' : 'Jetons'}
+                            {'Jeton'}
                           </span>
                         </div>
                         {selectedPackage.bonusCredits > 0 && (
@@ -398,7 +396,7 @@ export default function CreditsPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <div className={`h-px flex-1 ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`} />
                   <span className={`text-xs sm:text-sm ${textSecondary} font-medium px-2`}>
-                    {language === 'tr' ? 'Ödeme Yöntemleri' : 'Payment Methods'}
+                    {'Ödeme Yöntemleri'}
                   </span>
                   <div className={`h-px flex-1 ${isFacebook ? 'bg-gray-200' : 'bg-white/10'}`} />
                 </div>
@@ -419,10 +417,10 @@ export default function CreditsPage() {
                         <div className="font-bold text-base sm:text-lg flex items-center gap-2">
                           WhatsApp
                           <span className="bg-white/20 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">
-                            {language === 'tr' ? 'Önerilen' : 'Recommended'}
+                            {'Önerilen'}
                           </span>
                         </div>
-                        <div className="text-xs sm:text-sm opacity-80 truncate">{language === 'tr' ? 'Hızlı ve kolay ödeme' : 'Fast and easy payment'}</div>
+                        <div className="text-xs sm:text-sm opacity-80 truncate">{'Hızlı ve kolay ödeme'}</div>
                       </div>
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center">
                         <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
@@ -456,10 +454,10 @@ export default function CreditsPage() {
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <div className={`${textPrimary} font-bold text-base sm:text-lg`}>
-                          {language === 'tr' ? method.name : (method.nameEn || method.name)}
+                          {method.name}
                         </div>
                         <div className={`${textSecondary} text-xs sm:text-sm truncate`}>
-                          {language === 'tr' ? method.description : (method.descriptionEn || method.description)}
+                          {method.description}
                         </div>
                       </div>
                       <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
@@ -480,10 +478,10 @@ export default function CreditsPage() {
                   </div>
                   <div>
                     <div className={`text-xs sm:text-sm font-medium ${isFacebook ? 'text-green-800' : 'text-green-400'}`}>
-                      {language === 'tr' ? 'Güvenli Ödeme' : 'Secure Payment'}
+                      {'Güvenli Ödeme'}
                     </div>
                     <div className={`text-[10px] sm:text-xs ${isFacebook ? 'text-green-600' : 'text-green-400/70'}`}>
-                      {language === 'tr' ? 'Tüm işlemleriniz güvence altında' : 'All your transactions are protected'}
+                      {'Tüm işlemleriniz güvence altında'}
                     </div>
                   </div>
                 </div>
@@ -499,7 +497,7 @@ export default function CreditsPage() {
                       : 'bg-white/10 text-gray-300 hover:bg-white/20'
                   }`}
                 >
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
+                  {'İptal'}
                 </button>
               </div>
             </motion.div>
@@ -529,7 +527,7 @@ export default function CreditsPage() {
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white">
                     <MessageCircle className="w-5 h-5" />
                   </div>
-                  <h2 className={`text-lg font-bold ${textPrimary}`}>WhatsApp {language === 'tr' ? 'ile Ödeme' : 'Payment'}</h2>
+                  <h2 className={`text-lg font-bold ${textPrimary}`}>WhatsApp {'ile Ödeme'}</h2>
                 </div>
                 <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
@@ -538,20 +536,20 @@ export default function CreditsPage() {
 
               {/* Order Summary */}
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
-                <h3 className={`${textSecondary} text-sm mb-3`}>{language === 'tr' ? 'Sipariş Özeti' : 'Order Summary'}</h3>
+                <h3 className={`${textSecondary} text-sm mb-3`}>{'Sipariş Özeti'}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className={textSecondary}>{language === 'tr' ? 'Jeton Miktarı:' : 'Credits:'}</span>
+                    <span className={textSecondary}>{'Jeton Miktarı:'}</span>
                     <span className={`${goldColor} font-bold`}>{selectedPackage.credits}</span>
                   </div>
                   {selectedPackage.bonusCredits > 0 && (
                     <div className="flex justify-between">
-                      <span className={textSecondary}>{language === 'tr' ? 'Bonus:' : 'Bonus:'}</span>
+                      <span className={textSecondary}>{'Bonus:'}</span>
                       <span className="text-green-400 font-bold">+{selectedPackage.bonusCredits}</span>
                     </div>
                   )}
                   <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
-                    <span className={textPrimary}>{language === 'tr' ? 'Toplam:' : 'Total:'}</span>
+                    <span className={textPrimary}>{'Toplam:'}</span>
                     <span className={`${goldColor} font-bold text-lg`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</span>
                   </div>
                 </div>
@@ -559,22 +557,20 @@ export default function CreditsPage() {
 
               {/* User Info */}
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
-                <h3 className={`${textSecondary} text-sm mb-3`}>{language === 'tr' ? 'Kullanıcı Bilgisi' : 'User Info'}</h3>
+                <h3 className={`${textSecondary} text-sm mb-3`}>{'Kullanıcı Bilgisi'}</h3>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${iconBg} flex items-center justify-center`}>
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <div className={`${textPrimary} font-bold`}>{username || (language === 'tr' ? 'Kullanıcı' : 'User')}</div>
+                    <div className={`${textPrimary} font-bold`}>{username || ('Kullanıcı')}</div>
                     <div className={`${textSecondary} text-xs`}>{session?.user?.email || ''}</div>
                   </div>
                 </div>
               </div>
 
               <p className={`${textSecondary} text-sm mb-4`}>
-                {language === 'tr'
-                  ? 'Aşağıdaki butona tıklayarak WhatsApp üzerinden sipariş verebilirsiniz. Mesajınız otomatik olarak hazırlanacak.'
-                  : 'Click the button below to order via WhatsApp. Your message will be automatically prepared.'}
+                {'Aşağıdaki butona tıklayarak WhatsApp üzerinden sipariş verebilirsiniz. Mesajınız otomatik olarak hazırlanacak.'}
               </p>
 
               <a
@@ -584,7 +580,7 @@ export default function CreditsPage() {
                 className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-all text-lg"
               >
                 <MessageCircle className="w-6 h-6" />
-                <span>{language === 'tr' ? 'WhatsApp\'tan Sipariş Ver' : 'Order via WhatsApp'}</span>
+                <span>{'WhatsApp\'tan Sipariş Ver'}</span>
               </a>
 
               <button
@@ -594,7 +590,7 @@ export default function CreditsPage() {
                 }}
                 className={`w-full mt-3 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
               >
-                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+                ← {'Geri Dön'}
               </button>
             </motion.div>
           </motion.div>
@@ -623,7 +619,7 @@ export default function CreditsPage() {
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white">
                     <Wallet className="w-5 h-5" />
                   </div>
-                  <h2 className={`text-lg font-bold ${textPrimary}`}>Papara {language === 'tr' ? 'ile Ödeme' : 'Payment'}</h2>
+                  <h2 className={`text-lg font-bold ${textPrimary}`}>Papara {'ile Ödeme'}</h2>
                 </div>
                 <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
@@ -634,7 +630,7 @@ export default function CreditsPage() {
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}</div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {'Jeton'}</div>
                     {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
                   <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>
@@ -665,7 +661,7 @@ export default function CreditsPage() {
                     {details.accountHolder && (
                       <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Alıcı:' : 'Recipient:'}</span>
+                          <span className={`${textSecondary}`}>{'Alıcı:'}</span>
                           <span className={`${textPrimary} font-bold`}>{details.accountHolder}</span>
                         </div>
                       </div>
@@ -679,8 +675,7 @@ export default function CreditsPage() {
                 <p className="text-yellow-500 font-medium flex items-start gap-2">
                   <span className="text-xl">⚠️</span>
                   <span>
-                    {language === 'tr'
-                      ? `Açıklama kısmına kullanıcı adınızı yazın: "${username}"`
+                    {`Açıklama kısmına kullanıcı adınızı yazın}"`
                       : `Write your username in description: "${username}"`}
                   </span>
                 </p>
@@ -693,7 +688,7 @@ export default function CreditsPage() {
                 }}
                 className={`w-full mt-4 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
               >
-                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+                ← {'Geri Dön'}
               </button>
             </motion.div>
           </motion.div>
@@ -722,7 +717,7 @@ export default function CreditsPage() {
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white">
                     <Building2 className="w-5 h-5" />
                   </div>
-                  <h2 className={`text-lg font-bold ${textPrimary}`}>{language === 'tr' ? 'Banka Transferi' : 'Bank Transfer'}</h2>
+                  <h2 className={`text-lg font-bold ${textPrimary}`}>{'Banka Transferi'}</h2>
                 </div>
                 <button onClick={closeAllPopups} className="text-gray-400 hover:text-white p-1">
                   <X className="w-6 h-6" />
@@ -733,7 +728,7 @@ export default function CreditsPage() {
               <div className={`rounded-xl p-4 mb-4 border ${cardBg}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {language === 'tr' ? 'Jeton' : 'Jetons'}</div>
+                    <div className={`${goldColor} font-bold text-xl`}>{selectedPackage.credits} {'Jeton'}</div>
                     {selectedPackage.bonusCredits > 0 && <div className="text-green-400 text-sm">+{selectedPackage.bonusCredits} bonus</div>}
                   </div>
                   <div className={`${textPrimary} font-bold text-xl`}>{formatPrice(selectedPackage.price, selectedPackage.currency)}</div>
@@ -748,7 +743,7 @@ export default function CreditsPage() {
                     {details.bankName && (
                       <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Banka:' : 'Bank:'}</span>
+                          <span className={`${textSecondary}`}>{'Banka:'}</span>
                           <span className={`${textPrimary} font-bold`}>{details.bankName}</span>
                         </div>
                       </div>
@@ -756,7 +751,7 @@ export default function CreditsPage() {
                     {details.accountHolder && (
                       <div className={`rounded-xl p-4 border ${cardBg}`}>
                         <div className="flex justify-between items-center">
-                          <span className={`${textSecondary}`}>{language === 'tr' ? 'Alıcı:' : 'Recipient:'}</span>
+                          <span className={`${textSecondary}`}>{'Alıcı:'}</span>
                           <span className={`${textPrimary} font-bold`}>{details.accountHolder}</span>
                         </div>
                       </div>
@@ -770,7 +765,7 @@ export default function CreditsPage() {
                             className={`${accentColor} flex items-center gap-1 text-sm font-medium`}
                           >
                             {copiedField === 'iban' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                            {copiedField === 'iban' ? (language === 'tr' ? 'Kopyalandı!' : 'Copied!') : (language === 'tr' ? 'Kopyala' : 'Copy')}
+                            {copiedField === 'iban' ? ('Kopyalandı!') : ('Kopyala')}
                           </button>
                         </div>
                         <div className={`${isFacebook ? 'bg-gray-100' : isCosmic ? 'bg-blue-900/30' : 'bg-purple-900/50'} p-3 rounded-lg ${textPrimary} font-mono text-sm break-all`}>
@@ -787,8 +782,7 @@ export default function CreditsPage() {
                 <p className="text-yellow-500 font-medium flex items-start gap-2">
                   <span className="text-xl">⚠️</span>
                   <span>
-                    {language === 'tr'
-                      ? `Açıklama kısmına kullanıcı adınızı yazın: "${username}"`
+                    {`Açıklama kısmına kullanıcı adınızı yazın}"`
                       : `Write your username in description: "${username}"`}
                   </span>
                 </p>
@@ -801,7 +795,7 @@ export default function CreditsPage() {
                 }}
                 className={`w-full mt-4 py-3 rounded-xl ${textSecondary} hover:opacity-80 transition-all`}
               >
-                ← {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+                ← {'Geri Dön'}
               </button>
             </motion.div>
           </motion.div>

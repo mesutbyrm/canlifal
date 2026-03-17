@@ -128,7 +128,7 @@ export default function WatchAdCredits() {
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-medium transition-all shadow-lg"
       >
         <Gift className="w-5 h-5" />
-        <span>{language === 'tr' ? 'Ücretsiz CFC Kazan' : 'Earn Free CFC'}</span>
+        <span>{'Ücretsiz CFC Kazan'}</span>
       </button>
 
       {/* Modal */}
@@ -145,7 +145,7 @@ export default function WatchAdCredits() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-serif text-xl text-gold-400 flex items-center gap-2">
                   <Gift className="w-6 h-6" />
-                  {language === 'tr' ? 'Reklam İzle, CFC Kazan' : 'Watch Ad, Earn CFC'}
+                  {'Reklam İzle, CFC Kazan'}
                 </h2>
                 {!isWatching && (
                   <button
@@ -162,7 +162,7 @@ export default function WatchAdCredits() {
                 <div className="mb-6 p-4 bg-deep-purple-900/50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-deep-purple-300">
-                      {language === 'tr' ? 'Bugün izlenen' : 'Watched today'}
+                      {'Bugün izlenen'}
                     </span>
                     <span className="text-gold-400 font-semibold">
                       {adStatus.watchedToday} / 10
@@ -170,7 +170,7 @@ export default function WatchAdCredits() {
                   </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-deep-purple-300">
-                      {language === 'tr' ? 'Kalan hak' : 'Remaining'}
+                      {'Kalan hak'}
                     </span>
                     <span className="text-green-400 font-semibold">
                       {adStatus.remainingAds}
@@ -178,11 +178,11 @@ export default function WatchAdCredits() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-deep-purple-300">
-                      {language === 'tr' ? 'Reklam başına' : 'Per ad'}
+                      {'Reklam başına'}
                     </span>
                     <span className="text-gold-400 font-semibold flex items-center gap-1">
                       <Sparkles className="w-4 h-4" />
-                      +{adStatus.creditsPerAd} {language === 'tr' ? 'CFC' : 'CFC'}
+                      +{adStatus.creditsPerAd} {'CFC'}
                     </span>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ export default function WatchAdCredits() {
                   {/* Ad display area */}
                   <div 
                     className="w-full h-64 bg-deep-purple-900 rounded-lg mb-4 flex items-center justify-center overflow-hidden"
-                    dangerouslySetInnerHTML={{ __html: adContent || `<div class="text-deep-purple-400 text-center"><p>${language === 'tr' ? 'Reklam yüklüyor...' : 'Loading ad...'}</p></div>` }}
+                    dangerouslySetInnerHTML={{ __html: adContent || `<div class="text-deep-purple-400 text-center"><p>${'Reklam yüklüyor...'}</p></div>` }}
                   />
                   
                   {/* Progress bar */}
@@ -209,7 +209,7 @@ export default function WatchAdCredits() {
                   </div>
                   <div className="flex items-center justify-center gap-2 text-deep-purple-300">
                     <Clock className="w-4 h-4" />
-                    <span>{Math.ceil(30 - (watchProgress * 30 / 100))} {language === 'tr' ? 'saniye kaldı' : 'seconds left'}</span>
+                    <span>{Math.ceil(30 - (watchProgress * 30 / 100))} {'saniye kaldı'}</span>
                   </div>
                 </div>
               )}
@@ -223,15 +223,15 @@ export default function WatchAdCredits() {
                 >
                   <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                   <h3 className="text-green-300 font-medium text-lg mb-2">
-                    {language === 'tr' ? 'Tebrikler!' : 'Congratulations!'}
+                    {'Tebrikler!'}
                   </h3>
                   <p className="text-green-200 flex items-center justify-center gap-2">
                     <Sparkles className="w-5 h-5 text-gold-400" />
                     <span className="text-gold-400 font-bold text-xl">+{result.creditsEarned}</span>
-                    <span>{language === 'tr' ? 'CFC kazandınız!' : 'CFC earned!'}</span>
+                    <span>{'CFC kazandınız!'}</span>
                   </p>
                   <p className="text-deep-purple-400 text-sm mt-2">
-                    {language === 'tr' ? 'Toplam CFC:' : 'Total CFC:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
+                    {'Toplam CFC:'} <span className="text-gold-400 font-semibold">{result.totalCredits}</span>
                   </p>
                 </motion.div>
               )}
@@ -252,19 +252,15 @@ export default function WatchAdCredits() {
                       className="w-full py-3 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg flex items-center justify-center gap-2 transition-all"
                     >
                       <Play className="w-5 h-5" />
-                      {language === 'tr' ? 'Reklam İzle (+5 CFC)' : 'Watch Ad (+5 CFC)'}
+                      {'Reklam İzle (+5 CFC)'}
                     </button>
                   ) : (
                     <div className="text-center py-4">
                       <p className="text-deep-purple-400 mb-2">
-                        {language === 'tr' 
-                          ? 'Bugünlük reklam limitine ulaştınız.' 
-                          : 'You reached today\'s ad limit.'}
+                        {'Bugünlük reklam limitine ulaştınız.'}
                       </p>
                       <p className="text-deep-purple-500 text-sm">
-                        {language === 'tr' 
-                          ? 'Yarın tekrar deneyin!' 
-                          : 'Try again tomorrow!'}
+                        {'Yarın tekrar deneyin!'}
                       </p>
                     </div>
                   )}
@@ -273,7 +269,7 @@ export default function WatchAdCredits() {
                     onClick={closeModal}
                     className="w-full py-3 bg-deep-purple-800 text-deep-purple-200 rounded-lg hover:bg-deep-purple-700 transition-all font-medium"
                   >
-                    {language === 'tr' ? 'Kapat' : 'Close'}
+                    {'Kapat'}
                   </button>
                 </div>
               )}
@@ -284,7 +280,7 @@ export default function WatchAdCredits() {
                   onClick={closeModal}
                   className="w-full py-3 bg-gold-600 text-deep-purple-950 font-semibold rounded-lg hover:bg-gold-500 transition-all"
                 >
-                  {language === 'tr' ? 'Tamam' : 'OK'}
+                  {'Tamam'}
                 </button>
               )}
             </motion.div>

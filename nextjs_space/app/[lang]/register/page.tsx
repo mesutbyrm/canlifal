@@ -58,11 +58,11 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (data.error?.includes('already exists')) {
-          setError(language === 'tr' ? 'Bu e-posta adresi zaten kayıtlı' : 'This email is already registered')
+          setError('Bu e-posta adresi zaten kayıtlı')
         } else if (data.error?.includes('Username already taken')) {
-          setError(language === 'tr' ? 'Bu kullanıcı adı zaten kullanılıyor' : 'This username is already taken')
+          setError('Bu kullanıcı adı zaten kullanılıyor')
         } else {
-          setError(data.error || (language === 'tr' ? 'Bir hata oluştu' : 'An error occurred'))
+          setError(data.error || ('Bir hata oluştu'))
         }
         return
       }
@@ -81,7 +81,7 @@ export default function RegisterPage() {
         router.push(`/`)
       }
     } catch (err) {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -102,10 +102,10 @@ export default function RegisterPage() {
               <Sparkles className="w-12 h-12 text-gold-500" />
             </div>
             <h1 className="font-serif text-3xl text-gold-500 gold-glow mb-2">
-              {language === 'tr' ? 'Kayıt Ol' : 'Register'}
+              {'Kayıt Ol'}
             </h1>
             <p className="text-deep-purple-300">
-              {language === 'tr' ? 'Yeni hesap oluşturun' : 'Create a new account'}
+              {'Yeni hesap oluşturun'}
             </p>
           </div>
 
@@ -122,10 +122,10 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <p className="text-gold-400 font-medium text-sm">
-                    {language === 'tr' ? `${referrerName} seni davet etti!` : `${referrerName} invited you!`}
+                    {`${referrerName} seni davet etti!`}
                   </p>
                   <p className="text-gold-300/80 text-xs">
-                    {language === 'tr' ? 'Kayıt olunca 50 bonus CFC kazanacaksın!' : 'You\'ll get 50 bonus CFC when you sign up!'}
+                    {'Kayıt olunca 50 bonus CFC kazanacaksın!'}
                   </p>
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'Adınız' : 'Your Name'}
+                {'Adınız'}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                   value={name}
                   onChange={(e) => setName(e?.target?.value ?? '')}
                   className="w-full pl-11 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors"
-                  placeholder={language === 'tr' ? 'Adınız' : 'Your name'}
+                  placeholder={'Adınız'}
                   required
                 />
               </div>
@@ -159,7 +159,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'Kullanıcı Adı' : 'Username'} <span className="text-red-400">*</span>
+                {'Kullanıcı Adı'} <span className="text-red-400">*</span>
               </label>
               <div className="relative">
                 <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -168,21 +168,21 @@ export default function RegisterPage() {
                   value={username}
                   onChange={(e) => setUsername(e?.target?.value?.toLowerCase().replace(/[^a-z0-9_]/g, '') ?? '')}
                   className="w-full pl-11 pr-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-deep-purple-100 placeholder-deep-purple-400 focus:outline-none focus:border-gold-600 transition-colors"
-                  placeholder={language === 'tr' ? 'kullanici_adi' : 'username'}
+                  placeholder={'kullanici_adi'}
                   required
                   minLength={3}
                   maxLength={30}
                 />
               </div>
               <p className="text-deep-purple-400 text-xs">
-                {language === 'tr' ? 'Sadece küçük harf, rakam ve alt çizgi' : 'Only lowercase letters, numbers and underscore'}
+                {'Sadece küçük harf, rakam ve alt çizgi'}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="text-deep-purple-200 text-sm font-medium">
-                  {language === 'tr' ? 'Doğum Tarihi' : 'Birth Date'} <span className="text-red-400">*</span>
+                  {'Doğum Tarihi'} <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -199,7 +199,7 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <label className="text-deep-purple-200 text-sm font-medium">
-                  {language === 'tr' ? 'Doğum Saati' : 'Birth Time'} <span className="text-red-400">*</span>
+                  {'Doğum Saati'} <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -216,7 +216,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'E-posta' : 'Email'} <span className="text-red-400">*</span>
+                {'E-posta'} <span className="text-red-400">*</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -233,7 +233,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'Şifre' : 'Password'}
+                {'Şifre'}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -251,7 +251,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-deep-purple-200 text-sm font-medium">
-                {language === 'tr' ? 'Dil Tercihi' : 'Language Preference'}
+                {'Dil Tercihi'}
               </label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -271,19 +271,19 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="w-full py-3 bg-gold-600 text-deep-purple-950 rounded-lg hover:bg-gold-500 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed mystical-shadow"
             >
-              {isLoading ? <LoadingSpinner /> : (language === 'tr' ? 'Kayıt Ol' : 'Register')}
+              {isLoading ? <LoadingSpinner /> : ('Kayıt Ol')}
             </button>
           </form>
 
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-deep-purple-300 text-sm">
-              {language === 'tr' ? 'Zaten hesabınız var mı?' : 'Already have an account?'}{' '}
+              {'Zaten hesabınız var mı?'}{' '}
               <Link
                 href={`/login`}
                 className="text-gold-500 hover:text-gold-400 transition-colors font-medium"
               >
-                {language === 'tr' ? 'Giriş Yap' : 'Sign In'}
+                {'Giriş Yap'}
               </Link>
             </p>
           </div>

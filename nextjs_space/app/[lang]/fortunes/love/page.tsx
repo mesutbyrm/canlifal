@@ -36,7 +36,7 @@ export default function LoveCompatibilityPage() {
 
   const handleSubmit = async () => {
     if (!yourSign || !partnerSign) {
-      setError(language === 'tr' ? 'Lütfen her iki burcu da seçin' : 'Please select both zodiac signs')
+      setError('Lütfen her iki burcu da seçin')
       return
     }
 
@@ -100,14 +100,14 @@ export default function LoveCompatibilityPage() {
             <Heart className="w-16 h-16 text-pink-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Aşk Uyumu' : 'Love Compatibility'}
+            {'Aşk Uyumu'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'İki kalbin kozmik bağını keşfedin' : 'Discover the cosmic connection between two hearts'}
+            {'İki kalbin kozmik bağını keşfedin'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            5 {language === 'tr' ? 'CFC' : 'CFC'}
+            5 {'CFC'}
           </p>
         </motion.div>
 
@@ -120,13 +120,13 @@ export default function LoveCompatibilityPage() {
             <div className="grid md:grid-cols-2 gap-8 mb-6">
               <div>
                 <h3 className="text-gold-500 font-semibold mb-3 text-center">
-                  {language === 'tr' ? 'Sizin Burcunuz' : 'Your Sign'}
+                  {'Sizin Burcunuz'}
                 </h3>
                 <input
                   type="text"
                   value={yourName}
                   onChange={(e) => setYourName(e.target.value)}
-                  placeholder={language === 'tr' ? 'İsminiz (isteğe bağlı)' : 'Your name (optional)'}
+                  placeholder={'İsminiz (isteğe bağlı)'}
                   className="w-full mb-3 px-4 py-2 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 text-sm"
                 />
                 <div className="grid grid-cols-3 gap-2">
@@ -141,7 +141,7 @@ export default function LoveCompatibilityPage() {
                       }`}
                     >
                       <span className="text-lg block">{sign.emoji}</span>
-                      <span className="text-xs">{language === 'tr' ? sign.tr : sign.en}</span>
+                      <span className="text-xs">{sign.tr}</span>
                     </button>
                   ))}
                 </div>
@@ -149,13 +149,13 @@ export default function LoveCompatibilityPage() {
 
               <div>
                 <h3 className="text-gold-500 font-semibold mb-3 text-center">
-                  {language === 'tr' ? 'Partnerinizin Burcu' : "Partner's Sign"}
+                  {'Partnerinizin Burcu'}
                 </h3>
                 <input
                   type="text"
                   value={partnerName}
                   onChange={(e) => setPartnerName(e.target.value)}
-                  placeholder={language === 'tr' ? 'Partner ismi (isteğe bağlı)' : 'Partner name (optional)'}
+                  placeholder={'Partner ismi (isteğe bağlı)'}
                   className="w-full mb-3 px-4 py-2 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 text-sm"
                 />
                 <div className="grid grid-cols-3 gap-2">
@@ -170,7 +170,7 @@ export default function LoveCompatibilityPage() {
                       }`}
                     >
                       <span className="text-lg block">{sign.emoji}</span>
-                      <span className="text-xs">{language === 'tr' ? sign.tr : sign.en}</span>
+                      <span className="text-xs">{sign.tr}</span>
                     </button>
                   ))}
                 </div>
@@ -193,7 +193,7 @@ export default function LoveCompatibilityPage() {
               ) : (
                 <>
                   <Heart className="w-5 h-5" />
-                  {language === 'tr' ? 'Uyumu Keşfet' : 'Discover Compatibility'}
+                  {'Uyumu Keşfet'}
                 </>
               )}
             </button>
@@ -210,14 +210,14 @@ export default function LoveCompatibilityPage() {
               <div className="text-center">
                 <span className="text-4xl block">{yourSignData?.emoji}</span>
                 <span className="text-deep-purple-200 text-sm">
-                  {yourName || (language === 'tr' ? yourSignData?.tr : yourSignData?.en)}
+                  {yourName || (yourSignData?.tr}
                 </span>
               </div>
               <Heart className="w-8 h-8 text-pink-500 animate-pulse" />
               <div className="text-center">
                 <span className="text-4xl block">{partnerSignData?.emoji}</span>
                 <span className="text-deep-purple-200 text-sm">
-                  {partnerName || (language === 'tr' ? partnerSignData?.tr : partnerSignData?.en)}
+                  {partnerName || (partnerSignData?.tr}
                 </span>
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function LoveCompatibilityPage() {
             </div>
             
             <SocialShare 
-              title={language === 'tr' ? 'Aşk Uyumu Sonucu' : 'Love Compatibility Result'}
+              title={'Aşk Uyumu Sonucu'}
               text={response}
             />
 
@@ -234,7 +234,7 @@ export default function LoveCompatibilityPage() {
               onClick={() => { setResponse(''); setYourSign(''); setPartnerSign(''); setYourName(''); setPartnerName(''); }}
               className="mt-6 w-full py-3 border border-pink-500/50 text-pink-400 hover:bg-pink-500/10 rounded-lg transition-all"
             >
-              {language === 'tr' ? 'Yeni Uyum Bak' : 'Check Another Match'}
+              {'Yeni Uyum Bak'}
             </button>
           </motion.div>
         )}

@@ -341,9 +341,9 @@ export default function ProfilePage() {
 
   const handleWithdrawalSubmit = async () => {
     const amount = parseInt(withdrawalAmount)
-    if (!amount || amount <= 0) { setWithdrawalMessage(language === 'tr' ? 'Geçerli bir miktar girin' : 'Enter a valid amount'); return }
-    if (withdrawalLimit > 0 && amount > withdrawalLimit) { setWithdrawalMessage(language === 'tr' ? `Maksimum çekim limiti: ${withdrawalLimit} jeton` : `Max withdrawal limit: ${withdrawalLimit} jetons`); return }
-    if (!withdrawalAccount.trim()) { setWithdrawalMessage(language === 'tr' ? 'Hesap bilgilerini girin' : 'Enter account details'); return }
+    if (!amount || amount <= 0) { setWithdrawalMessage('Geçerli bir miktar girin'); return }
+    if (withdrawalLimit > 0 && amount > withdrawalLimit) { setWithdrawalMessage(`Maksimum çekim limiti: ${withdrawalLimit} jeton`); return }
+    if (!withdrawalAccount.trim()) { setWithdrawalMessage('Hesap bilgilerini girin'); return }
     setWithdrawalLoading(true)
     setWithdrawalMessage('')
     try {
@@ -354,7 +354,7 @@ export default function ProfilePage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setWithdrawalMessage(language === 'tr' ? '✅ Çekim talebi gönderildi!' : '✅ Withdrawal request submitted!')
+        setWithdrawalMessage('✅ Çekim talebi gönderildi!')
         setWithdrawalAmount('')
         setWithdrawalAccount('')
         setShowWithdrawalForm(false)
@@ -436,7 +436,7 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8"><p className={textSecondary}>{language === 'tr' ? 'Henüz kimse yok' : 'No one yet'}</p></div>
+                <div className="text-center py-8"><p className={textSecondary}>{'Henüz kimse yok'}</p></div>
               )}
             </div>
           </motion.div>
@@ -483,7 +483,7 @@ export default function ProfilePage() {
             <p className={`${textSecondary} text-sm px-8`}>{profile.bio}</p>
           ) : (
             <Link href={`/settings`} className={`${accentColor} text-sm italic`}>
-              + {language === 'tr' ? 'Bio ekle' : 'Add bio'}
+              + {'Bio ekle'}
             </Link>
           )}
         </div>
@@ -492,17 +492,17 @@ export default function ProfilePage() {
         <div className="flex items-center justify-center gap-6 mt-5">
           <button onClick={() => { setShowFollowingModal(true); fetchFollowing() }} className="text-center hover:opacity-80 transition-opacity">
             <p className={`${textPrimary} text-xl font-bold`}>{profile?.followingCount || 0}</p>
-            <p className={`${textSecondary} text-xs`}>{language === 'tr' ? 'Takipte' : 'Following'}</p>
+            <p className={`${textSecondary} text-xs`}>{'Takipte'}</p>
           </button>
           <div className={`w-px h-8 ${isFacebook ? 'bg-gray-300' : 'bg-gray-700'}`} />
           <button onClick={() => { setShowFollowersModal(true); fetchFollowers() }} className="text-center hover:opacity-80 transition-opacity">
             <p className={`${textPrimary} text-xl font-bold`}>{profile?.followersCount || 0}</p>
-            <p className={`${textSecondary} text-xs`}>{language === 'tr' ? 'Takipçi' : 'Followers'}</p>
+            <p className={`${textSecondary} text-xs`}>{'Takipçi'}</p>
           </button>
           <div className={`w-px h-8 ${isFacebook ? 'bg-gray-300' : 'bg-gray-700'}`} />
           <button onClick={() => { setShowLikersModal(true); fetchLikers() }} className="text-center hover:opacity-80 transition-opacity">
             <p className={`${textPrimary} text-xl font-bold`}>{profile?.likesCount || 0}</p>
-            <p className={`${textSecondary} text-xs`}>{language === 'tr' ? 'Beğeniler' : 'Likes'}</p>
+            <p className={`${textSecondary} text-xs`}>{'Beğeniler'}</p>
           </button>
         </div>
 
@@ -511,12 +511,12 @@ export default function ProfilePage() {
           <Link href={`/dashboard`}
             className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
             <Sparkles className="w-4 h-4" />
-            <span className="leading-tight">{language === 'tr' ? 'İstatistikler' : 'Statistics'}</span>
+            <span className="leading-tight">{'İstatistikler'}</span>
           </Link>
           <Link href={`/settings`}
             className={`flex-1 ${btnOutline} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
             <Settings className="w-4 h-4" />
-            <span>{language === 'tr' ? 'Profili Düzenle' : 'Edit Profile'}</span>
+            <span>{'Profili Düzenle'}</span>
           </Link>
         </div>
       </div>
@@ -550,7 +550,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="text-left">
                   <h3 className={`font-bold text-base ${textPrimary}`}>
-                    {language === 'tr' ? '🔮 Falcı Paneli' : '🔮 Teller Panel'}
+                    {'🔮 Falcı Paneli'}
                   </h3>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`w-2 h-2 rounded-full ${
@@ -564,10 +564,10 @@ export default function ProfilePage() {
                           : textSecondary
                     }`}>
                       {tellerActiveCount > 0
-                        ? (language === 'tr' ? '🔴 Seansta' : '🔴 In Session')
+                        ? ('🔴 Seansta')
                         : tellerProfile.isOnline
-                          ? (language === 'tr' ? '🟢 Canlıda' : '🟢 Live')
-                          : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                          ? ('🟢 Canlıda')
+                          : ('Çevrimdışı')}
                     </span>
                     {tellerProfile.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
                     {tellerAwards.length > 0 && tellerAwards.map(aw => (
@@ -606,8 +606,8 @@ export default function ProfilePage() {
                         <p className="text-yellow-300 text-sm flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 flex-shrink-0" />
                           {tellerProfile.applicationStatus === 'pending'
-                            ? (language === 'tr' ? 'Başvurunuz inceleniyor...' : 'Application under review...')
-                            : (language === 'tr' ? 'Başvurunuz reddedildi.' : 'Application rejected.')}
+                            ? ('Başvurunuz inceleniyor...')
+                            : ('Başvurunuz reddedildi.')}
                         </p>
                       </div>
                     )}
@@ -632,8 +632,8 @@ export default function ProfilePage() {
                           <>
                             <Power className="w-4 h-4" />
                             {tellerProfile.isOnline
-                              ? (language === 'tr' ? 'Çevrimiçi' : 'Online')
-                              : (language === 'tr' ? 'Çevrimdışı' : 'Offline')}
+                              ? ('Çevrimiçi')
+                              : ('Çevrimdışı')}
                           </>
                         )}
                       </button>
@@ -650,7 +650,7 @@ export default function ProfilePage() {
                         }`}
                       >
                         <Video className="w-4 h-4" />
-                        {language === 'tr' ? 'Tam Panel' : 'Full Panel'}
+                        {'Tam Panel'}
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -659,14 +659,14 @@ export default function ProfilePage() {
                     <div className="mt-3 grid grid-cols-4 gap-2">
                       <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
                         <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.totalSessions}</p>
-                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Seans' : 'Sessions'}</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{'Seans'}</p>
                       </div>
                       <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
                         <div className="flex items-center justify-center gap-0.5">
                           <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
                           <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.rating.toFixed(1)}</p>
                         </div>
-                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Puan' : 'Rating'}</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{'Puan'}</p>
                       </div>
                       {tellerProfile.canViewEarnings !== false && (
                         <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
@@ -676,7 +676,7 @@ export default function ProfilePage() {
                       )}
                       <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
                         <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.pricePerSession}</p>
-                        <p className={`text-[10px] ${textSecondary}`}>{language === 'tr' ? 'Ücret' : 'Price'}</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{'Ücret'}</p>
                       </div>
                     </div>
 
@@ -699,10 +699,10 @@ export default function ProfilePage() {
                           }`}
                         >
                           {tab === 'pending'
-                            ? (language === 'tr' ? 'Bekleyen' : 'Pending')
+                            ? ('Bekleyen')
                             : tab === 'active'
-                              ? (language === 'tr' ? 'Aktif' : 'Active')
-                              : (language === 'tr' ? 'Geçmiş' : 'History')}
+                              ? ('Aktif')
+                              : ('Geçmiş')}
                           {tab === 'pending' && tellerPendingCount > 0 && (
                             <span className="ml-1 px-1.5 py-0.5 bg-yellow-500 text-black text-[9px] rounded-full font-bold">
                               {tellerPendingCount}
@@ -724,10 +724,10 @@ export default function ProfilePage() {
                           <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
                           <p className="text-xs">
                             {tellerTab === 'pending'
-                              ? (language === 'tr' ? 'Bekleyen talep yok' : 'No pending requests')
+                              ? ('Bekleyen talep yok')
                               : tellerTab === 'active'
-                                ? (language === 'tr' ? 'Aktif seans yok' : 'No active sessions')
-                                : (language === 'tr' ? 'Geçmiş seans yok' : 'No history')}
+                                ? ('Aktif seans yok')
+                                : ('Geçmiş seans yok')}
                           </p>
                         </div>
                       ) : (
@@ -755,7 +755,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div>
                                   <p className={`text-sm font-medium ${textPrimary}`}>
-                                    {sess.user.name || (language === 'tr' ? 'Anonim' : 'Anonymous')}
+                                    {sess.user.name || ('Anonim')}
                                   </p>
                                   <p className={`text-[10px] ${textSecondary}`}>
                                     {FORTUNE_TYPE_NAMES[sess.fortuneType]?.[language as 'tr' | 'en'] || sess.fortuneType} • {sess.creditsCharged} jeton
@@ -775,14 +775,14 @@ export default function ProfilePage() {
                                   disabled={tellerSessionAction === sess.id}
                                   className="flex-1 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
                                 >
-                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {language === 'tr' ? 'Kabul' : 'Accept'}</>}
+                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {'Kabul'}</>}
                                 </button>
                                 <button
                                   onClick={() => handleTellerSessionAction(sess.id, 'cancel')}
                                   disabled={tellerSessionAction === sess.id}
                                   className="flex-1 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
                                 >
-                                  <X className="w-3 h-3" /> {language === 'tr' ? 'Reddet' : 'Reject'}
+                                  <X className="w-3 h-3" /> {'Reddet'}
                                 </button>
                               </div>
                             )}
@@ -795,14 +795,14 @@ export default function ProfilePage() {
                                     isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white'
                                   }`}
                                 >
-                                  <Video className="w-3 h-3" /> {language === 'tr' ? 'Odaya Gir' : 'Enter Room'}
+                                  <Video className="w-3 h-3" /> {'Odaya Gir'}
                                 </Link>
                                 <button
                                   onClick={() => handleTellerSessionAction(sess.id, 'complete')}
                                   disabled={tellerSessionAction === sess.id}
                                   className="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
                                 >
-                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {language === 'tr' ? 'Bitir' : 'Complete'}</>}
+                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {'Bitir'}</>}
                                 </button>
                               </div>
                             )}
@@ -832,7 +832,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <Gift className={`w-4 h-4 ${isFacebook ? 'text-pink-500' : 'text-pink-400'}`} />
                   <span className={`text-sm font-semibold ${textPrimary}`}>
-                    {language === 'tr' ? 'Hediye Verenler' : 'Gift Senders'} ({tellerGiftSenders.length})
+                    {'Hediye Verenler'} ({tellerGiftSenders.length})
                   </span>
                 </div>
                 {giftsOpen ? <ChevronUp className={`w-4 h-4 ${textSecondary}`} /> : <ChevronDown className={`w-4 h-4 ${textSecondary}`} />}
@@ -841,7 +841,7 @@ export default function ProfilePage() {
                 {giftsOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                     <div className={`px-3 pb-3 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
-                      <p className={`text-[10px] ${textSecondary} mt-2 mb-2`}>{language === 'tr' ? 'Son 7 gün' : 'Last 7 days'}</p>
+                      <p className={`text-[10px] ${textSecondary} mt-2 mb-2`}>{'Son 7 gün'}</p>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {tellerGiftSenders.map((g, i) => (
                           <div key={i} className={`flex items-center justify-between p-2 rounded-xl ${
@@ -858,7 +858,7 @@ export default function ProfilePage() {
                               </div>
                               <div>
                                 <p className={`text-xs font-medium ${textPrimary}`}>{g.senderName}</p>
-                                <p className={`text-[10px] ${textSecondary}`}>{g.giftCount} {language === 'tr' ? 'hediye' : 'gifts'}</p>
+                                <p className={`text-[10px] ${textSecondary}`}>{g.giftCount} {'hediye'}</p>
                               </div>
                             </div>
                             <span className={`text-xs font-bold ${isFacebook ? 'text-green-600' : 'text-green-400'}`}>
@@ -885,7 +885,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <Wallet className={`w-4 h-4 ${isFacebook ? 'text-green-600' : 'text-green-400'}`} />
                   <span className={`text-sm font-semibold ${textPrimary}`}>
-                    {language === 'tr' ? 'Para Çekimi' : 'Withdrawal'}
+                    {'Para Çekimi'}
                   </span>
                   {withdrawalLimit > 0 && (
                     <span className={`text-[10px] ${textSecondary}`}>
@@ -900,8 +900,8 @@ export default function ProfilePage() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                     <div className={`px-3 pb-3 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'} space-y-2`}>
                       <div className="mt-2">
-                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Miktar (Jeton)' : 'Amount (Jeton)'}</label>
-                        <input type="number" value={withdrawalAmount} onChange={e => setWithdrawalAmount(e.target.value)} placeholder={`${language === 'tr' ? 'Örn' : 'e.g.'}: 100`}
+                        <label className={`text-xs ${textSecondary}`}>{'Miktar (Jeton)'}</label>
+                        <input type="number" value={withdrawalAmount} onChange={e => setWithdrawalAmount(e.target.value)} placeholder={`${'Örn'}: 100`}
                           className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
                             isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
                           } outline-none`} />
@@ -912,18 +912,18 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Yöntem' : 'Method'}</label>
+                        <label className={`text-xs ${textSecondary}`}>{'Yöntem'}</label>
                         <select value={withdrawalMethod} onChange={e => setWithdrawalMethod(e.target.value)}
                           className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
                             isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
                           } outline-none`}>
-                          <option value="bank_transfer">{language === 'tr' ? 'Banka Havalesi' : 'Bank Transfer'}</option>
+                          <option value="bank_transfer">{'Banka Havalesi'}</option>
                           <option value="papara">Papara</option>
-                          <option value="crypto">{language === 'tr' ? 'Kripto' : 'Crypto'}</option>
+                          <option value="crypto">{'Kripto'}</option>
                         </select>
                       </div>
                       <div>
-                        <label className={`text-xs ${textSecondary}`}>{language === 'tr' ? 'Hesap Bilgileri (IBAN/Adres)' : 'Account Details (IBAN/Address)'}</label>
+                        <label className={`text-xs ${textSecondary}`}>{'Hesap Bilgileri (IBAN/Adres)'}</label>
                         <textarea value={withdrawalAccount} onChange={e => setWithdrawalAccount(e.target.value)} rows={2}
                           className={`w-full mt-1 px-3 py-2 rounded-xl text-sm border ${
                             isFacebook ? 'bg-gray-50 border-gray-200 text-gray-900' : isCosmic ? 'bg-blue-900/30 border-blue-700/30 text-white' : 'bg-purple-900/30 border-purple-700/30 text-white'
@@ -934,12 +934,12 @@ export default function ProfilePage() {
                         className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                           isFacebook ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
                         } disabled:opacity-50`}>
-                        {withdrawalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> {language === 'tr' ? 'Çekim Talebi Gönder' : 'Submit Withdrawal'}</>}
+                        {withdrawalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> {'Çekim Talebi Gönder'}</>}
                       </button>
                       {/* Withdrawal History */}
                       {withdrawalHistory.length > 0 && (
                         <div className="mt-2">
-                          <p className={`text-xs font-medium ${textPrimary} mb-1`}>{language === 'tr' ? 'Geçmiş Talepler' : 'Past Requests'}</p>
+                          <p className={`text-xs font-medium ${textPrimary} mb-1`}>{'Geçmiş Talepler'}</p>
                           <div className="space-y-1 max-h-32 overflow-y-auto">
                             {withdrawalHistory.slice(0, 5).map((wr: any) => (
                               <div key={wr.id} className={`flex items-center justify-between p-2 rounded-lg text-[10px] ${
@@ -953,7 +953,7 @@ export default function ProfilePage() {
                                   wr.status === 'approved' ? 'bg-green-500/20 text-green-400' :
                                   wr.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                                   'bg-yellow-500/20 text-yellow-400'
-                                }`}>{wr.status === 'pending' ? (language === 'tr' ? 'Bekliyor' : 'Pending') : wr.status === 'approved' ? (language === 'tr' ? 'Onaylandı' : 'Approved') : (language === 'tr' ? 'Reddedildi' : 'Rejected')}</span>
+                                }`}>{wr.status === 'pending' ? ('Bekliyor') : wr.status === 'approved' ? ('Onaylandı') : ('Reddedildi')}</span>
                               </div>
                             ))}
                           </div>
@@ -978,7 +978,7 @@ export default function ProfilePage() {
         <div className="mt-6 px-4">
           <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
             <Pin className={`w-4 h-4 ${accentColor}`} />
-            {language === 'tr' ? 'Sabitlenen Fallar' : 'Pinned Fortunes'}
+            {'Sabitlenen Fallar'}
           </h3>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {pinnedFortunes.map(fortune => (
@@ -989,7 +989,7 @@ export default function ProfilePage() {
                   {FORTUNE_NAMES[fortune.fortuneType]?.[language as 'tr' | 'en'] || fortune.fortuneType}
                 </p>
                 <p className={`${textSecondary} text-[10px] mt-1`}>
-                  {format(new Date(fortune.createdAt), 'dd MMM', { locale: language === 'tr' ? tr : enUS })}
+                  {format(new Date(fortune.createdAt), 'dd MMM', { locale: tr})}
                 </p>
               </Link>
             ))}
@@ -1024,7 +1024,7 @@ export default function ProfilePage() {
                     className="relative aspect-[3/4] bg-[#1a1a1a] overflow-hidden group">
                     {post.isPinned && (
                       <div className={`absolute top-1 left-1 z-10 ${isFacebook ? 'bg-blue-500' : 'bg-pink-500'} text-white text-[9px] px-1.5 py-0.5 rounded font-medium`}>
-                        {language === 'tr' ? 'Sabitlendi' : 'Pinned'}
+                        {'Sabitlendi'}
                       </div>
                     )}
                     {post.imageUrl ? (
@@ -1046,8 +1046,8 @@ export default function ProfilePage() {
                 <div className={`w-20 h-20 rounded-full border-2 ${isFacebook ? 'border-gray-300' : 'border-gray-600'} flex items-center justify-center mb-4`}>
                   <Camera className={`w-10 h-10 ${isFacebook ? 'text-gray-300' : 'text-gray-600'}`} />
                 </div>
-                <p className={`${textPrimary} text-xl font-semibold`}>{language === 'tr' ? 'Henüz paylaşım yok' : 'No posts yet'}</p>
-                <p className={`${textSecondary} text-sm mt-1`}>{language === 'tr' ? 'Fal paylaşımlarınız burada görünecek' : 'Your fortune posts will appear here'}</p>
+                <p className={`${textPrimary} text-xl font-semibold`}>{'Henüz paylaşım yok'}</p>
+                <p className={`${textSecondary} text-sm mt-1`}>{'Fal paylaşımlarınız burada görünecek'}</p>
               </div>
             )}
           </>
@@ -1068,12 +1068,12 @@ export default function ProfilePage() {
                           </h4>
                           {fortune.isPinned && (
                             <span className={`${isFacebook ? 'bg-blue-500' : 'bg-pink-500'} text-white text-[9px] px-1.5 py-0.5 rounded font-medium`}>
-                              {language === 'tr' ? 'Sabitlendi' : 'Pinned'}
+                              {'Sabitlendi'}
                             </span>
                           )}
                         </div>
                         <p className={`${textSecondary} text-sm mt-0.5`}>
-                          {format(new Date(fortune.createdAt), 'dd MMMM yyyy, HH:mm', { locale: language === 'tr' ? tr : enUS })}
+                          {format(new Date(fortune.createdAt), 'dd MMMM yyyy, HH:mm', { locale: tr})}
                         </p>
                         <p className={`${isFacebook ? 'text-gray-600' : 'text-gray-300'} text-sm mt-2 line-clamp-2`}>
                           {fortune.aiResponse.substring(0, 150)}...
@@ -1082,7 +1082,7 @@ export default function ProfilePage() {
                     </div>
                     <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-700/30' : 'border-fuchsia-700/30'}`}>
                       <Link href={`/dashboard?fortune=${fortune.id}`} className={`${accentColor} text-sm font-medium`}>
-                        {language === 'tr' ? 'Detayları Gör' : 'View Details'} →
+                        {'Detayları Gör'} →
                       </Link>
                       <div className="flex items-center gap-2">
                         <button onClick={() => handleFortuneAction(fortune.id, fortune.isSaved ? 'unsave' : 'save')}
@@ -1105,11 +1105,11 @@ export default function ProfilePage() {
                 <div className={`w-20 h-20 rounded-full border-2 ${isFacebook ? 'border-gray-300' : 'border-gray-600'} flex items-center justify-center mb-4`}>
                   <Sparkles className={`w-10 h-10 ${isFacebook ? 'text-gray-300' : 'text-gray-600'}`} />
                 </div>
-                <p className={`${textPrimary} text-xl font-semibold`}>{language === 'tr' ? 'Fallarınız' : 'Your Fortunes'}</p>
-                <p className={`${textSecondary} text-sm mt-1 text-center px-8`}>{language === 'tr' ? 'Baktırdığınız fallar burada görünecek' : 'Your fortune readings will appear here'}</p>
+                <p className={`${textPrimary} text-xl font-semibold`}>{'Fallarınız'}</p>
+                <p className={`${textSecondary} text-sm mt-1 text-center px-8`}>{'Baktırdığınız fallar burada görünecek'}</p>
                 <Link href={`/fortunes`}
                   className={`mt-4 px-6 py-2 bg-gradient-to-r ${isFacebook ? 'from-blue-500 to-blue-600' : isCosmic ? 'from-blue-500 to-cyan-500' : 'from-fuchsia-500 to-purple-600'} text-white font-semibold rounded-md`}>
-                  {language === 'tr' ? 'Fal Baktır' : 'Get Fortune'}
+                  {'Fal Baktır'}
                 </Link>
               </div>
             )}
@@ -1129,7 +1129,7 @@ export default function ProfilePage() {
                           {FORTUNE_NAMES[fortune.fortuneType]?.[language as 'tr' | 'en'] || fortune.fortuneType}
                         </h4>
                         <p className={`${textSecondary} text-sm mt-0.5`}>
-                          {format(new Date(fortune.createdAt), 'dd MMMM yyyy', { locale: language === 'tr' ? tr : enUS })}
+                          {format(new Date(fortune.createdAt), 'dd MMMM yyyy', { locale: tr})}
                         </p>
                       </div>
                       <button onClick={() => handleFortuneAction(fortune.id, 'unsave')}
@@ -1140,7 +1140,7 @@ export default function ProfilePage() {
                     </div>
                     <Link href={`/dashboard?fortune=${fortune.id}`}
                       className={`block mt-3 ${accentColor} text-sm font-medium`}>
-                      {language === 'tr' ? 'Detayları Gör' : 'View Details'} →
+                      {'Detayları Gör'} →
                     </Link>
                   </div>
                 ))}
@@ -1150,8 +1150,8 @@ export default function ProfilePage() {
                 <div className={`w-20 h-20 rounded-full border-2 ${isFacebook ? 'border-gray-300' : 'border-gray-600'} flex items-center justify-center mb-4`}>
                   <Bookmark className={`w-10 h-10 ${isFacebook ? 'text-gray-300' : 'text-gray-600'}`} />
                 </div>
-                <p className={`${textPrimary} text-xl font-semibold`}>{language === 'tr' ? 'Kaydedilenler' : 'Saved'}</p>
-                <p className={`${textSecondary} text-sm mt-1`}>{language === 'tr' ? 'Kaydettiğiniz fallar burada görünecek' : 'Your saved fortunes will appear here'}</p>
+                <p className={`${textPrimary} text-xl font-semibold`}>{'Kaydedilenler'}</p>
+                <p className={`${textSecondary} text-sm mt-1`}>{'Kaydettiğiniz fallar burada görünecek'}</p>
               </div>
             )}
           </>
@@ -1160,11 +1160,11 @@ export default function ProfilePage() {
 
       {/* Modals */}
       <UserListModal show={showFollowersModal} onClose={() => setShowFollowersModal(false)}
-        title={language === 'tr' ? 'Takipçiler' : 'Followers'} users={followers} loading={modalLoading} />
+        title={'Takipçiler'} users={followers} loading={modalLoading} />
       <UserListModal show={showFollowingModal} onClose={() => setShowFollowingModal(false)}
-        title={language === 'tr' ? 'Takip Edilenler' : 'Following'} users={following} loading={modalLoading} />
+        title={'Takip Edilenler'} users={following} loading={modalLoading} />
       <UserListModal show={showLikersModal} onClose={() => setShowLikersModal(false)}
-        title={language === 'tr' ? 'Beğenenler' : 'Likers'} users={likers} loading={modalLoading} />
+        title={'Beğenenler'} users={likers} loading={modalLoading} />
     </div>
   )
 }

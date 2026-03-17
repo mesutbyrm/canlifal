@@ -111,7 +111,7 @@ export default function TellerDashboard() {
       const tellerRes = await fetch('/api/fortune-tellers/my-profile')
       if (!tellerRes.ok) {
         if (tellerRes.status === 404) {
-          setError(language === 'tr' ? 'Falcı profiliniz bulunamadı' : 'Your teller profile not found')
+          setError('Falcı profiliniz bulunamadı')
           return
         }
         throw new Error('Failed to fetch teller profile')
@@ -128,7 +128,7 @@ export default function TellerDashboard() {
       }
     } catch (err) {
       console.error('Fetch error:', err)
-      setError(language === 'tr' ? 'Veriler yüklenirken hata oluştu' : 'Error loading data')
+      setError('Veriler yüklenirken hata oluştu')
     } finally {
       setLoading(false)
     }
@@ -198,7 +198,7 @@ export default function TellerDashboard() {
           href={`/live-tellers/apply`}
           className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg"
         >
-          {language === 'tr' ? 'Falcı Olarak Başvur' : 'Apply as Fortune Teller'}
+          {'Falcı Olarak Başvur'}
         </Link>
       </div>
     )
@@ -212,12 +212,12 @@ export default function TellerDashboard() {
         {/* Page Title with Refresh */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl md:text-2xl font-bold text-white">
-            {language === 'tr' ? '📊 Kontrol Paneli' : '📊 Dashboard'}
+            {'📊 Kontrol Paneli'}
           </h1>
           <button
             onClick={fetchTellerData}
             className="p-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-lg transition-colors"
-            title={language === 'tr' ? 'Yenile' : 'Refresh'}
+            title={'Yenile'}
           >
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -228,8 +228,8 @@ export default function TellerDashboard() {
           <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-xl">
             <p className="text-yellow-300">
               {teller.applicationStatus === 'pending'
-                ? (language === 'tr' ? 'Başvurunuz inceleniyor. Onaylandıktan sonra randevu alabilirsiniz.' : 'Your application is under review. You can receive bookings after approval.')
-                : (language === 'tr' ? 'Başvurunuz reddedildi.' : 'Your application was rejected.')}
+                ? ('Başvurunuz inceleniyor. Onaylandıktan sonra randevu alabilirsiniz.')
+                : ('Başvurunuz reddedildi.')}
             </p>
           </div>
         )}
@@ -281,18 +281,18 @@ export default function TellerDashboard() {
                 ) : isOnline ? (
                   <>
                     <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                    {language === 'tr' ? 'Çevrimiçi' : 'Online'}
+                    {'Çevrimiçi'}
                   </>
                 ) : (
                   <>
                     <span className="w-3 h-3 bg-gray-500 rounded-full" />
-                    {language === 'tr' ? 'Çevrimdışı' : 'Offline'}
+                    {'Çevrimdışı'}
                   </>
                 )}
               </button>
             ) : (
               <div className="w-full py-3 rounded-lg bg-red-500/10 text-red-400 text-sm text-center border border-red-500/20">
-                {language === 'tr' ? '⚠️ Online olma yetkiniz kısıtlandı' : '⚠️ Online access restricted'}
+                {'⚠️ Online olma yetkiniz kısıtlandı'}
               </div>
             )}
           </motion.div>
@@ -306,26 +306,26 @@ export default function TellerDashboard() {
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Video className="w-5 h-5 text-purple-400" />
-              {language === 'tr' ? 'İstatistikler' : 'Statistics'}
+              {'İstatistikler'}
             </h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-purple-300">{language === 'tr' ? 'Toplam Seans' : 'Total Sessions'}</span>
+                <span className="text-purple-300">{'Toplam Seans'}</span>
                 <span className="text-white font-semibold">{teller.totalSessions}</span>
               </div>
               {teller.canViewEarnings !== false && (
                 <div className="flex justify-between items-center">
-                  <span className="text-purple-300">{language === 'tr' ? 'Toplam Kazanç' : 'Total Earnings'}</span>
+                  <span className="text-purple-300">{'Toplam Kazanç'}</span>
                   <span className="text-gold-400 font-semibold">{teller.totalEarnings} jeton</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-purple-300">{language === 'tr' ? 'Seans Ücreti' : 'Session Price'}</span>
+                <span className="text-purple-300">{'Seans Ücreti'}</span>
                 <span className="text-white font-semibold">{teller.pricePerSession} jeton</span>
               </div>
               {teller.commissionRate && (
                 <div className="flex justify-between items-center">
-                  <span className="text-purple-300">{language === 'tr' ? 'Komisyon Oranı' : 'Commission Rate'}</span>
+                  <span className="text-purple-300">{'Komisyon Oranı'}</span>
                   <span className="text-orange-400 font-semibold">%{teller.commissionRate}</span>
                 </div>
               )}
@@ -341,18 +341,18 @@ export default function TellerDashboard() {
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Bell className="w-5 h-5 text-purple-400" />
-              {language === 'tr' ? 'Bekleyen Talepler' : 'Pending Requests'}
+              {'Bekleyen Talepler'}
             </h3>
             <div className="text-center">
               <div className="text-4xl font-bold text-white mb-2">{pendingCount}</div>
               <p className="text-purple-300 text-sm">
                 {pendingCount > 0
-                  ? (language === 'tr' ? 'Yeni randevu talebi var!' : 'New session requests!')
-                  : (language === 'tr' ? 'Henüz talep yok' : 'No pending requests')}
+                  ? ('Yeni randevu talebi var!')
+                  : ('Henüz talep yok')}
               </p>
               {activeCount > 0 && (
                 <p className="text-green-400 text-sm mt-2">
-                  {activeCount} {language === 'tr' ? 'aktif seans' : 'active session(s)'}
+                  {activeCount} {'aktif seans'}
                 </p>
               )}
             </div>
@@ -368,7 +368,7 @@ export default function TellerDashboard() {
                 activeTab === 'pending' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
               }`}
             >
-              {language === 'tr' ? 'Bekleyenler' : 'Pending'}
+              {'Bekleyenler'}
               {pendingCount > 0 && (
                 <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
                   {pendingCount}
@@ -381,7 +381,7 @@ export default function TellerDashboard() {
                 activeTab === 'active' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
               }`}
             >
-              {language === 'tr' ? 'Aktif' : 'Active'}
+              {'Aktif'}
               {activeCount > 0 && (
                 <span className="ml-2 px-2 py-0.5 bg-green-500 text-black text-xs rounded-full">
                   {activeCount}
@@ -394,7 +394,7 @@ export default function TellerDashboard() {
                 activeTab === 'history' ? 'text-white bg-purple-500/20' : 'text-purple-400 hover:text-white'
               }`}
             >
-              {language === 'tr' ? 'Geçmiş' : 'History'}
+              {'Geçmiş'}
             </button>
           </div>
 
@@ -404,10 +404,10 @@ export default function TellerDashboard() {
                 <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>
                   {activeTab === 'pending'
-                    ? (language === 'tr' ? 'Bekleyen randevu talebi yok' : 'No pending requests')
+                    ? ('Bekleyen randevu talebi yok')
                     : activeTab === 'active'
-                      ? (language === 'tr' ? 'Aktif seans yok' : 'No active sessions')
-                      : (language === 'tr' ? 'Geçmiş seans yok' : 'No session history')}
+                      ? ('Aktif seans yok')
+                      : ('Geçmiş seans yok')}
                 </p>
               </div>
             ) : (
@@ -430,7 +430,7 @@ export default function TellerDashboard() {
                         </div>
                         <div>
                           <h4 className="text-white font-medium">
-                            {sess.user.name || (language === 'tr' ? 'Anonim Kullanıcı' : 'Anonymous User')}
+                            {sess.user.name || ('Anonim Kullanıcı')}
                           </h4>
                           <p className="text-sm text-purple-300">
                             {FORTUNE_TYPE_NAMES[sess.fortuneType]?.[language as 'tr' | 'en'] || sess.fortuneType}
@@ -451,7 +451,7 @@ export default function TellerDashboard() {
                     <div className="mt-3 flex items-center justify-between">
                       <p className="text-xs text-purple-500">
                         <Clock className="w-3 h-3 inline mr-1" />
-                        {new Date(sess.createdAt).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                        {new Date(sess.createdAt).toLocaleString('tr-TR')}
                       </p>
 
                       {/* Action Buttons */}
@@ -467,7 +467,7 @@ export default function TellerDashboard() {
                             ) : (
                               <>
                                 <Check className="w-4 h-4" />
-                                {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                                {'Kabul Et'}
                               </>
                             )}
                           </button>
@@ -477,7 +477,7 @@ export default function TellerDashboard() {
                             className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
                           >
                             <X className="w-4 h-4" />
-                            {language === 'tr' ? 'Reddet' : 'Reject'}
+                            {'Reddet'}
                           </button>
                         </div>
                       )}
@@ -489,7 +489,7 @@ export default function TellerDashboard() {
                             className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-black rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                           >
                             <Video className="w-4 h-4" />
-                            {language === 'tr' ? 'Odaya Gir' : 'Enter Room'}
+                            {'Odaya Gir'}
                           </Link>
                           <button
                             onClick={() => handleSessionAction(sess.id, 'complete')}
@@ -501,7 +501,7 @@ export default function TellerDashboard() {
                             ) : (
                               <>
                                 <Check className="w-4 h-4" />
-                                {language === 'tr' ? 'Tamamla' : 'Complete'}
+                                {'Tamamla'}
                               </>
                             )}
                           </button>

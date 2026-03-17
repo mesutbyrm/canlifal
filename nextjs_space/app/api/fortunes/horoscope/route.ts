@@ -30,11 +30,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const today = new Date().toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir astrologsun. Bugün ${today} için ${zodiacSign} burcunun günlük yorumunu yap. Aşk, kariyer, sağlık ve genel enerji hakkında bilgi ver. Cevabın 200-300 kelime arasında, ilham verici ve kişiselleştirilmiş olmalı. Tamamen Türkçe cevap ver.`
-      : `You are an experienced astrologer. Provide the daily horoscope for ${zodiacSign} for ${today}. Include insights about love, career, health, and general energy. Your response should be 200-300 words, inspiring and personalized. Respond entirely in English.`
+    const systemPrompt = `Sen deneyimli bir astrologsun. Bugün ${today} için ${zodiacSign} burcunun günlük yorumunu yap. Aşk, kariyer, sağlık ve genel enerji hakkında bilgi ver. Cevabın 200-300 kelime arasında, ilham verici ve kişiselleştirilmiş olmalı. Tamamen Türkçe cevap ver.`} for ${today}. Include insights about love, career, health, and general energy. Your response should be 200-300 words, inspiring and personalized. Respond entirely in English.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

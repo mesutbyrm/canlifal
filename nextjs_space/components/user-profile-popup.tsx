@@ -82,7 +82,7 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
   const getMembershipLabel = (m: string) => {
     if (m === 'gold') return 'Gold'
     if (m === 'premium') return 'Premium'
-    return language === 'tr' ? 'Temel' : 'Basic'
+    return 'Temel'
   }
 
   const zodiacEmojis: Record<string, string> = {
@@ -165,15 +165,15 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
                   <div className="flex justify-center gap-4 mt-3 pt-3 border-t border-purple-500/20">
                     <div className="text-center">
                       <p className="text-white font-semibold text-sm">{profile.followerCount}</p>
-                      <p className="text-purple-400 text-[10px]">{language === 'tr' ? 'Takipçi' : 'Followers'}</p>
+                      <p className="text-purple-400 text-[10px]">{'Takipçi'}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-white font-semibold text-sm">{profile.followingCount}</p>
-                      <p className="text-purple-400 text-[10px]">{language === 'tr' ? 'Takip' : 'Following'}</p>
+                      <p className="text-purple-400 text-[10px]">{'Takip'}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-white font-semibold text-sm">{profile.postCount}</p>
-                      <p className="text-purple-400 text-[10px]">{language === 'tr' ? 'Gönderi' : 'Posts'}</p>
+                      <p className="text-purple-400 text-[10px]">{'Gönderi'}</p>
                     </div>
                   </div>
 
@@ -183,11 +183,11 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
                     className="mt-3 block w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
                     onClick={closeProfile}
                   >
-                    {language === 'tr' ? 'Profili Gör' : 'View Profile'}
+                    {'Profili Gör'}
                   </a>
                 </>
               ) : (
-                <p className="text-purple-400 text-xs">{language === 'tr' ? 'Profil bulunamadı' : 'Profile not found'}</p>
+                <p className="text-purple-400 text-xs">{'Profil bulunamadı'}</p>
               )}
             </div>
           </motion.div>

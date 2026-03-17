@@ -65,7 +65,7 @@ export async function POST(
           data: {
             userId: post.userId,
             type: 'like',
-            message: 'liked your post',
+            message: 'gönderinizi beğendi',
             postId: params.postId,
             fromUserId: session.user.id,
             fromUserName: session.user.name || 'Birisi'

@@ -38,7 +38,7 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
               <div className="flex items-center gap-3">
                 <Info className="w-6 h-6 text-purple-300" />
                 <h3 className="text-lg font-bold text-white">
-                  {language === 'tr' ? 'Para Birimi Bilgisi' : 'Currency Info'}
+                  {'Para Birimi Bilgisi'}
                 </h3>
               </div>
               <button
@@ -66,25 +66,19 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
                   <div className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-gold-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">
-                      {language === 'tr'
-                        ? 'Fal baktırma, sohbet, sosyal özellikler için kullanılır'
-                        : 'Used for fortune readings, chat, social features'}
+                      {'Fal baktırma, sohbet, sosyal özellikler için kullanılır'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-gold-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">
-                      {language === 'tr'
-                        ? 'Günlük bonuslar, reklam ödülleri ve davet bonusları ile kazanılır'
-                        : 'Earned through daily bonuses, ad rewards, and referral bonuses'}
+                      {'Günlük bonuslar, reklam ödülleri ve davet bonusları ile kazanılır'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-red-400 mt-0.5 flex-shrink-0 text-xs">❌</span>
                     <span className="text-red-300 font-medium">
-                      {language === 'tr'
-                        ? 'Canlı yayınlarda ve canlı falcı seanslarında KULLANILAMAZ'
-                        : 'CANNOT be used in live streams and live teller sessions'}
+                      {'Canlı yayınlarda ve canlı falcı seanslarında KULLANILAMAZ'}
                     </span>
                   </div>
                 </div>
@@ -104,33 +98,25 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
                   <div className="flex items-start gap-2">
                     <Radio className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">
-                      {language === 'tr'
-                        ? 'Canlı yayın hediyeleri, canlı falcı seansları için kullanılır'
-                        : 'Used for live stream gifts, live fortune teller sessions'}
+                      {'Canlı yayın hediyeleri, canlı falcı seansları için kullanılır'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Radio className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">
-                      {language === 'tr'
-                        ? 'Kullanıcılar arası hediye gönderimi için kullanılır'
-                        : 'Used for sending gifts between users'}
+                      {'Kullanıcılar arası hediye gönderimi için kullanılır'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Radio className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">
-                      {language === 'tr'
-                        ? 'Gerçek para ile satın alınır — her yerde geçerlidir'
-                        : 'Purchased with real money — valid everywhere'}
+                      {'Gerçek para ile satın alınır — her yerde geçerlidir'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-green-400 mt-0.5 flex-shrink-0 text-xs">✅</span>
                     <span className="text-green-300 font-medium">
-                      {language === 'tr'
-                        ? 'Her yerde kullanılabilir, sınırlama yoktur'
-                        : 'Can be used everywhere, no restrictions'}
+                      {'Her yerde kullanılabilir, sınırlama yoktur'}
                     </span>
                   </div>
                 </div>
@@ -143,13 +129,13 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
                 href={`/credits`}
                 className="flex-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white py-2.5 rounded-xl text-center font-medium text-sm transition-all"
               >
-                🪙 {language === 'tr' ? 'Jeton Satın Al' : 'Buy Jetons'}
+                🪙 {'Jeton Satın Al'}
               </Link>
               <button
                 onClick={onClose}
                 className="flex-1 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl font-medium text-sm transition-all"
               >
-                {language === 'tr' ? 'Anladım' : 'Got it'}
+                {'Anladım'}
               </button>
             </div>
           </motion.div>

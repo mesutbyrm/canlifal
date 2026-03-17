@@ -39,9 +39,7 @@ export async function POST(request: Request) {
     }
 
     // System prompt for dream interpretation
-    const systemPrompt = language === 'tr'
-      ? 'Sen deneyimli bir rüya yorumcususun. Kullanıcının rüyasını psikolojik, sembolik ve mistik açıdan yorumla. Rüyadaki sembollerin anlamını, bilinçaltı mesajlarını ve olası gelecek işaretlerini açıkla. Cevabın 200-300 kelime arasında, derinlemesine, anlamlı ve rehberlik edici olmalı. Tamamen Türkçe cevap ver.'
-      : 'You are an experienced dream interpreter. Interpret the user\'s dream from psychological, symbolic, and mystical perspectives. Explain the meanings of symbols in the dream, subconscious messages, and possible future signs. Your response should be 200-300 words, profound, meaningful, and guiding. Respond entirely in English.'
+    const systemPrompt = 'Sen deneyimli bir rüya yorumcususun. Kullanıcının rüyasını psikolojik, sembolik ve mistik açıdan yorumla. Rüyadaki sembollerin anlamını, bilinçaltı mesajlarını ve olası gelecek işaretlerini açıkla. Cevabın 200-300 kelime arasında, derinlemesine, anlamlı ve rehberlik edici olmalı. Tamamen Türkçe cevap ver.'
 
     const messages = [
       { role: 'system', content: systemPrompt },

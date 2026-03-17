@@ -139,9 +139,9 @@ export default function AdminWithdrawalsPage() {
   }
 
   const AWARD_TYPES: Record<string, string> = {
-    medium_of_day: language === 'tr' ? 'G\u00fcn\u00fcn Medyumu' : 'Medium of the Day',
-    medium_of_week: language === 'tr' ? 'Haftan\u0131n Medyumu' : 'Medium of the Week',
-    medium_of_month: language === 'tr' ? 'Ay\u0131n Medyumu' : 'Medium of the Month'
+    medium_of_day: 'G\u00fcn\u00fcn Medyumu',
+    medium_of_week: 'Haftan\u0131n Medyumu',
+    medium_of_month: 'Ay\u0131n Medyumu'
   }
 
   if (status === 'loading' || loading) {
@@ -156,12 +156,12 @@ export default function AdminWithdrawalsPage() {
     <div className="min-h-screen bg-[#0a0118] py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <Link href={`/admin`} className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6">
-          <ArrowLeft className="w-5 h-5" /> {language === 'tr' ? 'Admin Paneli' : 'Admin Panel'}
+          <ArrowLeft className="w-5 h-5" /> {'Admin Paneli'}
         </Link>
 
         <h1 className="text-2xl font-bold text-white flex items-center gap-3 mb-6">
           <Wallet className="w-7 h-7 text-purple-400" />
-          {language === 'tr' ? '\u00c7ekim & \u00d6d\u00fcller Y\u00f6netimi' : 'Withdrawals & Awards'}
+          {'\u00c7ekim & \u00d6d\u00fcller Y\u00f6netimi'}
         </h1>
 
         {/* Tabs */}
@@ -171,7 +171,7 @@ export default function AdminWithdrawalsPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-900/50'
               }`}>
-              {tab === 'withdrawals' ? (language === 'tr' ? '\u00c7ekim Talepleri' : 'Withdrawals') : (language === 'tr' ? '\u00d6d\u00fcller' : 'Awards')}
+              {tab === 'withdrawals' ? ('\u00c7ekim Talepleri') : ('\u00d6d\u00fcller')}
               {tab === 'withdrawals' && withdrawals.filter(w => w.status === 'pending').length > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black text-[10px] rounded-full font-bold">
                   {withdrawals.filter(w => w.status === 'pending').length}
@@ -190,10 +190,10 @@ export default function AdminWithdrawalsPage() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     filter === f ? 'bg-purple-500 text-white' : 'bg-purple-900/20 text-purple-400 hover:bg-purple-900/40'
                   }`}>
-                  {f === 'pending' ? (language === 'tr' ? 'Bekleyen' : 'Pending') :
-                   f === 'approved' ? (language === 'tr' ? 'Onayl\u0131' : 'Approved') :
-                   f === 'rejected' ? (language === 'tr' ? 'Reddedilen' : 'Rejected') :
-                   (language === 'tr' ? 'T\u00fcm\u00fc' : 'All')}
+                  {f === 'pending' ? ('Bekleyen') :
+                   f === 'approved' ? ('Onayl\u0131') :
+                   f === 'rejected' ? ('Reddedilen') :
+                   ('T\u00fcm\u00fc')}
                 </button>
               ))}
             </div>
@@ -201,7 +201,7 @@ export default function AdminWithdrawalsPage() {
             {filteredWithdrawals.length === 0 ? (
               <div className="text-center py-12 text-purple-400">
                 <Wallet className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>{language === 'tr' ? '\u00c7ekim talebi bulunamad\u0131' : 'No withdrawal requests found'}</p>
+                <p>{'\u00c7ekim talebi bulunamad\u0131'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -224,9 +224,9 @@ export default function AdminWithdrawalsPage() {
                         wr.status === 'approved' ? 'bg-green-500/20 text-green-400' :
                         'bg-red-500/20 text-red-400'
                       }`}>
-                        {wr.status === 'pending' ? (language === 'tr' ? 'Bekliyor' : 'Pending') :
-                         wr.status === 'approved' ? (language === 'tr' ? 'Onayl\u0131' : 'Approved') :
-                         (language === 'tr' ? 'Reddedildi' : 'Rejected')}
+                        {wr.status === 'pending' ? ('Bekliyor') :
+                         wr.status === 'approved' ? ('Onayl\u0131') :
+                         ('Reddedildi')}
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -243,7 +243,7 @@ export default function AdminWithdrawalsPage() {
                       <div className="mt-3 space-y-2">
                         <input
                           type="text"
-                          placeholder={language === 'tr' ? 'Admin notu (iste\u011fe ba\u011fl\u0131)' : 'Admin note (optional)'}
+                          placeholder={'Admin notu (iste\u011fe ba\u011fl\u0131)'}
                           value={noteMap[wr.id] || ''}
                           onChange={e => setNoteMap(prev => ({ ...prev, [wr.id]: e.target.value }))}
                           className="w-full px-3 py-2 bg-black/20 border border-purple-500/20 rounded-lg text-white text-sm outline-none"
@@ -251,11 +251,11 @@ export default function AdminWithdrawalsPage() {
                         <div className="flex gap-2">
                           <button onClick={() => handleWithdrawalAction(wr.id, 'approve')} disabled={actionLoading === wr.id}
                             className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                            {actionLoading === wr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> {language === 'tr' ? 'Onayla' : 'Approve'}</>}
+                            {actionLoading === wr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> {'Onayla'}</>}
                           </button>
                           <button onClick={() => handleWithdrawalAction(wr.id, 'reject')} disabled={actionLoading === wr.id}
                             className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                            <X className="w-4 h-4" /> {language === 'tr' ? 'Reddet' : 'Reject'}
+                            <X className="w-4 h-4" /> {'Reddet'}
                           </button>
                         </div>
                       </div>
@@ -275,11 +275,11 @@ export default function AdminWithdrawalsPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-400" /> {language === 'tr' ? 'Falc\u0131 \u00d6d\u00fclleri' : 'Teller Awards'}
+                <Trophy className="w-5 h-5 text-yellow-400" /> {'Falc\u0131 \u00d6d\u00fclleri'}
               </h2>
               <button onClick={() => setShowAwardForm(!showAwardForm)}
                 className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center gap-1">
-                <Plus className="w-4 h-4" /> {language === 'tr' ? '\u00d6d\u00fcl Ver' : 'Give Award'}
+                <Plus className="w-4 h-4" /> {'\u00d6d\u00fcl Ver'}
               </button>
             </div>
 
@@ -290,7 +290,7 @@ export default function AdminWithdrawalsPage() {
                   <label className="text-xs text-yellow-400">Falc\u0131</label>
                   <select value={awardTellerId} onChange={e => setAwardTellerId(e.target.value)}
                     className="w-full mt-1 px-3 py-2 bg-black/30 border border-yellow-500/20 rounded-lg text-white text-sm outline-none">
-                    <option value="">{language === 'tr' ? 'Falc\u0131 Se\u00e7in' : 'Select Teller'}</option>
+                    <option value="">{'Falc\u0131 Se\u00e7in'}</option>
                     {tellers.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                   </select>
                 </div>
@@ -302,14 +302,14 @@ export default function AdminWithdrawalsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-yellow-400">{language === 'tr' ? 'Ba\u015fl\u0131k' : 'Title'}</label>
+                  <label className="text-xs text-yellow-400">{'Ba\u015fl\u0131k'}</label>
                   <input type="text" value={awardTitle} onChange={e => setAwardTitle(e.target.value)}
-                    placeholder={language === 'tr' ? '\u00d6rn: G\u00fcn\u00fcn Medyumu' : 'e.g. Medium of the Day'}
+                    placeholder={'\u00d6rn: G\u00fcn\u00fcn Medyumu'}
                     className="w-full mt-1 px-3 py-2 bg-black/30 border border-yellow-500/20 rounded-lg text-white text-sm outline-none" />
                 </div>
                 <button onClick={handleCreateAward} disabled={awardSaving || !awardTellerId || !awardTitle}
                   className="w-full py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                  {awardSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trophy className="w-4 h-4" /> {language === 'tr' ? '\u00d6d\u00fcl Olu\u015ftur' : 'Create Award'}</>}
+                  {awardSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trophy className="w-4 h-4" /> {'\u00d6d\u00fcl Olu\u015ftur'}</>}
                 </button>
               </motion.div>
             )}
@@ -317,7 +317,7 @@ export default function AdminWithdrawalsPage() {
             {awards.length === 0 ? (
               <div className="text-center py-12 text-purple-400">
                 <Trophy className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>{language === 'tr' ? 'Hen\u00fcz \u00f6d\u00fcl yok' : 'No awards yet'}</p>
+                <p>{'Hen\u00fcz \u00f6d\u00fcl yok'}</p>
               </div>
             ) : (
               <div className="space-y-2">

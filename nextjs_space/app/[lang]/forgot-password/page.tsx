@@ -28,10 +28,10 @@ export default function ForgotPasswordPage() {
       if (res.ok) {
         setSent(true)
       } else {
-        setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+        setError('Bir hata oluştu')
       }
     } catch {
-      setError(language === 'tr' ? 'Bir hata oluştu' : 'An error occurred')
+      setError('Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -49,19 +49,17 @@ export default function ForgotPasswordPage() {
             <Check className="w-8 h-8 text-green-400" />
           </div>
           <h1 className="font-serif text-2xl text-gold-400 mb-4">
-            {language === 'tr' ? 'E-posta Gönderildi!' : 'Email Sent!'}
+            {'E-posta Gönderildi!'}
           </h1>
           <p className="text-deep-purple-200 mb-6">
-            {language === 'tr' 
-              ? 'Eğer bu e-posta adresi kayıtlıysa, şifre sıfırlama linki gönderildi.' 
-              : 'If this email is registered, a password reset link has been sent.'}
+            {'Eğer bu e-posta adresi kayıtlıysa, şifre sıfırlama linki gönderildi.'}
           </p>
           <Link
             href={`/login`}
             className="inline-flex items-center gap-2 text-gold-400 hover:text-gold-300"
           >
             <ArrowLeft className="w-4 h-4" />
-            {language === 'tr' ? 'Giriş sayfasına dön' : 'Back to login'}
+            {'Giriş sayfasına dön'}
           </Link>
         </motion.div>
       </div>
@@ -78,19 +76,17 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password'}
+            {'Şifremi Unuttum'}
           </h1>
           <p className="text-deep-purple-300 text-sm">
-            {language === 'tr' 
-              ? 'E-posta adresinizi girin, size sıfırlama linki gönderelim.' 
-              : 'Enter your email and we\'ll send you a reset link.'}
+            {'E-posta adresinizi girin, size sıfırlama linki gönderelim.'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-deep-purple-200 text-sm mb-2">
-              {language === 'tr' ? 'E-posta' : 'Email'}
+              {'E-posta'}
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-deep-purple-400" />
@@ -115,8 +111,8 @@ export default function ForgotPasswordPage() {
             className="w-full py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading 
-              ? (language === 'tr' ? 'Gönderiliyor...' : 'Sending...') 
-              : (language === 'tr' ? 'Sıfırlama Linki Gönder' : 'Send Reset Link')}
+              ? ('Gönderiliyor...') 
+              : ('Sıfırlama Linki Gönder')}
           </button>
         </form>
 
@@ -126,7 +122,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-2 text-deep-purple-300 hover:text-gold-400 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            {language === 'tr' ? 'Giriş sayfasına dön' : 'Back to login'}
+            {'Giriş sayfasına dön'}
           </Link>
         </div>
       </motion.div>

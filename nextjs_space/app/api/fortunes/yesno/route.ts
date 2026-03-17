@@ -28,9 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = language === 'tr'
-      ? `Sen mistik bir kahin olarak evet/hayır sorularını yanıtlıyorsun. Kullanıcının sorusuna önce net bir EVET veya HAYIR cevabı ver, ardından 100-150 kelimelik mistik ve derin bir açıklama yap. Yanıtın gizemli, bilge ve yol gösterici olmalı. Tamamen Türkçe cevap ver.`
-      : `You are a mystical oracle answering yes/no questions. First give a clear YES or NO answer to the user's question, then provide a 100-150 word mystical and profound explanation. Your response should be mysterious, wise, and guiding. Respond entirely in English.`
+    const systemPrompt = `Sen mistik bir kahin olarak evet/hayır sorularını yanıtlıyorsun. Kullanıcının sorusuna önce net bir EVET veya HAYIR cevabı ver, ardından 100-150 kelimelik mistik ve derin bir açıklama yap. Yanıtın gizemli, bilge ve yol gösterici olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

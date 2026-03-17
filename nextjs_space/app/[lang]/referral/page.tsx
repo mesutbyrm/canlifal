@@ -63,7 +63,7 @@ export default function ReferralPage() {
     if (data?.referralLink && navigator.share) {
       try {
         await navigator.share({
-          title: language === 'tr' ? 'Canlifal - Davet' : 'Canlifal - Invitation',
+          title: 'Canlifal - Davet',
           text: language === 'tr' 
             ? 'Canlifal\'a katıl ve 50 ücretsiz CFC kazan!' 
             : 'Join Canlifal and get 50 free credits!',
@@ -80,7 +80,7 @@ export default function ReferralPage() {
   if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0118] to-deep-purple-975">
-        <LoadingSpinner message={language === 'tr' ? 'Yükleniyor...' : 'Loading...'} />
+        <LoadingSpinner message={'Yükleniyor...'} />
       </div>
     )
   }
@@ -91,13 +91,13 @@ export default function ReferralPage() {
         <div className="text-center">
           <Gift className="w-16 h-16 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-gold-400 mb-4">
-            {language === 'tr' ? 'Giriş Yapın' : 'Please Login'}
+            {'Giriş Yapın'}
           </h1>
           <p className="text-deep-purple-200 mb-6">
-            {language === 'tr' ? 'Referans sistemini kullanmak için giriş yapın.' : 'Login to use the referral system.'}
+            {'Referans sistemini kullanmak için giriş yapın.'}
           </p>
           <Link href={`/login`} className="px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500">
-            {language === 'tr' ? 'Giriş Yap' : 'Login'}
+            {'Giriş Yap'}
           </Link>
         </div>
       </div>
@@ -115,12 +115,10 @@ export default function ReferralPage() {
         >
           <Gift className="w-16 h-16 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-3xl sm:text-4xl text-gold-400 mb-2">
-            {language === 'tr' ? 'Davet Et & Kazan' : 'Invite & Earn'}
+            {'Davet Et & Kazan'}
           </h1>
           <p className="text-deep-purple-200">
-            {language === 'tr' 
-              ? 'Arkadaşlarını davet et, her ikimiz de 50 CFC kazanalım!' 
-              : 'Invite friends, both of us get 50 credits!'}
+            {'Arkadaşlarını davet et, her ikimiz de 50 CFC kazanalım!'}
           </p>
         </motion.div>
 
@@ -133,7 +131,7 @@ export default function ReferralPage() {
           >
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
             <p className="text-3xl font-bold text-blue-400">{data?.totalReferrals || 0}</p>
-            <p className="text-deep-purple-300 text-sm">{language === 'tr' ? 'Davet Edilen' : 'Invited'}</p>
+            <p className="text-deep-purple-300 text-sm">{'Davet Edilen'}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -143,7 +141,7 @@ export default function ReferralPage() {
           >
             <Sparkles className="w-8 h-8 text-gold-400 mx-auto mb-2" />
             <p className="text-3xl font-bold text-gold-400">{data?.totalCreditsEarned || 0}</p>
-            <p className="text-deep-purple-300 text-sm">{language === 'tr' ? 'Kazanılan CFC' : 'CFC Earned'}</p>
+            <p className="text-deep-purple-300 text-sm">{'Kazanılan CFC'}</p>
           </motion.div>
         </div>
 
@@ -156,7 +154,7 @@ export default function ReferralPage() {
         >
           <h2 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
             <Share2 className="w-5 h-5" />
-            {language === 'tr' ? 'Davet Linkin' : 'Your Referral Link'}
+            {'Davet Linkin'}
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
@@ -171,7 +169,7 @@ export default function ReferralPage() {
                 className="flex-1 sm:flex-none px-6 py-3 bg-gold-600 text-black rounded-lg font-medium hover:bg-gold-500 flex items-center justify-center gap-2"
               >
                 {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                {copied ? (language === 'tr' ? 'Kopyalandı' : 'Copied') : (language === 'tr' ? 'Kopyala' : 'Copy')}
+                {copied ? ('Kopyalandı') : ('Kopyala')}
               </button>
               <button
                 onClick={shareLink}
@@ -182,8 +180,7 @@ export default function ReferralPage() {
             </div>
           </div>
           <p className="text-deep-purple-400 text-sm mt-3">
-            {language === 'tr' 
-              ? `Referans Kodun: ${data?.referralCode || ''}` 
+            {`Referans Kodun}` 
               : `Your Code: ${data?.referralCode || ''}`}
           </p>
         </motion.div>
@@ -197,7 +194,7 @@ export default function ReferralPage() {
         >
           <h2 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5" />
-            {language === 'tr' ? 'Kilometre Taşları' : 'Milestones'}
+            {'Kilometre Taşları'}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {data?.milestones?.map((milestone, idx) => (
@@ -213,7 +210,7 @@ export default function ReferralPage() {
                   {milestone.count}
                 </div>
                 <div className="text-xs text-deep-purple-300 mb-1">
-                  {language === 'tr' ? 'davet' : 'invites'}
+                  {'davet'}
                 </div>
                 <div className={`text-sm font-medium ${milestone.achieved ? 'text-gold-300' : 'text-deep-purple-400'}`}>
                   {milestone.rewardText[language]}
@@ -234,7 +231,7 @@ export default function ReferralPage() {
           >
             <h2 className="font-serif text-xl text-gold-400 mb-4 flex items-center gap-2">
               <Users className="w-5 h-5" />
-              {language === 'tr' ? 'Davet Ettiklerin' : 'Your Referrals'}
+              {'Davet Ettiklerin'}
             </h2>
             <div className="space-y-3">
               {data.referrals.slice(0, 10).map((ref) => (
@@ -248,7 +245,7 @@ export default function ReferralPage() {
                   <div className="text-right">
                     <span className="text-gold-400 font-medium">+50</span>
                     <p className="text-deep-purple-400 text-xs">
-                      {new Date(ref.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                      {new Date(ref.createdAt).toLocaleDateString('tr-TR')}
                     </p>
                   </div>
                 </div>

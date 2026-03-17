@@ -20,7 +20,7 @@ export default function NumerologyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !birthDate) {
-      setError(language === 'tr' ? 'Lütfen isim ve doğum tarihinizi girin' : 'Please enter your name and birth date')
+      setError('Lütfen isim ve doğum tarihinizi girin')
       return
     }
 
@@ -81,14 +81,14 @@ export default function NumerologyPage() {
             <Hash className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'Numeroloji' : 'Numerology'}
+            {'Numeroloji'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'İsminiz ve doğum tarihiniz yazılı kaderinizi açığa çıkarır' : 'Your name and birth date reveal your written destiny'}
+            {'İsminiz ve doğum tarihiniz yazılı kaderinizi açığa çıkarır'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            4 {language === 'tr' ? 'CFC' : 'CFC'}
+            4 {'CFC'}
           </p>
         </motion.div>
 
@@ -101,20 +101,20 @@ export default function NumerologyPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">
-                  {language === 'tr' ? 'Tam İsminiz' : 'Your Full Name'}
+                  {'Tam İsminiz'}
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={language === 'tr' ? 'İsminizi yazın...' : 'Enter your name...'}
+                  placeholder={'İsminizi yazın...'}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-deep-purple-200 mb-2">
-                  {language === 'tr' ? 'Doğum Tarihiniz' : 'Your Birth Date'}
+                  {'Doğum Tarihiniz'}
                 </label>
                 <input
                   type="date"
@@ -140,7 +140,7 @@ export default function NumerologyPage() {
                 ) : (
                   <>
                     <Hash className="w-5 h-5" />
-                    {language === 'tr' ? 'Sayılarımı Keşfet' : 'Discover My Numbers'}
+                    {'Sayılarımı Keşfet'}
                   </>
                 )}
               </button>
@@ -166,7 +166,7 @@ export default function NumerologyPage() {
             </div>
             
             <SocialShare 
-              title={language === 'tr' ? 'Numeroloji Analizi' : 'Numerology Analysis'}
+              title={'Numeroloji Analizi'}
               text={response}
             />
 
@@ -174,7 +174,7 @@ export default function NumerologyPage() {
               onClick={() => { setResponse(''); setName(''); setBirthDate(''); }}
               className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all"
             >
-              {language === 'tr' ? 'Yeni Analiz Yap' : 'Get Another Reading'}
+              {'Yeni Analiz Yap'}
             </button>
           </motion.div>
         )}

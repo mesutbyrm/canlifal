@@ -82,7 +82,7 @@ export default function ChatRoomsPage() {
 
   const handleCreateRoom = async () => {
     if (!createForm.name.trim()) {
-      setCreateError(language === 'tr' ? 'Oda adı gerekli' : 'Room name is required')
+      setCreateError('Oda adı gerekli')
       return
     }
     setCreating(true)
@@ -147,10 +147,10 @@ export default function ChatRoomsPage() {
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles className={`w-5 h-5 ${sectionIconColor}`} />
-                {language === 'tr' ? 'Fal Sohbet Odaları' : 'Fortune Chat Rooms'}
+                {'Fal Sohbet Odaları'}
               </h1>
               <p className={`${descColor} text-xs sm:text-sm mt-1`}>
-                {language === 'tr' ? 'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun' : 'Join chat rooms and talk with other users'}
+                {'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun'}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function ChatRoomsPage() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                   </span>
                   <span className="hidden sm:inline">
-                    {language === 'tr' ? `${totalOnline} çevrimiçi` : `${totalOnline} online`}
+                    {`${totalOnline} çevrimiçi`}
                   </span>
                   <span className="sm:hidden">{totalOnline}</span>
                 </div>
@@ -173,8 +173,8 @@ export default function ChatRoomsPage() {
                   className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${btnPrimary}`}
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">{language === 'tr' ? 'Oda Oluştur' : 'Create Room'}</span>
-                  <span className="sm:hidden">{language === 'tr' ? 'Oluştur' : 'Create'}</span>
+                  <span className="hidden sm:inline">{'Oda Oluştur'}</span>
+                  <span className="sm:hidden">{'Oluştur'}</span>
                 </button>
               )}
             </div>
@@ -190,7 +190,7 @@ export default function ChatRoomsPage() {
           <div className="text-center py-12">
             <MessageCircle className={`w-12 h-12 ${sectionIconColor} mx-auto mb-3 opacity-50`} />
             <p className={`${descColor} text-sm`}>
-              {language === 'tr' ? 'Henüz sohbet odası yok' : 'No chat rooms yet'}
+              {'Henüz sohbet odası yok'}
             </p>
           </div>
         ) : (
@@ -230,12 +230,12 @@ export default function ChatRoomsPage() {
 
                     {/* Room Name */}
                     <h2 className={`text-sm sm:text-base font-bold ${titleColor} mb-1 line-clamp-2 text-center`}>
-                      {language === 'tr' ? room.nameTr : room.nameEn}
+                      {room.nameTr}
                     </h2>
 
                     {/* Description - sadece büyük ekranlarda */}
                     <p className={`${descColor} text-[10px] sm:text-xs mb-2 line-clamp-2 text-center hidden sm:block flex-1`}>
-                      {language === 'tr' ? room.descTr : room.descEn}
+                      {room.descTr}
                     </p>
 
                     {/* Stats */}
@@ -276,7 +276,7 @@ export default function ChatRoomsPage() {
                     {/* Join CTA - mobilde küçük */}
                     <div className={`mt-2 pt-2 border-t ${borderAccent} sm:hidden`}>
                       <span className={`${joinColor} flex items-center justify-center gap-1 font-medium text-[10px]`}>
-                        {language === 'tr' ? 'Katıl' : 'Join'}
+                        {'Katıl'}
                         <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                       </span>
                     </div>
@@ -308,7 +308,7 @@ export default function ChatRoomsPage() {
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Plus className={`w-5 h-5 ${sectionIconColor}`} />
-                  {language === 'tr' ? 'Yeni Oda Oluştur' : 'Create New Room'}
+                  {'Yeni Oda Oluştur'}
                 </h2>
                 <button onClick={() => setShowCreateModal(false)} className="text-white/50 hover:text-white">
                   <X className="w-5 h-5" />
@@ -319,7 +319,7 @@ export default function ChatRoomsPage() {
                 {/* Icon Selection */}
                 <div>
                   <label className={`${descColor} text-sm block mb-2`}>
-                    {language === 'tr' ? 'İkon Seç' : 'Select Icon'}
+                    {'İkon Seç'}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {ROOM_ICONS.map((icon) => (
@@ -339,13 +339,13 @@ export default function ChatRoomsPage() {
                 {/* Room Name */}
                 <div>
                   <label className={`${descColor} text-sm block mb-1.5`}>
-                    {language === 'tr' ? 'Oda Adı' : 'Room Name'}
+                    {'Oda Adı'}
                   </label>
                   <input
                     type="text"
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder={language === 'tr' ? 'Oda adını girin...' : 'Enter room name...'}
+                    placeholder={'Oda adını girin...'}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm ${inputBg} focus:outline-none`}
                     maxLength={50}
                   />
@@ -354,12 +354,12 @@ export default function ChatRoomsPage() {
                 {/* Description */}
                 <div>
                   <label className={`${descColor} text-sm block mb-1.5`}>
-                    {language === 'tr' ? 'Açıklama' : 'Description'}
+                    {'Açıklama'}
                   </label>
                   <textarea
                     value={createForm.description}
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    placeholder={language === 'tr' ? 'Oda açıklaması...' : 'Room description...'}
+                    placeholder={'Oda açıklaması...'}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm ${inputBg} focus:outline-none resize-none`}
                     rows={3}
                     maxLength={200}
@@ -369,7 +369,7 @@ export default function ChatRoomsPage() {
                 {/* Payment Type */}
                 <div>
                   <label className={`${descColor} text-sm block mb-2`}>
-                    {language === 'tr' ? `Ödeme Yöntemi (${roomCost} birim)` : `Payment Method (${roomCost} units)`}
+                    {`Ödeme Yöntemi (${roomCost} birim)`}
                   </label>
                   <div className="flex gap-3">
                     <button
@@ -407,8 +407,8 @@ export default function ChatRoomsPage() {
                   className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${btnPrimary} disabled:opacity-50`}
                 >
                   {creating
-                    ? (language === 'tr' ? 'Oluşturuluyor...' : 'Creating...')
-                    : (language === 'tr' ? `Oda Oluştur (${roomCost} ${createForm.paymentType === 'jeton' ? 'Jeton' : 'CFC'})` : `Create Room (${roomCost} ${createForm.paymentType === 'jeton' ? 'Jeton' : 'CFC'})`)}
+                    ? ('Oluşturuluyor...')
+                    : (`Oda Oluştur (${roomCost} ${createForm.paymentType === 'jeton' ? 'Jeton' : 'CFC'})`)}
                 </button>
               </div>
             </motion.div>

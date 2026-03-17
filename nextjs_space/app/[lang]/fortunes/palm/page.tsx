@@ -43,7 +43,7 @@ export default function PalmReadingPage() {
         }
       }, 100)
     } catch (err) {
-      setError(language === 'tr' ? 'Kamera erişimi reddedildi' : 'Camera access denied')
+      setError('Kamera erişimi reddedildi')
     }
   }, [language])
 
@@ -78,7 +78,7 @@ export default function PalmReadingPage() {
 
   const handleImageSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setError(language === 'tr' ? 'Sadece resim dosyaları yüklenebilir' : 'Only image files are allowed')
+      setError('Sadece resim dosyaları yüklenebilir')
       return
     }
     const reader = new FileReader()
@@ -106,7 +106,7 @@ export default function PalmReadingPage() {
 
   const handleSubmit = async () => {
     if (!palmImage) {
-      setError(language === 'tr' ? 'Lütfen el fotoğrafı yükleyin' : 'Please upload palm photo')
+      setError('Lütfen el fotoğrafı yükleyin')
       return
     }
 
@@ -115,9 +115,9 @@ export default function PalmReadingPage() {
     setResponse('')
 
     try {
-      setUploadProgress(language === 'tr' ? 'Fotoğraf yükleniyor...' : 'Uploading photo...')
+      setUploadProgress('Fotoğraf yükleniyor...')
       const palmPath = await uploadImage(palmImage)
-      setUploadProgress(language === 'tr' ? 'El falınız hazırlanıyor...' : 'Preparing your palm reading...')
+      setUploadProgress('El falınız hazırlanıyor...')
 
       const res = await fetch('/api/fortunes/palm', {
         method: 'POST',
@@ -192,7 +192,7 @@ export default function PalmReadingPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-gold-500 font-serif text-lg mb-4 text-center">
-                {language === 'tr' ? 'Fotoğraf Kaynağı' : 'Photo Source'}
+                {'Fotoğraf Kaynağı'}
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -201,7 +201,7 @@ export default function PalmReadingPage() {
                 >
                   <Camera className="w-8 h-8 text-gold-500" />
                   <span className="text-deep-purple-100 text-sm font-medium">
-                    {language === 'tr' ? 'Kamera' : 'Camera'}
+                    {'Kamera'}
                   </span>
                 </button>
                 <button
@@ -210,7 +210,7 @@ export default function PalmReadingPage() {
                 >
                   <ImageIcon className="w-8 h-8 text-gold-500" />
                   <span className="text-deep-purple-100 text-sm font-medium">
-                    {language === 'tr' ? 'Galeri' : 'Gallery'}
+                    {'Galeri'}
                   </span>
                 </button>
               </div>
@@ -218,7 +218,7 @@ export default function PalmReadingPage() {
                 onClick={() => setShowSourceModal(false)}
                 className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors text-sm"
               >
-                {language === 'tr' ? 'İptal' : 'Cancel'}
+                {'İptal'}
               </button>
             </motion.div>
           </motion.div>
@@ -245,8 +245,8 @@ export default function PalmReadingPage() {
               <canvas ref={canvasRef} className="hidden" />
               <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-2 rounded-full text-sm">
                 {hand === 'right' 
-                  ? (language === 'tr' ? '🤚 Sağ elinizi gösterin' : '🤚 Show your right hand')
-                  : (language === 'tr' ? '🤛 Sol elinizi gösterin' : '🤛 Show your left hand')
+                  ? ('🤚 Sağ elinizi gösterin')
+                  : ('🤛 Sol elinizi gösterin')
                 }
               </div>
             </div>
@@ -281,7 +281,7 @@ export default function PalmReadingPage() {
           {/* Hand Selection */}
           <div>
             <label className="block text-deep-purple-200 mb-3 text-sm font-medium">
-              {language === 'tr' ? 'Hangi Eliniz?' : 'Which Hand?'}
+              {'Hangi Eliniz?'}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -293,7 +293,7 @@ export default function PalmReadingPage() {
                 }`}
               >
                 <span className="text-lg">🤚</span>
-                <span className="text-sm">{language === 'tr' ? 'Sağ El' : 'Right Hand'}</span>
+                <span className="text-sm">{'Sağ El'}</span>
               </button>
               <button
                 onClick={() => setHand('left')}
@@ -304,7 +304,7 @@ export default function PalmReadingPage() {
                 }`}
               >
                 <span className="text-lg">🤛</span>
-                <span className="text-sm">{language === 'tr' ? 'Sol El' : 'Left Hand'}</span>
+                <span className="text-sm">{'Sol El'}</span>
               </button>
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function PalmReadingPage() {
           {/* Palm Photo Upload */}
           <div>
             <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
-              {language === 'tr' ? 'El Fotoğrafınız' : 'Your Palm Photo'}
+              {'El Fotoğrafınız'}
               <span className="text-gold-500 ml-1">*</span>
             </label>
             <div
@@ -340,7 +340,7 @@ export default function PalmReadingPage() {
                   <div className="absolute bottom-3 left-3 right-3">
                     <div className="bg-green-500/90 text-white text-sm py-2 px-3 rounded-full flex items-center justify-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      <span>{language === 'tr' ? 'Fotoğraf Yüklendi' : 'Photo Uploaded'}</span>
+                      <span>{'Fotoğraf Yüklendi'}</span>
                     </div>
                   </div>
                 </>
@@ -351,7 +351,7 @@ export default function PalmReadingPage() {
                     <ImageIcon className="w-8 h-8" />
                   </div>
                   <p className="text-sm text-center">
-                    {language === 'tr' ? 'Fotoğraf çek veya galeriden seç' : 'Take photo or select from gallery'}
+                    {'Fotoğraf çek veya galeriden seç'}
                   </p>
                 </div>
               )}
@@ -373,9 +373,7 @@ export default function PalmReadingPage() {
           {/* Tips */}
           <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
             <p className="text-deep-purple-300 text-xs sm:text-sm">
-              ✋ {language === 'tr' 
-                ? 'Avucıçinizi açık tutun ve iyi aydınlatılmış bir ortamda net bir fotoğraf çekin.' 
-                : 'Keep your palm open and take a clear photo in a well-lit environment.'}
+              ✋ {'Avucıçinizi açık tutun ve iyi aydınlatılmış bir ortamda net bir fotoğraf çekin.'}
             </p>
           </div>
 
@@ -386,11 +384,11 @@ export default function PalmReadingPage() {
             className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
-              <LoadingSpinner message={uploadProgress || (language === 'tr' ? 'El falınız hazırlanıyor...' : 'Preparing your palm reading...')} />
+              <LoadingSpinner message={uploadProgress || ('El falınız hazırlanıyor...')} />
             ) : (
               <>
                 <Hand className="w-5 h-5" />
-                {language === 'tr' ? 'El Falıma Bak' : 'Read My Palm'}
+                {'El Falıma Bak'}
               </>
             )}
           </button>
@@ -409,11 +407,11 @@ export default function PalmReadingPage() {
               <div className="flex items-center gap-2 text-gold-500">
                 <Sparkles className="w-5 h-5" />
                 <h2 className="font-serif text-xl sm:text-2xl">
-                  {language === 'tr' ? 'El Falınız' : 'Your Palm Reading'}
+                  {'El Falınız'}
                 </h2>
               </div>
               <p className="text-deep-purple-300 text-sm mt-1">
-                {hand === 'right' ? (language === 'tr' ? '🤚 Sağ El' : '🤚 Right Hand') : (language === 'tr' ? '🤛 Sol El' : '🤛 Left Hand')}
+                {hand === 'right' ? ('🤚 Sağ El') : ('🤛 Sol El')}
               </p>
             </div>
           </div>
@@ -432,7 +430,7 @@ export default function PalmReadingPage() {
           <div className="flex flex-wrap gap-2">
             <ShareToSocial fortuneType="palm" content={response} />
             <SocialShare 
-              title={language === 'tr' ? 'El Falım' : 'My Palm Reading'} 
+              title={'El Falım'} 
               text={response} 
             />
           </div>
@@ -443,7 +441,7 @@ export default function PalmReadingPage() {
             className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <RotateCcw className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni El Falı Baktır' : 'Get Another Palm Reading'}
+            {'Yeni El Falı Baktır'}
           </button>
         </div>
       )}

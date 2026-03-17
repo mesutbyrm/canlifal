@@ -133,7 +133,7 @@ export default function AdminBroadcastImagesPage() {
   }
   
   const handleDeleteImage = async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu resmi silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this image?')) return
+    if (!confirm('Bu resmi silmek istediğinize emin misiniz?')) return
     
     try {
       const res = await fetch(`/api/admin/broadcast-images?id=${id}`, {
@@ -181,7 +181,7 @@ export default function AdminBroadcastImagesPage() {
             <div className="flex items-center gap-2">
               <Image className="w-6 h-6 text-purple-400" />
               <h1 className="text-xl font-bold">
-                {language === 'tr' ? 'Yayın Resimleri' : 'Broadcast Images'}
+                {'Yayın Resimleri'}
               </h1>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function AdminBroadcastImagesPage() {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold text-sm hover:from-purple-400 hover:to-pink-400 transition"
           >
             <Plus className="w-4 h-4" />
-            {language === 'tr' ? 'Resim Ekle' : 'Add Image'}
+            {'Resim Ekle'}
           </button>
         </div>
       </div>
@@ -199,16 +199,14 @@ export default function AdminBroadcastImagesPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         <p className="text-white/60 text-sm mb-6">
-          {language === 'tr' 
-            ? 'Yayıncıların ekran görüntüsü olarak kullanabileceği resimleri buradan yönetebilirsiniz. Yayıncılar sadece bu listedeki aktif resimleri seçebilir.'
-            : 'Manage images that broadcasters can use as screen captures. Broadcasters can only select active images from this list.'}
+          {'Yayıncıların ekran görüntüsü olarak kullanabileceği resimleri buradan yönetebilirsiniz. Yayıncılar sadece bu listedeki aktif resimleri seçebilir.'}
         </p>
         
         {images.length === 0 ? (
           <div className="text-center py-16">
             <Image className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <p className="text-white/40">
-              {language === 'tr' ? 'Henüz resim eklenmemiş' : 'No images added yet'}
+              {'Henüz resim eklenmemiş'}
             </p>
           </div>
         ) : (
@@ -240,8 +238,8 @@ export default function AdminBroadcastImagesPage() {
                       : 'bg-red-500/80 text-white'
                   }`}>
                     {image.isActive 
-                      ? (language === 'tr' ? 'Aktif' : 'Active')
-                      : (language === 'tr' ? 'Pasif' : 'Inactive')
+                      ? ('Aktif')
+                      : ('Pasif')
                     }
                   </div>
                   
@@ -269,8 +267,8 @@ export default function AdminBroadcastImagesPage() {
                     >
                       {image.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       {image.isActive 
-                        ? (language === 'tr' ? 'Gizle' : 'Hide')
-                        : (language === 'tr' ? 'Göster' : 'Show')
+                        ? ('Gizle')
+                        : ('Göster')
                       }
                     </button>
                     
@@ -315,8 +313,8 @@ export default function AdminBroadcastImagesPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold">
                   {editingImage 
-                    ? (language === 'tr' ? 'Resmi Düzenle' : 'Edit Image')
-                    : (language === 'tr' ? 'Yeni Resim Ekle' : 'Add New Image')
+                    ? ('Resmi Düzenle')
+                    : ('Yeni Resim Ekle')
                   }
                 </h2>
                 <button
@@ -330,20 +328,20 @@ export default function AdminBroadcastImagesPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">
-                    {language === 'tr' ? 'Resim Adı' : 'Image Name'}
+                    {'Resim Adı'}
                   </label>
                   <input
                     type="text"
                     value={formName}
                     onChange={e => setFormName(e.target.value)}
-                    placeholder={language === 'tr' ? 'Örn: Mor Arka Plan' : 'E.g: Purple Background'}
+                    placeholder={'Örn: Mor Arka Plan'}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
                   />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">
-                    {language === 'tr' ? 'Resim URL' : 'Image URL'}
+                    {'Resim URL'}
                   </label>
                   <input
                     type="url"
@@ -369,7 +367,7 @@ export default function AdminBroadcastImagesPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">
-                    {language === 'tr' ? 'Sıralama' : 'Sort Order'}
+                    {'Sıralama'}
                   </label>
                   <input
                     type="number"
@@ -391,8 +389,8 @@ export default function AdminBroadcastImagesPage() {
                     <>
                       <Save className="w-5 h-5" />
                       {editingImage 
-                        ? (language === 'tr' ? 'Güncelle' : 'Update')
-                        : (language === 'tr' ? 'Ekle' : 'Add')
+                        ? ('Güncelle')
+                        : ('Ekle')
                       }
                     </>
                   )}

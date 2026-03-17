@@ -24,7 +24,7 @@ export default function LiveTellerDashboardLayout({
           <Link href={`/`} className="flex items-center gap-2 text-gold-500 hover:text-gold-400">
             <Sparkles className="w-5 h-5" />
             <span className="font-semibold text-sm">
-              {language === 'tr' ? 'Falcı Paneli' : 'Teller Panel'}
+              {'Falcı Paneli'}
             </span>
           </Link>
 
@@ -35,14 +35,14 @@ export default function LiveTellerDashboardLayout({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-300 hover:text-white hover:bg-purple-800/50 rounded-lg transition-colors"
             >
               <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">{language === 'tr' ? 'Ana Sayfa' : 'Home'}</span>
+              <span className="hidden sm:inline">{'Ana Sayfa'}</span>
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: `/` })}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">{language === 'tr' ? 'Çıkış' : 'Logout'}</span>
+              <span className="hidden sm:inline">{'Çıkış'}</span>
             </button>
           </div>
         </div>

@@ -42,7 +42,7 @@ export default function CoffeeFortunePage() {
 
   const handleImageSelect = (file: File, type: 'cup' | 'saucer') => {
     if (!file.type.startsWith('image/')) {
-      setError(language === 'tr' ? 'Sadece resim dosyaları yüklenebilir' : 'Only image files are allowed')
+      setError('Sadece resim dosyaları yüklenebilir')
       return
     }
     
@@ -92,7 +92,7 @@ export default function CoffeeFortunePage() {
 
   const handleImageSubmit = async () => {
     if (!cupImage) {
-      setError(language === 'tr' ? 'Lütfen fincan içi fotoğrafı yükleyin' : 'Please upload cup interior photo')
+      setError('Lütfen fincan içi fotoğrafı yükleyin')
       return
     }
 
@@ -101,16 +101,16 @@ export default function CoffeeFortunePage() {
     setFortune('')
 
     try {
-      setUploadProgress(language === 'tr' ? 'Fincan fotoğrafı yükleniyor...' : 'Uploading cup photo...')
+      setUploadProgress('Fincan fotoğrafı yükleniyor...')
       const cupPath = await uploadImage(cupImage)
       
       let saucerPath = ''
       if (saucerImage) {
-        setUploadProgress(language === 'tr' ? 'Tabak fotoğrafı yükleniyor...' : 'Uploading saucer photo...')
+        setUploadProgress('Tabak fotoğrafı yükleniyor...')
         saucerPath = await uploadImage(saucerImage)
       }
 
-      setUploadProgress(language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...')
+      setUploadProgress('Falınız hazırlanıyor...')
 
       const response = await fetch('/api/fortunes/coffee-image', {
         method: 'POST',
@@ -253,7 +253,7 @@ export default function CoffeeFortunePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-gold-500 font-serif text-lg mb-4 text-center">
-                {language === 'tr' ? 'Fotoğraf Kaynağı' : 'Photo Source'}
+                {'Fotoğraf Kaynağı'}
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -269,7 +269,7 @@ export default function CoffeeFortunePage() {
                 >
                   <Camera className="w-8 h-8 text-gold-500" />
                   <span className="text-deep-purple-100 text-sm font-medium">
-                    {language === 'tr' ? 'Kamera' : 'Camera'}
+                    {'Kamera'}
                   </span>
                 </button>
                 <button
@@ -285,7 +285,7 @@ export default function CoffeeFortunePage() {
                 >
                   <ImageIcon className="w-8 h-8 text-gold-500" />
                   <span className="text-deep-purple-100 text-sm font-medium">
-                    {language === 'tr' ? 'Galeri' : 'Gallery'}
+                    {'Galeri'}
                   </span>
                 </button>
               </div>
@@ -293,7 +293,7 @@ export default function CoffeeFortunePage() {
                 onClick={() => setShowImageSourceModal(null)}
                 className="w-full mt-4 py-2 text-deep-purple-400 hover:text-deep-purple-200 transition-colors text-sm"
               >
-                {language === 'tr' ? 'İptal' : 'Cancel'}
+                {'İptal'}
               </button>
             </motion.div>
           </motion.div>
@@ -313,7 +313,7 @@ export default function CoffeeFortunePage() {
               }`}
             >
               <Camera className="w-4 h-4" />
-              <span>{language === 'tr' ? 'Fotoğraf' : 'Photo'}</span>
+              <span>{'Fotoğraf'}</span>
             </button>
             <button
               onClick={() => setInputMode('text')}
@@ -324,7 +324,7 @@ export default function CoffeeFortunePage() {
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>{language === 'tr' ? 'Metin' : 'Text'}</span>
+              <span>{'Metin'}</span>
             </button>
           </div>
 
@@ -348,7 +348,7 @@ export default function CoffeeFortunePage() {
                 {/* Cup Image */}
                 <div>
                   <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
-                    {language === 'tr' ? 'Fincan İçi' : 'Cup Interior'}
+                    {'Fincan İçi'}
                     <span className="text-gold-500 ml-1">*</span>
                   </label>
                   <div
@@ -376,7 +376,7 @@ export default function CoffeeFortunePage() {
                         <div className="absolute bottom-2 left-2 right-2">
                           <div className="bg-green-500/90 text-white text-xs py-1 px-2 rounded-full flex items-center justify-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            <span>{language === 'tr' ? 'Yüklendi' : 'Uploaded'}</span>
+                            <span>{'Yüklendi'}</span>
                           </div>
                         </div>
                       </>
@@ -384,7 +384,7 @@ export default function CoffeeFortunePage() {
                       <div className="flex flex-col items-center justify-center h-full text-deep-purple-400 p-3">
                         <Camera className="w-8 h-8 mb-2" />
                         <p className="text-xs text-center">
-                          {language === 'tr' ? 'Dokunun' : 'Tap here'}
+                          {'Dokunun'}
                         </p>
                       </div>
                     )}
@@ -409,8 +409,8 @@ export default function CoffeeFortunePage() {
                 {/* Saucer Image */}
                 <div>
                   <label className="block text-deep-purple-200 mb-2 text-sm font-medium">
-                    {language === 'tr' ? 'Tabak' : 'Saucer'}
-                    <span className="text-deep-purple-500 ml-1 text-xs">({language === 'tr' ? 'opsiyonel' : 'optional'})</span>
+                    {'Tabak'}
+                    <span className="text-deep-purple-500 ml-1 text-xs">({'opsiyonel'})</span>
                   </label>
                   <div
                     onClick={() => setShowImageSourceModal('saucer')}
@@ -437,7 +437,7 @@ export default function CoffeeFortunePage() {
                         <div className="absolute bottom-2 left-2 right-2">
                           <div className="bg-green-500/90 text-white text-xs py-1 px-2 rounded-full flex items-center justify-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            <span>{language === 'tr' ? 'Yüklendi' : 'Uploaded'}</span>
+                            <span>{'Yüklendi'}</span>
                           </div>
                         </div>
                       </>
@@ -445,7 +445,7 @@ export default function CoffeeFortunePage() {
                       <div className="flex flex-col items-center justify-center h-full text-deep-purple-400 p-3">
                         <ImageIcon className="w-8 h-8 mb-2" />
                         <p className="text-xs text-center">
-                          {language === 'tr' ? 'Dokunun' : 'Tap here'}
+                          {'Dokunun'}
                         </p>
                       </div>
                     )}
@@ -471,9 +471,7 @@ export default function CoffeeFortunePage() {
               {/* Tips */}
               <div className="bg-deep-purple-900/30 border border-deep-purple-700/50 rounded-xl p-3 sm:p-4">
                 <p className="text-deep-purple-300 text-xs sm:text-sm">
-                  💡 {language === 'tr' 
-                    ? 'En iyi sonuç için fincanı iyi aydınlatılmış bir ortamda ve net bir şekilde çekin.' 
-                    : 'For best results, photograph the cup in a well-lit area with clear focus.'}
+                  💡 {'En iyi sonuç için fincanı iyi aydınlatılmış bir ortamda ve net bir şekilde çekin.'}
                 </p>
               </div>
 
@@ -484,11 +482,11 @@ export default function CoffeeFortunePage() {
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {isLoading ? (
-                  <LoadingSpinner message={uploadProgress || (language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...')} />
+                  <LoadingSpinner message={uploadProgress || ('Falınız hazırlanıyor...')} />
                 ) : (
                   <>
                     <Coffee className="w-5 h-5" />
-                    {language === 'tr' ? 'Falıma Baktır' : 'Read My Fortune'}
+                    {'Falıma Baktır'}
                   </>
                 )}
               </button>
@@ -500,7 +498,7 @@ export default function CoffeeFortunePage() {
             <form onSubmit={handleTextSubmit} className="space-y-4">
               <div>
                 <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between mb-2">
-                  <span>{language === 'tr' ? 'Fincanda ne görüyorsunuz?' : 'What do you see in the cup?'}</span>
+                  <span>{'Fincanda ne görüyorsunuz?'}</span>
                   <VoiceInput 
                     onTranscript={(text) => setDescription(prev => prev + ' ' + text)}
                     disabled={isLoading}
@@ -510,7 +508,7 @@ export default function CoffeeFortunePage() {
                   value={description}
                   onChange={(e) => setDescription(e?.target?.value ?? '')}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-xl text-deep-purple-100 placeholder-deep-purple-500 focus:outline-none focus:border-gold-500/50 transition-colors min-h-[120px] sm:min-h-[150px] text-sm sm:text-base resize-none"
-                  placeholder={language === 'tr' ? 'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın...' : 'Describe the shapes, patterns, and what you see in your cup...'}
+                  placeholder={'Fincanınızdaki şekilleri, desenleri ve gördüklerinizi detaylıca anlatın...'}
                   required
                 />
               </div>
@@ -521,11 +519,11 @@ export default function CoffeeFortunePage() {
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {isLoading ? (
-                  <LoadingSpinner message={language === 'tr' ? 'Falınız hazırlanıyor...' : 'Preparing your fortune...'} />
+                  <LoadingSpinner message={'Falınız hazırlanıyor...'} />
                 ) : (
                   <>
                     <Coffee className="w-5 h-5" />
-                    {language === 'tr' ? 'Falımı Gör' : 'Read My Fortune'}
+                    {'Falımı Gör'}
                   </>
                 )}
               </button>
@@ -539,7 +537,7 @@ export default function CoffeeFortunePage() {
           <div className="flex items-center gap-2 text-gold-500">
             <Sparkles className="w-5 h-5" />
             <h2 className="font-serif text-xl sm:text-2xl">
-              {language === 'tr' ? 'Falınız Hazır' : 'Your Fortune is Ready'}
+              {'Falınız Hazır'}
             </h2>
           </div>
           
@@ -573,7 +571,7 @@ export default function CoffeeFortunePage() {
           <div className="flex flex-wrap gap-2">
             <ShareToSocial fortuneType="coffee" content={fortune} />
             <SocialShare 
-              title={language === 'tr' ? 'Kahve Falı Sonucum' : 'My Coffee Fortune'} 
+              title={'Kahve Falı Sonucum'} 
               text={fortune} 
             />
           </div>
@@ -584,7 +582,7 @@ export default function CoffeeFortunePage() {
             className="w-full py-3 sm:py-4 bg-deep-purple-800 hover:bg-deep-purple-700 text-gold-400 rounded-xl transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <RotateCcw className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Fal Baktır' : 'Get Another Reading'}
+            {'Yeni Fal Baktır'}
           </button>
         </div>
       )}

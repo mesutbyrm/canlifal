@@ -163,7 +163,7 @@ export function SpecialBadge({ type, size = 'md' }: { type: SpecialBadgeType; si
       
       {/* Tooltip */}
       <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 px-3 py-1.5 rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 border border-purple-500/30 pointer-events-none">
-        {language === 'tr' ? config.nameTr : config.nameEn}
+        {config.nameTr}
       </div>
     </div>
   )

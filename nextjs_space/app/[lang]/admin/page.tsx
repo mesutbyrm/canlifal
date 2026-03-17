@@ -259,7 +259,7 @@ export default function AdminPage() {
       })
       if (res.ok) {
         await fetchRoomModeration(selectedRoom.id)
-        alert(language === 'tr' ? 'İşlem başarılı!' : 'Action successful!')
+        alert('İşlem başarılı!')
       } else { const errorData = await res.json(); alert(errorData.error) }
     } catch (error) { console.error('Mod action error:', error) }
   }
@@ -289,11 +289,11 @@ export default function AdminPage() {
       })
       if (response?.ok) {
         await fetchData(); setSelectedUser(null)
-        alert(language === 'tr' ? 'CFC eklendi!' : 'CFC added!')
-      } else { alert(language === 'tr' ? 'CFC eklenemedi!' : 'Failed to add CFC!') }
+        alert('CFC eklendi!')
+      } else { alert('CFC eklenemedi!') }
     } catch (error) {
       console.error('Failed to add credits:', error)
-      alert(language === 'tr' ? 'Hata oluştu!' : 'Error occurred!')
+      alert('Hata oluştu!')
     }
   }
 
@@ -315,8 +315,8 @@ export default function AdminPage() {
       if (res.ok) {
         await fetchCommissionRooms()
         setEditingRoom(null)
-        alert(language === 'tr' ? 'Komisyon ayarları kaydedildi!' : 'Commission settings saved!')
-      } else { alert(language === 'tr' ? 'Kaydetme başarısız!' : 'Save failed!') }
+        alert('Komisyon ayarları kaydedildi!')
+      } else { alert('Kaydetme başarısız!') }
     } catch { alert('Hata oluştu') }
   }
 
@@ -361,7 +361,7 @@ export default function AdminPage() {
         }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
-        <span className="truncate">{language === 'tr' ? item.trLabel : item.enLabel}</span>
+        <span className="truncate">{item.trLabel}</span>
       </button>
     )
   }
@@ -388,19 +388,19 @@ export default function AdminPage() {
               <Eye className="w-5 h-5 text-green-500" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{ position: 'relative', top: -8, right: -2 }} />
             </div>
-            <span className={`${textSecondary} text-sm`}>{language === 'tr' ? 'Aktif Ziyaretçi' : 'Active Visitors'}</span>
+            <span className={`${textSecondary} text-sm`}>{'Aktif Ziyaretçi'}</span>
           </div>
           <LiveVisitorCount variant="admin" />
         </div>
         <StatCard icon={Users} label={t('admin.total_users')} value={statistics?.totalUsers ?? 0} color={accentColor} />
         <StatCard icon={Sparkles} label={t('admin.total_fortunes')} value={statistics?.totalFortunes ?? 0} color={goldColor} />
-        <StatCard icon={DollarSign} label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
-        <StatCard icon={Coins} label={language === 'tr' ? 'Dolaşımdaki Jeton' : 'Jetons'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
+        <StatCard icon={DollarSign} label={'Dolaşımdaki CFC'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+        <StatCard icon={Coins} label={'Dolaşımdaki Jeton'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
       </div>
 
       {/* Quick Actions Grid */}
       <div>
-        <h3 className={`${textPrimary} text-lg font-semibold mb-4`}>{language === 'tr' ? 'Hızlı Erişim' : 'Quick Access'}</h3>
+        <h3 className={`${textPrimary} text-lg font-semibold mb-4`}>{'Hızlı Erişim'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {MANAGEMENT_LINKS(language).map((link) => {
             const Icon = link.icon
@@ -411,7 +411,7 @@ export default function AdminPage() {
                   <Icon className={`w-6 h-6 ${accentColor}`} />
                 </div>
                 <span className={`${textPrimary} text-xs font-medium leading-tight`}>
-                  {language === 'tr' ? link.trLabel : link.enLabel}
+                  {link.trLabel}
                 </span>
               </Link>
             )
@@ -425,12 +425,12 @@ export default function AdminPage() {
         <div className={`${cardBg} rounded-xl p-5`}>
           <h3 className={`${textPrimary} font-semibold mb-4 flex items-center gap-2`}>
             <Sparkles className={`w-5 h-5 ${accentColor}`} />
-            {language === 'tr' ? 'Fal Türleri' : 'Fortune Types'}
+            {'Fal Türleri'}
           </h3>
           <div className="space-y-3">
-            {[{icon: Coffee, name: language === 'tr' ? 'Kahve Falı' : 'Coffee', key: 'coffee'},
-              {icon: Star, name: language === 'tr' ? 'Tarot' : 'Tarot', key: 'tarot'},
-              {icon: Moon, name: language === 'tr' ? 'Rüya Tabiri' : 'Dream', key: 'dream'}].map(item => (
+            {[{icon: Coffee, name: 'Kahve Falı', key: 'coffee'},
+              {icon: Star, name: 'Tarot', key: 'tarot'},
+              {icon: Moon, name: 'Rüya Tabiri', key: 'dream'}].map(item => (
               <div key={item.key} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <item.icon className={`w-4 h-4 ${accentColor}`} />
@@ -446,23 +446,23 @@ export default function AdminPage() {
         <div className={`${cardBg} rounded-xl p-5`}>
           <h3 className={`${textPrimary} font-semibold mb-4 flex items-center gap-2`}>
             <BarChart3 className={`w-5 h-5 ${accentColor}`} />
-            {language === 'tr' ? 'Platform Özeti' : 'Platform Summary'}
+            {'Platform Özeti'}
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{language === 'tr' ? 'Aktif Yayınlar' : 'Active Streams'}</span>
+              <span className={textSecondary}>{'Aktif Yayınlar'}</span>
               <span className="text-green-500 font-semibold">{statistics?.streams?.active ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{language === 'tr' ? 'Toplam Paylaşım' : 'Total Posts'}</span>
+              <span className={textSecondary}>{'Toplam Paylaşım'}</span>
               <span className={`${textPrimary} font-semibold`}>{statistics?.social?.totalPosts ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{language === 'tr' ? 'Toplam Mesaj' : 'Total Messages'}</span>
+              <span className={textSecondary}>{'Toplam Mesaj'}</span>
               <span className={`${textPrimary} font-semibold`}>{statistics?.messaging?.totalMessages ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{language === 'tr' ? 'Toplam Takip' : 'Total Follows'}</span>
+              <span className={textSecondary}>{'Toplam Takip'}</span>
               <span className={`${textPrimary} font-semibold`}>{statistics?.community?.totalFollows ?? 0}</span>
             </div>
           </div>
@@ -482,7 +482,7 @@ export default function AdminPage() {
               type="text"
               value={adminUserSearch}
               onChange={(e) => setAdminUserSearch(e.target.value)}
-              placeholder={language === 'tr' ? 'Ad, kullanıcı adı veya e-posta ara...' : 'Search name, username or email...'}
+              placeholder={'Ad, kullanıcı adı veya e-posta ara...'}
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm ${inputBg} focus:outline-none`}
             />
           </div>
@@ -493,9 +493,9 @@ export default function AdminPage() {
               <th className={`text-left py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('form.name')}</th>
               <th className={`text-left py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('form.email')}</th>
               <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{t('nav.credits')}</th>
-              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Fal' : 'Fortunes'}</th>
-              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Kayıt' : 'Joined'}</th>
-              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'İşlem' : 'Actions'}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{'Fal'}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{'Kayıt'}</th>
+              <th className={`text-center py-3 px-4 ${textSecondary} font-medium text-sm`}>{'İşlem'}</th>
             </tr>
           </thead>
           <tbody>
@@ -513,7 +513,7 @@ export default function AdminPage() {
                 <td className="py-3 px-4 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={() => setSelectedUser(user)}
-                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={language === 'tr' ? 'CFC Ekle' : 'Add CFC'}>
+                      className={`p-2 rounded-lg ${btnSecondary} transition-colors`} title={'CFC Ekle'}>
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
@@ -530,7 +530,7 @@ export default function AdminPage() {
     <div className="grid lg:grid-cols-3 gap-6">
       {/* Chat Rooms List */}
       <div className={`${cardBg} rounded-xl p-5`}>
-        <h2 className={`${textPrimary} text-lg font-bold mb-4`}>{language === 'tr' ? 'Sohbet Odaları' : 'Chat Rooms'}</h2>
+        <h2 className={`${textPrimary} text-lg font-bold mb-4`}>{'Sohbet Odaları'}</h2>
         <div className="space-y-2">
           {chatRooms.map((room) => (
             <div key={room.id} onClick={() => selectRoom(room)}
@@ -538,8 +538,8 @@ export default function AdminPage() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{room.icon}</span>
                 <div>
-                  <h3 className={`${textPrimary} font-medium text-sm`}>{language === 'tr' ? room.nameTr : room.nameEn}</h3>
-                  <p className={`${textMuted} text-xs`}>{room.onlineCount} {language === 'tr' ? 'çevrimiçi' : 'online'} • {room.messageCount} {language === 'tr' ? 'mesaj' : 'msg'}</p>
+                  <h3 className={`${textPrimary} font-medium text-sm`}>{room.nameTr}</h3>
+                  <p className={`${textMuted} text-xs`}>{room.onlineCount} {'çevrimiçi'} • {room.messageCount} {'mesaj'}</p>
                 </div>
               </div>
             </div>
@@ -554,16 +554,16 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className={`${textPrimary} text-lg font-bold flex items-center gap-2`}>
                 <span>{selectedRoom.icon}</span>
-                {language === 'tr' ? selectedRoom.nameTr : selectedRoom.nameEn}
+                {selectedRoom.nameTr}
                 {roomModData.roomMuted && <VolumeX className="w-5 h-5 text-red-400" />}
               </h2>
               <button onClick={() => performModAction(roomModData.roomMuted ? 'unmute_room' : 'mute_room', '')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm ${roomModData.roomMuted ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                 {roomModData.roomMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                {roomModData.roomMuted ? (language === 'tr' ? 'Sessizi Aç' : 'Unmute') : (language === 'tr' ? 'Sessize Al' : 'Mute')}
+                {roomModData.roomMuted ? ('Sessizi Aç') : ('Sessize Al')}
               </button>
               <button onClick={async () => {
-                if (!confirm(language === 'tr' ? 'Bu odayı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this room?')) return
+                if (!confirm('Bu odayı silmek istediğinize emin misiniz?')) return
                 try {
                   const res = await fetch('/api/admin/chat-rooms', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId: selectedRoom.id }) })
                   if (res.ok) { const rr = await fetch('/api/chat/rooms'); const rd = await rr.json(); setChatRooms(rd || []); setSelectedRoom(null); setRoomModData(null) }
@@ -571,7 +571,7 @@ export default function AdminPage() {
                 } catch { alert('Hata oluştu') }
               }} className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20">
                 <Trash2 className="w-4 h-4" />
-                {language === 'tr' ? 'Odayı Sil' : 'Delete Room'}
+                {'Odayı Sil'}
               </button>
             </div>
 
@@ -579,7 +579,7 @@ export default function AdminPage() {
             <div className={`mb-6 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
               <h3 className={`${textPrimary} font-medium mb-3 text-sm flex items-center gap-2`}>
                 <Crown className={`w-4 h-4 ${goldColor}`} />
-                {language === 'tr' ? 'Oda Sahibi' : 'Room Owner'}
+                {'Oda Sahibi'}
               </h3>
               {roomModData?.owner ? (
                 <div className="flex items-center justify-between mb-3">
@@ -589,31 +589,31 @@ export default function AdminPage() {
                   </div>
                   <button onClick={removeRoomOwner}
                     className="px-3 py-1 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20">
-                    {language === 'tr' ? 'Sahibi Kaldır' : 'Remove Owner'}
+                    {'Sahibi Kaldır'}
                   </button>
                 </div>
               ) : (
-                <p className={`${textMuted} text-sm mb-3`}>{language === 'tr' ? 'Bu odanın sahibi yok' : 'No owner for this room'}</p>
+                <p className={`${textMuted} text-sm mb-3`}>{'Bu odanın sahibi yok'}</p>
               )}
               <div className="flex gap-2 items-end flex-wrap">
                 <select value={ownerUserId} onChange={(e) => setOwnerUserId(e.target.value)}
                   className={`flex-1 min-w-[150px] px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Yeni Sahip Seç' : 'Select New Owner'}</option>
+                  <option value="">{'Yeni Sahip Seç'}</option>
                   {users.map((user) => (<option key={user.id} value={user.id}>{user.name}</option>))}
                 </select>
                 <button onClick={setRoomOwner} className={`px-4 py-2 rounded-lg text-sm font-medium ${btnPrimary}`}>
-                  {language === 'tr' ? 'Sahip Ata' : 'Set Owner'}
+                  {'Sahip Ata'}
                 </button>
               </div>
             </div>
 
             {/* Grant Role */}
             <div className={`mb-6 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
-              <h3 className={`${textPrimary} font-medium mb-3 text-sm`}>{language === 'tr' ? 'Yetki Ver' : 'Grant Role'}</h3>
+              <h3 className={`${textPrimary} font-medium mb-3 text-sm`}>{'Yetki Ver'}</h3>
               <div className="flex gap-2 items-end flex-wrap">
                 <select value={roleUserId} onChange={(e) => setRoleUserId(e.target.value)}
                   className={`flex-1 min-w-[150px] px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
-                  <option value="">{language === 'tr' ? 'Kullanıcı Seç' : 'Select User'}</option>
+                  <option value="">{'Kullanıcı Seç'}</option>
                   {users.map((user) => (<option key={user.id} value={user.id}>{user.name}</option>))}
                 </select>
                 <select value={roleType} onChange={(e) => setRoleType(e.target.value)}
@@ -624,7 +624,7 @@ export default function AdminPage() {
                   <option value="founder">~ Founder</option>
                 </select>
                 <button onClick={grantRole} className={`px-4 py-2 rounded-lg text-sm font-medium ${btnPrimary}`}>
-                  {language === 'tr' ? 'Ver' : 'Grant'}
+                  {'Ver'}
                 </button>
               </div>
             </div>
@@ -632,7 +632,7 @@ export default function AdminPage() {
             {/* Roles */}
             <div className="mb-4">
               <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
-                <Crown className={`w-4 h-4 ${goldColor}`} /> {language === 'tr' ? 'Yetkili Kullanıcılar' : 'Users with Roles'}
+                <Crown className={`w-4 h-4 ${goldColor}`} /> {'Yetkili Kullanıcılar'}
               </h3>
               {roomModData.roles.length > 0 ? (
                 <div className="space-y-1">
@@ -647,17 +647,17 @@ export default function AdminPage() {
                         <span className={`${textMuted} text-xs`}>({role.role})</span>
                       </div>
                       <button onClick={() => performModAction('remove_role', role.userId)}
-                        className="text-red-400 hover:text-red-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Remove'}</button>
+                        className="text-red-400 hover:text-red-300 text-xs">{'Kaldır'}</button>
                     </div>
                   ))}
                 </div>
-              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Yetkili yok' : 'No users'}</p>)}
+              ) : (<p className={`${textMuted} text-sm`}>{'Yetkili yok'}</p>)}
             </div>
 
             {/* Muted */}
             <div className="mb-4">
               <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
-                <VolumeX className="w-4 h-4 text-orange-400" /> {language === 'tr' ? 'Susturulanlar' : 'Muted'}
+                <VolumeX className="w-4 h-4 text-orange-400" /> {'Susturulanlar'}
               </h3>
               {roomModData.mutes.length > 0 ? (
                 <div className="space-y-1">
@@ -665,17 +665,17 @@ export default function AdminPage() {
                     <div key={mute.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-500/5">
                       <span className={`${textPrimary} text-sm`}>{mute.user.name}</span>
                       <button onClick={() => performModAction('unmute_user', mute.userId)}
-                        className="text-green-400 hover:text-green-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Unmute'}</button>
+                        className="text-green-400 hover:text-green-300 text-xs">{'Kaldır'}</button>
                     </div>
                   ))}
                 </div>
-              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Susturulan yok' : 'None'}</p>)}
+              ) : (<p className={`${textMuted} text-sm`}>{'Susturulan yok'}</p>)}
             </div>
 
             {/* Banned */}
             <div>
               <h3 className={`${textSecondary} font-medium mb-2 text-sm flex items-center gap-2`}>
-                <Ban className="w-4 h-4 text-red-400" /> {language === 'tr' ? 'Engellenenler' : 'Banned'}
+                <Ban className="w-4 h-4 text-red-400" /> {'Engellenenler'}
               </h3>
               {roomModData.bans.length > 0 ? (
                 <div className="space-y-1">
@@ -683,17 +683,17 @@ export default function AdminPage() {
                     <div key={ban.id} className="flex items-center justify-between p-2 rounded-lg bg-red-500/5">
                       <span className={`${textPrimary} text-sm`}>{ban.user.name}</span>
                       <button onClick={() => performModAction('unban_user', ban.userId)}
-                        className="text-green-400 hover:text-green-300 text-xs">{language === 'tr' ? 'Kaldır' : 'Unban'}</button>
+                        className="text-green-400 hover:text-green-300 text-xs">{'Kaldır'}</button>
                     </div>
                   ))}
                 </div>
-              ) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Engellenen yok' : 'None'}</p>)}
+              ) : (<p className={`${textMuted} text-sm`}>{'Engellenen yok'}</p>)}
             </div>
           </>
         ) : (
           <div className="text-center py-12">
             <MessageCircle className={`w-12 h-12 ${textMuted} mx-auto mb-4`} />
-            <p className={textMuted}>{language === 'tr' ? 'Yönetmek için bir oda seçin' : 'Select a room to manage'}</p>
+            <p className={textMuted}>{'Yönetmek için bir oda seçin'}</p>
           </div>
         )}
       </div>
@@ -708,18 +708,18 @@ export default function AdminPage() {
           <p className={`${textMuted} text-xs`}>{desc}</p>
         </div>
         {adSaveStatus === slotKey && (
-          <span className="flex items-center gap-1 text-green-500 text-xs"><CheckCircle className="w-3 h-3" /> {language === 'tr' ? 'Kaydedildi' : 'Saved'}</span>
+          <span className="flex items-center gap-1 text-green-500 text-xs"><CheckCircle className="w-3 h-3" /> {'Kaydedildi'}</span>
         )}
       </div>
       <textarea
         value={adSettings[slotKey] || ''}
         onChange={(e) => setAdSettings(prev => ({ ...prev, [slotKey]: e.target.value }))}
-        placeholder={language === 'tr' ? 'Google AdSense kodunu buraya yapıştırın...' : 'Paste code here...'}
+        placeholder={'Google AdSense kodunu buraya yapıştırın...'}
         className={`w-full h-24 px-3 py-2 rounded-lg border text-xs font-mono ${inputBg} focus:outline-none`}
       />
       <button onClick={() => saveAdSetting(slotKey, adSettings[slotKey] || '')}
         className={`mt-2 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
-        <Save className="w-4 h-4" /> {language === 'tr' ? 'Kaydet' : 'Save'}
+        <Save className="w-4 h-4" /> {'Kaydet'}
       </button>
     </div>
   )
@@ -727,18 +727,18 @@ export default function AdminPage() {
   const renderAds = () => (
     <div className="space-y-4">
       <div className={`${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'} rounded-xl p-4`}>
-        <h3 className={`${accentColor} font-medium text-sm mb-1`}>{language === 'tr' ? 'Google Ads Entegrasyonu' : 'Google Ads Integration'}</h3>
+        <h3 className={`${accentColor} font-medium text-sm mb-1`}>{'Google Ads Entegrasyonu'}</h3>
         <p className={`${textSecondary} text-xs`}>
-          {language === 'tr' ? 'Google AdSense kodlarınızı aşağıdaki alanlara yapıştırın.' : 'Paste your Google AdSense codes in the fields below.'}
+          {'Google AdSense kodlarınızı aşağıdaki alanlara yapıştırın.'}
         </p>
       </div>
       <div className="grid gap-4">
-        <AdSlot slotKey="ads_script" title={language === 'tr' ? 'AdSense Script' : 'AdSense Script'} desc={language === 'tr' ? 'Ana script kodu (head bölümü)' : 'Main script code (head section)'} />
-        <AdSlot slotKey="ads_header" title={language === 'tr' ? 'Üst Banner' : 'Header Banner'} desc={language === 'tr' ? 'Sayfa üstünde' : 'Top of pages'} />
-        <AdSlot slotKey="ads_sidebar" title={language === 'tr' ? 'Kenar Çubuğu' : 'Sidebar'} desc={language === 'tr' ? 'Sayfa kenarında' : 'Page sidebar'} />
-        <AdSlot slotKey="ads_inline" title={language === 'tr' ? 'İçerik Arası' : 'Inline Content'} desc={language === 'tr' ? 'İçerik arasında' : 'Between content'} />
-        <AdSlot slotKey="ads_footer" title={language === 'tr' ? 'Alt Banner' : 'Footer Banner'} desc={language === 'tr' ? 'Sayfa altında' : 'Bottom of pages'} />
-        <AdSlot slotKey="ads_rewarded" title={language === 'tr' ? 'Ödüllü Reklam' : 'Rewarded Ad'} desc={language === 'tr' ? '5 CFC kazanma, günlük 10 limit' : 'Earn 5 CFC, 10/day limit'} />
+        <AdSlot slotKey="ads_script" title={'AdSense Script'} desc={'Ana script kodu (head bölümü)'} />
+        <AdSlot slotKey="ads_header" title={'Üst Banner'} desc={'Sayfa üstünde'} />
+        <AdSlot slotKey="ads_sidebar" title={'Kenar Çubuğu'} desc={'Sayfa kenarında'} />
+        <AdSlot slotKey="ads_inline" title={'İçerik Arası'} desc={'İçerik arasında'} />
+        <AdSlot slotKey="ads_footer" title={'Alt Banner'} desc={'Sayfa altında'} />
+        <AdSlot slotKey="ads_rewarded" title={'Ödüllü Reklam'} desc={'5 CFC kazanma, günlük 10 limit'} />
       </div>
     </div>
   )
@@ -752,8 +752,8 @@ export default function AdminPage() {
         <span className={`${textSecondary} text-sm font-medium`}>{label}</span>
       </div>
       <div className="space-y-1">
-        <div><p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tekil' : 'Unique'}</p><p className={`text-2xl font-bold ${color}`}>{unique}</p></div>
-        <div><p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Toplam' : 'Total'}</p><p className={`text-lg ${textSecondary}`}>{total}</p></div>
+        <div><p className={`${textMuted} text-xs`}>{'Tekil'}</p><p className={`text-2xl font-bold ${color}`}>{unique}</p></div>
+        <div><p className={`${textMuted} text-xs`}>{'Toplam'}</p><p className={`text-lg ${textSecondary}`}>{total}</p></div>
       </div>
     </div>
   )
@@ -771,10 +771,10 @@ export default function AdminPage() {
     <div className="space-y-6">
       {/* Visit counts */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <VisitorCard label={language === 'tr' ? 'Bugün' : 'Today'} unique={visitorStats?.today?.unique ?? 0} total={visitorStats?.today?.total ?? 0} color="text-blue-500" icon={Eye} />
-        <VisitorCard label={language === 'tr' ? 'Bu Hafta' : 'This Week'} unique={visitorStats?.week?.unique ?? 0} total={visitorStats?.week?.total ?? 0} color="text-green-500" icon={TrendingUp} />
-        <VisitorCard label={language === 'tr' ? 'Bu Ay' : 'This Month'} unique={visitorStats?.month?.unique ?? 0} total={visitorStats?.month?.total ?? 0} color="text-yellow-500" icon={Star} />
-        <VisitorCard label={language === 'tr' ? 'Bu Yıl' : 'This Year'} unique={visitorStats?.year?.unique ?? 0} total={visitorStats?.year?.total ?? 0} color={accentColor} icon={Sparkles} />
+        <VisitorCard label={'Bugün'} unique={visitorStats?.today?.unique ?? 0} total={visitorStats?.today?.total ?? 0} color="text-blue-500" icon={Eye} />
+        <VisitorCard label={'Bu Hafta'} unique={visitorStats?.week?.unique ?? 0} total={visitorStats?.week?.total ?? 0} color="text-green-500" icon={TrendingUp} />
+        <VisitorCard label={'Bu Ay'} unique={visitorStats?.month?.unique ?? 0} total={visitorStats?.month?.total ?? 0} color="text-yellow-500" icon={Star} />
+        <VisitorCard label={'Bu Yıl'} unique={visitorStats?.year?.unique ?? 0} total={visitorStats?.year?.total ?? 0} color={accentColor} icon={Sparkles} />
       </div>
 
       {/* Device & Bot breakdown */}
@@ -782,7 +782,7 @@ export default function AdminPage() {
         {/* Device Types */}
         <div className={`${cardBg} rounded-xl p-5`}>
           <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
-            <Monitor className="w-4 h-4" /> {language === 'tr' ? 'Cihaz Dağılımı (Son 30 Gün)' : 'Device Breakdown (Last 30 Days)'}
+            <Monitor className="w-4 h-4" /> {'Cihaz Dağılımı (Son 30 Gün)'}
           </h3>
           <div className="space-y-3">
             {visitorStats?.devices?.length ? visitorStats.devices.map((item, idx) => (
@@ -790,22 +790,22 @@ export default function AdminPage() {
                 <div className="flex items-center gap-2">
                   {getDeviceIcon(item.deviceType)}
                   <span className={`${textSecondary} text-sm capitalize`}>
-                    {item.deviceType === 'mobile' ? (language === 'tr' ? 'Mobil' : 'Mobile') :
+                    {item.deviceType === 'mobile' ? ('Mobil') :
                      item.deviceType === 'tablet' ? 'Tablet' :
-                     item.deviceType === 'desktop' ? (language === 'tr' ? 'Masaüstü' : 'Desktop') :
-                     (language === 'tr' ? 'Bilinmiyor' : 'Unknown')}
+                     item.deviceType === 'desktop' ? ('Masaüstü') :
+                     ('Bilinmiyor')}
                   </span>
                 </div>
                 <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
               </div>
-            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+            )) : (<p className={`${textMuted} text-sm`}>{'Veri yok'}</p>)}
           </div>
         </div>
 
         {/* Bot Traffic */}
         <div className={`${cardBg} rounded-xl p-5`}>
           <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
-            <Bot className="w-4 h-4" /> {language === 'tr' ? 'Bot Trafiği (Son 30 Gün)' : 'Bot Traffic (Last 30 Days)'}
+            <Bot className="w-4 h-4" /> {'Bot Trafiği (Son 30 Gün)'}
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {visitorStats?.bots?.length ? visitorStats.bots.map((item, idx) => (
@@ -813,7 +813,7 @@ export default function AdminPage() {
                 <span className={`${textSecondary} text-sm`}>🤖 {item.botName}</span>
                 <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
               </div>
-            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Bot tespit edilmedi' : 'No bots detected'}</p>)}
+            )) : (<p className={`${textMuted} text-sm`}>{'Bot tespit edilmedi'}</p>)}
           </div>
         </div>
       </div>
@@ -821,25 +821,25 @@ export default function AdminPage() {
       {/* Geo stats */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className={`${cardBg} rounded-xl p-5`}>
-          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🌍 {language === 'tr' ? 'Ülkelere Göre (Son 30 Gün)' : 'By Country (Last 30 Days)'}</h3>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🌍 {'Ülkelere Göre (Son 30 Gün)'}</h3>
           <div className="space-y-2">
             {visitorStats?.geo?.countries?.length ? visitorStats.geo.countries.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <span className={`${textSecondary} text-sm`}>{item.country}</span>
                 <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
               </div>
-            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+            )) : (<p className={`${textMuted} text-sm`}>{'Veri yok'}</p>)}
           </div>
         </div>
         <div className={`${cardBg} rounded-xl p-5`}>
-          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🏙️ {language === 'tr' ? 'Şehirlere Göre (Son 30 Gün)' : 'By City (Last 30 Days)'}</h3>
+          <h3 className={`${textPrimary} font-semibold mb-4 text-sm`}>🏙️ {'Şehirlere Göre (Son 30 Gün)'}</h3>
           <div className="space-y-2">
             {visitorStats?.geo?.cities?.length ? visitorStats.geo.cities.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <span className={`${textSecondary} text-sm`}>{item.city}</span>
                 <span className={`${textPrimary} font-semibold text-sm`}>{item.count}</span>
               </div>
-            )) : (<p className={`${textMuted} text-sm`}>{language === 'tr' ? 'Veri yok' : 'No data'}</p>)}
+            )) : (<p className={`${textMuted} text-sm`}>{'Veri yok'}</p>)}
           </div>
         </div>
       </div>
@@ -847,7 +847,7 @@ export default function AdminPage() {
       {/* Active Visitors - Real-time */}
       <div className={`${cardBg} rounded-xl p-5`}>
         <h3 className={`${textPrimary} font-semibold mb-4 text-sm flex items-center gap-2`}>
-          <Activity className="w-4 h-4 text-green-400 animate-pulse" /> {language === 'tr' ? 'Şu An Aktif Ziyaretçiler' : 'Currently Active Visitors'}
+          <Activity className="w-4 h-4 text-green-400 animate-pulse" /> {'Şu An Aktif Ziyaretçiler'}
           <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${isFacebook ? 'bg-blue-100 text-blue-800' : 'bg-green-500/20 text-green-400'}`}>
             {visitorStats?.activeVisitors?.length ?? 0}
           </span>
@@ -856,11 +856,11 @@ export default function AdminPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className={`${textMuted} text-xs border-b ${isFacebook ? 'border-gray-200' : 'border-white/10'}`}>
-                <th className="text-left py-2 px-2">{language === 'tr' ? 'Tür' : 'Type'}</th>
-                <th className="text-left py-2 px-2">{language === 'tr' ? 'İsim' : 'Name'}</th>
-                <th className="text-left py-2 px-2">{language === 'tr' ? 'Cihaz' : 'Device'}</th>
-                <th className="text-left py-2 px-2">{language === 'tr' ? 'Sayfa' : 'Page'}</th>
-                <th className="text-left py-2 px-2">{language === 'tr' ? 'Son Görülme' : 'Last Seen'}</th>
+                <th className="text-left py-2 px-2">{'Tür'}</th>
+                <th className="text-left py-2 px-2">{'İsim'}</th>
+                <th className="text-left py-2 px-2">{'Cihaz'}</th>
+                <th className="text-left py-2 px-2">{'Sayfa'}</th>
+                <th className="text-left py-2 px-2">{'Son Görülme'}</th>
               </tr>
             </thead>
             <tbody>
@@ -870,13 +870,13 @@ export default function AdminPage() {
                     {v.isBot ? (
                       <span className="text-orange-400 text-xs font-medium">🤖 Bot</span>
                     ) : v.userId ? (
-                      <span className="text-green-400 text-xs font-medium">👤 {language === 'tr' ? 'Üye' : 'User'}</span>
+                      <span className="text-green-400 text-xs font-medium">👤 {'Üye'}</span>
                     ) : (
-                      <span className={`${textMuted} text-xs`}>👻 {language === 'tr' ? 'Misafir' : 'Guest'}</span>
+                      <span className={`${textMuted} text-xs`}>👻 {'Misafir'}</span>
                     )}
                   </td>
                   <td className={`py-2 px-2 ${textSecondary} text-sm font-medium`}>
-                    {v.isBot ? v.botName : (v.userName || (language === 'tr' ? 'Anonim' : 'Anonymous'))}
+                    {v.isBot ? v.botName : (v.userName || ('Anonim'))}
                   </td>
                   <td className="py-2 px-2">
                     <span className="flex items-center gap-1">
@@ -897,7 +897,7 @@ export default function AdminPage() {
               )) : (
                 <tr>
                   <td colSpan={5} className={`py-4 text-center ${textMuted} text-sm`}>
-                    {language === 'tr' ? 'Aktif ziyaretçi yok' : 'No active visitors'}
+                    {'Aktif ziyaretçi yok'}
                   </td>
                 </tr>
               )}
@@ -908,7 +908,7 @@ export default function AdminPage() {
 
       <div className="flex justify-center">
         <button onClick={fetchVisitorStats} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
-          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+          <TrendingUp className="w-4 h-4" /> {'Yenile'}
         </button>
       </div>
     </div>
@@ -925,12 +925,12 @@ export default function AdminPage() {
     <div className="space-y-6">
       {/* Users */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Kullanıcılar' : 'Users'}</h3>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {'Kullanıcılar'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Toplam' : 'Total'} value={statistics?.users?.total ?? statistics?.totalUsers ?? 0} color={textPrimary} />
-          <MiniStatCard label={language === 'tr' ? 'Bugün' : 'Today'} value={statistics?.users?.newToday ?? 0} color="text-green-500" />
-          <MiniStatCard label={language === 'tr' ? 'Haftalık' : 'Weekly'} value={statistics?.users?.newThisWeek ?? 0} color="text-blue-500" />
-          <MiniStatCard label={language === 'tr' ? 'Aylık' : 'Monthly'} value={statistics?.users?.newThisMonth ?? 0} color={accentColor} />
+          <MiniStatCard label={'Toplam'} value={statistics?.users?.total ?? statistics?.totalUsers ?? 0} color={textPrimary} />
+          <MiniStatCard label={'Bugün'} value={statistics?.users?.newToday ?? 0} color="text-green-500" />
+          <MiniStatCard label={'Haftalık'} value={statistics?.users?.newThisWeek ?? 0} color="text-blue-500" />
+          <MiniStatCard label={'Aylık'} value={statistics?.users?.newThisMonth ?? 0} color={accentColor} />
           <MiniStatCard label="Premium" value={statistics?.users?.premium ?? 0} color="text-yellow-500" />
           <MiniStatCard label="VIP" value={statistics?.users?.vip ?? 0} color="text-pink-500" />
         </div>
@@ -938,13 +938,13 @@ export default function AdminPage() {
 
       {/* Fortunes */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Sparkles className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Fallar' : 'Fortunes'}</h3>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Sparkles className={`w-5 h-5 ${accentColor}`} /> {'Fallar'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <MiniStatCard label={language === 'tr' ? 'Toplam Fal' : 'Total'} value={statistics?.fortunes?.total ?? statistics?.totalFortunes ?? 0} color={textPrimary} />
-          <MiniStatCard label={language === 'tr' ? 'Görüntülenme' : 'Views'} value={statistics?.fortunes?.totalViews ?? 0} color="text-blue-500" />
+          <MiniStatCard label={'Toplam Fal'} value={statistics?.fortunes?.total ?? statistics?.totalFortunes ?? 0} color={textPrimary} />
+          <MiniStatCard label={'Görüntülenme'} value={statistics?.fortunes?.totalViews ?? 0} color="text-blue-500" />
         </div>
         <div className={`${cardBg} rounded-xl p-4`}>
-          <p className={`${textMuted} text-xs mb-3`}>{language === 'tr' ? 'Türlere Göre' : 'By Type'}</p>
+          <p className={`${textMuted} text-xs mb-3`}>{'Türlere Göre'}</p>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
             {Object.entries(statistics?.fortunes?.byType ?? statistics?.fortunesByType ?? {}).map(([type, count]) => (
               <div key={type} className={`${statCardBg} rounded-lg p-2 text-center`}>
@@ -958,59 +958,59 @@ export default function AdminPage() {
 
       {/* Social */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Sosyal' : 'Social'}</h3>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {'Sosyal'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Paylaşım' : 'Posts'} value={statistics?.social?.totalPosts ?? 0} color={textPrimary} />
-          <MiniStatCard label={language === 'tr' ? 'Bugün' : 'Today'} value={statistics?.social?.postsToday ?? 0} color="text-green-500" />
-          <MiniStatCard label={language === 'tr' ? 'Beğeni' : 'Likes'} value={statistics?.social?.totalLikes ?? 0} color="text-red-500" />
-          <MiniStatCard label={language === 'tr' ? 'Yorum' : 'Comments'} value={statistics?.social?.totalComments ?? 0} color="text-blue-500" />
-          <MiniStatCard label={language === 'tr' ? 'Paylaşım' : 'Shares'} value={statistics?.social?.totalShares ?? 0} color={accentColor} />
+          <MiniStatCard label={'Paylaşım'} value={statistics?.social?.totalPosts ?? 0} color={textPrimary} />
+          <MiniStatCard label={'Bugün'} value={statistics?.social?.postsToday ?? 0} color="text-green-500" />
+          <MiniStatCard label={'Beğeni'} value={statistics?.social?.totalLikes ?? 0} color="text-red-500" />
+          <MiniStatCard label={'Yorum'} value={statistics?.social?.totalComments ?? 0} color="text-blue-500" />
+          <MiniStatCard label={'Paylaşım'} value={statistics?.social?.totalShares ?? 0} color={accentColor} />
         </div>
       </div>
 
       {/* Messaging & Community */}
       <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Mesajlaşma' : 'Messaging'}</h3>
+          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><MessageCircle className={`w-5 h-5 ${accentColor}`} /> {'Mesajlaşma'}</h3>
           <div className="grid grid-cols-3 gap-3">
-            <MiniStatCard label={language === 'tr' ? 'Mesaj' : 'Messages'} value={statistics?.messaging?.totalMessages ?? 0} color={textPrimary} />
-            <MiniStatCard label={language === 'tr' ? 'Haftalık' : 'Weekly'} value={statistics?.messaging?.messagesThisWeek ?? 0} color="text-blue-500" />
-            <MiniStatCard label={language === 'tr' ? 'Sohbet' : 'Chats'} value={statistics?.messaging?.totalConversations ?? 0} color="text-green-500" />
+            <MiniStatCard label={'Mesaj'} value={statistics?.messaging?.totalMessages ?? 0} color={textPrimary} />
+            <MiniStatCard label={'Haftalık'} value={statistics?.messaging?.messagesThisWeek ?? 0} color="text-blue-500" />
+            <MiniStatCard label={'Sohbet'} value={statistics?.messaging?.totalConversations ?? 0} color="text-green-500" />
           </div>
         </div>
         <div>
-          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Video className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Yayınlar' : 'Streams'}</h3>
+          <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Video className={`w-5 h-5 ${accentColor}`} /> {'Yayınlar'}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <MiniStatCard label={language === 'tr' ? 'Toplam' : 'Total'} value={statistics?.streams?.total ?? 0} color={textPrimary} />
-            <MiniStatCard label={language === 'tr' ? 'Aktif' : 'Active'} value={statistics?.streams?.active ?? 0} color="text-green-500" />
-            <MiniStatCard label={language === 'tr' ? 'Hediye' : 'Gifts'} value={statistics?.streams?.totalGiftsValue ?? 0} color="text-yellow-500" />
-            <MiniStatCard label={language === 'tr' ? 'Beğeni' : 'Likes'} value={statistics?.streams?.totalLikes ?? 0} color="text-red-500" />
+            <MiniStatCard label={'Toplam'} value={statistics?.streams?.total ?? 0} color={textPrimary} />
+            <MiniStatCard label={'Aktif'} value={statistics?.streams?.active ?? 0} color="text-green-500" />
+            <MiniStatCard label={'Hediye'} value={statistics?.streams?.totalGiftsValue ?? 0} color="text-yellow-500" />
+            <MiniStatCard label={'Beğeni'} value={statistics?.streams?.totalLikes ?? 0} color="text-red-500" />
           </div>
         </div>
       </div>
 
       {/* Economy Summary */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Ekonomi Özeti' : 'Economy Summary'}</h3>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><DollarSign className={`w-5 h-5 ${accentColor}`} /> {'Ekonomi Özeti'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki CFC' : 'CFC Circulation'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
-          <MiniStatCard label={language === 'tr' ? 'Dolaşımdaki Jeton' : 'Jeton Circulation'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
-          <MiniStatCard label={language === 'tr' ? 'Hediye (Jeton)' : 'Gifts (Jeton)'} value={statistics?.economy?.chatGiftJetonTotal ?? 0} color="text-blue-500" />
-          <MiniStatCard label={language === 'tr' ? 'Komisyon Toplam' : 'Commission Total'} value={statistics?.economy?.chatGiftCommissionTotal ?? 0} color="text-pink-500" />
+          <MiniStatCard label={'Dolaşımdaki CFC'} value={statistics?.economy?.cfcInCirculation ?? statistics?.economy?.creditsInCirculation ?? 0} color="text-green-500" />
+          <MiniStatCard label={'Dolaşımdaki Jeton'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
+          <MiniStatCard label={'Hediye (Jeton)'} value={statistics?.economy?.chatGiftJetonTotal ?? 0} color="text-blue-500" />
+          <MiniStatCard label={'Komisyon Toplam'} value={statistics?.economy?.chatGiftCommissionTotal ?? 0} color="text-pink-500" />
         </div>
       </div>
 
       {/* Community */}
       <div>
-        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Topluluk' : 'Community'}</h3>
+        <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}><Users className={`w-5 h-5 ${accentColor}`} /> {'Topluluk'}</h3>
         <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-          <MiniStatCard label={language === 'tr' ? 'Takip' : 'Follows'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
+          <MiniStatCard label={'Takip'} value={statistics?.community?.totalFollows ?? 0} color="text-pink-500" />
         </div>
       </div>
 
       <div className="flex justify-center">
         <button onClick={fetchData} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
-          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+          <TrendingUp className="w-4 h-4" /> {'Yenile'}
         </button>
       </div>
     </div>
@@ -1021,7 +1021,7 @@ export default function AdminPage() {
       {/* Dolaşımdaki Bakiyeler */}
       <div>
         <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
-          <Layers className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Dolaşımdaki Bakiyeler' : 'Balances in Circulation'}
+          <Layers className={`w-5 h-5 ${accentColor}`} /> {'Dolaşımdaki Bakiyeler'}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
           <div className={`${cardBg} rounded-xl p-6`}>
@@ -1034,7 +1034,7 @@ export default function AdminPage() {
                 <p className={`text-3xl font-bold text-green-500`}>{statistics?.economy?.cfcInCirculation ?? 0}</p>
               </div>
             </div>
-            <p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tüm kullanıcıların toplam CFC bakiyesi' : 'Total CFC across all users'}</p>
+            <p className={`${textMuted} text-xs`}>{'Tüm kullanıcıların toplam CFC bakiyesi'}</p>
           </div>
           <div className={`${cardBg} rounded-xl p-6`}>
             <div className="flex items-center gap-3 mb-3">
@@ -1046,7 +1046,7 @@ export default function AdminPage() {
                 <p className={`text-3xl font-bold text-amber-500`}>{statistics?.economy?.jetonInCirculation ?? 0}</p>
               </div>
             </div>
-            <p className={`${textMuted} text-xs`}>{language === 'tr' ? 'Tüm kullanıcıların toplam jeton bakiyesi' : 'Total jetons across all users'}</p>
+            <p className={`${textMuted} text-xs`}>{'Tüm kullanıcıların toplam jeton bakiyesi'}</p>
           </div>
         </div>
       </div>
@@ -1054,42 +1054,42 @@ export default function AdminPage() {
       {/* Gelir-Gider Tablosu */}
       <div>
         <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
-          <TrendingUp className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Jeton Gelir-Gider Tablosu' : 'Jeton Income & Expenses'}
+          <TrendingUp className={`w-5 h-5 ${accentColor}`} /> {'Jeton Gelir-Gider Tablosu'}
         </h3>
         <div className={`${cardBg} rounded-xl overflow-hidden`}>
           <table className="w-full">
             <thead>
               <tr className={`border-b ${tableBorder} ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'}`}>
-                <th className={`text-left py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Kalem' : 'Item'}</th>
-                <th className={`text-right py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Tutar' : 'Amount'}</th>
-                <th className={`text-center py-3 px-5 ${textSecondary} font-medium text-sm`}>{language === 'tr' ? 'Tür' : 'Type'}</th>
+                <th className={`text-left py-3 px-5 ${textSecondary} font-medium text-sm`}>{'Kalem'}</th>
+                <th className={`text-right py-3 px-5 ${textSecondary} font-medium text-sm`}>{'Tutar'}</th>
+                <th className={`text-center py-3 px-5 ${textSecondary} font-medium text-sm`}>{'Tür'}</th>
               </tr>
             </thead>
             <tbody>
               <tr className={`border-b ${tableBorder} ${hoverRow}`}>
-                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Zap className="w-4 h-4 text-green-500" /> {language === 'tr' ? 'Yüklenen Jeton (Satın Alma)' : 'Loaded Jetons (Purchase)'}</td>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Zap className="w-4 h-4 text-green-500" /> {'Yüklenen Jeton (Satın Alma)'}</td>
                 <td className="py-3 px-5 text-right text-green-500 font-semibold">+{statistics?.economy?.jetonLoaded ?? 0}</td>
-                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{language === 'tr' ? 'Gelir' : 'Income'}</span></td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{'Gelir'}</span></td>
               </tr>
               <tr className={`border-b ${tableBorder} ${hoverRow}`}>
-                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-blue-500" /> {language === 'tr' ? 'Hediye Gönderilen (Jeton)' : 'Gifts Sent (Jeton)'}</td>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-blue-500" /> {'Hediye Gönderilen (Jeton)'}</td>
                 <td className="py-3 px-5 text-right text-red-400 font-semibold">-{statistics?.economy?.jetonGiftSent ?? 0}</td>
-                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{language === 'tr' ? 'Gider' : 'Expense'}</span></td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{'Gider'}</span></td>
               </tr>
               <tr className={`border-b ${tableBorder} ${hoverRow}`}>
-                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-green-500" /> {language === 'tr' ? 'Hediye Alınan (Jeton)' : 'Gifts Received (Jeton)'}</td>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Gift className="w-4 h-4 text-green-500" /> {'Hediye Alınan (Jeton)'}</td>
                 <td className="py-3 px-5 text-right text-green-500 font-semibold">+{statistics?.economy?.jetonGiftReceived ?? 0}</td>
-                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{language === 'tr' ? 'Gelir' : 'Income'}</span></td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-500">{'Gelir'}</span></td>
               </tr>
               <tr className={`border-b ${tableBorder} ${hoverRow}`}>
-                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Crown className="w-4 h-4 text-pink-500" /> {language === 'tr' ? 'Komisyon Geliri' : 'Commission Income'}</td>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Crown className="w-4 h-4 text-pink-500" /> {'Komisyon Geliri'}</td>
                 <td className="py-3 px-5 text-right text-pink-500 font-semibold">+{statistics?.economy?.jetonCommission ?? 0}</td>
-                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-pink-500/10 text-pink-500">{language === 'tr' ? 'Komisyon' : 'Commission'}</span></td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-pink-500/10 text-pink-500">{'Komisyon'}</span></td>
               </tr>
               <tr className={`border-b ${tableBorder} ${hoverRow}`}>
-                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Sparkles className="w-4 h-4 text-red-400" /> {language === 'tr' ? 'Harcanan Jeton (Bana Özel vb.)' : 'Spent Jetons (Items etc.)'}</td>
+                <td className={`py-3 px-5 ${textPrimary} flex items-center gap-2`}><Sparkles className="w-4 h-4 text-red-400" /> {'Harcanan Jeton (Bana Özel vb.)'}</td>
                 <td className="py-3 px-5 text-right text-red-400 font-semibold">-{statistics?.economy?.jetonSpent ?? 0}</td>
-                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{language === 'tr' ? 'Gider' : 'Expense'}</span></td>
+                <td className="py-3 px-5 text-center"><span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">{'Gider'}</span></td>
               </tr>
             </tbody>
           </table>
@@ -1099,19 +1099,19 @@ export default function AdminPage() {
       {/* Hediye İstatistikleri */}
       <div>
         <h3 className={`${textPrimary} font-semibold mb-3 flex items-center gap-2`}>
-          <Gift className={`w-5 h-5 ${accentColor}`} /> {language === 'tr' ? 'Sohbet Odası Hediye İstatistikleri' : 'Chat Room Gift Stats'}
+          <Gift className={`w-5 h-5 ${accentColor}`} /> {'Sohbet Odası Hediye İstatistikleri'}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className={`${statCardBg} rounded-xl p-5 text-center`}>
-            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Hediye (Jeton)' : 'Gifts (Jeton)'}</p>
+            <p className={`${textMuted} text-xs mb-1`}>{'Hediye (Jeton)'}</p>
             <p className="text-2xl font-bold text-amber-500">{statistics?.economy?.chatGiftJetonTotal ?? 0}</p>
           </div>
           <div className={`${statCardBg} rounded-xl p-5 text-center`}>
-            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Hediye (CFC)' : 'Gifts (CFC)'}</p>
+            <p className={`${textMuted} text-xs mb-1`}>{'Hediye (CFC)'}</p>
             <p className="text-2xl font-bold text-green-500">{statistics?.economy?.chatGiftCfcTotal ?? 0}</p>
           </div>
           <div className={`${statCardBg} rounded-xl p-5 text-center`}>
-            <p className={`${textMuted} text-xs mb-1`}>{language === 'tr' ? 'Kesilen Komisyon' : 'Commission'}</p>
+            <p className={`${textMuted} text-xs mb-1`}>{'Kesilen Komisyon'}</p>
             <p className="text-2xl font-bold text-pink-500">{statistics?.economy?.chatGiftCommissionTotal ?? 0}</p>
           </div>
         </div>
@@ -1119,7 +1119,7 @@ export default function AdminPage() {
 
       <div className="flex justify-center">
         <button onClick={fetchData} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
-          <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+          <TrendingUp className="w-4 h-4" /> {'Yenile'}
         </button>
       </div>
     </div>
@@ -1130,11 +1130,9 @@ export default function AdminPage() {
     return (
       <div className="space-y-6">
         <div className={`${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'} rounded-xl p-4`}>
-          <h3 className={`${accentColor} font-medium text-sm mb-1`}>{language === 'tr' ? 'Hediye Komisyon Sistemi' : 'Gift Commission System'}</h3>
+          <h3 className={`${accentColor} font-medium text-sm mb-1`}>{'Hediye Komisyon Sistemi'}</h3>
           <p className={`${textSecondary} text-xs`}>
-            {language === 'tr'
-              ? 'Her sohbet odasında hediye gönderildiğinde, belirlenen yüzde oda sahibine veya atadığı kişiye komisyon olarak gider. Jeton hediyeleri için geçerlidir.'
-              : 'When gifts are sent in chat rooms, the set percentage goes to the room owner or designated beneficiary as commission. Applies to jeton gifts.'}
+            {'Her sohbet odasında hediye gönderildiğinde, belirlenen yüzde oda sahibine veya atadığı kişiye komisyon olarak gider. Jeton hediyeleri için geçerlidir.'}
           </p>
         </div>
 
@@ -1150,10 +1148,10 @@ export default function AdminPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{room.icon}</span>
                     <div>
-                      <h4 className={`${textPrimary} font-semibold`}>{language === 'tr' ? room.nameTr : room.nameEn}</h4>
+                      <h4 className={`${textPrimary} font-semibold`}>{room.nameTr}</h4>
                       <p className={`${textMuted} text-xs`}>
-                        {language === 'tr' ? 'Sahip' : 'Owner'}: {room.owner ? (room.owner.username || room.owner.name) : (language === 'tr' ? 'Yok' : 'None')}
-                        {' • '}{room._count?.chatGifts ?? 0} {language === 'tr' ? 'hediye' : 'gifts'}
+                        {'Sahip'}: {room.owner ? (room.owner.username || room.owner.name) : ('Yok')}
+                        {' • '}{room._count?.chatGifts ?? 0} {'hediye'}
                       </p>
                     </div>
                   </div>
@@ -1177,7 +1175,7 @@ export default function AdminPage() {
                 {room.giftBeneficiary && (
                   <div className={`mb-3 px-3 py-2 rounded-lg ${isFacebook ? 'bg-pink-50' : 'bg-pink-500/5'} flex items-center gap-2`}>
                     <Crown className="w-4 h-4 text-pink-500" />
-                    <span className={`${textSecondary} text-xs`}>{language === 'tr' ? 'Komisyon alıcısı' : 'Beneficiary'}:</span>
+                    <span className={`${textSecondary} text-xs`}>{'Komisyon alıcısı'}:</span>
                     <span className={`${textPrimary} text-sm font-medium`}>{room.giftBeneficiary.username || room.giftBeneficiary.name}</span>
                   </div>
                 )}
@@ -1186,7 +1184,7 @@ export default function AdminPage() {
                 {editingRoom === room.id && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={`mt-4 p-4 rounded-xl ${isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'} space-y-4`}>
                     <div>
-                      <label className={`${textSecondary} text-sm mb-2 block`}>{language === 'tr' ? 'Komisyon Yüzdesi (%)' : 'Commission Percent (%)'}</label>
+                      <label className={`${textSecondary} text-sm mb-2 block`}>{'Komisyon Yüzdesi (%)'}</label>
                       <div className="flex items-center gap-3">
                         <input type="range" min={0} max={50} value={editPercent} onChange={(e) => setEditPercent(parseInt(e.target.value))}
                           className="flex-1 accent-pink-500" />
@@ -1197,10 +1195,10 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className={`${textSecondary} text-sm mb-2 block`}>{language === 'tr' ? 'Komisyon Alıcısı (boş = oda sahibi)' : 'Beneficiary (empty = room owner)'}</label>
+                      <label className={`${textSecondary} text-sm mb-2 block`}>{'Komisyon Alıcısı (boş = oda sahibi)'}</label>
                       <div className="relative">
                         <input type="text" value={beneficiarySearch} onChange={(e) => searchBeneficiary(e.target.value)}
-                          placeholder={language === 'tr' ? 'Kullanıcı ara...' : 'Search user...'}
+                          placeholder={'Kullanıcı ara...'}
                           className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg} focus:outline-none`} />
                         {beneficiaryResults.length > 0 && (
                           <div className={`absolute top-full left-0 right-0 mt-1 ${modalBg} border rounded-xl shadow-lg z-10 max-h-40 overflow-y-auto`}>
@@ -1215,7 +1213,7 @@ export default function AdminPage() {
                       </div>
                       {editBeneficiary && (
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`${textMuted} text-xs`}>{language === 'tr' ? 'Seçili' : 'Selected'}: {beneficiarySearch || editBeneficiary}</span>
+                          <span className={`${textMuted} text-xs`}>{'Seçili'}: {beneficiarySearch || editBeneficiary}</span>
                           <button onClick={() => { setEditBeneficiary(''); setBeneficiarySearch('') }}
                             className="text-red-400 text-xs hover:text-red-300">✕</button>
                         </div>
@@ -1224,10 +1222,10 @@ export default function AdminPage() {
 
                     <div className="flex gap-2">
                       <button onClick={() => setEditingRoom(null)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${btnSecondary}`}>
-                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                        {'İptal'}
                       </button>
                       <button onClick={() => saveRoomCommission(room.id)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${btnPrimary} flex items-center justify-center gap-2`}>
-                        <Save className="w-4 h-4" /> {language === 'tr' ? 'Kaydet' : 'Save'}
+                        <Save className="w-4 h-4" /> {'Kaydet'}
                       </button>
                     </div>
                   </motion.div>
@@ -1239,7 +1237,7 @@ export default function AdminPage() {
 
         <div className="flex justify-center">
           <button onClick={fetchCommissionRooms} className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${btnPrimary}`}>
-            <TrendingUp className="w-4 h-4" /> {language === 'tr' ? 'Yenile' : 'Refresh'}
+            <TrendingUp className="w-4 h-4" /> {'Yenile'}
           </button>
         </div>
       </div>
@@ -1269,7 +1267,7 @@ export default function AdminPage() {
               <Shield className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className={`${textPrimary} font-bold text-sm`}>{language === 'tr' ? 'Yönetim Paneli' : 'Admin Panel'}</h2>
+              <h2 className={`${textPrimary} font-bold text-sm`}>{'Yönetim Paneli'}</h2>
               <p className={`${textMuted} text-[10px]`}>FalClub</p>
             </div>
           </div>
@@ -1278,7 +1276,7 @@ export default function AdminPage() {
         {/* Navigation */}
         <div className="px-3 space-y-1 flex-1 overflow-y-auto">
           <p className={`${textMuted} text-[10px] font-semibold uppercase tracking-wider px-4 mb-2`}>
-            {language === 'tr' ? 'Genel' : 'General'}
+            {'Genel'}
           </p>
           {SIDEBAR_ITEMS.map(item => (
             <SidebarItem key={item.id} item={item} isActive={activeTab === item.id}
@@ -1288,7 +1286,7 @@ export default function AdminPage() {
           <div className={`my-4 h-px ${isFacebook ? 'bg-gray-200' : isCosmic ? 'bg-blue-800/30' : 'bg-purple-800/30'}`} />
 
           <p className={`${textMuted} text-[10px] font-semibold uppercase tracking-wider px-4 mb-2`}>
-            {language === 'tr' ? 'Yönetim' : 'Management'}
+            {'Yönetim'}
           </p>
           {MANAGEMENT_LINKS(language).map(link => {
             const Icon = link.icon
@@ -1297,7 +1295,7 @@ export default function AdminPage() {
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${textSecondary} ${hoverRow} transition-colors`}
                 onClick={() => setSidebarOpen(false)}>
                 <Icon className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">{language === 'tr' ? link.trLabel : link.enLabel}</span>
+                <span className="truncate">{link.trLabel}</span>
                 <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
               </Link>
             )
@@ -1309,7 +1307,7 @@ export default function AdminPage() {
           <Link href={`/`}
             className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${textSecondary} ${hoverRow} transition-colors`}>
             <Home className="w-4 h-4" />
-            <span>{language === 'tr' ? 'Siteye Dön' : 'Back to Site'}</span>
+            <span>{'Siteye Dön'}</span>
           </Link>
         </div>
       </aside>
@@ -1319,17 +1317,17 @@ export default function AdminPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className={`${textPrimary} text-2xl font-bold`}>
-            {activeTab === 'dashboard' ? (language === 'tr' ? 'Gösterge Paneli' : 'Dashboard') :
-             activeTab === 'users' ? (language === 'tr' ? 'Kullanıcılar' : 'Users') :
-             activeTab === 'chat' ? (language === 'tr' ? 'Sohbet Yönetimi' : 'Chat Management') :
-             activeTab === 'ads' ? (language === 'tr' ? 'Reklam Yönetimi' : 'Ad Management') :
-             activeTab === 'visitors' ? (language === 'tr' ? 'Ziyaretçi İstatistikleri' : 'Visitor Statistics') :
-             activeTab === 'economy' ? (language === 'tr' ? 'Ekonomi Yönetimi' : 'Economy Management') :
-             activeTab === 'gift-settings' ? (language === 'tr' ? 'Hediye Komisyon Ayarları' : 'Gift Commission Settings') :
-             (language === 'tr' ? 'Tüm İstatistikler' : 'All Statistics')}
+            {activeTab === 'dashboard' ? ('Gösterge Paneli') :
+             activeTab === 'users' ? ('Kullanıcılar') :
+             activeTab === 'chat' ? ('Sohbet Yönetimi') :
+             activeTab === 'ads' ? ('Reklam Yönetimi') :
+             activeTab === 'visitors' ? ('Ziyaretçi İstatistikleri') :
+             activeTab === 'economy' ? ('Ekonomi Yönetimi') :
+             activeTab === 'gift-settings' ? ('Hediye Komisyon Ayarları') :
+             ('Tüm İstatistikler')}
           </h1>
           <p className={`${textMuted} text-sm mt-1`}>
-            {language === 'tr' ? 'Platform yönetimi ve kontrol merkezi' : 'Platform management and control center'}
+            {'Platform yönetimi ve kontrol merkezi'}
           </p>
         </div>
 
@@ -1369,11 +1367,11 @@ export default function AdminPage() {
                 <p className={`${textPrimary} font-medium`}>{selectedUser?.name}</p>
               </div>
               <div>
-                <p className={`${textMuted} text-sm mb-1`}>{language === 'tr' ? 'Mevcut CFC' : 'Current CFC'}</p>
+                <p className={`${textMuted} text-sm mb-1`}>{'Mevcut CFC'}</p>
                 <p className={`${goldColor} font-bold text-xl`}>{selectedUser?.credits}</p>
               </div>
               <div>
-                <label className={`${textMuted} text-sm mb-2 block`}>{language === 'tr' ? 'Eklenecek CFC' : 'CFC to Add'}</label>
+                <label className={`${textMuted} text-sm mb-2 block`}>{'Eklenecek CFC'}</label>
                 <input type="number" value={creditAmount}
                   onChange={(e) => setCreditAmount(parseInt(e?.target?.value ?? '0'))}
                   min="1" className={`w-full px-4 py-3 rounded-xl border ${inputBg} focus:outline-none`} />
@@ -1386,7 +1384,7 @@ export default function AdminPage() {
               </Dialog.Close>
               <button onClick={() => addCredits(selectedUser?.id ?? '', creditAmount)}
                 className={`flex-1 py-3 rounded-xl font-semibold ${btnPrimary}`}>
-                {language === 'tr' ? 'Ekle' : 'Add'}
+                {'Ekle'}
               </button>
             </div>
           </Dialog.Content>

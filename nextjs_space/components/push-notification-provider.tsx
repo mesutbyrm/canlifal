@@ -65,19 +65,19 @@ export default function PushNotificationProvider({ children }: { children: React
     if (notif.title) return notif.title
     
     const titles: Record<string, string> = {
-      'like': language === 'tr' ? '❤️ Yeni Beğeni' : '❤️ New Like',
-      'comment': language === 'tr' ? '💬 Yeni Yorum' : '💬 New Comment',
-      'share': language === 'tr' ? '🔄 Paylaşıldı' : '🔄 Shared',
-      'session_request': language === 'tr' ? '🔮 Yeni Seans Talebi' : '🔮 New Session Request',
-      'session_update': language === 'tr' ? '📺 Seans Güncellendi' : '📺 Session Updated',
-      'payment_notification': language === 'tr' ? '💰 Ödeme Bildirimi' : '💰 Payment Notification',
-      'payment_approved': language === 'tr' ? '✅ Ödeme Onaylandı' : '✅ Payment Approved',
-      'payment_rejected': language === 'tr' ? '❌ Ödeme Reddedildi' : '❌ Payment Rejected',
-      'gift': language === 'tr' ? '🎁 Yeni Hediye' : '🎁 New Gift',
-      'follow': language === 'tr' ? '👤 Yeni Takipçi' : '👤 New Follower'
+      'like': '❤️ Yeni Beğeni',
+      'comment': '💬 Yeni Yorum',
+      'share': '🔄 Paylaşıldı',
+      'session_request': '🔮 Yeni Seans Talebi',
+      'session_update': '📺 Seans Güncellendi',
+      'payment_notification': '💰 Ödeme Bildirimi',
+      'payment_approved': '✅ Ödeme Onaylandı',
+      'payment_rejected': '❌ Ödeme Reddedildi',
+      'gift': '🎁 Yeni Hediye',
+      'follow': '👤 Yeni Takipçi'
     }
     
-    return titles[notif.type] || (language === 'tr' ? '🔔 Yeni Bildirim' : '🔔 New Notification')
+    return titles[notif.type] || ('🔔 Yeni Bildirim')
   }, [language])
 
   // Get notification URL based on type

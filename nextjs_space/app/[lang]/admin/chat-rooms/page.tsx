@@ -127,7 +127,7 @@ export default function AdminChatRoomsPage() {
   }
   
   const handleDeleteRoom = async (roomId: string) => {
-    if (!confirm(language === 'tr' ? 'Bu odayı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this room?')) return
+    if (!confirm('Bu odayı silmek istediğinize emin misiniz?')) return
     try {
       const res = await fetch('/api/admin/chat-rooms', {
         method: 'DELETE',
@@ -182,7 +182,7 @@ export default function AdminChatRoomsPage() {
   
   const removeOwner = async () => {
     if (!showOwnerModal) return
-    if (!confirm(language === 'tr' ? 'Oda sahibini kaldırmak istediğinize emin misiniz?' : 'Are you sure you want to remove the room owner?')) return
+    if (!confirm('Oda sahibini kaldırmak istediğinize emin misiniz?')) return
     setAssigningOwner(true)
     try {
       const res = await fetch('/api/admin/chat-rooms', {
@@ -217,10 +217,10 @@ export default function AdminChatRoomsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <MessageSquare className="w-6 h-6 text-fuchsia-400" />
-              {language === 'tr' ? 'Sohbet Odaları Yönetimi' : 'Chat Rooms Management'}
+              {'Sohbet Odaları Yönetimi'}
             </h1>
             <p className="text-fuchsia-300/60 text-sm mt-1">
-              {language === 'tr' ? 'Odaları yönetin, sahip atayın' : 'Manage rooms, assign owners'}
+              {'Odaları yönetin, sahip atayın'}
             </p>
           </div>
           <button
@@ -228,7 +228,7 @@ export default function AdminChatRoomsPage() {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 rounded-xl text-white font-medium hover:from-fuchsia-500 hover:to-pink-500 transition-all"
           >
             <Plus className="w-4 h-4" />
-            {language === 'tr' ? 'Yeni Oda' : 'New Room'}
+            {'Yeni Oda'}
           </button>
         </div>
         
@@ -246,10 +246,10 @@ export default function AdminChatRoomsPage() {
                   <span className="text-3xl">{room.icon}</span>
                   <div>
                     <h3 className="text-white font-bold">
-                      {language === 'tr' ? room.nameTr : room.nameEn}
+                      {room.nameTr}
                     </h3>
                     <p className="text-fuchsia-300/60 text-sm">
-                      {language === 'tr' ? room.descTr : room.descEn}
+                      {room.descTr}
                     </p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-fuchsia-300/50">
                       <span className="flex items-center gap-1">
@@ -276,7 +276,7 @@ export default function AdminChatRoomsPage() {
                     }`}
                   >
                     <Crown className="w-3 h-3" />
-                    {room.owner ? room.owner.name : (language === 'tr' ? 'Sahip Ata' : 'Assign Owner')}
+                    {room.owner ? room.owner.name : ('Sahip Ata')}
                   </button>
                   
                   {/* Edit */}
@@ -320,7 +320,7 @@ export default function AdminChatRoomsPage() {
             >
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-fuchsia-400" />
-                {language === 'tr' ? 'Yeni Oda Oluştur' : 'Create New Room'}
+                {'Yeni Oda Oluştur'}
               </h2>
               
               <div className="space-y-4">
@@ -393,7 +393,7 @@ export default function AdminChatRoomsPage() {
             >
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-fuchsia-400" />
-                {language === 'tr' ? 'Odayı Düzenle' : 'Edit Room'}
+                {'Odayı Düzenle'}
               </h2>
               
               <div className="space-y-4">
@@ -503,17 +503,17 @@ export default function AdminChatRoomsPage() {
             >
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Crown className="w-5 h-5 text-yellow-400" />
-                {language === 'tr' ? 'Oda Sahibi Ata' : 'Assign Room Owner'}
+                {'Oda Sahibi Ata'}
               </h2>
               
               <p className="text-fuchsia-300/70 text-sm mb-4">
-                {showOwnerModal.icon} {language === 'tr' ? showOwnerModal.nameTr : showOwnerModal.nameEn}
+                {showOwnerModal.icon} {showOwnerModal.nameTr}
               </p>
               
               {showOwnerModal.owner && (
                 <div className="mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
                   <p className="text-yellow-400 text-sm font-medium mb-2">
-                    {language === 'tr' ? 'Mevcut Sahip:' : 'Current Owner:'}
+                    {'Mevcut Sahip:'}
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-white">{showOwnerModal.owner.name}</span>
@@ -522,7 +522,7 @@ export default function AdminChatRoomsPage() {
                       disabled={assigningOwner}
                       className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-all"
                     >
-                      {language === 'tr' ? 'Kaldır' : 'Remove'}
+                      {'Kaldır'}
                     </button>
                   </div>
                 </div>
@@ -535,7 +535,7 @@ export default function AdminChatRoomsPage() {
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
-                    placeholder={language === 'tr' ? 'Kullanıcı ara (isim/email)...' : 'Search user (name/email)...'}
+                    placeholder={'Kullanıcı ara (isim/email)...'}
                     className="flex-1 px-4 py-2 rounded-xl bg-fuchsia-900/30 border border-fuchsia-500/30 text-white placeholder-fuchsia-300/40 focus:outline-none"
                   />
                   <button

@@ -40,13 +40,13 @@ export default function FortunePageLayout({
               className="flex items-center gap-1.5 text-purple-300 hover:text-gold-400 transition-colors text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">{language === 'tr' ? 'Ana Sayfa' : 'Home'}</span>
+              <span className="hidden sm:inline">{'Ana Sayfa'}</span>
             </Link>
           )}
           <div className="flex items-center gap-2">
             <Icon className="w-5 h-5 text-gold-500" />
             <span className="text-white font-medium text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">
-              {language === 'tr' ? title : titleEn}
+              {title}
             </span>
           </div>
           <div className="flex items-center gap-1 text-gold-400 text-sm">
@@ -72,10 +72,10 @@ export default function FortunePageLayout({
               </div>
             </div>
             <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl text-gold-500 gold-glow mb-2 sm:mb-3">
-              {language === 'tr' ? title : titleEn}
+              {title}
             </h1>
             <p className="text-deep-purple-200 text-sm sm:text-lg max-w-md mx-auto">
-              {language === 'tr' ? subtitle : subtitleEn}
+              {subtitle}
             </p>
           </motion.div>
 

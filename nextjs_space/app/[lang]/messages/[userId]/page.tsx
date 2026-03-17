@@ -177,13 +177,13 @@ export default function ChatPage() {
 
   const formatMessageTime = (date: string) => {
     return format(new Date(date), 'HH:mm', {
-      locale: language === 'tr' ? tr : enUS
+      locale: tr
     })
   }
 
   const formatMessageDate = (date: string) => {
     return format(new Date(date), 'd MMMM yyyy', {
-      locale: language === 'tr' ? tr : enUS
+      locale: tr
     })
   }
 
@@ -209,7 +209,7 @@ export default function ChatPage() {
     return (
       <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
         <p className="text-white/70">
-          {language === 'tr' ? 'Kullan\u0131c\u0131 bulunamad\u0131' : 'User not found'}
+          {'Kullan\u0131c\u0131 bulunamad\u0131'}
         </p>
       </div>
     )
@@ -315,7 +315,7 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Lock className={`w-6 h-6 ${accentColor} mx-auto mb-1`} />
             <p className="text-white/70 text-sm">
-              {language === 'tr' ? 'Bu kullan\u0131c\u0131 mesaj kabul etmiyor' : 'This user is not accepting messages'}
+              {'Bu kullan\u0131c\u0131 mesaj kabul etmiyor'}
             </p>
           </div>
         </div>
@@ -324,14 +324,14 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Lock className={`w-6 h-6 ${accentColor} mx-auto mb-1`} />
             <p className="text-white/70 text-sm mb-2">
-              {language === 'tr' ? 'Mesaj g\u00F6ndermek i\u00E7in izin istemeniz gerekiyor' : 'You need to request permission to send messages'}
+              {'Mesaj g\u00F6ndermek i\u00E7in izin istemeniz gerekiyor'}
             </p>
             <button
               onClick={() => setShowRequestModal(true)}
               className={`px-5 py-1.5 ${sendBtnBg} text-white rounded-full text-sm font-medium`}
             >
               <UserPlus className="w-3.5 h-3.5 inline mr-1.5" />
-              {language === 'tr' ? 'Mesaj \u0130ste\u011Fi G\u00F6nder' : 'Send Message Request'}
+              {'Mesaj \u0130ste\u011Fi G\u00F6nder'}
             </button>
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Check className="w-6 h-6 text-green-500 mx-auto mb-1" />
             <p className="text-white/70 text-sm">
-              {language === 'tr' ? 'Mesaj iste\u011Finiz g\u00F6nderildi. Yan\u0131t bekleniyor...' : 'Message request sent. Waiting for response...'}
+              {'Mesaj iste\u011Finiz g\u00F6nderildi. Yan\u0131t bekleniyor...'}
             </p>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function ChatPage() {
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder={language === 'tr' ? 'Mesaj yaz...' : 'Type a message...'}
+                placeholder={'Mesaj yaz...'}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 className={`w-full ${inputBg} border rounded-full py-2.5 px-4 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/50`}
@@ -393,21 +393,19 @@ export default function ChatPage() {
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-bold text-white">
-                  {language === 'tr' ? 'Mesaj \u0130ste\u011Fi' : 'Message Request'}
+                  {'Mesaj \u0130ste\u011Fi'}
                 </h3>
                 <button onClick={() => setShowRequestModal(false)}>
                   <X className="w-5 h-5 text-white/60" />
                 </button>
               </div>
               <p className="text-white/70 text-sm mb-3">
-                {language === 'tr'
-                  ? `${user.name} sadece takip\u00E7ilerinden mesaj kabul ediyor. Bir mesaj iste\u011Fi g\u00F6nderin.`
-                  : `${user.name} only accepts messages from followers. Send a message request.`}
+                {`${user.name} sadece takip\u00E7ilerinden mesaj kabul ediyor. Bir mesaj iste\u011Fi g\u00F6nderin.`} only accepts messages from followers. Send a message request.`}
               </p>
               <textarea
                 value={requestMessage}
                 onChange={(e) => setRequestMessage(e.target.value.slice(0, 200))}
-                placeholder={language === 'tr' ? 'Neden mesaj g\u00F6ndermek istiyorsunuz? (iste\u011Fe ba\u011Fl\u0131)' : 'Why do you want to message? (optional)'}
+                placeholder={'Neden mesaj g\u00F6ndermek istiyorsunuz? (iste\u011Fe ba\u011Fl\u0131)'}
                 className={`w-full ${inputBg} border rounded-lg px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/50 resize-none mb-3`}
                 rows={3}
                 maxLength={200}
@@ -417,7 +415,7 @@ export default function ChatPage() {
                   onClick={() => setShowRequestModal(false)}
                   className="px-3 py-1.5 text-white/60 hover:text-white text-sm"
                 >
-                  {language === 'tr' ? '\u0130ptal' : 'Cancel'}
+                  {'\u0130ptal'}
                 </button>
                 <button
                   onClick={handleSendRequest}
@@ -429,7 +427,7 @@ export default function ChatPage() {
                   ) : (
                     <Send className="w-3.5 h-3.5" />
                   )}
-                  {language === 'tr' ? 'G\u00F6nder' : 'Send'}
+                  {'G\u00F6nder'}
                 </button>
               </div>
             </motion.div>

@@ -129,7 +129,7 @@ export async function POST(
       data: {
         userId: recipientId,
         type: 'chat_message',
-        title: isUser ? 'Yeni Mesaj' : 'New Message',
+        title: 'Yeni Mesaj',
         message: content ? (content.length > 50 ? content.substring(0, 50) + '...' : content) : '📷 Resim gönderildi',
         data: JSON.stringify({ chatSessionId: params.sessionId })
       }

@@ -113,7 +113,7 @@ export default function NavSearch() {
           className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg bg-fuchsia-900/60 hover:bg-fuchsia-800/60 text-fuchsia-300 transition-colors"
         >
           <Search className="w-6 h-6" />
-          <span className="text-[10px] font-medium">{language === 'tr' ? 'Ara' : 'Search'}</span>
+          <span className="text-[10px] font-medium">{'Ara'}</span>
         </button>
       ) : (
         <div className="flex items-center">
@@ -127,7 +127,7 @@ export default function NavSearch() {
                 setSelectedIndex(-1)
               }}
               onKeyDown={handleKeyDown}
-              placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
+              placeholder={'Ara...'}
               className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-fuchsia-900/40 border border-fuchsia-500/40 rounded-full text-white placeholder-fuchsia-300/60 focus:outline-none focus:border-fuchsia-400 transition-all"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fuchsia-400/60" />
@@ -164,7 +164,7 @@ export default function NavSearch() {
               </div>
             ) : results.length === 0 ? (
               <div className="py-6 text-center text-white/70 text-sm">
-                {language === 'tr' ? 'Sonu\u00e7 bulunamad\u0131' : 'No results found'}
+                {'Sonu\u00e7 bulunamad\u0131'}
               </div>
             ) : (
               <div className="py-1">
@@ -190,7 +190,7 @@ export default function NavSearch() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{result.title}</p>
                       <p className="text-[10px] text-white/60">
-                        {TYPE_LABELS[result.type]?.[language === 'tr' ? 'tr' : 'en'] || result.type}
+                        {TYPE_LABELS[result.type]?.['tr'] || result.type}
                       </p>
                     </div>
                   </button>

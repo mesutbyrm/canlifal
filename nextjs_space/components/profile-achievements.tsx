@@ -137,7 +137,7 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
             <Trophy className="w-4 h-4 text-white" />
           </div>
           <h3 className="text-white font-bold">
-            {language === 'tr' ? 'Rozetler & Başarılar' : 'Badges & Achievements'}
+            {'Rozetler & Başarılar'}
           </h3>
         </div>
         <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
                 </div>
                 {/* Tooltip */}
                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-gray-900 px-3 py-1.5 rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 border border-amber-500/30">
-                  {language === 'tr' ? achievement.nameTr : achievement.nameEn}
+                  {achievement.nameTr}
                 </div>
                 {/* Shine effect */}
                 <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
@@ -190,9 +190,9 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
               className="mt-3 text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 mx-auto"
             >
               {showAll ? (
-                <><ChevronUp className="w-4 h-4" /> {language === 'tr' ? 'Daha az göster' : 'Show less'}</>
+                <><ChevronUp className="w-4 h-4" /> {'Daha az göster'}</>
               ) : (
-                <><ChevronDown className="w-4 h-4" /> {language === 'tr' ? `+${completedAchievements.length - 6} daha` : `+${completedAchievements.length - 6} more`}</>
+                <><ChevronDown className="w-4 h-4" /> {`+${completedAchievements.length - 6} daha`}</>
               )}
             </button>
           )}
@@ -217,7 +217,7 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
                 <div className="flex items-center gap-2">
                   <CategoryIcon className={`w-4 h-4 ${info.textColor}`} />
                   <span className="text-white font-medium text-sm">
-                    {language === 'tr' ? info.labelTr : info.labelEn}
+                    {info.labelTr}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -271,14 +271,14 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
                               <span className={`text-sm font-medium ${
                                 achievement.isCompleted ? 'text-amber-300' : 'text-gray-400'
                               }`}>
-                                {language === 'tr' ? achievement.nameTr : achievement.nameEn}
+                                {achievement.nameTr}
                               </span>
                               {achievement.isCompleted && (
                                 <Check className="w-3.5 h-3.5 text-green-400" />
                               )}
                             </div>
                             <p className="text-xs text-gray-500 truncate">
-                              {language === 'tr' ? achievement.descriptionTr : achievement.descriptionEn}
+                              {achievement.descriptionTr}
                             </p>
                             {/* Progress bar for incomplete */}
                             {!achievement.isCompleted && (

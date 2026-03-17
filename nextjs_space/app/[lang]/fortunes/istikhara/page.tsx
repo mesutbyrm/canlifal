@@ -20,7 +20,7 @@ export default function IstikharaPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!question.trim()) {
-      setError(language === 'tr' ? 'Lütfen sorunuzu yazın' : 'Please enter your question')
+      setError('Lütfen sorunuzu yazın')
       return
     }
 
@@ -75,13 +75,13 @@ export default function IstikharaPage() {
             <Moon className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {language === 'tr' ? 'İstikhare' : 'Istikhara'}
+            {'İstikhare'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
-            {language === 'tr' ? 'Manevi rehberlik ve iç huzur arayışı' : 'Spiritual guidance and inner peace'}
+            {'Manevi rehberlik ve iç huzur arayışı'}
           </p>
           <p className="text-gold-400 text-sm mt-2">
-            <Sparkles className="inline w-4 h-4 mr-1" />4 {language === 'tr' ? 'CFC' : 'CFC'}
+            <Sparkles className="inline w-4 h-4 mr-1" />4 {'CFC'}
           </p>
         </motion.div>
 
@@ -89,22 +89,22 @@ export default function IstikharaPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Sorunuz *' : 'Your Question *'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Sorunuz *'}</label>
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={language === 'tr' ? 'Hakkında rehberlik istediğiniz konuyu yazın...' : 'Write the topic you need guidance on...'}
+                  placeholder={'Hakkında rehberlik istediğiniz konuyu yazın...'}
                   rows={3}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-deep-purple-200 mb-2">{language === 'tr' ? 'Durum Detayı (İsteğe Bağlı)' : 'Situation Details (Optional)'}</label>
+                <label className="block text-deep-purple-200 mb-2">{'Durum Detayı (İsteğe Bağlı)'}</label>
                 <textarea
                   value={situation}
                   onChange={(e) => setSituation(e.target.value)}
-                  placeholder={language === 'tr' ? 'Durumunuz hakkında daha fazla bilgi verin...' : 'Provide more details about your situation...'}
+                  placeholder={'Durumunuz hakkında daha fazla bilgi verin...'}
                   rows={3}
                   className="w-full px-4 py-3 bg-deep-purple-900/50 border border-deep-purple-700 rounded-lg text-white placeholder-deep-purple-400 focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
@@ -117,7 +117,7 @@ export default function IstikharaPage() {
                 disabled={isLoading}
                 className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isLoading ? <LoadingSpinner /> : <><Moon className="w-5 h-5" />{language === 'tr' ? 'Rehberlik Al' : 'Get Guidance'}</>}
+                {isLoading ? <LoadingSpinner /> : <><Moon className="w-5 h-5" />{'Rehberlik Al'}</>}
               </button>
             </form>
           </motion.div>
@@ -127,12 +127,12 @@ export default function IstikharaPage() {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-mystical-card border border-gold-500/30 rounded-xl p-8 mystical-shadow">
             <div className="flex items-center gap-3 mb-6">
               <Moon className="w-10 h-10 text-gold-500" />
-              <h2 className="font-serif text-2xl text-gold-500">{language === 'tr' ? 'Manevi Rehberlik' : 'Spiritual Guidance'}</h2>
+              <h2 className="font-serif text-2xl text-gold-500">{'Manevi Rehberlik'}</h2>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            <SocialShare title={language === 'tr' ? 'İstikhare Rehberliğim' : 'My Istikhara Guidance'} text={response} />
+            <SocialShare title={'İstikhare Rehberliğim'} text={response} />
             <button onClick={() => { setResponse(''); setQuestion(''); setSituation(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
-              {language === 'tr' ? 'Yeni Soru Sor' : 'Ask New Question'}
+              {'Yeni Soru Sor'}
             </button>
           </motion.div>
         )}

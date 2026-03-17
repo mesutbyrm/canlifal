@@ -169,7 +169,7 @@ export default function FloatingProfile() {
                 <div className="mt-3 flex items-center justify-between bg-purple-900/30 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-gold-400" />
-                    <span className="text-purple-200 text-sm">{language === 'tr' ? 'CFC' : 'CFC'}</span>
+                    <span className="text-purple-200 text-sm">{'CFC'}</span>
                   </div>
                   <span className="text-gold-400 font-semibold">{profile?.credits || 0}</span>
                 </div>
@@ -191,7 +191,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <User className="w-5 h-5 text-purple-400" />
-                  <span>{language === 'tr' ? 'Profilim' : 'My Profile'}</span>
+                  <span>{'Profilim'}</span>
                 </Link>
 
                 <Link
@@ -207,7 +207,7 @@ export default function FloatingProfile() {
                       </span>
                     )}
                   </div>
-                  <span>{language === 'tr' ? 'Mesajlar' : 'Messages'}</span>
+                  <span>{'Mesajlar'}</span>
                 </Link>
 
                 <Link
@@ -216,7 +216,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <Sparkles className="w-5 h-5 text-purple-400" />
-                  <span>{language === 'tr' ? 'Fallarım' : 'My Fortunes'}</span>
+                  <span>{'Fallarım'}</span>
                 </Link>
 
                 <Link
@@ -225,7 +225,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <Wallet className="w-5 h-5 text-purple-400" />
-                  <span>{language === 'tr' ? 'CFC Al' : 'Buy CFC'}</span>
+                  <span>{'CFC Al'}</span>
                 </Link>
 
                 <Link
@@ -234,7 +234,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <Radio className="w-5 h-5 text-pink-400" />
-                  <span>{language === 'tr' ? 'Canlı Yayın' : 'Go Live'}</span>
+                  <span>{'Canlı Yayın'}</span>
                 </Link>
 
                 <div className="border-t border-purple-800 my-2" />
@@ -245,7 +245,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <Settings className="w-5 h-5 text-purple-400" />
-                  <span>{language === 'tr' ? 'Ayarlar' : 'Settings'}</span>
+                  <span>{'Ayarlar'}</span>
                 </Link>
 
                 <button
@@ -256,7 +256,7 @@ export default function FloatingProfile() {
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
                 >
                   <LogOut className="w-5 h-5" />
-                  <span>{language === 'tr' ? 'Çıkış Yap' : 'Log Out'}</span>
+                  <span>{'Çıkış Yap'}</span>
                 </button>
               </div>
             </motion.div>

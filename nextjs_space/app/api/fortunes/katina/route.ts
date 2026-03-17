@@ -28,8 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = language === 'tr'
-      ? `Sen deneyimli bir Katina falcısısın. Kullanıcının sorusu: "${question}". 32 Katina kartından rastgele 5 kart seç ve her kartın anlamını açıkla. Kartların kombinasyonunu yorumla ve kullanıcının sorusuna mistik bir cevap ver. Cevabın 300-400 kelime arasında, gizemli ve aydınlatıcı olmalı. Her kart için ismini ve anlamını belirt. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen deneyimli bir Katina falcısısın. Kullanıcının sorusu}". 32 Katina kartından rastgele 5 kart seç ve her kartın anlamını açıkla. Kartların kombinasyonunu yorumla ve kullanıcının sorusuna mistik bir cevap ver. Cevabın 300-400 kelime arasında, gizemli ve aydınlatıcı olmalı. Her kart için ismini ve anlamını belirt. Tamamen Türkçe cevap ver.`
       : `You are an experienced Katina card reader. User's question: "${question}". Select 5 random cards from the 32 Katina deck and explain each card's meaning. Interpret the combination of cards and provide a mystical answer to the user's question. Your response should be 300-400 words, mysterious and enlightening. Name each card and its meaning. Respond entirely in English.`
 
     const messages = [

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
       const senderJetons = sender.jetonBalance ?? 0
       if (senderJetons < giftType.price) {
-        return NextResponse.json({ error: 'Yetersiz jeton / Insufficient jetons' }, { status: 400 })
+        return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
 
       // Deduct jetons from sender
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
       })
 
       if (senderJetonBalance < amount) {
-        return NextResponse.json({ error: 'Insufficient jetons' }, { status: 400 })
+        return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
 
       // Deduct from sender
