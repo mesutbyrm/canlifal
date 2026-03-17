@@ -20,6 +20,20 @@ export default function OneSignalInitializer() {
         await OneSignal.login(userId)
         loggedInUserId.current = userId
         console.log('OneSignal user logged in:', userId)
+
+        // After login, try to opt-in if permission already granted
+        try {
+          const permission = (OneSignal.Notifications as any)?.permission
+          if (permission === true || Notification.permission === 'granted') {
+            const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
+            if (!isOptedIn) {
+              await (OneSignal.User?.PushSubscription as any)?.optIn?.()
+              console.log('OneSignal: opted in after login')
+            }
+          }
+        } catch (e) {
+          // silent - opt-in is best-effort
+        }
       } else {
         if (!loggedInUserId.current) return // already logged out
         await OneSignal.logout()
@@ -52,6 +66,8 @@ export default function OneSignalInitializer() {
           allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
           serviceWorkerParam: { scope: '/' },
           serviceWorkerPath: '/OneSignalSDKWorker.js',
+          // @ts-ignore - notifyButton types are overly strict in react-onesignal
+          notifyButton: { enable: false },
         })
 
         initialized.current = true
@@ -63,6 +79,29 @@ export default function OneSignalInitializer() {
           loggedInUserId.current = session.user.id
           console.log('OneSignal user logged in:', session.user.id)
         }
+
+        // After init, prompt for push if not already subscribed
+        // Small delay so UI is ready
+        setTimeout(async () => {
+          try {
+            const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
+            if (!isOptedIn) {
+              // Show the native browser prompt if permission is 'default'
+              if (Notification.permission === 'default') {
+                await OneSignal.Slidedown.promptPush()
+                console.log('OneSignal: push prompt shown')
+              } else if (Notification.permission === 'granted') {
+                // Permission already granted but not opted in to OneSignal
+                await (OneSignal.User?.PushSubscription as any)?.optIn?.()
+                console.log('OneSignal: opted in (permission was already granted)')
+              }
+            } else {
+              console.log('OneSignal: already subscribed')
+            }
+          } catch (e) {
+            console.log('OneSignal prompt/optIn skipped:', e)
+          }
+        }, 2000)
       } catch (error) {
         console.error('OneSignal initialization error:', error)
       }

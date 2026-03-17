@@ -14,7 +14,42 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
   if (!isPushSupported()) return 'unsupported'
   
   try {
+    // First try using OneSignal's prompt (preferred - registers the subscription)
+    try {
+      const OneSignalModule = await import('react-onesignal')
+      const OneSignal = OneSignalModule.default
+      
+      // Use OneSignal's native prompt which handles both permission + subscription
+      await OneSignal.Slidedown.promptPush()
+      
+      // After prompt, check if user opted in
+      const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
+      if (isOptedIn) {
+        console.log('OneSignal: user subscribed via prompt')
+        return 'granted'
+      }
+      
+      // If OneSignal prompt was shown but user didn't accept, 
+      // fall through to check native permission
+    } catch (e) {
+      console.log('OneSignal prompt failed, falling back to native:', e)
+    }
+    
+    // Fallback: request native permission and then opt in to OneSignal
     const permission = await Notification.requestPermission()
+    
+    if (permission === 'granted') {
+      // Also opt in to OneSignal
+      try {
+        const OneSignalModule = await import('react-onesignal')
+        const OneSignal = OneSignalModule.default
+        await (OneSignal.User?.PushSubscription as any)?.optIn?.()
+        console.log('OneSignal: opted in after native permission grant')
+      } catch (e) {
+        console.log('OneSignal opt-in after native permission failed:', e)
+      }
+    }
+    
     return permission
   } catch (error) {
     console.error('Error requesting notification permission:', error)
