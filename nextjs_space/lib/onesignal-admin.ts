@@ -45,8 +45,15 @@ export async function sendNotification(params: SendNotificationParams): Promise<
       firefox_icon: '/logo.png',
     }
 
-    if (params.url) body.url = params.url
-    if (params.imageUrl) body.big_picture = params.imageUrl
+    // Convert relative URLs to absolute
+    if (params.url) {
+      const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+      body.url = params.url.startsWith('http') ? params.url : `${baseUrl}${params.url.startsWith('/') ? '' : '/'}${params.url}`
+    }
+    if (params.imageUrl) {
+      body.big_picture = params.imageUrl
+      body.chrome_web_image = params.imageUrl
+    }
 
     // Targeting
     switch (params.targetType) {
