@@ -95,5 +95,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  return [...staticPages, ...fortunePages, ...blogIndex, ...blogPages, ...seoPages, ...socialPostPages]
+  // Phase 3 pages
+  const phase3Pages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/ruya-sozlugu`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${baseUrl}/ruya-takvimi`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.7 },
+    { url: `${baseUrl}/ruya-yarismasi`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 },
+    { url: `${baseUrl}/burc-uyumu`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${baseUrl}/astroloji-paneli`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.7 },
+  ]
+
+  // Dream symbol pages
+  let dreamSymbolPages: MetadataRoute.Sitemap = []
+  try {
+    const symbols = await prisma.dreamSymbol.findMany({
+      select: { slug: true, updatedAt: true },
+      take: 500
+    })
+    dreamSymbolPages = symbols.map((s: any) => ({
+      url: `${baseUrl}/ruya-sozlugu/${s.slug}`,
+      lastModified: s.updatedAt || new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }))
+  } catch (e) {
+    console.error('Error fetching dream symbols for sitemap:', e)
+  }
+
+  return [...staticPages, ...fortunePages, ...blogIndex, ...blogPages, ...seoPages, ...socialPostPages, ...phase3Pages, ...dreamSymbolPages]
 }

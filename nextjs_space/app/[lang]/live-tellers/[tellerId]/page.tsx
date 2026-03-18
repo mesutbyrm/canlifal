@@ -601,36 +601,77 @@ export default function TellerDetailPage() {
             )}
           </div>
 
-          {/* Reviews Section */}
+          {/* Reviews Section - Enhanced */}
           <div className="p-6 md:p-8">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-purple-400" />
-              {'Değerlendirmeler'}
+              {'De\u011ferlendirmeler'}
               <span className="text-sm text-purple-400 font-normal">
                 ({teller.reviews.length})
               </span>
             </h2>
 
+            {teller.reviews.length > 0 && (() => {
+              const avg = teller.reviews.reduce((s, r) => s + r.rating, 0) / teller.reviews.length
+              const dist = [5,4,3,2,1].map(star => ({
+                star,
+                count: teller.reviews.filter(r => r.rating === star).length,
+                pct: Math.round((teller.reviews.filter(r => r.rating === star).length / teller.reviews.length) * 100)
+              }))
+              return (
+                <div className="bg-purple-900/20 border border-purple-700/20 rounded-xl p-4 mb-4">
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-white">{avg.toFixed(1)}</div>
+                      <div className="flex items-center gap-0.5 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avg) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
+                        ))}
+                      </div>
+                      <div className="text-purple-400 text-xs mt-1">{teller.reviews.length} de\u011ferlendirme</div>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      {dist.map(d => (
+                        <div key={d.star} className="flex items-center gap-2 text-xs">
+                          <span className="text-purple-300 w-3">{d.star}</span>
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          <div className="flex-1 h-2 bg-purple-900/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${d.pct}%` }} />
+                          </div>
+                          <span className="text-purple-400 w-6 text-right">{d.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {teller.reviews.length === 0 ? (
               <p className="text-purple-400 text-center py-8">
-                {'Henüz değerlendirme yok'}
+                {'Hen\u00fcz de\u011ferlendirme yok'}
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {teller.reviews.map(review => (
                   <div
                     key={review.id}
-                    className="p-4 bg-deep-purple-900/30 rounded-lg border border-purple-500/10"
+                    className="p-4 bg-purple-900/20 rounded-xl border border-purple-700/20"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-medium">
-                        {review.session.user.name || ('Anonim')}
-                      </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-fuchsia-600/30 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-fuchsia-300" />
+                        </div>
+                        <span className="text-white font-medium text-sm">
+                          {review.session.user.name || 'Anonim'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-0.5">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${
+                            className={`w-3.5 h-3.5 ${
                               i < review.rating
                                 ? 'text-yellow-400 fill-yellow-400'
                                 : 'text-gray-600'
@@ -640,7 +681,7 @@ export default function TellerDetailPage() {
                       </div>
                     </div>
                     {review.comment && (
-                      <p className="text-purple-200 text-sm">{review.comment}</p>
+                      <p className="text-purple-200 text-sm mt-1">{review.comment}</p>
                     )}
                     <p className="text-purple-500 text-xs mt-2">
                       {new Date(review.createdAt).toLocaleDateString(

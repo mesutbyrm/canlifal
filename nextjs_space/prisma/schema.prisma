@@ -91,6 +91,16 @@ model User {
   dreamComments         DreamComment[]
   dreamFavorites        DreamFavorite[]
   dreamViews            DreamView[]
+  dreamDiaryEntries     DreamDiaryEntry[]
+  dailyLoginRewards     DailyLoginReward[]
+  dreamContestEntries   DreamContestEntry[]
+  dreamContestVotes     DreamContestVote[]
+  weeklyDreamReports    WeeklyDreamReport[]
+  // XP & Level system
+  xp                    Int                  @default(0)
+  level                 Int                  @default(1)
+  loginStreak           Int                  @default(0)
+  lastLoginRewardDate   DateTime?            @db.Date
 
   @@index([referralCode])
   @@index([referredById])
@@ -1699,4 +1709,126 @@ model DreamView {
   @@index([userId, createdAt])
   @@index([dreamId])
   @@map("dream_views")
+}
+
+// Dream Symbol Dictionary (A-Z)
+model DreamSymbol {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  slug            String   @unique
+  letter          String   // First letter for A-Z grouping
+  meaning         String   @db.Text
+  detailedMeaning String?  @db.Text
+  relatedSymbols  String[] @default([])
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([letter])
+  @@index([slug])
+  @@index([isPublished])
+  @@map("dream_symbols")
+}
+
+// Dream Diary - Personal Dream Journal
+model DreamDiaryEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  dreamDate   DateTime @db.Date
+  title       String
+  content     String   @db.Text
+  symbols     String[] @default([])
+  mood        String?  // happy, sad, scared, confused, neutral
+  lucidity    Int?     // 1-5 lucidity scale
+  aiAnalysis  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dreamDate])
+  @@index([userId, dreamDate])
+  @@index([createdAt])
+  @@map("dream_diary_entries")
+}
+
+// Daily Login Reward
+model DailyLoginReward {
+  id          String   @id @default(cuid())
+  userId      String
+  rewardDate  DateTime @db.Date
+  streak      Int      @default(1)
+  xpEarned    Int      @default(10)
+  jetonEarned Int      @default(0)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rewardDate])
+  @@index([userId])
+  @@map("daily_login_rewards")
+}
+
+// Dream Interpretation Contest
+model DreamContest {
+  id          String              @id @default(cuid())
+  title       String
+  description String              @db.Text
+  dreamPrompt String              @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  entries     DreamContestEntry[]
+
+  @@index([isActive])
+  @@index([endDate])
+  @@map("dream_contests")
+}
+
+model DreamContestEntry {
+  id            String            @id @default(cuid())
+  contestId     String
+  userId        String
+  interpretation String           @db.Text
+  voteCount     Int               @default(0)
+  createdAt     DateTime          @default(now())
+  contest       DreamContest      @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes         DreamContestVote[]
+
+  @@unique([contestId, userId])
+  @@index([contestId, voteCount])
+  @@index([userId])
+  @@map("dream_contest_entries")
+}
+
+model DreamContestVote {
+  id        String            @id @default(cuid())
+  entryId   String
+  userId    String
+  createdAt DateTime          @default(now())
+  entry     DreamContestEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, userId])
+  @@index([entryId])
+  @@index([userId])
+  @@map("dream_contest_votes")
+}
+
+// Weekly Dream Report (AI-generated)
+model WeeklyDreamReport {
+  id          String   @id @default(cuid())
+  userId      String
+  weekStart   DateTime @db.Date
+  weekEnd     DateTime @db.Date
+  reportContent String @db.Text
+  dreamCount  Int      @default(0)
+  topSymbols  String[] @default([])
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@map("weekly_dream_reports")
 }

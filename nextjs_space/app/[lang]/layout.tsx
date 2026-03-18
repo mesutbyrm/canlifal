@@ -10,6 +10,7 @@ import NotificationPermissionPrompt from '@/components/notification-permission-p
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
 import DeviceGuard from '@/components/device-guard'
 import OneSignalInitializer from '@/components/onesignal-initializer'
+import DailyLoginReward from '@/components/daily-login-reward'
 
 export default function LangLayout({
   children,
@@ -49,6 +50,9 @@ export default function LangLayout({
         
         {/* OneSignal Web Push */}
         <OneSignalInitializer />
+        
+        {/* Daily Login Reward Popup */}
+        <DailyLoginReward />
       </div>
     </ProfilePopupProvider>
     </PushNotificationProvider>
