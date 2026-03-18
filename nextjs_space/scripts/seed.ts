@@ -613,6 +613,76 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Fortune request types seeded')
 
+  // Seed dream interpretations
+  const defaultDreams = [
+    {
+      title: 'Rüyada Yılan Görmek',
+      slug: 'ruyada-yilan-gormek',
+      summary: 'Rüyada yılan görmek, düşman, hile ve gizli tehlikelere işaret eder. İslami ve psikolojik yorumlarıyla detaylı analiz.',
+      content: '<h2>Rüyada Yılan Görmek Ne Anlama Gelir?</h2><p>Rüyada yılan görmek, en sık aranan rüya tabirlerinden biridir. Genel olarak düşman, hile, fitne ve gizli tehlikelere işaret eder.</p><h2>İslami Rüya Tabiri</h2><p>İslami kaynaklara göre rüyada yılan görmek, düşmanla karşılaşmaya ve fitnecilerle mücadeleye işaret eder. Büyük yılan güçlü bir düşmanı, küçük yılan ise zayıf bir düşmanı temsil eder.</p><h2>Psikolojik Yorum</h2><p>Psikolojik açıdan yılan rüyaları, bilinçaltındaki korkuları, bastırılmış duyguları ve değişim süreçlerini simgeler. Yılanın dönüşümü, kişisel gelişim ve yenilenme anlamına da gelebilir.</p><h2>Detaylı Senaryolar</h2><h3>Siyah Yılan Görmek</h3><p>Siyah yılan görmek, güçlü ve sinsi bir düşmanın varlığına işaret eder.</p><h3>Beyaz Yılan Görmek</h3><p>Beyaz yılan görmek, genellikle olumlu yorumlanır ve şifa anlamına gelir.</p><h3>Yılan Sokmak</h3><p>Rüyada yılanın sokması, beklenmedik bir yerden gelecek zarara veya hastalığa dikkat çeker.</p><h2>Genel Değerlendirme</h2><p>Yılan rüyaları bağlamına göre farklı yorumlanır. Rüyanın detaylarını dikkate alarak kapsamlı bir değerlendirme yapılmalıdır.</p>',
+      keywords: ['yılan', 'yılan görmek', 'siyah yılan', 'beyaz yılan', 'yılan sokması'],
+      metaDescription: 'Rüyada yılan görmek ne anlama gelir? İslami, psikolojik ve geleneksel yorumlarla detaylı rüya tabiri.',
+    },
+    {
+      title: 'Rüyada Köpek Görmek',
+      slug: 'ruyada-kopek-gormek',
+      summary: 'Rüyada köpek görmek, sadakat, dostluk veya düşmanlık gibi farklı anlamlara gelebilir.',
+      content: '<h2>Rüyada Köpek Görmek Ne Anlama Gelir?</h2><p>Rüyada köpek görmek, rüyanın bağlamına göre hem olumlu hem de olumsuz anlamlar taşıyabilir. Genel olarak sadakat, dostluk, koruma veya düşmanlık simgesidir.</p><h2>İslami Rüya Tabiri</h2><p>İslami yoruma göre rüyada köpek görmek farklı şekillerde tabir edilir. Evcil köpek sadık bir dost, saldırgan köpek ise zararlı bir kişiyi temsil eder.</p><h2>Psikolojik Yorum</h2><p>Psikolojik açıdan köpek rüyaları, güven, sadakat ve sosyal ilişkilerle bağlantılıdır.</p><h2>Detaylı Senaryolar</h2><h3>Beyaz Köpek Görmek</h3><p>Beyaz köpek, iyi niyetli ve güvenilir bir dosta işaret eder.</p><h3>Siyah Köpek Görmek</h3><p>Siyah köpek, gizli tehlike veya korkuları simgeler.</p><h3>Köpek Saldırması</h3><p>Köpek saldırması, çevrenizdeki birinin ihaneti veya saldırganlığına dikkat çeker.</p><h2>Genel Değerlendirme</h2><p>Köpek rüyaları kişisel ilişkileriniz ve güven duygularınız hakkında önemli ipuçları verir.</p>',
+      keywords: ['köpek', 'köpek görmek', 'beyaz köpek', 'siyah köpek', 'köpek saldırması'],
+      metaDescription: 'Rüyada köpek görmek ne anlama gelir? İslami ve psikolojik yorumlarla detaylı rüya tabiri.',
+    },
+    {
+      title: 'Rüyada Su Görmek',
+      slug: 'ruyada-su-gormek',
+      summary: 'Rüyada su görmek, rızık, bereket, arınma ve duygusal durumla ilişkilidir.',
+      content: '<h2>Rüyada Su Görmek Ne Anlama Gelir?</h2><p>Su, rüya tabirinde en önemli sembollerden biridir. Hayat, arınma, bereket ve duygusal durumu simgeler.</p><h2>İslami Rüya Tabiri</h2><p>İslami kaynaklara göre temiz su görmek rızık ve berekete, bulanık su görmek ise sıkıntı ve huzursuzluğa işaret eder.</p><h2>Psikolojik Yorum</h2><p>Psikolojik açıdan su, bilinçaltını ve duygusal dünyayı temsil eder. Durgun su iç huzuru, dalgalı su ise duygusal çalkantıları simgeler.</p><h2>Detaylı Senaryolar</h2><h3>Temiz Su Görmek</h3><p>Temiz ve berrak su, bolluk, sağlık ve huzur demektir.</p><h3>Bulanık Su Görmek</h3><p>Bulanık su, karışık duygular ve zorluklar anlamına gelir.</p><h3>Su İçmek</h3><p>Rüyada su içmek, ilim öğrenmeye ve manevi arınmaya işaret eder.</p><h2>Genel Değerlendirme</h2><p>Su rüyaları, duygusal ve manevi yaşamınız hakkında derin mesajlar taşır.</p>',
+      keywords: ['su', 'su görmek', 'temiz su', 'bulanık su', 'su içmek', 'deniz'],
+      metaDescription: 'Rüyada su görmek ne anlama gelir? Temiz su, bulanık su ve su içmek rüya tabirleri.',
+    },
+    {
+      title: 'Rüyada Altın Görmek',
+      slug: 'ruyada-altin-gormek',
+      summary: 'Rüyada altın görmek, zenginlik, başarı ve değerli kazanımlarla ilişkilendirilir.',
+      content: '<h2>Rüyada Altın Görmek Ne Anlama Gelir?</h2><p>Altın rüyaları genellikle maddi kazanç, başarı ve değerli fırsatlarla ilişkilendirilir.</p><h2>İslami Rüya Tabiri</h2><p>İslami yoruma göre altın görmek erkekler için sıkıntı, kadınlar için ise süs ve güzellik anlamına gelebilir.</p><h2>Psikolojik Yorum</h2><p>Psikolojik olarak altın, öz değer, başarı hırsı ve maddi güvenlik arayışını simgeler.</p><h2>Detaylı Senaryolar</h2><h3>Altın Bulmak</h3><p>Altın bulmak, beklenmedik bir kazanç veya fırsata işaret eder.</p><h3>Altın Bilezik Görmek</h3><p>Altın bilezik, kadınlar için güzellik ve mutluluk, erkekler için ise sorumluluk anlamına gelir.</p><h2>Genel Değerlendirme</h2><p>Altın rüyaları, maddi ve manevi değerleriniz hakkında önemli mesajlar taşır.</p>',
+      keywords: ['altın', 'altın görmek', 'altın bulmak', 'altın bilezik', 'altın yüzük'],
+      metaDescription: 'Rüyada altın görmek ne anlama gelir? Altın bulmak, altın bilezik ve detaylı rüya tabiri.',
+    },
+    {
+      title: 'Rüyada Bebek Görmek',
+      slug: 'ruyada-bebek-gormek',
+      summary: 'Rüyada bebek görmek, yeni başlangıçlar, masumiyet ve hayırlı haberlerle ilişkilidir.',
+      content: '<h2>Rüyada Bebek Görmek Ne Anlama Gelir?</h2><p>Bebek rüyaları, yeni başlangıçları, masumiyeti ve umut dolu gelişmeleri simgeler.</p><h2>İslami Rüya Tabiri</h2><p>İslami kaynaklara göre rüyada bebek görmek, hayırlı haberlere, rızka ve berekete işaret eder.</p><h2>Psikolojik Yorum</h2><p>Psikolojik açıdan bebek rüyaları, yeni projeleri, yaratıcılığı ve iç çocuğunuzla bağlantıyı temsil eder.</p><h2>Detaylı Senaryolar</h2><h3>Gülen Bebek Görmek</h3><p>Gülen bir bebek görmek, mutluluk ve güzel haberlere işaret eder.</p><h3>Ağlayan Bebek Görmek</h3><p>Ağlayan bebek, ihmal edilen bir konuya veya duygusal ihtiyaçlara dikkat çeker.</p><h2>Genel Değerlendirme</h2><p>Bebek rüyaları genel olarak olumlu yorumlanır ve hayatınızdaki yeni dönemlere işaret eder.</p>',
+      keywords: ['bebek', 'bebek görmek', 'gülen bebek', 'ağlayan bebek', 'yenidoğan'],
+      metaDescription: 'Rüyada bebek görmek ne anlama gelir? Gülen bebek, ağlayan bebek ve detaylı rüya tabiri.',
+    },
+    {
+      title: 'Rüyada Uçmak',
+      slug: 'ruyada-ucmak',
+      summary: 'Rüyada uçmak, özgürlük, yükselme, başarı ve manevi yücelmeye işaret eder.',
+      content: '<h2>Rüyada Uçmak Ne Anlama Gelir?</h2><p>Uçma rüyaları en yaygın rüya türlerinden biridir ve genellikle özgürlük, güç ve yükselme ile ilişkilendirilir.</p><h2>İslami Rüya Tabiri</h2><p>İslami yoruma göre rüyada uçmak, makam yükselmesi, seyahat ve manevi yücelme anlamına gelir.</p><h2>Psikolojik Yorum</h2><p>Psikolojik açıdan uçma rüyaları, kısıtlamalardan kurtulma arzusunu ve özgüven duygusunu yansıtır.</p><h2>Detaylı Senaryolar</h2><h3>Yüksekten Uçmak</h3><p>Yüksekten uçmak, büyük hedeflere ulaşmaya ve başarıya işaret eder.</p><h3>Alçaktan Uçmak</h3><p>Alçaktan uçmak, mevcut durumunuzda küçük ama önemli ilerlemelere işaret eder.</p><h3>Uçarken Düşmek</h3><p>Uçarken düşmek, kontrol kaybı ve güvensizlik hissini simgeler.</p><h2>Genel Değerlendirme</h2><p>Uçma rüyaları, kişisel gelişim ve özgürlük arayışınızla doğrudan bağlantılıdır.</p>',
+      keywords: ['uçmak', 'uçma', 'gökyüzü', 'kanat', 'düşmek'],
+      metaDescription: 'Rüyada uçmak ne anlama gelir? Yüksekten uçmak, alçaktan uçmak ve detaylı rüya tabiri.',
+    },
+  ]
+
+  for (const dream of defaultDreams) {
+    await prisma.dreamInterpretation.upsert({
+      where: { slug: dream.slug },
+      update: {
+        title: dream.title,
+        summary: dream.summary,
+        keywords: dream.keywords,
+        metaDescription: dream.metaDescription,
+      },
+      create: {
+        ...dream,
+        isPublished: true,
+        isAiGenerated: false,
+      },
+    })
+  }
+  console.log('Dream interpretations seeded')
+
   console.log('Seed completed successfully!')
 }
 

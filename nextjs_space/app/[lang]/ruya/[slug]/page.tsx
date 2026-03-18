@@ -2,9 +2,8 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Moon, Eye, Calendar, Tag, ChevronRight, Share2 } from 'lucide-react'
+import { ArrowLeft, Moon, Eye, Calendar, Tag, ChevronRight } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
-import Head from 'next/head'
 
 interface Dream {
   id: string
