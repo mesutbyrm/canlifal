@@ -24,7 +24,7 @@ export default function NotificationBell() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
   const router = useRouter()
-  const { isSupported, permission, requestPermission, unreadCount: pushUnreadCount } = usePushNotifications()
+  const { isSupported, permission, requestPermission } = usePushNotifications()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)

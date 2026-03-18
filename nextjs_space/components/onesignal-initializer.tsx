@@ -8,6 +8,46 @@ export default function OneSignalInitializer() {
   const initialized = useRef(false)
   const loggedInUserId = useRef<string | null>(null)
 
+  // Force re-subscribe: opt out then opt in to get a fresh push token
+  const forceResubscribe = useCallback(async (OneSignal: any) => {
+    try {
+      const sub = OneSignal.User?.PushSubscription
+      if (!sub) return
+
+      // Check if we have a valid push token
+      const token = sub.token
+      if (token) {
+        console.log('OneSignal: already has valid push token')
+        return
+      }
+
+      // No token — force re-subscribe
+      console.log('OneSignal: no push token, forcing re-subscribe...')
+      
+      // If permission is granted, force opt-out then opt-in to trigger new subscription
+      if (Notification.permission === 'granted') {
+        try {
+          await sub.optOut?.()
+          await new Promise(r => setTimeout(r, 1000))
+          await sub.optIn?.()
+          console.log('OneSignal: forced re-subscribe completed')
+        } catch (e) {
+          console.log('OneSignal: re-subscribe attempt:', e)
+        }
+      } else if (Notification.permission === 'default') {
+        // Permission not yet asked — prompt the user
+        try {
+          await OneSignal.Slidedown?.promptPush?.()
+          console.log('OneSignal: prompted user for push permission')
+        } catch (e) {
+          console.log('OneSignal: prompt skipped:', e)
+        }
+      }
+    } catch (error) {
+      console.error('OneSignal forceResubscribe error:', error)
+    }
+  }, [])
+
   // Sync user login/logout with OneSignal
   const syncUser = useCallback(async (userId: string | undefined | null) => {
     if (!initialized.current) return
@@ -21,19 +61,8 @@ export default function OneSignalInitializer() {
         loggedInUserId.current = userId
         console.log('OneSignal user logged in:', userId)
 
-        // After login, try to opt-in if permission already granted
-        try {
-          const permission = (OneSignal.Notifications as any)?.permission
-          if (permission === true || Notification.permission === 'granted') {
-            const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
-            if (!isOptedIn) {
-              await (OneSignal.User?.PushSubscription as any)?.optIn?.()
-              console.log('OneSignal: opted in after login')
-            }
-          }
-        } catch (e) {
-          // silent - opt-in is best-effort
-        }
+        // After login, ensure push subscription is active
+        setTimeout(() => forceResubscribe(OneSignal), 2000)
       } else {
         if (!loggedInUserId.current) return // already logged out
         await OneSignal.logout()
@@ -43,7 +72,7 @@ export default function OneSignalInitializer() {
     } catch (error) {
       console.error('OneSignal user sync error:', error)
     }
-  }, [])
+  }, [forceResubscribe])
 
   // Initialize OneSignal SDK once
   useEffect(() => {
@@ -80,21 +109,8 @@ export default function OneSignalInitializer() {
           console.log('OneSignal user logged in:', session.user.id)
         }
 
-        // If permission was already granted, silently opt in (no prompt)
-        setTimeout(async () => {
-          try {
-            const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
-            if (!isOptedIn && Notification.permission === 'granted') {
-              await (OneSignal.User?.PushSubscription as any)?.optIn?.()
-              console.log('OneSignal: silently opted in (permission was already granted)')
-            } else if (isOptedIn) {
-              console.log('OneSignal: already subscribed')
-            }
-            // Do NOT auto-prompt — let the user click the notification bell to enable
-          } catch (e) {
-            console.log('OneSignal opt-in check skipped:', e)
-          }
-        }, 2000)
+        // After init, try to establish push subscription
+        setTimeout(() => forceResubscribe(OneSignal), 3000)
       } catch (error) {
         console.error('OneSignal initialization error:', error)
       }
