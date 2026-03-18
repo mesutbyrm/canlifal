@@ -13,7 +13,7 @@ interface Post {
   postType: string
   createdAt: string
   imageUrl?: string
-  user: { id: string; name: string; username: string; avatar?: string }
+  user: { id: string; name: string; username: string; image?: string }
   _count: { comments: number; likes: number }
 }
 
@@ -21,7 +21,7 @@ interface Comment {
   id: string
   content: string
   createdAt: string
-  user: { id: string; name: string; username: string; avatar?: string }
+  user: { id: string; name: string; username: string; image?: string }
   post: { id: string; content: string }
 }
 
@@ -128,8 +128,8 @@ export default function AdminModerationPage() {
                 <div key={post.id} className="bg-white/5 rounded-2xl p-5 border border-white/10">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-sm">
-                      {post.user.avatar ? (
-                        <img src={post.user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      {post.user.image ? (
+                        <img src={post.user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         post.user.name?.charAt(0) || '?'
                       )}

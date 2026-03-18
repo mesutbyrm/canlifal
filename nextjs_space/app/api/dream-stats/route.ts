@@ -63,16 +63,11 @@ export async function GET(request: NextRequest) {
       if (entry.mood) {
         moodMap[entry.mood] = (moodMap[entry.mood] || 0) + 1
       }
-      if (entry.symbols) {
-        try {
-          const symbols = JSON.parse(entry.symbols)
-          if (Array.isArray(symbols)) {
-            for (const s of symbols) {
-              const sym = String(s).toLowerCase()
-              symbolMap[sym] = (symbolMap[sym] || 0) + 1
-            }
-          }
-        } catch (e) { /* skip */ }
+      if (entry.symbols && Array.isArray(entry.symbols)) {
+        for (const s of entry.symbols) {
+          const sym = String(s).toLowerCase()
+          symbolMap[sym] = (symbolMap[sym] || 0) + 1
+        }
       }
     }
 
