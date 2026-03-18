@@ -133,6 +133,7 @@ const MANAGEMENT_LINKS = (lang: string) => [
   { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
   { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
   { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
+  { href: `/admin/dreams`, icon: Moon, trLabel: 'Rüya Tabirleri Yönetimi', enLabel: 'Dream Interpretations' },
   { href: `/admin/button-order`, icon: LayoutDashboard, trLabel: 'Buton Sıralaması', enLabel: 'Button Order' },
   { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
   { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },

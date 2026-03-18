@@ -1631,3 +1631,24 @@ model PushNotificationLog {
   @@index([targetType])
   @@map("push_notification_logs")
 }
+
+model DreamInterpretation {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String   @db.Text
+  summary         String?  @db.Text
+  keywords        String[] @default([])
+  metaDescription String?
+  views           Int      @default(0)
+  isPublished     Boolean  @default(true)
+  isAiGenerated   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([views])
+  @@index([createdAt])
+  @@index([isPublished])
+  @@map("dream_interpretations")
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat', 'blog', 'bana-ozel']
+const DEFAULT_ORDER = ['games', 'gifts', 'teller', 'social', 'chat', 'blog', 'ruya', 'bana-ozel']
 
 export function useButtonOrder() {
   const [order, setOrder] = useState<string[]>(DEFAULT_ORDER)

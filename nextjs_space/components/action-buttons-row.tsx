@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Gamepad2, Gift, Video, Users, MessageCircle, Sparkles, BookOpen } from 'lucide-react'
+import { Gamepad2, Gift, Video, Users, MessageCircle, Sparkles, BookOpen, Moon } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useSectionPresence } from '@/hooks/use-section-presence'
@@ -53,6 +53,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
         chat: 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-400/50 text-cyan-200 hover:border-cyan-300',
         blog: 'bg-gradient-to-r from-orange-600/30 to-red-600/30 border-orange-400/50 text-orange-200 hover:border-orange-300',
         'bana-ozel': 'bg-gradient-to-r from-fuchsia-600/30 to-purple-600/30 border-fuchsia-400/50 text-fuchsia-200 hover:border-fuchsia-300',
+        ruya: 'bg-gradient-to-r from-blue-600/30 to-indigo-600/30 border-blue-400/50 text-blue-200 hover:border-blue-300',
       }
       return styles[key] || styles.games
     }
@@ -65,6 +66,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
         chat: 'bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
         blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
         'bana-ozel': 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400',
+        ruya: 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/50 text-blue-300 hover:border-blue-400',
       }
       return styles[key] || styles.games
     }
@@ -77,6 +79,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       chat: 'bg-gradient-to-r from-cyan-900/40 to-teal-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
       blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
       'bana-ozel': 'bg-gradient-to-r from-violet-900/40 to-fuchsia-900/40 border-violet-500/50 text-violet-300 hover:border-violet-400',
+      ruya: 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/50 text-blue-300 hover:border-blue-400',
     }
     return styles[key] || styles.games
   }
@@ -130,6 +133,14 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       labelEn: 'Blog',
       badgeCount: counts.blog,
     },
+    ruya: {
+      key: 'ruya',
+      href: `/ruya`,
+      icon: <Moon className="w-4 h-4" />,
+      labelTr: 'Rüya Tabirleri',
+      labelEn: 'Dream Guide',
+      badgeCount: 0,
+    },
     'bana-ozel': {
       key: 'bana-ozel',
       href: session?.user ? `/bana-ozel` : `/login`,
@@ -145,7 +156,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     .map((key) => allButtons[key])
 
   if (!mounted) {
-    return <div className="grid grid-cols-4 md:grid-cols-7 gap-2 min-h-[44px]" />
+    return <div className="grid grid-cols-4 md:grid-cols-8 gap-2 min-h-[44px]" />
   }
 
   const handleButtonClick = (btn: typeof orderedButtons[0]) => {
@@ -162,7 +173,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
 
   return (
     <>
-      <div className="grid grid-cols-4 md:grid-cols-7 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-2">
         {orderedButtons.map((btn) =>
           btn.key === 'bana-ozel' ? (
             <button
