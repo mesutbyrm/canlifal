@@ -2,11 +2,12 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { SITE_NAME, SITE_URL } from '@/lib/seo-config'
-import { ArrowLeft, BookOpen, Calendar, Tag, Clock, Eye, ChevronRight, Share2, Heart, ThumbsUp, User } from 'lucide-react'
-import { useEffect, useState, useMemo } from 'react'
+import { ArrowLeft, BookOpen, Calendar, Tag, Clock, Eye, ChevronRight, Share2, Heart, ThumbsUp, User, Bookmark, MessageCircle, Send, Reply, Trash2, Facebook, Loader2, Check, Copy, LinkIcon } from 'lucide-react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import LoadingSpinner from '@/components/loading-spinner'
 
 interface BlogPost {
@@ -49,9 +50,21 @@ interface BlogCategory {
   nameTr: string
 }
 
+interface Comment {
+  id: string
+  postId: string
+  userId: string
+  userName: string
+  userAvatar: string
+  content: string
+  parentId: string | null
+  createdAt: string
+}
+
 export default function BlogPostPage() {
   const params = useParams()
   const router = useRouter()
+  const { data: session } = useSession() || {}
   const lang = (params?.lang as string) || 'tr'
   const slug = params?.slug as string
   const [post, setPost] = useState<BlogPost | null>(null)
@@ -60,8 +73,30 @@ export default function BlogPostPage() {
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
+  // Interactions
+  const [liked, setLiked] = useState(false)
+  const [favorited, setFavorited] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
+  const [likeLoading, setLikeLoading] = useState(false)
+  const [favLoading, setFavLoading] = useState(false)
+
+  // Comments
+  const [comments, setComments] = useState<Comment[]>([])
+  const [replies, setReplies] = useState<Comment[]>([])
+  const [commentTotal, setCommentTotal] = useState(0)
+  const [commentText, setCommentText] = useState('')
+  const [replyTo, setReplyTo] = useState<Comment | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [commentLoading, setCommentLoading] = useState(false)
+  const [commentSubmitting, setCommentSubmitting] = useState(false)
+
+  // Share
+  const [showShareMenu, setShowShareMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
+
   useEffect(() => { setMounted(true) }, [])
 
+  // Fetch post data
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -72,7 +107,10 @@ export default function BlogPostPage() {
         ])
         if (postRes.ok) {
           const data = await postRes.json()
-          if (data.post) setPost(data.post)
+          if (data.post) {
+            setPost(data.post)
+            setLikesCount(data.post.likes || 0)
+          }
         }
         if (relatedRes.ok) {
           const data = await relatedRes.json()
@@ -82,32 +120,161 @@ export default function BlogPostPage() {
           const data = await catsRes.json()
           setCategories(data.categories || [])
         }
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
+      } catch (e) { console.error(e) }
+      finally { setLoading(false) }
     }
     fetchPost()
   }, [slug])
+
+  // Fetch interactions (liked/favorited status)
+  useEffect(() => {
+    if (!post?.id) return
+    fetch(`/api/blog/interactions?postId=${post.id}`)
+      .then(r => r.json())
+      .then(data => {
+        setLiked(data.liked || false)
+        setFavorited(data.favorited || false)
+        if (data.likesCount !== undefined) setLikesCount(data.likesCount)
+      })
+      .catch(() => {})
+  }, [post?.id])
+
+  // Fetch comments
+  const fetchComments = useCallback(async () => {
+    if (!post?.id) return
+    setCommentLoading(true)
+    try {
+      const res = await fetch(`/api/blog/comments?postId=${post.id}`)
+      const data = await res.json()
+      setComments(data.comments || [])
+      setReplies(data.replies || [])
+      setCommentTotal(data.total || 0)
+    } catch (e) { console.error(e) }
+    setCommentLoading(false)
+  }, [post?.id])
+
+  useEffect(() => { fetchComments() }, [fetchComments])
+
+  // Like toggle
+  const handleLike = async () => {
+    if (!session?.user) { router.push(`/${lang}/login`); return }
+    if (likeLoading || !post) return
+    setLikeLoading(true)
+    try {
+      const res = await fetch('/api/blog/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setLiked(data.liked)
+        setLikesCount(prev => data.liked ? prev + 1 : Math.max(0, prev - 1))
+      }
+    } catch (e) { console.error(e) }
+    setLikeLoading(false)
+  }
+
+  // Favorite toggle
+  const handleFavorite = async () => {
+    if (!session?.user) { router.push(`/${lang}/login`); return }
+    if (favLoading || !post) return
+    setFavLoading(true)
+    try {
+      const res = await fetch('/api/blog/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id }),
+      })
+      const data = await res.json()
+      if (res.ok) setFavorited(data.favorited)
+    } catch (e) { console.error(e) }
+    setFavLoading(false)
+  }
+
+  // Submit comment
+  const handleSubmitComment = async (parentId?: string) => {
+    if (!session?.user) { router.push(`/${lang}/login`); return }
+    const text = parentId ? replyText : commentText
+    if (!text.trim() || !post) return
+    setCommentSubmitting(true)
+    try {
+      const res = await fetch('/api/blog/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id, content: text.trim(), parentId: parentId || null }),
+      })
+      if (res.ok) {
+        if (parentId) { setReplyText(''); setReplyTo(null) }
+        else setCommentText('')
+        await fetchComments()
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Hata')
+      }
+    } catch (e) { console.error(e) }
+    setCommentSubmitting(false)
+  }
+
+  // Delete comment
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return
+    try {
+      const res = await fetch(`/api/blog/comments?id=${commentId}`, { method: 'DELETE' })
+      if (res.ok) await fetchComments()
+    } catch (e) { console.error(e) }
+  }
+
+  // Share helpers
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${SITE_URL}/blog/${slug}`
+  const shareTitle = post?.titleTr || ''
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: shareTitle, url: shareUrl }) } catch {}
+    }
+  }
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+
+  const shareToTwitter = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}`, '_blank')
+  const shareToFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank')
+  const shareToWhatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`, '_blank')
+  const shareToTelegram = () => window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`, '_blank')
 
   const formatDate = (date: string | null) => {
     if (!date) return ''
     try { return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) } catch { return '' }
   }
 
+  const timeAgo = (date: string) => {
+    const now = Date.now()
+    const d = new Date(date).getTime()
+    const diff = now - d
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'Az \u00f6nce'
+    if (mins < 60) return `${mins} dk \u00f6nce`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours} saat \u00f6nce`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days} g\u00fcn \u00f6nce`
+    return formatDate(date)
+  }
+
   const formatViews = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n)
 
   const getCategoryName = (catSlug: string) => categories.find(c => c.slug === catSlug)?.nameTr || catSlug
 
-  const handleShare = async () => {
-    const url = window.location.href
-    if (navigator.share) {
-      try { await navigator.share({ title: post?.titleTr, url }) } catch {}
-    } else {
-      await navigator.clipboard.writeText(url)
-    }
-  }
+  const getRepliesForComment = (commentId: string) => replies.filter(r => r.parentId === commentId)
+
+  const currentUserId = (session?.user as any)?.id
+  const isAdmin = ((session?.user as any)?.role || '').toLowerCase() === 'admin'
 
   if (!mounted) return null
 
@@ -135,7 +302,6 @@ export default function BlogPostPage() {
   const content = post.contentTr
   const publishDate = post.publishedAt || post.createdAt
 
-  // JSON-LD Schema
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -151,6 +317,12 @@ export default function BlogPostPage() {
     keywords: post.keywords.join(', '),
     wordCount: content.replace(/<[^>]*>/g, '').split(/\s+/).length,
     articleSection: getCategoryName(post.category),
+    commentCount: commentTotal,
+    interactionStatistic: {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/LikeAction',
+      userInteractionCount: likesCount,
+    },
   }
 
   const breadcrumbJsonLd = {
@@ -166,11 +338,9 @@ export default function BlogPostPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/20 to-gray-950">
-      {/* JSON-LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      {/* OG Meta via head */}
       <head>
         <meta property="og:title" content={title} />
         <meta property="og:description" content={desc} />
@@ -222,11 +392,75 @@ export default function BlogPostPage() {
               <span className="flex items-center gap-1.5"><User className="w-4 h-4" />{post.authorName}</span>
               <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{formatDate(publishDate)}</span>
               <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{post.readTime} dk okuma</span>
-              <span className="flex items-center gap-1.5"><Eye className="w-4 h-4" />{formatViews(post.views)} g\u00f6r\u00fcnt\u00fclenme</span>
+              <span className="flex items-center gap-1.5"><Eye className="w-4 h-4" />{formatViews(post.views)}</span>
             </div>
-            <button onClick={handleShare} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-purple-400 transition">
-              <Share2 className="w-4 h-4" /> Payla\u015f
-            </button>
+            {/* Interaction buttons - header */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLike}
+                disabled={likeLoading}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition ${
+                  liked ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 border border-white/10'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${liked ? 'fill-red-400' : ''}`} />
+                {likesCount > 0 && <span>{likesCount}</span>}
+              </button>
+              <button
+                onClick={handleFavorite}
+                disabled={favLoading}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition ${
+                  favorited ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-white/5 text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 border border-white/10'
+                }`}
+              >
+                <Bookmark className={`w-4 h-4 ${favorited ? 'fill-yellow-400' : ''}`} />
+              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 border border-white/10 transition"
+                >
+                  <Share2 className="w-4 h-4" /> Payla\u015f
+                </button>
+                <AnimatePresence>
+                  {showShareMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-gray-900 border border-white/10 rounded-xl shadow-2xl z-50 p-2"
+                    >
+                      {typeof navigator !== 'undefined' && !!navigator.share && (
+                        <button onClick={() => { handleNativeShare(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                          <Share2 className="w-4 h-4 text-purple-400" /> Payla\u015f (Cihaz)
+                        </button>
+                      )}
+                      <button onClick={() => { shareToTwitter(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                        <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        X (Twitter)
+                      </button>
+                      <button onClick={() => { shareToFacebook(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                        <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        Facebook
+                      </button>
+                      <button onClick={() => { shareToWhatsapp(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                        <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        WhatsApp
+                      </button>
+                      <button onClick={() => { shareToTelegram(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                        <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                        Telegram
+                      </button>
+                      <div className="border-t border-white/10 my-1"></div>
+                      <button onClick={() => { handleCopyLink(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
+                        {copied ? <Check className="w-4 h-4 text-green-400" /> : <LinkIcon className="w-4 h-4 text-gray-400" />}
+                        {copied ? 'Kopyaland\u0131!' : 'Linki Kopyala'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -260,15 +494,201 @@ export default function BlogPostPage() {
           </div>
         )}
 
-        {/* Share bar */}
-        <div className="mt-8 p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-          <span className="text-sm text-gray-400">Bu yaz\u0131y\u0131 be\u011fendiniz mi?</span>
-          <div className="flex items-center gap-3">
-            <button onClick={handleShare} className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition">
-              <Share2 className="w-4 h-4" /> Payla\u015f
-            </button>
+        {/* Interaction Bar */}
+        <div className="mt-8 p-5 rounded-2xl bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/20">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <span className="text-sm text-gray-300">Bu yaz\u0131y\u0131 be\u011fendiniz mi?</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleLike}
+                disabled={likeLoading}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition ${
+                  liked
+                    ? 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30'
+                    : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/20'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${liked ? 'fill-red-400' : ''}`} />
+                {liked ? 'Be\u011fenildi' : 'Be\u011fen'} {likesCount > 0 && `(${likesCount})`}
+              </button>
+              <button
+                onClick={handleFavorite}
+                disabled={favLoading}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition ${
+                  favorited
+                    ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/30'
+                    : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-yellow-500/10 hover:text-yellow-300 hover:border-yellow-500/20'
+                }`}
+              >
+                <Bookmark className={`w-4 h-4 ${favorited ? 'fill-yellow-400' : ''}`} />
+                {favorited ? 'Kaydedildi' : 'Kaydet'}
+              </button>
+              <button
+                onClick={() => setShowShareMenu(!showShareMenu)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition"
+              >
+                <Share2 className="w-4 h-4" /> Payla\u015f
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Comments Section */}
+        <section className="mt-12" id="yorumlar">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-purple-400" />
+            Yorumlar {commentTotal > 0 && <span className="text-sm font-normal text-gray-500">({commentTotal})</span>}
+          </h3>
+
+          {/* Comment Input */}
+          <div className="mb-8 p-4 rounded-xl bg-white/5 border border-white/10">
+            {session?.user ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <User className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <span className="text-sm text-gray-300">{(session.user as any).name || 'Kullan\u0131c\u0131'}</span>
+                </div>
+                <textarea
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  placeholder="D\u00fc\u015f\u00fcncelerinizi payla\u015f\u0131n..."
+                  rows={3}
+                  maxLength={2000}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-500 resize-none focus:outline-none focus:border-purple-500/50 transition"
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-gray-500">{commentText.length}/2000</span>
+                  <button
+                    onClick={() => handleSubmitComment()}
+                    disabled={commentSubmitting || !commentText.trim()}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50"
+                  >
+                    {commentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    G\u00f6nder
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-400 mb-3">Yorum yapmak i\u00e7in giri\u015f yap\u0131n</p>
+                <Link href={`/${lang}/login`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
+                  Giri\u015f Yap
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Comments List */}
+          {commentLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-purple-400 animate-spin" /></div>
+          ) : comments.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageCircle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500">Hen\u00fcz yorum yok. \u0130lk yorumu siz yap\u0131n!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map(comment => (
+                <motion.div
+                  key={comment.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-xl bg-white/5 border border-white/10"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                      {comment.userAvatar ? (
+                        <img src={comment.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <User className="w-4 h-4 text-purple-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-white">{comment.userName}</span>
+                        <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-gray-300 whitespace-pre-wrap break-words">{comment.content}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        {session?.user && (
+                          <button
+                            onClick={() => { setReplyTo(replyTo?.id === comment.id ? null : comment); setReplyText('') }}
+                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-purple-400 transition"
+                          >
+                            <Reply className="w-3.5 h-3.5" /> Yan\u0131tla
+                          </button>
+                        )}
+                        {(comment.userId === currentUserId || isAdmin) && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Sil
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Reply Form */}
+                      {replyTo?.id === comment.id && (
+                        <div className="mt-3 flex gap-2">
+                          <input
+                            value={replyText}
+                            onChange={e => setReplyText(e.target.value)}
+                            placeholder={`@${comment.userName} yan\u0131tla...`}
+                            maxLength={2000}
+                            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                            onKeyDown={e => e.key === 'Enter' && !commentSubmitting && handleSubmitComment(comment.id)}
+                          />
+                          <button
+                            onClick={() => handleSubmitComment(comment.id)}
+                            disabled={commentSubmitting || !replyText.trim()}
+                            className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm transition disabled:opacity-50"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Replies */}
+                      {getRepliesForComment(comment.id).length > 0 && (
+                        <div className="mt-3 space-y-3 pl-4 border-l-2 border-purple-500/20">
+                          {getRepliesForComment(comment.id).map(reply => (
+                            <div key={reply.id} className="flex items-start gap-2">
+                              <div className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                                {reply.userAvatar ? (
+                                  <img src={reply.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                  <User className="w-3 h-3 text-purple-400" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="text-xs font-medium text-white">{reply.userName}</span>
+                                  <span className="text-[10px] text-gray-500">{timeAgo(reply.createdAt)}</span>
+                                </div>
+                                <p className="text-xs text-gray-300 whitespace-pre-wrap break-words">{reply.content}</p>
+                                {(reply.userId === currentUserId || isAdmin) && (
+                                  <button
+                                    onClick={() => handleDeleteComment(reply.id)}
+                                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-red-400 mt-1 transition"
+                                  >
+                                    <Trash2 className="w-3 h-3" /> Sil
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
@@ -309,6 +729,11 @@ export default function BlogPostPage() {
           </section>
         )}
       </div>
+
+      {/* Click outside to close share menu */}
+      {showShareMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowShareMenu(false)} />
+      )}
     </div>
   )
 }

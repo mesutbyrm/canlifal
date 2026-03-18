@@ -1566,6 +1566,48 @@ model BlogPost {
   @@map("blog_posts")
 }
 
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  userName  String   @default("Anonim")
+  userAvatar String  @default("")
+  content   String   @db.Text
+  isApproved Boolean @default(true)
+  likes     Int      @default(0)
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@map("blog_likes")
+}
+
+model BlogFavorite {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("blog_favorites")
+}
+
 // User game level & XP tracking
 model UserGameProfile {
   id             String   @id @default(cuid())
