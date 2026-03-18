@@ -24,7 +24,8 @@ import ThemeToggle from './theme-toggle'
 export default function Navbar() {
   const { data: session, update: updateSession } = useSession() || {}
   const { language, setLanguage, t } = useLanguage()
-  const { theme } = useSiteTheme()
+  const { theme, colorMode } = useSiteTheme()
+  const isLight = colorMode === 'light'
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [credits, setCredits] = useState<number>(0)
@@ -270,11 +271,17 @@ export default function Navbar() {
     return null
   }
 
-  // FalClub theme colors for navbar
-  const navBg = 'bg-[#0f0520]/95 border-fuchsia-900/30'
-  const navTextColor = 'text-fuchsia-300 hover:text-fuchsia-200'
-  const navHoverBg = 'hover:bg-fuchsia-900/30'
-  const accentColor = 'text-fuchsia-300'
+  // Theme colors for navbar - Facebook for light, FalClub for dark
+  const navBg = isLight 
+    ? 'bg-white border-[#E4E6EB]'
+    : 'bg-[#0f0520]/95 border-fuchsia-900/30'
+  const navTextColor = isLight
+    ? 'text-[#65676B] hover:text-[#1877F2]'
+    : 'text-fuchsia-300 hover:text-fuchsia-200'
+  const navHoverBg = isLight
+    ? 'hover:bg-[#F0F2F5]'
+    : 'hover:bg-fuchsia-900/30'
+  const accentColor = isLight ? 'text-[#1877F2]' : 'text-fuchsia-300'
   
   return (
     <>
@@ -311,7 +318,7 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex flex-col items-center gap-1 px-2 py-1 rounded-lg hover:bg-purple-900/30"
+                    className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg ${isLight ? 'hover:bg-[#F0F2F5]' : 'hover:bg-purple-900/30'}`}
                   >
                     {/* Gold border for admin */}
                     <div className={`relative ${session.user.role === 'admin' ? 'p-0.5' : ''}`}>
@@ -346,13 +353,13 @@ export default function Navbar() {
                   
                   {/* Profile dropdown */}
                   {showProfileMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl shadow-xl py-2 z-50 bg-[#1a0a2e] border border-fuchsia-700/50">
-                      <div className="px-4 py-3 border-b border-fuchsia-700/40">
+                    <div className={`absolute right-0 top-full mt-2 w-64 rounded-xl shadow-xl py-2 z-50 ${isLight ? 'bg-white border border-[#E4E6EB]' : 'bg-[#1a0a2e] border border-fuchsia-700/50'}`}>
+                      <div className={`px-4 py-3 border-b ${isLight ? 'border-[#E4E6EB]' : 'border-fuchsia-700/40'}`}>
                         <div className="flex items-center gap-3">
                           <ProfileAvatar size="xl" showCamera />
                           <div className="flex-1 min-w-0">
-                            <p className="text-white font-semibold truncate">{session.user.name}</p>
-                            <p className="text-xs truncate text-fuchsia-300">{session.user.email}</p>
+                            <p className={`font-semibold truncate ${isLight ? 'text-[#050505]' : 'text-white'}`}>{session.user.name}</p>
+                            <p className={`text-xs truncate ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>{session.user.email}</p>
                             <div className="mt-1">
                               <UserLevelBadge compact />
                             </div>
@@ -363,19 +370,19 @@ export default function Navbar() {
                        {/* CFC display */}
                        <Link
                          href={`/credits`}
-                         className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                         className={`flex items-center justify-between px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                          onClick={() => setShowProfileMenu(false)}
                        >
                          <div className="flex items-center gap-3">
                            <CfcCoin size={20} />
                            {"CFC'lerim"}
                          </div>
-                         <span className="font-bold text-gold-400">{credits} CFC</span>
+                         <span className={`font-bold ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`}>{credits} CFC</span>
                        </Link>
                        {/* Jeton display with TL */}
                        <Link
                          href={`/credits`}
-                         className="flex items-center justify-between px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                         className={`flex items-center justify-between px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                          onClick={() => setShowProfileMenu(false)}
                        >
                          <div className="flex items-center gap-3">
@@ -383,8 +390,8 @@ export default function Navbar() {
                            {'Jetonlarım'}
                          </div>
                          <div className="text-right">
-                           <span className="font-bold text-amber-400">{jetonBalance}</span>
-                           <p className="text-[10px] text-amber-300/70">{(jetonBalance * jetonTlRate).toFixed(0)} TL</p>
+                           <span className={`font-bold ${isLight ? 'text-[#1877F2]' : 'text-amber-400'}`}>{jetonBalance}</span>
+                           <p className={`text-[10px] ${isLight ? 'text-[#65676B]' : 'text-amber-300/70'}`}>{(jetonBalance * jetonTlRate).toFixed(0)} TL</p>
                          </div>
                        </Link>
                       
@@ -392,66 +399,66 @@ export default function Navbar() {
                       {session?.user?.role === 'admin' ? (
                         <Link
                           href={`/admin/credits`}
-                          className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                          className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                           onClick={() => setShowProfileMenu(false)}
                         >
-                          <CreditCard className="w-5 h-5 text-gold-400" />
+                          <CreditCard className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`} />
                           {'Ödeme Emri'}
                         </Link>
                       ) : (
                         <button
                           onClick={() => { setShowProfileMenu(false); setShowPaymentModal(true); }}
-                          className="flex items-center gap-3 px-4 py-2.5 w-full text-fuchsia-200 hover:bg-fuchsia-800/30"
+                          className={`flex items-center gap-3 px-4 py-2.5 w-full ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         >
-                          <Send className="w-5 h-5 text-green-400" />
+                          <Send className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                           {'Ödeme Bildir'}
                         </button>
                       )}
                       
                       <Link
                         href={`/profile/${session.user.id}`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <User className="w-5 h-5 text-fuchsia-400" />
+                        <User className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-fuchsia-400'}`} />
                         {'Profilim'}
                       </Link>
                       
                       <Link
                         href={`/dashboard`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <LayoutGrid className="w-5 h-5 text-fuchsia-400" />
+                        <LayoutGrid className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-fuchsia-400'}`} />
                         {'İstatistiklerim'}
                       </Link>
                       
                       <Link
                         href={`/settings`}
-                        className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                        className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
-                        <Settings className="w-5 h-5 text-fuchsia-400" />
+                        <Settings className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-fuchsia-400'}`} />
                         {'Ayarlar'}
                       </Link>
 
                       {session?.user?.role === 'admin' && (
                         <Link
                           href={`/admin`}
-                          className="flex items-center gap-3 px-4 py-2.5 text-fuchsia-200 hover:bg-fuchsia-800/30"
+                          className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                           onClick={() => setShowProfileMenu(false)}
                         >
-                          <Shield className="w-5 h-5 text-gold-400" />
+                          <Shield className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`} />
                           Admin
                         </Link>
                       )}
                       
                       {/* Language toggle removed - Turkish only site */}
                       
-                      <div className="border-t mt-2 pt-2 border-fuchsia-700/40">
+                      <div className={`border-t mt-2 pt-2 ${isLight ? 'border-[#E4E6EB]' : 'border-fuchsia-700/40'}`}>
                         <button
                           onClick={() => signOut({ callbackUrl: `/` })}
-                          className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-900/30 w-full"
+                          className={`flex items-center gap-3 px-4 py-2.5 w-full ${isLight ? 'text-red-600 hover:bg-red-50' : 'text-red-400 hover:bg-red-900/30'}`}
                         >
                           <LogOut className="w-5 h-5" />
                           {'Çıkış Yap'}
@@ -463,7 +470,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href={`/login`}
-                  className="flex flex-col items-center gap-1 text-purple-300 hover:text-gold-400 transition-colors px-3 py-1 rounded-lg hover:bg-purple-900/30"
+                  className={`flex flex-col items-center gap-1 transition-colors px-3 py-1 rounded-lg ${isLight ? 'text-[#65676B] hover:text-[#1877F2] hover:bg-[#F0F2F5]' : 'text-purple-300 hover:text-gold-400 hover:bg-purple-900/30'}`}
                 >
                   <User className="w-6 h-6" />
                   <span className="text-[11px] font-medium">{'Giriş'}</span>

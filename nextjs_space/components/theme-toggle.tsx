@@ -14,13 +14,13 @@ export default function ThemeToggle() {
       className="relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300"
       style={{
         background: isLight
-          ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+          ? '#E4E6EB'
           : 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2))',
         border: isLight
-          ? '2px solid rgba(251, 191, 36, 0.6)'
+          ? '1px solid #D8DADF'
           : '2px solid rgba(217, 70, 239, 0.5)',
         boxShadow: isLight
-          ? '0 0 12px rgba(251, 191, 36, 0.4)'
+          ? '0 1px 2px rgba(0, 0, 0, 0.1)'
           : '0 0 12px rgba(217, 70, 239, 0.3)',
       }}
       aria-label={isLight ? 'Karanlık moda geç' : 'Aydınlık moda geç'}
@@ -35,7 +35,7 @@ export default function ThemeToggle() {
             exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
             transition={{ duration: 0.25 }}
           >
-            <Moon className="w-5 h-5 text-amber-800" />
+            <Moon className="w-5 h-5 text-[#050505]" />
           </motion.div>
         ) : (
           <motion.div

@@ -9,11 +9,14 @@ import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import { User, Home, Camera, MessageCircle, Coins } from 'lucide-react'
 import Image from 'next/image'
+import { useSiteTheme } from '@/lib/theme-context'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
   const { language } = useLanguage()
+  const { colorMode } = useSiteTheme()
   const pathname = usePathname()
+  const isLight = colorMode === 'light'
   const [unreadCount, setUnreadCount] = useState(0)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   
@@ -95,14 +98,18 @@ export default function MobileFooter() {
     },
   ]
   
-  // FalClub theme colors
-  const bgGradient = 'bg-gradient-to-t from-[#0f0520] via-[#1a0a2e] to-[#0f0520] border-fuchsia-400/40'
-  const centerBtnGradient = 'bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-fuchsia-500/40'
-  const accentActiveColor = 'text-fuchsia-300'
-  const iconColor = 'text-fuchsia-300'
-  const iconBgActive = 'bg-fuchsia-500/40'
-  const iconBgInactive = 'bg-fuchsia-900/60'
-  const ringColor = 'ring-[#0f0520]'
+  // Theme colors - Facebook for light, FalClub for dark
+  const bgGradient = isLight 
+    ? 'bg-white border-[#E4E6EB]'
+    : 'bg-gradient-to-t from-[#0f0520] via-[#1a0a2e] to-[#0f0520] border-fuchsia-400/40'
+  const centerBtnGradient = isLight
+    ? 'bg-[#1877F2] shadow-[#1877F2]/20'
+    : 'bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-fuchsia-500/40'
+  const accentActiveColor = isLight ? 'text-[#1877F2]' : 'text-fuchsia-300'
+  const iconColor = isLight ? 'text-[#65676B]' : 'text-fuchsia-300'
+  const iconBgActive = isLight ? 'bg-[#1877F2]/10' : 'bg-fuchsia-500/40'
+  const iconBgInactive = isLight ? 'bg-transparent' : 'bg-fuchsia-900/60'
+  const ringColor = isLight ? 'ring-white' : 'ring-[#0f0520]'
   
   return (
     <>
@@ -118,7 +125,7 @@ export default function MobileFooter() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg border-fuchsia-400 shadow-fuchsia-500/30"
+            className={`w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg ${isLight ? 'border-[#1877F2] shadow-[#1877F2]/15' : 'border-fuchsia-400 shadow-fuchsia-500/30'}`}
           >
             {profileImage || session.user.image ? (
               <Image
@@ -162,7 +169,7 @@ export default function MobileFooter() {
                     <Link href={item.href} className="absolute -top-9 group">
                       <div 
                         className={`relative w-[72px] h-[72px] rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
-                        style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)' }}
+                        style={{ boxShadow: isLight ? '0 2px 8px rgba(24, 119, 242, 0.3)' : '0 0 30px rgba(217, 70, 239, 0.5)' }}
                       >
                         <Camera className="w-9 h-9 text-white group-hover:scale-110 transition-transform" />
                       </div>
@@ -180,7 +187,7 @@ export default function MobileFooter() {
                   <div className="relative w-8 h-8 flex items-center justify-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       isJeton
-                        ? 'bg-amber-500/80 shadow-lg shadow-amber-500/40'
+                        ? (isLight ? 'bg-[#1877F2] shadow-sm' : 'bg-amber-500/80 shadow-lg shadow-amber-500/40')
                         : isActive ? iconBgActive : iconBgInactive
                     }`}>
                       <Icon className={`w-4.5 h-4.5 ${
@@ -195,7 +202,7 @@ export default function MobileFooter() {
                   </div>
                   
                   <span className={`text-[9px] font-medium mt-0.5 ${
-                    isJeton ? 'text-amber-300' : isActive ? accentActiveColor : iconColor
+                    isJeton ? (isLight ? 'text-[#1877F2]' : 'text-amber-300') : isActive ? accentActiveColor : iconColor
                   }`}>
                     {item.label}
                   </span>
