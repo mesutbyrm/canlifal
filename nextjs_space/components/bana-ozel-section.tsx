@@ -24,14 +24,14 @@ interface StreakInfo {
   totalFortunes: number
 }
 
-// Color schemes for different item categories
+// Color schemes for different item categories - matching Keşfedin section style
 const ITEM_COLORS: Record<string, { gradient: string; border: string; glow: string }> = {
-  'daily': { gradient: 'from-amber-600/30 to-orange-600/30', border: 'border-amber-400/50', glow: 'rgba(251, 191, 36, 0.3)' },
-  'tarot': { gradient: 'from-purple-600/30 to-fuchsia-600/30', border: 'border-purple-400/50', glow: 'rgba(168, 85, 247, 0.3)' },
-  'love': { gradient: 'from-pink-600/30 to-rose-600/30', border: 'border-pink-400/50', glow: 'rgba(236, 72, 153, 0.3)' },
-  'career': { gradient: 'from-blue-600/30 to-cyan-600/30', border: 'border-blue-400/50', glow: 'rgba(59, 130, 246, 0.3)' },
-  'health': { gradient: 'from-green-600/30 to-emerald-600/30', border: 'border-green-400/50', glow: 'rgba(34, 197, 94, 0.3)' },
-  'default': { gradient: 'from-violet-600/30 to-indigo-600/30', border: 'border-violet-400/50', glow: 'rgba(139, 92, 246, 0.3)' },
+  'daily': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
+  'tarot': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
+  'love': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
+  'career': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
+  'health': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
+  'default': { gradient: 'from-fuchsia-900/25 to-purple-900/25', border: 'border-fuchsia-700/30', glow: 'rgba(168, 85, 247, 0.15)' },
 }
 
 export default function BanaOzelSection() {

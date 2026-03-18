@@ -72,14 +72,14 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     }
     // falclub
     const styles: Record<string, string> = {
-      games: 'bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400',
-      gifts: 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400',
-      teller: 'bg-gradient-to-r from-emerald-900/40 to-green-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400',
-      social: 'bg-gradient-to-r from-pink-900/40 to-rose-900/40 border-pink-500/50 text-pink-300 hover:border-pink-400',
-      chat: 'bg-gradient-to-r from-cyan-900/40 to-teal-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
-      blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
-      'bana-ozel': 'bg-gradient-to-r from-violet-900/40 to-fuchsia-900/40 border-violet-500/50 text-violet-300 hover:border-violet-400',
-      ruya: 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/50 text-blue-300 hover:border-blue-400',
+      games: 'bg-[#0f0520]/60 border-cyan-500/60 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/20',
+      gifts: 'bg-[#0f0520]/60 border-fuchsia-500/60 text-fuchsia-300 hover:border-fuchsia-400 hover:bg-fuchsia-900/20',
+      teller: 'bg-[#0f0520]/60 border-emerald-500/60 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/20',
+      social: 'bg-[#0f0520]/60 border-pink-500/60 text-pink-300 hover:border-pink-400 hover:bg-pink-900/20',
+      chat: 'bg-[#0f0520]/60 border-teal-500/60 text-teal-300 hover:border-teal-400 hover:bg-teal-900/20',
+      blog: 'bg-[#0f0520]/60 border-amber-500/60 text-amber-300 hover:border-amber-400 hover:bg-amber-900/20',
+      'bana-ozel': 'bg-[#0f0520]/60 border-violet-500/60 text-violet-300 hover:border-violet-400 hover:bg-violet-900/20',
+      ruya: 'bg-[#0f0520]/60 border-indigo-500/60 text-indigo-300 hover:border-indigo-400 hover:bg-indigo-900/20',
     }
     return styles[key] || styles.games
   }

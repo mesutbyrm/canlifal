@@ -87,8 +87,8 @@ export default function LiveTicker() {
   })
   const tickerRef = useRef<HTMLDivElement>(null)
   
-  const bgGradient = 'bg-gradient-to-r from-[#0f0520] via-fuchsia-900/30 to-[#0f0520] border-fuchsia-500/30'
-  const labelGradient = 'bg-gradient-to-r from-fuchsia-500 to-pink-500'
+  const bgGradient = 'bg-gradient-to-r from-[#0a0118] via-[#150828] to-[#0a0118] border-fuchsia-800/40'
+  const labelGradient = 'bg-gradient-to-r from-fuchsia-600 to-purple-600'
   const secondaryText = 'text-white'
   const guestColor = 'text-fuchsia-200'
   const accentColor = 'text-fuchsia-300'
@@ -209,7 +209,7 @@ export default function LiveTicker() {
       <div className="flex items-center h-10 sm:h-12">
         <Link
           href={`/live-tellers`}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white text-xs sm:text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all"
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-fuchsia-700/90 to-purple-700/90 text-white text-xs sm:text-sm font-bold hover:from-fuchsia-600 hover:to-purple-600 transition-all"
         >
           <Sparkles className="w-4 h-4" />
           <span className="hidden xs:inline">{'Canlı Falcı'}</span>

@@ -371,10 +371,10 @@ export default function HomePage() {
                 className="flex flex-col items-center"
               >
                 <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-fuchsia-900/50 to-purple-900/50 border-2 border-fuchsia-400/70"
-                  style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.5)' }}
+                  className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-700/70 to-fuchsia-800/70 border-2 border-purple-400/80"
+                  style={{ boxShadow: '0 0 30px rgba(147, 51, 234, 0.6)' }}
                 >
-                  <Plus className="w-10 h-10 text-fuchsia-300" />
+                  <Plus className="w-10 h-10 text-purple-200" />
                 </div>
                 <span className="text-fuchsia-200 text-xs mt-2 font-semibold">
                   {'Yayın Başlat'}
@@ -492,7 +492,8 @@ export default function HomePage() {
                     className="flex-shrink-0 w-28 rainbow-border rainbow-border-live rounded-2xl"
                   >
                     <div className="rounded-2xl overflow-hidden" style={{
-                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
+                      background: 'linear-gradient(135deg, #0f0520 0%, #1e0b38 50%, #0f0520 100%)',
+                      border: '1px solid rgba(168, 85, 247, 0.2)',
                     }}>
                     {/* Square Photo */}
                     <div className="relative w-full aspect-square overflow-hidden">
@@ -503,7 +504,7 @@ export default function HomePage() {
                           <span className="text-white font-bold text-2xl">{teller.displayName?.[0]}</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#1a0a2e] via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0520] via-transparent to-transparent" />
                       <div className="absolute top-1.5 left-1.5 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded"
                         style={{ boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}>
                         CANLI
@@ -544,8 +545,8 @@ export default function HomePage() {
                   className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border rainbow-border-live' : 'opacity-50'}`}
                 >
                   <div className="rounded-2xl overflow-hidden" style={{
-                    border: teller.isOnline ? 'none' : '2px solid rgba(100, 60, 140, 0.4)',
-                    background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1145 50%, #1a0a2e 100%)',
+                    border: teller.isOnline ? '1px solid rgba(168, 85, 247, 0.2)' : '2px solid rgba(100, 60, 140, 0.3)',
+                    background: 'linear-gradient(135deg, #0f0520 0%, #1e0b38 50%, #0f0520 100%)',
                   }}>
                   <div className="relative w-full aspect-square overflow-hidden">
                     {teller.avatar ? (
@@ -555,7 +556,7 @@ export default function HomePage() {
                         <span className="text-white font-bold text-2xl">{teller.displayName?.[0]}</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a0a2e] via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0520] via-transparent to-transparent" />
                     {teller.isOnline ? (
                       <div className="absolute top-1.5 left-1.5 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded"
                         style={{ boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}>

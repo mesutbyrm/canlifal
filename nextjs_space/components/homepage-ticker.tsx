@@ -69,7 +69,7 @@ export default function HomepageTicker() {
   const nextMsg = messages[nextIndex]
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-[#1a0a2e] via-fuchsia-900/30 to-[#1a0a2e] border-b border-fuchsia-400/40 py-2 sm:py-2.5">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-[#0a0118] via-[#150828] to-[#0a0118] border-b border-fuchsia-800/40 py-2 sm:py-2.5">
       <div className="flex items-center justify-center">
         {/* Announcement icon */}
         <div className="flex-shrink-0 pl-3 sm:pl-4 pr-2">
