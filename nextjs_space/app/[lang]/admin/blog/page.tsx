@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, Star, TrendingUp, Award, Image as ImageIcon, Clock, Search } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 
@@ -18,6 +18,18 @@ interface BlogPost {
   category: string
   keywords: string[]
   isPublished: boolean
+  metaDescription: string
+  coverImage: string
+  readTime: number
+  isFeatured: boolean
+  isTrending: boolean
+  isEditorPick: boolean
+  isAiGenerated: boolean
+  authorName: string
+  views: number
+  likes: number
+  publishedAt: string | null
+  scheduledAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +40,22 @@ interface BlogCategory {
   nameTr: string
   nameEn: string
   sortOrder: number
+}
+
+type FormState = {
+  slug: string; titleTr: string; titleEn: string; descTr: string; descEn: string
+  contentTr: string; contentEn: string; category: string; isPublished: boolean
+  metaDescription: string; coverImage: string; readTime: number
+  isFeatured: boolean; isTrending: boolean; isEditorPick: boolean
+  isAiGenerated: boolean; authorName: string
+}
+
+const emptyForm: FormState = {
+  slug: '', titleTr: '', titleEn: '', descTr: '', descEn: '',
+  contentTr: '', contentEn: '', category: 'genel', isPublished: false,
+  metaDescription: '', coverImage: '', readTime: 0,
+  isFeatured: false, isTrending: false, isEditorPick: false,
+  isAiGenerated: false, authorName: 'Canlifal Editör',
 }
 
 export default function AdminBlogPage() {
@@ -41,6 +69,7 @@ export default function AdminBlogPage() {
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [aiTitle, setAiTitle] = useState('')
+  const [aiKeywords, setAiKeywords] = useState('')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [newCatSlug, setNewCatSlug] = useState('')
   const [newCatNameTr, setNewCatNameTr] = useState('')
@@ -48,404 +77,341 @@ export default function AdminBlogPage() {
   const [filterCategory, setFilterCategory] = useState('all')
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: number; errors: string[]; newCategories: string[] } | null>(null)
-
-  const emptyPost: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'> = {
-    slug: '',
-    titleTr: '',
-    titleEn: '',
-    descTr: '',
-    descEn: '',
-    contentTr: '',
-    contentEn: '',
-    category: 'genel',
-    keywords: [],
-    isPublished: false,
-  }
-
-  const [form, setForm] = useState(emptyPost)
+  const [form, setForm] = useState<FormState>({ ...emptyForm })
   const [keywordsInput, setKeywordsInput] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [aiMessage, setAiMessage] = useState('')
 
-  const fetchPosts = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/blog')
-      if (res.ok) {
-        const data = await res.json()
-        setPosts(data.posts || [])
-      }
-    } catch (e) {
-      console.error('Failed to fetch posts', e)
-    } finally {
-      setLoading(false)
-    }
+      const [postsRes, catsRes] = await Promise.all([
+        fetch('/api/admin/blog'),
+        fetch('/api/blog/categories'),
+      ])
+      const postsData = await postsRes.json()
+      const catsData = await catsRes.json()
+      setPosts(postsData.posts || [])
+      setCategories(catsData.categories || [])
+    } catch (e) { console.error('Fetch error:', e) }
+    setLoading(false)
   }, [])
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/blog/categories')
-      if (res.ok) {
-        const data = await res.json()
-        setCategories(data.categories || [])
-      }
-    } catch (e) {
-      console.error('Failed to fetch categories', e)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchPosts()
-    fetchCategories()
-  }, [fetchPosts, fetchCategories])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const openNew = () => {
-    setForm(emptyPost)
-    setKeywordsInput('')
     setEditing(null)
     setIsNew(true)
-    setAiTitle('')
+    setForm({ ...emptyForm, category: categories[0]?.slug || 'genel' })
+    setKeywordsInput('')
+    setShowForm(true)
   }
 
   const openEdit = (post: BlogPost) => {
+    setEditing(post)
+    setIsNew(false)
     setForm({
       slug: post.slug,
       titleTr: post.titleTr,
-      titleEn: post.titleEn,
-      descTr: post.descTr,
-      descEn: post.descEn,
+      titleEn: post.titleEn || '',
+      descTr: post.descTr || '',
+      descEn: post.descEn || '',
       contentTr: post.contentTr,
-      contentEn: post.contentEn,
+      contentEn: post.contentEn || '',
       category: post.category,
-      keywords: post.keywords,
       isPublished: post.isPublished,
+      metaDescription: post.metaDescription || '',
+      coverImage: post.coverImage || '',
+      readTime: post.readTime || 0,
+      isFeatured: post.isFeatured || false,
+      isTrending: post.isTrending || false,
+      isEditorPick: post.isEditorPick || false,
+      isAiGenerated: post.isAiGenerated || false,
+      authorName: post.authorName || 'Canlifal Editör',
     })
-    setKeywordsInput(post.keywords.join(', '))
-    setEditing(post)
-    setIsNew(false)
+    setKeywordsInput((post.keywords || []).join(', '))
+    setShowForm(true)
   }
 
   const closeForm = () => {
+    setShowForm(false)
     setEditing(null)
     setIsNew(false)
   }
 
-  // AI GENERATE
-  const handleAiGenerate = async () => {
-    if (!aiTitle.trim() || aiTitle.trim().length < 3) {
-      alert('Lütfen en az 3 karakterlik bir başlık girin.')
-      return
-    }
+  // AI Generate
+  const handleGenerate = async () => {
+    if (!aiTitle.trim()) return
     setGenerating(true)
+    setAiMessage('')
     try {
+      const kws = aiKeywords.trim() ? aiKeywords.split(',').map(k => k.trim()).filter(Boolean) : []
       const res = await fetch('/api/admin/blog/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: aiTitle.trim() }),
+        body: JSON.stringify({ title: aiTitle.trim(), keywords: kws }),
       })
-      if (!res.ok) {
-        const err = await res.json()
-        alert(err.error || 'Yapay zeka hatası')
-        return
-      }
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Hata')
+
       setForm({
         slug: data.slug || '',
-        titleTr: data.titleTr || aiTitle.trim(),
+        titleTr: data.titleTr || '',
         titleEn: data.titleEn || '',
         descTr: data.descTr || '',
         descEn: data.descEn || '',
         contentTr: data.contentTr || '',
         contentEn: data.contentEn || '',
-        category: data.category || 'genel',
-        keywords: data.keywords || [],
+        category: data.category || categories[0]?.slug || 'genel',
         isPublished: false,
+        metaDescription: data.metaDescriptionTr || '',
+        coverImage: '',
+        readTime: data.readTime || 0,
+        isFeatured: false,
+        isTrending: false,
+        isEditorPick: false,
+        isAiGenerated: true,
+        authorName: 'Canlifal AI',
       })
       setKeywordsInput((data.keywords || []).join(', '))
-      // Refresh categories in case new one was created
-      if (data.newCategoryCreated) {
-        fetchCategories()
-      }
       setIsNew(true)
       setEditing(null)
-    } catch (e) {
-      console.error(e)
-      alert('Yapay zeka bağlantı hatası')
-    } finally {
-      setGenerating(false)
+      setShowForm(true)
+
+      const wordCount = (data.contentTr || '').replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length
+      const faqCount = (data.faqQuestions || []).length
+      setAiMessage(`✅ ${wordCount} kelime | ${data.readTime || 0} dk okuma | ${faqCount} SSS sorusu | ${(data.keywords || []).length} anahtar kelime`)
+
+      if (data.newCategoryCreated) {
+        const catsRes = await fetch('/api/blog/categories')
+        const catsData = await catsRes.json()
+        setCategories(catsData.categories || [])
+      }
+    } catch (err: any) {
+      setAiMessage('❌ ' + (err.message || 'Oluşturulamadı'))
     }
+    setGenerating(false)
   }
 
+  // Save
   const handleSave = async () => {
+    if (!form.slug || !form.titleTr || !form.contentTr) {
+      alert('Slug, Başlık (TR) ve İçerik (TR) zorunludur')
+      return
+    }
     setSaving(true)
     try {
-      const body = {
-        ...form,
-        keywords: keywordsInput.split(',').map(k => k.trim()).filter(Boolean),
+      const keywords = keywordsInput.split(',').map(k => k.trim()).filter(Boolean)
+      const payload = { ...form, keywords }
+      const url = isNew ? '/api/admin/blog' : `/api/admin/blog/${editing?.id}`
+      const res = await fetch(url, {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error || 'Kayıt hatası')
       }
-
-      if (isNew) {
-        const res = await fetch('/api/admin/blog', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        if (!res.ok) {
-          const err = await res.json()
-          alert(err.error || 'Hata oluştu')
-          return
-        }
-      } else if (editing) {
-        const res = await fetch(`/api/admin/blog/${editing.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        if (!res.ok) {
-          const err = await res.json()
-          alert(err.error || 'Hata oluştu')
-          return
-        }
-      }
-
+      await fetchData()
       closeForm()
-      fetchPosts()
-    } catch (e) {
-      console.error(e)
-      alert('Kaydetme hatası')
-    } finally {
-      setSaving(false)
+    } catch (err: any) {
+      alert(err.message || 'Kayıt hatası')
     }
+    setSaving(false)
   }
 
-  const handleDelete = async (postId: string) => {
+  // Delete
+  const handleDelete = async (id: string) => {
     if (!confirm('Bu yazıyı silmek istediğinize emin misiniz?')) return
     try {
-      await fetch(`/api/admin/blog/${postId}`, { method: 'DELETE' })
-      fetchPosts()
-    } catch (e) {
-      console.error(e)
-    }
+      await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' })
+      await fetchData()
+    } catch (e) { console.error(e) }
   }
 
+  // Toggle publish
   const togglePublish = async (post: BlogPost) => {
     try {
       await fetch(`/api/admin/blog/${post.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPublished: !post.isPublished }),
       })
-      fetchPosts()
-    } catch (e) {
-      console.error(e)
-    }
+      await fetchData()
+    } catch (e) { console.error(e) }
   }
 
+  // Category management
   const handleAddCategory = async () => {
-    if (!newCatSlug || !newCatNameTr) {
-      alert('Slug ve Türkçe ad zorunlu')
-      return
-    }
+    if (!newCatSlug.trim() || !newCatNameTr.trim()) return
     try {
-      const res = await fetch('/api/admin/blog/categories', {
+      const res = await fetch('/api/blog/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: newCatSlug, nameTr: newCatNameTr, nameEn: newCatNameEn }),
+        body: JSON.stringify({ slug: newCatSlug.trim(), nameTr: newCatNameTr.trim(), nameEn: newCatNameEn.trim() || newCatNameTr.trim() }),
       })
-      if (!res.ok) {
-        const err = await res.json()
-        alert(err.error || 'Hata')
-        return
+      if (res.ok) {
+        setNewCatSlug(''); setNewCatNameTr(''); setNewCatNameEn(''); setShowCategoryForm(false)
+        const catsRes = await fetch('/api/blog/categories')
+        const catsData = await catsRes.json()
+        setCategories(catsData.categories || [])
       }
-      setNewCatSlug('')
-      setNewCatNameTr('')
-      setNewCatNameEn('')
-      setShowCategoryForm(false)
-      fetchCategories()
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  const handleDeleteCategory = async (cat: BlogCategory) => {
-    if (!confirm(`"${cat.nameTr}" kategorisini silmek istediğinize emin misiniz?`)) return
-    try {
-      await fetch(`/api/admin/blog/categories?id=${cat.id}`, { method: 'DELETE' })
-      fetchCategories()
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }
 
   // CSV Import
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
     setImporting(true)
     setImportResult(null)
-    
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      const res = await fetch('/api/admin/blog/import', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const data = await res.json()
-      
-      if (!res.ok) {
-        setImportResult({ success: 0, errors: [data.error || 'İçe aktarma hatası'], newCategories: [] })
-      } else {
-        setImportResult({
-          success: data.success || 0,
-          errors: data.errors || [],
-          newCategories: data.newCategories || [],
-        })
-        fetchPosts()
-        fetchCategories()
+      const text = await file.text()
+      const lines = text.split('\n').filter(l => l.trim())
+      if (lines.length < 2) throw new Error('Geçersiz CSV')
+      const headers = lines[0].split(';').map(h => h.trim().toLowerCase())
+      const results = { success: 0, errors: [] as string[], newCategories: [] as string[] }
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const vals = lines[i].split(';').map(v => v.trim())
+          const row: any = {}
+          headers.forEach((h, idx) => { row[h] = vals[idx] || '' })
+          if (!row.slug || !row.titletr) { results.errors.push(`Satır ${i + 1}: slug veya titleTr eksik`); continue }
+          const res = await fetch('/api/admin/blog', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slug: row.slug, titleTr: row.titletr, titleEn: row.titleen || '',
+              descTr: row.desctr || '', descEn: row.descen || '',
+              contentTr: row.contenttr || '', contentEn: row.contenten || '',
+              category: row.category || 'genel',
+              keywords: row.keywords ? row.keywords.split(',').map((k: string) => k.trim()) : [],
+              isPublished: row.ispublished === 'true' || row.ispublished === '1',
+            }),
+          })
+          if (res.ok) results.success++
+          else {
+            const d = await res.json()
+            results.errors.push(`Satır ${i + 1}: ${d.error || 'Hata'}`)
+          }
+        } catch (err: any) { results.errors.push(`Satır ${i + 1}: ${err.message}`) }
       }
-    } catch (err) {
-      console.error(err)
-      setImportResult({ success: 0, errors: ['Bağlantı hatası'], newCategories: [] })
-    } finally {
-      setImporting(false)
-      // Reset file input
-      e.target.value = ''
-    }
+      setImportResult(results)
+      await fetchData()
+    } catch (err: any) { setImportResult({ success: 0, errors: [err.message], newCategories: [] }) }
+    setImporting(false)
+    e.target.value = ''
   }
 
   const downloadTemplate = () => {
-    const headers = ['slug', 'category', 'titleTr', 'titleEn', 'descTr', 'descEn', 'contentTr', 'contentEn', 'keywords', 'isPublished']
-    const sampleRow = [
-      'ornek-blog-yazisi',
-      'tarot',
-      'Örnek Blog Yazısı',
-      'Sample Blog Post',
-      'Bu bir örnek açıklamadır.',
-      'This is a sample description.',
-      '<p>Bu örnek içerik HTML desteklidir.</p>',
-      '<p>This sample content supports HTML.</p>',
-      'tarot, fal, örnek',
-      'false'
-    ]
-    
-    const csvContent = [
-      headers.join(','),
-      sampleRow.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
-    ].join('\n')
-    
-    const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8' })
+    const csv = 'slug;titleTr;titleEn;descTr;descEn;contentTr;contentEn;category;keywords;isPublished\nornek-yazi;Örnek Başlık;Example Title;Kısa açıklama;Short desc;<p>İçerik</p>;<p>Content</p>;tarot;fal,tarot;true'
+    const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'blog-import-template.csv'
-    a.click()
+    const a = document.createElement('a'); a.href = url; a.download = 'blog-sablon.csv'; a.click()
     URL.revokeObjectURL(url)
   }
 
-  const getCategoryLabel = (slug: string) => {
-    const cat = categories.find(c => c.slug === slug)
-    return cat ? cat.nameTr : slug
-  }
+  const getCategoryLabel = (slug: string) => categories.find(c => c.slug === slug)?.nameTr || slug
 
-  const showForm = isNew || editing
   const filteredPosts = filterCategory === 'all' ? posts : posts.filter(p => p.category === filterCategory)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950">
-      <div className="max-w-5xl mx-auto px-4 py-8 pb-28">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/30 to-gray-950 p-4 md:p-6">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link href={`/admin`} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
-              <ArrowLeft className="w-5 h-5 text-white" />
+            <Link href={`/${lang}/admin`} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
+              <ArrowLeft className="w-5 h-5 text-gray-400" />
             </Link>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-purple-400" />
-              Blog Yönetimi
-            </h1>
-          </div>
-          {!showForm && (
-            <div className="flex gap-2">
-              <button onClick={() => setShowCategoryForm(!showCategoryForm)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium transition border border-white/10">
-                <Tag className="w-4 h-4" /> Kategoriler
-              </button>
-              <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
-                <Plus className="w-4 h-4" /> Yeni Yazı
-              </button>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Blog Yönetimi</h1>
+              <p className="text-sm text-gray-500">{posts.length} yazı • {categories.length} kategori</p>
             </div>
-          )}
+          </div>
+          <button onClick={openNew} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition">
+            <Plus className="w-4 h-4" /> Yeni Yazı
+          </button>
         </div>
 
-        {/* Category Management */}
-        {showCategoryForm && !showForm && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <Tag className="w-4 h-4 text-purple-400" /> Kategori Yönetimi
+        {/* AI Generation Card */}
+        {!showForm && (
+          <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-500/30 rounded-2xl p-5 mb-6">
+            <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" /> SEO İçerik Üretici (AI)
             </h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {categories.map(cat => (
-                <div key={cat.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                  <span className="text-sm text-purple-200">{cat.nameTr}</span>
-                  <span className="text-xs text-gray-500">({cat.slug})</span>
-                  <button onClick={() => handleDeleteCategory(cat)} className="text-red-400 hover:text-red-300 ml-1">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+            <p className="text-sm text-gray-400 mb-3">
+              Konu veya başlık girin, AI 800-1500 kelimelik SEO uyumlu, FAQ bölümlü içerik üretsin.
+            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-3">
+                <input
+                  value={aiTitle}
+                  onChange={e => setAiTitle(e.target.value)}
+                  placeholder="Konu veya başlık girin... (ör: 2026 Mart Burç Yorumları)"
+                  className="flex-1 min-w-[200px] px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-500"
+                  onKeyDown={e => e.key === 'Enter' && !generating && handleGenerate()}
+                />
+                <input
+                  value={aiKeywords}
+                  onChange={e => setAiKeywords(e.target.value)}
+                  placeholder="Anahtar kelimeler (opsiyonel, virgülle ayırın)"
+                  className="w-64 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-500"
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating || !aiTitle.trim()}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition disabled:opacity-50"
+                >
+                  {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Üretiliyor...</> : <><Sparkles className="w-4 h-4" /> Üret</>}
+                </button>
+              </div>
+              {aiMessage && (
+                <p className={`text-sm ${aiMessage.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{aiMessage}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Category Management */}
+        {!showForm && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <Tag className="w-4 h-4 text-purple-400" /> Kategoriler
+              </h3>
+              <button onClick={() => setShowCategoryForm(!showCategoryForm)} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300">
+                <FolderPlus className="w-3.5 h-3.5" /> Yeni Kategori
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(c => (
+                <span key={c.slug} className="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                  {c.nameTr}
+                </span>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2 items-end">
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Slug</label>
-                <input value={newCatSlug} onChange={e => setNewCatSlug(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="yeni-slug" />
+            {showCategoryForm && (
+              <div className="mt-4 flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Slug</label>
+                  <input value={newCatSlug} onChange={e => setNewCatSlug(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Ad (TR)</label>
+                  <input value={newCatNameTr} onChange={e => setNewCatNameTr(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Ad (EN)</label>
+                  <input value={newCatNameEn} onChange={e => setNewCatNameEn(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" />
+                </div>
+                <button onClick={handleAddCategory} className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm">Ekle</button>
               </div>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Türkçe Ad</label>
-                <input value={newCatNameTr} onChange={e => setNewCatNameTr(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="Kategori Adı" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">İngilizce Ad</label>
-                <input value={newCatNameEn} onChange={e => setNewCatNameEn(e.target.value)} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm w-36" placeholder="Category Name" />
-              </div>
-              <button onClick={handleAddCategory} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm transition">
-                <FolderPlus className="w-4 h-4" /> Ekle
-              </button>
-            </div>
+            )}
           </div>
         )}
 
-        {/* AI Generate Section */}
-        {!showForm && (
-          <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-2xl p-5 mb-6">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-400" /> Yapay Zeka ile Blog Oluştur
-            </h3>
-            <p className="text-sm text-gray-400 mb-3">Sadece bir başlık yazın, yapay zeka tüm içeriği (slug, kategori, başlıklar, açıklamalar, içerikler, anahtar kelimeler) otomatik oluştursun.</p>
-            <div className="flex gap-2">
-              <input
-                value={aiTitle}
-                onChange={e => setAiTitle(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !generating && handleAiGenerate()}
-                className="flex-1 px-4 py-2.5 bg-white/5 border border-purple-500/30 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-400"
-                placeholder="Blog başlığını yazın... (ör: Tarot kartlarının tarihi)"
-                disabled={generating}
-              />
-              <button
-                onClick={handleAiGenerate}
-                disabled={generating || !aiTitle.trim()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition disabled:opacity-50"
-              >
-                {generating ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Oluşturuluyor...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Oluştur</>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* CSV Import Section */}
+        {/* CSV Import */}
         {!showForm && (
           <div className="bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border border-emerald-500/30 rounded-2xl p-5 mb-6">
             <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
@@ -476,8 +442,6 @@ export default function AdminBlogPage() {
                 <Download className="w-4 h-4" /> Örnek Şablon İndir
               </button>
             </div>
-            
-            {/* Import Result */}
             {importResult && (
               <div className="mt-4 p-4 rounded-xl bg-black/30 border border-white/10">
                 {importResult.success > 0 && (
@@ -501,18 +465,13 @@ export default function AdminBlogPage() {
                     ))}
                   </div>
                 )}
-                <button
-                  onClick={() => setImportResult(null)}
-                  className="mt-3 text-xs text-gray-500 hover:text-gray-400"
-                >
-                  Kapat
-                </button>
+                <button onClick={() => setImportResult(null)} className="mt-3 text-xs text-gray-500 hover:text-gray-400">Kapat</button>
               </div>
             )}
           </div>
         )}
 
-        {/* Form */}
+        {/* FORM */}
         {showForm && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -522,6 +481,7 @@ export default function AdminBlogPage() {
               </button>
             </div>
 
+            {/* Row 1: Slug + Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Slug (URL)</label>
@@ -535,6 +495,7 @@ export default function AdminBlogPage() {
               </div>
             </div>
 
+            {/* Row 2: Titles */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Başlık (TR)</label>
@@ -546,6 +507,7 @@ export default function AdminBlogPage() {
               </div>
             </div>
 
+            {/* Row 3: Descriptions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Açıklama (TR)</label>
@@ -557,28 +519,106 @@ export default function AdminBlogPage() {
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="text-sm text-gray-400 mb-1 block">İçerik TR (HTML destekli)</label>
-              <textarea value={form.contentTr} onChange={e => setForm(f => ({ ...f, contentTr: e.target.value }))} rows={8} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono resize-y" />
+            {/* Row 4: Meta Description + Cover Image */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Meta Açıklama (SEO - 140-160 karakter)</label>
+                <textarea
+                  value={form.metaDescription}
+                  onChange={e => setForm(f => ({ ...f, metaDescription: e.target.value }))}
+                  rows={2}
+                  maxLength={160}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm resize-none"
+                  placeholder="Google arama sonuçlarında görünecek açıklama..."
+                />
+                <p className={`text-xs mt-1 ${form.metaDescription.length >= 140 && form.metaDescription.length <= 160 ? 'text-green-400' : form.metaDescription.length > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                  {form.metaDescription.length}/160 karakter {form.metaDescription.length >= 140 && form.metaDescription.length <= 160 ? '✓ İdeal' : form.metaDescription.length > 0 && form.metaDescription.length < 140 ? '(140-160 arası ideal)' : ''}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Kapak Görseli URL</label>
+                <div className="flex gap-2">
+                  <input
+                    value={form.coverImage}
+                    onChange={e => setForm(f => ({ ...f, coverImage: e.target.value }))}
+                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+                    placeholder="https://upload.wikimedia.org/wikipedia/en/thumb/9/9a/Among_Us_cover_art.jpg/250px-Among_Us_cover_art.jpg (opsiyonel)"
+                  />
+                  <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {form.coverImage ? (
+                      <img src={form.coverImage} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    ) : (
+                      <ImageIcon className="w-4 h-4 text-gray-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
+            {/* Row 5: Author + Read Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Yazar Adı</label>
+                <input value={form.authorName} onChange={e => setForm(f => ({ ...f, authorName: e.target.value }))} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm" />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Okuma Süresi (dk) <span className="text-gray-600">— 0 = otomatik hesapla</span></label>
+                <input type="number" min={0} value={form.readTime} onChange={e => setForm(f => ({ ...f, readTime: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm" />
+              </div>
+            </div>
+
+            {/* Content TR */}
+            <div className="mb-4">
+              <label className="text-sm text-gray-400 mb-1 block">İçerik TR (HTML destekli)</label>
+              <textarea value={form.contentTr} onChange={e => setForm(f => ({ ...f, contentTr: e.target.value }))} rows={10} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono resize-y" />
+              <p className="text-xs text-gray-500 mt-1">
+                {form.contentTr.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime
+              </p>
+            </div>
+
+            {/* Content EN */}
             <div className="mb-4">
               <label className="text-sm text-gray-400 mb-1 block">İçerik EN (HTML destekli)</label>
               <textarea value={form.contentEn} onChange={e => setForm(f => ({ ...f, contentEn: e.target.value }))} rows={8} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono resize-y" />
             </div>
 
+            {/* Keywords */}
             <div className="mb-4">
               <label className="text-sm text-gray-400 mb-1 block">Anahtar Kelimeler (virgülle ayırın)</label>
-              <input value={keywordsInput} onChange={e => setKeywordsInput(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm" placeholder="fal, tarot, kahve falı" />
+              <input value={keywordsInput} onChange={e => setKeywordsInput(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm" placeholder="fal, tarot, kahve falı, astroloji" />
+              <div className="flex flex-wrap gap-1 mt-2">
+                {keywordsInput.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
+                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">{kw}</span>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 mb-6">
+            {/* Toggles Row */}
+            <div className="flex flex-wrap items-center gap-6 mb-6 p-4 bg-white/3 rounded-xl border border-white/5">
               <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                <input type="checkbox" checked={form.isPublished} onChange={e => setForm(f => ({ ...f, isPublished: e.target.checked }))} className="rounded" />
-                Yayınla
+                <input type="checkbox" checked={form.isPublished} onChange={e => setForm(f => ({ ...f, isPublished: e.target.checked }))} className="rounded accent-green-500" />
+                <Eye className="w-4 h-4 text-green-400" /> Yayınla
               </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={form.isFeatured} onChange={e => setForm(f => ({ ...f, isFeatured: e.target.checked }))} className="rounded accent-yellow-500" />
+                <Star className="w-4 h-4 text-yellow-400" /> Öne Çıkan
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={form.isTrending} onChange={e => setForm(f => ({ ...f, isTrending: e.target.checked }))} className="rounded accent-orange-500" />
+                <TrendingUp className="w-4 h-4 text-orange-400" /> Trend
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={form.isEditorPick} onChange={e => setForm(f => ({ ...f, isEditorPick: e.target.checked }))} className="rounded accent-blue-500" />
+                <Award className="w-4 h-4 text-blue-400" /> Editör Seçimi
+              </label>
+              {form.isAiGenerated && (
+                <span className="flex items-center gap-1.5 text-sm text-purple-400">
+                  <Sparkles className="w-4 h-4" /> AI Üretimi
+                </span>
+              )}
             </div>
 
+            {/* Save / Cancel */}
             <div className="flex gap-3">
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50">
                 <Save className="w-4 h-4" /> {saving ? 'Kaydediliyor...' : 'Kaydet'}
@@ -619,15 +659,27 @@ export default function AdminBlogPage() {
             {filteredPosts.map(post => (
               <div key={post.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${post.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>
                       {post.isPublished ? 'Yayında' : 'Taslak'}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300">{getCategoryLabel(post.category)}</span>
+                    {post.isFeatured && <Star className="w-3.5 h-3.5 text-yellow-400" />}
+                    {post.isTrending && <TrendingUp className="w-3.5 h-3.5 text-orange-400" />}
+                    {post.isEditorPick && <Award className="w-3.5 h-3.5 text-blue-400" />}
+                    {post.isAiGenerated && <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                    {post.readTime > 0 && (
+                      <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
+                        <Clock className="w-3 h-3" /> {post.readTime} dk
+                      </span>
+                    )}
+                    {post.views > 0 && (
+                      <span className="text-[10px] text-gray-500">{post.views} görüntülenme</span>
+                    )}
                   </div>
                   <h3 className="text-white font-medium truncate">{post.titleTr}</h3>
                   <p className="text-xs text-gray-500 truncate">{post.descTr}</p>
-                  {post.keywords.length > 0 && (
+                  {post.keywords && post.keywords.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {post.keywords.slice(0, 4).map((kw, i) => (
                         <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">{kw}</span>

@@ -5,7 +5,15 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
+export async function PUT(req: NextRequest, { params }: { params: { postId: string } }) {
+  return handleUpdate(req, params.postId)
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { postId: string } }) {
+  return handleUpdate(req, params.postId)
+}
+
+async function handleUpdate(req: NextRequest, postId: string) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
@@ -28,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { postId: st
     }
 
     const post = await prisma.blogPost.update({
-      where: { id: params.postId },
+      where: { id: postId },
       data: {
         ...(slug !== undefined && { slug }),
         ...(titleTr !== undefined && { titleTr }),
