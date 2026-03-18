@@ -185,7 +185,7 @@ export default function ProfilePage() {
   const [tellerProfile, setTellerProfile] = useState<TellerProfile | null>(null)
   const [tellerSessions, setTellerSessions] = useState<TellerSession[]>([])
   const [isTeller, setIsTeller] = useState(false)
-  const [tellerPanelOpen, setTellerPanelOpen] = useState(true)
+  const [tellerPanelOpen, setTellerPanelOpen] = useState(false)
   const [tellerOnlineToggling, setTellerOnlineToggling] = useState(false)
   const [tellerSessionAction, setTellerSessionAction] = useState<string | null>(null)
   const [tellerTab, setTellerTab] = useState<'pending' | 'active' | 'history'>('pending')
@@ -512,8 +512,35 @@ export default function ProfilePage() {
           </button>
         </div>
 
+        {/* Para Çekimi & Sohbet Odası Hediyeleri Buttons */}
+        {isTeller && tellerProfile && (
+          <div className="flex gap-2 mt-6 px-2">
+            {tellerProfile.canWithdraw && (
+              <button
+                onClick={() => {
+                  setShowWithdrawalForm(!showWithdrawalForm)
+                  setTimeout(() => {
+                    document.getElementById('withdrawal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }, 100)
+                }}
+                className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
+                <Wallet className="w-4 h-4" />
+                <span className="leading-tight">{'Para Çekimi'}</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                document.getElementById('chat-gifts-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }}
+              className={`flex-1 ${btnOutline} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
+              <Gift className="w-4 h-4" />
+              <span className="leading-tight">{'Sohbet Odası Hediyeleri'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
-        <div className="flex gap-2 mt-6 px-2">
+        <div className="flex gap-2 mt-3 px-2">
           <Link href={`/dashboard`}
             className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
             <Sparkles className="w-4 h-4" />
@@ -882,7 +909,7 @@ export default function ProfilePage() {
 
           {/* Withdrawal Section */}
           {tellerProfile.canWithdraw && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            <motion.div id="withdrawal-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className={`rounded-2xl border overflow-hidden ${
                 isFacebook ? 'bg-white border-blue-200 shadow' : isCosmic ? 'bg-blue-900/30 border-blue-500/30' : 'bg-purple-900/30 border-fuchsia-500/30'
               }`}>
@@ -895,9 +922,12 @@ export default function ProfilePage() {
                   </span>
                   {withdrawalLimit > 0 && (
                     <span className={`text-[10px] ${textSecondary}`}>
-                      (max: {withdrawalLimit} jeton)
+                      (Max {withdrawalLimit} jeton)
                     </span>
                   )}
+                  <span className={`text-[10px] ${textSecondary}`}>
+                    (min: 6bin jeton - 3.000₺)
+                  </span>
                 </div>
                 {showWithdrawalForm ? <ChevronUp className={`w-4 h-4 ${textSecondary}`} /> : <ChevronDown className={`w-4 h-4 ${textSecondary}`} />}
               </button>
@@ -975,7 +1005,7 @@ export default function ProfilePage() {
       )}
 
       {/* Chat Room Received Gifts */}
-      <div className="px-4 mt-3">
+      <div id="chat-gifts-section" className="px-4 mt-3">
         <ChatRoomReceivedGifts language={language} isFacebook={isFacebook} isCosmic={isCosmic} textPrimary={textPrimary} textSecondary={textSecondary} />
       </div>
 
