@@ -511,6 +511,34 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* KEŞFEDİN - New Features Section */}
+          <div className="falclub-card p-4">
+            <h2 className="falclub-section-title mb-3">
+              <Sparkles className="w-5 h-5" />
+              {'KEŞFEDİN'}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { href: '/ruya-sozlugu', icon: '📖', label: 'Rüya Sözlüğü', desc: 'A-Z rüya tabiri' },
+                { href: '/ruya-takvimi', icon: '📅', label: 'Rüya Takvimi', desc: 'Günlük rüya günlüğün' },
+                { href: '/ruya-yarismasi', icon: '🏆', label: 'Rüya Yarışması', desc: 'Haftalık yarışma' },
+                { href: '/burc-uyumu', icon: '💕', label: 'Burç Uyumu', desc: 'Detaylı uyum analizi' },
+                { href: '/astroloji-paneli', icon: '🔮', label: 'Astroloji Paneli', desc: 'Kişisel paneliniz' },
+                { href: '/chat', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
+              ].map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="bg-fuchsia-900/20 border border-fuchsia-700/20 rounded-xl p-3 text-center hover:bg-fuchsia-900/40 transition-all group"
+                >
+                  <span className="text-2xl block mb-1">{item.icon}</span>
+                  <span className="text-white text-xs font-semibold group-hover:text-fuchsia-200 block">{item.label}</span>
+                  <span className="text-purple-400 text-[10px] block">{item.desc}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           {/* BANA ÖZEL Section - Only for logged-in users */}
           {session?.user && <BanaOzelSection />}
         </div>

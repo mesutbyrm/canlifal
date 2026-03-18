@@ -717,7 +717,35 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { name: '\u00dc\u015f\u00fcmek', letter: '\u00dc', meaning: 'Yaln\u0131zl\u0131k, duygusal uzakl\u0131k ve ihtiya\u00e7.', detailedMeaning: 'R\u00fcyada \u00fc\u015f\u00fcmek, duygusal olarak desteklenmemi\u015f hissetmeyi veya yaln\u0131zl\u0131\u011f\u0131 simgeler. S\u0131cakl\u0131\u011fa kavu\u015fmak ise teselli bulmay\u0131 ifade eder.' },
     { name: 'Volkan', letter: 'V', meaning: 'Bastırılmı\u015f duygular, \u00f6fke ve ani patlamalar.', detailedMeaning: 'R\u00fcyada volkan g\u00f6rmek, i\u00e7inizde biriken duygular\u0131n patlama noktas\u0131na geldi\u011fini simgeler. Patlayan volkan kontrol kayb\u0131n\u0131, s\u00f6nm\u00fc\u015f volkan ise ge\u00e7mi\u015f \u00f6fkeyi temsil eder.' },
     { name: 'Zil', letter: 'Z', meaning: 'Uyar\u0131, haber ve fark\u0131ndal\u0131k.', detailedMeaning: 'R\u00fcyada zil sesi duymak, dikkat etmeniz gereken \u00f6nemli bir mesaj veya uyar\u0131 oldu\u011funu simgeler. Kap\u0131 zili misafir haberini ifade eder.' },
-  ]\n\n  for (const symbol of dreamSymbols) {\n    const slug = symbol.name.toLowerCase()\n      .replace(/\\u015f/g, 's').replace(/\\u00e7/g, 'c').replace(/\\u011f/g, 'g')\n      .replace(/\\u0131/g, 'i').replace(/\\u00f6/g, 'o').replace(/\\u00fc/g, 'u')\n      .replace(/\\u0130/g, 'i').replace(/\\u00c7/g, 'c').replace(/\\u011e/g, 'g')\n      .replace(/\\u015e/g, 's').replace(/\\u00d6/g, 'o').replace(/\\u00dc/g, 'u')\n      .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')\n    await prisma.dreamSymbol.upsert({\n      where: { slug },\n      update: {\n        name: symbol.name,\n        letter: symbol.letter,\n        meaning: symbol.meaning,\n        detailedMeaning: symbol.detailedMeaning,\n      },\n      create: {\n        name: symbol.name,\n        slug,\n        letter: symbol.letter,\n        meaning: symbol.meaning,\n        detailedMeaning: symbol.detailedMeaning,\n      },\n    })\n  }\n  console.log('Dream symbols seeded')\n\n  console.log('Seed completed successfully!')
+  ]
+
+  for (const symbol of dreamSymbols) {
+    const slug = symbol.name.toLowerCase()
+      .replace(/ş/g, 's').replace(/ç/g, 'c').replace(/ğ/g, 'g')
+      .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u')
+      .replace(/İ/g, 'i').replace(/Ç/g, 'c').replace(/Ğ/g, 'g')
+      .replace(/Ş/g, 's').replace(/Ö/g, 'o').replace(/Ü/g, 'u')
+      .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    await prisma.dreamSymbol.upsert({
+      where: { slug },
+      update: {
+        name: symbol.name,
+        letter: symbol.letter,
+        meaning: symbol.meaning,
+        detailedMeaning: symbol.detailedMeaning,
+      },
+      create: {
+        name: symbol.name,
+        slug,
+        letter: symbol.letter,
+        meaning: symbol.meaning,
+        detailedMeaning: symbol.detailedMeaning,
+      },
+    })
+  }
+  console.log('Dream symbols seeded')
+
+  console.log('Seed completed successfully!')
 }
 
 main()
