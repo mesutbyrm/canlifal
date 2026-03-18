@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         isAiGenerated: isAiGenerated || false,
         isPremium: isPremium || false,
         zodiacSign: zodiacSign || '',
-        authorName: authorName || 'Canlifal Edit\u00f6r',
+        authorName: authorName || 'Canlifal Editör',
         authorId: (session.user as any).id,
         publishedAt: isPublished ? (publishedAt ? new Date(publishedAt) : new Date()) : null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Blog create error:', error)
     if (error?.code === 'P2002') {
-      return NextResponse.json({ error: 'Bu slug zaten kullan\u0131l\u0131yor' }, { status: 400 })
+      return NextResponse.json({ error: 'Bu slug zaten kullanılıyor' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

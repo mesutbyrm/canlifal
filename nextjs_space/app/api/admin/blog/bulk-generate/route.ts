@@ -33,28 +33,28 @@ export async function POST(req: NextRequest) {
 
     for (const topic of topics) {
       try {
-        const prompt = `Sen Canlifal.com i\u00e7in uzman SEO blog yazar\u0131s\u0131n. A\u015fa\u011f\u0131daki konuda 800-1500 kelimelik, SEO uyumlu blog yaz\u0131s\u0131 \u00fcret.
+        const prompt = `Sen Canlifal.com için uzman SEO blog yazarısın. Aşağıdaki konuda 800-1500 kelimelik, SEO uyumlu blog yazısı üret.
 
 Konu: "${topic.trim()}"
 Kategori: ${category || 'en uygun olanı seç'}
 Mevcut kategoriler: ${categoryList}
-${zodiacSign ? `Bur\u00e7: ${zodiacSign} - yaz\u0131y\u0131 bu bur\u00e7 \u00f6zelinde yaz` : ''}
+${zodiacSign ? `Burç: ${zodiacSign} - yazıyı bu burç özelinde yaz` : ''}
 
-JSON format\u0131nda yan\u0131t ver:
+JSON formatında yanıt ver:
 {
   "slug": "seo-url-slug",
   "category": "kategori-slug",
-  "titleTr": "T\u00fcrk\u00e7e Ba\u015fl\u0131k",
+  "titleTr": "Türkçe Başlık",
   "titleEn": "English Title",
-  "descTr": "T\u00fcrk\u00e7e a\u00e7\u0131klama 2-3 c\u00fcmle",
+  "descTr": "Türkçe açıklama 2-3 cümle",
   "descEn": "English desc",
-  "metaDescriptionTr": "140-160 karakter meta a\u00e7\u0131klama",
-  "contentTr": "HTML i\u00e7erik h2/h3 yap\u0131s\u0131nda, FAQ b\u00f6l\u00fcm\u00fc dahil",
+  "metaDescriptionTr": "140-160 karakter meta açıklama",
+  "contentTr": "HTML içerik h2/h3 yapısında, FAQ bölümü dahil",
   "contentEn": "HTML content",
   "keywords": ["kw1","kw2","kw3","kw4","kw5","kw6","kw7","kw8"]
 }
 
-Sadece ge\u00e7erli JSON d\u00f6nd\u00fcr.`
+Sadece geçerli JSON döndür.`
 
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
@@ -101,6 +101,6 @@ Sadece ge\u00e7erli JSON d\u00f6nd\u00fcr.`
     return NextResponse.json({ results })
   } catch (error) {
     console.error('Bulk generate error:', error)
-    return NextResponse.json({ error: 'Toplu \u00fcretim hatas\u0131' }, { status: 500 })
+    return NextResponse.json({ error: 'Toplu üretim hatası' }, { status: 500 })
   }
 }

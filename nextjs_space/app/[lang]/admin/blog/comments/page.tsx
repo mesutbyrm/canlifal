@@ -58,12 +58,12 @@ export default function AdminCommentsPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <MessageCircle className="w-6 h-6 text-green-400" /> Yorum Y\u00f6netimi
+                <MessageCircle className="w-6 h-6 text-green-400" /> Yorum Yönetimi
               </h1>
               <p className="text-sm text-gray-500">{total} yorum</p>
             </div>
           </div>
-          <Link href={`/${lang}/admin/blog/analytics`} className="text-xs text-purple-400 hover:text-purple-300">Analitik \u2192</Link>
+          <Link href={`/${lang}/admin/blog/analytics`} className="text-xs text-purple-400 hover:text-purple-300">Analitik →</Link>
         </div>
 
         {/* Filter */}
@@ -71,7 +71,7 @@ export default function AdminCommentsPage() {
           <Filter className="w-4 h-4 text-gray-500" />
           {(['all', 'approved', 'pending'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs transition ${filter === f ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {f === 'all' ? 'T\u00fcm\u00fc' : f === 'approved' ? 'Onayl\u0131' : 'Bekleyen'}
+              {f === 'all' ? 'Tümü' : f === 'approved' ? 'Onaylı' : 'Bekleyen'}
             </button>
           ))}
         </div>
@@ -81,7 +81,7 @@ export default function AdminCommentsPage() {
         ) : comments.length === 0 ? (
           <div className="text-center py-20">
             <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">Hen\u00fcz yorum yok</p>
+            <p className="text-gray-400">Henüz yorum yok</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -95,13 +95,13 @@ export default function AdminCommentsPage() {
                       </span>
                       <span className="text-[10px] text-gray-500">{fmtDate(c.createdAt)}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${c.isApproved ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                        {c.isApproved ? 'Onayl\u0131' : 'Bekliyor'}
+                        {c.isApproved ? 'Onaylı' : 'Bekliyor'}
                       </span>
-                      {c.parentId && <span className="text-[10px] text-gray-500">yan\u0131t</span>}
+                      {c.parentId && <span className="text-[10px] text-gray-500">yanıt</span>}
                     </div>
                     <p className="text-sm text-gray-300 mb-2 whitespace-pre-wrap">{c.content}</p>
                     <p className="text-[10px] text-gray-500">
-                      Yaz\u0131: <Link href={`/${lang}/blog/${c.postSlug}`} className="text-purple-400 hover:text-purple-300">{c.postTitle}</Link>
+                      Yazı: <Link href={`/${lang}/blog/${c.postSlug}`} className="text-purple-400 hover:text-purple-300">{c.postTitle}</Link>
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

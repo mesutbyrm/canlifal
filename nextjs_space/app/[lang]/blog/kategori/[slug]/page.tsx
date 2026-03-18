@@ -1,24 +1,32 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import {
-  ArrowLeft, BookOpen, Calendar, ChevronLeft, ChevronRight,
-  Clock, Eye, Loader2, Search
-} from 'lucide-react'
+import { Eye, Clock, ChevronRight, ChevronLeft, Tag, Crown } from 'lucide-react'
+import LoadingSpinner from '@/components/loading-spinner'
+import { SITE_NAME, SITE_URL } from '@/lib/seo-config'
 
 interface BlogPost {
   id: string
   slug: string
   titleTr: string
+  titleEn: string
   descTr: string
+  descEn: string
   category: string
+  keywords: string[]
   coverImage: string
   readTime: number
   views: number
+  likes: number
+  isFeatured: boolean
+  isTrending: boolean
+  isEditorPick: boolean
+  isPremium: boolean
+  authorName: string
   publishedAt: string | null
   createdAt: string
 }
@@ -27,189 +35,216 @@ interface BlogCategory {
   id: string
   slug: string
   nameTr: string
+  nameEn: string
   descTr: string
   icon: string
   color: string
   postCount: number
 }
 
-interface Pagination {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
-
-const CATEGORY_ICONS: Record<string, string> = {
-  'Cpu': '\ud83d\udcbb', 'Heart': '\u2764\ufe0f', 'Sparkles': '\u2728', 'UtensilsCrossed': '\ud83c\udf7d\ufe0f',
-  'Plane': '\u2708\ufe0f', 'TrendingUp': '\ud83d\udcb0', 'GraduationCap': '\ud83c\udf93', 'HeartHandshake': '\ud83d\udc91',
-  'Baby': '\ud83d\udc76', 'Gamepad2': '\ud83c\udfae', 'Clapperboard': '\ud83c\udfac', 'Star': '\u2b50', 'Moon': '\ud83c\udf19',
-  'BookOpen': '\ud83d\udcda',
-}
-
-export default function BlogCategoryPage() {
+export default function CategoryPage() {
   const params = useParams()
-  const router = useRouter()
   const lang = (params?.lang as string) || 'tr'
   const slug = params?.slug as string
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [category, setCategory] = useState<BlogCategory | null>(null)
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 12, total: 0, totalPages: 0 })
+  const [categories, setCategories] = useState<BlogCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
-  const fetchPosts = useCallback(async (page = 1) => {
-    setLoading(true)
-    try {
-      const [postsRes, catsRes] = await Promise.all([
-        fetch(`/api/blog?category=${encodeURIComponent(slug)}&page=${page}&limit=12`),
-        fetch('/api/blog/categories'),
-      ])
-      if (postsRes.ok) {
-        const data = await postsRes.json()
-        setPosts(data.posts || [])
-        setPagination(data.pagination || { page: 1, limit: 12, total: 0, totalPages: 0 })
-      }
-      if (catsRes.ok) {
-        const data = await catsRes.json()
-        const found = (data.categories || []).find((c: BlogCategory) => c.slug === slug)
-        if (found) setCategory(found)
-      }
-    } catch (e) {
-      console.error('Category fetch error:', e)
-    } finally {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const [postsRes, catsRes] = await Promise.all([
+          fetch(`/api/blog?category=${encodeURIComponent(slug)}&page=${page}&limit=12`),
+          fetch('/api/blog/categories'),
+        ])
+        if (postsRes.ok) {
+          const data = await postsRes.json()
+          setPosts(data.posts || [])
+          setPagination({ total: data.pagination?.total || 0, totalPages: data.pagination?.totalPages || 0 })
+        }
+        if (catsRes.ok) {
+          const data = await catsRes.json()
+          const cats = data.categories || []
+          setCategories(cats)
+          const found = cats.find((c: BlogCategory) => c.slug === slug)
+          setCategory(found || null)
+        }
+      } catch (e) { console.error(e) }
       setLoading(false)
     }
-  }, [slug])
+    fetchData()
+  }, [slug, page])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
-
-  const formatDate = (date: string | null) => {
-    if (!date) return ''
-    try { return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) } catch { return '' }
+  const formatDate = (d: string | null) => {
+    if (!d) return ''
+    try { return new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }
+    catch { return '' }
   }
 
-  const formatViews = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n)
+  const formatViews = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v)
 
   if (!mounted) return null
 
+  if (loading && page === 1) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  const catName = category?.nameTr || slug
+  const catDesc = category?.descTr || ''
+
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${catName} - ${SITE_NAME} Blog`,
+    description: catDesc || `${catName} kategorisindeki yazılar`,
+    url: `${SITE_URL}/blog/kategori/${slug}`,
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/blog` },
+      { '@type': 'ListItem', position: 3, name: catName, item: `${SITE_URL}/blog/kategori/${slug}` },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/20 to-gray-950">
-      {/* Schema markup */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        name: category?.nameTr || slug,
-        description: category?.descTr || '',
-        url: typeof window !== 'undefined' ? window.location.href : '',
-      }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 pb-28">
+      <head>
+        <title>{catName} - {SITE_NAME} Blog</title>
+        <meta name="description" content={catDesc || `${catName} kategorisindeki en güncel yazılar`} />
+        <meta property="og:title" content={`${catName} - ${SITE_NAME} Blog`} />
+        <meta property="og:description" content={catDesc || `${catName} kategorisindeki en güncel yazılar`} />
+        <link rel="canonical" href={`${SITE_URL}/blog/kategori/${slug}`} />
+      </head>
+
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-28">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
           <Link href={`/${lang}/blog`} className="hover:text-purple-400 transition">Blog</Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-white">{category?.nameTr || slug}</span>
+          <span className="text-gray-500">{catName}</span>
         </nav>
 
         {/* Category Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">{CATEGORY_ICONS[category?.icon || ''] || '\ud83d\udcc4'}</span>
-            <h1 className="text-3xl font-bold text-white">{category?.nameTr || slug}</h1>
+            {category?.icon && <span className="text-2xl">{category.icon}</span>}
+            <h1 className="text-3xl md:text-4xl font-bold text-white">{catName}</h1>
           </div>
-          {category?.descTr && (
-            <p className="text-gray-400 max-w-2xl">{category.descTr}</p>
-          )}
-          <p className="text-sm text-gray-500 mt-2">{pagination.total} yaz\u0131 bulundu</p>
+          {catDesc && <p className="text-gray-400 text-lg mt-2">{catDesc}</p>}
+          <p className="text-sm text-gray-500 mt-2">{pagination.total} yazı bulundu</p>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-16">
-            <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">Bu kategoride hen\u00fcz yaz\u0131 yok</p>
-            <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300 text-sm mt-2 inline-block">T\u00fcm yaz\u0131lara d\u00f6n</Link>
+        {/* Posts Grid */}
+        {posts.length === 0 && !loading ? (
+          <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+            <Tag className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400">Bu kategoride henüz yazı yok</p>
+            <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300 text-sm mt-2 inline-block">Tüm yazılara dön</Link>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {posts.map((post, i) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  <Link href={`/${lang}/blog/${post.slug}`} className="block group">
-                    <div className="rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-purple-500/30 transition-all h-full">
-                      {post.coverImage ? (
-                        <div className="relative aspect-video bg-gray-800">
-                          <Image src={post.coverImage} alt={post.titleTr} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                        </div>
-                      ) : (
-                        <div className="aspect-video bg-gradient-to-br from-purple-900/20 to-indigo-900/20 flex items-center justify-center">
-                          <BookOpen className="w-10 h-10 text-purple-500/20" />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h2 className="text-sm font-semibold text-white group-hover:text-purple-300 transition line-clamp-2">{post.titleTr}</h2>
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{post.descTr}</p>
-                        <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.readTime} dk</span>
-                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatViews(post.views)}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map((post, i) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Link href={`/${lang}/blog/${post.slug}`}>
+                  <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all duration-300 group h-full">
+                    {post.coverImage && (
+                      <div className="relative aspect-video bg-gray-800">
+                        <Image src={post.coverImage} alt={post.titleTr} fill className="object-cover group-hover:scale-105 transition duration-500" />
+                        {post.isPremium && (
+                          <div className="absolute top-2 right-2 px-2 py-1 bg-yellow-500/90 rounded-full text-[10px] font-bold text-black flex items-center gap-1">
+                            <Crown className="w-3 h-3" /> Premium
                           </div>
-                          <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                        )}
+                        {post.isFeatured && (
+                          <div className="absolute top-2 left-2 px-2 py-1 bg-purple-600/90 rounded-full text-[10px] font-bold text-white">
+                            Öne Çıkan
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <h2 className="text-white font-semibold line-clamp-2 mb-2 group-hover:text-purple-300 transition">{post.titleTr}</h2>
+                      <p className="text-gray-400 text-sm line-clamp-2 mb-4">{post.descTr}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.readTime} dk</span>
+                          <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatViews(post.views)}</span>
                         </div>
+                        <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                       </div>
                     </div>
-                  </Link>
-                </motion.div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-10">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm hover:bg-white/10 transition disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" /> Önceki
+            </button>
+            <span className="text-sm text-gray-400">
+              Sayfa {page} / {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              disabled={page === pagination.totalPages}
+              className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm hover:bg-white/10 transition disabled:opacity-30"
+            >
+              Sonraki <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Other Categories */}
+        {categories.length > 1 && (
+          <div className="mt-16">
+            <h2 className="text-xl font-bold text-white mb-6">Diğer Kategoriler</h2>
+            <div className="flex flex-wrap gap-3">
+              {categories.filter(c => c.slug !== slug).map(c => (
+                <Link
+                  key={c.slug}
+                  href={`/${lang}/blog/kategori/${c.slug}`}
+                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-purple-500/10 hover:border-purple-500/20 hover:text-purple-300 transition"
+                >
+                  {c.icon && <span className="mr-1.5">{c.icon}</span>}
+                  {c.nameTr}
+                  {c.postCount > 0 && <span className="ml-1.5 text-gray-500">({c.postCount})</span>}
+                </Link>
               ))}
             </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  onClick={() => fetchPosts(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 disabled:opacity-30 transition"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                  const pageNum = i + 1
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => fetchPosts(pageNum)}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
-                        pageNum === pagination.page
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                })}
-                <button
-                  onClick={() => fetchPosts(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
-                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 disabled:opacity-30 transition"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -259,12 +259,12 @@ export default function BlogPostPage() {
     const d = new Date(date).getTime()
     const diff = now - d
     const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'Az \u00f6nce'
-    if (mins < 60) return `${mins} dk \u00f6nce`
+    if (mins < 1) return 'Az önce'
+    if (mins < 60) return `${mins} dk önce`
     const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours} saat \u00f6nce`
+    if (hours < 24) return `${hours} saat önce`
     const days = Math.floor(hours / 24)
-    if (days < 30) return `${days} g\u00fcn \u00f6nce`
+    if (days < 30) return `${days} gün önce`
     return formatDate(date)
   }
 
@@ -291,8 +291,8 @@ export default function BlogPostPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-xl mb-4">Yaz\u0131 bulunamad\u0131</p>
-          <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300">Blog&apos;a D\u00f6n</Link>
+          <p className="text-white text-xl mb-4">Yazı bulunamadı</p>
+          <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300">Blog&apos;a Dön</Link>
         </div>
       </div>
     )
@@ -426,7 +426,7 @@ export default function BlogPostPage() {
                   onClick={() => setShowShareMenu(!showShareMenu)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 border border-white/10 transition"
                 >
-                  <Share2 className="w-4 h-4" /> Payla\u015f
+                  <Share2 className="w-4 h-4" /> Paylaş
                 </button>
                 <AnimatePresence>
                   {showShareMenu && (
@@ -438,7 +438,7 @@ export default function BlogPostPage() {
                     >
                       {typeof navigator !== 'undefined' && !!navigator.share && (
                         <button onClick={() => { handleNativeShare(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
-                          <Share2 className="w-4 h-4 text-purple-400" /> Payla\u015f (Cihaz)
+                          <Share2 className="w-4 h-4 text-purple-400" /> Paylaş (Cihaz)
                         </button>
                       )}
                       <button onClick={() => { shareToTwitter(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
@@ -460,7 +460,7 @@ export default function BlogPostPage() {
                       <div className="border-t border-white/10 my-1"></div>
                       <button onClick={() => { handleCopyLink(); setShowShareMenu(false) }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 text-sm transition">
                         {copied ? <Check className="w-4 h-4 text-green-400" /> : <LinkIcon className="w-4 h-4 text-gray-400" />}
-                        {copied ? 'Kopyaland\u0131!' : 'Linki Kopyala'}
+                        {copied ? 'Kopyalandı!' : 'Linki Kopyala'}
                       </button>
                     </motion.div>
                   )}
@@ -542,7 +542,7 @@ export default function BlogPostPage() {
         {/* Interaction Bar */}
         <div className="mt-8 p-5 rounded-2xl bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/20">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <span className="text-sm text-gray-300">Bu yaz\u0131y\u0131 be\u011fendiniz mi?</span>
+            <span className="text-sm text-gray-300">Bu yazıyı beğendiniz mi?</span>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleLike}
@@ -554,7 +554,7 @@ export default function BlogPostPage() {
                 }`}
               >
                 <Heart className={`w-4 h-4 ${liked ? 'fill-red-400' : ''}`} />
-                {liked ? 'Be\u011fenildi' : 'Be\u011fen'} {likesCount > 0 && `(${likesCount})`}
+                {liked ? 'Beğenildi' : 'Beğen'} {likesCount > 0 && `(${likesCount})`}
               </button>
               <button
                 onClick={handleFavorite}
@@ -572,7 +572,7 @@ export default function BlogPostPage() {
                 onClick={() => setShowShareMenu(!showShareMenu)}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition"
               >
-                <Share2 className="w-4 h-4" /> Payla\u015f
+                <Share2 className="w-4 h-4" /> Paylaş
               </button>
             </div>
           </div>
@@ -593,12 +593,12 @@ export default function BlogPostPage() {
                   <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                     <User className="w-4 h-4 text-purple-400" />
                   </div>
-                  <span className="text-sm text-gray-300">{(session.user as any).name || 'Kullan\u0131c\u0131'}</span>
+                  <span className="text-sm text-gray-300">{(session.user as any).name || 'Kullanıcı'}</span>
                 </div>
                 <textarea
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
-                  placeholder="D\u00fc\u015f\u00fcncelerinizi payla\u015f\u0131n..."
+                  placeholder="Düşüncelerinizi paylaşın..."
                   rows={3}
                   maxLength={2000}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-500 resize-none focus:outline-none focus:border-purple-500/50 transition"
@@ -611,15 +611,15 @@ export default function BlogPostPage() {
                     className="flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50"
                   >
                     {commentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    G\u00f6nder
+                    Gönder
                   </button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-gray-400 mb-3">Yorum yapmak i\u00e7in giri\u015f yap\u0131n</p>
+                <p className="text-gray-400 mb-3">Yorum yapmak için giriş yapın</p>
                 <Link href={`/${lang}/login`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
-                  Giri\u015f Yap
+                  Giriş Yap
                 </Link>
               </div>
             )}
@@ -631,7 +631,7 @@ export default function BlogPostPage() {
           ) : comments.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500">Hen\u00fcz yorum yok. \u0130lk yorumu siz yap\u0131n!</p>
+              <p className="text-gray-500">Henüz yorum yok. İlk yorumu siz yapın!</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -662,7 +662,7 @@ export default function BlogPostPage() {
                             onClick={() => { setReplyTo(replyTo?.id === comment.id ? null : comment); setReplyText('') }}
                             className="flex items-center gap-1 text-xs text-gray-500 hover:text-purple-400 transition"
                           >
-                            <Reply className="w-3.5 h-3.5" /> Yan\u0131tla
+                            <Reply className="w-3.5 h-3.5" /> Yanıtla
                           </button>
                         )}
                         {(comment.userId === currentUserId || isAdmin) && (
@@ -681,7 +681,7 @@ export default function BlogPostPage() {
                           <input
                             value={replyText}
                             onChange={e => setReplyText(e.target.value)}
-                            placeholder={`@${comment.userName} yan\u0131tla...`}
+                            placeholder={`@${comment.userName} yanıtla...`}
                             maxLength={2000}
                             className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
                             onKeyDown={e => e.key === 'Enter' && !commentSubmitting && handleSubmitComment(comment.id)}
@@ -739,7 +739,7 @@ export default function BlogPostPage() {
         {relatedPosts.length > 0 && (
           <section className="mt-12">
             <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-purple-400" /> Benzer Yaz\u0131lar
+              <BookOpen className="w-5 h-5 text-purple-400" /> Benzer Yazılar
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {relatedPosts.map((rp, i) => (

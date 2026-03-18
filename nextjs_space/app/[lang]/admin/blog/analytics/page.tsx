@@ -56,7 +56,7 @@ export default function BlogAnalyticsPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2"><BarChart3 className="w-6 h-6 text-purple-400" /> Blog Analitik</h1>
-            <p className="text-sm text-gray-500">T\u00fcm blog performans metrikleri</p>
+            <p className="text-sm text-gray-500">Tüm blog performans metrikleri</p>
           </div>
         </div>
 
@@ -64,9 +64,9 @@ export default function BlogAnalyticsPage() {
         {overview && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
             {[
-              { icon: FileText, label: 'Toplam Yaz\u0131', value: overview.totalPosts, color: 'purple' },
-              { icon: Eye, label: 'Toplam G\u00f6r\u00fcnt\u00fclenme', value: overview.totalViews, color: 'blue' },
-              { icon: Heart, label: 'Toplam Be\u011feni', value: overview.totalLikes, color: 'red' },
+              { icon: FileText, label: 'Toplam Yazı', value: overview.totalPosts, color: 'purple' },
+              { icon: Eye, label: 'Toplam Görüntülenme', value: overview.totalViews, color: 'blue' },
+              { icon: Heart, label: 'Toplam Beğeni', value: overview.totalLikes, color: 'red' },
               { icon: MessageCircle, label: 'Toplam Yorum', value: overview.totalComments, color: 'green' },
               { icon: Bookmark, label: 'Toplam Favori', value: overview.totalFavorites, color: 'yellow' },
             ].map((item, i) => (
@@ -84,7 +84,7 @@ export default function BlogAnalyticsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
               <p className="text-lg font-bold text-green-400">{overview.publishedPosts}</p>
-              <p className="text-xs text-gray-400">Yay\u0131nda</p>
+              <p className="text-xs text-gray-400">Yayında</p>
             </div>
             <div className="p-3 rounded-lg bg-gray-500/10 border border-gray-500/20 text-center">
               <p className="text-lg font-bold text-gray-400">{overview.draftPosts}</p>
@@ -92,7 +92,7 @@ export default function BlogAnalyticsPage() {
             </div>
             <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
               <p className="text-lg font-bold text-purple-400">{overview.aiPosts}</p>
-              <p className="text-xs text-gray-400">AI \u00dcretimi</p>
+              <p className="text-xs text-gray-400">AI Üretimi</p>
             </div>
             <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
               <p className="text-lg font-bold text-yellow-400">{overview.premiumPosts}</p>
@@ -104,7 +104,7 @@ export default function BlogAnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Top by Views */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Eye className="w-4 h-4 text-blue-400" /> En \u00c7ok G\u00f6r\u00fcnt\u00fclenen</h3>
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Eye className="w-4 h-4 text-blue-400" /> En Çok Görüntülenen</h3>
             <div className="space-y-2">
               {topByViews.slice(0, 7).map((p, i) => (
                 <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/3 hover:bg-white/5 transition">
@@ -120,7 +120,7 @@ export default function BlogAnalyticsPage() {
 
           {/* Top by Likes */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Heart className="w-4 h-4 text-red-400" /> En \u00c7ok Be\u011fenilen</h3>
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Heart className="w-4 h-4 text-red-400" /> En Çok Beğenilen</h3>
             <div className="space-y-2">
               {topByLikes.slice(0, 7).map((p, i) => (
                 <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/3 hover:bg-white/5 transition">
@@ -137,14 +137,14 @@ export default function BlogAnalyticsPage() {
 
         {/* Category Distribution */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
-          <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-purple-400" /> Kategori Da\u011f\u0131l\u0131m\u0131</h3>
+          <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-purple-400" /> Kategori Dağılımı</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {categoryStats.filter(c => c.postCount > 0).map(cat => (
               <div key={cat.slug} className="p-3 rounded-xl bg-white/5 border border-white/5">
                 <p className="text-sm font-medium text-white">{cat.nameTr}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-gray-400">{cat.postCount} yaz\u0131</span>
-                  <span className="text-xs text-blue-400">{fmt(cat.totalViews)} g\u00f6r\u00fcnt\u00fclenme</span>
+                  <span className="text-xs text-gray-400">{cat.postCount} yazı</span>
+                  <span className="text-xs text-blue-400">{fmt(cat.totalViews)} görüntülenme</span>
                 </div>
               </div>
             ))}
@@ -156,7 +156,7 @@ export default function BlogAnalyticsPage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-semibold flex items-center gap-2"><MessageCircle className="w-4 h-4 text-green-400" /> Son Yorumlar</h3>
-              <Link href={`/${lang}/admin/blog/comments`} className="text-xs text-purple-400 hover:text-purple-300">T\u00fcm\u00fcn\u00fc G\u00f6r</Link>
+              <Link href={`/${lang}/admin/blog/comments`} className="text-xs text-purple-400 hover:text-purple-300">Tümünü Gör</Link>
             </div>
             <div className="space-y-3">
               {recentComments.slice(0, 5).map(c => (
@@ -165,7 +165,7 @@ export default function BlogAnalyticsPage() {
                     <span className="text-xs font-medium text-white">{c.userName}</span>
                     <span className="text-[10px] text-gray-500">{fmtDate(c.createdAt)}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${c.isApproved ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                      {c.isApproved ? 'Onayl\u0131' : 'Bekliyor'}
+                      {c.isApproved ? 'Onaylı' : 'Bekliyor'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-300 line-clamp-2">{c.content}</p>
@@ -177,9 +177,9 @@ export default function BlogAnalyticsPage() {
 
           {/* Scheduled Posts */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-orange-400" /> Zamanlanm\u0131\u015f Yaz\u0131lar</h3>
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-orange-400" /> Zamanlanmış Yazılar</h3>
             {scheduledPosts.length === 0 ? (
-              <p className="text-sm text-gray-500">Zamanlanm\u0131\u015f yaz\u0131 yok</p>
+              <p className="text-sm text-gray-500">Zamanlanmış yazı yok</p>
             ) : (
               <div className="space-y-2">
                 {scheduledPosts.map(p => (
