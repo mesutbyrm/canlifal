@@ -10,47 +10,59 @@ export const getPermissionStatus = (): NotificationPermission | 'unsupported' =>
   return Notification.permission
 }
 
+// Helper to get OneSignal from window
+const getOneSignal = (): any | null => {
+  if (typeof window !== 'undefined' && (window as any).OneSignal) {
+    return (window as any).OneSignal
+  }
+  return null
+}
+
 export const requestNotificationPermission = async (): Promise<NotificationPermission | 'unsupported'> => {
   if (!isPushSupported()) return 'unsupported'
   
   try {
-    // First try using OneSignal's prompt (preferred - registers the subscription)
-    try {
-      const OneSignalModule = await import('react-onesignal')
-      const OneSignal = OneSignalModule.default
-      
+    const OneSignal = getOneSignal()
+    
+    if (OneSignal) {
       // Use OneSignal's native prompt which handles both permission + subscription
-      await OneSignal.Slidedown.promptPush()
-      
-      // After prompt, check if user opted in
-      const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
-      if (isOptedIn) {
-        console.log('OneSignal: user subscribed via prompt')
-        return 'granted'
-      }
-      
-      // If OneSignal prompt was shown but user didn't accept, 
-      // fall through to check native permission
-    } catch (e) {
-      console.log('OneSignal prompt failed, falling back to native:', e)
-    }
-    
-    // Fallback: request native permission and then opt in to OneSignal
-    const permission = await Notification.requestPermission()
-    
-    if (permission === 'granted') {
-      // Also opt in to OneSignal
       try {
-        const OneSignalModule = await import('react-onesignal')
-        const OneSignal = OneSignalModule.default
-        await (OneSignal.User?.PushSubscription as any)?.optIn?.()
-        console.log('OneSignal: opted in after native permission grant')
+        // First try the slidedown prompt
+        await OneSignal.Slidedown.promptPush()
+        console.log('OneSignal: slidedown prompt shown')
+        
+        // After prompt, check if user opted in
+        const sub = OneSignal.User?.PushSubscription
+        if (sub?.optedIn) {
+          console.log('OneSignal: user subscribed via prompt')
+          return 'granted'
+        }
       } catch (e) {
-        console.log('OneSignal opt-in after native permission failed:', e)
+        console.log('OneSignal slidedown failed, trying native + optIn:', e)
       }
+      
+      // Fallback: request native permission, then opt into OneSignal
+      const permission = await Notification.requestPermission()
+      
+      if (permission === 'granted') {
+        try {
+          const sub = OneSignal.User?.PushSubscription
+          if (sub && !sub.optedIn) {
+            await sub.optIn()
+            console.log('OneSignal: opted in after native permission grant, token:', sub.token?.substring(0, 20) + '...')
+          }
+        } catch (e) {
+          console.log('OneSignal opt-in after native permission failed:', e)
+        }
+      }
+      
+      return permission
+    } else {
+      // OneSignal not loaded yet, just request native permission
+      console.log('OneSignal not available, requesting native permission only')
+      const permission = await Notification.requestPermission()
+      return permission
     }
-    
-    return permission
   } catch (error) {
     console.error('Error requesting notification permission:', error)
     return 'denied'
@@ -58,34 +70,8 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
 }
 
 export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
-  
-  // Don't register service worker in test mode or during SSR
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    // Check if we're in a test/build environment
-    const isTestEnv = document.querySelector('meta[name="next-test"]') !== null
-    if (isTestEnv) {
-      console.log('Skipping Service Worker registration in test environment')
-      return null
-    }
-  }
-  
-  try {
-    // Wait for the page to fully load
-    if (document.readyState !== 'complete') {
-      await new Promise(resolve => window.addEventListener('load', resolve, { once: true }))
-    }
-    
-    const registration = await navigator.serviceWorker.register('/notification-sw.js', {
-      scope: '/'
-    })
-    console.log('Service Worker registered:', registration.scope)
-    return registration
-  } catch (error) {
-    // Silently fail - notifications will still work via Notification API
-    console.log('Service Worker registration skipped:', (error as Error).message)
-    return null
-  }
+  // OneSignal handles its own service worker, no need to register separately
+  return null
 }
 
 export const showBrowserNotification = async (
@@ -150,7 +136,6 @@ export const playNotificationSound = (): void => {
     
     const audioContext = new AudioContextClass()
     
-    // Create a more pleasant notification sound
     const playTone = (freq: number, startTime: number, duration: number) => {
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
@@ -171,9 +156,8 @@ export const playNotificationSound = (): void => {
     }
     
     const now = audioContext.currentTime
-    // Two-tone notification sound
-    playTone(880, now, 0.15)       // A5
-    playTone(1174.66, now + 0.15, 0.2) // D6
+    playTone(880, now, 0.15)
+    playTone(1174.66, now + 0.15, 0.2)
     
   } catch (e) {
     console.log('Audio notification not supported')

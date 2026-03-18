@@ -3,126 +3,110 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
+declare global {
+  interface Window {
+    OneSignalDeferred?: Array<(OneSignal: any) => void>
+    OneSignal?: any
+    __onesignal_init_started?: boolean
+  }
+}
+
 export default function OneSignalInitializer() {
   const { data: session } = useSession() || {}
   const initialized = useRef(false)
   const loggedInUserId = useRef<string | null>(null)
 
-  // Force re-subscribe: opt out then opt in to get a fresh push token
+  const getOneSignal = useCallback((): any | null => {
+    if (typeof window !== 'undefined' && window.OneSignal) {
+      return window.OneSignal
+    }
+    return null
+  }, [])
+
   const forceResubscribe = useCallback(async (OneSignal: any) => {
     try {
       const sub = OneSignal.User?.PushSubscription
       if (!sub) return
 
-      // Check if we have a valid push token
       const token = sub.token
-      if (token) {
-        console.log('OneSignal: already has valid push token')
-        return
-      }
+      if (token) return
 
-      // No token — force re-subscribe
-      console.log('OneSignal: no push token, forcing re-subscribe...')
-      
-      // If permission is granted, force opt-out then opt-in to trigger new subscription
       if (Notification.permission === 'granted') {
         try {
-          await sub.optOut?.()
+          await sub.optOut()
           await new Promise(r => setTimeout(r, 1000))
-          await sub.optIn?.()
-          console.log('OneSignal: forced re-subscribe completed')
-        } catch (e) {
-          console.log('OneSignal: re-subscribe attempt:', e)
-        }
+          await sub.optIn()
+        } catch (_e) { /* ignore */ }
       } else if (Notification.permission === 'default') {
-        // Permission not yet asked — prompt the user
         try {
-          await OneSignal.Slidedown?.promptPush?.()
-          console.log('OneSignal: prompted user for push permission')
-        } catch (e) {
-          console.log('OneSignal: prompt skipped:', e)
-        }
+          await OneSignal.Slidedown.promptPush()
+        } catch (_e) { /* ignore */ }
       }
-    } catch (error) {
-      console.error('OneSignal forceResubscribe error:', error)
-    }
+    } catch (_error) { /* ignore */ }
   }, [])
 
-  // Sync user login/logout with OneSignal
   const syncUser = useCallback(async (userId: string | undefined | null) => {
     if (!initialized.current) return
-    try {
-      const OneSignalModule = await import('react-onesignal')
-      const OneSignal = OneSignalModule.default
+    const OneSignal = getOneSignal()
+    if (!OneSignal) return
 
+    try {
       if (userId) {
-        if (loggedInUserId.current === userId) return // already logged in
+        if (loggedInUserId.current === userId) return
         await OneSignal.login(userId)
         loggedInUserId.current = userId
-        console.log('OneSignal user logged in:', userId)
-
-        // After login, ensure push subscription is active
         setTimeout(() => forceResubscribe(OneSignal), 2000)
       } else {
-        if (!loggedInUserId.current) return // already logged out
+        if (!loggedInUserId.current) return
         await OneSignal.logout()
         loggedInUserId.current = null
-        console.log('OneSignal user logged out')
       }
-    } catch (error) {
-      console.error('OneSignal user sync error:', error)
-    }
-  }, [forceResubscribe])
+    } catch (_error) { /* ignore */ }
+  }, [forceResubscribe, getOneSignal])
 
-  // Initialize OneSignal SDK once
   useEffect(() => {
-    if (initialized.current) return
     if (typeof window === 'undefined') return
+    // Module-level global guard to prevent double init across React re-renders/strict mode
+    if (window.__onesignal_init_started) {
+      initialized.current = true
+      return
+    }
+    window.__onesignal_init_started = true
 
     const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID
-    if (!appId) {
-      console.warn('OneSignal App ID not configured')
+    if (!appId) return
+
+    // Skip OneSignal on non-production origins (it's configured only for canlifal.com)
+    const isProduction = typeof window !== 'undefined' && window.location.hostname === 'canlifal.com'
+    if (!isProduction) {
+      console.log('OneSignal: skipped on non-production origin')
       return
     }
 
-    const initOneSignal = async () => {
-      try {
-        const OneSignalModule = await import('react-onesignal')
-        const OneSignal = OneSignalModule.default
+    window.OneSignalDeferred = window.OneSignalDeferred || []
 
+    window.OneSignalDeferred.push(async function(OneSignal: any) {
+      try {
         await OneSignal.init({
           appId,
-          allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
           serviceWorkerParam: { scope: '/' },
           serviceWorkerPath: '/OneSignalSDKWorker.js',
-          // @ts-ignore - notifyButton types are overly strict in react-onesignal
           notifyButton: { enable: false },
         })
 
         initialized.current = true
-        console.log('OneSignal initialized')
 
-        // If session is already available at init time, login immediately
         if (session?.user?.id) {
           await OneSignal.login(session.user.id)
           loggedInUserId.current = session.user.id
-          console.log('OneSignal user logged in:', session.user.id)
         }
 
-        // After init, try to establish push subscription
-        setTimeout(() => forceResubscribe(OneSignal), 3000)
-      } catch (error) {
-        console.error('OneSignal initialization error:', error)
-      }
-    }
-
-    // Delay initialization to avoid interfering with page load
-    const timer = setTimeout(initOneSignal, 3000)
-    return () => clearTimeout(timer)
+        setTimeout(() => forceResubscribe(OneSignal), 2000)
+      } catch (_error) { /* ignore init errors */ }
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Re-sync user when session changes (handles login/logout after init)
   useEffect(() => {
     syncUser(session?.user?.id)
   }, [session?.user?.id, syncUser])

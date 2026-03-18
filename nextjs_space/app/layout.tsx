@@ -106,6 +106,8 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
+        {/* OneSignal Web SDK */}
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer />
         {/* Google AdSense */}
         <script
           async
