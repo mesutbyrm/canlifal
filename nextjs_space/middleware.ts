@@ -55,6 +55,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|favicon.png|og-image.png|manifest.json|sw.js|sitemap\\.xml|robots\\.txt|icons/.*|.*\\.jpg|.*\\.png|.*\\.svg|.*\\.mp3).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|favicon.png|og-image.png|manifest.json|sw.js|OneSignalSDKWorker\\.js|sitemap\\.xml|robots\\.txt|icons/.*|.*\\.jpg|.*\\.png|.*\\.svg|.*\\.mp3).*)',
   ],
 }
