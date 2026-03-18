@@ -6,18 +6,18 @@ import { Heart, Sparkles, Loader2, Star, Moon, Sun, ArrowRight } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion'
 
 const ZODIAC_SIGNS = [
-  { id: 'koc', name: 'Ko\u00e7', symbol: '\u2648', element: 'Ate\u015f' },
-  { id: 'boga', name: 'Bo\u011fa', symbol: '\u2649', element: 'Toprak' },
-  { id: 'ikizler', name: '\u0130kizler', symbol: '\u264a', element: 'Hava' },
-  { id: 'yengec', name: 'Yenge\u00e7', symbol: '\u264b', element: 'Su' },
-  { id: 'aslan', name: 'Aslan', symbol: '\u264c', element: 'Ate\u015f' },
-  { id: 'basak', name: 'Ba\u015fak', symbol: '\u264d', element: 'Toprak' },
-  { id: 'terazi', name: 'Terazi', symbol: '\u264e', element: 'Hava' },
-  { id: 'akrep', name: 'Akrep', symbol: '\u264f', element: 'Su' },
-  { id: 'yay', name: 'Yay', symbol: '\u2650', element: 'Ate\u015f' },
-  { id: 'oglak', name: 'O\u011flak', symbol: '\u2651', element: 'Toprak' },
-  { id: 'kova', name: 'Kova', symbol: '\u2652', element: 'Hava' },
-  { id: 'balik', name: 'Bal\u0131k', symbol: '\u2653', element: 'Su' },
+  { id: 'koc', name: 'Koç', symbol: '♈', element: 'Ateş' },
+  { id: 'boga', name: 'Boğa', symbol: '♉', element: 'Toprak' },
+  { id: 'ikizler', name: 'İkizler', symbol: '♊', element: 'Hava' },
+  { id: 'yengec', name: 'Yengeç', symbol: '♋', element: 'Su' },
+  { id: 'aslan', name: 'Aslan', symbol: '♌', element: 'Ateş' },
+  { id: 'basak', name: 'Başak', symbol: '♍', element: 'Toprak' },
+  { id: 'terazi', name: 'Terazi', symbol: '♎', element: 'Hava' },
+  { id: 'akrep', name: 'Akrep', symbol: '♏', element: 'Su' },
+  { id: 'yay', name: 'Yay', symbol: '♐', element: 'Ateş' },
+  { id: 'oglak', name: 'Oğlak', symbol: '♑', element: 'Toprak' },
+  { id: 'kova', name: 'Kova', symbol: '♒', element: 'Hava' },
+  { id: 'balik', name: 'Balık', symbol: '♓', element: 'Su' },
 ]
 
 interface CompatibilityResult {
@@ -41,7 +41,7 @@ export default function ZodiacCompatibilityPage() {
 
   const handleSubmit = async () => {
     if (!person1.sun || !person2.sun) {
-      setError('L\u00fctfen en az\u0131ndan her iki ki\u015fi i\u00e7in g\u00fcne\u015f burcunu se\u00e7in.')
+      setError('Lütfen en azından her iki kişi için güneş burcunu seçin.')
       return
     }
     setError('')
@@ -55,7 +55,7 @@ export default function ZodiacCompatibilityPage() {
       })
       if (!res.ok) {
         const d = await res.json()
-        throw new Error(d.error || 'Bir hata olu\u015ftu')
+        throw new Error(d.error || 'Bir hata oluştu')
       }
       const data = await res.json()
       setResult(data)
@@ -114,29 +114,29 @@ export default function ZodiacCompatibilityPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-fuchsia-600/20 px-4 py-1.5 rounded-full mb-4">
             <Heart className="w-4 h-4 text-fuchsia-400" />
-            <span className="text-fuchsia-300 text-sm font-medium">Bur\u00e7 Uyumu</span>
+            <span className="text-fuchsia-300 text-sm font-medium">Burç Uyumu</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Bur\u00e7 Uyumu Analizi
+            Burç Uyumu Analizi
           </h1>
           <p className="text-purple-300 text-sm">
-            G\u00fcne\u015f, y\u00fckselen ve ay bur\u00e7lar\u0131n\u0131zla detayl\u0131 uyum analizi yap\u0131n
+            Güneş, yükselen ve ay burçlarınızla detaylı uyum analizi yapın
           </p>
         </div>
 
         {/* Selection Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {[{ title: '1. Ki\u015fi', data: person1, setter: setPerson1 }, { title: '2. Ki\u015fi', data: person2, setter: setPerson2 }].map((p, idx) => (
+          {[{ title: '1. Kişi', data: person1, setter: setPerson1 }, { title: '2. Kişi', data: person2, setter: setPerson2 }].map((p, idx) => (
             <div key={idx} className="bg-purple-900/20 border border-purple-700/30 rounded-2xl p-5 space-y-4">
               <h3 className="text-white font-semibold text-lg text-center">{p.title}</h3>
               <SignSelector
-                label="G\u00fcne\u015f Burcu *"
+                label="Güneş Burcu *"
                 icon={<Sun className="w-4 h-4 text-yellow-400" />}
                 value={p.data.sun}
                 onChange={v => p.setter({ ...p.data, sun: v })}
               />
               <SignSelector
-                label="Y\u00fckselen Bur\u00e7 (Opsiyonel)"
+                label="Yükselen Burç (Opsiyonel)"
                 icon={<Star className="w-4 h-4 text-orange-400" />}
                 value={p.data.rising}
                 onChange={v => p.setter({ ...p.data, rising: v })}
@@ -159,7 +159,7 @@ export default function ZodiacCompatibilityPage() {
           className="w-full py-3.5 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
         >
           {loading ? (
-            <><Loader2 className="w-5 h-5 animate-spin" /> Analiz Yap\u0131l\u0131yor...</>
+            <><Loader2 className="w-5 h-5 animate-spin" /> Analiz Yapılıyor...</>
           ) : (
             <><Heart className="w-5 h-5" /> Uyumu Analiz Et</>
           )}
@@ -176,20 +176,20 @@ export default function ZodiacCompatibilityPage() {
               {/* Overall Score */}
               <div className="bg-gradient-to-br from-fuchsia-900/40 to-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-6 text-center">
                 <div className="text-6xl font-bold text-fuchsia-300 mb-2">%{result.overallScore}</div>
-                <p className="text-purple-300">Genel Uyum Puan\u0131</p>
+                <p className="text-purple-300">Genel Uyum Puanı</p>
               </div>
 
               {/* Score Bars */}
               <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl p-5 space-y-4">
-                <ScoreBar label="A\u015fk Uyumu" score={result.loveScore} color="bg-gradient-to-r from-pink-500 to-rose-500" />
-                <ScoreBar label="Arkada\u015fl\u0131k Uyumu" score={result.friendshipScore} color="bg-gradient-to-r from-blue-500 to-cyan-500" />
-                <ScoreBar label="\u0130\u015f Uyumu" score={result.workScore} color="bg-gradient-to-r from-green-500 to-emerald-500" />
+                <ScoreBar label="Aşk Uyumu" score={result.loveScore} color="bg-gradient-to-r from-pink-500 to-rose-500" />
+                <ScoreBar label="Arkadaşlık Uyumu" score={result.friendshipScore} color="bg-gradient-to-r from-blue-500 to-cyan-500" />
+                <ScoreBar label="İş Uyumu" score={result.workScore} color="bg-gradient-to-r from-green-500 to-emerald-500" />
               </div>
 
               {/* Analysis */}
               <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl p-5">
                 <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-fuchsia-400" /> Detayl\u0131 Analiz
+                  <Sparkles className="w-5 h-5 text-fuchsia-400" /> Detaylı Analiz
                 </h3>
                 <p className="text-purple-200 text-sm leading-relaxed whitespace-pre-line">{result.analysis}</p>
               </div>
@@ -197,21 +197,21 @@ export default function ZodiacCompatibilityPage() {
               {/* Strengths & Challenges */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-green-900/20 border border-green-700/30 rounded-2xl p-5">
-                  <h4 className="text-green-300 font-semibold mb-3">\u2728 G\u00fc\u00e7l\u00fc Yanlar</h4>
+                  <h4 className="text-green-300 font-semibold mb-3">✨ Güçlü Yanlar</h4>
                   <ul className="space-y-2">
                     {result.strengths.map((s, i) => (
                       <li key={i} className="text-green-200 text-sm flex items-start gap-2">
-                        <span className="text-green-400 mt-0.5">\u2713</span> {s}
+                        <span className="text-green-400 mt-0.5">✓</span> {s}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="bg-orange-900/20 border border-orange-700/30 rounded-2xl p-5">
-                  <h4 className="text-orange-300 font-semibold mb-3">\u26a0\ufe0f Zorluklar</h4>
+                  <h4 className="text-orange-300 font-semibold mb-3">⚠️ Zorluklar</h4>
                   <ul className="space-y-2">
                     {result.challenges.map((c, i) => (
                       <li key={i} className="text-orange-200 text-sm flex items-start gap-2">
-                        <span className="text-orange-400 mt-0.5">\u2022</span> {c}
+                        <span className="text-orange-400 mt-0.5">•</span> {c}
                       </li>
                     ))}
                   </ul>

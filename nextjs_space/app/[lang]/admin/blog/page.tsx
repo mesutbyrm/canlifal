@@ -130,7 +130,7 @@ export default function AdminBlogPage() {
   // AI GENERATE
   const handleAiGenerate = async () => {
     if (!aiTitle.trim() || aiTitle.trim().length < 3) {
-      alert('L\u00fctfen en az 3 karakterlik bir ba\u015fl\u0131k girin.')
+      alert('Lütfen en az 3 karakterlik bir başlık girin.')
       return
     }
     setGenerating(true)
@@ -334,7 +334,7 @@ export default function AdminBlogPage() {
       sampleRow.map(v => `"${v.replace(/"/g, '""')}"`).join(',')
     ].join('\n')
     
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

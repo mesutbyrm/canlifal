@@ -33,7 +33,7 @@ export async function GET(
     return NextResponse.json({ entries, userVotedEntryIds })
   } catch (error) {
     console.error('Contest entries GET error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }
 
@@ -43,17 +43,17 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const contest = await prisma.dreamContest.findUnique({ where: { id: params.contestId } })
-    if (!contest || !contest.isActive) return NextResponse.json({ error: 'Yar\u0131\u015fma bulunamad\u0131' }, { status: 404 })
+    if (!contest || !contest.isActive) return NextResponse.json({ error: 'Yarışma bulunamadı' }, { status: 404 })
     const now = new Date()
-    if (now > contest.endDate) return NextResponse.json({ error: 'Yar\u0131\u015fma sona erdi' }, { status: 400 })
+    if (now > contest.endDate) return NextResponse.json({ error: 'Yarışma sona erdi' }, { status: 400 })
 
     const { interpretation } = await req.json()
     if (!interpretation || interpretation.length < 20) {
-      return NextResponse.json({ error: 'Yorum en az 20 karakter olmal\u0131' }, { status: 400 })
+      return NextResponse.json({ error: 'Yorum en az 20 karakter olmalı' }, { status: 400 })
     }
 
     const entry = await prisma.dreamContestEntry.create({
@@ -64,8 +64,8 @@ export async function POST(
 
     return NextResponse.json(entry)
   } catch (error: any) {
-    if (error?.code === 'P2002') return NextResponse.json({ error: 'Zaten kat\u0131ld\u0131n\u0131z' }, { status: 400 })
+    if (error?.code === 'P2002') return NextResponse.json({ error: 'Zaten katıldınız' }, { status: 400 })
     console.error('Contest entry POST error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

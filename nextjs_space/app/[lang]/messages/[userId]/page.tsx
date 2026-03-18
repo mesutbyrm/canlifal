@@ -209,7 +209,7 @@ export default function ChatPage() {
     return (
       <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
         <p className="text-white/70">
-          {'Kullan\u0131c\u0131 bulunamad\u0131'}
+          {'Kullanıcı bulunamadı'}
         </p>
       </div>
     )
@@ -315,7 +315,7 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Lock className={`w-6 h-6 ${accentColor} mx-auto mb-1`} />
             <p className="text-white/70 text-sm">
-              {'Bu kullan\u0131c\u0131 mesaj kabul etmiyor'}
+              {'Bu kullanıcı mesaj kabul etmiyor'}
             </p>
           </div>
         </div>
@@ -324,14 +324,14 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Lock className={`w-6 h-6 ${accentColor} mx-auto mb-1`} />
             <p className="text-white/70 text-sm mb-2">
-              {'Mesaj g\u00F6ndermek i\u00E7in izin istemeniz gerekiyor'}
+              {'Mesaj göndermek için izin istemeniz gerekiyor'}
             </p>
             <button
               onClick={() => setShowRequestModal(true)}
               className={`px-5 py-1.5 ${sendBtnBg} text-white rounded-full text-sm font-medium`}
             >
               <UserPlus className="w-3.5 h-3.5 inline mr-1.5" />
-              {'Mesaj \u0130ste\u011Fi G\u00F6nder'}
+              {'Mesaj İsteği Gönder'}
             </button>
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function ChatPage() {
           <div className="max-w-lg mx-auto text-center">
             <Check className="w-6 h-6 text-green-500 mx-auto mb-1" />
             <p className="text-white/70 text-sm">
-              {'Mesaj iste\u011Finiz g\u00F6nderildi. Yan\u0131t bekleniyor...'}
+              {'Mesaj isteğiniz gönderildi. Yanıt bekleniyor...'}
             </p>
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function ChatPage() {
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-bold text-white">
-                  {'Mesaj \u0130ste\u011Fi'}
+                  {'Mesaj İsteği'}
                 </h3>
                 <button onClick={() => setShowRequestModal(false)}>
                   <X className="w-5 h-5 text-white/60" />
@@ -405,7 +405,7 @@ export default function ChatPage() {
               <textarea
                 value={requestMessage}
                 onChange={(e) => setRequestMessage(e.target.value.slice(0, 200))}
-                placeholder={'Neden mesaj g\u00F6ndermek istiyorsunuz? (iste\u011Fe ba\u011Fl\u0131)'}
+                placeholder={'Neden mesaj göndermek istiyorsunuz? (isteğe bağlı)'}
                 className={`w-full ${inputBg} border rounded-lg px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/50 resize-none mb-3`}
                 rows={3}
                 maxLength={200}
@@ -415,7 +415,7 @@ export default function ChatPage() {
                   onClick={() => setShowRequestModal(false)}
                   className="px-3 py-1.5 text-white/60 hover:text-white text-sm"
                 >
-                  {'\u0130ptal'}
+                  {'İptal'}
                 </button>
                 <button
                   onClick={handleSendRequest}
@@ -427,7 +427,7 @@ export default function ChatPage() {
                   ) : (
                     <Send className="w-3.5 h-3.5" />
                   )}
-                  {'G\u00F6nder'}
+                  {'Gönder'}
                 </button>
               </div>
             </motion.div>

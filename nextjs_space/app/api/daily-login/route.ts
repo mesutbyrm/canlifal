@@ -18,7 +18,7 @@ const STREAK_REWARDS = [
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const user = await prisma.user.findUnique({
@@ -40,27 +40,27 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Daily login GET error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { loginStreak: true, lastLoginRewardDate: true, xp: true, level: true, jetonBalance: true },
     })
-    if (!user) return NextResponse.json({ error: 'Kullan\u0131c\u0131 bulunamad\u0131' }, { status: 404 })
+    if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     if (user.lastLoginRewardDate && new Date(user.lastLoginRewardDate).getTime() === today.getTime()) {
-      return NextResponse.json({ error: 'Bug\u00fcn\u00fc zaten ald\u0131n\u0131z' }, { status: 400 })
+      return NextResponse.json({ error: 'Bugünü zaten aldınız' }, { status: 400 })
     }
 
     const yesterday = new Date(today)
@@ -105,6 +105,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Daily login POST error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

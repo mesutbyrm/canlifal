@@ -14,7 +14,7 @@ const openai = new OpenAI({
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const reports = await prisma.weeklyDreamReport.findMany({
@@ -26,14 +26,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ reports })
   } catch (error) {
     console.error('Weekly report GET error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const now = new Date()
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (entries.length === 0) {
-      return NextResponse.json({ error: 'Ge\u00e7en hafta r\u00fcya kayd\u0131 bulunamad\u0131' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçen hafta rüya kaydı bulunamadı' }, { status: 400 })
     }
 
     const allSymbols = entries.flatMap((e: any) => e.symbols || [])
@@ -67,13 +67,13 @@ export async function POST(req: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'Sen bir r\u00fcya analisti ve psikologsun. Kullan\u0131c\u0131n\u0131n haftal\u0131k r\u00fcya g\u00fcnl\u00fc\u011f\u00fcn\u00fc analiz et. Tekrarlayan temalar, duygusal durumlar ve semboller hakk\u0131nda i\u00e7g\u00f6r\u00fcler sun. T\u00fcrk\u00e7e yaz. HTML format\u0131nda yaz.' },
-        { role: 'user', content: `Haftal\u0131k r\u00fcya g\u00fcnl\u00fc\u011f\u00fc:\n${dreamsText}\n\n\u00d6ne \u00e7\u0131kan semboller: ${topSymbols.join(', ')}` },
+        { role: 'system', content: 'Sen bir rüya analisti ve psikologsun. Kullanıcının haftalık rüya günlüğünü analiz et. Tekrarlayan temalar, duygusal durumlar ve semboller hakkında içgörüler sun. Türkçe yaz. HTML formatında yaz.' },
+        { role: 'user', content: `Haftalık rüya günlüğü:\n${dreamsText}\n\nÖne çıkan semboller: ${topSymbols.join(', ')}` },
       ],
       max_tokens: 1000,
     })
 
-    const reportContent = completion.choices[0]?.message?.content || 'Rapor olu\u015fturulamad\u0131'
+    const reportContent = completion.choices[0]?.message?.content || 'Rapor oluşturulamadı'
 
     const report = await prisma.weeklyDreamReport.create({
       data: { userId, weekStart, weekEnd, reportContent, dreamCount: entries.length, topSymbols },
@@ -82,6 +82,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(report)
   } catch (error) {
     console.error('Weekly report POST error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

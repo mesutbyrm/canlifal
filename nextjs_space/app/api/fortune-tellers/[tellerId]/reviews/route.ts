@@ -42,6 +42,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Teller reviews error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

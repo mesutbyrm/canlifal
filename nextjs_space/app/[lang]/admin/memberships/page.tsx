@@ -317,7 +317,7 @@ export default function AdminMembershipsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu plan\u0131 silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu planı silmek istediğinize emin misiniz?')) return
 
     try {
       const res = await fetch(`/api/admin/memberships?id=${id}`, { method: 'DELETE' })

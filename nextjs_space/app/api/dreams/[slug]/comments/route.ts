@@ -56,7 +56,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Giri\u015f yapman\u0131z gerekiyor' }, { status: 401 })
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
     const dream = await prisma.dreamInterpretation.findUnique({
@@ -69,7 +69,7 @@ export async function POST(
 
     const { content } = await req.json()
     if (!content || typeof content !== 'string' || content.trim().length < 3) {
-      return NextResponse.json({ error: 'Yorum en az 3 karakter olmal\u0131' }, { status: 400 })
+      return NextResponse.json({ error: 'Yorum en az 3 karakter olmalı' }, { status: 400 })
     }
     if (content.length > 1000) {
       return NextResponse.json({ error: 'Yorum en fazla 1000 karakter olabilir' }, { status: 400 })

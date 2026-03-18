@@ -210,8 +210,8 @@ export async function GET(request: NextRequest) {
             createNotificationWithPush({
               userId,
               type: 'achievement',
-              message: `"${achievement.nameTr}" ba\u015far\u0131m\u0131n\u0131 kazand\u0131n! ${achievement.icon}`,
-              title: '\ud83c\udfc6 Yeni Ba\u015far\u0131m!'
+              message: `"${achievement.nameTr}" başarımını kazandın! ${achievement.icon}`,
+              title: '\ud83c\udfc6 Yeni Başarım!'
             }).catch(e => console.error('Achievement notification error:', e))
           }
         }).catch(e => console.error('Achievement update error:', e))

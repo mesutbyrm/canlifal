@@ -47,7 +47,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Giri\u015f yapman\u0131z gerekiyor' }, { status: 401 })
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
     const dream = await prisma.dreamInterpretation.findUnique({

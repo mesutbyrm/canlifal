@@ -56,7 +56,7 @@ export default function DeviceGuard() {
               <Smartphone className="w-8 h-8 text-orange-400" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">
-              {'Ba\u015Fka Cihazda Oturum A\u00E7\u0131ld\u0131'}
+              {'Başka Cihazda Oturum Açıldı'}
             </h2>
             <p className="text-orange-300 text-sm mb-6">
               {'Hesabınız başka bir telefonda/cihazda açıldı. Aynı anda sadece bir cihazda oturum açık olabilir.'}
@@ -66,7 +66,7 @@ export default function DeviceGuard() {
               className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
               <LogOut className="w-5 h-5" />
-              {'Giri\u015F Sayfas\u0131na D\u00F6n'}
+              {'Giriş Sayfasına Dön'}
             </button>
           </motion.div>
         </motion.div>

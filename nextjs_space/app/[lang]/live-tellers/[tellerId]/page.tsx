@@ -605,7 +605,7 @@ export default function TellerDetailPage() {
           <div className="p-6 md:p-8">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-purple-400" />
-              {'De\u011ferlendirmeler'}
+              {'Değerlendirmeler'}
               <span className="text-sm text-purple-400 font-normal">
                 ({teller.reviews.length})
               </span>
@@ -628,7 +628,7 @@ export default function TellerDetailPage() {
                           <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avg) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />
                         ))}
                       </div>
-                      <div className="text-purple-400 text-xs mt-1">{teller.reviews.length} de\u011ferlendirme</div>
+                      <div className="text-purple-400 text-xs mt-1">{teller.reviews.length} değerlendirme</div>
                     </div>
                     <div className="flex-1 space-y-1">
                       {dist.map(d => (
@@ -649,7 +649,7 @@ export default function TellerDetailPage() {
 
             {teller.reviews.length === 0 ? (
               <p className="text-purple-400 text-center py-8">
-                {'Hen\u00fcz de\u011ferlendirme yok'}
+                {'Henüz değerlendirme yok'}
               </p>
             ) : (
               <div className="space-y-3">

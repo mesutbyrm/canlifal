@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { postId: st
   } catch (error: any) {
     console.error('Blog update error:', error)
     if (error?.code === 'P2002') {
-      return NextResponse.json({ error: 'Bu slug zaten kullan\u0131l\u0131yor' }, { status: 400 })
+      return NextResponse.json({ error: 'Bu slug zaten kullanılıyor' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

@@ -11,10 +11,10 @@ export async function GET(
     const symbol = await prisma.dreamSymbol.findUnique({
       where: { slug: params.slug, isPublished: true },
     })
-    if (!symbol) return NextResponse.json({ error: 'Bulunamad\u0131' }, { status: 404 })
+    if (!symbol) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
     return NextResponse.json(symbol)
   } catch (error) {
     console.error('Dream symbol detail error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

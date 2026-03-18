@@ -78,7 +78,7 @@ export default function DailyLoginReward() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-2">
               <Gift className="w-6 h-6 text-fuchsia-400" />
-              <h3 className="text-white font-bold text-lg">G\u00fcnl\u00fck \u00d6d\u00fcl</h3>
+              <h3 className="text-white font-bold text-lg">Günlük Ödül</h3>
             </div>
             <button onClick={() => setShow(false)} className="text-purple-400 hover:text-white">
               <X className="w-5 h-5" />
@@ -90,7 +90,7 @@ export default function DailyLoginReward() {
               {/* Streak display */}
               <div className="flex items-center justify-center gap-1 mb-4">
                 <Flame className="w-5 h-5 text-orange-400" />
-                <span className="text-orange-300 font-semibold">{streak} g\u00fcn seri</span>
+                <span className="text-orange-300 font-semibold">{streak} gün seri</span>
               </div>
 
               {/* Reward days */}
@@ -129,7 +129,7 @@ export default function DailyLoginReward() {
                 disabled={loading}
                 className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"
               >
-                <Gift className="w-5 h-5" /> \u00d6d\u00fcl\u00fc Al
+                <Gift className="w-5 h-5" /> Ödülü Al
               </button>
             </>
           ) : (
@@ -152,7 +152,7 @@ export default function DailyLoginReward() {
               </div>
               <div className="flex items-center justify-center gap-1 text-orange-300">
                 <Flame className="w-4 h-4" />
-                <span className="text-sm">{streak} g\u00fcn seri!</span>
+                <span className="text-sm">{streak} gün seri!</span>
               </div>
               <button
                 onClick={() => setShow(false)}

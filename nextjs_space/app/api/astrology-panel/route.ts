@@ -14,7 +14,7 @@ const openai = new OpenAI({
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const user = await prisma.user.findUnique({
@@ -23,32 +23,32 @@ export async function GET(req: NextRequest) {
     })
 
     if (!user?.birthDate || !user?.zodiacSign) {
-      return NextResponse.json({ error: 'Do\u011fum bilgilerinizi profil ayarlar\u0131ndan ekleyin' }, { status: 400 })
+      return NextResponse.json({ error: 'Doğum bilgilerinizi profil ayarlarından ekleyin' }, { status: 400 })
     }
 
-    const prompt = `Kullan\u0131c\u0131 bilgileri:
+    const prompt = `Kullanıcı bilgileri:
 - Ad: ${user.name}
-- Do\u011fum tarihi: ${new Date(user.birthDate).toLocaleDateString('tr-TR')}
-- Do\u011fum saati: ${user.birthTime || 'Bilinmiyor'}
-- G\u00fcne\u015f burcu: ${user.zodiacSign}
-- Y\u00fckselen bur\u00e7: ${user.risingSign || 'Bilinmiyor'}
-- Bug\u00fcn\u00fcn tarihi: ${new Date().toLocaleDateString('tr-TR')}
+- Doğum tarihi: ${new Date(user.birthDate).toLocaleDateString('tr-TR')}
+- Doğum saati: ${user.birthTime || 'Bilinmiyor'}
+- Güneş burcu: ${user.zodiacSign}
+- Yükselen burç: ${user.risingSign || 'Bilinmiyor'}
+- Bugünün tarihi: ${new Date().toLocaleDateString('tr-TR')}
 
-Bu ki\u015fi i\u00e7in detayl\u0131 ki\u015fisel astroloji paneli olu\u015ftur:
-1. Bug\u00fcnk\u00fc genel enerji (1-10 puan)
-2. A\u015fk & ili\u015fki enerjisi
+Bu kişi için detaylı kişisel astroloji paneli oluştur:
+1. Bugünkü genel enerji (1-10 puan)
+2. Aşk & ilişki enerjisi
 3. Kariyer & para enerjisi
-4. Sa\u011fl\u0131k enerjisi
-5. \u015eansl\u0131 say\u0131lar, renkler
-6. Gezegen ge\u00e7i\u015fleri etkisi
-7. Haftal\u0131k \u00f6ng\u00f6r\u00fc
+4. Sağlık enerjisi
+5. Şanslı sayılar, renkler
+6. Gezegen geçişleri etkisi
+7. Haftalık öngörü
 
-HTML format\u0131nda, T\u00fcrk\u00e7e yaz.`
+HTML formatında, Türkçe yaz.`
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'Sen uzman bir astrologsun. Ki\u015fiye \u00f6zel detayl\u0131 astroloji paneli olu\u015ftur. T\u00fcrk\u00e7e yaz.' },
+        { role: 'system', content: 'Sen uzman bir astrologsun. Kişiye özel detaylı astroloji paneli oluştur. Türkçe yaz.' },
         { role: 'user', content: prompt },
       ],
       max_tokens: 2000,
@@ -65,6 +65,6 @@ HTML format\u0131nda, T\u00fcrk\u00e7e yaz.`
     })
   } catch (error) {
     console.error('Astrology panel error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

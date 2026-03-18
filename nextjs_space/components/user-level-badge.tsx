@@ -6,15 +6,15 @@ import { Star, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const LEVEL_TITLES: Record<number, string> = {
-  1: 'Yeni \u00dcye',
-  2: '\u00c7\u0131rak',
-  3: 'Ke\u015fif\u00e7i',
+  1: 'Yeni Üye',
+  2: 'Çırak',
+  3: 'Keşifçi',
   4: 'Yorumcu',
   5: 'Bilge',
   6: 'Usta Yorumcu',
   7: 'Gizemci',
   8: 'Kahin',
-  9: 'B\u00fcy\u00fck Kahin',
+  9: 'Büyük Kahin',
   10: 'Efsanevi',
 }
 
@@ -65,7 +65,7 @@ export default function UserLevelBadge({ compact = false }: { compact?: boolean 
           <p className="text-fuchsia-300 font-bold text-sm">{xp} XP</p>
           <p className="text-purple-500 text-xs flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
-            {100 - (xp % 100)} XP kald\u0131
+            {100 - (xp % 100)} XP kaldı
           </p>
         </div>
       </div>

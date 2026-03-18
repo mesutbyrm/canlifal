@@ -11,7 +11,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const { entryId } = await req.json()
@@ -19,7 +19,7 @@ export async function POST(
 
     const entry = await prisma.dreamContestEntry.findUnique({ where: { id: entryId } })
     if (!entry || entry.contestId !== params.contestId) {
-      return NextResponse.json({ error: 'Giri\u015f bulunamad\u0131' }, { status: 404 })
+      return NextResponse.json({ error: 'Giriş bulunamadı' }, { status: 404 })
     }
     if (entry.userId === userId) {
       return NextResponse.json({ error: 'Kendi yorumunuza oy veremezsiniz' }, { status: 400 })
@@ -40,6 +40,6 @@ export async function POST(
     }
   } catch (error) {
     console.error('Contest vote error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

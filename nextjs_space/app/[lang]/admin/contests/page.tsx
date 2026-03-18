@@ -86,7 +86,7 @@ export default function AdminContestsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu yar\u0131\u015fmay\u0131 silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu yarışmayı silmek istediğinize emin misiniz?')) return
     try {
       await fetch(`/api/admin/contests?id=${id}`, { method: 'DELETE' })
       fetchContests()
@@ -116,8 +116,8 @@ export default function AdminContestsPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold">R\u00fcya Yar\u0131\u015fmas\u0131 Y\u00f6netimi</h1>
-              <p className="text-sm text-purple-400">Haftal\u0131k r\u00fcya yar\u0131\u015fmalar\u0131n\u0131 olu\u015ftur ve y\u00f6net</p>
+              <h1 className="text-xl font-bold">Rüya Yarışması Yönetimi</h1>
+              <p className="text-sm text-purple-400">Haftalık rüya yarışmalarını oluştur ve yönet</p>
             </div>
           </div>
           <button
@@ -125,7 +125,7 @@ export default function AdminContestsPage() {
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-medium transition"
           >
             <Plus className="w-4 h-4" />
-            Yeni Yar\u0131\u015fma
+            Yeni Yarışma
           </button>
         </div>
 
@@ -135,38 +135,38 @@ export default function AdminContestsPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               className="bg-white/5 rounded-2xl p-6 border border-white/10 mb-6 overflow-hidden">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold">{editingId ? 'Yar\u0131\u015fma D\u00fczenle' : 'Yeni Yar\u0131\u015fma'}</h3>
+                <h3 className="font-semibold">{editingId ? 'Yarışma Düzenle' : 'Yeni Yarışma'}</h3>
                 <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-white/10">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-purple-300 mb-1 block">Ba\u015fl\u0131k</label>
+                  <label className="text-sm text-purple-300 mb-1 block">Başlık</label>
                   <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-purple-400/50"
-                    placeholder="\u00d6rn: Haftan\u0131n R\u00fcyas\u0131: U\u00e7mak" />
+                    placeholder="Örn: Haftanın Rüyası: Uçmak" />
                 </div>
                 <div>
-                  <label className="text-sm text-purple-300 mb-1 block">A\u00e7\u0131klama</label>
+                  <label className="text-sm text-purple-300 mb-1 block">Açıklama</label>
                   <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-purple-400/50 h-20 resize-none"
-                    placeholder="Yar\u0131\u015fma a\u00e7\u0131klamas\u0131" />
+                    placeholder="Yarışma açıklaması" />
                 </div>
                 <div>
-                  <label className="text-sm text-purple-300 mb-1 block">R\u00fcya Konusu / Prompt</label>
+                  <label className="text-sm text-purple-300 mb-1 block">Rüya Konusu / Prompt</label>
                   <textarea value={form.dreamPrompt} onChange={e => setForm({ ...form, dreamPrompt: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-purple-400/50 h-24 resize-none"
-                    placeholder="Kat\u0131l\u0131mc\u0131lar\u0131n yorumlayaca\u011f\u0131 r\u00fcya metni" />
+                    placeholder="Katılımcıların yorumlayacağı rüya metni" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-purple-300 mb-1 block">Ba\u015flang\u0131\u00e7</label>
+                    <label className="text-sm text-purple-300 mb-1 block">Başlangıç</label>
                     <input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white" />
                   </div>
                   <div>
-                    <label className="text-sm text-purple-300 mb-1 block">Biti\u015f</label>
+                    <label className="text-sm text-purple-300 mb-1 block">Bitiş</label>
                     <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white" />
                   </div>
@@ -174,7 +174,7 @@ export default function AdminContestsPage() {
                 <button onClick={handleSave} disabled={saving || !form.title || !form.dreamPrompt || !form.startDate || !form.endDate}
                   className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-xl text-sm font-medium transition">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {editingId ? 'G\u00fcncelle' : 'Olu\u015ftur'}
+                  {editingId ? 'Güncelle' : 'Oluştur'}
                 </button>
               </div>
             </motion.div>
@@ -187,7 +187,7 @@ export default function AdminContestsPage() {
         ) : contests.length === 0 ? (
           <div className="text-center py-12">
             <Trophy className="w-12 h-12 text-purple-500/30 mx-auto mb-3" />
-            <p className="text-purple-400">Hen\u00fcz yar\u0131\u015fma yok</p>
+            <p className="text-purple-400">Henüz yarışma yok</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -211,7 +211,7 @@ export default function AdminContestsPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
-                        {contest._count.entries} kat\u0131l\u0131mc\u0131
+                        {contest._count.entries} katılımcı
                       </span>
                     </div>
                   </div>

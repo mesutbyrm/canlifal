@@ -8,18 +8,18 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 
 const ZODIAC_SIGNS = [
-  { id: 'koc', name: 'Ko\u00e7', symbol: '\u2648' },
-  { id: 'boga', name: 'Bo\u011fa', symbol: '\u2649' },
-  { id: 'ikizler', name: '\u0130kizler', symbol: '\u264a' },
-  { id: 'yengec', name: 'Yenge\u00e7', symbol: '\u264b' },
-  { id: 'aslan', name: 'Aslan', symbol: '\u264c' },
-  { id: 'basak', name: 'Ba\u015fak', symbol: '\u264d' },
-  { id: 'terazi', name: 'Terazi', symbol: '\u264e' },
-  { id: 'akrep', name: 'Akrep', symbol: '\u264f' },
-  { id: 'yay', name: 'Yay', symbol: '\u2650' },
-  { id: 'oglak', name: 'O\u011flak', symbol: '\u2651' },
-  { id: 'kova', name: 'Kova', symbol: '\u2652' },
-  { id: 'balik', name: 'Bal\u0131k', symbol: '\u2653' },
+  { id: 'koc', name: 'Koç', symbol: '♈' },
+  { id: 'boga', name: 'Boğa', symbol: '♉' },
+  { id: 'ikizler', name: 'İkizler', symbol: '♊' },
+  { id: 'yengec', name: 'Yengeç', symbol: '♋' },
+  { id: 'aslan', name: 'Aslan', symbol: '♌' },
+  { id: 'basak', name: 'Başak', symbol: '♍' },
+  { id: 'terazi', name: 'Terazi', symbol: '♎' },
+  { id: 'akrep', name: 'Akrep', symbol: '♏' },
+  { id: 'yay', name: 'Yay', symbol: '♐' },
+  { id: 'oglak', name: 'Oğlak', symbol: '♑' },
+  { id: 'kova', name: 'Kova', symbol: '♒' },
+  { id: 'balik', name: 'Balık', symbol: '♓' },
 ]
 
 interface PanelData {
@@ -82,7 +82,7 @@ export default function AstrologyPanelPage() {
 
   const generatePanel = async () => {
     if (!sunSign) {
-      setError('L\u00fctfen en az\u0131ndan g\u00fcne\u015f burcunuzu se\u00e7in.')
+      setError('Lütfen en azından güneş burcunuzu seçin.')
       return
     }
     setError('')
@@ -95,7 +95,7 @@ export default function AstrologyPanelPage() {
       })
       if (!res.ok) {
         const d = await res.json()
-        throw new Error(d.error || 'Hata olu\u015ftu')
+        throw new Error(d.error || 'Hata oluştu')
       }
       const data = await res.json()
       setPanel(data)
@@ -140,20 +140,20 @@ export default function AstrologyPanelPage() {
             <span className="text-fuchsia-300 text-sm font-medium">Astroloji Paneli</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Ki\u015fisel Astroloji Paneliniz
+            Kişisel Astroloji Paneliniz
           </h1>
           <p className="text-purple-300 text-sm">
-            Do\u011fum bilgilerinize g\u00f6re g\u00fcnl\u00fck astroloji analiziniz
+            Doğum bilgilerinize göre günlük astroloji analiziniz
           </p>
         </div>
 
         {/* Setup Form */}
         {!hasProfile && !loading && (
           <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl p-6 mb-6">
-            <h3 className="text-white font-semibold mb-4">Do\u011fum Bilgileriniz</h3>
+            <h3 className="text-white font-semibold mb-4">Doğum Bilgileriniz</h3>
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-purple-300 text-sm mb-1 block">Do\u011fum Tarihi</label>
+                <label className="text-purple-300 text-sm mb-1 block">Doğum Tarihi</label>
                 <input
                   type="date"
                   value={birthDate}
@@ -162,7 +162,7 @@ export default function AstrologyPanelPage() {
                 />
               </div>
               <div>
-                <label className="text-purple-300 text-sm mb-1 block">Do\u011fum Saati</label>
+                <label className="text-purple-300 text-sm mb-1 block">Doğum Saati</label>
                 <input
                   type="time"
                   value={birthTime}
@@ -171,19 +171,19 @@ export default function AstrologyPanelPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-purple-300 text-sm mb-1 block">Do\u011fum Yeri</label>
+                <label className="text-purple-300 text-sm mb-1 block">Doğum Yeri</label>
                 <input
                   type="text"
                   value={birthPlace}
                   onChange={e => setBirthPlace(e.target.value)}
-                  placeholder="\u00d6r: \u0130stanbul"
+                  placeholder="Ör: İstanbul"
                   className="w-full px-3 py-2.5 bg-purple-900/40 border border-purple-700/40 rounded-xl text-white text-sm placeholder-purple-500 focus:border-fuchsia-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <h4 className="text-purple-300 text-sm font-medium mb-3 flex items-center gap-2">
-              <Sun className="w-4 h-4 text-yellow-400" /> G\u00fcne\u015f Burcu *
+              <Sun className="w-4 h-4 text-yellow-400" /> Güneş Burcu *
             </h4>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 mb-4">
               {ZODIAC_SIGNS.map(sign => (
@@ -205,14 +205,14 @@ export default function AstrologyPanelPage() {
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="text-purple-300 text-sm mb-1 block flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 text-orange-400" /> Y\u00fckselen Bur\u00e7
+                  <Star className="w-3.5 h-3.5 text-orange-400" /> Yükselen Burç
                 </label>
                 <select
                   value={risingSign}
                   onChange={e => setRisingSign(e.target.value)}
                   className="w-full px-3 py-2.5 bg-purple-900/40 border border-purple-700/40 rounded-xl text-white text-sm focus:border-fuchsia-500 focus:outline-none"
                 >
-                  <option value="">Se\u00e7iniz (Opsiyonel)</option>
+                  <option value="">Seçiniz (Opsiyonel)</option>
                   {ZODIAC_SIGNS.map(s => <option key={s.id} value={s.id}>{s.symbol} {s.name}</option>)}
                 </select>
               </div>
@@ -225,7 +225,7 @@ export default function AstrologyPanelPage() {
                   onChange={e => setMoonSign(e.target.value)}
                   className="w-full px-3 py-2.5 bg-purple-900/40 border border-purple-700/40 rounded-xl text-white text-sm focus:border-fuchsia-500 focus:outline-none"
                 >
-                  <option value="">Se\u00e7iniz (Opsiyonel)</option>
+                  <option value="">Seçiniz (Opsiyonel)</option>
                   {ZODIAC_SIGNS.map(s => <option key={s.id} value={s.id}>{s.symbol} {s.name}</option>)}
                 </select>
               </div>
@@ -239,7 +239,7 @@ export default function AstrologyPanelPage() {
               className="w-full py-3.5 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              Panelimi Olu\u015ftur
+              Panelimi Oluştur
             </button>
           </div>
         )}
@@ -247,7 +247,7 @@ export default function AstrologyPanelPage() {
         {loading && !panel && (
           <div className="text-center py-16">
             <Loader2 className="w-10 h-10 animate-spin text-fuchsia-400 mx-auto mb-4" />
-            <p className="text-purple-300">Astroloji paneliniz haz\u0131rlan\u0131yor...</p>
+            <p className="text-purple-300">Astroloji paneliniz hazırlanıyor...</p>
           </div>
         )}
 
@@ -268,15 +268,15 @@ export default function AstrologyPanelPage() {
             <div className="bg-gradient-to-r from-fuchsia-900/30 to-purple-900/30 border border-fuchsia-700/30 rounded-2xl p-5">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-purple-400 text-xs mb-1">\u015eans Say\u0131lar\u0131</p>
+                  <p className="text-purple-400 text-xs mb-1">Şans Sayıları</p>
                   <p className="text-white font-bold">{panel.luckyNumbers.join(', ')}</p>
                 </div>
                 <div>
-                  <p className="text-purple-400 text-xs mb-1">\u015eans Rengi</p>
+                  <p className="text-purple-400 text-xs mb-1">Şans Rengi</p>
                   <p className="text-white font-bold">{panel.luckyColor}</p>
                 </div>
                 <div>
-                  <p className="text-purple-400 text-xs mb-1">\u015eans G\u00fcn\u00fc</p>
+                  <p className="text-purple-400 text-xs mb-1">Şans Günü</p>
                   <p className="text-white font-bold">{panel.luckyDay}</p>
                 </div>
               </div>
@@ -284,13 +284,13 @@ export default function AstrologyPanelPage() {
 
             <InfoCard
               icon={<Sun className="w-5 h-5 text-yellow-400" />}
-              title="G\u00fcnl\u00fck Tahmin"
+              title="Günlük Tahmin"
               content={panel.dailyForecast}
               gradient="bg-yellow-900/10"
             />
             <InfoCard
               icon={<Calendar className="w-5 h-5 text-blue-400" />}
-              title="Haftal\u0131k Bak\u0131\u015f"
+              title="Haftalık Bakış"
               content={panel.weeklyForecast}
               gradient="bg-blue-900/10"
             />
@@ -304,13 +304,13 @@ export default function AstrologyPanelPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <InfoCard
                 icon={<Star className="w-5 h-5 text-pink-400" />}
-                title="A\u015fk & \u0130li\u015fkiler"
+                title="Aşk & İlişkiler"
                 content={panel.loveAdvice}
                 gradient="bg-pink-900/10"
               />
               <InfoCard
                 icon={<Sparkles className="w-5 h-5 text-green-400" />}
-                title="Kariyer & \u0130\u015f"
+                title="Kariyer & İş"
                 content={panel.careerAdvice}
                 gradient="bg-green-900/10"
               />
@@ -318,7 +318,7 @@ export default function AstrologyPanelPage() {
 
             <InfoCard
               icon={<Moon className="w-5 h-5 text-cyan-400" />}
-              title="Sa\u011fl\u0131k"
+              title="Sağlık"
               content={panel.healthAdvice}
               gradient="bg-cyan-900/10"
             />

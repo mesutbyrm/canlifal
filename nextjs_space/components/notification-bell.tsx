@@ -161,9 +161,9 @@ export default function NotificationBell() {
       return notif.title || notif.message
     }
     switch (notif.type) {
-      case 'like': return `${senderName} ${'payla\u015f\u0131m\u0131n\u0131 be\u011fendi'}`
-      case 'comment': return `${senderName} ${'yorum yapt\u0131'}`
-      case 'share': return `${senderName} ${'payla\u015ft\u0131'}`
+      case 'like': return `${senderName} ${'paylaşımını beğendi'}`
+      case 'comment': return `${senderName} ${'yorum yaptı'}`
+      case 'share': return `${senderName} ${'paylaştı'}`
       default: return notif.message
     }
   }
@@ -175,10 +175,10 @@ export default function NotificationBell() {
     const mins = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
-    if (mins < 1) return '\u015eimdi'
+    if (mins < 1) return 'Şimdi'
     if (mins < 60) return `${mins} ${'dk'}`
     if (hours < 24) return `${hours} ${'saat'}`
-    return `${days} ${'g\u00fcn'}`
+    return `${days} ${'gün'}`
   }
 
   if (!session?.user) return null
@@ -286,7 +286,7 @@ export default function NotificationBell() {
                       {'Bildirim yok'}
                     </p>
                     <p className="text-fuchsia-500/30 text-sm mt-1">
-                      {'Yeni bildirimler burada g\u00f6r\u00fcnecek'}
+                      {'Yeni bildirimler burada görünecek'}
                     </p>
                   </div>
                 ) : (

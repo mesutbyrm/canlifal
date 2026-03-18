@@ -19,7 +19,7 @@ export default function DreamSymbolDetailPage() {
   }, [slug])
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-purple-400" size={32} /></div>
-  if (!symbol) return <div className="text-center py-20 text-white/40">Sembol bulunamad\u0131</div>
+  if (!symbol) return <div className="text-center py-20 text-white/40">Sembol bulunamadı</div>
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
@@ -35,26 +35,26 @@ export default function DreamSymbolDetailPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-white">{symbol.name}</h1>
             <div className="flex items-center gap-2 text-white/40 text-sm">
-              <BookOpen size={14} /> R\u00fcya S\u00f6zl\u00fc\u011f\u00fc
+              <BookOpen size={14} /> Rüya Sözlüğü
             </div>
           </div>
         </div>
 
         <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 mb-6">
-          <h3 className="text-purple-300 font-semibold mb-2">K\u0131sa Anlam</h3>
+          <h3 className="text-purple-300 font-semibold mb-2">Kısa Anlam</h3>
           <p className="text-white/80">{symbol.meaning}</p>
         </div>
 
         {symbol.detailedMeaning && (
           <div className="prose prose-invert max-w-none mb-6">
-            <h3 className="text-white font-semibold mb-3">Detayl\u0131 Yorum</h3>
+            <h3 className="text-white font-semibold mb-3">Detaylı Yorum</h3>
             <div className="text-white/70 leading-relaxed" dangerouslySetInnerHTML={{ __html: symbol.detailedMeaning }} />
           </div>
         )}
 
         {symbol.relatedSymbols?.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Tag size={16} /> \u0130lgili Semboller</h3>
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Tag size={16} /> İlgili Semboller</h3>
             <div className="flex flex-wrap gap-2">
               {symbol.relatedSymbols.map((rs: string) => (
                 <span key={rs} className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-sm text-white/60">{rs}</span>
@@ -66,7 +66,7 @@ export default function DreamSymbolDetailPage() {
 
       <div className="mt-6 text-center">
         <Link href={`/${lang}/ruya-sozlugu`} className="text-purple-400 hover:text-purple-300 transition-colors">
-          \u2190 T\u00fcm Sembollere D\u00f6n
+          ← Tüm Sembollere Dön
         </Link>
       </div>
     </div>

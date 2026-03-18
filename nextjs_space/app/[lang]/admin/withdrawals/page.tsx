@@ -139,9 +139,9 @@ export default function AdminWithdrawalsPage() {
   }
 
   const AWARD_TYPES: Record<string, string> = {
-    medium_of_day: 'G\u00fcn\u00fcn Medyumu',
-    medium_of_week: 'Haftan\u0131n Medyumu',
-    medium_of_month: 'Ay\u0131n Medyumu'
+    medium_of_day: 'Günün Medyumu',
+    medium_of_week: 'Haftanın Medyumu',
+    medium_of_month: 'Ayın Medyumu'
   }
 
   if (status === 'loading' || loading) {
@@ -161,7 +161,7 @@ export default function AdminWithdrawalsPage() {
 
         <h1 className="text-2xl font-bold text-white flex items-center gap-3 mb-6">
           <Wallet className="w-7 h-7 text-purple-400" />
-          {'\u00c7ekim & \u00d6d\u00fcller Y\u00f6netimi'}
+          {'Çekim & Ödüller Yönetimi'}
         </h1>
 
         {/* Tabs */}
@@ -171,7 +171,7 @@ export default function AdminWithdrawalsPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-900/50'
               }`}>
-              {tab === 'withdrawals' ? ('\u00c7ekim Talepleri') : ('\u00d6d\u00fcller')}
+              {tab === 'withdrawals' ? ('Çekim Talepleri') : ('Ödüller')}
               {tab === 'withdrawals' && withdrawals.filter(w => w.status === 'pending').length > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black text-[10px] rounded-full font-bold">
                   {withdrawals.filter(w => w.status === 'pending').length}
@@ -191,9 +191,9 @@ export default function AdminWithdrawalsPage() {
                     filter === f ? 'bg-purple-500 text-white' : 'bg-purple-900/20 text-purple-400 hover:bg-purple-900/40'
                   }`}>
                   {f === 'pending' ? ('Bekleyen') :
-                   f === 'approved' ? ('Onayl\u0131') :
+                   f === 'approved' ? ('Onaylı') :
                    f === 'rejected' ? ('Reddedilen') :
-                   ('T\u00fcm\u00fc')}
+                   ('Tümü')}
                 </button>
               ))}
             </div>
@@ -201,7 +201,7 @@ export default function AdminWithdrawalsPage() {
             {filteredWithdrawals.length === 0 ? (
               <div className="text-center py-12 text-purple-400">
                 <Wallet className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>{'\u00c7ekim talebi bulunamad\u0131'}</p>
+                <p>{'Çekim talebi bulunamadı'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -216,7 +216,7 @@ export default function AdminWithdrawalsPage() {
                         </div>
                         <div>
                           <p className="text-white font-medium">{wr.user.name || wr.user.email}</p>
-                          <p className="text-xs text-purple-400">{wr.user.email} \u2022 Bakiye: {wr.user.jetonBalance} jeton</p>
+                          <p className="text-xs text-purple-400">{wr.user.email} • Bakiye: {wr.user.jetonBalance} jeton</p>
                         </div>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -225,14 +225,14 @@ export default function AdminWithdrawalsPage() {
                         'bg-red-500/20 text-red-400'
                       }`}>
                         {wr.status === 'pending' ? ('Bekliyor') :
-                         wr.status === 'approved' ? ('Onayl\u0131') :
+                         wr.status === 'approved' ? ('Onaylı') :
                          ('Reddedildi')}
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                       <div><span className="text-purple-400 text-xs">Miktar:</span><p className="text-white font-bold">{wr.amount} jeton</p></div>
                       <div><span className="text-purple-400 text-xs">TL:</span><p className="text-green-400 font-bold">{wr.amountTL} TL</p></div>
-                      <div><span className="text-purple-400 text-xs">Y\u00f6ntem:</span><p className="text-white">{METHOD_LABELS[wr.method] || wr.method}</p></div>
+                      <div><span className="text-purple-400 text-xs">Yöntem:</span><p className="text-white">{METHOD_LABELS[wr.method] || wr.method}</p></div>
                       <div><span className="text-purple-400 text-xs">Tarih:</span><p className="text-white text-xs">{new Date(wr.createdAt).toLocaleString('tr-TR')}</p></div>
                     </div>
                     <div className="mt-2">
@@ -243,7 +243,7 @@ export default function AdminWithdrawalsPage() {
                       <div className="mt-3 space-y-2">
                         <input
                           type="text"
-                          placeholder={'Admin notu (iste\u011fe ba\u011fl\u0131)'}
+                          placeholder={'Admin notu (isteğe bağlı)'}
                           value={noteMap[wr.id] || ''}
                           onChange={e => setNoteMap(prev => ({ ...prev, [wr.id]: e.target.value }))}
                           className="w-full px-3 py-2 bg-black/20 border border-purple-500/20 rounded-lg text-white text-sm outline-none"
@@ -275,11 +275,11 @@ export default function AdminWithdrawalsPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-400" /> {'Falc\u0131 \u00d6d\u00fclleri'}
+                <Trophy className="w-5 h-5 text-yellow-400" /> {'Falcı Ödülleri'}
               </h2>
               <button onClick={() => setShowAwardForm(!showAwardForm)}
                 className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center gap-1">
-                <Plus className="w-4 h-4" /> {'\u00d6d\u00fcl Ver'}
+                <Plus className="w-4 h-4" /> {'Ödül Ver'}
               </button>
             </div>
 
@@ -287,29 +287,29 @@ export default function AdminWithdrawalsPage() {
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-4 mb-4 space-y-3">
                 <div>
-                  <label className="text-xs text-yellow-400">Falc\u0131</label>
+                  <label className="text-xs text-yellow-400">Falcı</label>
                   <select value={awardTellerId} onChange={e => setAwardTellerId(e.target.value)}
                     className="w-full mt-1 px-3 py-2 bg-black/30 border border-yellow-500/20 rounded-lg text-white text-sm outline-none">
-                    <option value="">{'Falc\u0131 Se\u00e7in'}</option>
+                    <option value="">{'Falcı Seçin'}</option>
                     {tellers.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-yellow-400">T\u00fcr</label>
+                  <label className="text-xs text-yellow-400">Tür</label>
                   <select value={awardType} onChange={e => setAwardType(e.target.value)}
                     className="w-full mt-1 px-3 py-2 bg-black/30 border border-yellow-500/20 rounded-lg text-white text-sm outline-none">
                     {Object.entries(AWARD_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-yellow-400">{'Ba\u015fl\u0131k'}</label>
+                  <label className="text-xs text-yellow-400">{'Başlık'}</label>
                   <input type="text" value={awardTitle} onChange={e => setAwardTitle(e.target.value)}
-                    placeholder={'\u00d6rn: G\u00fcn\u00fcn Medyumu'}
+                    placeholder={'Örn: Günün Medyumu'}
                     className="w-full mt-1 px-3 py-2 bg-black/30 border border-yellow-500/20 rounded-lg text-white text-sm outline-none" />
                 </div>
                 <button onClick={handleCreateAward} disabled={awardSaving || !awardTellerId || !awardTitle}
                   className="w-full py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                  {awardSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trophy className="w-4 h-4" /> {'\u00d6d\u00fcl Olu\u015ftur'}</>}
+                  {awardSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trophy className="w-4 h-4" /> {'Ödül Oluştur'}</>}
                 </button>
               </motion.div>
             )}
@@ -317,7 +317,7 @@ export default function AdminWithdrawalsPage() {
             {awards.length === 0 ? (
               <div className="text-center py-12 text-purple-400">
                 <Trophy className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>{'Hen\u00fcz \u00f6d\u00fcl yok'}</p>
+                <p>{'Henüz ödül yok'}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -329,7 +329,7 @@ export default function AdminWithdrawalsPage() {
                       </div>
                       <div>
                         <p className="text-white font-medium text-sm">{aw.teller.displayName} — <span className="text-yellow-400">{aw.title}</span></p>
-                        <p className="text-xs text-purple-400">{AWARD_TYPES[aw.awardType] || aw.awardType} \u2022 {new Date(aw.startDate).toLocaleDateString('tr-TR')} - {new Date(aw.endDate).toLocaleDateString('tr-TR')}</p>
+                        <p className="text-xs text-purple-400">{AWARD_TYPES[aw.awardType] || aw.awardType} • {new Date(aw.startDate).toLocaleDateString('tr-TR')} - {new Date(aw.endDate).toLocaleDateString('tr-TR')}</p>
                       </div>
                     </div>
                     <button onClick={() => handleDeleteAward(aw.id)} disabled={actionLoading === aw.id}

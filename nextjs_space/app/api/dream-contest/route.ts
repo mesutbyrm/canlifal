@@ -30,6 +30,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ contests: contestsWithStatus })
   } catch (error) {
     console.error('Dream contest GET error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

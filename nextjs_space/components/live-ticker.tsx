@@ -179,7 +179,7 @@ export default function LiveTicker() {
       <div key={`purchase-${purchase.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
         <Coins className={`w-4 h-4 ${accentColor}`} />
         <span className={`${secondaryText} text-xs sm:text-sm font-medium`}>
-          {purchase.user.username || purchase.user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'}
+          {purchase.user.username || purchase.user.name?.split(' ')[0] || 'Kullanıcı'}
         </span>
         <span className={`${accentColor} text-xs sm:text-sm font-bold`}>+{purchase.amount}\ud83d\udcb0</span>
       </div>
@@ -188,14 +188,14 @@ export default function LiveTicker() {
 
   // Big gifts
   data.bigGifts.slice(0, 3).forEach((gift, index) => {
-    const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullan\u0131c\u0131'
-    const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullan\u0131c\u0131'
+    const senderName = gift.sender.username || gift.sender.name?.split(' ')[0] || 'Kullanıcı'
+    const receiverName = gift.stream.user.username || gift.stream.user.name?.split(' ')[0] || 'Kullanıcı'
     scrollItems.push(
       <div key={`gift-${gift.id}-${index}`} className="inline-flex items-center gap-2 px-3 py-1.5 mx-1 whitespace-nowrap">
         <Crown className={`w-4 h-4 text-pink-400`} />
         <span className={`text-xs sm:text-sm ${guestColor}`}>
-          <span className="text-white font-medium">{senderName}</span>\u2192
-          <span className="text-xl">{gift.giftType.icon}</span>\u2192
+          <span className="text-white font-medium">{senderName}</span>→
+          <span className="text-xl">{gift.giftType.icon}</span>→
           <span className="text-white font-medium">{receiverName}</span>
         </span>
       </div>
@@ -223,14 +223,14 @@ export default function LiveTicker() {
         <div className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-full bg-green-900/40">
           <Circle className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-green-400 fill-green-400 animate-pulse" />
           <span className="text-green-400 text-xs sm:text-sm font-bold">{data.onlineCount}</span>
-          <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">{'ki\u015fi'}</span>
+          <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">{'kişi'}</span>
         </div>
         {/* Scrolling ticker fills remaining space - items shown once */}
         <div className="flex-1 overflow-hidden h-full flex items-center" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex">
             {scrollItems.length > 0 ? scrollItems : (
               <div className="inline-flex items-center gap-2 px-3 py-1 mx-2 whitespace-nowrap">
-                <span className="text-fuchsia-300/50 text-xs">{'\u015eu an aktif kullan\u0131c\u0131 yok'}</span>
+                <span className="text-fuchsia-300/50 text-xs">{'Şu an aktif kullanıcı yok'}</span>
               </div>
             )}
           </div>

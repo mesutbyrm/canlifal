@@ -65,11 +65,11 @@ export default function AdminModerationPage() {
         body: JSON.stringify({ action, targetId, reason })
       })
       if (res.ok) {
-        setMessage({ type: 'success', text: '\u0130\u015flem ba\u015far\u0131yla uyguland\u0131' })
+        setMessage({ type: 'success', text: 'İşlem başarıyla uygulandı' })
         fetchData()
       }
     } catch (e) {
-      setMessage({ type: 'error', text: '\u0130\u015flem ba\u015far\u0131s\u0131z' })
+      setMessage({ type: 'error', text: 'İşlem başarısız' })
     } finally {
       setActionLoading(null)
       setTimeout(() => setMessage(null), 3000)
@@ -87,9 +87,9 @@ export default function AdminModerationPage() {
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               <Shield className="w-5 h-5 text-red-400" />
-              \u0130\u00e7erik Moderasyonu
+              İçerik Moderasyonu
             </h1>
-            <p className="text-sm text-purple-400">Kullan\u0131c\u0131 i\u00e7eriklerini y\u00f6net ve denetle</p>
+            <p className="text-sm text-purple-400">Kullanıcı içeriklerini yönet ve denetle</p>
           </div>
         </div>
 
@@ -104,7 +104,7 @@ export default function AdminModerationPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           {[
-            { key: 'posts' as const, label: 'Payla\u015f\u0131mlar', icon: ImageIcon, count: posts.length },
+            { key: 'posts' as const, label: 'Paylaşımlar', icon: ImageIcon, count: posts.length },
             { key: 'comments' as const, label: 'Yorumlar', icon: MessageSquare, count: comments.length }
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -122,7 +122,7 @@ export default function AdminModerationPage() {
         ) : activeTab === 'posts' ? (
           <div className="space-y-4">
             {posts.length === 0 ? (
-              <div className="text-center py-12 text-purple-400">Payla\u015f\u0131m bulunamad\u0131</div>
+              <div className="text-center py-12 text-purple-400">Paylaşım bulunamadı</div>
             ) : (
               posts.map(post => (
                 <div key={post.id} className="bg-white/5 rounded-2xl p-5 border border-white/10">
@@ -142,7 +142,7 @@ export default function AdminModerationPage() {
                       </div>
                       <p className="text-sm text-purple-200 mb-2 line-clamp-3">{post.content}</p>
                       <div className="flex items-center gap-4 text-xs text-purple-400">
-                        <span>\u2764\ufe0f {post._count.likes}</span>
+                        <span>❤️ {post._count.likes}</span>
                         <span>\ud83d\udcac {post._count.comments}</span>
                       </div>
                     </div>
@@ -154,17 +154,17 @@ export default function AdminModerationPage() {
                         }}
                         disabled={actionLoading === post.id}
                         className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"
-                        title="\u0130\u00e7eri\u011fi sil"
+                        title="İçeriği sil"
                       >
                         {actionLoading === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={() => {
-                          const reason = prompt('Uyar\u0131 sebebi:')
+                          const reason = prompt('Uyarı sebebi:')
                           if (reason) handleAction('warn_user', post.user.id, reason)
                         }}
                         className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition"
-                        title="Kullan\u0131c\u0131y\u0131 uyar"
+                        title="Kullanıcıyı uyar"
                       >
                         <AlertTriangle className="w-4 h-4" />
                       </button>
@@ -177,7 +177,7 @@ export default function AdminModerationPage() {
         ) : (
           <div className="space-y-4">
             {comments.length === 0 ? (
-              <div className="text-center py-12 text-purple-400">Yorum bulunamad\u0131</div>
+              <div className="text-center py-12 text-purple-400">Yorum bulunamadı</div>
             ) : (
               comments.map(comment => (
                 <div key={comment.id} className="bg-white/5 rounded-2xl p-5 border border-white/10">
@@ -191,7 +191,7 @@ export default function AdminModerationPage() {
                         <span className="text-xs text-purple-400">@{comment.user.username}</span>
                       </div>
                       <p className="text-sm text-purple-200 mb-1">{comment.content}</p>
-                      <p className="text-xs text-purple-500">G\u00f6nderi: {comment.post.content.substring(0, 60)}...</p>
+                      <p className="text-xs text-purple-500">Gönderi: {comment.post.content.substring(0, 60)}...</p>
                     </div>
                     <div className="flex gap-1">
                       <button
@@ -204,11 +204,11 @@ export default function AdminModerationPage() {
                       </button>
                       <button
                         onClick={() => {
-                          const reason = prompt('Uyar\u0131 sebebi:')
+                          const reason = prompt('Uyarı sebebi:')
                           if (reason) handleAction('warn_user', comment.user.id, reason)
                         }}
                         className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition"
-                        title="Kullan\u0131c\u0131y\u0131 uyar"
+                        title="Kullanıcıyı uyar"
                       >
                         <AlertTriangle className="w-4 h-4" />
                       </button>

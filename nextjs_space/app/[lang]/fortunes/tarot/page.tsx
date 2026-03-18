@@ -134,7 +134,7 @@ export default function TarotFortunePage() {
                       : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-300 hover:border-gold-500/50'
                   }`}
                 >
-                  <span className="text-lg sm:text-xl">{'\u2605'.repeat(Math.min(count, 3))}</span>
+                  <span className="text-lg sm:text-xl">{'★'.repeat(Math.min(count, 3))}</span>
                   <span className="text-sm">{count} {'Kart'}</span>
                 </button>
               ))}

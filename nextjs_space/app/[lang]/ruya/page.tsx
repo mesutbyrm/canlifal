@@ -170,19 +170,19 @@ export default function RuyaPage() {
         if (data.sharedToSocial) setSharedToSocial(true)
       } else {
         const err = await res.json().catch(() => ({}))
-        setInterpretation(err.error || 'Bir hata olu\u015ftu.')
+        setInterpretation(err.error || 'Bir hata oluştu.')
       }
     } catch (e) {
       console.error('Interpret error', e)
-      setInterpretation('Ba\u011flant\u0131 hatas\u0131 olu\u015ftu.')
+      setInterpretation('Bağlantı hatası oluştu.')
     } finally {
       setInterpreting(false)
     }
   }
 
   const popularKeywords = [
-    'Y\u0131lan', 'K\u00f6pek', 'Kedi', 'Alt\u0131n', 'Su', 'Ate\u015f', 'Bebek', 'Araba',
-    '\u00d6l\u00fcm', 'D\u00fc\u011f\u00fcn', 'U\u00e7mak', 'Di\u015f', 'Kan', 'Para', 'Ev', 'Deniz',
+    'Yılan', 'Köpek', 'Kedi', 'Altın', 'Su', 'Ateş', 'Bebek', 'Araba',
+    'Ölüm', 'Düğün', 'Uçmak', 'Diş', 'Kan', 'Para', 'Ev', 'Deniz',
   ]
 
   return (
@@ -193,13 +193,13 @@ export default function RuyaPage() {
         <div className="relative max-w-4xl mx-auto px-4 pt-8 pb-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-4">
             <Moon className="w-5 h-5 text-indigo-400" />
-            <span className="text-indigo-300 text-sm font-medium">R\u00fcya Tabirleri Ansiklopedisi</span>
+            <span className="text-indigo-300 text-sm font-medium">Rüya Tabirleri Ansiklopedisi</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            R\u00fcyan\u0131zda Ne G\u00f6rd\u00fcn\u00fcz?
+            Rüyanızda Ne Gördünüz?
           </h1>
           <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto mb-6">
-            Binlerce r\u00fcya tabiri ve yorumu aras\u0131nda aray\u0131n. Bulamad\u0131\u011f\u0131n\u0131z r\u00fcyay\u0131 yapay zeka anında yorumlas\u0131n.
+            Binlerce rüya tabiri ve yorumu arasında arayın. Bulamadığınız rüyayı yapay zeka anında yorumlasın.
           </p>
 
           {/* Tab Buttons */}
@@ -222,7 +222,7 @@ export default function RuyaPage() {
                   : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
               }`}
             >
-              <PenLine className="w-4 h-4" /> R\u00fcyan\u0131 Yaz
+              <PenLine className="w-4 h-4" /> Rüyanı Yaz
             </button>
             {session?.user && (
               <button
@@ -249,7 +249,7 @@ export default function RuyaPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="\u00d6rne\u011fin: Y\u0131lan g\u00f6rmek, U\u00e7mak, Alt\u0131n bulmak..."
+                    placeholder="Örneğin: Yılan görmek, Uçmak, Altın bulmak..."
                     className="w-full pl-12 pr-28 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm md:text-base"
                   />
                   <button
@@ -288,7 +288,7 @@ export default function RuyaPage() {
           <>
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-400 text-sm">
-                {loading ? 'Y\u00fckleniyor...' : `${total} r\u00fcya tabiri bulundu`}
+                {loading ? 'Yükleniyor...' : `${total} rüya tabiri bulundu`}
               </p>
               <div className="flex gap-2">
                 <button
@@ -299,7 +299,7 @@ export default function RuyaPage() {
                       : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
                   }`}
                 >
-                  <TrendingUp className="w-3.5 h-3.5" /> Pop\u00fcler
+                  <TrendingUp className="w-3.5 h-3.5" /> Popüler
                 </button>
                 <button
                   onClick={() => { setSort('newest'); setCurrentPage(1) }}
@@ -320,12 +320,12 @@ export default function RuyaPage() {
               <div className="text-center py-12">
                 <Moon className="w-16 h-16 text-indigo-500/30 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">
-                  {searchQuery ? 'Bu r\u00fcya hen\u00fcz yorumlanmam\u0131\u015f' : 'Hen\u00fcz r\u00fcya tabiri eklenmemi\u015f'}
+                  {searchQuery ? 'Bu rüya henüz yorumlanmamış' : 'Henüz rüya tabiri eklenmemiş'}
                 </h3>
                 {searchQuery && (
                   <>
                     <p className="text-gray-400 mb-6">
-                      &ldquo;{searchQuery}&rdquo; i\u00e7in yapay zeka ile an\u0131nda r\u00fcya tabiri olu\u015fturabilirsiniz.
+                      &ldquo;{searchQuery}&rdquo; için yapay zeka ile anında rüya tabiri oluşturabilirsiniz.
                     </p>
                     <button
                       onClick={handleAiGenerate}
@@ -335,7 +335,7 @@ export default function RuyaPage() {
                       {generating ? (
                         <><Loader2 className="w-5 h-5 animate-spin" /> Yapay Zeka Yorumluyor...</>
                       ) : (
-                        <><Sparkles className="w-5 h-5" /> AI ile R\u00fcya Tabiri Olu\u015ftur</>
+                        <><Sparkles className="w-5 h-5" /> AI ile Rüya Tabiri Oluştur</>
                       )}
                     </button>
                   </>
@@ -379,16 +379,16 @@ export default function RuyaPage() {
 
                 {searchQuery && dreams.length > 0 && (
                   <div className="mt-6 text-center">
-                    <p className="text-gray-500 text-xs mb-2">Arad\u0131\u011f\u0131n\u0131z\u0131 bulamad\u0131n\u0131z m\u0131?</p>
+                    <p className="text-gray-500 text-xs mb-2">Aradığınızı bulamadınız mı?</p>
                     <button
                       onClick={handleAiGenerate}
                       disabled={generating}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 rounded-lg text-sm hover:bg-indigo-600/30 transition-all disabled:opacity-50"
                     >
                       {generating ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> Olu\u015fturuluyor...</>
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Oluşturuluyor...</>
                       ) : (
-                        <><Sparkles className="w-4 h-4" /> AI ile &ldquo;{searchQuery}&rdquo; Tabiri Olu\u015ftur</>
+                        <><Sparkles className="w-4 h-4" /> AI ile &ldquo;{searchQuery}&rdquo; Tabiri Oluştur</>
                       )}
                     </button>
                   </div>
@@ -420,7 +420,7 @@ export default function RuyaPage() {
           </>
         )}
 
-        {/* ===== INTERPRET TAB (R\u00fcyan\u0131 Yaz Yorumlayal\u0131m) ===== */}
+        {/* ===== INTERPRET TAB (Rüyanı Yaz Yorumlayalım) ===== */}
         {tab === 'interpret' && (
           <div className="max-w-2xl mx-auto">
             <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20">
@@ -429,15 +429,15 @@ export default function RuyaPage() {
                   <PenLine className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">R\u00fcyan\u0131z\u0131 Anlat\u0131n</h2>
-                  <p className="text-gray-400 text-xs">Yapay zeka r\u00fcyan\u0131z\u0131 \u0130slami, psikolojik ve geleneksel perspektiflerden yorumlayacak</p>
+                  <h2 className="text-lg font-semibold text-white">Rüyanızı Anlatın</h2>
+                  <p className="text-gray-400 text-xs">Yapay zeka rüyanızı İslami, psikolojik ve geleneksel perspektiflerden yorumlayacak</p>
                 </div>
               </div>
 
               <textarea
                 value={dreamText}
                 onChange={(e) => setDreamText(e.target.value)}
-                placeholder="R\u00fcyan\u0131zda neler g\u00f6rd\u00fc\u011f\u00fcn\u00fcz\u00fc detayl\u0131ca anlat\u0131n... \u00d6rne\u011fin: D\u00fcn gece r\u00fcyamda y\u00fcksek bir da\u011f\u0131n tepesinde uçtu\u011fumu g\u00f6rd\u00fcm. A\u015fa\u011f\u0131da mavi bir deniz vard\u0131 ve..."
+                placeholder="Rüyanızda neler gördüğünüzü detaylıca anlatın... Örneğin: Dün gece rüyamda yüksek bir dağın tepesinde uçtuğumu gördüm. Aşağıda mavi bir deniz vardı ve..."
                 rows={6}
                 maxLength={3000}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm resize-none"
@@ -450,9 +450,9 @@ export default function RuyaPage() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium text-sm transition-all disabled:opacity-50"
                 >
                   {interpreting ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Yorumlan\u0131yor...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Yorumlanıyor...</>
                   ) : (
-                    <><Sparkles className="w-4 h-4" /> R\u00fcyam\u0131 Yorumla</>
+                    <><Sparkles className="w-4 h-4" /> Rüyamı Yorumla</>
                   )}
                 </button>
               </div>
@@ -463,7 +463,7 @@ export default function RuyaPage() {
               <div className="mt-6 p-6 rounded-2xl bg-white/[0.03] border border-indigo-500/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-indigo-400" />
-                  <h3 className="text-lg font-semibold text-white">R\u00fcya Yorumunuz</h3>
+                  <h3 className="text-lg font-semibold text-white">Rüya Yorumunuz</h3>
                 </div>
                 <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                   {interpretation}
@@ -482,7 +482,7 @@ export default function RuyaPage() {
 
             {!session?.user && (
               <div className="mt-4 text-center">
-                <p className="text-gray-500 text-sm">R\u00fcyan\u0131z\u0131 yorumlatmak i\u00e7in <button onClick={() => router.push(`/${lang}/login`)} className="text-indigo-400 hover:underline">giri\u015f yap\u0131n</button></p>
+                <p className="text-gray-500 text-sm">Rüyanızı yorumlatmak için <button onClick={() => router.push(`/${lang}/login`)} className="text-indigo-400 hover:underline">giriş yapın</button></p>
               </div>
             )}
           </div>
@@ -496,13 +496,13 @@ export default function RuyaPage() {
             ) : favorites.length === 0 ? (
               <div className="text-center py-12">
                 <Heart className="w-16 h-16 text-pink-500/30 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Hen\u00fcz favoriniz yok</h3>
-                <p className="text-gray-400 mb-4">R\u00fcya tabirlerinde kalp ikonuna t\u0131klayarak favorilerinize ekleyebilirsiniz.</p>
+                <h3 className="text-xl font-semibold text-white mb-2">Henüz favoriniz yok</h3>
+                <p className="text-gray-400 mb-4">Rüya tabirlerinde kalp ikonuna tıklayarak favorilerinize ekleyebilirsiniz.</p>
                 <button
                   onClick={() => setTab('search')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors"
                 >
-                  <Search className="w-4 h-4" /> R\u00fcya Tabiri Ara
+                  <Search className="w-4 h-4" /> Rüya Tabiri Ara
                 </button>
               </div>
             ) : (
@@ -540,10 +540,10 @@ export default function RuyaPage() {
           <div className="mt-10">
             <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-400" />
-              {session?.user ? 'Size \u00d6zel \u00d6neriler' : 'Pop\u00fcler R\u00fcya Tabirleri'}
+              {session?.user ? 'Size Özel Öneriler' : 'Popüler Rüya Tabirleri'}
             </h2>
             <p className="text-gray-500 text-xs mb-4">
-              {session?.user ? '\u0130lgi alanlar\u0131n\u0131za g\u00f6re se\u00e7ilmi\u015f r\u00fcya tabirleri' : 'En \u00e7ok okunan r\u00fcya tabirleri'}
+              {session?.user ? 'İlgi alanlarınıza göre seçilmiş rüya tabirleri' : 'En çok okunan rüya tabirleri'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recommendations.slice(0, 6).map((rec) => (

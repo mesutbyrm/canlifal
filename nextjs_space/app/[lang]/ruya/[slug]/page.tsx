@@ -140,7 +140,7 @@ export default function DreamDetailPage() {
   // Update document title
   useEffect(() => {
     if (dream) {
-      document.title = `${dream.title} - R\u00fcya Tabiri | Canlifal`
+      document.title = `${dream.title} - Rüya Tabiri | Canlifal`
       const metaDesc = document.querySelector('meta[name="description"]')
       if (metaDesc && dream.metaDescription) {
         metaDesc.setAttribute('content', dream.metaDescription)
@@ -213,7 +213,7 @@ export default function DreamDetailPage() {
 
   // Share functions
   const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://canlifal.com/${lang}/ruya/${slug}`
-  const shareTitle = dream?.title || 'R\u00fcya Tabiri'
+  const shareTitle = dream?.title || 'Rüya Tabiri'
 
   const shareWhatsApp = () => {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareTitle + ' - ' + shareUrl)}`, '_blank')
@@ -241,13 +241,13 @@ export default function DreamDetailPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <Moon className="w-16 h-16 text-indigo-500/30 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">R\u00fcya Tabiri Bulunamad\u0131</h2>
-          <p className="text-gray-400 mb-4">Arad\u0131\u011f\u0131n\u0131z r\u00fcya tabiri mevcut de\u011fil.</p>
+          <h2 className="text-xl font-semibold text-white mb-2">Rüya Tabiri Bulunamadı</h2>
+          <p className="text-gray-400 mb-4">Aradığınız rüya tabiri mevcut değil.</p>
           <button
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
           </button>
         </div>
       </div>
@@ -286,7 +286,7 @@ export default function DreamDetailPage() {
         <nav className="flex items-center gap-2 text-xs text-gray-500 mb-6">
           <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors">Ana Sayfa</button>
           <ChevronRight className="w-3 h-3" />
-          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">R\u00fcya Tabirleri</button>
+          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">Rüya Tabirleri</button>
           <ChevronRight className="w-3 h-3" />
           <span className="text-indigo-400 truncate max-w-[200px]">{dream.title}</span>
         </nav>
@@ -319,7 +319,7 @@ export default function DreamDetailPage() {
               <Calendar className="w-3.5 h-3.5" /> {formattedDate}
             </span>
             <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} g\u00f6r\u00fcnt\u00fclenme
+              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} görüntülenme
             </span>
             <span className="flex items-center gap-1">
               <MessageCircle className="w-3.5 h-3.5" /> {commentTotal} yorum
@@ -376,7 +376,7 @@ export default function DreamDetailPage() {
 
         {/* Social Share Buttons */}
         <div className="mt-6 pt-6 border-t border-white/10">
-          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri payla\u015f\u0131n</p>
+          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri paylaşın</p>
           <div className="flex items-center gap-2">
             <button
               onClick={shareWhatsApp}
@@ -422,7 +422,7 @@ export default function DreamDetailPage() {
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder={session?.user ? 'Yorumunuzu yaz\u0131n...' : 'Yorum yapmak i\u00e7in giri\u015f yap\u0131n'}
+                placeholder={session?.user ? 'Yorumunuzu yazın...' : 'Yorum yapmak için giriş yapın'}
                 rows={3}
                 maxLength={1000}
                 disabled={!session?.user}
@@ -437,7 +437,7 @@ export default function DreamDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {commentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                G\u00f6nder
+                Gönder
               </button>
             </div>
           </form>
@@ -448,7 +448,7 @@ export default function DreamDetailPage() {
           ) : comments.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">Hen\u00fcz yorum yap\u0131lmam\u0131\u015f. \u0130lk yorumu siz yap\u0131n!</p>
+              <p className="text-gray-500 text-sm">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -490,7 +490,7 @@ export default function DreamDetailPage() {
         {/* Similar Dreams */}
         {similar.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-4">Benzer R\u00fcya Tabirleri</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Benzer Rüya Tabirleri</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {similar.map((s) => (
                 <button
@@ -516,8 +516,8 @@ export default function DreamDetailPage() {
         {/* Smart Recommendations */}
         {recommendations.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-1">Size \u00d6zel \u00d6neriler</h2>
-            <p className="text-gray-500 text-xs mb-4">\u0130lgi alanlar\u0131n\u0131za g\u00f6re se\u00e7ilmi\u015f r\u00fcya tabirleri</p>
+            <h2 className="text-lg font-semibold text-white mb-1">Size Özel Öneriler</h2>
+            <p className="text-gray-500 text-xs mb-4">İlgi alanlarınıza göre seçilmiş rüya tabirleri</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recommendations.filter(r => r.id !== dream.id).slice(0, 6).map((rec) => (
                 <button
@@ -543,7 +543,7 @@ export default function DreamDetailPage() {
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white hover:border-white/20 transition-all"
           >
-            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
           </button>
         </div>
       </div>

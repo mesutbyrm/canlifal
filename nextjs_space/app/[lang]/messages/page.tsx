@@ -187,10 +187,10 @@ export default function MessagesPage() {
                   <Mail className={`w-8 h-8 ${accentColor}`} />
                 </div>
                 <p className="text-white text-base">
-                  {'Hen\u00FCz mesaj yok'}
+                  {'Henüz mesaj yok'}
                 </p>
                 <p className="text-white/60 text-sm mt-1">
-                  {'Birini takip edip mesaj g\u00F6nderebilirsiniz'}
+                  {'Birini takip edip mesaj gönderebilirsiniz'}
                 </p>
               </div>
             ) : (
@@ -232,7 +232,7 @@ export default function MessagesPage() {
                       </span>
                     </div>
                     <p className={`text-xs truncate ${conv.unreadCount > 0 ? 'text-white/90 font-medium' : 'text-white/50'}`}>
-                      {conv.lastMessage || ('Mesaj ba\u015Flat')}
+                      {conv.lastMessage || ('Mesaj başlat')}
                     </p>
                   </div>
                 </Link>
@@ -247,7 +247,7 @@ export default function MessagesPage() {
                   <UserPlus className={`w-8 h-8 ${accentColor}`} />
                 </div>
                 <p className="text-white text-base">
-                  {'Mesaj iste\u011Fi yok'}
+                  {'Mesaj isteği yok'}
                 </p>
               </div>
             ) : (

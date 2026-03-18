@@ -102,17 +102,17 @@ export default function DreamContestPage() {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 px-4 py-2 rounded-full mb-4">
           <Trophy size={18} />
-          <span>R\u00fcya Yar\u0131\u015fmas\u0131</span>
+          <span>Rüya Yarışması</span>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">R\u00fcya Yorumu Yar\u0131\u015fmas\u0131</h1>
-        <p className="text-white/60">Haftal\u0131k r\u00fcyay\u0131 yorumlay\u0131n, topluluk oylas\u0131n!</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Rüya Yorumu Yarışması</h1>
+        <p className="text-white/60">Haftalık rüyayı yorumlayın, topluluk oylasın!</p>
       </div>
 
       {contests.length === 0 ? (
         <div className="text-center py-12 bg-white/5 border border-white/10 rounded-2xl">
           <Sparkles size={48} className="mx-auto mb-4 text-amber-400/40" />
-          <p className="text-white/60">\u015eu an aktif yar\u0131\u015fma bulunmuyor</p>
-          <p className="text-white/40 text-sm mt-1">Yak\u0131nda yeni yar\u0131\u015fmalar ba\u015flayacak!</p>
+          <p className="text-white/60">Şu an aktif yarışma bulunmuyor</p>
+          <p className="text-white/40 text-sm mt-1">Yakında yeni yarışmalar başlayacak!</p>
         </div>
       ) : (
         <>
@@ -137,23 +137,23 @@ export default function DreamContestPage() {
                 <h2 className="text-xl font-bold text-white mb-2">{selectedContest.title}</h2>
                 <p className="text-white/60 text-sm mb-4">{selectedContest.description}</p>
                 <div className="bg-white/5 rounded-xl p-4 mb-4">
-                  <p className="text-purple-300 font-semibold mb-2">\ud83d\udcad R\u00fcya:</p>
+                  <p className="text-purple-300 font-semibold mb-2">\ud83d\udcad Rüya:</p>
                   <p className="text-white/80 italic">{selectedContest.dreamPrompt}</p>
                 </div>
                 <div className="flex gap-4 text-sm text-white/40">
                   <span className="flex items-center gap-1"><Clock size={14} />
-                    {selectedContest.isOngoing ? 'Devam ediyor' : selectedContest.isEnded ? 'Sona erdi' : 'Ba\u015flamad\u0131'}
+                    {selectedContest.isOngoing ? 'Devam ediyor' : selectedContest.isEnded ? 'Sona erdi' : 'Başlamadı'}
                   </span>
-                  <span className="flex items-center gap-1"><Users size={14} /> {selectedContest.entryCount} kat\u0131l\u0131mc\u0131</span>
+                  <span className="flex items-center gap-1"><Users size={14} /> {selectedContest.entryCount} katılımcı</span>
                 </div>
               </div>
 
               {/* Submit Entry */}
               {selectedContest.isOngoing && session?.user && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-                  <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Send size={16} /> Yorumunuzu G\u00f6nderin</h3>
+                  <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Send size={16} /> Yorumunuzu Gönderin</h3>
                   <textarea
-                    placeholder="R\u00fcyay\u0131 yorumlay\u0131n... (en az 20 karakter)"
+                    placeholder="Rüyayı yorumlayın... (en az 20 karakter)"
                     value={interpretation}
                     onChange={(e) => setInterpretation(e.target.value)}
                     rows={4}
@@ -162,14 +162,14 @@ export default function DreamContestPage() {
                   <button onClick={handleSubmitEntry} disabled={submitting || interpretation.length < 20}
                     className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white px-6 py-2 rounded-xl text-sm transition-colors flex items-center gap-2">
                     {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    G\u00f6nder
+                    Gönder
                   </button>
                 </div>
               )}
 
               {!session?.user && selectedContest.isOngoing && (
                 <div className="text-center py-4 mb-6 bg-white/5 border border-white/10 rounded-xl">
-                  <Link href={`/${lang}/login`} className="text-amber-400 hover:text-amber-300">Kat\u0131lmak i\u00e7in giri\u015f yap\u0131n</Link>
+                  <Link href={`/${lang}/login`} className="text-amber-400 hover:text-amber-300">Katılmak için giriş yapın</Link>
                 </div>
               )}
 

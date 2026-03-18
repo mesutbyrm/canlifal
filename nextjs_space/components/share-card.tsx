@@ -73,7 +73,7 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
     if (cardData && navigator.share) {
       try {
         await navigator.share({
-          title: cardData.typeLabel || 'CanliF\u0061l Payla\u015f\u0131m',
+          title: cardData.typeLabel || 'CanliFal Paylaşım',
           text: cardData.summary || cardData.content || '',
           url: cardData.shareUrl
         })
@@ -91,7 +91,7 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
         {trigger || (
           <button className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg text-sm transition">
             <Share2 className="w-4 h-4" />
-            Payla\u015f
+            Paylaş
           </button>
         )}
       </div>
@@ -159,7 +159,7 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
                     {/* Social Stats */}
                     {(cardData.likes !== undefined || cardData.comments !== undefined) && (
                       <div className="flex gap-4 text-white/60 text-sm">
-                        {cardData.likes !== undefined && <span>\u2764\ufe0f {cardData.likes} be\u011feni</span>}
+                        {cardData.likes !== undefined && <span>❤️ {cardData.likes} beğeni</span>}
                         {cardData.comments !== undefined && <span>\ud83d\udcac {cardData.comments} yorum</span>}
                       </div>
                     )}
@@ -178,7 +178,7 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
                       className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-xl text-white text-sm transition"
                     >
                       {copied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                      {copied ? 'Kopyaland\u0131!' : 'Link Kopyala'}
+                      {copied ? 'Kopyalandı!' : 'Link Kopyala'}
                     </button>
                     {typeof navigator !== 'undefined' && 'share' in navigator && (
                       <button
@@ -186,14 +186,14 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
                         className="flex-1 flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white text-sm transition"
                       >
                         <Share2 className="w-4 h-4" />
-                        Payla\u015f
+                        Paylaş
                       </button>
                     )}
                   </div>
                 </>
               ) : (
                 <div className="bg-white/10 backdrop-blur rounded-2xl p-8 text-center text-purple-300">
-                  Kart y\u00fcklenemedi
+                  Kart yüklenemedi
                 </div>
               )}
             </motion.div>

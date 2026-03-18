@@ -6,22 +6,22 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
 const LEVEL_TITLES: Record<number, string> = {
-  1: 'Yeni \u00dcye',
-  2: '\u00c7\u0131rak',
-  3: 'Ke\u015fifci',
+  1: 'Yeni Üye',
+  2: 'Çırak',
+  3: 'Keşifci',
   4: 'Yorumcu',
   5: 'Bilge',
   6: 'Usta Yorumcu',
   7: 'Gizemci',
   8: 'Kahin',
-  9: 'B\u00fcy\u00fck Kahin',
+  9: 'Büyük Kahin',
   10: 'Efsanevi',
 }
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giri\u015f yap\u0131n' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = (session.user as any).id
 
     const user = await prisma.user.findUnique({
@@ -45,6 +45,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('XP GET error:', error)
-    return NextResponse.json({ error: 'Hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
   }
 }

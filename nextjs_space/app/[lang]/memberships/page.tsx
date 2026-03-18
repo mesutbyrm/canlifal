@@ -160,10 +160,10 @@ export default function MembershipsPage() {
             <Crown className="w-8 h-8 text-black" />
           </div>
           <h1 className={`text-2xl font-bold ${textPrimary} mb-2`}>
-            {'Gold \u00dcyelikler'}
+            {'Gold Üyelikler'}
           </h1>
           <p className={textSecondary}>
-            {'Ayr\u0131cal\u0131kl\u0131 \u00f6zellikler i\u00e7in \u00fcyelik se\u00e7in'}
+            {'Ayrıcalıklı özellikler için üyelik seçin'}
           </p>
         </motion.div>
 
@@ -184,7 +184,7 @@ export default function MembershipsPage() {
                 </p>
                 {formatExpiry(userMembership.membershipExpiresAt) && (
                   <p className={`${textSecondary} text-sm`}>
-                    {'Biti\u015f:'} {formatExpiry(userMembership.membershipExpiresAt)}
+                    {'Bitiş:'} {formatExpiry(userMembership.membershipExpiresAt)}
                   </p>
                 )}
               </div>
@@ -246,7 +246,7 @@ export default function MembershipsPage() {
             >
               {plan.isFeatured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Star className="w-3 h-3" /> {'Pop\u00fcler'}
+                  <Star className="w-3 h-3" /> {'Popüler'}
                 </div>
               )}
 
@@ -265,7 +265,7 @@ export default function MembershipsPage() {
                   {/* Features */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className={`bg-amber-500/20 ${goldColor} text-xs px-2 py-1 rounded-full flex items-center gap-1`}>
-                      <Clock className="w-3 h-3" /> {plan.durationDays} {'g\u00fcn'}
+                      <Clock className="w-3 h-3" /> {plan.durationDays} {'gün'}
                     </span>
                     {plan.bonusJetons > 0 && (
                       <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -301,7 +301,7 @@ export default function MembershipsPage() {
                       }}
                       className={`px-5 py-2 bg-gradient-to-r ${getTierGradient(plan.tier)} text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95`}
                     >
-                      {'Sat\u0131n Al'}
+                      {'Satın Al'}
                     </button>
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function MembershipsPage() {
             <div className="text-center py-12">
               <Crown className={`w-16 h-16 mx-auto mb-4 ${textSecondary} opacity-50`} />
               <p className={textSecondary}>
-                {'Hen\u00fcz \u00fcyelik plan\u0131 bulunmuyor'}
+                {'Henüz üyelik planı bulunmuyor'}
               </p>
             </div>
           )}
@@ -341,7 +341,7 @@ export default function MembershipsPage() {
                     <Crown className="w-8 h-8 text-black" />
                   </div>
                   <h3 className={`${textPrimary} text-xl font-bold mb-2`}>
-                    {'\u00dcyeli\u011fi Onayla'}
+                    {'Üyeliği Onayla'}
                   </h3>
                   <p className={textSecondary}>
                     {selectedPlan.name}

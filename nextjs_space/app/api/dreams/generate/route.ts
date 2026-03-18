@@ -88,7 +88,7 @@ Aşağıdaki formatta yanıt ver (JSON):
     // Send OneSignal push notification to all subscribers
     const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
     sendNotification({
-      title: '\u{1F319} Yeni R\u00fcya Tabiri',
+      title: '\u{1F319} Yeni Rüya Tabiri',
       message: dream.title,
       url: `${baseUrl}/tr/ruya/${dream.slug}`,
       targetType: 'all',
@@ -97,6 +97,6 @@ Aşağıdaki formatta yanıt ver (JSON):
     return NextResponse.json({ dream, generated: true })
   } catch (error) {
     console.error('Dream generate error:', error)
-    return NextResponse.json({ error: 'R\u00fcya yorumu olu\u015fturulurken bir hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Rüya yorumu oluşturulurken bir hata oluştu' }, { status: 500 })
   }
 }

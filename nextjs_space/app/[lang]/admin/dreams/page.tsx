@@ -118,7 +118,7 @@ export default function AdminDreamsPage() {
 
   const handleSave = async () => {
     if (!formTitle.trim() || !formContent.trim()) {
-      setError('Ba\u015fl\u0131k ve i\u00e7erik zorunlu')
+      setError('Başlık ve içerik zorunlu')
       return
     }
     setSaving(true)
@@ -141,20 +141,20 @@ export default function AdminDreamsPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'Hata olu\u015ftu')
+        setError(data.error || 'Hata oluştu')
         return
       }
-      setSuccess(editing ? 'G\u00fcncellendi!' : 'Olu\u015fturuldu!')
+      setSuccess(editing ? 'Güncellendi!' : 'Oluşturuldu!')
       setTimeout(() => { closeEditor(); fetchDreams(currentPage, searchQuery) }, 800)
     } catch {
-      setError('Sunucu hatas\u0131')
+      setError('Sunucu hatası')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu r\u00fcya tabirini silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu rüya tabirini silmek istediğinize emin misiniz?')) return
     try {
       const res = await fetch(`/api/admin/dreams?id=${id}`, { method: 'DELETE' })
       if (res.ok) fetchDreams(currentPage, searchQuery)
@@ -188,15 +188,15 @@ export default function AdminDreamsPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'AI hatas\u0131')
+        setError(data.error || 'AI hatası')
         return
       }
       setAiTitle('')
-      setSuccess('AI r\u00fcya tabiri olu\u015fturuldu!')
+      setSuccess('AI rüya tabiri oluşturuldu!')
       fetchDreams(currentPage, searchQuery)
       setTimeout(() => setSuccess(''), 3000)
     } catch {
-      setError('AI ile r\u00fcya olu\u015fturulamad\u0131')
+      setError('AI ile rüya oluşturulamadı')
     } finally {
       setGenerating(false)
     }
@@ -214,16 +214,16 @@ export default function AdminDreamsPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Moon className="w-5 h-5 text-indigo-400" /> R\u00fcya Tabirleri Y\u00f6netimi
+              <Moon className="w-5 h-5 text-indigo-400" /> Rüya Tabirleri Yönetimi
             </h1>
-            <p className="text-gray-500 text-xs">Toplam: {total} r\u00fcya tabiri</p>
+            <p className="text-gray-500 text-xs">Toplam: {total} rüya tabiri</p>
           </div>
         </div>
 
         {/* AI Generate Section */}
         <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 mb-6">
           <h3 className="text-sm font-medium text-indigo-300 mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> AI ile R\u00fcya Tabiri Olu\u015ftur
+            <Sparkles className="w-4 h-4" /> AI ile Rüya Tabiri Oluştur
           </h3>
           <div className="flex gap-2">
             <input
@@ -231,7 +231,7 @@ export default function AdminDreamsPage() {
               value={aiTitle}
               onChange={(e) => setAiTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
-              placeholder="\u00d6rne\u011fin: Y\u0131lan g\u00f6rmek, U\u00e7mak, Alt\u0131n bulmak..."
+              placeholder="Örneğin: Yılan görmek, Uçmak, Altın bulmak..."
               className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-indigo-500/50"
             />
             <button
@@ -240,7 +240,7 @@ export default function AdminDreamsPage() {
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {generating ? 'Olu\u015fturuluyor...' : 'Olu\u015ftur'}
+              {generating ? 'Oluşturuluyor...' : 'Oluştur'}
             </button>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function AdminDreamsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="R\u00fcya ara..."
+              placeholder="Rüya ara..."
               className="flex-1 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-indigo-500/50"
             />
             <button onClick={handleSearch} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-300 rounded-xl text-sm hover:bg-white/10 transition-colors">
@@ -268,7 +268,7 @@ export default function AdminDreamsPage() {
             onClick={() => openEditor()}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> Yeni R\u00fcya Tabiri
+            <Plus className="w-4 h-4" /> Yeni Rüya Tabiri
           </button>
         </div>
 
@@ -278,7 +278,7 @@ export default function AdminDreamsPage() {
             <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gray-900 border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-white">
-                  {isNew ? 'Yeni R\u00fcya Tabiri' : 'R\u00fcya Tabiri D\u00fczenle'}
+                  {isNew ? 'Yeni Rüya Tabiri' : 'Rüya Tabiri Düzenle'}
                 </h2>
                 <button onClick={closeEditor} className="p-2 rounded-lg hover:bg-white/10 text-gray-400">
                   <X className="w-4 h-4" />
@@ -287,53 +287,53 @@ export default function AdminDreamsPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Ba\u015fl\u0131k *</label>
+                  <label className="block text-xs text-gray-400 mb-1">Başlık *</label>
                   <input
                     type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="R\u00fcyada Y\u0131lan G\u00f6rmek"
+                    placeholder="Rüyada Yılan Görmek"
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">\u00d6zet</label>
+                  <label className="block text-xs text-gray-400 mb-1">Özet</label>
                   <textarea
                     value={formSummary}
                     onChange={(e) => setFormSummary(e.target.value)}
                     rows={2}
-                    placeholder="K\u0131sa \u00f6zet..."
+                    placeholder="Kısa özet..."
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">\u0130\u00e7erik (HTML) *</label>
+                  <label className="block text-xs text-gray-400 mb-1">İçerik (HTML) *</label>
                   <textarea
                     value={formContent}
                     onChange={(e) => setFormContent(e.target.value)}
                     rows={12}
-                    placeholder="<h2>R\u00fcyada ... G\u00f6rmek</h2><p>...</p>"
+                    placeholder="<h2>Rüyada ... Görmek</h2><p>...</p>"
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono focus:outline-none focus:border-indigo-500/50 resize-y"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Anahtar Kelimeler (virg\u00fcl ile)</label>
+                    <label className="block text-xs text-gray-400 mb-1">Anahtar Kelimeler (virgül ile)</label>
                     <input
                       type="text"
                       value={formKeywords}
                       onChange={(e) => setFormKeywords(e.target.value)}
-                      placeholder="y\u0131lan, r\u00fcya, korku"
+                      placeholder="yılan, rüya, korku"
                       className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">SEO A\u00e7\u0131klama</label>
+                    <label className="block text-xs text-gray-400 mb-1">SEO Açıklama</label>
                     <input
                       type="text"
                       value={formMetaDesc}
                       onChange={(e) => setFormMetaDesc(e.target.value)}
-                      placeholder="155 karakter SEO a\u00e7\u0131klamas\u0131"
+                      placeholder="155 karakter SEO açıklaması"
                       className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50"
                     />
                   </div>
@@ -346,7 +346,7 @@ export default function AdminDreamsPage() {
                       onChange={(e) => setFormPublished(e.target.checked)}
                       className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-indigo-500"
                     />
-                    <span className="text-sm text-gray-300">Yay\u0131nla</span>
+                    <span className="text-sm text-gray-300">Yayınla</span>
                   </label>
                 </div>
 
@@ -355,7 +355,7 @@ export default function AdminDreamsPage() {
 
                 <div className="flex justify-end gap-3 pt-2">
                   <button onClick={closeEditor} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white transition-colors">
-                    \u0130ptal
+                    İptal
                   </button>
                   <button
                     onClick={handleSave}
@@ -377,7 +377,7 @@ export default function AdminDreamsPage() {
         ) : dreams.length === 0 ? (
           <div className="text-center py-12">
             <Moon className="w-12 h-12 text-indigo-500/30 mx-auto mb-3" />
-            <p className="text-gray-400">Hen\u00fcz r\u00fcya tabiri eklenmemi\u015f</p>
+            <p className="text-gray-400">Henüz rüya tabiri eklenmemiş</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -406,14 +406,14 @@ export default function AdminDreamsPage() {
                   <button
                     onClick={() => handleTogglePublish(dream)}
                     className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
-                    title={dream.isPublished ? 'Gizle' : 'Yay\u0131nla'}
+                    title={dream.isPublished ? 'Gizle' : 'Yayınla'}
                   >
                     {dream.isPublished ? <Eye className="w-4 h-4 text-green-400" /> : <EyeOff className="w-4 h-4 text-yellow-400" />}
                   </button>
                   <button
                     onClick={() => openEditor(dream)}
                     className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
-                    title="D\u00fczenle"
+                    title="Düzenle"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -438,7 +438,7 @@ export default function AdminDreamsPage() {
               disabled={currentPage <= 1}
               className="px-3 py-1.5 bg-white/5 border border-white/10 text-gray-400 rounded-lg text-sm disabled:opacity-30"
             >
-              \u00d6nceki
+              Önceki
             </button>
             <span className="text-gray-400 text-sm">{currentPage} / {totalPages}</span>
             <button

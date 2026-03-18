@@ -28,14 +28,14 @@ interface WeeklyReport {
 
 const MOODS = [
   { value: 'happy', label: 'Mutlu', emoji: '\ud83d\ude0a' },
-  { value: 'sad', label: '\u00dczg\u00fcn', emoji: '\ud83d\ude22' },
-  { value: 'scared', label: 'Korkmu\u015f', emoji: '\ud83d\ude28' },
-  { value: 'confused', label: 'Kafas\u0131 kar\u0131\u015f\u0131k', emoji: '\ud83d\ude15' },
-  { value: 'neutral', label: 'N\u00f6tr', emoji: '\ud83d\ude10' },
+  { value: 'sad', label: 'Üzgün', emoji: '\ud83d\ude22' },
+  { value: 'scared', label: 'Korkmuş', emoji: '\ud83d\ude28' },
+  { value: 'confused', label: 'Kafası karışık', emoji: '\ud83d\ude15' },
+  { value: 'neutral', label: 'Nötr', emoji: '\ud83d\ude10' },
 ]
 
-const MONTHS_TR = ['Ocak', '\u015eubat', 'Mart', 'Nisan', 'May\u0131s', 'Haziran', 'Temmuz', 'A\u011fustos', 'Eyl\u00fcl', 'Ekim', 'Kas\u0131m', 'Aral\u0131k']
-const DAYS_TR = ['Pzt', 'Sal', '\u00c7ar', 'Per', 'Cum', 'Cmt', 'Paz']
+const MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+const DAYS_TR = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
 export default function DreamCalendarPage() {
   const { lang } = useParams()
@@ -99,7 +99,7 @@ export default function DreamCalendarPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu r\u00fcya kayd\u0131n\u0131 silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu rüya kaydını silmek istediğinize emin misiniz?')) return
     try {
       await fetch('/api/dream-diary', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
       fetchEntries()
@@ -118,10 +118,10 @@ export default function DreamCalendarPage() {
     return (
       <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto text-center py-20">
         <Moon size={48} className="mx-auto mb-4 text-purple-400" />
-        <h2 className="text-2xl font-bold text-white mb-2">R\u00fcya Takviminiz</h2>
-        <p className="text-white/60 mb-4">R\u00fcyalar\u0131n\u0131z\u0131 g\u00fcnl\u00fck kaydedin, desenlerinizi ke\u015ffedin</p>
+        <h2 className="text-2xl font-bold text-white mb-2">Rüya Takviminiz</h2>
+        <p className="text-white/60 mb-4">Rüyalarınızı günlük kaydedin, desenlerinizi keşfedin</p>
         <Link href={`/${lang}/login`} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-colors inline-block">
-          Giri\u015f Yap\u0131n
+          Giriş Yapın
         </Link>
       </div>
     )
@@ -132,10 +132,10 @@ export default function DreamCalendarPage() {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 px-4 py-2 rounded-full mb-4">
           <Calendar size={18} />
-          <span>R\u00fcya Takvimi</span>
+          <span>Rüya Takvimi</span>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">R\u00fcya G\u00fcnl\u00fc\u011f\u00fcn\u00fcz</h1>
-        <p className="text-white/60">R\u00fcyalar\u0131n\u0131z\u0131 kaydedin, AI ile analiz edin, desenlerinizi ke\u015ffedin</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Rüya Günlüğünüz</h1>
+        <p className="text-white/60">Rüyalarınızı kaydedin, AI ile analiz edin, desenlerinizi keşfedin</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -189,7 +189,7 @@ export default function DreamCalendarPage() {
               </div>
               <p className="text-white/40 text-xs mb-3">{new Date(selectedEntry.dreamDate).toLocaleDateString('tr-TR')}</p>
               {selectedEntry.mood && <p className="text-sm mb-2">Ruh hali: {MOODS.find(m => m.value === selectedEntry.mood)?.emoji} {MOODS.find(m => m.value === selectedEntry.mood)?.label}</p>}
-              {selectedEntry.lucidity && <p className="text-sm text-white/60 mb-3">Berrakl\u0131k: {'\u2b50'.repeat(selectedEntry.lucidity)}</p>}
+              {selectedEntry.lucidity && <p className="text-sm text-white/60 mb-3">Berraklık: {'⭐'.repeat(selectedEntry.lucidity)}</p>}
               <p className="text-white/70 text-sm mb-4 whitespace-pre-wrap">{selectedEntry.content}</p>
               {selectedEntry.symbols?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-4">
@@ -205,17 +205,17 @@ export default function DreamCalendarPage() {
             </div>
           ) : showForm ? (
             <div>
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><PenLine size={16} /> R\u00fcya Kaydet</h3>
+              <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><PenLine size={16} /> Rüya Kaydet</h3>
               <p className="text-white/40 text-xs mb-3">{selectedDate}</p>
               <input
                 type="text"
-                placeholder="R\u00fcya ba\u015fl\u0131\u011f\u0131"
+                placeholder="Rüya başlığı"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-3 focus:outline-none focus:border-purple-500/50"
               />
               <textarea
-                placeholder="R\u00fcyan\u0131z\u0131 anlat\u0131n..."
+                placeholder="Rüyanızı anlatın..."
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 rows={5}
@@ -223,7 +223,7 @@ export default function DreamCalendarPage() {
               />
               <input
                 type="text"
-                placeholder="Semboller (virg\u00fclle ay\u0131r\u0131n)"
+                placeholder="Semboller (virgülle ayırın)"
                 value={formData.symbols}
                 onChange={(e) => setFormData({ ...formData, symbols: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-3 focus:outline-none focus:border-purple-500/50"
@@ -240,12 +240,12 @@ export default function DreamCalendarPage() {
                 </div>
               </div>
               <div className="mb-3">
-                <label className="text-white/60 text-xs mb-1 block">Berrakl\u0131k (1-5)</label>
+                <label className="text-white/60 text-xs mb-1 block">Berraklık (1-5)</label>
                 <div className="flex gap-1">
                   {[1,2,3,4,5].map(n => (
                     <button key={n} onClick={() => setFormData({ ...formData, lucidity: n })}
                       className={`px-3 py-1 rounded text-sm ${formData.lucidity >= n ? 'bg-yellow-500/30 text-yellow-300' : 'bg-white/5 text-white/40'}`}>
-                      \u2b50
+                      ⭐
                     </button>
                   ))}
                 </div>
@@ -264,8 +264,8 @@ export default function DreamCalendarPage() {
           ) : (
             <div className="text-center py-8 text-white/40">
               <Calendar size={32} className="mx-auto mb-3 opacity-40" />
-              <p className="text-sm">Takvimden bir g\u00fcn se\u00e7in</p>
-              <p className="text-xs mt-1">R\u00fcyan\u0131z\u0131 kaydedin veya ge\u00e7mi\u015f kay\u0131tlar\u0131n\u0131z\u0131 g\u00f6r\u00fcnt\u00fcleyin</p>
+              <p className="text-sm">Takvimden bir gün seçin</p>
+              <p className="text-xs mt-1">Rüyanızı kaydedin veya geçmiş kayıtlarınızı görüntüleyin</p>
             </div>
           )}
         </div>
@@ -327,7 +327,7 @@ export default function DreamCalendarPage() {
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-purple-400">{entries.length}</p>
-          <p className="text-white/40 text-xs">Bu Ay R\u00fcya</p>
+          <p className="text-white/40 text-xs">Bu Ay Rüya</p>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-indigo-400">{entries.filter((e: DiaryEntry) => e.aiAnalysis).length}</p>
@@ -335,11 +335,11 @@ export default function DreamCalendarPage() {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-pink-400">{new Set(entries.flatMap((e: DiaryEntry) => e.symbols || [])).size}</p>
-          <p className="text-white/40 text-xs">Farkl\u0131 Sembol</p>
+          <p className="text-white/40 text-xs">Farklı Sembol</p>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-amber-400">{entries.filter((e: DiaryEntry) => e.lucidity && e.lucidity >= 4).length}</p>
-          <p className="text-white/40 text-xs">Berrak R\u00fcya</p>
+          <p className="text-white/40 text-xs">Berrak Rüya</p>
         </div>
       </div>
     </div>

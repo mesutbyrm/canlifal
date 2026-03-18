@@ -45,10 +45,10 @@ export async function GET(request: NextRequest) {
         const input = JSON.parse(fortune.inputData)
         const dreamText = (input.dream || input.content || '').toLowerCase()
         const commonSymbols = [
-          'su', 'deniz', 'u\u00e7mak', 'u\u00e7ak', 'y\u0131lan', 'kedi', 'k\u00f6pek', 'ev', 'araba',
-          'beb\u00e7ek', 'anne', 'baba', 'para', 'alt\u0131n', '\u00f6l\u00fcm', 'd\u00fc\u015fmek',
-          'ko\u015fmak', 'a\u011flamak', 'g\u00fclmek', 'ate\u015f', 'da\u011f', 'orman',
-          '\u00e7i\u00e7ek', 'ay', 'g\u00fcne\u015f', 'y\u0131ld\u0131z', 'gece', 'r\u00fczgar'
+          'su', 'deniz', 'uçmak', 'uçak', 'yılan', 'kedi', 'köpek', 'ev', 'araba',
+          'bebçek', 'anne', 'baba', 'para', 'altın', 'ölüm', 'düşmek',
+          'koşmak', 'ağlamak', 'gülmek', 'ateş', 'dağ', 'orman',
+          'çiçek', 'ay', 'güneş', 'yıldız', 'gece', 'rüzgar'
         ]
         for (const symbol of commonSymbols) {
           if (dreamText.includes(symbol)) {
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       .map(([mood, count]) => ({ mood, count }))
 
     // Day of week distribution
-    const dayNames = ['Pazar', 'Pazartesi', 'Sal\u0131', '\u00c7ar\u015famba', 'Per\u015fembe', 'Cuma', 'Cumartesi']
+    const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
     const dayOfWeekData = Object.entries(dayOfWeekMap)
       .map(([day, count]) => ({ day: dayNames[parseInt(day)], count }))
 

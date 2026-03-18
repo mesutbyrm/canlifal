@@ -20,7 +20,7 @@ const TYPE_LABELS: Record<string, { tr: string; en: string }> = {
   fortune: { tr: 'Fal', en: 'Fortune' },
   page: { tr: 'Sayfa', en: 'Page' },
   game: { tr: 'Oyun', en: 'Game' },
-  user: { tr: 'Kullan\u0131c\u0131', en: 'User' },
+  user: { tr: 'Kullanıcı', en: 'User' },
 }
 
 export default function NavSearch() {
@@ -164,7 +164,7 @@ export default function NavSearch() {
               </div>
             ) : results.length === 0 ? (
               <div className="py-6 text-center text-white/70 text-sm">
-                {'Sonu\u00e7 bulunamad\u0131'}
+                {'Sonuç bulunamadı'}
               </div>
             ) : (
               <div className="py-1">

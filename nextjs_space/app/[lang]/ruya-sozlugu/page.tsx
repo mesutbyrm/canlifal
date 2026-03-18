@@ -13,7 +13,7 @@ interface DreamSymbol {
   meaning: string
 }
 
-const TURKISH_ALPHABET = 'ABC\u00c7DEFG\u011eHI\u0130JKLMNO\u00d6PRS\u015eTU\u00dcVYZ'.split('')
+const TURKISH_ALPHABET = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'.split('')
 
 export default function DreamDictionaryPage() {
   const { lang } = useParams()
@@ -56,10 +56,10 @@ export default function DreamDictionaryPage() {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-full mb-4">
           <BookOpen size={18} />
-          <span>R\u00fcya S\u00f6zl\u00fc\u011f\u00fc</span>
+          <span>Rüya Sözlüğü</span>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">R\u00fcya Sembolleri A-Z</h1>
-        <p className="text-white/60">R\u00fcyan\u0131zdaki sembollerin anlamlar\u0131n\u0131 ke\u015ffedin</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Rüya Sembolleri A-Z</h1>
+        <p className="text-white/60">Rüyanızdaki sembollerin anlamlarını keşfedin</p>
       </div>
 
       {/* Search */}
@@ -68,7 +68,7 @@ export default function DreamDictionaryPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
           <input
             type="text"
-            placeholder="Sembol ara... (\u00f6r: Y\u0131lan, Su, Ate\u015f)"
+            placeholder="Sembol ara... (ör: Yılan, Su, Ateş)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -88,7 +88,7 @@ export default function DreamDictionaryPage() {
             !selectedLetter ? 'bg-purple-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
           }`}
         >
-          T\u00fcm\u00fc
+          Tümü
         </button>
         {TURKISH_ALPHABET.map((letter) => (
           <button
@@ -111,7 +111,7 @@ export default function DreamDictionaryPage() {
       ) : symbols.length === 0 ? (
         <div className="text-center py-12 text-white/40">
           <Sparkles size={48} className="mx-auto mb-4 opacity-40" />
-          <p>Sonu\u00e7 bulunamad\u0131</p>
+          <p>Sonuç bulunamadı</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
