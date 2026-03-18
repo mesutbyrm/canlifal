@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       slug, titleTr, titleEn, descTr, descEn, contentTr, contentEn,
       category, keywords, isPublished, metaDescription, coverImage,
       readTime, isFeatured, isTrending, isEditorPick, isAiGenerated,
-      authorName, publishedAt, scheduledAt,
+      isPremium, zodiacSign, authorName, publishedAt, scheduledAt,
     } = body
 
     if (!slug || !titleTr || !contentTr) {
@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
         isTrending: isTrending || false,
         isEditorPick: isEditorPick || false,
         isAiGenerated: isAiGenerated || false,
+        isPremium: isPremium || false,
+        zodiacSign: zodiacSign || '',
         authorName: authorName || 'Canlifal Edit\u00f6r',
         authorId: (session.user as any).id,
         publishedAt: isPublished ? (publishedAt ? new Date(publishedAt) : new Date()) : null,

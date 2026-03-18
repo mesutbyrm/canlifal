@@ -1549,6 +1549,8 @@ model BlogPost {
   isTrending      Boolean   @default(false)
   isEditorPick    Boolean   @default(false)
   isAiGenerated   Boolean   @default(false)
+  isPremium       Boolean   @default(false)
+  zodiacSign      String    @default("")
   authorId        String?
   authorName      String    @default("Canlifal Editör")
   publishedAt     DateTime?
@@ -1563,6 +1565,8 @@ model BlogPost {
   @@index([isTrending])
   @@index([views])
   @@index([publishedAt])
+  @@index([isPremium])
+  @@index([zodiacSign])
   @@map("blog_posts")
 }
 

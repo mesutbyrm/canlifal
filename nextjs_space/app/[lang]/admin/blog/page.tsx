@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, Star, TrendingUp, Award, Image as ImageIcon, Clock, Search } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles, Loader2, FolderPlus, Tag, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, Star, TrendingUp, Award, Image as ImageIcon, Clock, Search, BarChart3, MessageCircle, Crown, Zap, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 
@@ -25,6 +25,8 @@ interface BlogPost {
   isTrending: boolean
   isEditorPick: boolean
   isAiGenerated: boolean
+  isPremium: boolean
+  zodiacSign: string
   authorName: string
   views: number
   likes: number
@@ -47,15 +49,27 @@ type FormState = {
   contentTr: string; contentEn: string; category: string; isPublished: boolean
   metaDescription: string; coverImage: string; readTime: number
   isFeatured: boolean; isTrending: boolean; isEditorPick: boolean
-  isAiGenerated: boolean; authorName: string
+  isAiGenerated: boolean; isPremium: boolean; zodiacSign: string
+  authorName: string; scheduledAt: string
 }
+
+const ZODIAC_SIGNS = [
+  { value: '', label: 'Yok' },
+  { value: 'koc', label: '\u2648 Ko\u00e7' }, { value: 'boga', label: '\u2649 Bo\u011fa' },
+  { value: 'ikizler', label: '\u264a \u0130kizler' }, { value: 'yengec', label: '\u264b Yenge\u00e7' },
+  { value: 'aslan', label: '\u264c Aslan' }, { value: 'basak', label: '\u264d Ba\u015fak' },
+  { value: 'terazi', label: '\u264e Terazi' }, { value: 'akrep', label: '\u264f Akrep' },
+  { value: 'yay', label: '\u2650 Yay' }, { value: 'oglak', label: '\u2651 O\u011flak' },
+  { value: 'kova', label: '\u2652 Kova' }, { value: 'balik', label: '\u2653 Bal\u0131k' },
+]
 
 const emptyForm: FormState = {
   slug: '', titleTr: '', titleEn: '', descTr: '', descEn: '',
   contentTr: '', contentEn: '', category: 'genel', isPublished: false,
   metaDescription: '', coverImage: '', readTime: 0,
   isFeatured: false, isTrending: false, isEditorPick: false,
-  isAiGenerated: false, authorName: 'Canlifal Editör',
+  isAiGenerated: false, isPremium: false, zodiacSign: '',
+  authorName: 'Canlifal Edit\u00f6r', scheduledAt: '',
 }
 
 export default function AdminBlogPage() {
@@ -81,6 +95,15 @@ export default function AdminBlogPage() {
   const [keywordsInput, setKeywordsInput] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [aiMessage, setAiMessage] = useState('')
+
+  // Bulk generation
+  const [bulkTopics, setBulkTopics] = useState('')
+  const [bulkCategory, setBulkCategory] = useState('')
+  const [bulkZodiac, setBulkZodiac] = useState('')
+  const [bulkAutoPublish, setBulkAutoPublish] = useState(false)
+  const [bulkGenerating, setBulkGenerating] = useState(false)
+  const [bulkMessage, setBulkMessage] = useState('')
+  const [showBulkForm, setShowBulkForm] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -126,7 +149,10 @@ export default function AdminBlogPage() {
       isTrending: post.isTrending || false,
       isEditorPick: post.isEditorPick || false,
       isAiGenerated: post.isAiGenerated || false,
+      isPremium: post.isPremium || false,
+      zodiacSign: post.zodiacSign || '',
       authorName: post.authorName || 'Canlifal Editör',
+      scheduledAt: post.scheduledAt ? new Date(post.scheduledAt).toISOString().slice(0, 16) : '',
     })
     setKeywordsInput((post.keywords || []).join(', '))
     setShowForm(true)
@@ -170,7 +196,10 @@ export default function AdminBlogPage() {
         isTrending: false,
         isEditorPick: false,
         isAiGenerated: true,
+        isPremium: false,
+        zodiacSign: '',
         authorName: 'Canlifal AI',
+        scheduledAt: '',
       })
       setKeywordsInput((data.keywords || []).join(', '))
       setIsNew(true)
@@ -201,7 +230,7 @@ export default function AdminBlogPage() {
     setSaving(true)
     try {
       const keywords = keywordsInput.split(',').map(k => k.trim()).filter(Boolean)
-      const payload = { ...form, keywords }
+      const payload = { ...form, keywords, scheduledAt: form.scheduledAt || null }
       const url = isNew ? '/api/admin/blog' : `/api/admin/blog/${editing?.id}`
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PUT',
@@ -329,9 +358,17 @@ export default function AdminBlogPage() {
               <p className="text-sm text-gray-500">{posts.length} yazı • {categories.length} kategori</p>
             </div>
           </div>
-          <button onClick={openNew} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition">
-            <Plus className="w-4 h-4" /> Yeni Yazı
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href={`/${lang}/admin/blog/analytics`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
+              <BarChart3 className="w-4 h-4 text-purple-400" /> Analitik
+            </Link>
+            <Link href={`/${lang}/admin/blog/comments`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
+              <MessageCircle className="w-4 h-4 text-green-400" /> Yorumlar
+            </Link>
+            <button onClick={openNew} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition">
+              <Plus className="w-4 h-4" /> Yeni Yazı
+            </button>
+          </div>
         </div>
 
         {/* AI Generation Card */}
@@ -609,13 +646,31 @@ export default function AdminBlogPage() {
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={form.isEditorPick} onChange={e => setForm(f => ({ ...f, isEditorPick: e.target.checked }))} className="rounded accent-blue-500" />
-                <Award className="w-4 h-4 text-blue-400" /> Editör Seçimi
+                <Award className="w-4 h-4 text-blue-400" /> Edit\u00f6r Se\u00e7imi
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={form.isPremium} onChange={e => setForm(f => ({ ...f, isPremium: e.target.checked }))} className="rounded accent-yellow-500" />
+                <Crown className="w-4 h-4 text-yellow-400" /> Premium
               </label>
               {form.isAiGenerated && (
                 <span className="flex items-center gap-1.5 text-sm text-purple-400">
-                  <Sparkles className="w-4 h-4" /> AI Üretimi
+                  <Sparkles className="w-4 h-4" /> AI \u00dcretimi
                 </span>
               )}
+            </div>
+
+            {/* Zodiac + Schedule */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Bur\u00e7 (Astroloji Mod\u00fcl\u00fc)</label>
+                <select value={form.zodiacSign} onChange={e => setForm(f => ({ ...f, zodiacSign: e.target.value }))} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm">
+                  {ZODIAC_SIGNS.map(z => <option key={z.value} value={z.value}>{z.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Zamanl\u0131 Yay\u0131n <span className="text-gray-600">(opsiyonel)</span></label>
+                <input type="datetime-local" value={form.scheduledAt} onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm" />
+              </div>
             </div>
 
             {/* Save / Cancel */}
@@ -668,6 +723,7 @@ export default function AdminBlogPage() {
                     {post.isTrending && <TrendingUp className="w-3.5 h-3.5 text-orange-400" />}
                     {post.isEditorPick && <Award className="w-3.5 h-3.5 text-blue-400" />}
                     {post.isAiGenerated && <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                    {post.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
                     {post.readTime > 0 && (
                       <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
                         <Clock className="w-3 h-3" /> {post.readTime} dk

@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const trending = searchParams.get('trending')
     const editorPick = searchParams.get('editorPick')
     const search = searchParams.get('search')
+    const zodiacSign = searchParams.get('zodiacSign')
 
     // Single post by slug
     if (slug) {
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
     if (featured === 'true') where.isFeatured = true
     if (trending === 'true') where.isTrending = true
     if (editorPick === 'true') where.isEditorPick = true
+    if (zodiacSign) where.zodiacSign = zodiacSign
     if (search) {
       where.OR = [
         { titleTr: { contains: search, mode: 'insensitive' } },
@@ -67,6 +69,8 @@ export async function GET(req: NextRequest) {
           isFeatured: true,
           isTrending: true,
           isEditorPick: true,
+          isPremium: true,
+          zodiacSign: true,
           authorName: true,
           publishedAt: true,
           createdAt: true,

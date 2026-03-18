@@ -25,7 +25,7 @@ async function handleUpdate(req: NextRequest, postId: string) {
       slug, titleTr, titleEn, descTr, descEn, contentTr, contentEn,
       category, keywords, isPublished, metaDescription, coverImage,
       readTime, isFeatured, isTrending, isEditorPick, isAiGenerated,
-      authorName, publishedAt, scheduledAt,
+      isPremium, zodiacSign, authorName, publishedAt, scheduledAt,
     } = body
 
     // Calculate read time if content changed and readTime not set
@@ -55,6 +55,8 @@ async function handleUpdate(req: NextRequest, postId: string) {
         ...(isTrending !== undefined && { isTrending }),
         ...(isEditorPick !== undefined && { isEditorPick }),
         ...(isAiGenerated !== undefined && { isAiGenerated }),
+        ...(isPremium !== undefined && { isPremium }),
+        ...(zodiacSign !== undefined && { zodiacSign }),
         ...(authorName !== undefined && { authorName }),
         ...(publishedAt !== undefined && { publishedAt: publishedAt ? new Date(publishedAt) : null }),
         ...(scheduledAt !== undefined && { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }),

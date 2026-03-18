@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { SITE_NAME, SITE_URL } from '@/lib/seo-config'
-import { ArrowLeft, BookOpen, Calendar, Tag, Clock, Eye, ChevronRight, Share2, Heart, ThumbsUp, User, Bookmark, MessageCircle, Send, Reply, Trash2, Facebook, Loader2, Check, Copy, LinkIcon } from 'lucide-react'
+import { ArrowLeft, BookOpen, Calendar, Tag, Clock, Eye, ChevronRight, Share2, Heart, ThumbsUp, User, Bookmark, MessageCircle, Send, Reply, Trash2, Facebook, Loader2, Check, Copy, LinkIcon, Crown, Lock } from 'lucide-react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -27,6 +27,7 @@ interface BlogPost {
   views: number
   likes: number
   authorName: string
+  isPremium: boolean
   publishedAt: string | null
   createdAt: string
 }
@@ -383,6 +384,11 @@ export default function BlogPostPage() {
             >
               {getCategoryName(post.category)}
             </Link>
+            {post.isPremium && (
+              <span className="px-3 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/30 flex items-center gap-1">
+                <Crown className="w-3 h-3" /> Premium
+              </span>
+            )}
           </div>
           <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight mb-4">{title}</h1>
           <p className="text-gray-400 text-lg">{post.descTr}</p>
@@ -465,20 +471,59 @@ export default function BlogPostPage() {
         </header>
 
         {/* Article Content */}
-        <article
-          className="prose prose-invert prose-purple max-w-none
-            prose-headings:text-white prose-headings:font-bold
-            prose-h1:text-2xl prose-h1:mt-10 prose-h1:mb-4
-            prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
-            prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
-            prose-p:text-gray-300 prose-p:leading-relaxed
-            prose-strong:text-white
-            prose-a:text-purple-400 prose-a:no-underline hover:prose-a:text-purple-300
-            prose-li:text-gray-300
-            prose-blockquote:border-purple-500 prose-blockquote:bg-purple-500/5 prose-blockquote:rounded-lg prose-blockquote:p-4
-            prose-img:rounded-xl"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+        {post.isPremium && !session?.user ? (
+          <div className="relative">
+            <article
+              className="prose prose-invert prose-purple max-w-none
+                prose-headings:text-white prose-headings:font-bold
+                prose-h1:text-2xl prose-h1:mt-10 prose-h1:mb-4
+                prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
+                prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
+                prose-p:text-gray-300 prose-p:leading-relaxed
+                prose-strong:text-white
+                prose-a:text-purple-400 prose-a:no-underline hover:prose-a:text-purple-300
+                prose-li:text-gray-300
+                prose-blockquote:border-purple-500 prose-blockquote:bg-purple-500/5 prose-blockquote:rounded-lg prose-blockquote:p-4
+                prose-img:rounded-xl max-h-[300px] overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-gray-950 via-gray-950/90 to-transparent" />
+            <div className="relative -mt-8 p-8 rounded-2xl bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-500/30 text-center">
+              <Crown className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-white mb-2">Premium İçerik</h3>
+              <p className="text-gray-400 mb-5">Bu yazının tamamını okumak için giriş yapın veya üye olun.</p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  href={`/${lang}/login`}
+                  className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition"
+                >
+                  Giriş Yap
+                </Link>
+                <Link
+                  href={`/${lang}/register`}
+                  className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition"
+                >
+                  Üye Ol
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <article
+            className="prose prose-invert prose-purple max-w-none
+              prose-headings:text-white prose-headings:font-bold
+              prose-h1:text-2xl prose-h1:mt-10 prose-h1:mb-4
+              prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
+              prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
+              prose-p:text-gray-300 prose-p:leading-relaxed
+              prose-strong:text-white
+              prose-a:text-purple-400 prose-a:no-underline hover:prose-a:text-purple-300
+              prose-li:text-gray-300
+              prose-blockquote:border-purple-500 prose-blockquote:bg-purple-500/5 prose-blockquote:rounded-lg prose-blockquote:p-4
+              prose-img:rounded-xl"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        )}
 
         {/* Tags */}
         {post.keywords.length > 0 && (
