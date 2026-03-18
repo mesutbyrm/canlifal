@@ -18,6 +18,7 @@ import CfcCoin from './cfc-coin'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import TellerIncomingRequest from './teller-incoming-request'
+import UserLevelBadge from './user-level-badge'
 
 export default function Navbar() {
   const { data: session, update: updateSession } = useSession() || {}
@@ -346,10 +347,9 @@ export default function Navbar() {
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-semibold truncate">{session.user.name}</p>
                             <p className="text-xs truncate text-fuchsia-300">{session.user.email}</p>
-                            <p className="text-[10px] mt-1 flex items-center gap-1 text-gold-400">
-                              <Camera className="w-3 h-3" />
-                              {'Resmi değiştir'}
-                            </p>
+                            <div className="mt-1">
+                              <UserLevelBadge compact />
+                            </div>
                           </div>
                         </div>
                       </div>

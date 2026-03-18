@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import OpenAI from 'openai'
+import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,15 +15,15 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Giri\u015f yapman\u0131z gerekiyor' }, { status: 401 })
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
     const { dreamText } = await req.json()
     if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length < 10) {
-      return NextResponse.json({ error: 'R\u00fcyan\u0131z\u0131 en az 10 karakter olarak yaz\u0131n' }, { status: 400 })
+      return NextResponse.json({ error: 'Rüyanızı en az 10 karakter olarak yazın' }, { status: 400 })
     }
     if (dreamText.length > 3000) {
-      return NextResponse.json({ error: 'R\u00fcya metni en fazla 3000 karakter olabilir' }, { status: 400 })
+      return NextResponse.json({ error: 'Rüya metni en fazla 3000 karakter olabilir' }, { status: 400 })
     }
 
     const completion = await openai.chat.completions.create({
@@ -30,31 +31,53 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `Sen deneyimli bir r\u00fcya tabircisisin. Kullan\u0131c\u0131n\u0131n anlatt\u0131\u011f\u0131 r\u00fcyay\u0131 \u0130slami, psikolojik ve geleneksel T\u00fcrk k\u00fclt\u00fcr\u00fc perspektiflerinden yorumlayacaks\u0131n.
+          content: `Sen deneyimli bir rüya tabircisisin. Kullanıcının anlattığı rüyayı İslami, psikolojik ve geleneksel Türk kültürü perspektiflerinden yorumlayacaksın.
 
 Kurallar:
-- T\u00fcrk\u00e7e yaz
-- Samimi ve anla\u015f\u0131l\u0131r bir dil kullan
-- \u0130slami yorum, psikolojik yorum ve genel de\u011ferlendirme b\u00f6l\u00fcmleri olsun
+- Türkçe yaz
+- Samimi ve anlaşılır bir dil kullan
+- İslami yorum, psikolojik yorum ve genel değerlendirme bölümleri olsun
 - En az 300 kelime yaz
-- HTML kullanma, d\u00fcz metin yaz
-- R\u00fcyadaki sembolleri ayr\u0131 ayr\u0131 ele al
+- HTML kullanma, düz metin yaz
+- Rüyadaki sembolleri ayrı ayrı ele al
 - Olumlu ve umut verici bir ton kullan`,
         },
         {
           role: 'user',
-          content: `R\u00fcyam\u0131 yorumla:\n\n${dreamText.trim()}`,
+          content: `Rüyamı yorumla:\n\n${dreamText.trim()}`,
         },
       ],
       temperature: 0.7,
       max_tokens: 2000,
     })
 
-    const interpretation = completion.choices[0]?.message?.content || 'Yorum olu\u015fturulamad\u0131.'
+    const interpretation = completion.choices[0]?.message?.content || 'Yorum oluşturulamadı.'
 
-    return NextResponse.json({ interpretation })
+    // Auto-share to social feed
+    let socialPostId: string | null = null
+    try {
+      const dreamSummary = dreamText.trim().length > 150 ? dreamText.trim().substring(0, 150) + '...' : dreamText.trim()
+      const interpretSummary = interpretation.length > 300 ? interpretation.substring(0, 300) + '...' : interpretation
+      const socialContent = `🌙 Rüya Yorumum\n\n💭 "${dreamSummary}"\n\n🔮 Yorum:\n${interpretSummary}`
+
+      const post = await prisma.socialPost.create({
+        data: {
+          userId: session.user.id,
+          content: socialContent,
+          postType: 'text',
+          fortuneType: 'dream',
+          isPublic: true,
+          isAuto: true,
+        },
+      })
+      socialPostId = post.id
+    } catch (shareErr) {
+      console.error('Auto-share to social error:', shareErr)
+    }
+
+    return NextResponse.json({ interpretation, socialPostId, sharedToSocial: !!socialPostId })
   } catch (error) {
     console.error('Dream interpret error:', error)
-    return NextResponse.json({ error: 'R\u00fcya yorumlan\u0131rken bir hata olu\u015ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Rüya yorumlanırken bir hata oluştu' }, { status: 500 })
   }
 }

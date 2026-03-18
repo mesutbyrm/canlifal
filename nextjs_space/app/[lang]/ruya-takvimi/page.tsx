@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Calendar, PenLine, Loader2, Moon, Brain, ChevronLeft, ChevronRight, Trash2, Sparkles, BookOpen } from 'lucide-react'
+import { Calendar, PenLine, Loader2, Moon, Brain, ChevronLeft, ChevronRight, Trash2, Sparkles, BookOpen, FileText, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 interface DiaryEntry {
@@ -15,6 +15,15 @@ interface DiaryEntry {
   mood: string | null
   lucidity: number | null
   aiAnalysis: string | null
+}
+
+interface WeeklyReport {
+  id: string
+  weekStart: string
+  weekEnd: string
+  reportContent: string
+  dreamCount: number
+  topSymbols: string[]
 }
 
 const MOODS = [
@@ -40,9 +49,14 @@ export default function DreamCalendarPage() {
   const [formData, setFormData] = useState({ title: '', content: '', symbols: '', mood: 'neutral', lucidity: 3, analyzeWithAI: false })
   const [saving, setSaving] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null)
+  const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
+  const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
-    if (session?.user) fetchEntries()
+    if (session?.user) {
+      fetchEntries()
+      fetch('/api/weekly-dream-report').then(r => r.ok ? r.json() : []).then(data => setWeeklyReports(Array.isArray(data) ? data : [])).catch(() => {})
+    }
     else setLoading(false)
   }, [session, month, year])
 
@@ -256,6 +270,58 @@ export default function DreamCalendarPage() {
           )}
         </div>
       </div>
+
+      {/* Weekly Dream Report */}
+      {session?.user && (
+        <div className="mt-6 bg-white/5 border border-indigo-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText size={18} className="text-indigo-400" />
+              <h3 className="text-white font-semibold">Haftalık Rüya Raporu</h3>
+            </div>
+            <button
+              onClick={async () => {
+                setGeneratingReport(true)
+                try {
+                  const res = await fetch('/api/weekly-dream-report', { method: 'POST' })
+                  if (res.ok) {
+                    const data = await res.json()
+                    setWeeklyReports(prev => [data, ...prev.slice(0, 3)])
+                  }
+                } catch (e) { console.error(e) }
+                finally { setGeneratingReport(false) }
+              }}
+              disabled={generatingReport}
+              className="text-xs px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {generatingReport ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              {generatingReport ? 'Oluşturuluyor...' : 'Rapor Oluştur'}
+            </button>
+          </div>
+          {weeklyReports.length > 0 ? (
+            <div className="space-y-3">
+              {weeklyReports.map((report: WeeklyReport) => (
+                <details key={report.id} className="group">
+                  <summary className="cursor-pointer flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div>
+                      <p className="text-white text-sm font-medium">
+                        {new Date(report.weekStart).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} — {new Date(report.weekEnd).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                      </p>
+                      <p className="text-white/40 text-xs">{report.dreamCount} rüya • {(report.topSymbols || []).slice(0, 3).join(', ')}</p>
+                    </div>
+                    <ChevronDown size={14} className="text-white/40 group-open:rotate-180 transition-transform" />
+                  </summary>
+                  <div className="mt-2 p-3 bg-white/[0.02] rounded-lg text-white/70 text-sm leading-relaxed whitespace-pre-wrap">
+                    {report.reportContent}
+                  </div>
+                </details>
+              ))}
+            </div>
+          ) : (
+            <p className="text-white/30 text-sm text-center py-4">Henüz haftalık rapor oluşturulmadı. Rüyalarınızı kaydedin ve AI raporunuzu alın!</p>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">

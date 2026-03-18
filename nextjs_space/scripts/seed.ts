@@ -745,6 +745,109 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Dream symbols seeded')
 
+  // ===== Blog Categories =====
+  const blogCategories = [
+    { slug: 'haftanin-burcu', nameTr: 'Haftanın Burcu', nameEn: 'Weekly Zodiac', sortOrder: 1 },
+    { slug: 'astroloji-rehberi', nameTr: 'Astroloji Rehberi', nameEn: 'Astrology Guide', sortOrder: 2 },
+  ]
+  for (const cat of blogCategories) {
+    await prisma.blogCategory.upsert({
+      where: { slug: cat.slug },
+      update: { nameTr: cat.nameTr, sortOrder: cat.sortOrder },
+      create: cat,
+    })
+  }
+  console.log('Blog categories seeded')
+
+  // ===== Blog Posts =====
+  const blogPosts = [
+    {
+      slug: 'haftanin-burcu-koc-mart-2026',
+      titleTr: 'Haftanın Burcu: Koç — 16-22 Mart 2026',
+      descTr: 'Bu hafta Koç burçları için enerjik ve fırsatlarla dolu bir dönem başlıyor. Mars etkisi altında cesur adımlar atmanın tam zamanı.',
+      contentTr: `🔮 Koç Burcu Haftalık Yorum — 16-22 Mart 2026\n\nBu hafta Koç burçları için oldukça dinamik bir dönem. Mars'ın Yay burcundaki konumu sizlere cesaret ve enerji veriyor.\n\n⭐ Aşk: İlişkinizde tutku yeniden alevleniyor. Bekar Koçlar beklenmedik bir tanışma yaşayabilir.\n\n💼 Kariyer: İş hayatında liderlik özellikleriniz ön plana çıkıyor. Yeni projeler için ideal bir hafta.\n\n💰 Para: Finansal konularda dikkatli olun. Ani harcamalardan kaçının ama yatırım fırsatlarını değerlendirin.\n\n🌟 Sağlık: Enerji seviyeniz yüksek. Spor yapmak için harika bir hafta.\n\n📅 Şanslı Günler: Salı ve Perşembe\n🔢 Şanslı Sayılar: 3, 17, 28\n🎨 Şanslı Renk: Kırmızı`,
+      category: 'haftanin-burcu',
+      keywords: ['koç', 'haftalık burç', 'mart 2026', 'astroloji'],
+    },
+    {
+      slug: 'haftanin-burcu-boga-mart-2026',
+      titleTr: 'Haftanın Burcu: Boğa — 16-22 Mart 2026',
+      descTr: 'Boğa burçları bu hafta maddi konularda şanslı. Venüs etkisiyle aşk hayatında güzel gelişmeler sizi bekliyor.',
+      contentTr: `🔮 Boğa Burcu Haftalık Yorum — 16-22 Mart 2026\n\nBu hafta Boğa burçları için duygusal ve maddi denge ön planda.\n\n⭐ Aşk: Venüs'ün etkisiyle romantik anlar yaşayacaksınız. Partnerinizle özel bir akşam planlayın.\n\n💼 Kariyer: Sabırlı yaklaşımınız meyvelerini veriyor. Uzun süredir beklediğiniz haber bu hafta gelebilir.\n\n💰 Para: Maddi konularda olumlu gelişmeler. Beklenmedik bir gelir kapınızı çalabilir.\n\n🌟 Sağlık: Stres yönetimi önemli. Doğada vakit geçirin.\n\n📅 Şanslı Günler: Çarşamba ve Cuma\n🔢 Şanslı Sayılar: 6, 15, 24\n🎨 Şanslı Renk: Yeşil`,
+      category: 'haftanin-burcu',
+      keywords: ['boğa', 'haftalık burç', 'mart 2026', 'astroloji'],
+    },
+    {
+      slug: 'astroloji-rehberi-yukselen-burc',
+      titleTr: 'Yükselen Burcunuz Ne Anlama Gelir?',
+      descTr: 'Yükselen burcunuz, dış dünyanın sizi nasıl gördüğünü belirler. Bu rehberde yükselen burcunuzun tüm sırlarını öğrenin.',
+      contentTr: `🌅 Yükselen Burcunuz Ne Anlama Gelir?\n\nAstrolojide yükselen burç, doğum anınızda ufuk çizgisinde yükselen burç işaretidir. Güneş burcunuz iç benliğinizi temsil ederken, yükselen burcunuz dış dünyanın sizi nasıl algıladığını belirler.\n\n🔍 Yükselen Burcunuzu Nasıl Hesaplarsınız?\nDoğum saatinizi, tarihinizi ve yerinizi bilmeniz gerekir. Astroloji panelimizde bu hesaplamayı otomatik yapabilirsiniz.\n\n♈ Koç Yükselen: Enerjik, cesur ve girişimci bir izlenim bırakırsınız.\n♉ Boğa Yükselen: Sakin, güvenilir ve zarif görünürsünüz.\n♊ İkizler Yükselen: Sosyal, meraklı ve iletişime açık birisiniz.\n♋ Yengeç Yükselen: Şefkatli, koruyucu ve sezgisel bir aura yayarsınız.\n♌ Aslan Yükselen: Karizmatik, güçlü ve dikkat çekici bir yapınız var.\n♍ Başak Yükselen: Düzenli, analitik ve mükemmeliyetçi bir izlenim bırakırsınız.\n♎ Terazi Yükselen: Diplomatik, zarif ve uyumlu görünürsünüz.\n♏ Akrep Yükselen: Gizemli, yoğun ve manyetik bir çekiciliğiniz var.\n♐ Yay Yükselen: İyimser, özgür ruhlu ve maceracı birisiniz.\n♑ Oğlak Yükselen: Ciddi, kararlı ve otoriter bir izlenim verirsiniz.\n♒ Kova Yükselen: Farklı, yenilikçi ve bağımsız bir yapınız var.\n♓ Balık Yükselen: Hayalperest, empatik ve sanatsal bir ruhunuz var.\n\n💡 İpucu: Astroloji Panelimizde doğum bilgilerinizi girerek yükselen burcunuzu ve detaylı analizinizi görebilirsiniz!`,
+      category: 'astroloji-rehberi',
+      keywords: ['yükselen burç', 'astroloji', 'doğum haritası', 'rehber'],
+    },
+    {
+      slug: 'astroloji-rehberi-ay-burclari',
+      titleTr: 'Ay Burcunuz ve Duygusal Dünyanız',
+      descTr: 'Ay burcunuz duygusal ihtiyaçlarınızı, içgüdülerinizi ve bilinçaltınızı yansıtır. Her ay burcunun özellikleri bu yazıda.',
+      contentTr: `🌙 Ay Burcunuz ve Duygusal Dünyanız\n\nAy burcunuz, astrolojide en kişisel gezegen konumudur. Duygusal ihtiyaçlarınızı, içgüdülerinizi ve bilinçaltınızı temsil eder.\n\nAy burcunuzu bilmek, kendinizi daha iyi anlamanız için çok önemlidir.\n\n🔥 Ateş Grubu (Koç, Aslan, Yay):\nDuygularınız yoğun ve tutkulu. Heyecan arar, kolayca sıkılırsınız.\n\n🌍 Toprak Grubu (Boğa, Başak, Oğlak):\nDuygusal güvenlik arayışındasınız. Rutinler ve stabilite sizi rahatlatır.\n\n💨 Hava Grubu (İkizler, Terazi, Kova):\nDuygularınızı düşüncelerinizle ifade edersiniz. İletişim ve entelektüel bağ önemli.\n\n💧 Su Grubu (Yengeç, Akrep, Balık):\nDerinden hissedersiniz. Sezgileriniz güçlüdür, empati yeteneğiniz yüksektir.\n\n💡 Burç Uyumu sayfamızda Ay burcunuzla partnerinizin uyumunu detaylıca analiz edebilirsiniz!`,
+      category: 'astroloji-rehberi',
+      keywords: ['ay burcu', 'astroloji', 'duygusal dünya', 'burç analizi'],
+    },
+  ]
+  for (const post of blogPosts) {
+    await prisma.blogPost.upsert({
+      where: { slug: post.slug },
+      update: {
+        titleTr: post.titleTr,
+        descTr: post.descTr,
+        contentTr: post.contentTr,
+        category: post.category,
+        keywords: post.keywords,
+        isPublished: true,
+      },
+      create: {
+        slug: post.slug,
+        titleTr: post.titleTr,
+        titleEn: '',
+        descTr: post.descTr,
+        descEn: '',
+        contentTr: post.contentTr,
+        contentEn: '',
+        category: post.category,
+        keywords: post.keywords,
+        isPublished: true,
+      },
+    })
+  }
+  console.log('Blog posts seeded')
+
+  // ===== Dream Contest =====
+  const now = new Date()
+  const weekEnd = new Date(now)
+  weekEnd.setDate(weekEnd.getDate() + 7)
+
+  await prisma.dreamContest.upsert({
+    where: { id: 'default-weekly-contest' },
+    update: {
+      title: 'Haftanın Rüya Yarışması',
+      description: 'Bu haftanın teması: Uçmak! Uçma rüyanızı en yaratıcı şekilde yorumlayın ve topluluk oylarıyla birinci olun.',
+      dreamPrompt: 'Rüyamda gökyüzünde kuşlar gibi süzülüyordum. Aşağıda şehir ışıkları parlıyordu ve bulutların arasından geçerken tüyler gibi hafif hissettim. Birden bir kartal yanıma geldi ve birlikte uçmaya başladık...',
+      startDate: now,
+      endDate: weekEnd,
+      isActive: true,
+    },
+    create: {
+      id: 'default-weekly-contest',
+      title: 'Haftanın Rüya Yarışması',
+      description: 'Bu haftanın teması: Uçmak! Uçma rüyanızı en yaratıcı şekilde yorumlayın ve topluluk oylarıyla birinci olun.',
+      dreamPrompt: 'Rüyamda gökyüzünde kuşlar gibi süzülüyordum. Aşağıda şehir ışıkları parlıyordu ve bulutların arasından geçerken tüyler gibi hafif hissettim. Birden bir kartal yanıma geldi ve birlikte uçmaya başladık...',
+      startDate: now,
+      endDate: weekEnd,
+      isActive: true,
+    },
+  })
+  console.log('Dream contest seeded')
+
   console.log('Seed completed successfully!')
 }
 

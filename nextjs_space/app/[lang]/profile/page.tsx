@@ -19,6 +19,7 @@ import {
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
 import ChatRoomReceivedGifts from '@/components/chat-room-received-gifts'
+import UserLevelBadge from '@/components/user-level-badge'
 
 interface UserProfile {
   id: string
@@ -486,6 +487,11 @@ export default function ProfilePage() {
               + {'Bio ekle'}
             </Link>
           )}
+        </div>
+
+        {/* Level Badge */}
+        <div className="mt-4 flex justify-center">
+          <UserLevelBadge />
         </div>
 
         {/* Stats */}

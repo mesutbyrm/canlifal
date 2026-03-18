@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Search, Moon, Eye, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Clock, Loader2, Heart, PenLine, Star } from 'lucide-react'
+import { Search, Moon, Eye, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Clock, Loader2, Heart, PenLine, Star, Share2, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
 
@@ -63,6 +63,7 @@ export default function RuyaPage() {
   const [dreamText, setDreamText] = useState('')
   const [interpretation, setInterpretation] = useState('')
   const [interpreting, setInterpreting] = useState(false)
+  const [sharedToSocial, setSharedToSocial] = useState(false)
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -156,6 +157,7 @@ export default function RuyaPage() {
     }
     setInterpreting(true)
     setInterpretation('')
+    setSharedToSocial(false)
     try {
       const res = await fetch('/api/dreams/interpret', {
         method: 'POST',
@@ -165,6 +167,7 @@ export default function RuyaPage() {
       if (res.ok) {
         const data = await res.json()
         setInterpretation(data.interpretation || '')
+        if (data.sharedToSocial) setSharedToSocial(true)
       } else {
         const err = await res.json().catch(() => ({}))
         setInterpretation(err.error || 'Bir hata olu\u015ftu.')
@@ -465,6 +468,15 @@ export default function RuyaPage() {
                 <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                   {interpretation}
                 </div>
+                {sharedToSocial && (
+                  <div className="mt-4 flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Rüya yorumunuz otomatik olarak sosyal akışınızda paylaşıldı!</span>
+                    <button onClick={() => router.push(`/${lang}/social`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">
+                      <Share2 className="w-3 h-3" /> Görüntüle
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
