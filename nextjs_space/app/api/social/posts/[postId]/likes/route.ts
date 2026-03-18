@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,17 +60,15 @@ export async function POST(
         where: { postId: params.postId }
       })
 
-      // Create notification for post owner (if not self-like)
+      // Create notification + push for post owner (if not self-like)
       if (post.userId !== session.user.id) {
-        await prisma.notification.create({
-          data: {
-            userId: post.userId,
-            type: 'like',
-            message: 'gönderinizi beğendi',
-            postId: params.postId,
-            fromUserId: session.user.id,
-            fromUserName: session.user.name || 'Birisi'
-          }
+        createNotificationWithPush({
+          userId: post.userId,
+          type: 'like',
+          message: 'gönderinizi beğendi',
+          postId: params.postId,
+          fromUserId: session.user.id,
+          fromUserName: session.user.name || 'Birisi'
         }).catch((err: any) => console.error('Notification error:', err))
       }
 

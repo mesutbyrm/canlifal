@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export async function POST(req: NextRequest) {
   try {
@@ -93,24 +94,22 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      // Send notification to recipient
-      await prisma.notification.create({
-        data: {
-          userId: recipient.id,
-          type: 'gift_received',
-          title: 'Hediye Aldınız! 🎁',
-          message: `${sender.name} size ${giftType.icon} ${giftType.name} hediye gönderdi!`,
-          fromUserId: sender.id,
-          fromUserName: sender.name,
-          data: JSON.stringify({
-            giftTypeId: giftType.id,
-            giftName: giftType.name,
-            giftIcon: giftType.icon,
-            senderId: sender.id,
-            senderName: sender.name
-          })
-        }
-      })
+      // Send notification + push to recipient
+      createNotificationWithPush({
+        userId: recipient.id,
+        type: 'gift',
+        title: 'Hediye Aldınız! 🎁',
+        message: `size ${giftType.icon} ${giftType.name} hediye gönderdi!`,
+        fromUserId: sender.id,
+        fromUserName: sender.name,
+        data: JSON.stringify({
+          giftTypeId: giftType.id,
+          giftName: giftType.name,
+          giftIcon: giftType.icon,
+          senderId: sender.id,
+          senderName: sender.name
+        })
+      }).catch(err => console.error('Gift notification error:', err))
 
       const isBigGift = giftType.price >= 1000
       return NextResponse.json({
@@ -183,22 +182,20 @@ export async function POST(req: NextRequest) {
       })
 
       // Send notification
-      await prisma.notification.create({
-        data: {
-          userId: recipient.id,
-          type: 'gift_received',
-          title: 'Jeton Hediyesi! 🪙',
-          message: `${sender.name} size ${amount} jeton hediye gönderdi!`,
-          fromUserId: sender.id,
-          fromUserName: sender.name,
-          data: JSON.stringify({
-            type: 'jeton',
-            amount,
-            senderId: sender.id,
-            senderName: sender.name
-          })
-        }
-      })
+      createNotificationWithPush({
+        userId: recipient.id,
+        type: 'gift',
+        title: 'Jeton Hediyesi! 🪙',
+        message: `size ${amount} jeton hediye gönderdi!`,
+        fromUserId: sender.id,
+        fromUserName: sender.name,
+        data: JSON.stringify({
+          type: 'jeton',
+          amount,
+          senderId: sender.id,
+          senderName: sender.name
+        })
+      }).catch(err => console.error('Jeton gift notification error:', err))
 
       const isBigJetonGift = amount >= 1000
       return NextResponse.json({

@@ -2,6 +2,45 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { sendOneSignalPushToMany } from '@/lib/onesignal'
+
+/**
+ * Notify all followers of a user that they went live.
+ */
+async function notifyFollowersOfLiveStream(userId: string, userName: string, streamId: string, streamTitle: string) {
+  // Get all follower IDs
+  const followers = await prisma.follow.findMany({
+    where: { followingId: userId },
+    select: { followerId: true }
+  })
+
+  if (followers.length === 0) return
+
+  const followerIds = followers.map(f => f.followerId)
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+
+  // Create in-app notifications in bulk
+  await prisma.notification.createMany({
+    data: followerIds.map(fId => ({
+      userId: fId,
+      type: 'stream_live',
+      title: '🔴 Canlı Yayın Başladı!',
+      message: `${userName} canlı yayına başladı: ${streamTitle || 'Canlı Fal'}`,
+      fromUserId: userId,
+      fromUserName: userName,
+      data: JSON.stringify({ streamId }),
+    }))
+  })
+
+  // Send push notification to all followers at once
+  await sendOneSignalPushToMany(
+    followerIds,
+    '🔴 Canlı Yayın Başladı!',
+    `${userName} canlı yayına başladı: ${streamTitle || 'Canlı Fal'}`,
+    `${baseUrl}/live-room/${streamId}`,
+    { streamId, type: 'stream_live' }
+  )
+}
 
 export async function GET() {
   try {
@@ -111,6 +150,11 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Notify followers that this teller went live (fire-and-forget)
+    notifyFollowersOfLiveStream(session.user.id, session.user.name || 'Falcı', stream.id, title).catch(err =>
+      console.error('Live stream follower notification error:', err)
+    )
 
     return NextResponse.json(stream)
   } catch (error) {

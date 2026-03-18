@@ -10,7 +10,7 @@ import {
   Target, Tag, User, Globe, Calendar, Image as ImageIcon,
   Link as LinkIcon, Sparkles, Zap, Eye, ChevronLeft, ChevronRight,
   Copy, Radio, Gift, Star, TrendingUp, MousePointerClick,
-  Upload, X
+  Upload, X, ChevronDown, Search
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -78,6 +78,60 @@ const QUICK_ACTIONS = [
     defaultMessage: 'Uzun zamandır görünmüyorsunuz. Yeni fallar ve özellikler sizi bekliyor!',
     defaultUrl: '/',
   },
+  {
+    id: 'daily_horoscope',
+    label: 'Günlük Burç Yorumu',
+    icon: <Star className="w-5 h-5" />,
+    color: 'from-indigo-500 to-blue-500',
+    defaultTitle: '⭐ Günlük Burç Yorumunuz Hazır!',
+    defaultMessage: 'Bugün yıldızlar sizin için ne söylüyor? Günlük burç yorumunuzu okuyun.',
+    defaultUrl: '/fortunes',
+  },
+  {
+    id: 'new_teller',
+    label: 'Yeni Falcı Duyurusu',
+    icon: <User className="w-5 h-5" />,
+    color: 'from-teal-500 to-cyan-500',
+    defaultTitle: '🌙 Yeni Falcımız Aramıza Katıldı!',
+    defaultMessage: 'Deneyimli falcımız artık platformda. Hemen profilini incele ve randevu al!',
+    defaultUrl: '/live-tellers',
+  },
+  {
+    id: 'credit_bonus',
+    label: 'Jeton Bonusu',
+    icon: <TrendingUp className="w-5 h-5" />,
+    color: 'from-yellow-500 to-orange-500',
+    defaultTitle: '🪙 Bonus Jeton Fırsatı!',
+    defaultMessage: 'Bugüne özel jeton yükleme kampanyası! %50 bonus jeton kazanma şansı.',
+    defaultUrl: '/memberships',
+  },
+  {
+    id: 'weekend_event',
+    label: 'Hafta Sonu Etkinliği',
+    icon: <Calendar className="w-5 h-5" />,
+    color: 'from-pink-500 to-rose-500',
+    defaultTitle: '🎉 Hafta Sonu Özel Etkinlik!',
+    defaultMessage: 'Bu hafta sonu canlı yayınlarda özel fal etkinliği! Kaçırmayın.',
+    defaultUrl: '/live-tellers',
+  },
+  {
+    id: 'social_engagement',
+    label: 'Sosyal Paylaşım Teşvik',
+    icon: <Users className="w-5 h-5" />,
+    color: 'from-violet-500 to-fuchsia-500',
+    defaultTitle: '💬 Topluluğa Katılın!',
+    defaultMessage: 'Fal deneyimlerinizi paylaşın, diğer üyelerle etkileşime geçin!',
+    defaultUrl: '/social',
+  },
+  {
+    id: 'maintenance',
+    label: 'Bakım Bildirimi',
+    icon: <AlertCircle className="w-5 h-5" />,
+    color: 'from-gray-500 to-slate-500',
+    defaultTitle: '🔧 Planlı Bakım Bildirimi',
+    defaultMessage: 'Kısa süreli bakım çalışması yapılacaktır. Anlayışınız için teşekkürler.',
+    defaultUrl: '/',
+  },
 ]
 
 const TARGET_TYPES = [
@@ -86,6 +140,44 @@ const TARGET_TYPES = [
   { value: 'tag', label: 'Etikete Göre', icon: <Tag className="w-4 h-4" /> },
   { value: 'player_id', label: 'Belirli Kullanıcı', icon: <User className="w-4 h-4" /> },
 ]
+
+const URL_OPTIONS = [
+  { value: '', label: 'URL seçiniz (opsiyonel)' },
+  { value: '/', label: 'Ana Sayfa — /' },
+  { value: '/dashboard', label: 'Panel — /dashboard' },
+  { value: '/fortunes', label: 'Fallar — /fortunes' },
+  { value: '/live-tellers', label: 'Canlı Falcılar — /live-tellers' },
+  { value: '/social', label: 'Sosyal — /social' },
+  { value: '/memberships', label: 'Üyelik — /memberships' },
+  { value: '/games', label: 'Oyunlar — /games' },
+  { value: '/leaderboard', label: 'Sıralama — /leaderboard' },
+  { value: '/messages', label: 'Mesajlar — /messages' },
+  { value: '/profile', label: 'Profil — /profile' },
+]
+
+const TAG_OPTIONS = [
+  { value: '', label: 'Etiket seçiniz...' },
+  { value: 'membership=premium', label: 'Premium Üyeler' },
+  { value: 'membership=gold', label: 'Gold Üyeler' },
+  { value: 'membership=basic', label: 'Basic Üyeler' },
+  { value: 'role=fortune_teller', label: 'Falcılar' },
+  { value: 'role=admin', label: 'Adminler' },
+  { value: 'has_credits=true', label: 'Jetonu Olanlar' },
+  { value: 'has_credits=false', label: 'Jetonu Olmayanlar' },
+  { value: 'active_last_7d=true', label: 'Son 7 Gün Aktif' },
+  { value: 'active_last_30d=true', label: 'Son 30 Gün Aktif' },
+  { value: 'inactive_7d=true', label: '7+ Gündür Pasif' },
+  { value: 'inactive_30d=true', label: '30+ Gündür Pasif' },
+]
+
+interface SearchUser {
+  id: string
+  name: string
+  username: string | null
+  email: string
+  image: string | null
+  role: string
+}
 
 export default function AdminNotificationsPage() {
   const { data: session, status: sessionStatus } = useSession() || {}
@@ -112,6 +204,14 @@ export default function AdminNotificationsPage() {
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageMode, setImageMode] = useState<'url' | 'upload'>('upload')
+
+  // User search for autocomplete
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [userSearchResults, setUserSearchResults] = useState<SearchUser[]>([])
+  const [searchingUsers, setSearchingUsers] = useState(false)
+  const [selectedUsers, setSelectedUsers] = useState<SearchUser[]>([])
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [urlCustomMode, setUrlCustomMode] = useState(false)
 
   // History
   const [logs, setLogs] = useState<NotificationLog[]>([])
@@ -167,6 +267,42 @@ export default function AdminNotificationsPage() {
   }, [sessionStatus, fetchStats, fetchHistory])
 
   // Handle image upload
+  // User search for autocomplete
+  const searchUsers = useCallback(async (query: string) => {
+    if (query.length < 1) {
+      setUserSearchResults([])
+      return
+    }
+    setSearchingUsers(true)
+    try {
+      const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}&limit=8`)
+      if (res.ok) {
+        const data = await res.json()
+        setUserSearchResults(data.users || [])
+      }
+    } catch (err) {
+      console.error('User search error:', err)
+    } finally {
+      setSearchingUsers(false)
+    }
+  }, [])
+
+  // Debounced user search
+  useEffect(() => {
+    if (targetType !== 'player_id') return
+    const timer = setTimeout(() => {
+      searchUsers(userSearchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [userSearchQuery, targetType, searchUsers])
+
+  // Update targetValue when selectedUsers changes
+  useEffect(() => {
+    if (targetType === 'player_id') {
+      setTargetValue(selectedUsers.map(u => u.id).join(', '))
+    }
+  }, [selectedUsers, targetType])
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -538,14 +674,49 @@ export default function AdminNotificationsPage() {
                       <label className="text-sm text-white/60 mb-1 flex items-center gap-1">
                         <LinkIcon className="w-3 h-3" /> Yönlendirme URL (opsiyonel)
                       </label>
-                      <input
-                        type="text"
-                        value={url}
-                        onChange={e => setUrl(e.target.value)}
-                        placeholder="/dashboard, /memberships veya https://canlifal.com/..."
-                        className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-purple-500 focus:outline-none"
-                      />
-                      <p className="text-xs text-white/30 mt-1">Bildirime tıklanınca açılacak sayfa. Ör: /live-tellers, /dashboard</p>
+                      {urlCustomMode ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={url}
+                            onChange={e => setUrl(e.target.value)}
+                            placeholder="/ozel-sayfa veya https://..."
+                            className="flex-1 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-purple-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => { setUrlCustomMode(false); setUrl('') }}
+                            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition text-xs"
+                          >
+                            Liste
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <select
+                              value={url}
+                              onChange={e => setUrl(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
+                            >
+                              {URL_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value} className="bg-[#1a1a2e] text-white">
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUrlCustomMode(true)}
+                            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition text-xs whitespace-nowrap"
+                          >
+                            Özel URL
+                          </button>
+                        </div>
+                      )}
+                      <p className="text-xs text-white/30 mt-1">Bildirime tıklanınca açılacak sayfa</p>
                     </div>
 
                     {/* Image Section */}
@@ -651,7 +822,7 @@ export default function AdminNotificationsPage() {
                       {TARGET_TYPES.map(tt => (
                         <button
                           key={tt.value}
-                          onClick={() => { setTargetType(tt.value); setTargetValue('') }}
+                          onClick={() => { setTargetType(tt.value); setTargetValue(''); setSelectedUsers([]); setUserSearchQuery(''); setShowUserDropdown(false) }}
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition border ${
                             targetType === tt.value
                               ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
@@ -664,24 +835,147 @@ export default function AdminNotificationsPage() {
                       ))}
                     </div>
 
-                    {targetType !== 'all' && (
+                    {targetType === 'segment' && (
                       <div>
                         <label className="text-sm text-white/60 mb-1 block">
-                          {targetType === 'segment' && 'Segment adı (ör: Active Users, Inactive Users)'}
-                          {targetType === 'tag' && 'Etiket filtresi (ör: membership=gold veya premium)'}
-                          {targetType === 'player_id' && 'Kullanıcı ID (virgülle ayırarak birden fazla)'}
+                          Segment adı (ör: Active Users, Inactive Users)
                         </label>
                         <input
                           type="text"
                           value={targetValue}
                           onChange={e => setTargetValue(e.target.value)}
-                          placeholder={
-                            targetType === 'segment' ? 'Active Users' :
-                            targetType === 'tag' ? 'membership=gold' :
-                            'user_id_1, user_id_2'
-                          }
+                          placeholder="Active Users"
                           className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-purple-500 focus:outline-none"
                         />
+                      </div>
+                    )}
+
+                    {targetType === 'tag' && (
+                      <div>
+                        <label className="text-sm text-white/60 mb-1 block">Etiket filtresi</label>
+                        <div className="relative">
+                          <select
+                            value={targetValue}
+                            onChange={e => setTargetValue(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
+                          >
+                            {TAG_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value} className="bg-[#1a1a2e] text-white">
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    {targetType === 'player_id' && (
+                      <div>
+                        <label className="text-sm text-white/60 mb-1 block">Kullanıcı Ara</label>
+                        {/* Selected users chips */}
+                        {selectedUsers.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {selectedUsers.map(u => (
+                              <span
+                                key={u.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs"
+                              >
+                                {u.image ? (
+                                  <img src={u.image} alt="" className="w-4 h-4 rounded-full" />
+                                ) : (
+                                  <User className="w-3 h-3" />
+                                )}
+                                <span className="max-w-[120px] truncate">{u.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedUsers(prev => prev.filter(su => su.id !== u.id))}
+                                  className="hover:text-red-400 transition"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {/* Search input */}
+                        <div className="relative">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                            <input
+                              type="text"
+                              value={userSearchQuery}
+                              onChange={e => {
+                                setUserSearchQuery(e.target.value)
+                                setShowUserDropdown(true)
+                              }}
+                              onFocus={() => setShowUserDropdown(true)}
+                              placeholder="İsim, kullanıcı adı veya e-posta yazın..."
+                              className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-purple-500 focus:outline-none"
+                            />
+                            {searchingUsers && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400 animate-spin" />
+                            )}
+                          </div>
+                          {/* Dropdown results */}
+                          {showUserDropdown && userSearchQuery.length >= 1 && (
+                            <div className="absolute z-50 w-full mt-1 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                              {userSearchResults.length === 0 && !searchingUsers ? (
+                                <div className="px-4 py-3 text-sm text-white/40">Kullanıcı bulunamadı</div>
+                              ) : (
+                                userSearchResults.map(user => {
+                                  const isSelected = selectedUsers.some(su => su.id === user.id)
+                                  return (
+                                    <button
+                                      key={user.id}
+                                      type="button"
+                                      disabled={isSelected}
+                                      onClick={() => {
+                                        if (!isSelected) {
+                                          setSelectedUsers(prev => [...prev, user])
+                                          setUserSearchQuery('')
+                                          setShowUserDropdown(false)
+                                          setUserSearchResults([])
+                                        }
+                                      }}
+                                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition ${
+                                        isSelected
+                                          ? 'opacity-40 cursor-not-allowed bg-white/5'
+                                          : 'hover:bg-white/10 cursor-pointer'
+                                      }`}
+                                    >
+                                      {user.image ? (
+                                        <img src={user.image} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                                      ) : (
+                                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                                          <User className="w-4 h-4 text-purple-400" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate text-white">{user.name}</p>
+                                        <p className="text-xs text-white/40 truncate">
+                                          {user.username ? `@${user.username}` : user.email}
+                                          {user.role !== 'user' && (
+                                            <span className="ml-1 text-purple-400">• {user.role}</span>
+                                          )}
+                                        </p>
+                                      </div>
+                                      {isSelected && (
+                                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                                      )}
+                                    </button>
+                                  )
+                                })
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-white/30 mt-1">
+                          {selectedUsers.length > 0
+                            ? `${selectedUsers.length} kullanıcı seçildi`
+                            : 'Kullanıcı aramak için yazmaya başlayın'
+                          }
+                        </p>
                       </div>
                     )}
                   </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // Follow or unfollow a user
 export async function POST(
@@ -65,19 +66,19 @@ export async function POST(
         }
       })
 
-      // Create notification for the followed user
-      await prisma.notification.create({
-        data: {
-          userId: targetUser.id,
-          type: 'new_follower',
-          message: `${session.user.name || 'Birisi'} seni takip etmeye başladı`,
-          data: JSON.stringify({
-            followerId: currentUserId,
-            followerName: session.user.name,
-            followerImage: session.user.image
-          })
-        }
-      })
+      // Create notification + push for the followed user
+      createNotificationWithPush({
+        userId: targetUser.id,
+        type: 'follow',
+        message: 'seni takip etmeye başladı',
+        fromUserId: currentUserId,
+        fromUserName: session.user.name || 'Birisi',
+        data: JSON.stringify({
+          followerId: currentUserId,
+          followerName: session.user.name,
+          followerImage: session.user.image
+        })
+      }).catch((err: any) => console.error('Follow notification error:', err))
 
       return NextResponse.json({ 
         success: true, 
