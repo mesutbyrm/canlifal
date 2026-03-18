@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +174,9 @@ export async function GET(request: NextRequest) {
         case 'dedicated_user':
           currentProgress = user.totalTimeSpentMinutes || 0
           break
+        case 'early_bird':
+          currentProgress = user.loginStreak || 0
+          break
         case 'newcomer':
           currentProgress = user._count.fortunes > 0 ? 1 : 0
           break
@@ -185,6 +189,7 @@ export async function GET(request: NextRequest) {
 
       // Update user achievement if needed
       if (!userAchievement || userAchievement.progress !== currentProgress) {
+        const isNewlyCompleted = isCompleted && !userAchievement?.isCompleted
         prisma.userAchievement.upsert({
           where: {
             userId_achievementId: { userId, achievementId: achievement.id }
@@ -192,13 +197,22 @@ export async function GET(request: NextRequest) {
           update: {
             progress: currentProgress,
             isCompleted,
-            earnedAt: isCompleted && !userAchievement?.isCompleted ? new Date() : undefined
+            earnedAt: isNewlyCompleted ? new Date() : undefined
           },
           create: {
             userId,
             achievementId: achievement.id,
             progress: currentProgress,
             isCompleted
+          }
+        }).then(() => {
+          if (isNewlyCompleted) {
+            createNotificationWithPush({
+              userId,
+              type: 'achievement',
+              message: `"${achievement.nameTr}" ba\u015far\u0131m\u0131n\u0131 kazand\u0131n! ${achievement.icon}`,
+              title: '\ud83c\udfc6 Yeni Ba\u015far\u0131m!'
+            }).catch(e => console.error('Achievement notification error:', e))
           }
         }).catch(e => console.error('Achievement update error:', e))
       }

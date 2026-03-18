@@ -119,6 +119,10 @@ export function getNotificationTitle(type: string): string {
     'follow': '👤 Yeni Takipçi',
     'message': '✉️ Yeni Mesaj',
     'co_broadcast_invite': '📹 Ortak Yayın Daveti',
+    'achievement': '🏆 Yeni Başarım',
+    'contest_result': '🎉 Yarışma Sonucu',
+    'new_blog': '📝 Yeni Blog Yazısı',
+    'moderation': '⚠️ Moderasyon Bildirimi',
   }
   return titles[type] || '🔔 Yeni Bildirim'
 }
@@ -142,6 +146,18 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
     return `${baseUrl}/social`
   }
   if (type === 'message') {
+    return `${baseUrl}/dashboard`
+  }
+  if (type === 'achievement') {
+    return `${baseUrl}/basarimlar`
+  }
+  if (type === 'contest_result') {
+    return `${baseUrl}/ruya-yarismasi`
+  }
+  if (type === 'new_blog') {
+    return `${baseUrl}/blog`
+  }
+  if (type === 'moderation') {
     return `${baseUrl}/dashboard`
   }
   return `${baseUrl}/dashboard`

@@ -9,6 +9,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import YouTubeSearchModal from '@/components/youtube-search-modal'
+import ShareCard from '@/components/share-card'
 
 interface SocialPost {
   id: string
@@ -703,13 +704,20 @@ export default function SocialPage() {
                             <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
                           </button>
                         </div>
-                        <Link
-                          href={`/fal/${post.id}`}
-                          className="flex items-center gap-1 text-[10px] sm:text-xs text-fuchsia-400/40 hover:text-fuchsia-300 transition-colors"
-                        >
-                          <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          {'Detay'}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <ShareCard postId={post.id} trigger={
+                            <span className="flex items-center gap-1 text-[10px] sm:text-xs text-fuchsia-400/40 hover:text-fuchsia-300 transition-colors cursor-pointer">
+                              🎨 Kart
+                            </span>
+                          } />
+                          <Link
+                            href={`/fal/${post.id}`}
+                            className="flex items-center gap-1 text-[10px] sm:text-xs text-fuchsia-400/40 hover:text-fuchsia-300 transition-colors"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            {'Detay'}
+                          </Link>
+                        </div>
                       </div>
 
                       {/* Comments Section */}

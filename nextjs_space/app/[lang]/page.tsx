@@ -524,6 +524,8 @@ export default function HomePage() {
                 { href: '/ruya-yarismasi', icon: '🏆', label: 'Rüya Yarışması', desc: 'Haftalık yarışma' },
                 { href: '/burc-uyumu', icon: '💕', label: 'Burç Uyumu', desc: 'Detaylı uyum analizi' },
                 { href: '/astroloji-paneli', icon: '🔮', label: 'Astroloji Paneli', desc: 'Kişisel paneliniz' },
+                { href: '/ruya-istatistikleri', icon: '📊', label: 'Rüya İstatistikleri', desc: 'Kişisel trendlerin' },
+                { href: '/basarimlar', icon: '🏅', label: 'Başarımlar', desc: 'Rozetlerini topla' },
                 { href: '/chat', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
               ].map(item => (
                 <Link
