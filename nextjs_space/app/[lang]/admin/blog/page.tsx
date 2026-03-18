@@ -288,6 +288,41 @@ export default function AdminBlogPage() {
     } catch (e) { console.error(e) }
   }
 
+  // Bulk AI Generation
+  const handleBulkGenerate = async () => {
+    const topics = bulkTopics.split('\n').map(t => t.trim()).filter(Boolean)
+    if (topics.length === 0) return
+    if (topics.length > 5) { setBulkMessage('❌ Maksimum 5 konu girin.'); return }
+    setBulkGenerating(true)
+    setBulkMessage('')
+    try {
+      const res = await fetch('/api/admin/blog/bulk-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topics,
+          category: bulkCategory || undefined,
+          zodiacSign: bulkZodiac || undefined,
+          autoPublish: bulkAutoPublish,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const successCount = data.results?.filter((r: any) => r.success).length || 0
+        const failCount = data.results?.filter((r: any) => !r.success).length || 0
+        setBulkMessage(`✅ ${successCount} yazı üretildi${failCount > 0 ? `, ${failCount} hata` : ''}`)
+        setBulkTopics('')
+        fetchData()
+      } else {
+        setBulkMessage(`❌ ${data.error || 'Hata oluştu'}`)
+      }
+    } catch (e) {
+      console.error(e)
+      setBulkMessage('❌ Bağlantı hatası')
+    }
+    setBulkGenerating(false)
+  }
+
   // CSV Import
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -407,6 +442,79 @@ export default function AdminBlogPage() {
                 <p className={`text-sm ${aiMessage.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{aiMessage}</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Bulk AI Generation */}
+        {!showForm && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+            <button
+              onClick={() => setShowBulkForm(!showBulkForm)}
+              className="w-full flex items-center justify-between"
+            >
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-400" /> Toplu İçerik Üretici (AI)
+              </h3>
+              <span className="text-gray-500 text-sm">{showBulkForm ? '▲' : '▼'}</span>
+            </button>
+            {showBulkForm && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-400">Her satıra bir konu yazın (maks. 5). AI her biri için SEO uyumlu içerik üretecek.</p>
+                <textarea
+                  value={bulkTopics}
+                  onChange={e => setBulkTopics(e.target.value)}
+                  placeholder={"2026 Koç Burcu Mart Yorumu\nKahve Falında Kalp Şekli Ne Anlama Gelir?\nTarot'ta Kule Kartı Rehberi"}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 resize-none"
+                />
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Kategori</label>
+                    <select
+                      value={bulkCategory}
+                      onChange={e => setBulkCategory(e.target.value)}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm min-w-[140px]"
+                    >
+                      <option value="">Otomatik</option>
+                      {categories.map(c => (
+                        <option key={c.slug} value={c.slug}>{c.nameTr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Burç</label>
+                    <select
+                      value={bulkZodiac}
+                      onChange={e => setBulkZodiac(e.target.value)}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm min-w-[120px]"
+                    >
+                      {ZODIAC_SIGNS.map(z => (
+                        <option key={z.value} value={z.value}>{z.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={bulkAutoPublish}
+                      onChange={e => setBulkAutoPublish(e.target.checked)}
+                      className="rounded border-white/20 bg-white/5"
+                    />
+                    Otomatik Yayınla
+                  </label>
+                  <button
+                    onClick={handleBulkGenerate}
+                    disabled={bulkGenerating || !bulkTopics.trim()}
+                    className="flex items-center gap-2 px-6 py-2 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white text-sm font-medium transition disabled:opacity-50"
+                  >
+                    {bulkGenerating ? <><Loader2 className="w-4 h-4 animate-spin" /> Üretiliyor...</> : <><Zap className="w-4 h-4" /> Toplu Üret</>}
+                  </button>
+                </div>
+                {bulkMessage && (
+                  <p className={`text-sm ${bulkMessage.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{bulkMessage}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
