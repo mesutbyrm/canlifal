@@ -160,6 +160,94 @@ export default function RootLayout({
             })
           }}
         />
+        {/* Service Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Service",
+              "serviceType": "Online Fal Bakma",
+              "provider": {
+                "@type": "Organization",
+                "name": "Canlifal",
+                "url": "https://canlifal.com"
+              },
+              "name": "Canlı Fal Platformu",
+              "description": "Canlı falcılarla birebir görüntülü görüşme, yapay zeka destekli kahve falı, tarot, burç yorumu, rüya tabiri ve daha fazlası.",
+              "areaServed": { "@type": "Country", "name": "Turkey" },
+              "availableChannel": {
+                "@type": "ServiceChannel",
+                "serviceUrl": "https://canlifal.com",
+                "serviceType": "Online"
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Fal Türleri",
+                "itemListElement": [
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Kahve Falı", "url": "https://canlifal.com/fortunes/coffee" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tarot Falı", "url": "https://canlifal.com/fortunes/tarot" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Rüya Tabiri", "url": "https://canlifal.com/fortunes/dream" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Burç Yorumu", "url": "https://canlifal.com/fortunes/horoscope" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "El Falı", "url": "https://canlifal.com/fortunes/palm" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Numeroloji", "url": "https://canlifal.com/fortunes/numerology" }}
+                ]
+              }
+            })
+          }}
+        />
+        {/* FAQPage Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Canlifal nedir?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Canlifal, canlı falcılarla birebir görüntülü görüşme yapabileceğiniz ve yapay zeka destekli fal baktırabileceğiniz online bir platformdur."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Hangi fal türleri mevcut?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Kahve falı, tarot, el falı, rüya tabiri, burç yorumu, numeroloji, aura okuma, melek kartları ve daha birçok fal türü mevcuttur."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Ücretsiz fal baktırabilir miyim?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Evet! Canlifal'de yapay zeka destekli fallar tamamen ücretsiz olarak kullanılabilir. Ayrıca canlı falcılarla da görüşebilirsiniz."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Canlı falcılarla nasıl görüşebilirim?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Ücretsiz hesap oluşturarak online falcıları görebilir ve istediğiniz falcıyla birebir görüntülü görüşme başlatabilirsiniz."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Rüya tabiri nasıl yapılır?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Rüyanızı yazılı olarak girin, yapay zeka destekli sistemimiz detaylı rüya tabiri sunar. Ayrıca rüya sözlüğümüzden sembol anlamlarını öğrenebilirsiniz."
+                  }
+                }
+              ]
+            })
+          }}
+        />
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {

@@ -1,9 +1,15 @@
 import { MetadataRoute } from 'next'
 import prisma from '@/lib/db'
 import { BLOG_POSTS, SEO_PAGES } from '@/lib/seo-config'
+import { headers } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+  const headersList = headers()
+  const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'canlifal.com'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const baseUrl = `${proto}://${host}`
   
   // Static pages - Turkish only, clean URLs without /tr/ prefix
   const staticPages: MetadataRoute.Sitemap = [

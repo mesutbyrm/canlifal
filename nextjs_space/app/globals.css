@@ -50,6 +50,49 @@
   }
 }
 
+/* ===== LIGHT MODE OVERRIDES ===== */
+.light-mode,
+.light-mode [data-theme="falclub"] {
+  --background: 270 20% 97%;
+  --foreground: 270 50% 15%;
+  --card: 270 20% 95%;
+  --card-foreground: 270 50% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 270 50% 15%;
+  --primary: 285 75% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 270 20% 90%;
+  --secondary-foreground: 270 50% 20%;
+  --muted: 270 15% 92%;
+  --muted-foreground: 270 20% 40%;
+  --accent: 285 75% 55%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 270 25% 82%;
+  --input: 270 15% 88%;
+  --ring: 285 75% 55%;
+  --theme-bg: #f5f0fa;
+  --theme-scrollbar-track: #ede5f5;
+  --theme-scrollbar-thumb: #a855f7;
+  --theme-scrollbar-thumb-hover: #9333ea;
+  --theme-gradient-start: #f5f0fa;
+  --theme-gradient-mid: #ede5f5;
+  --theme-gradient-end: #f5f0fa;
+  --falclub-purple-dark: #f5f0fa;
+  --falclub-purple: #ede5f5;
+  --falclub-purple-light: #e0d4f0;
+  --falclub-pink: #a855f7;
+  --falclub-pink-light: #c084fc;
+  --falclub-pink-glow: rgba(168, 85, 247, 0.3);
+  --falclub-magenta: #d946ef;
+  --falclub-card-bg: rgba(255, 255, 255, 0.9);
+  --falclub-card-border: rgba(168, 85, 247, 0.35);
+  --falclub-text: #1e1030;
+  --falclub-text-secondary: #4a3660;
+  --falclub-gold: #d97706;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -62,11 +105,20 @@
     -moz-osx-font-smoothing: grayscale;
     background: linear-gradient(180deg, #0f0520 0%, #1a0a2e 40%, #2d1b47 60%, #1a0a2e 80%, #0f0520 100%);
     background-attachment: fixed;
+    transition: background 0.4s ease, color 0.4s ease;
+  }
+  .light-mode body {
+    background: linear-gradient(180deg, #f5f0fa 0%, #ede5f5 40%, #e0d4f0 60%, #ede5f5 80%, #f5f0fa 100%);
+    color: #1e1030;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 700;
     color: #f0abfc;
+  }
+  .light-mode h1, .light-mode h2, .light-mode h3,
+  .light-mode h4, .light-mode h5, .light-mode h6 {
+    color: #7c3aed;
   }
 }
 
@@ -181,8 +233,13 @@
     animation: twinkle 4s ease-in-out infinite alternate;
   }
   @keyframes twinkle {
-    0% { opacity: 0.3; }
-    100% { opacity: 0.5; }
+    0% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+    100% { opacity: 0.3; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
   .falclub-gradient-text {
     background: linear-gradient(135deg, #f0abfc 0%, #d946ef 50%, #ec4899 100%);
@@ -195,6 +252,53 @@
     color: #f0abfc;
     text-shadow: 0 0 10px rgba(217, 70, 239, 0.5);
   }
+}
+
+/* ===== LIGHT MODE UTILITY OVERRIDES ===== */
+.light-mode .falclub-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(168, 85, 247, 0.25);
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.08);
+}
+.light-mode .falclub-card-light {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+.light-mode .falclub-btn {
+  background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.3);
+}
+.light-mode .falclub-section-title {
+  color: #7c3aed;
+  text-shadow: none;
+}
+.light-mode .falclub-text { color: #1e1030; }
+.light-mode .falclub-text-secondary { color: #4a3660; }
+.light-mode .falclub-text-pink { color: #9333ea; }
+.light-mode .falclub-text-gold { color: #d97706; }
+.light-mode .falclub-gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #d946ef 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.light-mode .falclub-icon-circle {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%);
+}
+.light-mode .falclub-starry-bg {
+  background: 
+    radial-gradient(ellipse at 15% 25%, rgba(168, 85, 247, 0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(236, 72, 153, 0.06) 0%, transparent 45%),
+    linear-gradient(180deg, #f5f0fa 0%, #ede5f5 30%, #e0d4f0 50%, #ede5f5 70%, #f5f0fa 100%);
+}
+.light-mode .falclub-starry-bg::before {
+  display: none;
+}
+.light-mode .falclub-glow {
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.15);
 }
 
 /* Text Readability Fixes */
@@ -761,3 +865,42 @@
 .animate-slideUp {
   animation: slideUp 0.5s ease-out;
 }
+
+/* ===== LIGHT MODE TEXT COLOR OVERRIDES ===== */
+.light-mode [class~="text-white"] { color: #1e1030 !important; }
+.light-mode .text-fuchsia-200 { color: #6b21a8 !important; }
+.light-mode .text-fuchsia-300 { color: #7c3aed !important; }
+.light-mode .text-fuchsia-300\/70 { color: #7c3aed !important; }
+.light-mode .text-fuchsia-400 { color: #9333ea !important; }
+.light-mode .text-purple-300 { color: #6b21a8 !important; }
+.light-mode .text-purple-400 { color: #7c3aed !important; }
+.light-mode .text-purple-200 { color: #581c87 !important; }
+.light-mode .text-gray-200 { color: #374151 !important; }
+.light-mode .text-gray-300 { color: #4b5563 !important; }
+.light-mode .text-gray-400 { color: #6b7280 !important; }
+.light-mode .text-muted-foreground { color: #6b7280 !important; }
+.light-mode .text-gold-400 { color: #b45309 !important; }
+.light-mode .text-amber-300 { color: #b45309 !important; }
+.light-mode .text-amber-400 { color: #d97706 !important; }
+.light-mode .text-yellow-400 { color: #d97706 !important; }
+.light-mode .text-red-400 { color: #dc2626 !important; }
+.light-mode .text-green-400 { color: #16a34a !important; }
+.light-mode .text-blue-400 { color: #2563eb !important; }
+.light-mode .bg-white\/50 { background-color: rgba(168, 85, 247, 0.15) !important; }
+.light-mode [data-star-bg] { display: none !important; }
+.light-mode .bg-\[\#1a0a2e\] { background-color: #ffffff !important; }
+.light-mode .bg-\[\#0a0118\] { background-color: #f5f0fa !important; }
+.light-mode .bg-\[\#0f0520\] { background-color: #f5f0fa !important; }
+.light-mode .bg-purple-900\/30 { background-color: rgba(168, 85, 247, 0.08) !important; }
+.light-mode .bg-fuchsia-900\/20 { background-color: rgba(168, 85, 247, 0.06) !important; }
+.light-mode .bg-fuchsia-800\/30 { background-color: rgba(168, 85, 247, 0.08) !important; }
+.light-mode .border-fuchsia-700\/50 { border-color: rgba(168, 85, 247, 0.25) !important; }
+.light-mode .border-fuchsia-700\/40 { border-color: rgba(168, 85, 247, 0.2) !important; }
+.light-mode .border-fuchsia-700\/20 { border-color: rgba(168, 85, 247, 0.15) !important; }
+.light-mode .border-purple-400\/40 { border-color: rgba(168, 85, 247, 0.2) !important; }
+/* Keep specific white text elements white in light mode */
+.light-mode .falclub-btn [class*="text-white"],
+.light-mode .falclub-btn-gold,
+.light-mode [class*="bg-red-500"] [class*="text-white"],
+.light-mode [class*="bg-red-600"] [class*="text-white"] { color: #ffffff !important; }
+.light-mode .falclub-btn { color: #ffffff !important; }

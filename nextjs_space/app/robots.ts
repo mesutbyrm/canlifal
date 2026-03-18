@@ -1,7 +1,13 @@
 import { MetadataRoute } from 'next'
+import { headers } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+  const headersList = headers()
+  const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'canlifal.com'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const baseUrl = `${proto}://${host}`
   
   return {
     rules: [
@@ -15,6 +21,8 @@ export default function robots(): MetadataRoute.Robots {
           '/dashboard/',
           '/live-room/',
           '/chat/video/broadcast/',
+          '/login',
+          '/signup',
         ],
       },
       {

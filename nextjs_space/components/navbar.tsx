@@ -19,6 +19,7 @@ import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import TellerIncomingRequest from './teller-incoming-request'
 import UserLevelBadge from './user-level-badge'
+import ThemeToggle from './theme-toggle'
 
 export default function Navbar() {
   const { data: session, update: updateSession } = useSession() || {}
@@ -299,6 +300,11 @@ export default function Navbar() {
 
               {/* Search */}
               <NavSearch />
+
+              {/* Theme Toggle */}
+              <div className="flex flex-col items-center gap-0.5 px-1">
+                <ThemeToggle />
+              </div>
 
               {/* Profile */}
               {session?.user ? (

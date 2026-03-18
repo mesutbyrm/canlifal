@@ -241,6 +241,23 @@ export default function HomePage() {
 
   // FalClub Theme - Premium Neon Pink Design (exact match to provided image)
   if (isFalclub) {
+    const sectionVariants = {
+      hidden: { opacity: 0, y: 30 },
+      visible: (i: number) => ({
+        opacity: 1,
+        y: 0,
+        transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }
+      })
+    }
+    const cardStagger = {
+      hidden: { opacity: 0, scale: 0.85 },
+      visible: (i: number) => ({
+        opacity: 1,
+        scale: 1,
+        transition: { delay: i * 0.05, duration: 0.4, ease: 'easeOut' }
+      })
+    }
+
     return (
       <div className="min-h-screen falclub-starry-bg relative overflow-hidden">
         {/* Animated Stars background */}
@@ -260,6 +277,34 @@ export default function HomePage() {
           ))}
         </div>
 
+        {/* Floating Mystical Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          {[
+            { size: 200, x: '-10%', y: '20%', color: 'rgba(192,38,211,0.12)', dur: 18 },
+            { size: 150, x: '80%', y: '60%', color: 'rgba(139,92,246,0.10)', dur: 22 },
+            { size: 120, x: '50%', y: '10%', color: 'rgba(217,70,239,0.08)', dur: 15 },
+          ].map((orb, i) => (
+            <motion.div
+              key={`orb-${i}`}
+              className="absolute rounded-full"
+              style={{
+                width: orb.size,
+                height: orb.size,
+                left: orb.x,
+                top: orb.y,
+                background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
+                filter: 'blur(40px)',
+              }}
+              animate={{
+                x: [0, 30, -20, 0],
+                y: [0, -25, 15, 0],
+                scale: [1, 1.15, 0.9, 1],
+              }}
+              transition={{ duration: orb.dur, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+
         {/* Ticker */}
         <div className="fixed top-14 left-0 right-0 z-40">
           <HomepageTicker />
@@ -268,11 +313,44 @@ export default function HomePage() {
 
         {/* Main Content - minimal gap between ticker and content */}
         <div className="pt-[108px] sm:pt-[118px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
+          {/* Hero Welcome */}
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="text-center py-3"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-4xl mb-1"
+            >
+              🔮
+            </motion.div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-fuchsia-300 via-purple-200 to-fuchsia-300 bg-clip-text text-transparent">
+              Canli Fal
+            </h1>
+            <p className="text-fuchsia-300/70 text-xs mt-0.5">Geleceğini keşfet, falına bak</p>
+          </motion.div>
+
           {/* Action Buttons Row */}
-          <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
+          </motion.div>
 
           {/* CANLI YAYINLAR Section */}
-          <div className="falclub-card p-4 relative overflow-hidden">
+          <motion.div
+            className="falclub-card p-4 relative overflow-hidden"
+            custom={0}
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             {/* Mystical Woman Silhouette Background */}
             <div 
               className="absolute inset-0 opacity-30 bg-gradient-to-b from-transparent via-fuchsia-900/20 to-transparent"
@@ -335,10 +413,17 @@ export default function HomePage() {
                 </p>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* FALLAR Section */}
-          <div className="falclub-card p-4">
+          <motion.div
+            className="falclub-card p-4"
+            custom={1}
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             <h2 className="falclub-section-title mb-4">
               <Sparkles className="w-5 h-5" />
               {'FALLAR'}
@@ -350,34 +435,50 @@ export default function HomePage() {
             </h2>
             
             <div className="grid grid-cols-5 gap-3">
-              {FORTUNE_CARDS.slice(0, 10).map((fortune) => (
-                <Link
+              {FORTUNE_CARDS.slice(0, 10).map((fortune, idx) => (
+                <motion.div
                   key={fortune.id}
-                  href={`/${language}${fortune.href}`}
-                  className="flex flex-col items-center group"
+                  custom={idx}
+                  variants={cardStagger}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
                 >
-                  <div 
-                    className="falclub-icon-circle w-14 h-14 transition-all group-hover:scale-110"
+                  <Link
+                    href={`/${language}${fortune.href}`}
+                    className="flex flex-col items-center group"
                   >
-                    <Image
-                      src={fortune.image}
-                      alt={fortune.nameTr}
-                      width={56}
-                      height={56}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <span className="text-fuchsia-200 text-[10px] font-medium mt-1.5 text-center leading-tight">
-                    {fortune.nameTr}
-                  </span>
-                </Link>
+                    <motion.div 
+                      className="falclub-icon-circle w-14 h-14 transition-all group-hover:scale-110"
+                      whileHover={{ scale: 1.15, rotate: 3 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Image
+                        src={fortune.image}
+                        alt={fortune.nameTr}
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
+                    <span className="text-fuchsia-200 text-[10px] font-medium mt-1.5 text-center leading-tight">
+                      {fortune.nameTr}
+                    </span>
+                  </Link>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* ONLINE FALCILAR Section */}
           {sortedTellers.filter(t => t.isOnline).length > 0 && (
-            <div>
+            <motion.div
+              custom={2}
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
               <h2 className="falclub-section-title mb-3">
                 <Circle className="w-5 h-5 text-green-400 fill-green-400 animate-pulse" />
                 {'ONLINE FALCILAR'}
@@ -419,11 +520,17 @@ export default function HomePage() {
                   </Link>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* POPÜLER FALCILAR Section */}
-          <div>
+          <motion.div
+            custom={3}
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             <h2 className="falclub-section-title mb-3">
               <Star className="w-5 h-5" />
               {'POPÜLER FALCILAR'}
@@ -490,10 +597,17 @@ export default function HomePage() {
                 {'Tüm Falcıları Gör →'}
               </Link>
             </div>
-          </div>
+          </motion.div>
 
           {/* GÜNLÜK BURÇ Section */}
-          <div className="falclub-card p-4">
+          <motion.div
+            className="falclub-card p-4"
+            custom={4}
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             <h2 className="falclub-section-title mb-3">
               <Heart className="w-5 h-5" />
               {'GÜNLÜK BURÇ'}
@@ -509,10 +623,17 @@ export default function HomePage() {
                 [{'Detaylı Oku'}]
               </Link>
             </div>
-          </div>
+          </motion.div>
 
           {/* KEŞFEDİN - New Features Section */}
-          <div className="falclub-card p-4">
+          <motion.div
+            className="falclub-card p-4"
+            custom={5}
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             <h2 className="falclub-section-title mb-3">
               <Sparkles className="w-5 h-5" />
               {'KEŞFEDİN'}
@@ -527,19 +648,32 @@ export default function HomePage() {
                 { href: '/ruya-istatistikleri', icon: '📊', label: 'Rüya İstatistikleri', desc: 'Kişisel trendlerin' },
                 { href: '/basarimlar', icon: '🏅', label: 'Başarımlar', desc: 'Rozetlerini topla' },
                 { href: '/chat', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
-              ].map(item => (
-                <Link
+              ].map((item, idx) => (
+                <motion.div
                   key={item.href}
-                  href={item.href}
-                  className="bg-fuchsia-900/20 border border-fuchsia-700/20 rounded-xl p-3 text-center hover:bg-fuchsia-900/40 transition-all group"
+                  custom={idx}
+                  variants={cardStagger}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
                 >
-                  <span className="text-2xl block mb-1">{item.icon}</span>
-                  <span className="text-white text-xs font-semibold group-hover:text-fuchsia-200 block">{item.label}</span>
-                  <span className="text-purple-400 text-[10px] block">{item.desc}</span>
-                </Link>
+                  <Link
+                    href={item.href}
+                    className="bg-fuchsia-900/20 border border-fuchsia-700/20 rounded-xl p-3 text-center hover:bg-fuchsia-900/40 transition-all group block"
+                  >
+                    <motion.span 
+                      className="text-2xl block mb-1"
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                    >
+                      {item.icon}
+                    </motion.span>
+                    <span className="text-white text-xs font-semibold group-hover:text-fuchsia-200 block">{item.label}</span>
+                    <span className="text-purple-400 text-[10px] block">{item.desc}</span>
+                  </Link>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* BANA ÖZEL Section - Only for logged-in users */}
           {session?.user && <BanaOzelSection />}
