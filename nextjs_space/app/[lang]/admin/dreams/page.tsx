@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 
@@ -264,12 +264,20 @@ export default function AdminDreamsPage() {
               <Search className="w-4 h-4" />
             </button>
           </div>
-          <button
-            onClick={() => openEditor()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Yeni Rüya Tabiri
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/${lang}/admin/dreams/bulk-import`}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" /> Toplu İçe Aktar
+            </Link>
+            <button
+              onClick={() => openEditor()}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Yeni Rüya Tabiri
+            </button>
+          </div>
         </div>
 
         {/* Editor Modal */}
