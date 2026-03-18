@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: receiverId,
         type: 'message_request',
-        message: `${session.user.name} wants to send you a message`,
+        message: `${session.user.name} size mesaj göndermek istiyor`,
         data: JSON.stringify({ senderId })
       }
     })
@@ -106,8 +106,8 @@ export async function PATCH(request: NextRequest) {
         userId: messageRequest.senderId,
         type: 'message_request_response',
         message: action === 'accept'
-          ? `${session.user.name} accepted your message request`
-          : `${session.user.name} declined your message request`,
+          ? `${session.user.name} mesaj isteğinizi kabul etti`
+          : `${session.user.name} mesaj isteğinizi reddetti`,
         data: JSON.stringify({ action, receiverId: userId })
       }
     })

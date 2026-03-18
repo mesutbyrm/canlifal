@@ -218,7 +218,7 @@ export default function ChatPage() {
   const groupedMessages = groupMessagesByDate(messages)
 
   return (
-    <div className={`h-screen ${bgColor} flex flex-col overflow-hidden`}>
+    <div className={`h-screen ${bgColor} flex flex-col overflow-hidden pt-[60px]`}>
       {/* Header - compact */}
       <div className={`flex-shrink-0 ${headerBg} backdrop-blur-sm ${borderColor} border-b z-40`}>
         <div className="max-w-lg mx-auto px-3 py-2 flex items-center gap-2">
@@ -272,13 +272,13 @@ export default function ChatPage() {
                     key={message.id}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`flex mb-2 ${isOwn ? 'justify-start' : 'justify-end'}`}
+                    className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[75%] px-3 py-2 rounded-2xl ${
                         isOwn
-                          ? `${myMsgBg} text-white rounded-bl-sm`
-                          : `${otherMsgBg} text-white/90 rounded-br-sm`
+                          ? `${myMsgBg} text-white rounded-br-sm`
+                          : `${otherMsgBg} text-white/90 rounded-bl-sm`
                       }`}
                     >
                       {message.imageUrl && (
@@ -291,7 +291,7 @@ export default function ChatPage() {
                         />
                       )}
                       <p className="break-words text-sm">{message.content}</p>
-                      <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex items-center gap-1 mt-0.5 justify-end`}>
                         <span className="text-[10px] text-white/60">
                           {formatMessageTime(message.createdAt)}
                         </span>
