@@ -1511,35 +1511,58 @@ model DailyQuest {
 
 // Blog posts managed by admin
 model BlogCategory {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  nameTr    String
-  nameEn    String   @default("")
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameTr      String
+  nameEn      String   @default("")
+  descTr      String   @default("")
+  descEn      String   @default("")
+  icon        String   @default("BookOpen")
+  color       String   @default("#8B5CF6")
+  coverImage  String   @default("")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
 
   @@map("blog_categories")
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  titleTr     String
-  titleEn     String   @default("")
-  descTr      String
-  descEn      String   @default("")
-  contentTr   String   @db.Text
-  contentEn   String   @default("") @db.Text
-  category    String   @default("genel")
-  keywords    String[] @default([])
-  isPublished Boolean  @default(false)
-  authorId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  titleTr         String
+  titleEn         String    @default("")
+  descTr          String
+  descEn          String    @default("")
+  contentTr       String    @db.Text
+  contentEn       String    @default("") @db.Text
+  category        String    @default("genel")
+  keywords        String[]  @default([])
+  metaDescription String    @default("")
+  coverImage      String    @default("")
+  readTime        Int       @default(5)
+  views           Int       @default(0)
+  likes           Int       @default(0)
+  isPublished     Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  isTrending      Boolean   @default(false)
+  isEditorPick    Boolean   @default(false)
+  isAiGenerated   Boolean   @default(false)
+  authorId        String?
+  authorName      String    @default("Canlifal Editör")
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([isPublished])
   @@index([category])
   @@index([slug])
+  @@index([isFeatured])
+  @@index([isTrending])
+  @@index([views])
+  @@index([publishedAt])
   @@map("blog_posts")
 }
 

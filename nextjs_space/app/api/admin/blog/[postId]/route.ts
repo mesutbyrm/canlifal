@@ -13,7 +13,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { postId: st
     }
 
     const body = await req.json()
-    const { slug, titleTr, titleEn, descTr, descEn, contentTr, contentEn, category, keywords, isPublished } = body
+    const {
+      slug, titleTr, titleEn, descTr, descEn, contentTr, contentEn,
+      category, keywords, isPublished, metaDescription, coverImage,
+      readTime, isFeatured, isTrending, isEditorPick, isAiGenerated,
+      authorName, publishedAt, scheduledAt,
+    } = body
+
+    // Calculate read time if content changed and readTime not set
+    let calculatedReadTime = readTime
+    if (contentTr && !readTime) {
+      const wordCount = contentTr.replace(/<[^>]*>/g, '').split(/\s+/).length
+      calculatedReadTime = Math.max(1, Math.ceil(wordCount / 200))
+    }
 
     const post = await prisma.blogPost.update({
       where: { id: params.postId },
@@ -28,6 +40,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { postId: st
         ...(category !== undefined && { category }),
         ...(keywords !== undefined && { keywords }),
         ...(isPublished !== undefined && { isPublished }),
+        ...(metaDescription !== undefined && { metaDescription }),
+        ...(coverImage !== undefined && { coverImage }),
+        ...(calculatedReadTime !== undefined && { readTime: calculatedReadTime }),
+        ...(isFeatured !== undefined && { isFeatured }),
+        ...(isTrending !== undefined && { isTrending }),
+        ...(isEditorPick !== undefined && { isEditorPick }),
+        ...(isAiGenerated !== undefined && { isAiGenerated }),
+        ...(authorName !== undefined && { authorName }),
+        ...(publishedAt !== undefined && { publishedAt: publishedAt ? new Date(publishedAt) : null }),
+        ...(scheduledAt !== undefined && { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }),
+        ...(isPublished === true && { publishedAt: new Date() }),
       },
     })
 

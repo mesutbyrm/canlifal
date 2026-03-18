@@ -747,13 +747,24 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
 
   // ===== Blog Categories =====
   const blogCategories = [
-    { slug: 'haftanin-burcu', nameTr: 'Haftanın Burcu', nameEn: 'Weekly Zodiac', sortOrder: 1 },
-    { slug: 'astroloji-rehberi', nameTr: 'Astroloji Rehberi', nameEn: 'Astrology Guide', sortOrder: 2 },
+    { slug: 'teknoloji', nameTr: 'Teknoloji', nameEn: 'Technology', descTr: 'Yapay zeka, yazılım ve teknoloji dünyasından en güncel haberler ve analizler', icon: 'Cpu', color: '#3B82F6', sortOrder: 1 },
+    { slug: 'saglik-fitness', nameTr: 'Sağlık & Fitness', nameEn: 'Health & Fitness', descTr: 'Sağlıklı yaşam, beslenme ve fitness rehberleri', icon: 'Heart', color: '#EF4444', sortOrder: 2 },
+    { slug: 'moda-guzellik', nameTr: 'Moda & Güzellik', nameEn: 'Fashion & Beauty', descTr: 'Moda trendleri, güzellik ipuçları ve stil rehberleri', icon: 'Sparkles', color: '#EC4899', sortOrder: 3 },
+    { slug: 'yemek-tarifleri', nameTr: 'Yemek Tarifleri', nameEn: 'Recipes', descTr: 'Lezzetli ve kolay yemek tarifleri, mutfak sırları', icon: 'UtensilsCrossed', color: '#F97316', sortOrder: 4 },
+    { slug: 'seyahat-gezi', nameTr: 'Seyahat / Gezi', nameEn: 'Travel', descTr: 'Gezi rehberleri, seyahat ipuçları ve keşfedilecek yerler', icon: 'Plane', color: '#06B6D4', sortOrder: 5 },
+    { slug: 'para-kazanma', nameTr: 'Para Kazanma & İş Fikirleri', nameEn: 'Money & Business', descTr: 'Ek gelir kaynakları, iş fikirleri ve finansal özgürlük rehberleri', icon: 'TrendingUp', color: '#22C55E', sortOrder: 6 },
+    { slug: 'egitim-ders-notlari', nameTr: 'Eğitim & Ders Notları', nameEn: 'Education', descTr: 'Eğitim kaynakları, ders notları ve kişisel gelişim', icon: 'GraduationCap', color: '#6366F1', sortOrder: 7 },
+    { slug: 'iliskiler-psikoloji', nameTr: 'İlişkiler & Psikoloji', nameEn: 'Relationships & Psychology', descTr: 'İlişki tavsiyeleri, psikoloji ve kişisel gelişim yazıları', icon: 'HeartHandshake', color: '#D946EF', sortOrder: 8 },
+    { slug: 'anne-cocuk', nameTr: 'Anne & Çocuk', nameEn: 'Parenting', descTr: 'Anne-çocuk sağlığı, ebeveynlik ipuçları ve çocuk gelişimi', icon: 'Baby', color: '#F472B6', sortOrder: 9 },
+    { slug: 'oyun-gaming', nameTr: 'Oyun (Gaming)', nameEn: 'Gaming', descTr: 'Oyun incelemeleri, gaming haberleri ve oyun dünyası', icon: 'Gamepad2', color: '#8B5CF6', sortOrder: 10 },
+    { slug: 'film-dizi-kitap', nameTr: 'Film / Dizi / Kitap', nameEn: 'Movies & Books', descTr: 'Film, dizi ve kitap incelemeleri, önerileri', icon: 'Clapperboard', color: '#EAB308', sortOrder: 11 },
+    { slug: 'haftanin-burcu', nameTr: 'Haftanın Burcu', nameEn: 'Weekly Zodiac', descTr: 'Haftalık burç yorumları ve astroloji tahminleri', icon: 'Star', color: '#A855F7', sortOrder: 12 },
+    { slug: 'astroloji-rehberi', nameTr: 'Astroloji Rehberi', nameEn: 'Astrology Guide', descTr: 'Astroloji dünyasını keşfedin: burçlar, gezegenler ve daha fazlası', icon: 'Moon', color: '#7C3AED', sortOrder: 13 },
   ]
   for (const cat of blogCategories) {
     await prisma.blogCategory.upsert({
       where: { slug: cat.slug },
-      update: { nameTr: cat.nameTr, sortOrder: cat.sortOrder },
+      update: { nameTr: cat.nameTr, sortOrder: cat.sortOrder, descTr: cat.descTr, icon: cat.icon, color: cat.color },
       create: cat,
     })
   }

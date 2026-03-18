@@ -1,19 +1,24 @@
 import type { Metadata } from 'next'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION_TR } from '@/lib/seo-config'
+import { SITE_NAME, SITE_URL } from '@/lib/seo-config'
 
 export const metadata: Metadata = {
-  title: 'Blog - Fal ve Astroloji Yazıları',
-  description: 'Kahve falı, tarot, burç yorumları ve daha fazlası hakkında bilgilendirici yazılar. Fal dünyasının sırlarını keşfedin.',
-  keywords: ['fal blog', 'astroloji yazıları', 'kahve falı rehber', 'tarot rehber', 'burç yorumları'],
+  title: `Blog - Güncel Haberler, Rehberler ve İpuçları | ${SITE_NAME}`,
+  description: 'Teknoloji, sağlık, moda, seyahat, yemek tarifleri, astroloji ve daha fazlası hakkında SEO uyumlu, güncel ve bilgilendirici blog yazıları.',
+  keywords: ['blog', 'teknoloji', 'sağlık', 'moda', 'yemek tarifleri', 'seyahat', 'astroloji', 'psikoloji', 'oyun', 'film', 'kitap'],
   alternates: {
     canonical: `${SITE_URL}/blog`,
   },
   openGraph: {
-    title: 'Blog - Fal ve Astroloji Yazıları | ' + SITE_NAME,
-    description: 'Kahve falı, tarot, burç yorumları ve daha fazlası hakkında bilgilendirici yazılar.',
+    title: `Blog | ${SITE_NAME}`,
+    description: 'Güncel haberler, rehberler ve ipuçları. Her kategoriden kaliteli içerikler.',
     url: `${SITE_URL}/blog`,
     siteName: SITE_NAME,
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Blog | ${SITE_NAME}`,
+    description: 'Güncel haberler, rehberler ve ipuçları.',
   },
 }
 

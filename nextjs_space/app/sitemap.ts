@@ -80,17 +80,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching posts for sitemap:', error)
   }
 
-  // Blog pages
-  const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.map(post => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
-  }))
+  // Blog pages from DB
+  let blogPages: MetadataRoute.Sitemap = []
+  let blogCategoryPages: MetadataRoute.Sitemap = []
+  try {
+    const dbBlogPosts = await prisma.blogPost.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true, publishedAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 1000,
+    })
+    blogPages = dbBlogPosts.map((p: any) => ({
+      url: `${baseUrl}/blog/${p.slug}`,
+      lastModified: p.updatedAt || p.publishedAt || new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
+    const dbCategories = await prisma.blogCategory.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    })
+    blogCategoryPages = dbCategories.map((c: any) => ({
+      url: `${baseUrl}/blog/kategori/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
+  } catch (e) {
+    console.error('Error fetching blog posts for sitemap:', e)
+    // Fallback to static
+    blogPages = BLOG_POSTS.map(post => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+  }
 
   // Blog index
   const blogIndex: MetadataRoute.Sitemap = [
-    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.9 },
   ]
 
   // SEO landing pages
@@ -127,5 +156,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching dream symbols for sitemap:', e)
   }
 
-  return [...staticPages, ...fortunePages, ...blogIndex, ...blogPages, ...seoPages, ...socialPostPages, ...phase3Pages, ...dreamSymbolPages]
+  return [...staticPages, ...fortunePages, ...blogIndex, ...blogCategoryPages, ...blogPages, ...seoPages, ...socialPostPages, ...phase3Pages, ...dreamSymbolPages]
 }
