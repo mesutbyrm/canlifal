@@ -80,26 +80,19 @@ export default function OneSignalInitializer() {
           console.log('OneSignal user logged in:', session.user.id)
         }
 
-        // After init, prompt for push if not already subscribed
-        // Small delay so UI is ready
+        // If permission was already granted, silently opt in (no prompt)
         setTimeout(async () => {
           try {
             const isOptedIn = (OneSignal.User?.PushSubscription as any)?.optedIn
-            if (!isOptedIn) {
-              // Show the native browser prompt if permission is 'default'
-              if (Notification.permission === 'default') {
-                await OneSignal.Slidedown.promptPush()
-                console.log('OneSignal: push prompt shown')
-              } else if (Notification.permission === 'granted') {
-                // Permission already granted but not opted in to OneSignal
-                await (OneSignal.User?.PushSubscription as any)?.optIn?.()
-                console.log('OneSignal: opted in (permission was already granted)')
-              }
-            } else {
+            if (!isOptedIn && Notification.permission === 'granted') {
+              await (OneSignal.User?.PushSubscription as any)?.optIn?.()
+              console.log('OneSignal: silently opted in (permission was already granted)')
+            } else if (isOptedIn) {
               console.log('OneSignal: already subscribed')
             }
+            // Do NOT auto-prompt — let the user click the notification bell to enable
           } catch (e) {
-            console.log('OneSignal prompt/optIn skipped:', e)
+            console.log('OneSignal opt-in check skipped:', e)
           }
         }, 2000)
       } catch (error) {

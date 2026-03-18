@@ -2,13 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
-import { useLanguage } from '@/lib/language-context'
 import {
   isPushSupported,
   getPermissionStatus,
-  requestNotificationPermission,
-  showBrowserNotification,
-  playNotificationSound
+  requestNotificationPermission
 } from '@/lib/push-notifications'
 
 interface PushNotificationContextType {
@@ -27,23 +24,11 @@ const PushNotificationContext = createContext<PushNotificationContextType>({
 
 export const usePushNotifications = () => useContext(PushNotificationContext)
 
-interface Notification {
-  id: string
-  type: string
-  title?: string
-  message: string
-  fromUserName?: string
-  isRead: boolean
-  createdAt: string
-}
-
 export default function PushNotificationProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession() || {}
-  const { language } = useLanguage()
   const [isSupported, setIsSupported] = useState(false)
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
   const [unreadCount, setUnreadCount] = useState(0)
-  const [lastNotificationId, setLastNotificationId] = useState<string | null>(null)
 
   // Initialize on mount - no service worker registration here, OneSignal handles its own
   useEffect(() => {
@@ -60,41 +45,7 @@ export default function PushNotificationProvider({ children }: { children: React
     setPermission(result)
   }, [])
 
-  // Get notification title based on type
-  const getNotificationTitle = useCallback((notif: Notification): string => {
-    if (notif.title) return notif.title
-    
-    const titles: Record<string, string> = {
-      'like': '❤️ Yeni Beğeni',
-      'comment': '💬 Yeni Yorum',
-      'share': '🔄 Paylaşıldı',
-      'session_request': '🔮 Yeni Seans Talebi',
-      'session_update': '📺 Seans Güncellendi',
-      'payment_notification': '💰 Ödeme Bildirimi',
-      'payment_approved': '✅ Ödeme Onaylandı',
-      'payment_rejected': '❌ Ödeme Reddedildi',
-      'gift': '🎁 Yeni Hediye',
-      'follow': '👤 Yeni Takipçi'
-    }
-    
-    return titles[notif.type] || ('🔔 Yeni Bildirim')
-  }, [language])
-
-  // Get notification URL based on type
-  const getNotificationUrl = useCallback((notif: Notification): string => {
-    if (notif.type === 'payment_notification' || notif.type === 'payment_approved' || notif.type === 'payment_rejected') {
-      return session?.user?.role === 'admin' ? `/admin/credits` : `/memberships`
-    }
-    if (notif.type === 'session_request' || notif.type === 'session_update') {
-      return `/dashboard`
-    }
-    if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share') {
-      return `/social`
-    }
-    return `/dashboard`
-  }, [language, session?.user?.role])
-
-  // Poll for notifications and show browser notification for new ones
+  // Poll for unread count only — push notifications are handled by OneSignal
   useEffect(() => {
     if (!session?.user) return
     
@@ -104,37 +55,7 @@ export default function PushNotificationProvider({ children }: { children: React
         if (!res.ok) return
         
         const data = await res.json()
-        const newUnreadCount = data.unreadCount || 0
-        const notifications: Notification[] = data.notifications || []
-        
-        // Check if there are new notifications
-        if (notifications.length > 0) {
-          const newestNotif = notifications[0]
-          const newNotificationsCount = newUnreadCount - unreadCount
-          
-          // Only show notification if it's truly new
-          if (lastNotificationId && newestNotif.id !== lastNotificationId && newNotificationsCount > 0) {
-            // Play sound
-            playNotificationSound()
-            
-            // Show browser notification if permission granted
-            if (permission === 'granted') {
-              const title = getNotificationTitle(newestNotif)
-              const body = newestNotif.message
-              const url = getNotificationUrl(newestNotif)
-              
-              showBrowserNotification(title, body, {
-                tag: `falclub-${newestNotif.type}`,
-                url,
-                count: newNotificationsCount
-              })
-            }
-          }
-          
-          setLastNotificationId(newestNotif.id)
-        }
-        
-        setUnreadCount(newUnreadCount)
+        setUnreadCount(data.unreadCount || 0)
       } catch (error) {
         console.error('Error checking notifications:', error)
       }
@@ -147,7 +68,7 @@ export default function PushNotificationProvider({ children }: { children: React
     const interval = setInterval(checkNotifications, 15000)
     
     return () => clearInterval(interval)
-  }, [session?.user, permission, lastNotificationId, unreadCount, getNotificationTitle, getNotificationUrl])
+  }, [session?.user])
 
   return (
     <PushNotificationContext.Provider value={{ isSupported, permission, requestPermission, unreadCount }}>
