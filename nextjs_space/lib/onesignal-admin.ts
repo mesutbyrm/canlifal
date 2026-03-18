@@ -7,7 +7,7 @@ const API_URL = 'https://api.onesignal.com'
 function headers() {
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Basic ${REST_API_KEY}`,
+    'Authorization': `Key ${REST_API_KEY}`,
   }
 }
 
@@ -133,7 +133,7 @@ export async function getAppStats(): Promise<{
     const response = await fetch(`${API_URL}/api/v1/apps/${APP_ID}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${REST_API_KEY}`,
+        'Authorization': `Key ${REST_API_KEY}`,
       },
     })
 
@@ -168,7 +168,7 @@ export async function getNotificationDetails(notificationId: string): Promise<{
       {
         method: 'GET',
         headers: {
-          'Authorization': `Basic ${REST_API_KEY}`,
+          'Authorization': `Key ${REST_API_KEY}`,
         },
       }
     )
@@ -201,7 +201,7 @@ export async function cancelNotification(notificationId: string): Promise<{ succ
       {
         method: 'DELETE',
         headers: {
-          'Authorization': `Basic ${REST_API_KEY}`,
+          'Authorization': `Key ${REST_API_KEY}`,
         },
       }
     )
