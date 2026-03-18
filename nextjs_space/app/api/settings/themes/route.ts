@@ -9,14 +9,15 @@ export async function GET() {
     const settings = await prisma.platformSettings.findMany({
       where: {
         key: {
-          in: ['default_theme', 'enabled_themes']
+          in: ['default_theme', 'enabled_themes', 'color_mode']
         }
       }
     });
 
-    const result: { default_theme: string; enabled_themes: string[] } = {
+    const result: { default_theme: string; enabled_themes: string[]; color_mode: string } = {
       default_theme: 'falclub',
-      enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub']
+      enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'],
+      color_mode: 'dark'
     };
 
     settings.forEach((s: { key: string; value: string }) => {
@@ -31,6 +32,10 @@ export async function GET() {
         } catch {
           // Keep default enabled themes
         }
+      } else if (s.key === 'color_mode') {
+        if (s.value === 'light' || s.value === 'dark') {
+          result.color_mode = s.value;
+        }
       }
     });
 
@@ -38,7 +43,7 @@ export async function GET() {
   } catch (error) {
     console.error('Fetch theme settings error:', error);
     return NextResponse.json(
-      { default_theme: 'falclub', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'] }
+      { default_theme: 'falclub', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'], color_mode: 'dark' }
     );
   }
 }

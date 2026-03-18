@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type SiteTheme = 'falclub' | 'cosmic' | 'facebook' | 'falci' | 'mystical';
 export type ColorMode = 'dark' | 'light';
@@ -19,14 +19,26 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [colorMode, setColorMode] = useState<ColorMode>('dark');
 
+  // Load color mode from API (admin-controlled)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('canlifal-color-mode') as ColorMode | null;
-      if (saved === 'light' || saved === 'dark') {
-        setColorMode(saved);
+    let cancelled = false;
+    async function loadColorMode() {
+      try {
+        const res = await fetch('/api/settings/themes');
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && (data.color_mode === 'light' || data.color_mode === 'dark')) {
+            setColorMode(data.color_mode);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load color mode:', err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
-    setIsLoading(false);
+    loadColorMode();
+    return () => { cancelled = true; };
   }, []);
 
   // Apply theme to document
@@ -43,13 +55,9 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [colorMode]);
 
-  const toggleColorMode = () => {
-    const next = colorMode === 'dark' ? 'light' : 'dark';
-    setColorMode(next);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('canlifal-color-mode', next);
-    }
-  };
+  const toggleColorMode = useCallback(() => {
+    setColorMode(prev => prev === 'dark' ? 'light' : 'dark');
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, isLoading, colorMode, toggleColorMode }}>

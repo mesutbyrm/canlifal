@@ -140,6 +140,7 @@ export default function AdminThemesPage() {
   const [saved, setSaved] = useState(false)
   const [defaultTheme, setDefaultTheme] = useState('mystical')
   const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci', 'falclub'])
+  const [colorMode, setColorMode] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -168,6 +169,9 @@ export default function AdminThemesPage() {
             // Keep default enabled themes
           }
         }
+        if (data.color_mode === 'light' || data.color_mode === 'dark') {
+          setColorMode(data.color_mode)
+        }
       }
     } catch (err) {
       console.error('Fetch theme settings error:', err)
@@ -191,6 +195,13 @@ export default function AdminThemesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'enabled_themes', value: JSON.stringify(enabledThemes) })
+      })
+
+      // Save color mode
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'color_mode', value: colorMode })
       })
 
       setSaved(true)
@@ -297,6 +308,56 @@ export default function AdminThemesPage() {
               <span className="px-4 py-2 bg-purple-500/30 text-purple-200 rounded-lg font-medium">
                 {THEMES.find(t => t.id === defaultTheme)?.['nameTr'] || defaultTheme}
               </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Color Mode Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-purple-900/50 to-purple-950/50 rounded-xl border border-purple-500/30 p-6 mb-8"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              {colorMode === 'dark' ? (
+                <Moon className="w-6 h-6 text-purple-400" />
+              ) : (
+                <Sun className="w-6 h-6 text-yellow-400" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white">
+                Renk Modu
+              </h3>
+              <p className="text-purple-400 text-sm">
+                Sitenin açık veya koyu temada görünmesini kontrol edin
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setColorMode('dark')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                  colorMode === 'dark'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                    : 'bg-purple-900/30 text-purple-400 hover:bg-purple-900/50'
+                }`}
+              >
+                <Moon className="w-4 h-4" />
+                Koyu
+              </button>
+              <button
+                onClick={() => setColorMode('light')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                  colorMode === 'light'
+                    ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30'
+                    : 'bg-purple-900/30 text-purple-400 hover:bg-purple-900/50'
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+                Açık
+              </button>
             </div>
           </div>
         </motion.div>
