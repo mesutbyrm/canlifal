@@ -172,6 +172,32 @@ export default function BlogPage() {
           </div>
         </div>
 
+        {/* Categories Bar - only categories with posts */}
+        {categories.filter(c => c.postCount > 0).length > 0 && (
+          <section className="mb-6">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {categories.filter(c => c.postCount > 0).map((cat, i) => (
+                <motion.div
+                  key={cat.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex-shrink-0"
+                >
+                  <Link
+                    href={`/${lang}/blog/kategori/${cat.slug}`}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/10 transition-all group whitespace-nowrap"
+                  >
+                    <span className="text-lg">{CATEGORY_ICONS[cat.icon] || '📄'}</span>
+                    <span className="text-sm font-medium text-gray-300 group-hover:text-purple-300 transition">{cat.nameTr}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">{cat.postCount}</span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
@@ -231,35 +257,7 @@ export default function BlogPage() {
               </section>
             )}
 
-            {/* Categories Grid */}
-            {categories.length > 0 && (
-              <section className="mb-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-400" /> Kategoriler
-                  </h2>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {categories.map((cat, i) => (
-                    <motion.div
-                      key={cat.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                    >
-                      <Link
-                        href={`/${lang}/blog/kategori/${cat.slug}`}
-                        className="block p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-white/10 transition-all text-center group"
-                      >
-                        <span className="text-2xl block mb-2">{CATEGORY_ICONS[cat.icon] || '📄'}</span>
-                        <span className="text-sm font-medium text-white group-hover:text-purple-300 transition line-clamp-1">{cat.nameTr}</span>
-                        <span className="text-xs text-gray-500 mt-1 block">{cat.postCount} yazı</span>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-              </section>
-            )}
+            {/* Categories Grid removed - now shown as top bar */}
 
             {/* Trending Posts */}
             {trendingPosts.length > 0 && (
