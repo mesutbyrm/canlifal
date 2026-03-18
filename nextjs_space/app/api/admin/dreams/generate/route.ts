@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import OpenAI from 'openai'
 import { slugifyTurkish } from '@/lib/dream-utils'
+import { sendNotification } from '@/lib/onesignal-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,6 +89,15 @@ Kurallar:
         isAiGenerated: true,
       },
     })
+
+    // Send OneSignal push notification to all subscribers
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+    sendNotification({
+      title: '\u{1F319} Yeni R\u00fcya Tabiri',
+      message: dream.title,
+      url: `${baseUrl}/tr/ruya/${dream.slug}`,
+      targetType: 'all',
+    }).catch((err) => console.error('OneSignal dream notification error:', err))
 
     return NextResponse.json({ dream })
   } catch (error) {

@@ -88,6 +88,9 @@ model User {
   conversationsAsUser2  Conversation[]       @relation("ConversationUser2")
   sentRequests          MessageRequest[]     @relation("SentRequests")
   receivedRequests      MessageRequest[]     @relation("ReceivedRequests")
+  dreamComments         DreamComment[]
+  dreamFavorites        DreamFavorite[]
+  dreamViews            DreamView[]
 
   @@index([referralCode])
   @@index([referredById])
@@ -1633,22 +1636,67 @@ model PushNotificationLog {
 }
 
 model DreamInterpretation {
-  id              String   @id @default(cuid())
+  id              String           @id @default(cuid())
   title           String
-  slug            String   @unique
-  content         String   @db.Text
-  summary         String?  @db.Text
-  keywords        String[] @default([])
+  slug            String           @unique
+  content         String           @db.Text
+  summary         String?          @db.Text
+  keywords        String[]         @default([])
   metaDescription String?
-  views           Int      @default(0)
-  isPublished     Boolean  @default(true)
-  isAiGenerated   Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  views           Int              @default(0)
+  isPublished     Boolean          @default(true)
+  isAiGenerated   Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  comments        DreamComment[]
+  favorites       DreamFavorite[]
+  dreamViews      DreamView[]
 
   @@index([slug])
   @@index([views])
   @@index([createdAt])
   @@index([isPublished])
   @@map("dream_interpretations")
+}
+
+model DreamComment {
+  id        String              @id @default(cuid())
+  content   String              @db.Text
+  userId    String
+  dreamId   String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@index([dreamId, createdAt])
+  @@index([userId])
+  @@map("dream_comments")
+}
+
+model DreamFavorite {
+  id        String              @id @default(cuid())
+  userId    String
+  dreamId   String
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dreamId])
+  @@index([userId])
+  @@index([dreamId])
+  @@map("dream_favorites")
+}
+
+model DreamView {
+  id        String              @id @default(cuid())
+  userId    String
+  dreamId   String
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([dreamId])
+  @@map("dream_views")
 }
