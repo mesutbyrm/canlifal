@@ -2,9 +2,10 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Search, Moon, Eye, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Clock, Loader2, Heart, PenLine, Star, Share2, CheckCircle } from 'lucide-react'
+import { Search, Moon, Eye, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Clock, Loader2, Heart, PenLine, Star, Share2, CheckCircle, Coins, BarChart3 } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
+import { DREAM_CATEGORIES } from '@/lib/dream-categories'
 
 interface Dream {
   id: string
@@ -12,6 +13,7 @@ interface Dream {
   slug: string
   summary: string | null
   keywords: string[]
+  category: string
   views: number
   createdAt: string
 }
@@ -52,6 +54,7 @@ export default function RuyaPage() {
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
   const [currentPage, setCurrentPage] = useState(1)
   const [sort, setSort] = useState<'popular' | 'newest'>('popular')
+  const [category, setCategory] = useState('tumu')
   const [generating, setGenerating] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -64,15 +67,18 @@ export default function RuyaPage() {
   const [interpretation, setInterpretation] = useState('')
   const [interpreting, setInterpreting] = useState(false)
   const [sharedToSocial, setSharedToSocial] = useState(false)
+  const [jetonInfo, setJetonInfo] = useState<{ spent?: number; balance?: number; isPersonalized?: boolean } | null>(null)
+  const [interpretError, setInterpretError] = useState('')
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
 
-  const fetchDreams = useCallback(async (search = '', page = 1, sortBy = 'popular') => {
+  const fetchDreams = useCallback(async (search = '', page = 1, sortBy = 'popular', cat = 'tumu') => {
     setLoading(true)
     try {
       const qs = new URLSearchParams({ page: String(page), sort: sortBy })
       if (search) qs.set('search', search)
+      if (cat && cat !== 'tumu') qs.set('category', cat)
       const res = await fetch(`/api/dreams?${qs}`)
       if (res.ok) {
         const data = await res.json()
@@ -88,8 +94,8 @@ export default function RuyaPage() {
   }, [])
 
   useEffect(() => {
-    fetchDreams(searchQuery, currentPage, sort)
-  }, [currentPage, sort, fetchDreams])
+    fetchDreams(searchQuery, currentPage, sort, category)
+  }, [currentPage, sort, category, fetchDreams])
 
   // Fetch recommendations
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function RuyaPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setCurrentPage(1)
-    fetchDreams(searchQuery, 1, sort)
+    fetchDreams(searchQuery, 1, sort, category)
   }
 
   const handleAiGenerate = async () => {
@@ -148,7 +154,7 @@ export default function RuyaPage() {
     if (tab === 'favorites') fetchFavorites()
   }, [tab, fetchFavorites])
 
-  // Interpret dream
+  // Interpret dream (personalized)
   const handleInterpret = async () => {
     if (!dreamText.trim() || interpreting) return
     if (!session?.user) {
@@ -158,6 +164,8 @@ export default function RuyaPage() {
     setInterpreting(true)
     setInterpretation('')
     setSharedToSocial(false)
+    setJetonInfo(null)
+    setInterpretError('')
     try {
       const res = await fetch('/api/dreams/interpret', {
         method: 'POST',
@@ -168,6 +176,10 @@ export default function RuyaPage() {
         const data = await res.json()
         setInterpretation(data.interpretation || '')
         if (data.sharedToSocial) setSharedToSocial(true)
+        setJetonInfo({ spent: data.jetonSpent, balance: data.jetonBalance, isPersonalized: data.isPersonalized })
+      } else if (res.status === 402) {
+        const err = await res.json().catch(() => ({}))
+        setInterpretError(err.error || 'Yetersiz jeton.')
       } else {
         const err = await res.json().catch(() => ({}))
         setInterpretation(err.error || 'Bir hata oluştu.')
@@ -184,6 +196,8 @@ export default function RuyaPage() {
     'Yılan', 'Köpek', 'Kedi', 'Altın', 'Su', 'Ateş', 'Bebek', 'Araba',
     'Ölüm', 'Düğün', 'Uçmak', 'Diş', 'Kan', 'Para', 'Ev', 'Deniz',
   ]
+
+  const getCatIcon = (val: string) => DREAM_CATEGORIES.find(c => c.value === val)?.icon || '💭'
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950">
@@ -203,7 +217,7 @@ export default function RuyaPage() {
           </p>
 
           {/* Tab Buttons */}
-          <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
             <button
               onClick={() => setTab('search')}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -236,6 +250,12 @@ export default function RuyaPage() {
                 <Heart className="w-4 h-4" /> Favoriler
               </button>
             )}
+            <button
+              onClick={() => router.push(`/${lang}/ruya-trendleri`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
+            >
+              <BarChart3 className="w-4 h-4" /> Trendler
+            </button>
           </div>
 
           {/* Search Box - only in search tab */}
@@ -267,7 +287,7 @@ export default function RuyaPage() {
                     onClick={() => {
                       setSearchQuery(kw)
                       setCurrentPage(1)
-                      fetchDreams(kw, 1, sort)
+                      fetchDreams(kw, 1, sort, category)
                     }}
                     className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs hover:bg-indigo-500/20 hover:border-indigo-500/30 hover:text-indigo-300 transition-all"
                   >
@@ -286,6 +306,25 @@ export default function RuyaPage() {
         {/* ===== SEARCH TAB ===== */}
         {tab === 'search' && (
           <>
+            {/* Category Filter */}
+            <div className="mb-4 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center gap-2 pb-2 min-w-max">
+                {DREAM_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => { setCategory(cat.value); setCurrentPage(1) }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      category === cat.value
+                        ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    <span>{cat.icon}</span> {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-400 text-sm">
                 {loading ? 'Yükleniyor...' : `${total} rüya tabiri bulundu`}
@@ -352,9 +391,12 @@ export default function RuyaPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-white font-medium text-sm md:text-base group-hover:text-indigo-300 transition-colors truncate">
-                            {dream.title}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm">{getCatIcon(dream.category)}</span>
+                            <h3 className="text-white font-medium text-sm md:text-base group-hover:text-indigo-300 transition-colors truncate">
+                              {dream.title}
+                            </h3>
+                          </div>
                           {dream.summary && (
                             <p className="text-gray-500 text-xs md:text-sm mt-1 line-clamp-2">{dream.summary}</p>
                           )}
@@ -420,7 +462,7 @@ export default function RuyaPage() {
           </>
         )}
 
-        {/* ===== INTERPRET TAB (Rüyanı Yaz Yorumlayalım) ===== */}
+        {/* ===== INTERPRET TAB (Kişiselleştirilmiş Rüya Yorumu) ===== */}
         {tab === 'interpret' && (
           <div className="max-w-2xl mx-auto">
             <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20">
@@ -429,9 +471,15 @@ export default function RuyaPage() {
                   <PenLine className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Rüyanızı Anlatın</h2>
-                  <p className="text-gray-400 text-xs">Yapay zeka rüyanızı İslami, psikolojik ve geleneksel perspektiflerden yorumlayacak</p>
+                  <h2 className="text-lg font-semibold text-white">Kişiselleştirilmiş Rüya Yorumu</h2>
+                  <p className="text-gray-400 text-xs">Burcunuza ve rüya geçmişinize göre özel yorum</p>
                 </div>
+              </div>
+
+              {/* Jeton info */}
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 text-xs">Bu işlem <strong>5 jeton</strong> harcar. Burcunuz, yükselen burcunuz ve rüya günlüğünüzden kişiselleştirilmiş yorum alırsınız.</span>
               </div>
 
               <textarea
@@ -452,24 +500,48 @@ export default function RuyaPage() {
                   {interpreting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Yorumlanıyor...</>
                   ) : (
-                    <><Sparkles className="w-4 h-4" /> Rüyamı Yorumla</>
+                    <><Sparkles className="w-4 h-4" /> Rüyamı Yorumla (5 ₳)</>
                   )}
                 </button>
               </div>
             </div>
+
+            {/* Jeton Error */}
+            {interpretError && (
+              <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                <p className="text-red-400 text-sm">{interpretError}</p>
+                <button
+                  onClick={() => router.push(`/${lang}/jeton`)}
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm transition-colors"
+                >
+                  <Coins className="w-4 h-4" /> Jeton Satın Al
+                </button>
+              </div>
+            )}
 
             {/* Interpretation Result */}
             {interpretation && (
               <div className="mt-6 p-6 rounded-2xl bg-white/[0.03] border border-indigo-500/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-indigo-400" />
-                  <h3 className="text-lg font-semibold text-white">Rüya Yorumunuz</h3>
+                  <h3 className="text-lg font-semibold text-white">Kişiselleştirilmiş Rüya Yorumunuz</h3>
+                  {jetonInfo?.isPersonalized && (
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px]">
+                      ✨ Kişiselleştirilmiş
+                    </span>
+                  )}
                 </div>
                 <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                   {interpretation}
                 </div>
+                {jetonInfo && (
+                  <div className="mt-4 flex items-center gap-2 text-amber-400 text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                    <Coins className="w-4 h-4" />
+                    <span>{jetonInfo.spent} jeton harcandı. Kalan bakiye: {jetonInfo.balance} jeton</span>
+                  </div>
+                )}
                 {sharedToSocial && (
-                  <div className="mt-4 flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                  <div className="mt-3 flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
                     <CheckCircle className="w-4 h-4" />
                     <span>Rüya yorumunuz otomatik olarak sosyal akışınızda paylaşıldı!</span>
                     <button onClick={() => router.push(`/${lang}/social`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">

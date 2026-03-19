@@ -19,26 +19,35 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const page = Math.max(1, parseInt(new URL(req.url).searchParams.get('page') || '1'))
+    const url = new URL(req.url)
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'))
+    const filterType = url.searchParams.get('type') || 'all' // all | yorum | deneyim
     const limit = 20
     const skip = (page - 1) * limit
 
+    const where: any = { dreamId: dream.id }
+    if (filterType === 'yorum' || filterType === 'deneyim') {
+      where.experienceType = filterType
+    }
+
     const [comments, total] = await Promise.all([
       prisma.dreamComment.findMany({
-        where: { dreamId: dream.id },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
         select: {
           id: true,
           content: true,
+          experienceType: true,
+          didComeTrue: true,
           createdAt: true,
           user: {
             select: { id: true, name: true, image: true, username: true },
           },
         },
       }),
-      prisma.dreamComment.count({ where: { dreamId: dream.id } }),
+      prisma.dreamComment.count({ where }),
     ])
 
     return NextResponse.json({ comments, total, totalPages: Math.ceil(total / limit) })
@@ -67,7 +76,7 @@ export async function POST(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const { content } = await req.json()
+    const { content, experienceType, didComeTrue } = await req.json()
     if (!content || typeof content !== 'string' || content.trim().length < 3) {
       return NextResponse.json({ error: 'Yorum en az 3 karakter olmalı' }, { status: 400 })
     }
@@ -75,15 +84,22 @@ export async function POST(
       return NextResponse.json({ error: 'Yorum en fazla 1000 karakter olabilir' }, { status: 400 })
     }
 
+    const validTypes = ['yorum', 'deneyim']
+    const type = validTypes.includes(experienceType) ? experienceType : 'yorum'
+
     const comment = await prisma.dreamComment.create({
       data: {
         content: content.trim(),
         userId: (session.user as any).id,
         dreamId: dream.id,
+        experienceType: type,
+        didComeTrue: type === 'deneyim' && typeof didComeTrue === 'boolean' ? didComeTrue : null,
       },
       select: {
         id: true,
         content: true,
+        experienceType: true,
+        didComeTrue: true,
         createdAt: true,
         user: {
           select: { id: true, name: true, image: true, username: true },

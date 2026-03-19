@@ -44,8 +44,11 @@ Aşağıdaki formatta yanıt ver (JSON):
   "content": "<h2>Rüyada ... Görmek Ne Anlama Gelir?</h2>\n<p>...</p>\n<h2>İslami Rüya Tabiri</h2>\n<p>...</p>\n<h2>Psikolojik Yorum</h2>\n<p>...</p>\n<h2>Detaylı Yorumlar</h2>\n<h3>...</h3>\n<p>...</p>\n<h2>Genel Değerlendirme</h2>\n<p>...</p>",
   "summary": "2-3 cümlelik özet",
   "keywords": ["anahtar", "kelimeler"],
+  "category": "kategori",
   "metaDescription": "155 karakterlik SEO açıklaması"
 }
+
+Kategori seçenekleri (sadece bunlardan birini yaz): genel, hayvanlar, doga, insanlar, nesneler, duygusal, korkulu, dini, gizemli, yolculuk, yiyecek, saglik, para
 
 Önemli kurallar:
 - İçerik en az 800 kelime olmalı
@@ -80,6 +83,9 @@ Aşağıdaki formatta yanıt ver (JSON):
       }
     }
 
+    const validCategories = ['genel', 'hayvanlar', 'doga', 'insanlar', 'nesneler', 'duygusal', 'korkulu', 'dini', 'gizemli', 'yolculuk', 'yiyecek', 'saglik', 'para']
+    const cat = validCategories.includes(parsed.category) ? parsed.category : 'genel'
+
     const dream = await prisma.dreamInterpretation.create({
       data: {
         title: parsed.title || `Rüyada ${searchTerm} Görmek`,
@@ -87,6 +93,7 @@ Aşağıdaki formatta yanıt ver (JSON):
         content: parsed.content || raw,
         summary: parsed.summary || '',
         keywords: parsed.keywords || [searchTerm.toLowerCase()],
+        category: cat,
         metaDescription: parsed.metaDescription || `Rüyada ${searchTerm} görmek ne anlama gelir?`,
         isPublished: true,
         isAiGenerated: true,

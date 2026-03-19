@@ -1723,6 +1723,7 @@ model DreamInterpretation {
   summary         String?          @db.Text
   keywords        String[]         @default([])
   metaDescription String?
+  category        String           @default("genel")
   views           Int              @default(0)
   isPublished     Boolean          @default(true)
   isAiGenerated   Boolean          @default(false)
@@ -1736,21 +1737,25 @@ model DreamInterpretation {
   @@index([views])
   @@index([createdAt])
   @@index([isPublished])
+  @@index([category])
   @@map("dream_interpretations")
 }
 
 model DreamComment {
-  id        String              @id @default(cuid())
-  content   String              @db.Text
-  userId    String
-  dreamId   String
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+  id             String              @id @default(cuid())
+  content        String              @db.Text
+  userId         String
+  dreamId        String
+  experienceType String              @default("yorum") // yorum | deneyim
+  didComeTrue    Boolean?            // null = belirtilmedi, true = gerçekleşti, false = gerçekleşmedi
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream          DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
 
   @@index([dreamId, createdAt])
   @@index([userId])
+  @@index([experienceType])
   @@map("dream_comments")
 }
 

@@ -2,9 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
-import { ArrowLeft, Moon, Eye, Calendar, Tag, ChevronRight, Heart, MessageCircle, Send, Trash2, Loader2 } from 'lucide-react'
+import { ArrowLeft, Moon, Eye, Calendar, Tag, ChevronRight, Heart, MessageCircle, Send, Trash2, Loader2, CheckCircle, XCircle, Users } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
+import { getCategoryLabel, getCategoryIcon } from '@/lib/dream-categories'
 
 interface Dream {
   id: string
@@ -13,6 +14,7 @@ interface Dream {
   content: string
   summary: string | null
   keywords: string[]
+  category: string
   metaDescription: string | null
   views: number
   isAiGenerated: boolean
@@ -25,12 +27,16 @@ interface SimilarDream {
   title: string
   slug: string
   summary: string | null
+  category: string
+  keywords: string[]
   views: number
 }
 
 interface Comment {
   id: string
   content: string
+  experienceType: string
+  didComeTrue: boolean | null
   createdAt: string
   user: { id: string; name: string; image: string | null; username: string | null }
 }
@@ -41,6 +47,13 @@ interface Recommendation {
   slug: string
   summary: string | null
   views: number
+}
+
+interface ExperienceStats {
+  comments: number
+  experiences: number
+  cameTrue: number
+  didNotComeTrue: number
 }
 
 export default function DreamDetailPage() {
@@ -54,6 +67,7 @@ export default function DreamDetailPage() {
   const [similar, setSimilar] = useState<SimilarDream[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [expStats, setExpStats] = useState<ExperienceStats>({ comments: 0, experiences: 0, cameTrue: 0, didNotComeTrue: 0 })
 
   // Favorites
   const [isFavorited, setIsFavorited] = useState(false)
@@ -66,6 +80,9 @@ export default function DreamDetailPage() {
   const [commentText, setCommentText] = useState('')
   const [commentLoading, setCommentLoading] = useState(false)
   const [commentSubmitting, setCommentSubmitting] = useState(false)
+  const [commentFilter, setCommentFilter] = useState<'all' | 'yorum' | 'deneyim'>('all')
+  const [commentType, setCommentType] = useState<'yorum' | 'deneyim'>('yorum')
+  const [didComeTrue, setDidComeTrue] = useState<boolean | null>(null)
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -83,6 +100,7 @@ export default function DreamDetailPage() {
         const data = await res.json()
         setDream(data.dream)
         setSimilar(data.similar || [])
+        if (data.experienceStats) setExpStats(data.experienceStats)
       }
     } catch (e) {
       console.error('Failed to fetch dream', e)
@@ -110,11 +128,12 @@ export default function DreamDetailPage() {
   }, [slug])
 
   // Fetch comments
-  const fetchComments = useCallback(async () => {
+  const fetchComments = useCallback(async (filter = 'all') => {
     if (!slug) return
     setCommentLoading(true)
     try {
-      const res = await fetch(`/api/dreams/${encodeURIComponent(slug)}/comments`)
+      const qs = filter !== 'all' ? `?type=${filter}` : ''
+      const res = await fetch(`/api/dreams/${encodeURIComponent(slug)}/comments${qs}`)
       if (res.ok) {
         const data = await res.json()
         setComments(data.comments || [])
@@ -127,7 +146,7 @@ export default function DreamDetailPage() {
     }
   }, [slug])
 
-  useEffect(() => { fetchComments() }, [fetchComments])
+  useEffect(() => { fetchComments(commentFilter) }, [fetchComments, commentFilter])
 
   // Fetch recommendations
   useEffect(() => {
@@ -140,7 +159,7 @@ export default function DreamDetailPage() {
   // Update document title
   useEffect(() => {
     if (dream) {
-      document.title = `${dream.title} - Rüya Tabiri | Canlifal`
+      document.title = `${dream.title} - R\u00fcya Tabiri | Canlifal`
       const metaDesc = document.querySelector('meta[name="description"]')
       if (metaDesc && dream.metaDescription) {
         metaDesc.setAttribute('content', dream.metaDescription)
@@ -180,13 +199,19 @@ export default function DreamDetailPage() {
       const res = await fetch(`/api/dreams/${encodeURIComponent(slug)}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: commentText.trim() }),
+        body: JSON.stringify({
+          content: commentText.trim(),
+          experienceType: commentType,
+          didComeTrue: commentType === 'deneyim' ? didComeTrue : null,
+        }),
       })
       if (res.ok) {
         const data = await res.json()
         setComments(prev => [data.comment, ...prev])
         setCommentTotal(prev => prev + 1)
         setCommentText('')
+        setCommentType('yorum')
+        setDidComeTrue(null)
       }
     } catch (e) {
       console.error('Comment submit error', e)
@@ -213,7 +238,7 @@ export default function DreamDetailPage() {
 
   // Share functions
   const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://canlifal.com/${lang}/ruya/${slug}`
-  const shareTitle = dream?.title || 'Rüya Tabiri'
+  const shareTitle = dream?.title || 'R\u00fcya Tabiri'
 
   const shareWhatsApp = () => {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareTitle + ' - ' + shareUrl)}`, '_blank')
@@ -241,13 +266,13 @@ export default function DreamDetailPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <Moon className="w-16 h-16 text-indigo-500/30 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Rüya Tabiri Bulunamadı</h2>
-          <p className="text-gray-400 mb-4">Aradığınız rüya tabiri mevcut değil.</p>
+          <h2 className="text-xl font-semibold text-white mb-2">R\u00fcya Tabiri Bulunamad\u0131</h2>
+          <p className="text-gray-400 mb-4">Arad\u0131\u011f\u0131n\u0131z r\u00fcya tabiri mevcut de\u011fil.</p>
           <button
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
           </button>
         </div>
       </div>
@@ -286,7 +311,11 @@ export default function DreamDetailPage() {
         <nav className="flex items-center gap-2 text-xs text-gray-500 mb-6">
           <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors">Ana Sayfa</button>
           <ChevronRight className="w-3 h-3" />
-          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">Rüya Tabirleri</button>
+          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">R\u00fcya Tabirleri</button>
+          <ChevronRight className="w-3 h-3" />
+          <button onClick={() => router.push(`/${lang}/ruya?category=${dream.category}`)} className="hover:text-gray-300 transition-colors">
+            {getCategoryIcon(dream.category)} {getCategoryLabel(dream.category)}
+          </button>
           <ChevronRight className="w-3 h-3" />
           <span className="text-indigo-400 truncate max-w-[200px]">{dream.title}</span>
         </nav>
@@ -295,8 +324,8 @@ export default function DreamDetailPage() {
         <div className="mb-8">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                <Moon className="w-5 h-5 text-indigo-400" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-lg">
+                {getCategoryIcon(dream.category)}
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-white">{dream.title}</h1>
             </div>
@@ -314,15 +343,18 @@ export default function DreamDetailPage() {
               <span>{favCount}</span>
             </button>
           </div>
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" /> {formattedDate}
             </span>
             <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} görüntülenme
+              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} g\u00f6r\u00fcnt\u00fclenme
             </span>
             <span className="flex items-center gap-1">
               <MessageCircle className="w-3.5 h-3.5" /> {commentTotal} yorum
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px]">
+              {getCategoryIcon(dream.category)} {getCategoryLabel(dream.category)}
             </span>
             {dream.isAiGenerated && (
               <span className="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px]">
@@ -331,6 +363,26 @@ export default function DreamDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Experience Stats Badge */}
+        {(expStats.experiences > 0) && (
+          <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/15 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 text-sm">
+              <Users className="w-4 h-4 text-teal-400" />
+              <span className="text-teal-300">{expStats.experiences} ki\u015fi bu r\u00fcyay\u0131 g\u00f6rd\u00fc\u011f\u00fcn\u00fc payla\u015ft\u0131</span>
+            </div>
+            {expStats.cameTrue > 0 && (
+              <span className="flex items-center gap-1 text-emerald-400 text-xs">
+                <CheckCircle className="w-3.5 h-3.5" /> {expStats.cameTrue} ger\u00e7ekle\u015fti
+              </span>
+            )}
+            {expStats.didNotComeTrue > 0 && (
+              <span className="flex items-center gap-1 text-red-400 text-xs">
+                <XCircle className="w-3.5 h-3.5" /> {expStats.didNotComeTrue} ger\u00e7ekle\u015fmedi
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Summary */}
         {dream.summary && (
@@ -376,7 +428,7 @@ export default function DreamDetailPage() {
 
         {/* Social Share Buttons */}
         <div className="mt-6 pt-6 border-t border-white/10">
-          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri paylaşın</p>
+          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri payla\u015f\u0131n</p>
           <div className="flex items-center gap-2">
             <button
               onClick={shareWhatsApp}
@@ -409,12 +461,36 @@ export default function DreamDetailPage() {
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* ===== Comments & Experience Section ===== */}
         <div className="mt-10 pt-6 border-t border-white/10">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-indigo-400" />
-            Yorumlar ({commentTotal})
+            Yorumlar ve Deneyimler ({commentTotal})
           </h2>
+
+          {/* Comment Type Toggle (for submitting) */}
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setCommentType('yorum')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                commentType === 'yorum'
+                  ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                  : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" /> Yorum Yaz
+            </button>
+            <button
+              onClick={() => setCommentType('deneyim')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                commentType === 'deneyim'
+                  ? 'bg-teal-500/20 border border-teal-500/40 text-teal-300'
+                  : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" /> Ben de G\u00f6rd\u00fcm
+            </button>
+          </div>
 
           {/* Comment form */}
           <form onSubmit={submitComment} className="mb-6">
@@ -422,13 +498,46 @@ export default function DreamDetailPage() {
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder={session?.user ? 'Yorumunuzu yazın...' : 'Yorum yapmak için giriş yapın'}
+                placeholder={commentType === 'deneyim'
+                  ? 'Bu r\u00fcyay\u0131 siz de g\u00f6rd\u00fcn\u00fcz m\u00fc? Deneyiminizi payla\u015f\u0131n...'
+                  : session?.user ? 'Yorumunuzu yaz\u0131n...' : 'Yorum yapmak i\u00e7in giri\u015f yap\u0131n'
+                }
                 rows={3}
                 maxLength={1000}
                 disabled={!session?.user}
                 className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm resize-none disabled:opacity-50"
               />
             </div>
+
+            {/* Experience came true toggle */}
+            {commentType === 'deneyim' && (
+              <div className="mt-2 flex items-center gap-3">
+                <span className="text-gray-400 text-xs">Bu r\u00fcya ger\u00e7ekle\u015fti mi?</span>
+                <button
+                  type="button"
+                  onClick={() => setDidComeTrue(didComeTrue === true ? null : true)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${
+                    didComeTrue === true
+                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                      : 'bg-white/5 border border-white/10 text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> Evet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDidComeTrue(didComeTrue === false ? null : false)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${
+                    didComeTrue === false
+                      ? 'bg-red-500/20 border border-red-500/40 text-red-400'
+                      : 'bg-white/5 border border-white/10 text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <XCircle className="w-3.5 h-3.5" /> Hay\u0131r
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mt-2">
               <span className="text-gray-600 text-xs">{commentText.length}/1000</span>
               <button
@@ -437,10 +546,27 @@ export default function DreamDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {commentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Gönder
+                G\u00f6nder
               </button>
             </div>
           </form>
+
+          {/* Comment Filter Tabs */}
+          <div className="flex items-center gap-2 mb-4">
+            {(['all', 'yorum', 'deneyim'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setCommentFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  commentFilter === f
+                    ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                {f === 'all' ? 'T\u00fcm\u00fc' : f === 'yorum' ? 'Yorumlar' : 'Deneyimler'}
+              </button>
+            ))}
+          </div>
 
           {/* Comments list */}
           {commentLoading ? (
@@ -448,15 +574,28 @@ export default function DreamDetailPage() {
           ) : comments.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
+              <p className="text-gray-500 text-sm">
+                {commentFilter === 'deneyim'
+                  ? 'Hen\u00fcz deneyim payla\u015f\u0131lmam\u0131\u015f. Bu r\u00fcyay\u0131 siz de g\u00f6rd\u00fcyseniz payla\u015f\u0131n!'
+                  : 'Hen\u00fcz yorum yap\u0131lmam\u0131\u015f. \u0130lk yorumu siz yap\u0131n!'
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment.id} className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div key={comment.id} className={`p-4 rounded-xl border ${
+                  comment.experienceType === 'deneyim'
+                    ? 'bg-teal-500/[0.03] border-teal-500/15'
+                    : 'bg-white/[0.03] border-white/[0.06]'
+                }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs font-bold">
+                      <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold ${
+                        comment.experienceType === 'deneyim'
+                          ? 'bg-teal-500/20 border-teal-500/30 text-teal-400'
+                          : 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
+                      }`}>
                         {comment.user.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <div>
@@ -465,6 +604,21 @@ export default function DreamDetailPage() {
                           <span className="text-gray-600 text-xs ml-1">@{comment.user.username}</span>
                         )}
                       </div>
+                      {comment.experienceType === 'deneyim' && (
+                        <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px]">
+                          Ben de g\u00f6rd\u00fcm
+                        </span>
+                      )}
+                      {comment.didComeTrue === true && (
+                        <span className="flex items-center gap-0.5 text-emerald-400 text-[10px]">
+                          <CheckCircle className="w-3 h-3" /> Ger\u00e7ekle\u015fti
+                        </span>
+                      )}
+                      {comment.didComeTrue === false && (
+                        <span className="flex items-center gap-0.5 text-red-400 text-[10px]">
+                          <XCircle className="w-3 h-3" /> Ger\u00e7ekle\u015fmedi
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600 text-xs">
@@ -487,10 +641,11 @@ export default function DreamDetailPage() {
           )}
         </div>
 
-        {/* Similar Dreams */}
+        {/* Related Dreams (Enhanced with categories) */}
         {similar.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-4">Benzer Rüya Tabirleri</h2>
+            <h2 className="text-lg font-semibold text-white mb-1">\u0130li\u015fkili R\u00fcya Tabirleri</h2>
+            <p className="text-gray-500 text-xs mb-4">Bu r\u00fcyay\u0131 g\u00f6rd\u00fcyseniz bunlara da bak\u0131n</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {similar.map((s) => (
                 <button
@@ -498,14 +653,28 @@ export default function DreamDetailPage() {
                   onClick={() => router.push(`/${lang}/ruya/${s.slug}`)}
                   className="text-left p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-indigo-500/30 transition-all group"
                 >
-                  <h3 className="text-white text-sm font-medium group-hover:text-indigo-300 transition-colors truncate">
-                    {s.title}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm">{getCategoryIcon(s.category)}</span>
+                    <h3 className="text-white text-sm font-medium group-hover:text-indigo-300 transition-colors truncate">
+                      {s.title}
+                    </h3>
+                  </div>
                   {s.summary && (
                     <p className="text-gray-500 text-xs mt-1 line-clamp-2">{s.summary}</p>
                   )}
-                  <div className="flex items-center gap-1 text-gray-600 text-[10px] mt-2">
-                    <Eye className="w-3 h-3" /> {s.views}
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1 text-gray-600 text-[10px]">
+                      <Eye className="w-3 h-3" /> {s.views}
+                    </div>
+                    {s.keywords && s.keywords.filter(k => dream.keywords.includes(k)).length > 0 && (
+                      <div className="flex gap-1">
+                        {s.keywords.filter(k => dream.keywords.includes(k)).slice(0, 2).map((kw, i) => (
+                          <span key={i} className="px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[9px]">
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </button>
               ))}
@@ -516,8 +685,8 @@ export default function DreamDetailPage() {
         {/* Smart Recommendations */}
         {recommendations.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-1">Size Özel Öneriler</h2>
-            <p className="text-gray-500 text-xs mb-4">İlgi alanlarınıza göre seçilmiş rüya tabirleri</p>
+            <h2 className="text-lg font-semibold text-white mb-1">Size \u00d6zel \u00d6neriler</h2>
+            <p className="text-gray-500 text-xs mb-4">\u0130lgi alanlar\u0131n\u0131za g\u00f6re se\u00e7ilmi\u015f r\u00fcya tabirleri</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recommendations.filter(r => r.id !== dream.id).slice(0, 6).map((rec) => (
                 <button
@@ -543,7 +712,7 @@ export default function DreamDetailPage() {
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white hover:border-white/20 transition-all"
           >
-            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
           </button>
         </div>
       </div>
