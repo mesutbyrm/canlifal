@@ -63,8 +63,14 @@ export async function GET(request: NextRequest) {
                              (tellerGiftTotal._sum.totalPrice || 0)
       const totalSessionSpent = sessionCharges._sum.creditsCharged || 0
 
-      // Platform profit: revenue - (total distributed to tellers)
-      const platformProfit = totalRevenue - totalTellerEarnings
+      // Manual profit adjustments from platform_settings
+      const manualAdjSetting = await prisma.platformSettings.findUnique({
+        where: { key: 'manual_profit_adjustment' },
+      })
+      const manualProfitAdjustment = manualAdjSetting ? parseFloat(manualAdjSetting.value) : 0
+
+      // Platform profit: revenue - (total distributed to tellers) + manual adjustments
+      const platformProfit = totalRevenue - totalTellerEarnings + manualProfitAdjustment
 
       return NextResponse.json({
         totalCfc: totals._sum.credits || 0,
@@ -75,6 +81,35 @@ export async function GET(request: NextRequest) {
         totalSessionSpent,
         totalCommission,
         platformProfit,
+        manualProfitAdjustment,
+      })
+    }
+
+    if (section === 'commission-settings') {
+      // Fetch all commission-related platform settings
+      const keys = [
+        'commission_rate',
+        'broadcaster_commission_rate',
+        'chat_room_default_commission_rate',
+        'manual_profit_adjustment',
+      ]
+      const settings = await prisma.platformSettings.findMany({
+        where: { key: { in: keys } },
+      })
+      const settingsMap: Record<string, string> = {}
+      for (const s of settings) {
+        settingsMap[s.key] = s.value
+      }
+
+      return NextResponse.json({
+        // Canlı falcı seans komisyonu (platform keser)
+        commission_rate: settingsMap['commission_rate'] || '20',
+        // Canlı yayıncı hediye komisyonu (platform keser) 
+        broadcaster_commission_rate: settingsMap['broadcaster_commission_rate'] || '20',
+        // Sohbet odası hediye komisyonu default
+        chat_room_default_commission_rate: settingsMap['chat_room_default_commission_rate'] || '0',
+        // Manuel kar/zarar düzeltmesi
+        manual_profit_adjustment: settingsMap['manual_profit_adjustment'] || '0',
       })
     }
 
@@ -189,7 +224,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Add/remove jeton or CFC for a user
+// POST: Multiple actions - adjust user balance, update commission settings, manual profit adjustment
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -198,6 +233,77 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const { action } = body
+
+    // Update a commission setting
+    if (action === 'update-commission') {
+      const { key, value } = body
+      const allowedKeys = [
+        'commission_rate',
+        'broadcaster_commission_rate', 
+        'chat_room_default_commission_rate',
+      ]
+      if (!allowedKeys.includes(key)) {
+        return NextResponse.json({ error: 'Geçersiz ayar anahtarı' }, { status: 400 })
+      }
+      const numVal = parseInt(value)
+      if (isNaN(numVal) || numVal < 0 || numVal > 100) {
+        return NextResponse.json({ error: 'Oran 0-100 arasında olmalıdır' }, { status: 400 })
+      }
+
+      const descMap: Record<string, string> = {
+        'commission_rate': 'Canlı falcı seans komisyon oranı (%)',
+        'broadcaster_commission_rate': 'Canlı yayıncı hediye komisyon oranı (%)',
+        'chat_room_default_commission_rate': 'Sohbet odası hediye komisyon oranı (%)',
+      }
+
+      await prisma.platformSettings.upsert({
+        where: { key },
+        update: { value: String(numVal) },
+        create: { key, value: String(numVal), description: descMap[key] || key },
+      })
+
+      return NextResponse.json({ success: true, key, value: numVal })
+    }
+
+    // Manual profit/loss adjustment
+    if (action === 'adjust-profit') {
+      const { amount, reason } = body
+      if (typeof amount !== 'number') {
+        return NextResponse.json({ error: 'Geçersiz tutar' }, { status: 400 })
+      }
+
+      // Get current adjustment value
+      const current = await prisma.platformSettings.findUnique({
+        where: { key: 'manual_profit_adjustment' },
+      })
+      const currentVal = current ? parseFloat(current.value) : 0
+      const newVal = currentVal + amount
+
+      await prisma.platformSettings.upsert({
+        where: { key: 'manual_profit_adjustment' },
+        update: { value: String(newVal) },
+        create: { key: 'manual_profit_adjustment', value: String(newVal), description: 'Manuel kar/zarar düzeltmesi (TRY)' },
+      })
+
+      // Log as a notification or in description
+      if (reason) {
+        // We append a history note to description
+        const historyNote = `[${new Date().toISOString().slice(0, 16)}] ${amount > 0 ? '+' : ''}${amount} TRY: ${reason}`
+        const existingDesc = current?.description || 'Manuel kar/zarar düzeltmesi (TRY)'
+        const updatedDesc = existingDesc.includes('[') 
+          ? existingDesc + ' | ' + historyNote 
+          : historyNote
+        await prisma.platformSettings.update({
+          where: { key: 'manual_profit_adjustment' },
+          data: { description: updatedDesc },
+        })
+      }
+
+      return NextResponse.json({ success: true, newTotal: newVal })
+    }
+
+    // Default: adjust user balance (legacy behavior)
     const { userId, amount, currency, reason } = body
 
     if (!userId || typeof amount !== 'number' || !currency) {

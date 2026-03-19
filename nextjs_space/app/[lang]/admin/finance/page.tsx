@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Loader2, Search, Coins, TrendingUp, TrendingDown,
   Gift, Users, Plus, Minus, X, Award, DollarSign,
-  ArrowUpRight, ArrowDownRight, Crown, Star, Wallet
+  ArrowUpRight, ArrowDownRight, Crown, Star, Wallet,
+  Settings, Percent, Save, CheckCircle
 } from 'lucide-react'
 
 interface OverviewData {
@@ -20,6 +21,14 @@ interface OverviewData {
   totalSessionSpent: number
   totalCommission: number
   platformProfit: number
+  manualProfitAdjustment: number
+}
+
+interface CommissionSettings {
+  commission_rate: string
+  broadcaster_commission_rate: string
+  chat_room_default_commission_rate: string
+  manual_profit_adjustment: string
 }
 
 interface RankedUser {
@@ -49,7 +58,7 @@ interface UserSearchResult {
   credits: number
 }
 
-type ActiveTab = 'overview' | 'top-gift-receivers' | 'top-gift-senders' | 'top-jeton-holders' | 'top-cfc-holders'
+type ActiveTab = 'overview' | 'commission-settings' | 'top-gift-receivers' | 'top-gift-senders' | 'top-jeton-holders' | 'top-cfc-holders'
 
 export default function AdminFinancePage() {
   const { data: session, status } = useSession()
@@ -62,12 +71,21 @@ export default function AdminFinancePage() {
   const [rankedUsers, setRankedUsers] = useState<RankedUser[]>([])
   const [holders, setHolders] = useState<HolderUser[]>([])
 
+  // Commission settings
+  const [commissionSettings, setCommissionSettings] = useState<CommissionSettings | null>(null)
+
   // Adjust modal
   const [adjustModal, setAdjustModal] = useState<{ user: HolderUser | RankedUser['user'] & { jetonBalance?: number; credits?: number } } | null>(null)
   const [adjustCurrency, setAdjustCurrency] = useState<'jeton' | 'cfc'>('jeton')
   const [adjustAmount, setAdjustAmount] = useState('')
   const [adjustReason, setAdjustReason] = useState('')
   const [adjusting, setAdjusting] = useState(false)
+
+  // Profit adjust modal
+  const [showProfitAdjust, setShowProfitAdjust] = useState(false)
+  const [profitAmount, setProfitAmount] = useState('')
+  const [profitReason, setProfitReason] = useState('')
+  const [profitAdjusting, setProfitAdjusting] = useState(false)
 
   // Search modal for manual add
   const [showSearch, setShowSearch] = useState(false)
@@ -87,12 +105,13 @@ export default function AdminFinancePage() {
   const fetchData = useCallback(async (tab: ActiveTab) => {
     setLoading(true)
     try {
-      const section = tab === 'overview' ? 'overview' : tab
-      const res = await fetch(`/api/admin/finance?section=${section}`)
+      const res = await fetch(`/api/admin/finance?section=${tab}`)
       const data = await res.json()
 
       if (tab === 'overview') {
         setOverview(data)
+      } else if (tab === 'commission-settings') {
+        setCommissionSettings(data)
       } else if (tab === 'top-jeton-holders' || tab === 'top-cfc-holders') {
         setHolders(data)
       } else {
@@ -147,11 +166,35 @@ export default function AdminFinancePage() {
     setAdjustModal({ user: { ...user, username: user.username || undefined, image: undefined } })
   }
 
+  const handleProfitAdjust = async (isAdd: boolean) => {
+    if (!profitAmount) return
+    setProfitAdjusting(true)
+    try {
+      const amount = isAdd ? Math.abs(Number(profitAmount)) : -Math.abs(Number(profitAmount))
+      const res = await fetch('/api/admin/finance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'adjust-profit', amount, reason: profitReason }),
+      })
+      if (res.ok) {
+        setShowProfitAdjust(false)
+        setProfitAmount('')
+        setProfitReason('')
+        fetchData('overview')
+      }
+    } catch (err) {
+      console.error('Profit adjust error:', err)
+    } finally {
+      setProfitAdjusting(false)
+    }
+  }
+
   const formatNumber = (n: number) => n.toLocaleString('tr-TR')
   const formatCurrency = (n: number) => n.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
 
   const tabs: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Genel Bakış', icon: <DollarSign className="w-4 h-4" /> },
+    { key: 'commission-settings', label: 'Komisyon Ayarları', icon: <Settings className="w-4 h-4" /> },
     { key: 'top-gift-receivers', label: 'En Çok Hediye Alan', icon: <Gift className="w-4 h-4" /> },
     { key: 'top-gift-senders', label: 'En Çok Hediye Atan', icon: <ArrowUpRight className="w-4 h-4" /> },
     { key: 'top-jeton-holders', label: 'En Çok Jeton', icon: <Coins className="w-4 h-4" /> },
@@ -170,17 +213,26 @@ export default function AdminFinancePage() {
     <div className="min-h-screen bg-[#0a0118] text-white p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
             💰 Finans Yönetimi
           </h1>
-          <button
-            onClick={() => setShowSearch(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:from-purple-500 hover:to-fuchsia-500 transition-all text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Jeton/CFC Ekle/Çıkar
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setShowProfitAdjust(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-600 rounded-xl hover:from-amber-500 hover:to-yellow-500 transition-all text-sm font-medium"
+            >
+              <DollarSign className="w-4 h-4" />
+              Kâr/Zarar Düzenle
+            </button>
+            <button
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl hover:from-purple-500 hover:to-fuchsia-500 transition-all text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Jeton/CFC Ekle/Çıkar
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -215,7 +267,8 @@ export default function AdminFinancePage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'overview' && overview && <OverviewSection data={overview} formatNumber={formatNumber} formatCurrency={formatCurrency} />}
+              {activeTab === 'overview' && overview && <OverviewSection data={overview} formatNumber={formatNumber} formatCurrency={formatCurrency} onAdjustProfit={() => setShowProfitAdjust(true)} />}
+              {activeTab === 'commission-settings' && commissionSettings && <CommissionSettingsSection settings={commissionSettings} onUpdate={() => fetchData('commission-settings')} />}
               {activeTab === 'top-gift-receivers' && <RankingSection title="En Çok Hediye Alanlar" data={rankedUsers} type="receiver" onAdjust={(u) => setAdjustModal({ user: u.user })} formatNumber={formatNumber} />}
               {activeTab === 'top-gift-senders' && <RankingSection title="En Çok Hediye Atanlar" data={rankedUsers} type="sender" onAdjust={(u) => setAdjustModal({ user: u.user })} formatNumber={formatNumber} />}
               {activeTab === 'top-jeton-holders' && <HoldersSection title="En Çok Jetona Sahip Kullanıcılar" data={holders} type="jeton" onAdjust={(u) => { setAdjustModal({ user: u }); setAdjustCurrency('jeton') }} formatNumber={formatNumber} />}
@@ -385,13 +438,89 @@ export default function AdminFinancePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Profit Adjust Modal */}
+      <AnimatePresence>
+        {showProfitAdjust && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowProfitAdjust(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1a0a2e] border border-amber-500/30 rounded-2xl p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-amber-200">💰 Kâr/Zarar Manuel Düzenleme</h3>
+                <button onClick={() => setShowProfitAdjust(false)} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-400 mb-4">
+                Bu işlem, genel kâr/zarar hesabına manuel olarak ekleme veya çıkarma yapmanızı sağlar. Girdiğiniz tutar TRY cinsindendir.
+              </p>
+
+              {overview && (
+                <div className="bg-white/5 rounded-xl p-3 mb-4">
+                  <p className="text-xs text-gray-400">Mevcut Manuel Düzeltme</p>
+                  <p className={`text-lg font-bold ${(overview.manualProfitAdjustment || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatCurrency(overview.manualProfitAdjustment || 0)}
+                  </p>
+                </div>
+              )}
+
+              <input
+                type="number"
+                value={profitAmount}
+                onChange={(e) => setProfitAmount(e.target.value)}
+                placeholder="Tutar (TRY)"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-amber-400/50 focus:outline-none mb-3"
+              />
+
+              <input
+                type="text"
+                value={profitReason}
+                onChange={(e) => setProfitReason(e.target.value)}
+                placeholder="Sebep (isteğe bağlı)"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-amber-400/50 focus:outline-none mb-4"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleProfitAdjust(true)}
+                  disabled={profitAdjusting || !profitAmount}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all text-sm font-bold disabled:opacity-50"
+                >
+                  {profitAdjusting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Kâr Ekle
+                </button>
+                <button
+                  onClick={() => handleProfitAdjust(false)}
+                  disabled={profitAdjusting || !profitAmount}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-600 to-rose-600 rounded-xl hover:from-red-500 hover:to-rose-500 transition-all text-sm font-bold disabled:opacity-50"
+                >
+                  {profitAdjusting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Minus className="w-4 h-4" />}
+                  Zarar Ekle
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 // ========= Sub Components =========
 
-function OverviewSection({ data, formatNumber, formatCurrency }: { data: OverviewData; formatNumber: (n: number) => string; formatCurrency: (n: number) => string }) {
+function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }: { data: OverviewData; formatNumber: (n: number) => string; formatCurrency: (n: number) => string; onAdjustProfit: () => void }) {
   const isProfit = data.platformProfit >= 0
 
   return (
@@ -406,21 +535,35 @@ function OverviewSection({ data, formatNumber, formatCurrency }: { data: Overvie
             : 'bg-gradient-to-r from-red-900/40 to-rose-900/40 border-red-500/30'
         }`}
       >
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl ${isProfit ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-            {isProfit ? <TrendingUp className="w-8 h-8 text-green-400" /> : <TrendingDown className="w-8 h-8 text-red-400" />}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl ${isProfit ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+              {isProfit ? <TrendingUp className="w-8 h-8 text-green-400" /> : <TrendingDown className="w-8 h-8 text-red-400" />}
+            </div>
+            <div>
+              <p className="text-sm text-gray-300">
+                {isProfit ? '✅ Siteniz KÂRDA' : '⚠️ Siteniz ZARARDA'}
+              </p>
+              <p className={`text-3xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+                {formatCurrency(Math.abs(data.platformProfit))}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Yayıncı yüzdeleri düşüldükten sonraki net durum
+                {data.manualProfitAdjustment !== 0 && (
+                  <span className={`ml-2 ${data.manualProfitAdjustment > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    (Manuel düzeltme: {data.manualProfitAdjustment > 0 ? '+' : ''}{formatCurrency(data.manualProfitAdjustment)})
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-300">
-              {isProfit ? '✅ Siteniz KÂRDA' : '⚠️ Siteniz ZARARDA'}
-            </p>
-            <p className={`text-3xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-              {formatCurrency(Math.abs(data.platformProfit))}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Yayıncı yüzdeleri düşüldükten sonraki net durum
-            </p>
-          </div>
+          <button
+            onClick={onAdjustProfit}
+            className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-all text-xs font-medium text-gray-300"
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            Manuel Düzenle
+          </button>
         </div>
       </motion.div>
 
@@ -496,6 +639,149 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
       <div className="flex items-center gap-2 mb-2">{icon}</div>
       <p className="text-xs text-gray-400 mb-1">{label}</p>
       <p className="text-lg font-bold text-white">{value}</p>
+    </div>
+  )
+}
+
+function CommissionSettingsSection({ settings, onUpdate }: { settings: CommissionSettings; onUpdate: () => void }) {
+  const [values, setValues] = useState(settings)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
+
+  useEffect(() => {
+    setValues(settings)
+  }, [settings])
+
+  const handleSave = async (key: string, value: string) => {
+    setSaving(key)
+    try {
+      const res = await fetch('/api/admin/finance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update-commission', key, value }),
+      })
+      if (res.ok) {
+        setSaved(key)
+        onUpdate()
+        setTimeout(() => setSaved(null), 2000)
+      }
+    } catch (err) {
+      console.error('Save commission error:', err)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const commissionItems = [
+    {
+      key: 'commission_rate',
+      label: 'Canlı Falcı Seans Komisyonu',
+      description: 'Canlı falcı seanslarında platform tarafından kesilen komisyon oranı. Seans bittiğinde falcının kazancından bu yüzde kesilir.',
+      icon: '🔮',
+      color: 'purple',
+    },
+    {
+      key: 'broadcaster_commission_rate',
+      label: 'Canlı Yayıncı Hediye Komisyonu',
+      description: 'Canlı yayın sırasında gönderilen hediyelerden platform tarafından kesilen komisyon oranı.',
+      icon: '📺',
+      color: 'pink',
+    },
+    {
+      key: 'chat_room_default_commission_rate',
+      label: 'Sohbet Odası Hediye Komisyonu',
+      description: 'Sohbet odalarında gönderilen hediyelerden varsayılan olarak kesilen komisyon oranı. Her oda için ayrıca ayarlanabilir.',
+      icon: '💬',
+      color: 'blue',
+    },
+  ]
+
+  const colorMap: Record<string, { bg: string; border: string; text: string; slider: string }> = {
+    purple: { bg: 'from-purple-900/30 to-purple-900/10', border: 'border-purple-500/20', text: 'text-purple-300', slider: 'accent-purple-500' },
+    pink: { bg: 'from-pink-900/30 to-pink-900/10', border: 'border-pink-500/20', text: 'text-pink-300', slider: 'accent-pink-500' },
+    blue: { bg: 'from-blue-900/30 to-blue-900/10', border: 'border-blue-500/20', text: 'text-blue-300', slider: 'accent-blue-500' },
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-purple-200 mb-4 flex items-center gap-2">
+        <Percent className="w-5 h-5" />
+        Komisyon Oranları
+      </h2>
+      <p className="text-xs text-gray-400 mb-4">
+        Burada platform genelindeki komisyon oranlarını belirleyebilirsiniz. Değişiklikler anında yürürlüğe girer. İlerisi için yeni komisyon türleri eklendiğinde buradan yönetebilirsiniz.
+      </p>
+
+      <div className="space-y-4">
+        {commissionItems.map((item) => {
+          const colors = colorMap[item.color] || colorMap.purple
+          const currentVal = values[item.key as keyof CommissionSettings] || '0'
+          return (
+            <motion.div
+              key={item.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`bg-gradient-to-br ${colors.bg} ${colors.border} border rounded-2xl p-5`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{item.icon}</span>
+                  <div>
+                    <h3 className={`text-sm font-bold ${colors.text}`}>{item.label}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5 max-w-md">{item.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {saved === item.key ? (
+                    <span className="flex items-center gap-1 text-xs text-green-400">
+                      <CheckCircle className="w-4 h-4" /> Kaydedildi
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleSave(item.key, currentVal)}
+                      disabled={saving === item.key}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-all text-xs font-medium text-gray-300 disabled:opacity-50"
+                    >
+                      {saving === item.key ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Kaydet
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={currentVal}
+                  onChange={(e) => setValues(prev => ({ ...prev, [item.key]: e.target.value }))}
+                  className={`flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer ${colors.slider}`}
+                />
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={currentVal}
+                    onChange={(e) => setValues(prev => ({ ...prev, [item.key]: e.target.value }))}
+                    className="w-16 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-center text-sm text-white focus:border-purple-400/50 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-400">%</span>
+                </div>
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Future placeholder info */}
+      <div className="mt-6 bg-white/5 border border-white/10 rounded-xl p-4">
+        <p className="text-xs text-gray-400 flex items-center gap-2">
+          <Settings className="w-4 h-4 text-gray-500" />
+          İlerisi için yeni gelir kalemleri eklendiğinde komisyon oranları buradan yönetilebilir.
+        </p>
+      </div>
     </div>
   )
 }
