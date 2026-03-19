@@ -74,12 +74,89 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update user's lastActiveAt if logged in
+    // Update user's lastActiveAt and track activity if logged in
     if (session?.user?.id) {
+      const userId = session.user.id;
+      const now = new Date();
+      
       await prisma.user.update({
-        where: { id: session.user.id },
-        data: { lastActiveAt: new Date() },
+        where: { id: userId },
+        data: { lastActiveAt: now },
       });
+      
+      // Activity Tracking: Track login sessions, daily/hourly activity
+      try {
+        const uaInfo2 = parseUserAgent(userAgent);
+        
+        // 1. Login Session tracking
+        // Find active session (one that has no logoutAt and was updated recently - within 5 min)
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const activeLoginSession = await prisma.userLoginSession.findFirst({
+          where: {
+            userId,
+            logoutAt: null,
+            loginAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // within last 24h
+          },
+          orderBy: { loginAt: 'desc' }
+        });
+        
+        if (activeLoginSession) {
+          // Update duration of existing session
+          const durationMin = Math.round((now.getTime() - new Date(activeLoginSession.loginAt).getTime()) / 60000);
+          await prisma.userLoginSession.update({
+            where: { id: activeLoginSession.id },
+            data: { duration: durationMin }
+          });
+        } else {
+          // Create new login session
+          await prisma.userLoginSession.create({
+            data: {
+              userId,
+              loginAt: now,
+              deviceType: uaInfo2.deviceType || 'unknown',
+              browser: userAgent?.substring(0, 100) || null,
+            }
+          });
+        }
+        
+        // 2. Daily activity tracking - add ~0.5 min per heartbeat (heartbeat every ~30s)
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        await prisma.userDailyActivity.upsert({
+          where: { userId_date: { userId, date: today } },
+          update: { minutesSpent: { increment: 1 } },
+          create: {
+            userId,
+            date: today,
+            minutesSpent: 1,
+          }
+        });
+        
+        // 3. Hourly activity tracking
+        const currentHour = now.getHours();
+        await prisma.userHourlyActivity.upsert({
+          where: { userId_hour: { userId, hour: currentHour } },
+          update: { 
+            totalMinutes: { increment: 1 },
+            loginCount: { increment: 0 } // don't increment on heartbeat
+          },
+          create: {
+            userId,
+            hour: currentHour,
+            totalMinutes: 1,
+            loginCount: 1,
+          }
+        });
+        
+        // 4. Update user totalTimeSpentMinutes
+        await prisma.user.update({
+          where: { id: userId },
+          data: { totalTimeSpentMinutes: { increment: 1 } }
+        });
+      } catch (activityErr) {
+        console.error('Activity tracking error (non-critical):', activityErr);
+      }
     }
 
     // Record visit if new session (first visit of the day for this visitor)
