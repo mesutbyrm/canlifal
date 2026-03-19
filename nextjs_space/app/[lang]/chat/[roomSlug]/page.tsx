@@ -26,6 +26,7 @@ interface ActiveUser {
   id: string
   name: string
   nickname?: string
+  image?: string | null
   lastSeen: string
   chatRole?: string
   roleSymbol?: string
@@ -72,6 +73,13 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
   admin: <Shield className="w-3 h-3" />,
   op: <Star className="w-3 h-3" />,
   voice: <Mic className="w-3 h-3" />
+}
+
+const ROLE_BADGE_STYLES: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  founder: { bg: 'bg-red-500/20', border: 'border-red-500/60', text: 'text-red-300', label: '~Kurucu' },
+  admin: { bg: 'bg-orange-500/20', border: 'border-orange-500/60', text: 'text-orange-300', label: '&Moderatör' },
+  op: { bg: 'bg-green-500/20', border: 'border-green-500/60', text: 'text-green-300', label: '@Operatör' },
+  voice: { bg: 'bg-blue-500/20', border: 'border-blue-500/60', text: 'text-blue-300', label: '+Ses' },
 }
 
 const GIFT_IMAGES: Record<string, string> = {
@@ -149,6 +157,12 @@ export default function ChatRoomPage() {
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
   const [showMobileUsers, setShowMobileUsers] = useState(false)
+  
+  // Broadcast images for profile pictures in grid
+  const [broadcastImages, setBroadcastImages] = useState<Array<{id: string; name: string; imageUrl: string}>>([])
+  const [showImagePicker, setShowImagePicker] = useState(false)
+  const [myBroadcastImage, setMyBroadcastImage] = useState<string | null>(null)
+  
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -370,6 +384,25 @@ export default function ChatRoomPage() {
     }
   }, [room])
 
+  // Fetch broadcast images for profile picture selection
+  const fetchBroadcastImages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/chat/broadcast-images')
+      if (res.ok) {
+        const data = await res.json()
+        setBroadcastImages(data)
+      }
+    } catch (err) { console.error('Broadcast images fetch error:', err) }
+  }, [])
+
+  // Load saved broadcast image from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && session?.user?.id) {
+      const saved = localStorage.getItem(`chat_broadcast_img_${session.user.id}`)
+      if (saved) setMyBroadcastImage(saved)
+    }
+  }, [session?.user?.id])
+
   // Fetch typing users
   const fetchTypingUsers = useCallback(async () => {
     if (!room || !session?.user?.id) return
@@ -400,6 +433,7 @@ export default function ChatRoomPage() {
       checkBan()
       fetchVoiceUsers()
       fetchTypingUsers()
+      fetchBroadcastImages()
       setLoading(false)
 
       const messageInterval = setInterval(fetchMessages, 2000)
@@ -433,7 +467,7 @@ export default function ChatRoomPage() {
         }
       }
     }
-  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers])
+  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers, fetchBroadcastImages])
 
   // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
@@ -1154,11 +1188,12 @@ export default function ChatRoomPage() {
     }
   }
 
-  const openGiftModal = (user: ActiveUser | { id: string; name: string; nickname?: string; lastSeen?: string; chatRole?: string; roleSymbol?: string; roleLevel?: number; isAdmin?: boolean }) => {
+  const openGiftModal = (user: ActiveUser | { id: string; name: string; nickname?: string; image?: string | null; lastSeen?: string; chatRole?: string; roleSymbol?: string; roleLevel?: number; isAdmin?: boolean }) => {
     const fullUser: ActiveUser = {
       id: user.id,
       name: user.name,
       nickname: user.nickname,
+      image: user.image || null,
       lastSeen: (user as ActiveUser).lastSeen || new Date().toISOString(),
       chatRole: (user as ActiveUser).chatRole,
       roleSymbol: (user as ActiveUser).roleSymbol,
@@ -1609,20 +1644,145 @@ export default function ChatRoomPage() {
             </div>
           </div>
 
-          {/* Room Owner Banner */}
-          {room.owner && (
-            <div className="flex-shrink-0 bg-red-600/80 px-3 py-2 flex items-center gap-2">
-              <Crown className="w-4 h-4 text-yellow-300" />
-              <span className="text-white text-sm font-medium">
-                {'Oda Sahibi'}
-              </span>
-              <span className="text-yellow-200 text-sm font-bold">
-                {room.owner.username || room.owner.name}
-              </span>
-            </div>
-          )}
+          {/* Privileged Users Grid - Shows users with roles (~founder, &admin, @op) */}
+          {(() => {
+            const privilegedUsers = activeUsers.filter(u => u.chatRole && ['founder', 'admin', 'op'].includes(u.chatRole))
+            // Also include room owner if not already in the list
+            const ownerInList = room.owner && !privilegedUsers.find(u => u.id === room.owner?.id)
+            const ownerUser = ownerInList ? activeUsers.find(u => u.id === room.owner?.id) : null
+            const gridUsers = ownerUser ? [ownerUser, ...privilegedUsers.filter(u => u.id !== room.owner?.id)] : privilegedUsers
+            const displayUsers = gridUsers.slice(0, 6)
+            
+            if (displayUsers.length === 0 && !room.owner) return null
+            
+            // If no privileged users online, show room owner banner
+            if (displayUsers.length === 0 && room.owner) {
+              return (
+                <div className="flex-shrink-0 bg-gradient-to-r from-red-900/60 to-purple-900/40 px-3 py-2 flex items-center gap-2 border-b border-red-500/30">
+                  <Crown className="w-4 h-4 text-yellow-300" />
+                  <span className="text-white text-sm font-medium">Oda Sahibi</span>
+                  <span className="text-yellow-200 text-sm font-bold">{room.owner.username || room.owner.name}</span>
+                </div>
+              )
+            }
+            
+            return (
+              <div className="flex-shrink-0 bg-gradient-to-b from-[#0d0520] to-[#1a0b2e] border-b border-purple-500/30 p-2">
+                {/* Counter */}
+                <div className="flex items-center justify-between mb-1.5 px-1">
+                  <span className="text-[10px] text-purple-400 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    {displayUsers.length}/{activeUsers.length} Yetkili Canlı
+                  </span>
+                  {session?.user && displayUsers.some(u => u.id === session?.user?.id) && broadcastImages.length > 0 && (
+                    <button
+                      onClick={() => setShowImagePicker(true)}
+                      className="text-[10px] text-purple-400 hover:text-purple-200 transition-colors"
+                    >
+                      📷 Resim Değiştir
+                    </button>
+                  )}
+                </div>
+                {/* Grid */}
+                <div className={`grid gap-1.5 ${displayUsers.length <= 3 ? 'grid-cols-3' : displayUsers.length <= 4 ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-6'}`}>
+                  {displayUsers.map((user) => {
+                    const isOwner = isRoomOwner(user.id)
+                    const isMe = user.id === session?.user?.id
+                    const badge = user.chatRole ? ROLE_BADGE_STYLES[user.chatRole] : null
+                    const displayImage = isMe && myBroadcastImage ? myBroadcastImage : user.image
+                    
+                    return (
+                      <div
+                        key={user.id}
+                        className={`relative rounded-lg overflow-hidden cursor-pointer group ${isOwner ? 'ring-2 ring-yellow-400/60' : badge ? `ring-1 ${badge.border}` : 'ring-1 ring-purple-500/30'}`}
+                        style={{ aspectRatio: '1' }}
+                        onClick={() => user.id !== session?.user?.id && openGiftModal(user)}
+                      >
+                        {/* Profile Image / Avatar */}
+                        {displayImage ? (
+                          <img src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-900/80 to-yellow-900/50' : 'bg-gradient-to-br from-purple-900/80 to-indigo-900/50'}`}>
+                            <span className="text-xl font-bold text-white/80">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</span>
+                          </div>
+                        )}
+                        {/* Dark gradient overlay at bottom */}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-6 pb-1 px-1">
+                          <p className={`text-[10px] font-bold truncate text-center ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white'}`}>
+                            {getDisplayName(user)}
+                          </p>
+                        </div>
+                        {/* Role Badge - top left */}
+                        {(isOwner || badge) && (
+                          <div className={`absolute top-0.5 left-0.5 px-1 py-0.5 rounded text-[8px] font-bold ${isOwner ? 'bg-red-600/90 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
+                            {isOwner ? '👑' : user.roleSymbol}
+                          </div>
+                        )}
+                        {/* Speaking indicator */}
+                        {speakingUsers.has(user.id) && (
+                          <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-green-500 rounded-full animate-pulse border border-green-300" />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
 
-          {/* Voice Users Bar removed */}
+          {/* Image Picker Modal */}
+          <AnimatePresence>
+            {showImagePicker && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                onClick={() => setShowImagePicker(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-sm w-full overflow-hidden"
+                >
+                  <div className="p-4 border-b border-purple-500/20 flex items-center justify-between">
+                    <h3 className="text-gold-400 font-bold">📷 Profil Resmi Seç</h3>
+                    <button onClick={() => setShowImagePicker(false)} className="text-purple-400 hover:text-white">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="p-3 grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                    {/* Remove image option */}
+                    <button
+                      onClick={() => {
+                        setMyBroadcastImage(null)
+                        if (session?.user?.id) localStorage.removeItem(`chat_broadcast_img_${session.user.id}`)
+                        setShowImagePicker(false)
+                      }}
+                      className={`relative aspect-square rounded-lg border-2 ${!myBroadcastImage ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden flex items-center justify-center bg-purple-900/30 hover:bg-purple-800/40 transition-colors`}
+                    >
+                      <span className="text-purple-300 text-xs text-center">Varsayılan</span>
+                    </button>
+                    {broadcastImages.map((img) => (
+                      <button
+                        key={img.id}
+                        onClick={() => {
+                          setMyBroadcastImage(img.imageUrl)
+                          if (session?.user?.id) localStorage.setItem(`chat_broadcast_img_${session.user.id}`, img.imageUrl)
+                          setShowImagePicker(false)
+                        }}
+                        className={`relative aspect-square rounded-lg border-2 ${myBroadcastImage === img.imageUrl ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden hover:border-purple-400/60 transition-colors`}
+                      >
+                        <img src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Messages Area */}
           <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative" style={{ overscrollBehavior: 'contain' }}>
@@ -2026,6 +2186,7 @@ export default function ChatRoomPage() {
                 {activeUsers.map((user) => {
                   const isOwner = isRoomOwner(user.id)
                   const userIsSpeaking = speakingUsers.has(user.id) || (user.id === session?.user?.id && isSpeaking)
+                  const badge = user.chatRole ? ROLE_BADGE_STYLES[user.chatRole] : null
                   
                   return (
                     <div
@@ -2042,9 +2203,9 @@ export default function ChatRoomPage() {
                           }
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-2 py-1 cursor-pointer hover:bg-purple-800/30 ${isOwner ? 'bg-red-900/40' : ''}`}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 cursor-pointer hover:bg-purple-800/30 ${isOwner ? 'bg-red-900/30' : ''}`}
                     >
-                      {/* Speaking Indicator */}
+                      {/* Speaking Indicator or Role Icon */}
                       {userIsSpeaking ? (
                         <span className="text-green-400 w-4 text-center animate-pulse">●</span>
                       ) : user.chatRole ? (
@@ -2057,24 +2218,37 @@ export default function ChatRoomPage() {
                         <span className="w-4" />
                       )}
                       
-                      <span className={`text-xs truncate flex-1 min-w-0 ${
-                        isOwner
-                          ? 'text-yellow-300 font-bold'
-                          : user.chatRole 
-                            ? ROLE_COLORS[user.chatRole] 
-                            : user.isAdmin 
-                              ? 'text-red-400'
-                              : 'text-purple-200'
-                      }`} title={getDisplayName(user)}>
-                        {getDisplayName(user)}
-                      </span>
+                      <div className="flex-1 min-w-0 flex items-center gap-1">
+                        <span className={`text-xs truncate ${
+                          isOwner
+                            ? 'text-yellow-300 font-bold'
+                            : user.chatRole 
+                              ? ROLE_COLORS[user.chatRole] 
+                              : user.isAdmin 
+                                ? 'text-red-400'
+                                : 'text-purple-200'
+                        }`} title={getDisplayName(user)}>
+                          {getDisplayName(user)}
+                        </span>
+                        {/* Role Badge */}
+                        {badge && (
+                          <span className={`text-[8px] px-1 py-0.5 rounded ${badge.bg} ${badge.text} border ${badge.border} font-medium whitespace-nowrap`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        {isOwner && !badge && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-yellow-300 border border-red-500/40 font-medium whitespace-nowrap">
+                            👑Sahip
+                          </span>
+                        )}
+                      </div>
                       {user.id !== session?.user?.id && (
                         <button
                           onClick={(e) => { e.stopPropagation(); openGiftModal(user) }}
-                          className="ml-auto text-yellow-400 hover:text-yellow-200 hover:bg-yellow-500/20 rounded p-0.5 transition-all"
+                          className="ml-auto text-yellow-400 hover:text-yellow-200 hover:bg-yellow-500/20 rounded p-0.5 transition-all flex-shrink-0"
                           title="Hediye Gönder"
                         >
-                          <Gift className="w-4 h-4" />
+                          <Gift className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -2161,6 +2335,15 @@ export default function ChatRoomPage() {
                 >
                   {anim.senderName} → 🎁
                 </motion.p>
+                {/* CanlıFal branding */}
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8, type: 'spring', stiffness: 200 }}
+                  className="text-[10px] text-purple-400/60 mt-2 font-medium tracking-wider"
+                >
+                  CanlıFal
+                </motion.p>
               </div>
             </motion.div>
 
@@ -2226,18 +2409,26 @@ export default function ChatRoomPage() {
               </>
             )}
 
-            {/* Gift amount badge */}
+            {/* Gift amount badge + CanlıFal branding */}
             {(anim.phase === 'hit' || anim.phase === 'burst') && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 flex flex-col items-center"
                 style={{ marginTop: '50px' }}
               >
                 <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold px-4 py-1.5 rounded-full text-sm shadow-lg shadow-yellow-500/50">
                   x{anim.amount}
                 </div>
+                <motion.span
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-2 text-xs font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent tracking-widest"
+                >
+                  CanlıFal
+                </motion.span>
               </motion.div>
             )}
           </motion.div>

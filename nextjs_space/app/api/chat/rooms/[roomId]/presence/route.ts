@@ -51,7 +51,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            image: true
           }
         }
       }
@@ -84,6 +85,7 @@ export async function GET(
         id: p.user.id,
         name: p.user.name,
         nickname: p.nickname || p.user.name,
+        image: p.user.image || null,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -299,7 +301,8 @@ export async function POST(
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            image: true
           }
         }
       }
@@ -331,6 +334,7 @@ export async function POST(
         id: p.user.id,
         name: p.user.name,
         nickname: p.nickname || p.user.name,
+        image: p.user.image || null,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
