@@ -393,6 +393,39 @@ export async function POST(request: Request) {
       })
     }
 
+    // Auto-adjust platform profit based on jeton add/remove
+    // Adding jeton = site cost (like selling jeton for free) → decrease profit
+    // Removing jeton = site gain (reclaiming value) → increase profit
+    if (currency === 'jeton') {
+      // Get jeton_tl_rate to convert jeton to TRY
+      const rateSetting = await prisma.platformSettings.findUnique({
+        where: { key: 'jeton_tl_rate' },
+      })
+      const jetonRate = rateSetting ? parseFloat(rateSetting.value) : 0.5
+      // amount > 0 means admin added jeton → cost to platform → subtract from profit
+      // amount < 0 means admin removed jeton → gain for platform → add to profit
+      const profitImpact = -(amount * jetonRate) // negative of jeton value in TRY
+
+      const currentAdj = await prisma.platformSettings.findUnique({
+        where: { key: 'manual_profit_adjustment' },
+      })
+      const currentAdjVal = currentAdj ? parseFloat(currentAdj.value) : 0
+      const newAdjVal = currentAdjVal + profitImpact
+
+      const adjNote = `[${new Date().toISOString().slice(0, 16)}] ${profitImpact > 0 ? '+' : ''}${profitImpact.toFixed(2)} TRY: Jeton ${amount > 0 ? 'ekleme' : 'çıkarma'} (${Math.abs(amount)} jeton → ${user.name || user.email})${reason ? ' - ' + reason : ''}`
+
+      await prisma.platformSettings.upsert({
+        where: { key: 'manual_profit_adjustment' },
+        update: { 
+          value: String(newAdjVal),
+          description: currentAdj?.description 
+            ? (currentAdj.description.includes('[') ? currentAdj.description + ' | ' + adjNote : adjNote)
+            : adjNote
+        },
+        create: { key: 'manual_profit_adjustment', value: String(newAdjVal), description: adjNote },
+      })
+    }
+
     return NextResponse.json({ success: true, user })
   } catch (error) {
     console.error('Finance POST error:', error)

@@ -426,8 +426,20 @@ export default function AdminFinancePage() {
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
                 placeholder="Sebep (isteğe bağlı)"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-purple-400/50 focus:outline-none mb-4"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-purple-400/50 focus:outline-none mb-3"
               />
+
+              {/* Profit impact warning for jeton */}
+              {adjustCurrency === 'jeton' && adjustAmount && (
+                <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 mb-4">
+                  <p className="text-xs text-amber-300 flex items-center gap-1.5">
+                    <TrendingDown className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>
+                      <strong>Kâr/Zarar Etkisi:</strong> Jeton eklendiğinde site jeton satmış gibi zarara, çıkarıldığında kâra yansır.
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button
@@ -759,6 +771,11 @@ function CommissionSettingsSection({ settings, onUpdate }: { settings: Commissio
       description: 'Canlı falcı seanslarında platform tarafından kesilen komisyon oranı. Seans bittiğinde falcının kazancından bu yüzde kesilir.',
       icon: '🔮',
       color: 'purple',
+      suggestions: [
+        { value: 10, label: 'Düşük', desc: 'Yeni platformlar için ideal, falcı çekmek amaçlı' },
+        { value: 20, label: 'Standart', desc: 'Sektör ortalaması, dengeli kâr oranı' },
+        { value: 30, label: 'Yüksek', desc: 'Yerleşik platformlar için, güçlü marka bilinirliği gerektirir' },
+      ],
     },
     {
       key: 'broadcaster_commission_rate',
@@ -766,6 +783,11 @@ function CommissionSettingsSection({ settings, onUpdate }: { settings: Commissio
       description: 'Canlı yayın sırasında gönderilen hediyelerden platform tarafından kesilen komisyon oranı.',
       icon: '📺',
       color: 'pink',
+      suggestions: [
+        { value: 15, label: 'Düşük', desc: 'Yayıncı dostu, içerik üretimini teşvik eder' },
+        { value: 25, label: 'Standart', desc: 'TikTok/Bigo tarzı platformlardaki ortalama' },
+        { value: 40, label: 'Yüksek', desc: 'Büyük altyapı maliyetleri olan platformlar için' },
+      ],
     },
     {
       key: 'chat_room_default_commission_rate',
@@ -773,6 +795,11 @@ function CommissionSettingsSection({ settings, onUpdate }: { settings: Commissio
       description: 'Sohbet odalarında gönderilen hediyelerden varsayılan olarak kesilen komisyon oranı. Her oda için ayrıca ayarlanabilir.',
       icon: '💬',
       color: 'blue',
+      suggestions: [
+        { value: 5, label: 'Düşük', desc: 'Sohbet odası kullanımını artırmak için' },
+        { value: 15, label: 'Orta', desc: 'Makul platform payı, oda sahipleri memnun kalır' },
+        { value: 25, label: 'Yüksek', desc: 'Premium sohbet deneyimi sunan platformlar için' },
+      ],
     },
   ]
 
@@ -850,6 +877,32 @@ function CommissionSettingsSection({ settings, onUpdate }: { settings: Commissio
                   <span className="text-sm text-gray-400">%</span>
                 </div>
               </div>
+
+              {/* Suggestions */}
+              {item.suggestions && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">💡 Önerilen Oranlar</p>
+                  <div className="flex flex-wrap gap-2">
+                    {item.suggestions.map((sug) => (
+                      <button
+                        key={sug.value}
+                        onClick={() => setValues(prev => ({ ...prev, [item.key]: String(sug.value) }))}
+                        className={`group relative px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          parseInt(currentVal) === sug.value
+                            ? `${colors.bg.replace('from-', 'bg-').split(' ')[0]}/50 border ${colors.border} ${colors.text}`
+                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                        title={sug.desc}
+                      >
+                        %{sug.value} — {sug.label}
+                        <span className="hidden group-hover:block absolute left-0 top-full mt-1 z-10 w-56 p-2 bg-[#0a0118] border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-lg">
+                          {sug.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )
         })}
