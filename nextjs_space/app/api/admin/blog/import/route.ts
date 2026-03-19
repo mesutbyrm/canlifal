@@ -161,6 +161,17 @@ export async function POST(request: NextRequest) {
         // Check if slug already exists
         const existing = await prisma.blogPost.findUnique({ where: { slug: row.slug } })
         
+        // Check for duplicate title (different slug but same title)
+        if (!existing) {
+          const existingByTitle = await prisma.blogPost.findFirst({
+            where: { titleTr: { equals: row.titleTr, mode: 'insensitive' } },
+          })
+          if (existingByTitle) {
+            results.errors.push(`Satır ${rowNum}: "${row.titleTr}" başlığında yazı zaten mevcut`)
+            continue
+          }
+        }
+
         if (existing) {
           // Update existing
           await prisma.blogPost.update({

@@ -70,6 +70,15 @@ Sadece geçerli JSON döndür.`
         const wordCount = (gen.contentTr || '').replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length
         const readTime = Math.max(1, Math.ceil(wordCount / 200))
 
+        // Check for duplicate title
+        const existingByTitle = await prisma.blogPost.findFirst({
+          where: { titleTr: { equals: gen.titleTr || topic, mode: 'insensitive' } },
+        })
+        if (existingByTitle) {
+          results.push({ title: gen.titleTr || topic, slug: '', success: false, error: 'Bu başlıkta yazı zaten mevcut' })
+          continue
+        }
+
         await prisma.blogPost.create({
           data: {
             slug: gen.slug || topic.toLowerCase().replace(/\s+/g, '-').slice(0, 60),

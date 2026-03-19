@@ -28,10 +28,18 @@ export async function POST(req: NextRequest) {
     const searchTerm = title.trim()
     const slug = slugifyTurkish(searchTerm)
 
-    // Check if already exists
+    // Check if already exists by slug
     const existing = await prisma.dreamInterpretation.findUnique({ where: { slug } })
     if (existing) {
       return NextResponse.json({ error: 'Bu rüya yorumu zaten mevcut', existing }, { status: 409 })
+    }
+
+    // Check if already exists by title (case-insensitive)
+    const existingByTitle = await prisma.dreamInterpretation.findFirst({
+      where: { title: { contains: searchTerm, mode: 'insensitive' } },
+    })
+    if (existingByTitle) {
+      return NextResponse.json({ error: 'Bu başlıkta bir rüya tabiri zaten mevcut', existing: existingByTitle }, { status: 409 })
     }
 
     const systemPrompt = `Sen Türkiye'nin en deneyimli rüya tabircisisin. Rüya yorumlarını İslami, psikolojik ve geleneksel Türk kültürü perspektiflerinden kapsamlı şekilde yaparsın.

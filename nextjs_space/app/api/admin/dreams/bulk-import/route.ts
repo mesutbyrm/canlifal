@@ -313,23 +313,30 @@ export async function POST(req: NextRequest) {
 
     for (const dream of processedDreams) {
       try {
-        let slug = generateSlug(dream.title)
-
-        // Check if slug exists, if so append a number
-        const existing = await prisma.dreamInterpretation.findUnique({ where: { slug } })
-        if (existing) {
-          // Try with number suffix
-          let counter = 2
-          while (await prisma.dreamInterpretation.findUnique({ where: { slug: `${slug}-${counter}` } })) {
-            counter++
-          }
-          slug = `${slug}-${counter}`
-        }
-
         // SEO-optimized title: "Rüyada [Title] Görmek" format if not already
         let seoTitle = dream.title
         if (!seoTitle.toLowerCase().startsWith('rüyada') && !seoTitle.toLowerCase().startsWith('ruyada')) {
           seoTitle = `Rüyada ${dream.title} Görmek`
+        }
+
+        // Check for duplicate title (case-insensitive) — skip if already exists
+        const existingByTitle = await prisma.dreamInterpretation.findFirst({
+          where: { title: { equals: seoTitle, mode: 'insensitive' } },
+        })
+        if (existingByTitle) {
+          skipped++
+          errors.push(`"${seoTitle}" zaten mevcut, atlandı`)
+          continue
+        }
+
+        const slug = generateSlug(dream.title)
+
+        // Check if slug exists, if so skip (don't append numbers — that causes duplicates)
+        const existingBySlug = await prisma.dreamInterpretation.findUnique({ where: { slug } })
+        if (existingBySlug) {
+          skipped++
+          errors.push(`"${seoTitle}" slug zaten mevcut, atlandı`)
+          continue
         }
 
         await prisma.dreamInterpretation.create({

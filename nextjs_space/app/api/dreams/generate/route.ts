@@ -21,10 +21,18 @@ export async function POST(req: NextRequest) {
     const searchTerm = query.trim()
     const slug = slugifyTurkish(searchTerm)
 
-    // Check if already exists
+    // Check if already exists by slug
     const existing = await prisma.dreamInterpretation.findUnique({ where: { slug } })
     if (existing) {
       return NextResponse.json({ dream: existing, generated: false })
+    }
+
+    // Check if already exists by title (case-insensitive)
+    const existingByTitle = await prisma.dreamInterpretation.findFirst({
+      where: { title: { contains: searchTerm, mode: 'insensitive' } },
+    })
+    if (existingByTitle) {
+      return NextResponse.json({ dream: existingByTitle, generated: false })
     }
 
     // Generate with AI

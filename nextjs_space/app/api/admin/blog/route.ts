@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'slug, titleTr, contentTr zorunlu' }, { status: 400 })
     }
 
+    // Check for duplicate title (case-insensitive)
+    const existingByTitle = await prisma.blogPost.findFirst({
+      where: { titleTr: { equals: titleTr, mode: 'insensitive' } },
+    })
+    if (existingByTitle) {
+      return NextResponse.json({ error: 'Bu başlıkta bir yazı zaten mevcut' }, { status: 409 })
+    }
+
     // Calculate read time from content if not provided
     const wordCount = contentTr.replace(/<[^>]*>/g, '').split(/\s+/).length
     const calculatedReadTime = readTime || Math.max(1, Math.ceil(wordCount / 200))

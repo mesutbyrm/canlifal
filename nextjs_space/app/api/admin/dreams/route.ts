@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Başlık ve içerik zorunlu' }, { status: 400 })
     }
 
+    // Check for duplicate title (case-insensitive)
+    const existingByTitle = await prisma.dreamInterpretation.findFirst({
+      where: { title: { equals: title, mode: 'insensitive' } },
+    })
+    if (existingByTitle) {
+      return NextResponse.json({ error: 'Bu başlıkta bir rüya tabiri zaten mevcut' }, { status: 409 })
+    }
+
     const slug = slugifyTurkish(title)
 
     const dream = await prisma.dreamInterpretation.create({
