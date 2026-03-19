@@ -14,50 +14,102 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const section = searchParams.get('section') || 'overview'
+    const period = searchParams.get('period') || 'all' // all, daily, weekly, monthly, yearly, custom
+    const fromParam = searchParams.get('from')
+    const toParam = searchParams.get('to')
+
+    // Calculate date range based on period
+    function getDateRange(): { from: Date | null; to: Date | null } {
+      const now = new Date()
+      if (period === 'daily') {
+        const from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+        return { from, to: now }
+      }
+      if (period === 'weekly') {
+        const from = new Date(now)
+        from.setDate(from.getDate() - 7)
+        from.setHours(0, 0, 0, 0)
+        return { from, to: now }
+      }
+      if (period === 'monthly') {
+        const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
+        return { from, to: now }
+      }
+      if (period === 'yearly') {
+        const from = new Date(now.getFullYear(), 0, 1, 0, 0, 0)
+        return { from, to: now }
+      }
+      if (period === 'custom' && fromParam) {
+        const from = new Date(fromParam)
+        from.setHours(0, 0, 0, 0)
+        const to = toParam ? new Date(toParam) : now
+        to.setHours(23, 59, 59, 999)
+        return { from, to }
+      }
+      return { from: null, to: null }
+    }
+
+    const { from: dateFrom, to: dateTo } = getDateRange()
+    const dateFilter = dateFrom && dateTo ? { createdAt: { gte: dateFrom, lte: dateTo } } : {}
 
     if (section === 'overview') {
-      // Total CFC (credits) and Jeton across all users
+      // Total CFC (credits) and Jeton across all users (always total, not filtered)
       const totals = await prisma.user.aggregate({
         _sum: { credits: true, jetonBalance: true },
       })
 
-      // Total completed payments (revenue)
+      // Total completed payments (revenue) - filtered by date
       const revenue = await prisma.payment.aggregate({
-        where: { status: 'completed' },
+        where: { status: 'completed', ...dateFilter },
         _sum: { amount: true, creditsAwarded: true },
       })
 
-      // Total gifts sent (StreamGift + ChatRoomGift + TellerGift)
+      // Total gifts sent (StreamGift + ChatRoomGift + TellerGift) - filtered
       const streamGiftTotal = await prisma.streamGift.aggregate({
+        where: dateFilter,
         _sum: { totalPrice: true },
       })
       const chatGiftTotal = await prisma.chatRoomGift.aggregate({
+        where: dateFilter,
         _sum: { totalPrice: true, commissionAmount: true },
       })
       const tellerGiftTotal = await prisma.tellerGift.aggregate({
+        where: dateFilter,
         _sum: { totalPrice: true },
       })
 
-      // Teller earnings & commission
-      const tellerEarnings = await prisma.liveFortuneTeller.aggregate({
-        _sum: { totalEarnings: true },
-      })
-
-      // Live session total credits charged
+      // Live session total credits charged - filtered
       const sessionCharges = await prisma.liveSession.aggregate({
-        where: { status: { in: ['completed', 'active'] } },
+        where: { status: { in: ['completed', 'active'] }, ...dateFilter },
         _sum: { creditsCharged: true },
       })
 
+      // Teller earnings - not easily filtered by date on the aggregate, 
+      // so for filtered view we calculate from sessions
+      let totalTellerEarnings = 0
+      if (dateFrom && dateTo) {
+        // When filtered, calculate from completed sessions in the period
+        const sessionsInRange = await prisma.liveSession.findMany({
+          where: { status: 'completed', ...dateFilter },
+          select: { creditsCharged: true },
+        })
+        // Get commission rate 
+        const commSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
+        const commRate = commSetting ? parseInt(commSetting.value) : 20
+        const totalCharged = sessionsInRange.reduce((s, x) => s + x.creditsCharged, 0)
+        totalTellerEarnings = totalCharged - Math.floor(totalCharged * commRate / 100)
+      } else {
+        const tellerEarnings = await prisma.liveFortuneTeller.aggregate({
+          _sum: { totalEarnings: true },
+        })
+        totalTellerEarnings = tellerEarnings._sum.totalEarnings || 0
+      }
+
       // Total revenue from payments
       const totalRevenue = revenue._sum.amount || 0
-      // Total teller earnings (what tellers earned after commission)
-      const totalTellerEarnings = tellerEarnings._sum.totalEarnings || 0
       // Commission earned by platform from gifts
       const totalCommission = chatGiftTotal._sum.commissionAmount || 0
 
-      // Broadcaster percentage is commissionRate on each teller (default 20%)
-      // Platform keeps: total spent - what goes to tellers
       const totalGiftSpent = (streamGiftTotal._sum.totalPrice || 0) + 
                              (chatGiftTotal._sum.totalPrice || 0) + 
                              (tellerGiftTotal._sum.totalPrice || 0)
@@ -70,7 +122,7 @@ export async function GET(request: NextRequest) {
       const manualProfitAdjustment = manualAdjSetting ? parseFloat(manualAdjSetting.value) : 0
 
       // Platform profit: revenue - (total distributed to tellers) + manual adjustments
-      const platformProfit = totalRevenue - totalTellerEarnings + manualProfitAdjustment
+      const platformProfit = totalRevenue - totalTellerEarnings + (dateFrom ? 0 : manualProfitAdjustment)
 
       return NextResponse.json({
         totalCfc: totals._sum.credits || 0,
@@ -81,7 +133,10 @@ export async function GET(request: NextRequest) {
         totalSessionSpent,
         totalCommission,
         platformProfit,
-        manualProfitAdjustment,
+        manualProfitAdjustment: dateFrom ? 0 : manualProfitAdjustment,
+        period,
+        dateFrom: dateFrom?.toISOString() || null,
+        dateTo: dateTo?.toISOString() || null,
       })
     }
 
@@ -117,6 +172,7 @@ export async function GET(request: NextRequest) {
       // Top users who received most gifts (ChatRoomGift recipients)
       const topReceivers = await prisma.chatRoomGift.groupBy({
         by: ['recipientId'],
+        where: dateFilter,
         _sum: { totalPrice: true, quantity: true },
         _count: true,
         orderBy: { _sum: { totalPrice: 'desc' } },
@@ -144,6 +200,7 @@ export async function GET(request: NextRequest) {
       // Combine ChatRoomGift + StreamGift + TellerGift senders
       const chatSenders = await prisma.chatRoomGift.groupBy({
         by: ['senderId'],
+        where: dateFilter,
         _sum: { totalPrice: true },
         _count: true,
         orderBy: { _sum: { totalPrice: 'desc' } },
@@ -151,6 +208,7 @@ export async function GET(request: NextRequest) {
       })
       const streamSenders = await prisma.streamGift.groupBy({
         by: ['senderId'],
+        where: dateFilter,
         _sum: { totalPrice: true },
         _count: true,
         orderBy: { _sum: { totalPrice: 'desc' } },
@@ -158,6 +216,7 @@ export async function GET(request: NextRequest) {
       })
       const tellerSenders = await prisma.tellerGift.groupBy({
         by: ['senderId'],
+        where: dateFilter,
         _sum: { totalPrice: true },
         _count: true,
         orderBy: { _sum: { totalPrice: 'desc' } },

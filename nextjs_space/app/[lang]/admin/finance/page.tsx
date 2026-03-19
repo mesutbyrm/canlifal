@@ -9,7 +9,7 @@ import {
   Loader2, Search, Coins, TrendingUp, TrendingDown,
   Gift, Users, Plus, Minus, X, Award, DollarSign,
   ArrowUpRight, ArrowDownRight, Crown, Star, Wallet,
-  Settings, Percent, Save, CheckCircle
+  Settings, Percent, Save, CheckCircle, Calendar
 } from 'lucide-react'
 
 interface OverviewData {
@@ -71,6 +71,12 @@ export default function AdminFinancePage() {
   const [rankedUsers, setRankedUsers] = useState<RankedUser[]>([])
   const [holders, setHolders] = useState<HolderUser[]>([])
 
+  // Date period filter
+  type PeriodType = 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
+  const [period, setPeriod] = useState<PeriodType>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+
   // Commission settings
   const [commissionSettings, setCommissionSettings] = useState<CommissionSettings | null>(null)
 
@@ -100,12 +106,17 @@ export default function AdminFinancePage() {
       return
     }
     fetchData(activeTab)
-  }, [session, status, activeTab])
+  }, [session, status, activeTab, period, customFrom, customTo])
 
   const fetchData = useCallback(async (tab: ActiveTab) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin/finance?section=${tab}`)
+      let url = `/api/admin/finance?section=${tab}&period=${period}`
+      if (period === 'custom' && customFrom) {
+        url += `&from=${customFrom}`
+        if (customTo) url += `&to=${customTo}`
+      }
+      const res = await fetch(url)
       const data = await res.json()
 
       if (tab === 'overview') {
@@ -122,7 +133,7 @@ export default function AdminFinancePage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [period, customFrom, customTo])
 
   const searchUsers = async (query: string) => {
     if (!query || query.length < 2) { setSearchResults([]); return }
@@ -236,7 +247,7 @@ export default function AdminFinancePage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -252,6 +263,75 @@ export default function AdminFinancePage() {
             </button>
           ))}
         </div>
+
+        {/* Date Period Filter - hide for commission-settings and holders tabs */}
+        {activeTab !== 'commission-settings' && activeTab !== 'top-jeton-holders' && activeTab !== 'top-cfc-holders' && (
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span className="text-xs text-gray-400 mr-1">Tarih Aralığı:</span>
+              {([
+                { key: 'all', label: 'Tümü' },
+                { key: 'daily', label: 'Bugün' },
+                { key: 'weekly', label: 'Son 7 Gün' },
+                { key: 'monthly', label: 'Bu Ay' },
+                { key: 'yearly', label: 'Bu Yıl' },
+                { key: 'custom', label: 'Özel Tarih' },
+              ] as const).map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => setPeriod(p.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    period === p.key
+                      ? 'bg-amber-600/40 border border-amber-400/50 text-amber-200'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom date pickers */}
+            {period === 'custom' && (
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-400">Başlangıç:</label>
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-amber-400/50 focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-400">Bitiş:</label>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-amber-400/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Active period indicator */}
+            {period !== 'all' && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-amber-400/80">
+                  📅 {period === 'daily' ? 'Bugünkü' : period === 'weekly' ? 'Son 7 günlük' : period === 'monthly' ? 'Bu ayki' : period === 'yearly' ? 'Bu yılki' : 'Seçilen tarihlerdeki'} veriler gösteriliyor
+                </span>
+                <button
+                  onClick={() => { setPeriod('all'); setCustomFrom(''); setCustomTo('') }}
+                  className="text-xs text-gray-500 hover:text-white underline"
+                >
+                  Filtreyi Kaldır
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (
