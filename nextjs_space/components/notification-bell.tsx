@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins, BellRing, BellOff } from 'lucide-react'
+import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins, BellRing, BellOff, Eye } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
@@ -13,6 +13,7 @@ interface Notification {
   type: string
   title?: string
   message: string
+  fromUserId?: string
   fromUserName?: string
   postId?: string
   data?: string
@@ -134,6 +135,8 @@ export default function NotificationBell() {
       } else {
         router.push(`/dashboard`)
       }
+    } else if (notif.type === 'profile_view' && notif.fromUserId) {
+      router.push(`/profile/${notif.fromUserId}`)
     } else if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share' || notif.postId) {
       router.push(`/social${notif.postId ? `?postId=${notif.postId}` : ''}`)
     } else {
@@ -151,6 +154,7 @@ export default function NotificationBell() {
       case 'payment_notification': return <CreditCard className="w-4 h-4 text-yellow-400" />
       case 'payment_approved': return <Coins className="w-4 h-4 text-green-400" />
       case 'payment_rejected': return <CreditCard className="w-4 h-4 text-red-400" />
+      case 'profile_view': return <Eye className="w-4 h-4 text-cyan-400" />
       default: return <Bell className="w-4 h-4 text-fuchsia-300" />
     }
   }

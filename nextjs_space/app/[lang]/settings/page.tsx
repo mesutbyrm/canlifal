@@ -31,7 +31,9 @@ import {
   UserX,
   Trash2,
   MessageCircle,
-  Video
+  Video,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
@@ -80,6 +82,7 @@ export default function SettingsPage() {
   const [zodiacSign, setZodiacSign] = useState('')
   const [risingSign, setRisingSign] = useState('')
   const [messagePrivacy, setMessagePrivacy] = useState('everyone')
+  const [hideProfileViews, setHideProfileViews] = useState(false)
   
   // Blocked users
   interface BlockedUser {
@@ -162,6 +165,7 @@ export default function SettingsPage() {
         setZodiacSign(data.zodiacSign || '')
         setRisingSign(data.risingSign || '')
         setMessagePrivacy(data.messagePrivacy || 'everyone')
+        setHideProfileViews(data.hideProfileViews || false)
       }
     } catch (err) {
       console.error('Fetch profile error:', err)
@@ -253,7 +257,8 @@ export default function SettingsPage() {
           favoriteTeam: favoriteTeam || null,
           zodiacSign: zodiacSign || null,
           risingSign: risingSign || null,
-          messagePrivacy
+          messagePrivacy,
+          hideProfileViews
         })
       })
       if (res.ok) {
@@ -565,6 +570,30 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Profile View Privacy */}
+          <div className={`rounded-2xl p-6 space-y-4 border ${privacyCardBg}`}>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Eye className={`w-5 h-5 ${accentIcon}`} />
+              {'Profil Görüntüleme Gizliliği'}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setHideProfileViews(!hideProfileViews)}
+              className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                hideProfileViews ? `${privacyActive} text-white` : `${privacyInactive} ${labelColor}`
+              }`}
+            >
+              <EyeOff className="w-5 h-5" />
+              <div className="flex-1 text-left">
+                <p className="font-medium">{'Gizli Gezinme Modu'}</p>
+                <p className="text-xs opacity-70">{'Açıldığında: başkalarının profilini ziyaret ettiğinizde görünmezsiniz ve karşı tarafa bildirim gitmez'}</p>
+              </div>
+              <div className={`w-12 h-7 rounded-full transition-all flex items-center ${hideProfileViews ? 'bg-fuchsia-500 justify-end' : 'bg-gray-600 justify-start'}`}>
+                <div className="w-5 h-5 bg-white rounded-full mx-1 shadow-md" />
+              </div>
+            </button>
           </div>
 
           {/* Blocked Users Section */}

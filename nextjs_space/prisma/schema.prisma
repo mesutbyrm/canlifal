@@ -37,6 +37,7 @@ model User {
   lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
   // Privacy settings
   messagePrivacy        String               @default("everyone") // everyone, followers, nobody
+  hideProfileViews      Boolean              @default(false) // hide from profile view tracking
   // Theme preference
   theme                 String               @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel

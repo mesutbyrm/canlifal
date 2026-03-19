@@ -87,6 +87,51 @@ export async function GET(
       }
     }
 
+    // Track profile view & send notification (only if viewer is logged in, not own profile)
+    const currentUserId = (session?.user as any)?.id
+    if (currentUserId && currentUserId !== user.id) {
+      // Check if the viewer has hideProfileViews enabled
+      const viewer = await prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { hideProfileViews: true, name: true, username: true }
+      })
+
+      // Only record view and notify if viewer is NOT hidden
+      if (!viewer?.hideProfileViews) {
+        // Record profile view (non-blocking)
+        prisma.profileView.create({
+          data: {
+            viewedUserId: user.id,
+            viewerId: currentUserId,
+          }
+        }).catch(err => console.error('Profile view tracking error:', err))
+
+        // Check if we already sent a notification for this viewer recently (last 24h)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        const recentNotification = await prisma.notification.findFirst({
+          where: {
+            userId: user.id,
+            type: 'profile_view',
+            fromUserId: currentUserId,
+            createdAt: { gte: oneDayAgo }
+          }
+        })
+
+        if (!recentNotification) {
+          prisma.notification.create({
+            data: {
+              userId: user.id,
+              type: 'profile_view',
+              title: '👁️ Profil Görüntüleme',
+              message: `${viewer?.name || viewer?.username || 'Birisi'} profilinizi görüntüledi`,
+              fromUserId: currentUserId,
+              fromUserName: viewer?.name || viewer?.username || null,
+            }
+          }).catch(err => console.error('Profile view notification error:', err))
+        }
+      }
+    }
+
     return NextResponse.json({
       id: user.id,
       name: user.name,

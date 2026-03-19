@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         membership: true,
         membershipExpiresAt: true,
         messagePrivacy: true,
+        hideProfileViews: true,
         createdAt: true,
         _count: {
           select: {
@@ -81,7 +82,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam, messagePrivacy } = body;
+    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam, messagePrivacy, hideProfileViews } = body;
 
     const updateData: any = {};
     
@@ -96,6 +97,9 @@ export async function PATCH(request: NextRequest) {
     if (favoriteTeam !== undefined) updateData.favoriteTeam = favoriteTeam;
     if (messagePrivacy !== undefined && ['everyone', 'followers', 'nobody'].includes(messagePrivacy)) {
       updateData.messagePrivacy = messagePrivacy;
+    }
+    if (hideProfileViews !== undefined) {
+      updateData.hideProfileViews = !!hideProfileViews;
     }
 
     // Check username uniqueness
@@ -161,7 +165,8 @@ export async function PATCH(request: NextRequest) {
         zodiacSign: true,
         risingSign: true,
         favoriteTeam: true,
-        messagePrivacy: true
+        messagePrivacy: true,
+        hideProfileViews: true,
       }
     });
 
