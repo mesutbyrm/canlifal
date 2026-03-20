@@ -874,6 +874,26 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Online fal sections seeded')
 
+  // Seed Homepage Buttons
+  const homepageButtons = [
+    { key: 'games', label: 'Oyunlar', icon: '🎮', href: '/games', sortOrder: 0 },
+    { key: 'gifts', label: 'Hediyeler', icon: '🎁', href: '/gifts', sortOrder: 1 },
+    { key: 'teller', label: 'Falcı Ol', icon: '📹', href: '/become-teller', sortOrder: 2, specialBehavior: 'teller' },
+    { key: 'social', label: 'Sosyal', icon: '👥', href: '/social', sortOrder: 3 },
+    { key: 'chat', label: 'Sohbet', icon: '💬', href: '/chat', sortOrder: 4 },
+    { key: 'blog', label: 'Blog', icon: '📖', href: '/blog', sortOrder: 5 },
+    { key: 'ruya', label: 'Rüya Tabiri', icon: '🌙', href: '/ruya', sortOrder: 6 },
+    { key: 'bana-ozel', label: 'Bana Özel', icon: '✨', href: '/bana-ozel', sortOrder: 7, specialBehavior: 'bana-ozel' },
+  ]
+  for (const btn of homepageButtons) {
+    await prisma.homepageButton.upsert({
+      where: { key: btn.key },
+      update: { label: btn.label, icon: btn.icon, href: btn.href, sortOrder: btn.sortOrder, specialBehavior: btn.specialBehavior || null },
+      create: { ...btn, specialBehavior: btn.specialBehavior || null },
+    })
+  }
+  console.log('Homepage buttons seeded')
+
   console.log('Seed completed successfully!')
 }
 

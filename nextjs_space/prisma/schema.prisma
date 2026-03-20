@@ -1944,3 +1944,22 @@ model OnlineFalButton {
   @@index([sortOrder])
   @@map("online_fal_buttons")
 }
+
+// ==========================================
+// Homepage Buttons (fully admin-managed)
+// ==========================================
+model HomepageButton {
+  id          String   @id @default(cuid())
+  key         String   @unique // unique identifier e.g. "games", "gifts", "custom_1"
+  label       String   // Display label
+  icon        String   @default("🔗") // Emoji icon
+  href        String   // Destination URL/path (relative)
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  specialBehavior String? // null for normal link, "bana-ozel" for popup, "teller" for role-based
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("homepage_buttons")
+}

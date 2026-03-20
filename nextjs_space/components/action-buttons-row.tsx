@@ -1,15 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { Gamepad2, Gift, Video, Users, MessageCircle, Sparkles, BookOpen, Moon } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useSectionPresence } from '@/hooks/use-section-presence'
-import { useButtonOrder } from '@/hooks/use-button-order'
 import { useSiteTheme } from '@/lib/theme-context'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BanaOzelPopup from '@/components/bana-ozel-popup'
+
+interface HomepageButton {
+  id: string
+  key: string
+  label: string
+  icon: string
+  href: string
+  sortOrder: number
+  specialBehavior: string | null
+}
 
 interface ActionButtonsRowProps {
   isTeller?: boolean
@@ -26,143 +34,89 @@ function LiveBadge({ count }: { count: number }) {
   )
 }
 
+// Badge count mapping for known keys
+function getBadgeCount(key: string, counts: Record<string, number>, isTeller: boolean, pendingRequestCount: number): number {
+  switch (key) {
+    case 'games': return counts.games || 0
+    case 'gifts': return counts.gifts || 0
+    case 'teller': return isTeller ? pendingRequestCount : 0
+    case 'social': return counts.social || 0
+    case 'chat': return counts.chat || 0
+    case 'blog': return counts.blog || 0
+    case 'bana-ozel': return (counts.games || 0) + (counts.fortunes || 0)
+    default: return 0
+  }
+}
+
+// Dynamic href based on special behaviors
+function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean): string {
+  if (btn.specialBehavior === 'teller') {
+    if (!session?.user) return '/login'
+    return isTeller ? '/profile' : btn.href
+  }
+  if (btn.key === 'gifts' && !session?.user) return '/login'
+  return btn.href
+}
+
+// Dynamic label for teller button
+function getEffectiveLabel(btn: HomepageButton, isTeller: boolean): string {
+  if (btn.specialBehavior === 'teller' && isTeller) return 'Falc\u0131 Paneli'
+  return btn.label
+}
+
+// Style mappings per theme
+const THEME_STYLES: Record<string, Record<string, string>> = {
+  falclub: {
+    default: 'bg-[#0f0520]/60 border-purple-500/60 text-purple-300 hover:border-purple-400 hover:bg-purple-900/20',
+  },
+  falci: {
+    default: 'bg-gradient-to-r from-indigo-600/30 to-violet-600/30 border-indigo-400/50 text-indigo-200 hover:border-indigo-300',
+  },
+  cosmic: {
+    default: 'bg-gradient-to-r from-indigo-900/40 to-violet-900/40 border-indigo-500/50 text-indigo-300 hover:border-indigo-400',
+  },
+}
+
 export default function ActionButtonsRow({ isTeller = false, pendingRequestCount = 0, variant }: ActionButtonsRowProps) {
   const { language } = useLanguage()
   const { data: session } = useSession() || {}
   const { counts } = useSectionPresence()
-  const buttonOrder = useButtonOrder()
   const { theme } = useSiteTheme()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [showBanaOzel, setShowBanaOzel] = useState(false)
+  const [buttons, setButtons] = useState<HomepageButton[]>([])
 
   useEffect(() => { setMounted(true) }, [])
 
+  useEffect(() => {
+    const fetchButtons = async () => {
+      try {
+        const res = await fetch('/api/homepage-buttons')
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data.buttons) && data.buttons.length > 0) {
+            setButtons(data.buttons)
+          }
+        }
+      } catch {
+        // fallback to empty
+      }
+    }
+    fetchButtons()
+  }, [])
+
   const resolvedVariant = variant || (theme === 'cosmic' ? 'cosmic' : theme === 'falci' ? 'falci' : 'falclub')
-  const isCosmic = resolvedVariant === 'cosmic'
-  const isFalci = resolvedVariant === 'falci'
+  const themeStyle = THEME_STYLES[resolvedVariant]?.default || THEME_STYLES.falclub.default
 
-  // Button style mappings per theme
-  const getButtonStyle = (key: string) => {
-    if (isFalci) {
-      const styles: Record<string, string> = {
-        games: 'bg-gradient-to-r from-indigo-600/30 to-violet-600/30 border-indigo-400/50 text-indigo-200 hover:border-indigo-300',
-        gifts: 'bg-gradient-to-r from-amber-600/30 to-orange-600/30 border-amber-400/50 text-amber-200 hover:border-amber-300',
-        teller: 'bg-gradient-to-r from-emerald-600/30 to-teal-600/30 border-emerald-400/50 text-emerald-200 hover:border-emerald-300',
-        social: 'bg-gradient-to-r from-pink-600/30 to-rose-600/30 border-pink-400/50 text-pink-200 hover:border-pink-300',
-        chat: 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-400/50 text-cyan-200 hover:border-cyan-300',
-        blog: 'bg-gradient-to-r from-orange-600/30 to-red-600/30 border-orange-400/50 text-orange-200 hover:border-orange-300',
-        'bana-ozel': 'bg-gradient-to-r from-fuchsia-600/30 to-purple-600/30 border-fuchsia-400/50 text-fuchsia-200 hover:border-fuchsia-300',
-        ruya: 'bg-gradient-to-r from-blue-600/30 to-indigo-600/30 border-blue-400/50 text-blue-200 hover:border-blue-300',
-      }
-      return styles[key] || styles.games
-    }
-    if (isCosmic) {
-      const styles: Record<string, string> = {
-        games: 'bg-gradient-to-r from-indigo-900/40 to-violet-900/40 border-indigo-500/50 text-indigo-300 hover:border-indigo-400',
-        gifts: 'bg-gradient-to-r from-amber-900/40 to-orange-900/40 border-amber-500/50 text-amber-300 hover:border-amber-400',
-        teller: 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border-emerald-500/50 text-emerald-300 hover:border-emerald-400',
-        social: 'bg-gradient-to-r from-pink-900/40 to-rose-900/40 border-pink-500/50 text-pink-300 hover:border-pink-400',
-        chat: 'bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border-cyan-500/50 text-cyan-300 hover:border-cyan-400',
-        blog: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/50 text-orange-300 hover:border-orange-400',
-        'bana-ozel': 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/50 text-fuchsia-300 hover:border-fuchsia-400',
-        ruya: 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/50 text-blue-300 hover:border-blue-400',
-      }
-      return styles[key] || styles.games
-    }
-    // falclub
-    const styles: Record<string, string> = {
-      games: 'bg-[#0f0520]/60 border-cyan-500/60 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/20',
-      gifts: 'bg-[#0f0520]/60 border-fuchsia-500/60 text-fuchsia-300 hover:border-fuchsia-400 hover:bg-fuchsia-900/20',
-      teller: 'bg-[#0f0520]/60 border-emerald-500/60 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/20',
-      social: 'bg-[#0f0520]/60 border-pink-500/60 text-pink-300 hover:border-pink-400 hover:bg-pink-900/20',
-      chat: 'bg-[#0f0520]/60 border-teal-500/60 text-teal-300 hover:border-teal-400 hover:bg-teal-900/20',
-      blog: 'bg-[#0f0520]/60 border-amber-500/60 text-amber-300 hover:border-amber-400 hover:bg-amber-900/20',
-      'bana-ozel': 'bg-[#0f0520]/60 border-violet-500/60 text-violet-300 hover:border-violet-400 hover:bg-violet-900/20',
-      ruya: 'bg-[#0f0520]/60 border-indigo-500/60 text-indigo-300 hover:border-indigo-400 hover:bg-indigo-900/20',
-    }
-    return styles[key] || styles.games
-  }
-
-  const allButtons: Record<string, { key: string; href: string; icon: React.ReactNode; labelTr: string; labelEn: string; badgeCount: number }> = {
-    games: {
-      key: 'games',
-      href: `/games`,
-      icon: <Gamepad2 className="w-4 h-4" />,
-      labelTr: 'Oyun Merkezi',
-      labelEn: 'Game Center',
-      badgeCount: counts.games,
-    },
-    gifts: {
-      key: 'gifts',
-      href: session?.user ? `/gifts` : `/login`,
-      icon: <Gift className="w-4 h-4" />,
-      labelTr: 'Hediye Gönder',
-      labelEn: 'Send Gift',
-      badgeCount: counts.gifts,
-    },
-    teller: {
-      key: 'teller',
-      href: session?.user ? (isTeller ? `/profile` : `/become-teller`) : `/login`,
-      icon: <Video className="w-4 h-4" />,
-      labelTr: isTeller ? 'Falcı Paneli' : 'Canlı Falcı Ol',
-      labelEn: isTeller ? 'Teller Panel' : 'Become Live Teller',
-      badgeCount: isTeller ? pendingRequestCount : 0,
-    },
-    social: {
-      key: 'social',
-      href: `/social`,
-      icon: <Users className="w-4 h-4" />,
-      labelTr: 'Sosyal',
-      labelEn: 'Social',
-      badgeCount: counts.social,
-    },
-    chat: {
-      key: 'chat',
-      href: `/chat`,
-      icon: <MessageCircle className="w-4 h-4" />,
-      labelTr: 'Fal Sohbet',
-      labelEn: 'Fortune Chat',
-      badgeCount: counts.chat,
-    },
-    blog: {
-      key: 'blog',
-      href: `/blog`,
-      icon: <BookOpen className="w-4 h-4" />,
-      labelTr: 'Blog',
-      labelEn: 'Blog',
-      badgeCount: counts.blog,
-    },
-    ruya: {
-      key: 'ruya',
-      href: `/ruya`,
-      icon: <Moon className="w-4 h-4" />,
-      labelTr: 'Rüya Tabirleri',
-      labelEn: 'Dream Guide',
-      badgeCount: 0,
-    },
-    'bana-ozel': {
-      key: 'bana-ozel',
-      href: session?.user ? `/bana-ozel` : `/login`,
-      icon: <Sparkles className="w-4 h-4" />,
-      labelTr: 'Bana Özel',
-      labelEn: 'For Me',
-      badgeCount: counts.games + counts.fortunes,
-    },
-  }
-
-  const orderedButtons = buttonOrder
-    .filter((key) => allButtons[key])
-    .map((key) => allButtons[key])
-
-  if (!mounted) {
+  if (!mounted || buttons.length === 0) {
     return <div className="grid grid-cols-4 md:grid-cols-8 gap-2 min-h-[44px]" />
   }
 
-  const handleButtonClick = (btn: typeof orderedButtons[0]) => {
-    if (btn.key === 'bana-ozel') {
+  const handleClick = (btn: HomepageButton) => {
+    if (btn.specialBehavior === 'bana-ozel') {
       if (!session?.user) {
-        router.push(`/login`)
+        router.push('/login')
       } else {
         setShowBanaOzel(true)
       }
@@ -171,40 +125,48 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     return false
   }
 
+  // Calculate grid columns based on button count
+  const colCount = Math.min(buttons.length, 8)
+
   return (
     <>
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-2">
-        {orderedButtons.map((btn) =>
-          btn.key === 'bana-ozel' ? (
-            <button
-              key={btn.key}
-              onClick={() => handleButtonClick(btn)}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${
-                getButtonStyle(btn.key)
-              }`}
-            >
-              <span className="flex-shrink-0">{btn.icon}</span>
-              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
-                {btn.labelTr}
-              </span>
-              <LiveBadge count={btn.badgeCount} />
-            </button>
-          ) : (
+      <div className={`grid gap-1.5 sm:gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(colCount, 4)}, minmax(0, 1fr))` }}>
+        {buttons.map((btn) => {
+          const badgeCount = getBadgeCount(btn.key, counts as unknown as Record<string, number>, isTeller, pendingRequestCount)
+          const effectiveHref = getEffectiveHref(btn, session, isTeller)
+          const effectiveLabel = getEffectiveLabel(btn, isTeller)
+          const isBanaOzel = btn.specialBehavior === 'bana-ozel'
+
+          if (isBanaOzel) {
+            return (
+              <button
+                key={btn.id}
+                onClick={() => handleClick(btn)}
+                className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${themeStyle}`}
+              >
+                <span className="flex-shrink-0 text-sm">{btn.icon}</span>
+                <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
+                  {effectiveLabel}
+                </span>
+                <LiveBadge count={badgeCount} />
+              </button>
+            )
+          }
+
+          return (
             <Link
-              key={btn.key}
-              href={btn.href}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${
-                getButtonStyle(btn.key)
-              }`}
+              key={btn.id}
+              href={effectiveHref}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 h-11 px-1 sm:px-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] relative ${themeStyle}`}
             >
-              <span className="flex-shrink-0">{btn.icon}</span>
+              <span className="flex-shrink-0 text-sm">{btn.icon}</span>
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight truncate max-w-full">
-                {btn.labelTr}
+                {effectiveLabel}
               </span>
-              <LiveBadge count={btn.badgeCount} />
+              <LiveBadge count={badgeCount} />
             </Link>
           )
-        )}
+        })}
       </div>
       <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
     </>
