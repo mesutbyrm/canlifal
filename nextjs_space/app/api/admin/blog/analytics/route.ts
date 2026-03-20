@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     // Category distribution
     const categories = await prisma.blogCategory.findMany({ orderBy: { sortOrder: 'asc' } })
     const categoryStats = await Promise.all(
-      categories.map(async (cat) => {
+      categories.map(async (cat: any) => {
         const count = await prisma.blogPost.count({ where: { category: cat.slug } })
         const viewsAgg = await prisma.blogPost.aggregate({ where: { category: cat.slug }, _sum: { views: true } })
         return { slug: cat.slug, nameTr: cat.nameTr, postCount: count, totalViews: viewsAgg._sum.views || 0 }

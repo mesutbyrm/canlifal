@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 }
 
 export default function CanliTarot({ params }: { params: { lang: string } }) {
-  redirect(`/${params.lang}/fortunes/tarot`)
+  redirect(`/${params.lang}/fallar/tarot-fali`)
 }

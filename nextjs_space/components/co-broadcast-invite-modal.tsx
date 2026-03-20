@@ -113,8 +113,8 @@ export default function CoBroadcastInviteModal() {
   useEffect(() => {
     // Don't show during active broadcast/viewing or in video pages
     if (!session?.user) return
-    if (pathname?.includes('/chat/video/')) return
-    if (pathname?.includes('/live-room/')) return
+    if (pathname?.includes('/sohbet/video/')) return
+    if (pathname?.includes('/canli-oda/')) return
     
     checkPendingInvites()
     pollIntervalRef.current = setInterval(checkPendingInvites, 10000)
@@ -140,7 +140,7 @@ export default function CoBroadcastInviteModal() {
         setIsVisible(false)
         setPendingInvite(null)
         // Redirect to broadcast page as co-host
-        router.push(`/chat/video/broadcast/${pendingInvite.streamId}?cohost=true`)
+        router.push(`/sohbet/video/broadcast/${pendingInvite.streamId}?cohost=true`)
       }
     } catch (error) {
       console.error('Error accepting co-broadcast:', error)

@@ -142,7 +142,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-500/20">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href={`/social`} className="text-white/70 hover:text-white">
+          <Link href={`/sosyal`} className="text-white/70 hover:text-white">
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
         >
           {/* Author Info */}
           <Link 
-            href={`/profile/${post.user.id}`}
+            href={`/profil/${post.user.id}`}
             className="p-4 flex items-center gap-3 border-b border-purple-500/10 hover:bg-purple-500/5 transition-colors"
           >
             {post.user.image ? (
@@ -327,7 +327,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 {lang === 'tr' ? 'Yorum yapmak için giriş yapın' : 'Sign in to comment'}
               </p>
               <Link
-                href={`/login`}
+                href={`/giris`}
                 className="text-purple-400 hover:text-purple-300 text-sm font-medium"
               >
                 {lang === 'tr' ? 'Giriş Yap' : 'Sign In'}
@@ -344,7 +344,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 bg-white/5 rounded-xl p-3"
               >
-                <Link href={`/profile/${comment.user.id}`} className="flex-shrink-0">
+                <Link href={`/profil/${comment.user.id}`} className="flex-shrink-0">
                   {comment.user.image ? (
                     <Image
                       src={comment.user.image}
@@ -361,7 +361,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
                 </Link>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Link href={`/profile/${comment.user.id}`} className="text-white font-medium text-sm hover:text-gold-400 transition-colors">{comment.user.name}</Link>
+                    <Link href={`/profil/${comment.user.id}`} className="text-white font-medium text-sm hover:text-gold-400 transition-colors">{comment.user.name}</Link>
                     <p className="text-white/40 text-xs">
                       {format(new Date(comment.createdAt), 'd MMM, HH:mm', { locale: lang === 'tr' ? tr : enUS })}
                     </p>
@@ -393,7 +393,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
               : 'Discover our free fortune services and learn your future'}
           </p>
           <Link
-            href={`/fortunes`}
+            href={`/fallar`}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity"
           >
             <Sparkles className="w-5 h-5" />

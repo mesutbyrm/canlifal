@@ -53,98 +53,98 @@ const FORTUNE_CARDS = [
     nameTr: 'Kahve Falı',
     nameEn: 'Coffee Reading',
     image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png',
-    href: '/fortunes/coffee'
+    href: '/fallar/kahve-fali'
   },
   {
     id: 'tarot',
     nameTr: 'Tarot Falı',
     nameEn: 'Tarot Cards',
     image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png',
-    href: '/fortunes/tarot'
+    href: '/fallar/tarot-fali'
   },
   {
     id: 'palm',
     nameTr: 'El Falı',
     nameEn: 'Palm Reading',
     image: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png',
-    href: '/fortunes/palm'
+    href: '/fallar/el-fali'
   },
   {
     id: 'dream',
     nameTr: 'Rüya Tabiri',
     nameEn: 'Dream Reading',
     image: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png',
-    href: '/fortunes/dream'
+    href: '/fallar/ruya-yorumu'
   },
   {
     id: 'love',
     nameTr: 'Aşk Uyumu',
     nameEn: 'Love Match',
     image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png',
-    href: '/fortunes/love'
+    href: '/fallar/ask-uyumu'
   },
   {
     id: 'horoscope',
     nameTr: 'Günlük Burç',
     nameEn: 'Daily Horoscope',
     image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png',
-    href: '/fortunes/horoscope'
+    href: '/fallar/burc-yorumu'
   },
   {
     id: 'numerology',
     nameTr: 'Numeroloji',
     nameEn: 'Numerology',
     image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png',
-    href: '/fortunes/numerology'
+    href: '/fallar/numeroloji'
   },
   {
     id: 'angel',
     nameTr: 'Melek Kartları',
     nameEn: 'Angel Cards',
     image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png',
-    href: '/fortunes/angel'
+    href: '/fallar/melek-kartlari'
   },
   {
     id: 'aura',
     nameTr: 'Aura Okuma',
     nameEn: 'Aura Reading',
-    image: '/fortunes/aura.jpg',
-    href: '/fortunes/aura'
+    image: '/fallar/aura-analizi.jpg',
+    href: '/fallar/aura-analizi'
   },
   {
     id: 'birthchart',
     nameTr: 'Doğum Haritası',
     nameEn: 'Birth Chart',
-    image: '/fortunes/birthchart.jpg',
-    href: '/fortunes/birthchart'
+    image: '/fallar/dogum-haritasi.jpg',
+    href: '/fallar/dogum-haritasi'
   },
   {
     id: 'katina',
     nameTr: 'Katina Falı',
     nameEn: 'Katina Cards',
-    image: '/fortunes/katina.jpg',
-    href: '/fortunes/katina'
+    image: '/fallar/katina.jpg',
+    href: '/fallar/katina'
   },
   {
     id: 'yesno',
     nameTr: 'Evet/Hayır',
     nameEn: 'Yes/No Oracle',
-    image: '/fortunes/yesno.jpg',
-    href: '/fortunes/yesno'
+    image: '/fallar/evet-hayir.jpg',
+    href: '/fallar/evet-hayir'
   },
   {
     id: 'kursundokme',
     nameTr: 'Kurşun Dökme',
     nameEn: 'Lead Pouring',
-    image: '/fortunes/dream.jpg',
-    href: '/fortunes/kursundokme'
+    image: '/fallar/ruya-yorumu.jpg',
+    href: '/fallar/kursundokme'
   },
   {
     id: 'istikhara',
     nameTr: 'İstikhare',
     nameEn: 'Istikhara',
-    image: '/fortunes/angel.jpg',
-    href: '/fortunes/istikhara'
+    image: '/fallar/melek-kartlari.jpg',
+    href: '/fallar/istihare'
   },
 ]
 
@@ -212,7 +212,7 @@ export default function HomePage() {
     if (!session?.user) return
     const checkTeller = async () => {
       try {
-        const res = await fetch('/api/fortune-tellers/my-profile')
+        const res = await fetch('/api/fortune-tellers/my-profilee')
         if (res.ok) {
           const data = await res.json()
           setIsTeller(true)
@@ -368,7 +368,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4 relative z-10">
               {/* Start Stream Button */}
               <Link
-                href={session ? `/chat/video/setup` : `/login`}
+                href={session ? `/sohbet/video/setup` : `/giris`}
                 className="flex flex-col items-center"
               >
                 <div 
@@ -388,7 +388,7 @@ export default function HomePage() {
                   {liveStreams.slice(0, 4).map((stream) => (
                     <Link
                       key={stream.id}
-                      href={`/chat/video?watch=${stream.id}`}
+                      href={`/sohbet/video?watch=${stream.id}`}
                       className="flex flex-col items-center flex-shrink-0"
                     >
                       <div 
@@ -489,7 +489,7 @@ export default function HomePage() {
                 {sortedTellers.filter(t => t.isOnline).map((teller) => (
                   <Link
                     key={teller.id}
-                    href={`/live-tellers/${teller.id}`}
+                    href={`/canli-falcilar/${teller.id}`}
                     className="flex-shrink-0 w-28 rainbow-border rainbow-border-live rounded-2xl"
                   >
                     <div className="rounded-2xl overflow-hidden" style={{
@@ -542,7 +542,7 @@ export default function HomePage() {
               {sortedTellers.slice(0, 6).map((teller) => (
                 <Link
                   key={teller.id}
-                  href={`/live-tellers/${teller.id}`}
+                  href={`/canli-falcilar/${teller.id}`}
                   className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border rainbow-border-live' : 'opacity-50'}`}
                 >
                   <div className="rounded-2xl overflow-hidden" style={{
@@ -589,7 +589,7 @@ export default function HomePage() {
             
             <div className="flex justify-center mt-3">
               <Link
-                href={`/live-tellers`}
+                href={`/canli-falcilar`}
                 className="inline-block px-4 py-2 rounded-xl text-fuchsia-200 text-sm font-medium hover:text-white transition-colors"
                 style={{
                   border: '1.5px solid rgba(232, 121, 249, 0.5)',
@@ -619,7 +619,7 @@ export default function HomePage() {
               <p className="font-semibold text-white mb-1">Koç:</p>
               <p className="opacity-90">{'Bugün enerjin yüksek. Yeni fırsatlar karşına çıkabilir.'}</p>
               <Link 
-                href={`/fortunes/horoscope`}
+                href={`/fallar/burc-yorumu`}
                 className="inline-block mt-2 text-fuchsia-300 font-medium hover:text-fuchsia-200"
               >
                 [{'Detaylı Oku'}]
@@ -649,7 +649,7 @@ export default function HomePage() {
                 { href: '/astroloji-paneli', icon: '🔮', label: 'Astroloji Paneli', desc: 'Kişisel paneliniz' },
                 { href: '/ruya-istatistikleri', icon: '📊', label: 'Rüya İstatistikleri', desc: 'Kişisel trendlerin' },
                 { href: '/basarimlar', icon: '🏅', label: 'Başarımlar', desc: 'Rozetlerini topla' },
-                { href: '/chat', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
+                { href: '/sohbet', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
               ].map((item, idx) => (
                 <motion.div
                   key={item.href}
@@ -722,7 +722,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               {/* Start Stream Button */}
               <Link
-                href={session ? `/chat/video/setup` : `/login`}
+                href={session ? `/sohbet/video/setup` : `/giris`}
                 className="flex flex-col items-center"
               >
                 <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-indigo-400/50 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"
@@ -740,7 +740,7 @@ export default function HomePage() {
                   {liveStreams.slice(0, 5).map((stream) => (
                     <Link
                       key={stream.id}
-                      href={`/chat/video?watch=${stream.id}`}
+                      href={`/sohbet/video?watch=${stream.id}`}
                       className="flex flex-col items-center flex-shrink-0"
                     >
                       <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-red-500 relative">
@@ -841,7 +841,7 @@ export default function HomePage() {
               {sortedTellers.length > 0 ? sortedTellers.map((teller) => (
                 <Link
                   key={teller.id}
-                  href={`/live-tellers/${teller.id}`}
+                  href={`/canli-falcilar/${teller.id}`}
                   className="flex-shrink-0 flex flex-col items-center"
                 >
                   {/* Circular Avatar with Gradient Border */}
@@ -882,7 +882,7 @@ export default function HomePage() {
                     {'Şu an falcı yok'}
                   </p>
                   <Link
-                    href={`/live-tellers`}
+                    href={`/canli-falcilar`}
                     className={`inline-block mt-3 px-4 py-1.5 ${isCosmic ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500'} text-white rounded-full text-xs font-medium transition-colors`}
                   >
                     {'Tüm Falcıları Gör'}
@@ -899,7 +899,7 @@ export default function HomePage() {
                 <Sparkles className={`w-4 h-4 ${accentColor}`} />
                 {'Fal Kategorileri'}
               </h2>
-              <Link href={`/fortunes`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
+              <Link href={`/fallar`} className={`${accentColor} text-sm flex items-center gap-1 hover:opacity-80`}>
                 {'Tümünü Gör'}
                 <ChevronRight className="w-4 h-4" />
               </Link>

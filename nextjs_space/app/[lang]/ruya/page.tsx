@@ -158,7 +158,7 @@ export default function RuyaPage() {
   const handleInterpret = async () => {
     if (!dreamText.trim() || interpreting) return
     if (!session?.user) {
-      router.push(`/${lang}/login`)
+      router.push(`/${lang}/giris`)
       return
     }
     setInterpreting(true)
@@ -544,7 +544,7 @@ export default function RuyaPage() {
                   <div className="mt-3 flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
                     <CheckCircle className="w-4 h-4" />
                     <span>Rüya yorumunuz otomatik olarak sosyal akışınızda paylaşıldı!</span>
-                    <button onClick={() => router.push(`/${lang}/social`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">
+                    <button onClick={() => router.push(`/${lang}/sosyal`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">
                       <Share2 className="w-3 h-3" /> Görüntüle
                     </button>
                   </div>
@@ -554,7 +554,7 @@ export default function RuyaPage() {
 
             {!session?.user && (
               <div className="mt-4 text-center">
-                <p className="text-gray-500 text-sm">Rüyanızı yorumlatmak için <button onClick={() => router.push(`/${lang}/login`)} className="text-indigo-400 hover:underline">giriş yapın</button></p>
+                <p className="text-gray-500 text-sm">Rüyanızı yorumlatmak için <button onClick={() => router.push(`/${lang}/giris`)} className="text-indigo-400 hover:underline">giriş yapın</button></p>
               </div>
             )}
           </div>

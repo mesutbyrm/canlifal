@@ -299,7 +299,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       giftTypeId: g.giftType.id,
       giftName: g.giftType.name,
       giftIcon: g.giftType.icon,
-      giftImage: `/gifts/${g.giftType.id}.png`,
+      giftImage: `/hediyeler/${g.giftType.id}.png`,
       amount: g.totalPrice,
       currencyType: g.currencyType,
       createdAt: g.createdAt.toISOString()

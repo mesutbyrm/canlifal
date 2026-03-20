@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 }
 
 export default function EnIyiFalcilar({ params }: { params: { lang: string } }) {
-  redirect(`/${params.lang}/live-tellers`)
+  redirect(`/${params.lang}/canli-falcilar`)
 }

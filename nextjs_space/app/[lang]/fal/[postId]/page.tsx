@@ -276,7 +276,7 @@ export default async function FortuneDetailPage({ params }: PageProps) {
           '@type': 'ListItem',
           position: 2,
           name: lang === 'tr' ? 'Paylaşımlar' : 'Posts',
-          item: `${baseUrl}/social`,
+          item: `${baseUrl}/sosyal`,
         },
         {
           '@type': 'ListItem',

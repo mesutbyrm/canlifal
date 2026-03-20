@@ -70,7 +70,7 @@ export default function AdminWithdrawalsPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      router.push(`/login`)
+      router.push(`/giris`)
       return
     }
     fetchData()

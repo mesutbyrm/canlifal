@@ -35,7 +35,7 @@ export default function DeviceGuard() {
   }, [status, checkDevice])
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: `/${language || 'tr'}/login` })
+    signOut({ callbackUrl: `/${language || 'tr'}/giris` })
   }
 
   return (

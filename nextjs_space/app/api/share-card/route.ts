@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         userImage: fortune.user?.image || null,
         summary,
         date: fortune.createdAt,
-        shareUrl: (process.env.NEXTAUTH_URL || 'https://canlifal.com') + '/social'
+        shareUrl: (process.env.NEXTAUTH_URL || 'https://canlifal.com') + '/sosyal'
       }
     }
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         likes: post._count?.likes || 0,
         comments: post._count?.comments || 0,
         date: post.createdAt,
-        shareUrl: (process.env.NEXTAUTH_URL || 'https://canlifal.com') + '/social'
+        shareUrl: (process.env.NEXTAUTH_URL || 'https://canlifal.com') + '/sosyal'
       }
     }
 

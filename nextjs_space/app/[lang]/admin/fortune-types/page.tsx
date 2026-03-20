@@ -57,7 +57,7 @@ export default function FortuneTypesAdminPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/auth/login`)
+      router.push(`/auth/giris`)
     }
     fetchTypes()
   }, [status, language, router])

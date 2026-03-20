@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
         // Get commission rate 
         const commSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
         const commRate = commSetting ? parseInt(commSetting.value) : 20
-        const totalCharged = sessionsInRange.reduce((s, x) => s + x.creditsCharged, 0)
+        const totalCharged = sessionsInRange.reduce((s: any, x: any) => s + x.creditsCharged, 0)
         totalTellerEarnings = totalCharged - Math.floor(totalCharged * commRate / 100)
       } else {
         const tellerEarnings = await prisma.liveFortuneTeller.aggregate({
@@ -179,15 +179,15 @@ export async function GET(request: NextRequest) {
         take: 20,
       })
 
-      const receiverIds = topReceivers.map((r) => r.recipientId)
+      const receiverIds = topReceivers.map((r: any) => r.recipientId)
       const users = await prisma.user.findMany({
         where: { id: { in: receiverIds } },
         select: { id: true, name: true, username: true, email: true, image: true },
       })
-      const userMap = new Map(users.map((u) => [u.id, u]))
+      const userMap = new Map(users.map((u: any) => [u.id, u]))
 
       return NextResponse.json(
-        topReceivers.map((r) => ({
+        topReceivers.map((r: any) => ({
           user: userMap.get(r.recipientId) || { id: r.recipientId, name: 'Bilinmeyen' },
           totalReceived: r._sum.totalPrice || 0,
           totalQuantity: r._sum.quantity || 0,
@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
         where: { id: { in: senderIds } },
         select: { id: true, name: true, username: true, email: true, image: true },
       })
-      const userMap = new Map(users.map((u) => [u.id, u]))
+      const userMap = new Map(users.map((u: any) => [u.id, u]))
 
       return NextResponse.json(
         sorted.map(([id, data]) => ({

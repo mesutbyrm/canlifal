@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/login',
+    signIn: '/giris',
   },
   session: {
     strategy: 'jwt',

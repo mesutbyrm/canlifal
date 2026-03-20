@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
         }),
       ])
 
-      const totalDelivered = logs.reduce((s, l) => s + l.deliveredCount, 0)
-      const totalClicked = logs.reduce((s, l) => s + l.clickedCount, 0)
+      const totalDelivered = logs.reduce((s: any, l: any) => s + l.deliveredCount, 0)
+      const totalClicked = logs.reduce((s: any, l: any) => s + l.clickedCount, 0)
       const ctr = totalDelivered > 0 ? ((totalClicked / totalDelivered) * 100).toFixed(1) : '0'
 
       return NextResponse.json({

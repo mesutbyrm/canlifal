@@ -125,22 +125,22 @@ export default function NotificationBell() {
       if (session?.user?.role === 'admin') {
         router.push(`/admin/credits`)
       } else {
-        router.push(`/memberships`)
+        router.push(`/uyelik`)
       }
     } else if (notif.type === 'session_update' || notif.type === 'session_request') {
       if (parsedData?.action === 'accept' && parsedData?.sessionId) {
-        router.push(`/live-room/${parsedData.sessionId}`)
+        router.push(`/canli-oda/${parsedData.sessionId}`)
       } else if (parsedData?.sessionId) {
-        router.push(`/live-room/${parsedData.sessionId}`)
+        router.push(`/canli-oda/${parsedData.sessionId}`)
       } else {
-        router.push(`/dashboard`)
+        router.push(`/panel`)
       }
     } else if (notif.type === 'profile_view' && notif.fromUserId) {
-      router.push(`/profile/${notif.fromUserId}`)
+      router.push(`/profil/${notif.fromUserId}`)
     } else if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share' || notif.postId) {
-      router.push(`/social${notif.postId ? `?postId=${notif.postId}` : ''}`)
+      router.push(`/sosyal${notif.postId ? `?postId=${notif.postId}` : ''}`)
     } else {
-      router.push(`/dashboard`)
+      router.push(`/panel`)
     }
   }
 

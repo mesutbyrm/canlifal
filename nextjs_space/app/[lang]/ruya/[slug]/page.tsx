@@ -169,7 +169,7 @@ export default function DreamDetailPage() {
 
   const toggleFavorite = async () => {
     if (!session?.user) {
-      router.push(`/${lang}/login`)
+      router.push(`/${lang}/giris`)
       return
     }
     setFavLoading(true)
@@ -190,7 +190,7 @@ export default function DreamDetailPage() {
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session?.user) {
-      router.push(`/${lang}/login`)
+      router.push(`/${lang}/giris`)
       return
     }
     if (!commentText.trim() || commentSubmitting) return

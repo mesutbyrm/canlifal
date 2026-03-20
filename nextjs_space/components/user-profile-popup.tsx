@@ -179,7 +179,7 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
 
                   {/* View Profile Link */}
                   <a
-                    href={`/profile/${profile.username || profile.id}`}
+                    href={`/profil/${profile.username || profile.id}`}
                     className="mt-3 block w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
                     onClick={closeProfile}
                   >

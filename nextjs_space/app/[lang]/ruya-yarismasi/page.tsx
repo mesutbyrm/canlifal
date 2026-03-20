@@ -169,7 +169,7 @@ export default function DreamContestPage() {
 
               {!session?.user && selectedContest.isOngoing && (
                 <div className="text-center py-4 mb-6 bg-white/5 border border-white/10 rounded-xl">
-                  <Link href={`/${lang}/login`} className="text-amber-400 hover:text-amber-300">Katılmak için giriş yapın</Link>
+                  <Link href={`/${lang}/giris`} className="text-amber-400 hover:text-amber-300">Katılmak için giriş yapın</Link>
                 </div>
               )}
 

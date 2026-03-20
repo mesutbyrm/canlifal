@@ -31,20 +31,20 @@ interface CustomButton {
 }
 
 const FORTUNE_CARDS = [
-  { id: 'coffee', nameTr: 'Kahve Falı', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fortunes/coffee' },
-  { id: 'tarot', nameTr: 'Tarot Falı', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fortunes/tarot' },
-  { id: 'palm', nameTr: 'El Falı', image: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png', href: '/fortunes/palm' },
-  { id: 'dream', nameTr: 'Rüya Tabiri', image: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png', href: '/fortunes/dream' },
-  { id: 'love', nameTr: 'Aşk Uyumu', image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png', href: '/fortunes/love' },
-  { id: 'horoscope', nameTr: 'Günlük Burç', image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', href: '/fortunes/horoscope' },
-  { id: 'numerology', nameTr: 'Numeroloji', image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', href: '/fortunes/numerology' },
-  { id: 'angel', nameTr: 'Melek Kartları', image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', href: '/fortunes/angel' },
-  { id: 'aura', nameTr: 'Aura Okuma', image: '/fortunes/aura.jpg', href: '/fortunes/aura' },
-  { id: 'birthchart', nameTr: 'Doğum Haritası', image: '/fortunes/birthchart.jpg', href: '/fortunes/birthchart' },
-  { id: 'katina', nameTr: 'Katina Falı', image: '/fortunes/katina.jpg', href: '/fortunes/katina' },
-  { id: 'yesno', nameTr: 'Evet/Hayır', image: '/fortunes/yesno.jpg', href: '/fortunes/yesno' },
-  { id: 'kursundokme', nameTr: 'Kurşun Dökme', image: '/fortunes/dream.jpg', href: '/fortunes/kursundokme' },
-  { id: 'istikhara', nameTr: 'İstikhare', image: '/fortunes/angel.jpg', href: '/fortunes/istikhara' },
+  { id: 'coffee', nameTr: 'Kahve Falı', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali' },
+  { id: 'tarot', nameTr: 'Tarot Falı', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fallar/tarot-fali' },
+  { id: 'palm', nameTr: 'El Falı', image: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png', href: '/fallar/el-fali' },
+  { id: 'dream', nameTr: 'Rüya Tabiri', image: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png', href: '/fallar/ruya-yorumu' },
+  { id: 'love', nameTr: 'Aşk Uyumu', image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png', href: '/fallar/ask-uyumu' },
+  { id: 'horoscope', nameTr: 'Günlük Burç', image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', href: '/fallar/burc-yorumu' },
+  { id: 'numerology', nameTr: 'Numeroloji', image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', href: '/fallar/numeroloji' },
+  { id: 'angel', nameTr: 'Melek Kartları', image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', href: '/fallar/melek-kartlari' },
+  { id: 'aura', nameTr: 'Aura Okuma', image: '/fallar/aura-analizi.jpg', href: '/fallar/aura-analizi' },
+  { id: 'birthchart', nameTr: 'Doğum Haritası', image: '/fallar/dogum-haritasi.jpg', href: '/fallar/dogum-haritasi' },
+  { id: 'katina', nameTr: 'Katina Falı', image: '/fallar/katina.jpg', href: '/fallar/katina' },
+  { id: 'yesno', nameTr: 'Evet/Hayır', image: '/fallar/evet-hayir.jpg', href: '/fallar/evet-hayir' },
+  { id: 'kursundokme', nameTr: 'Kurşun Dökme', image: '/fallar/ruya-yorumu.jpg', href: '/fallar/kursundokme' },
+  { id: 'istikhara', nameTr: 'İstikhare', image: '/fallar/melek-kartlari.jpg', href: '/fallar/istihare' },
 ]
 
 export default function OnlineFalPage() {

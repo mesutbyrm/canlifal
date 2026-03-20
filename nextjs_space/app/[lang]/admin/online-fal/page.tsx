@@ -460,10 +460,10 @@ export default function AdminOnlineFalPage() {
                   type="text"
                   value={modalForm.href}
                   onChange={(e) => setModalForm((f) => ({ ...f, href: e.target.value }))}
-                  placeholder="\u00d6rn: /games veya /blog"
+                  placeholder="\u00d6rn: /oyunlar veya /blog"
                   className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
                 />
-                <p className="text-gray-600 text-[10px] mt-1">Site i\u00e7i yol (/games) veya d\u0131\u015f URL (https://...) kullanabilirsiniz</p>
+                <p className="text-gray-600 text-[10px] mt-1">Site i\u00e7i yol (/oyunlar) veya d\u0131\u015f URL (https://...) kullanabilirsiniz</p>
               </div>
 
               {/* Color picker */}

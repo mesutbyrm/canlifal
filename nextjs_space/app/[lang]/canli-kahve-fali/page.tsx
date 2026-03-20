@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 }
 
 export default function CanliKahveFali({ params }: { params: { lang: string } }) {
-  redirect(`/${params.lang}/fortunes/coffee`)
+  redirect(`/${params.lang}/fallar/kahve-fali`)
 }

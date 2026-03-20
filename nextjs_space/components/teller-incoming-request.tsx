@@ -104,7 +104,7 @@ export default function TellerIncomingRequest() {
   useEffect(() => {
     // Run for fortune tellers anywhere on the site, except live-room pages
     if (!session?.user) return
-    if (pathname?.includes('/live-room/')) return // Don't show during active sessions
+    if (pathname?.includes('/canli-oda/')) return // Don't show during active sessions
     
     checkPendingRequests()
     pollIntervalRef.current = setInterval(checkPendingRequests, 10000)
@@ -131,7 +131,7 @@ export default function TellerIncomingRequest() {
         setIsVisible(false)
         setPendingRequest(null)
         // Redirect to live room
-        router.push(`/live-room/${pendingRequest.id}`)
+        router.push(`/canli-oda/${pendingRequest.id}`)
       }
     } catch (error) {
       console.error('Error accepting session:', error)

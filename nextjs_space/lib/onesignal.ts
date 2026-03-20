@@ -134,19 +134,19 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
   const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
   
   if (type === 'payment_notification' || type === 'payment_approved' || type === 'payment_rejected') {
-    return `${baseUrl}/memberships`
+    return `${baseUrl}/uyelik`
   }
   if (type === 'session_request' || type === 'session_update') {
-    return data?.sessionId ? `${baseUrl}/live-room/${data.sessionId}` : `${baseUrl}/dashboard`
+    return data?.sessionId ? `${baseUrl}/canli-oda/${data.sessionId}` : `${baseUrl}/panel`
   }
   if (type === 'like' || type === 'comment' || type === 'share') {
-    return data?.postId ? `${baseUrl}/social?postId=${data.postId}` : `${baseUrl}/social`
+    return data?.postId ? `${baseUrl}/sosyal?postId=${data.postId}` : `${baseUrl}/sosyal`
   }
   if (type === 'follow') {
-    return `${baseUrl}/social`
+    return `${baseUrl}/sosyal`
   }
   if (type === 'message') {
-    return `${baseUrl}/dashboard`
+    return `${baseUrl}/panel`
   }
   if (type === 'achievement') {
     return `${baseUrl}/basarimlar`
@@ -158,7 +158,7 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
     return `${baseUrl}/blog`
   }
   if (type === 'moderation') {
-    return `${baseUrl}/dashboard`
+    return `${baseUrl}/panel`
   }
-  return `${baseUrl}/dashboard`
+  return `${baseUrl}/panel`
 }

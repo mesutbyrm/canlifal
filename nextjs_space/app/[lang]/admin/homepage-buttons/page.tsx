@@ -413,10 +413,10 @@ export default function AdminHomepageButtonsPage() {
                   type="text"
                   value={modalForm.href}
                   onChange={(e) => setModalForm((f) => ({ ...f, href: e.target.value }))}
-                  placeholder="Örn: /games veya /blog"
+                  placeholder="Örn: /oyunlar veya /blog"
                   className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
                 />
-                <p className="text-gray-600 text-[10px] mt-1">Site içi yol (/games) veya dış URL (https://...) kullanabilirsiniz</p>
+                <p className="text-gray-600 text-[10px] mt-1">Site içi yol (/oyunlar) veya dış URL (https://...) kullanabilirsiniz</p>
               </div>
 
               {/* Special behavior */}

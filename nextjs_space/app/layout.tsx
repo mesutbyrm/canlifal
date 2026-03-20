@@ -105,7 +105,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
+        <script src="https://apps.abacus.ai/sohbetllm/appllm-lib.js" async />
         {/* OneSignal Web SDK */}
         <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer />
         {/* Google AdSense */}
@@ -152,7 +152,7 @@ export default function RootLayout({
                 "@type": "SearchAction",
                 "target": {
                   "@type": "EntryPoint",
-                  "urlTemplate": "https://canlifal.com/social?search={search_term_string}"
+                  "urlTemplate": "https://canlifal.com/sosyal?search={search_term_string}"
                 },
                 "query-input": "required name=search_term_string"
               },
@@ -185,12 +185,12 @@ export default function RootLayout({
                 "@type": "OfferCatalog",
                 "name": "Fal Türleri",
                 "itemListElement": [
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Kahve Falı", "url": "https://canlifal.com/fortunes/coffee" }},
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tarot Falı", "url": "https://canlifal.com/fortunes/tarot" }},
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Rüya Tabiri", "url": "https://canlifal.com/fortunes/dream" }},
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Burç Yorumu", "url": "https://canlifal.com/fortunes/horoscope" }},
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "El Falı", "url": "https://canlifal.com/fortunes/palm" }},
-                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Numeroloji", "url": "https://canlifal.com/fortunes/numerology" }}
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Kahve Falı", "url": "https://canlifal.com/fallar/kahve-fali" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tarot Falı", "url": "https://canlifal.com/fallar/tarot-fali" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Rüya Tabiri", "url": "https://canlifal.com/fallar/ruya-yorumu" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Burç Yorumu", "url": "https://canlifal.com/fallar/burc-yorumu" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "El Falı", "url": "https://canlifal.com/fallar/el-fali" }},
+                  { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Numeroloji", "url": "https://canlifal.com/fallar/numeroloji" }}
                 ]
               }
             })

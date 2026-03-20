@@ -45,7 +45,7 @@ export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login')
+    if (status === 'unauthenticated') router.push('/giris')
   }, [status, router])
 
   useEffect(() => {

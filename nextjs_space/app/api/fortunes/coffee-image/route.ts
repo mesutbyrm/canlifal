@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     ]
 
     // Call LLM API with vision capability
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://routellm.abacus.ai/v1/sohbet/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

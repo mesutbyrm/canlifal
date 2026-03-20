@@ -5,11 +5,11 @@ export const dynamic = 'force-dynamic';
 
 // Section path patterns
 const SECTION_PATTERNS: Record<string, string[]> = {
-  games: ['/games', '/game'],
+  games: ['/oyunlar', '/game'],
   fortunes: ['/tarot', '/coffee', '/rune', '/astrology', '/numerology', '/dream', '/hand-reading', '/crystal', '/fortune', '/fal'],
-  social: ['/social'],
-  chat: ['/chat'],
-  gifts: ['/gifts', '/gift'],
+  social: ['/sosyal'],
+  chat: ['/sohbet'],
+  gifts: ['/hediyeler', '/gift'],
   blog: ['/blog'],
 };
 

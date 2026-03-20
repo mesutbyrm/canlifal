@@ -51,10 +51,10 @@ function getBadgeCount(key: string, counts: Record<string, number>, isTeller: bo
 // Dynamic href based on special behaviors
 function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean): string {
   if (btn.specialBehavior === 'teller') {
-    if (!session?.user) return '/login'
-    return isTeller ? '/profile' : btn.href
+    if (!session?.user) return '/giris'
+    return isTeller ? '/profil' : btn.href
   }
-  if (btn.key === 'gifts' && !session?.user) return '/login'
+  if (btn.key === 'gifts' && !session?.user) return '/giris'
   return btn.href
 }
 
@@ -116,7 +116,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
   const handleClick = (btn: HomepageButton) => {
     if (btn.specialBehavior === 'bana-ozel') {
       if (!session?.user) {
-        router.push('/login')
+        router.push('/giris')
       } else {
         setShowBanaOzel(true)
       }

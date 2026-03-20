@@ -49,7 +49,7 @@ const QUICK_ACTIONS = [
     color: 'from-red-500 to-pink-500',
     defaultTitle: '🔮 Canlı Fal Başladı!',
     defaultMessage: 'Falcınız şu anda canlı yayında! Hemen katılın ve falınızı baktırın.',
-    defaultUrl: '/live-tellers',
+    defaultUrl: '/canli-falcilar',
   },
   {
     id: 'fortune_ready',
@@ -58,7 +58,7 @@ const QUICK_ACTIONS = [
     color: 'from-purple-500 to-violet-500',
     defaultTitle: '✨ Falınız Hazır!',
     defaultMessage: 'Fal yorumunuz tamamlandı. Hemen gelin ve detaylı yorumunuzu okuyun!',
-    defaultUrl: '/dashboard',
+    defaultUrl: '/panel',
   },
   {
     id: 'premium_offer',
@@ -67,7 +67,7 @@ const QUICK_ACTIONS = [
     color: 'from-amber-500 to-yellow-500',
     defaultTitle: '🌟 Özel Teklif!',
     defaultMessage: 'Premium üyelere özel indirim! Bu fırsatı kaçırmayın.',
-    defaultUrl: '/memberships',
+    defaultUrl: '/uyelik',
   },
   {
     id: 'inactive_reminder',
@@ -85,7 +85,7 @@ const QUICK_ACTIONS = [
     color: 'from-indigo-500 to-blue-500',
     defaultTitle: '⭐ Günlük Burç Yorumunuz Hazır!',
     defaultMessage: 'Bugün yıldızlar sizin için ne söylüyor? Günlük burç yorumunuzu okuyun.',
-    defaultUrl: '/fortunes',
+    defaultUrl: '/fallar',
   },
   {
     id: 'new_teller',
@@ -94,7 +94,7 @@ const QUICK_ACTIONS = [
     color: 'from-teal-500 to-cyan-500',
     defaultTitle: '🌙 Yeni Falcımız Aramıza Katıldı!',
     defaultMessage: 'Deneyimli falcımız artık platformda. Hemen profilini incele ve randevu al!',
-    defaultUrl: '/live-tellers',
+    defaultUrl: '/canli-falcilar',
   },
   {
     id: 'credit_bonus',
@@ -103,7 +103,7 @@ const QUICK_ACTIONS = [
     color: 'from-yellow-500 to-orange-500',
     defaultTitle: '🪙 Bonus Jeton Fırsatı!',
     defaultMessage: 'Bugüne özel jeton yükleme kampanyası! %50 bonus jeton kazanma şansı.',
-    defaultUrl: '/memberships',
+    defaultUrl: '/uyelik',
   },
   {
     id: 'weekend_event',
@@ -112,7 +112,7 @@ const QUICK_ACTIONS = [
     color: 'from-pink-500 to-rose-500',
     defaultTitle: '🎉 Hafta Sonu Özel Etkinlik!',
     defaultMessage: 'Bu hafta sonu canlı yayınlarda özel fal etkinliği! Kaçırmayın.',
-    defaultUrl: '/live-tellers',
+    defaultUrl: '/canli-falcilar',
   },
   {
     id: 'social_engagement',
@@ -121,7 +121,7 @@ const QUICK_ACTIONS = [
     color: 'from-violet-500 to-fuchsia-500',
     defaultTitle: '💬 Topluluğa Katılın!',
     defaultMessage: 'Fal deneyimlerinizi paylaşın, diğer üyelerle etkileşime geçin!',
-    defaultUrl: '/social',
+    defaultUrl: '/sosyal',
   },
   {
     id: 'maintenance',
@@ -144,15 +144,15 @@ const TARGET_TYPES = [
 const URL_OPTIONS = [
   { value: '', label: 'URL seçiniz (opsiyonel)' },
   { value: '/', label: 'Ana Sayfa — /' },
-  { value: '/dashboard', label: 'Panel — /dashboard' },
-  { value: '/fortunes', label: 'Fallar — /fortunes' },
-  { value: '/live-tellers', label: 'Canlı Falcılar — /live-tellers' },
-  { value: '/social', label: 'Sosyal — /social' },
-  { value: '/memberships', label: 'Üyelik — /memberships' },
-  { value: '/games', label: 'Oyunlar — /games' },
-  { value: '/leaderboard', label: 'Sıralama — /leaderboard' },
-  { value: '/messages', label: 'Mesajlar — /messages' },
-  { value: '/profile', label: 'Profil — /profile' },
+  { value: '/panel', label: 'Panel — /panel' },
+  { value: '/fallar', label: 'Fallar — /fallar' },
+  { value: '/canli-falcilar', label: 'Canlı Falcılar — /canli-falcilar' },
+  { value: '/sosyal', label: 'Sosyal — /sosyal' },
+  { value: '/uyelik', label: 'Üyelik — /uyelik' },
+  { value: '/oyunlar', label: 'Oyunlar — /oyunlar' },
+  { value: '/siralama', label: 'Sıralama — /siralama' },
+  { value: '/mesajlar', label: 'Mesajlar — /mesajlar' },
+  { value: '/profil', label: 'Profil — /profil' },
 ]
 
 const TAG_OPTIONS = [
@@ -222,7 +222,7 @@ export default function AdminNotificationsPage() {
 
   // Auth check
   useEffect(() => {
-    if (sessionStatus === 'unauthenticated') router.push('/login')
+    if (sessionStatus === 'unauthenticated') router.push('/giris')
   }, [sessionStatus, router])
 
   // Fetch stats

@@ -51,7 +51,7 @@ export default function AstrologyPanelPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/giris')
     }
   }, [status, router])
 

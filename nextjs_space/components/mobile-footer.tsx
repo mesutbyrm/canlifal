@@ -21,11 +21,11 @@ export default function MobileFooter() {
   const [profileImage, setProfileImage] = useState<string | null>(null)
   
   // Hide footer on certain pages
-  const hiddenPaths = ['/live-room', '/chat/video', '/login', '/register']
+  const hiddenPaths = ['/canli-oda', '/sohbet/video', '/giris', '/kayit-ol']
   const shouldHide = hiddenPaths.some(path => pathname?.includes(path))
   
   // Check if we're on messages page (hide floating profile button there)
-  const isMessagesPage = pathname?.includes('/messages')
+  const isMessagesPage = pathname?.includes('/mesajlar')
   
   useEffect(() => {
     if (!session?.user) return
@@ -65,26 +65,26 @@ export default function MobileFooter() {
   
   const navItems = [
     {
-      href: session ? `/profile` : `/login`,
+      href: session ? `/profil` : `/giris`,
       icon: User,
       label: 'Profilim',
       isCenter: false,
     },
     {
-      href: `/messages`,
+      href: `/mesajlar`,
       icon: MessageCircle,
       label: 'Mesajlar',
       isCenter: false,
       badge: unreadCount,
     },
     {
-      href: session ? `/chat/video/setup` : `/login`,
+      href: session ? `/sohbet/video/setup` : `/giris`,
       icon: Camera,
       label: 'Yayın',
       isCenter: true,
     },
     {
-      href: `/credits`,
+      href: `/jeton`,
       icon: Coins,
       label: 'Jeton Al',
       isCenter: false,
@@ -119,7 +119,7 @@ export default function MobileFooter() {
       {/* Floating Profile Button - above footer - HIDDEN on messages page */}
       {session?.user && !isMessagesPage && (
         <Link
-          href={`/profile/${session.user.id}`}
+          href={`/profil/${session.user.id}`}
           className="fixed bottom-[70px] right-3 z-[51] md:hidden"
         >
           <motion.div

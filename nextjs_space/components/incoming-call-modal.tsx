@@ -33,7 +33,7 @@ export default function IncomingCallModal() {
 
   // Check if we're already in a live room
   const isInLiveRoom = typeof window !== 'undefined' && 
-    window.location.pathname.includes('/live-room/');
+    window.location.pathname.includes('/canli-oda/');
 
   useEffect(() => {
     if (!session?.user || isInLiveRoom) return;
@@ -128,7 +128,7 @@ export default function IncomingCallModal() {
     if (!incomingSession) return;
     stopRingtone();
     setIsVisible(false);
-    router.push(`/live-room/${incomingSession.id}`);
+    router.push(`/canli-oda/${incomingSession.id}`);
   };
 
   const handleDecline = async () => {

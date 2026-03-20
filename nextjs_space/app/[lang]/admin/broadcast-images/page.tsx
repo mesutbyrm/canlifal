@@ -54,7 +54,7 @@ export default function AdminBroadcastImagesPage() {
     if (status === 'authenticated') {
       fetchImages()
     } else if (status === 'unauthenticated') {
-      router.push(`/login`)
+      router.push(`/giris`)
     }
   }, [status, fetchImages, router, language])
   

@@ -43,7 +43,7 @@ export default function DreamStatsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login')
+    if (status === 'unauthenticated') router.push('/giris')
   }, [status, router])
 
   useEffect(() => {

@@ -75,7 +75,7 @@ export function getWelcomeEmailHtml(name: string, language: string): string {
         </ul>
       </div>
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${process.env.NEXTAUTH_URL}/fortunes" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        <a href="${process.env.NEXTAUTH_URL}/fallar" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
           Falınıza Bakın
         </a>
       </div>
@@ -132,7 +132,7 @@ export function getLowCreditsEmailHtml(name: string, credits: number, language: 
         </p>
       </div>
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        <a href="${process.env.NEXTAUTH_URL}/panel" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
           CFC Al
         </a>
       </div>
@@ -177,7 +177,7 @@ export function getFortuneReadingSummaryHtml(
         </div>
       </div>
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        <a href="${process.env.NEXTAUTH_URL}/panel" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%); color: #1a0b2e; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px;">
           Geçmiş Fallarım
         </a>
       </div>

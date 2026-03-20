@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       { role: 'user', content: `Analyze love compatibility between ${yourSign} and ${partnerSign}` },
     ]
 
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://apps.abacus.ai/v1/sohbet/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

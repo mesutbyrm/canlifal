@@ -55,10 +55,10 @@ export default function Navbar() {
   const isFalclub = true
   
   // Hide navbar on mobile for profile and messages pages (footer handles navigation there)
-  const hideOnMobile = pathname?.includes('/profile') || pathname?.includes('/messages')
+  const hideOnMobile = pathname?.includes('/profil') || pathname?.includes('/mesajlar')
   
   // Completely hide navbar on live streaming and live fortune pages
-  const hideCompletely = pathname?.includes('/chat/video') || pathname?.includes('/live-room')
+  const hideCompletely = pathname?.includes('/sohbet/video') || pathname?.includes('/canli-oda')
 
   useEffect(() => {
     if (session?.user) {
@@ -292,7 +292,7 @@ export default function Navbar() {
             <div className="flex-1 flex justify-around items-center">
               {/* İstatistikler (Statistics) */}
               <Link
-                href={`/dashboard`}
+                href={`/panel`}
                 className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
               >
                 <Sparkles className="w-6 h-6" />
@@ -364,7 +364,7 @@ export default function Navbar() {
                       
                        {/* CFC display */}
                        <Link
-                         href={`/credits`}
+                         href={`/jeton`}
                          className={`flex items-center justify-between px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                          onClick={() => setShowProfileMenu(false)}
                        >
@@ -376,7 +376,7 @@ export default function Navbar() {
                        </Link>
                        {/* Jeton display with TL */}
                        <Link
-                         href={`/credits`}
+                         href={`/jeton`}
                          className={`flex items-center justify-between px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                          onClick={() => setShowProfileMenu(false)}
                        >
@@ -411,7 +411,7 @@ export default function Navbar() {
                       )}
                       
                       <Link
-                        href={`/profile/${session.user.id}`}
+                        href={`/profil/${session.user.id}`}
                         className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -420,7 +420,7 @@ export default function Navbar() {
                       </Link>
                       
                       <Link
-                        href={`/dashboard`}
+                        href={`/panel`}
                         className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -438,7 +438,7 @@ export default function Navbar() {
                       </Link>
                       
                       <Link
-                        href={`/settings`}
+                        href={`/ayarlar`}
                         className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
                         onClick={() => setShowProfileMenu(false)}
                       >
@@ -473,7 +473,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <Link
-                  href={`/login`}
+                  href={`/giris`}
                   className={`flex flex-col items-center gap-1 transition-colors px-3 py-1 rounded-lg ${isLight ? 'text-[#65676B] hover:text-[#1877F2] hover:bg-[#F0F2F5]' : 'text-purple-300 hover:text-gold-400 hover:bg-purple-900/30'}`}
                 >
                   <User className="w-6 h-6" />

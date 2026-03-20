@@ -31,7 +31,7 @@ export const prisma = global.__prisma ?? createPrismaClient()
 // Prisma middleware: auto-send OneSignal push when a notification is created
 // Only register once (not on hot reloads)
 if (isNewClient) {
-prisma.$use(async (params, next) => {
+prisma.$use(async (params: any, next: any) => {
   const result = await next(params)
   
   // Only trigger on notification create

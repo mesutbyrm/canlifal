@@ -158,7 +158,7 @@ export default function BlogPostPage() {
 
   // Like toggle
   const handleLike = async () => {
-    if (!session?.user) { router.push(`/${lang}/login`); return }
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
     if (likeLoading || !post) return
     setLikeLoading(true)
     try {
@@ -178,7 +178,7 @@ export default function BlogPostPage() {
 
   // Favorite toggle
   const handleFavorite = async () => {
-    if (!session?.user) { router.push(`/${lang}/login`); return }
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
     if (favLoading || !post) return
     setFavLoading(true)
     try {
@@ -195,7 +195,7 @@ export default function BlogPostPage() {
 
   // Submit comment
   const handleSubmitComment = async (parentId?: string) => {
-    if (!session?.user) { router.push(`/${lang}/login`); return }
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
     const text = parentId ? replyText : commentText
     if (!text.trim() || !post) return
     setCommentSubmitting(true)
@@ -494,13 +494,13 @@ export default function BlogPostPage() {
               <p className="text-gray-400 mb-5">Bu yazının tamamını okumak için giriş yapın veya üye olun.</p>
               <div className="flex items-center justify-center gap-3">
                 <Link
-                  href={`/${lang}/login`}
+                  href={`/${lang}/giris`}
                   className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition"
                 >
                   Giriş Yap
                 </Link>
                 <Link
-                  href={`/${lang}/register`}
+                  href={`/${lang}/kayit-ol`}
                   className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition"
                 >
                   Üye Ol
@@ -618,7 +618,7 @@ export default function BlogPostPage() {
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-400 mb-3">Yorum yapmak için giriş yapın</p>
-                <Link href={`/${lang}/login`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
+                <Link href={`/${lang}/giris`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
                   Giriş Yap
                 </Link>
               </div>

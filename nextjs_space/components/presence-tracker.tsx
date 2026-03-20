@@ -9,20 +9,20 @@ function detectSection(path: string | null): string | null {
   if (!path) return null
   const lowerPath = path.toLowerCase()
   
-  if (lowerPath.includes('/chat')) return 'chat'
+  if (lowerPath.includes('/sohbet')) return 'chat'
   if (lowerPath.includes('/fortune') || lowerPath.includes('/fal') || lowerPath.includes('/tarot') || 
       lowerPath.includes('/coffee') || lowerPath.includes('/dream') || lowerPath.includes('/palm') ||
       lowerPath.includes('/horoscope') || lowerPath.includes('/numerology') || lowerPath.includes('/aura') ||
       lowerPath.includes('/angel') || lowerPath.includes('/katina') || lowerPath.includes('/yesno') ||
       lowerPath.includes('/love') || lowerPath.includes('/birthchart')) return 'fortunes'
   if (lowerPath.includes('/game')) return 'games'
-  if (lowerPath.includes('/social')) return 'social'
+  if (lowerPath.includes('/sosyal')) return 'social'
   if (lowerPath.includes('/gift')) return 'gifts'
   if (lowerPath.includes('/blog')) return 'blog'
   if (lowerPath.includes('/live-teller')) return 'live-tellers'
   if (lowerPath.includes('/membership')) return 'memberships'
-  if (lowerPath.includes('/profile')) return 'profile'
-  if (lowerPath.includes('/dashboard')) return 'dashboard'
+  if (lowerPath.includes('/profil')) return 'profile'
+  if (lowerPath.includes('/panel')) return 'dashboard'
   if (lowerPath === '/' || lowerPath === '/tr' || lowerPath === '/en') return 'home'
   
   return null
