@@ -621,7 +621,7 @@ export default function AdminMembershipsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {purchase.user?.image ? (
-                        <img src={purchase.user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img loading="lazy" src={purchase.user.image} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center`}>
                           <Crown className="w-5 h-5 text-black" />

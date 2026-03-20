@@ -359,7 +359,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
               {statistics.user.image ? (
-                <img src={statistics.user.image} alt="" className="w-full h-full object-cover" />
+                <img loading="lazy" src={statistics.user.image} alt="" className="w-full h-full object-cover" />
               ) : (
                 <User className="h-8 w-8 text-white" />
               )}
@@ -848,7 +848,7 @@ export default function DashboardPage() {
                 <Link href={`/profil/${statistics.streams.topGiftSender.username || statistics.streams.topGiftSender.id}`} className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2 -mx-2 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center overflow-hidden">
                     {statistics.streams.topGiftSender.image ? (
-                      <img src={statistics.streams.topGiftSender.image} alt="" className="w-full h-full object-cover" />
+                      <img loading="lazy" src={statistics.streams.topGiftSender.image} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <User className="h-5 w-5 text-white" />
                     )}
@@ -1070,7 +1070,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
                           {entry.image ? (
-                            <img src={entry.image} alt="" className="w-full h-full object-cover" />
+                            <img loading="lazy" src={entry.image} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <User className="h-5 w-5 text-white" />
                           )}

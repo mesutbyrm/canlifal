@@ -265,7 +265,7 @@ export default function LiveTellersPage() {
                     <div className="relative">
                       <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-2 ring-green-400">
                         {teller.avatar || teller.user.image ? (
-                          <img src={teller.avatar || teller.user.image || ''} alt={teller.displayName} className="w-full h-full object-cover" />
+                          <img loading="lazy" src={teller.avatar || teller.user.image || ''} alt={teller.displayName} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-xl font-bold text-white">{teller.displayName.charAt(0)}</span>
                         )}

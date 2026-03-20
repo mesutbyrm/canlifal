@@ -645,7 +645,7 @@ export default function BlogPostPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                       {comment.userAvatar ? (
-                        <img src={comment.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+                        <img loading="lazy" src={comment.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <User className="w-4 h-4 text-purple-400" />
                       )}
@@ -703,7 +703,7 @@ export default function BlogPostPage() {
                             <div key={reply.id} className="flex items-start gap-2">
                               <div className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                                 {reply.userAvatar ? (
-                                  <img src={reply.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+                                  <img loading="lazy" src={reply.userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
                                 ) : (
                                   <User className="w-3 h-3 text-purple-400" />
                                 )}

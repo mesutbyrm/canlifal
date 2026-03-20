@@ -382,6 +382,31 @@ export default function AdminBlogPage() {
 
   const getCategoryLabel = (slug: string) => categories.find(c => c.slug === slug)?.nameTr || slug
 
+  const toggleSelectPost = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredPosts.length) setSelectedIds([])
+    else setSelectedIds(filteredPosts.map(p => p.id))
+  }
+  const handleBulkCategoryMove = async () => {
+    if (!bulkCategoryTarget || selectedIds.length === 0) return
+    setBulkMoving(true)
+    try {
+      const res = await fetch('/api/admin/blog/bulk-category', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postIds: selectedIds, category: bulkCategoryTarget }),
+      })
+      if (res.ok) {
+        setSelectedIds([])
+        setBulkCategoryTarget('')
+        await fetchData()
+      }
+    } catch (e) { console.error(e) }
+    setBulkMoving(false)
+  }
+
   const filteredPosts = filterCategory === 'all' ? posts : posts.filter(p => p.category === filterCategory)
 
   return (
@@ -709,7 +734,7 @@ export default function AdminBlogPage() {
                   />
                   <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {form.coverImage ? (
-                      <img src={form.coverImage} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img loading="lazy" src={form.coverImage} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     ) : (
                       <ImageIcon className="w-4 h-4 text-gray-500" />
                     )}
@@ -826,6 +851,33 @@ export default function AdminBlogPage() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="mb-4 p-3 rounded-xl bg-purple-900/40 border border-purple-500/30 flex flex-wrap items-center gap-3">
+            <span className="text-sm text-purple-200">{selectedIds.length} yazı seçildi</span>
+            <select
+              value={bulkCategoryTarget}
+              onChange={e => setBulkCategoryTarget(e.target.value)}
+              className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm border border-white/10"
+            >
+              <option value="">Kategori seç...</option>
+              {categories.map(c => (
+                <option key={c.slug} value={c.slug}>{c.nameTr}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleBulkCategoryMove}
+              disabled={!bulkCategoryTarget || bulkMoving}
+              className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50"
+            >
+              {bulkMoving ? 'Taşınıyor...' : 'Kategoriye Taşı'}
+            </button>
+            <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition">
+              İptal
+            </button>
+          </div>
+        )}
+
         {/* Posts List */}
         {loading ? (
           <div className="flex justify-center py-20"><LoadingSpinner /></div>
@@ -837,8 +889,24 @@ export default function AdminBlogPage() {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Select All */}
+            <div className="flex items-center gap-2 px-4 py-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.length === filteredPosts.length && filteredPosts.length > 0}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded accent-purple-500"
+              />
+              <span className="text-xs text-gray-400">Tümünü Seç</span>
+            </div>
             {filteredPosts.map(post => (
-              <div key={post.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
+              <div key={post.id} className={`p-4 rounded-xl border flex items-center gap-3 ${selectedIds.includes(post.id) ? 'bg-purple-900/20 border-purple-500/40' : 'bg-white/5 border-white/10'}`}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(post.id)}
+                  onChange={() => toggleSelectPost(post.id)}
+                  className="w-4 h-4 rounded accent-purple-500 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${post.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>

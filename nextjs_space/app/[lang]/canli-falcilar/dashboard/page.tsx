@@ -256,7 +256,7 @@ export default function TellerDashboard() {
               <div className="relative">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
                   {teller.avatar ? (
-                    <img src={teller.avatar} alt={teller.displayName} className="w-full h-full object-cover" />
+                    <img loading="lazy" src={teller.avatar} alt={teller.displayName} className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-8 h-8 text-white/70" />
                   )}
@@ -433,7 +433,7 @@ export default function TellerDashboard() {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                           {sess.user.image ? (
-                            <img src={sess.user.image} alt="" className="w-full h-full rounded-full object-cover" />
+                            <img loading="lazy" src={sess.user.image} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
                             <User className="w-6 h-6 text-white/70" />
                           )}

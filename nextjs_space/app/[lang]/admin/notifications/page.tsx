@@ -882,7 +882,7 @@ export default function AdminNotificationsPage() {
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs"
                               >
                                 {u.image ? (
-                                  <img src={u.image} alt="" className="w-4 h-4 rounded-full" />
+                                  <img loading="lazy" src={u.image} alt="" className="w-4 h-4 rounded-full" />
                                 ) : (
                                   <User className="w-3 h-3" />
                                 )}
@@ -945,7 +945,7 @@ export default function AdminNotificationsPage() {
                                       }`}
                                     >
                                       {user.image ? (
-                                        <img src={user.image} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                                        <img loading="lazy" src={user.image} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
                                       ) : (
                                         <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                                           <User className="w-4 h-4 text-purple-400" />
@@ -1060,7 +1060,7 @@ export default function AdminNotificationsPage() {
                       </div>
                       {imageUrl && (
                         <div className="mt-3 rounded-lg overflow-hidden bg-white/5 aspect-[2/1]">
-                          <img src={imageUrl} alt="preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <img loading="lazy" src={imageUrl} alt="preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         </div>
                       )}
                       {url && (

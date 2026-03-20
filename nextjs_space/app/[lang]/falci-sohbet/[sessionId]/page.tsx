@@ -279,7 +279,7 @@ export default function ChatPage() {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {isMe ? (
                         session?.user?.image ? (
-                          <img src={session.user.image} alt="" className="w-full h-full object-cover" />
+                          <img loading="lazy" src={session.user.image} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <User className="w-4 h-4 text-white/70" />
                         )

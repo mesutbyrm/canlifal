@@ -114,34 +114,70 @@ const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; e
   { id: 'statistics', icon: BarChart3, trLabel: 'Tüm İstatistikler', enLabel: 'All Statistics' },
 ]
 
-const MANAGEMENT_LINKS = (lang: string) => [
-  { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
-  { href: `/admin/finance`, icon: TrendingUp, trLabel: 'Finans Yönetimi', enLabel: 'Finance Management' },
-  { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
-  { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
-  { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
-  { href: `/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
-  { href: `/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
-  { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
-  { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
-  { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
-  { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
-  { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
-  { href: `/admin/notifications`, icon: Bell, trLabel: 'Push Bildirim Yönetimi', enLabel: 'Push Notification Mgmt' },
-  { href: `/admin/announcement-settings`, icon: Megaphone, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
-  { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
-  { href: `/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
-  { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
-  { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
-  { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
-  { href: `/admin/dreams`, icon: Moon, trLabel: 'Rüya Tabirleri Yönetimi', enLabel: 'Dream Interpretations' },
-  { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons' },
-  { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page' },
-  { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
-  { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
-  { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation' },
-  { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
+interface ManagementLink { href: string; icon: React.ElementType; trLabel: string; enLabel: string }
+interface ManagementGroup { groupLabel: string; groupIcon: string; links: ManagementLink[] }
+
+const MANAGEMENT_GROUPS: ManagementGroup[] = [
+  {
+    groupLabel: '💰 Finans & Jeton',
+    groupIcon: '💰',
+    links: [
+      { href: `/admin/finance`, icon: TrendingUp, trLabel: 'Finans Yönetimi', enLabel: 'Finance Management' },
+      { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
+      { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
+      { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
+      { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
+    ],
+  },
+  {
+    groupLabel: '👥 Kullanıcı & Üyelik',
+    groupIcon: '👥',
+    links: [
+      { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
+      { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
+      { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
+      { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation' },
+    ],
+  },
+  {
+    groupLabel: '📝 İçerik Yönetimi',
+    groupIcon: '📝',
+    links: [
+      { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
+      { href: `/admin/dreams`, icon: Moon, trLabel: 'Rüya Tabirleri Yönetimi', enLabel: 'Dream Interpretations' },
+      { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
+      { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
+      { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page' },
+    ],
+  },
+  {
+    groupLabel: '📺 Canlı & Sohbet',
+    groupIcon: '📺',
+    links: [
+      { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
+      { href: `/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
+      { href: `/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
+      { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
+    ],
+  },
+  {
+    groupLabel: '⚙️ Görünüm & Ayarlar',
+    groupIcon: '⚙️',
+    links: [
+      { href: `/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
+      { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
+      { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons' },
+      { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
+      { href: `/admin/notifications`, icon: Bell, trLabel: 'Push Bildirim Yönetimi', enLabel: 'Push Notification Mgmt' },
+      { href: `/admin/announcement-settings`, icon: Megaphone, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
+      { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
+      { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
+    ],
+  },
 ]
+
+// Flatten for sidebar
+const MANAGEMENT_LINKS = (_lang: string) => MANAGEMENT_GROUPS.flatMap(g => g.links)
 
 export default function AdminPage() {
   const { language, t } = useLanguage()
@@ -403,25 +439,32 @@ export default function AdminPage() {
         <StatCard icon={Coins} label={'Dolaşımdaki Jeton'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
       </div>
 
-      {/* Quick Actions Grid */}
-      <div>
-        <h3 className={`${textPrimary} text-lg font-semibold mb-4`}>{'Hızlı Erişim'}</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {MANAGEMENT_LINKS(language).map((link) => {
-            const Icon = link.icon
-            return (
-              <Link key={link.href} href={link.href}
-                className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105`}>
-                <div className={`w-12 h-12 rounded-full ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
-                  <Icon className={`w-6 h-6 ${accentColor}`} />
-                </div>
-                <span className={`${textPrimary} text-xs font-medium leading-tight`}>
-                  {link.trLabel}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
+      {/* Quick Actions Grid - Grouped */}
+      <div className="space-y-6">
+        <h3 className={`${textPrimary} text-lg font-semibold`}>{'Hızlı Erişim'}</h3>
+        {MANAGEMENT_GROUPS.map(group => (
+          <div key={group.groupLabel}>
+            <h4 className={`${textSecondary} text-sm font-medium mb-3 flex items-center gap-2`}>
+              <span>{group.groupLabel}</span>
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {group.links.map(link => {
+                const Icon = link.icon
+                return (
+                  <Link key={link.href} href={link.href}
+                    className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105`}>
+                    <div className={`w-12 h-12 rounded-full ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
+                      <Icon className={`w-6 h-6 ${accentColor}`} />
+                    </div>
+                    <span className={`${textPrimary} text-xs font-medium leading-tight`}>
+                      {link.trLabel}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Recent Activity */}

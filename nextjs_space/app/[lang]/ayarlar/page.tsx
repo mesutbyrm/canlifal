@@ -337,7 +337,7 @@ export default function SettingsPage() {
             <div className="relative">
               <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-4 border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-600 to-pink-600">
                 {image ? (
-                  <img src={image} alt="Profile" className="w-full h-full object-cover" />
+                  <img loading="lazy" src={image} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-10 h-10 text-white/70" />
                 )}
@@ -624,7 +624,7 @@ export default function SettingsPage() {
                       <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
                         <div className="flex items-center gap-3">
                           {ban.userImage ? (
-                            <img src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            <img loading="lazy" src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
                               <UserX className="w-5 h-5 text-fuchsia-400" />
@@ -669,7 +669,7 @@ export default function SettingsPage() {
                       <div key={ban.id} className={`flex items-center justify-between p-3 rounded-xl ${privacyInactive} mb-2`}>
                         <div className="flex items-center gap-3">
                           {ban.userImage ? (
-                            <img src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            <img loading="lazy" src={ban.userImage} alt="" className="w-10 h-10 rounded-full object-cover" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
                               <UserX className="w-5 h-5 text-fuchsia-400" />

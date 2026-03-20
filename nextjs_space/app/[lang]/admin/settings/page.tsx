@@ -64,6 +64,13 @@ export default function AdminSettingsPage() {
   const [durationSaving, setDurationSaving] = useState(false)
   const [durationSaved, setDurationSaved] = useState(false)
 
+  // SEO settings state
+  const [seoSettings, setSeoSettings] = useState<Record<string, string>>({
+    site_name: '', site_description: '', site_keywords: '', site_logo: '', site_favicon: '', site_og_image: ''
+  })
+  const [seoSaving, setSeoSaving] = useState(false)
+  const [seoSaved, setSeoSaved] = useState(false)
+
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
@@ -75,11 +82,13 @@ export default function AdminSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admin/settings')
+      const [res, seoRes] = await Promise.all([
+        fetch('/api/admin/settings'),
+        fetch('/api/admin/seo-settings'),
+      ])
       if (res.ok) {
         const data = await res.json()
         setSettings(data)
-        // Load durations
         if (data.live_session_durations) {
           try {
             const parsed = JSON.parse(data.live_session_durations)
@@ -89,10 +98,33 @@ export default function AdminSettingsPage() {
           } catch {}
         }
       }
+      if (seoRes.ok) {
+        const seoData = await seoRes.json()
+        setSeoSettings(prev => ({ ...prev, ...seoData }))
+      }
     } catch (err) {
       console.error('Fetch settings error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveSeoSettings = async () => {
+    setSeoSaving(true)
+    try {
+      const res = await fetch('/api/admin/seo-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(seoSettings),
+      })
+      if (res.ok) {
+        setSeoSaved(true)
+        setTimeout(() => setSeoSaved(false), 2000)
+      }
+    } catch (err) {
+      console.error('Save SEO settings error:', err)
+    } finally {
+      setSeoSaving(false)
     }
   }
 
@@ -336,6 +368,99 @@ export default function AdminSettingsPage() {
             )}
             {durationSaved ? 'Kaydedildi' : 'Süreleri Kaydet'}
           </button>
+        </motion.div>
+
+        {/* SEO Ayarları */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8 bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+        >
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Settings className="w-6 h-6 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white mb-1">SEO & Site Ayarları</h3>
+              <p className="text-sm text-purple-400">Site adı, açıklama, anahtar kelime ve logo ayarları</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Site Adı</label>
+              <input
+                type="text"
+                value={seoSettings.site_name}
+                onChange={e => setSeoSettings(p => ({ ...p, site_name: e.target.value }))}
+                placeholder="Canlifal"
+                className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Site Açıklaması</label>
+              <textarea
+                value={seoSettings.site_description}
+                onChange={e => setSeoSettings(p => ({ ...p, site_description: e.target.value }))}
+                placeholder="Canlifal - Online fal, rüya tabiri ve astroloji platformu"
+                rows={2}
+                className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50 resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Anahtar Kelimeler (virgül ile)</label>
+              <input
+                type="text"
+                value={seoSettings.site_keywords}
+                onChange={e => setSeoSettings(p => ({ ...p, site_keywords: e.target.value }))}
+                placeholder="fal, rüya tabiri, astroloji, burçlar, tarot, kahve falı"
+                className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Logo URL</label>
+                <input
+                  type="text"
+                  value={seoSettings.site_logo}
+                  onChange={e => setSeoSettings(p => ({ ...p, site_logo: e.target.value }))}
+                  placeholder="https://canlifal.com/logo.png"
+                  className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Favicon URL</label>
+                <input
+                  type="text"
+                  value={seoSettings.site_favicon}
+                  onChange={e => setSeoSettings(p => ({ ...p, site_favicon: e.target.value }))}
+                  placeholder="https://canlifal.com/favicon.ico"
+                  className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">OG Image URL (sosyal medya paylaşım resmi)</label>
+              <input
+                type="text"
+                value={seoSettings.site_og_image}
+                onChange={e => setSeoSettings(p => ({ ...p, site_og_image: e.target.value }))}
+                placeholder="https://canlifal.com/og-image.jpg"
+                className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-purple-500/20 text-white text-sm focus:outline-none focus:border-purple-500/50"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={saveSeoSettings}
+              disabled={seoSaving}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+            >
+              {seoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : seoSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {seoSaved ? 'Kaydedildi' : 'SEO Ayarlarını Kaydet'}
+            </button>
+          </div>
         </motion.div>
 
         <div className="space-y-4">

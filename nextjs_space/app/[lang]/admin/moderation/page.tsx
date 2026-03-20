@@ -129,7 +129,7 @@ export default function AdminModerationPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-sm">
                       {post.user.image ? (
-                        <img src={post.user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        <img loading="lazy" src={post.user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         post.user.name?.charAt(0) || '?'
                       )}

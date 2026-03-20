@@ -781,7 +781,7 @@ export default function ProfilePage() {
                                   isFacebook ? 'bg-blue-100' : 'bg-gradient-to-br from-purple-600 to-pink-600'
                                 }`}>
                                   {sess.user.image ? (
-                                    <img src={sess.user.image} alt="" className="w-full h-full object-cover rounded-full" />
+                                    <img loading="lazy" src={sess.user.image} alt="" className="w-full h-full object-cover rounded-full" />
                                   ) : (
                                     <User className="w-4 h-4 text-white/70" />
                                   )}
@@ -887,7 +887,7 @@ export default function ProfilePage() {
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden ${
                                 isFacebook ? 'bg-blue-100' : 'bg-gradient-to-br from-pink-600 to-purple-600'
                               }`}>
-                                {g.senderImage ? <img src={g.senderImage} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-white/70" />}
+                                {g.senderImage ? <img loading="lazy" src={g.senderImage} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-white/70" />}
                               </div>
                               <div>
                                 <p className={`text-xs font-medium ${textPrimary}`}>{g.senderName}</p>

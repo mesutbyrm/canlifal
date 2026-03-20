@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { title, content, summary, keywords, metaDescription, isPublished } = body
+    const { title, content, summary, keywords, metaDescription, category, isPublished } = body
 
     if (!title || !content) {
       return NextResponse.json({ error: 'Başlık ve içerik zorunlu' }, { status: 400 })
@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
         summary: summary || '',
         keywords: keywords || [],
         metaDescription: metaDescription || '',
+        category: category || 'genel',
         isPublished: isPublished !== false,
         isAiGenerated: false,
       },
@@ -95,7 +96,7 @@ export async function PUT(req: NextRequest) {
     if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { id, title, content, summary, keywords, metaDescription, isPublished } = body
+    const { id, title, content, summary, keywords, metaDescription, category, isPublished } = body
 
     if (!id) return NextResponse.json({ error: 'ID zorunlu' }, { status: 400 })
 
@@ -105,6 +106,7 @@ export async function PUT(req: NextRequest) {
     if (summary !== undefined) data.summary = summary
     if (keywords !== undefined) data.keywords = keywords
     if (metaDescription !== undefined) data.metaDescription = metaDescription
+    if (category !== undefined) data.category = category
     if (isPublished !== undefined) data.isPublished = isPublished
 
     const dream = await prisma.dreamInterpretation.update({ where: { id }, data })

@@ -1700,7 +1700,7 @@ export default function ChatRoomPage() {
                       >
                         {/* Profile Image / Avatar */}
                         {displayImage ? (
-                          <img src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
+                          <img loading="lazy" src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-900/80 to-yellow-900/50' : 'bg-gradient-to-br from-purple-900/80 to-indigo-900/50'}`}>
                             <span className="text-xl font-bold text-white/80">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</span>
@@ -1775,7 +1775,7 @@ export default function ChatRoomPage() {
                         }}
                         className={`relative aspect-square rounded-lg border-2 ${myBroadcastImage === img.imageUrl ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden hover:border-purple-400/60 transition-colors`}
                       >
-                        <img src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
+                        <img loading="lazy" src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -2357,7 +2357,7 @@ export default function ChatRoomPage() {
                 style={{ marginTop: '-70px' }}
               >
                 {anim.giftImage ? (
-                  <img src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
+                  <img loading="lazy" src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
                 ) : (
                   <span className="text-6xl">{anim.giftIcon}</span>
                 )}
@@ -2494,7 +2494,7 @@ export default function ChatRoomPage() {
                     className={`flex flex-col items-center p-2 rounded-lg transition-all ${selectedGiftType === gt.id ? 'bg-gold-500/20 border border-gold-500/50 scale-105' : 'bg-purple-900/30 border border-purple-500/20 hover:border-purple-400/40'}`}
                   >
                     {GIFT_IMAGES[gt.id] ? (
-                      <img src={GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
+                      <img loading="lazy" src={GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
                     ) : (
                       <span className="text-2xl">{gt.icon}</span>
                     )}

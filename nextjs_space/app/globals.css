@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global responsive - prevent horizontal overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Hide hydration errors */
+[data-hydration-error] { display: none !important; }
+
 @layer base {
   /* FalClub Theme - Premium Neon Mystical Design */
   :root,

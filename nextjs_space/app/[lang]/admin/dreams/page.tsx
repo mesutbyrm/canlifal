@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload, FolderPlus } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
+import { DREAM_CATEGORIES } from '@/lib/dream-categories'
 
 interface Dream {
   id: string
@@ -14,6 +15,7 @@ interface Dream {
   summary: string | null
   keywords: string[]
   metaDescription: string | null
+  category: string
   views: number
   isPublished: boolean
   isAiGenerated: boolean
@@ -28,10 +30,13 @@ const emptyDream: Omit<Dream, 'id' | 'createdAt' | 'updatedAt'> = {
   summary: '',
   keywords: [],
   metaDescription: '',
+  category: 'genel',
   views: 0,
   isPublished: true,
   isAiGenerated: false,
 }
+
+const DREAM_CATS_NO_TUMU = DREAM_CATEGORIES.filter(c => c.value !== 'tumu')
 
 export default function AdminDreamsPage() {
   const params = useParams()
@@ -50,6 +55,12 @@ export default function AdminDreamsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Bulk selection for category
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkCategoryTarget, setBulkCategoryTarget] = useState('')
+  const [bulkMoving, setBulkMoving] = useState(false)
+  const [formCategory, setFormCategory] = useState('genel')
 
   // Form fields
   const [formTitle, setFormTitle] = useState('')
@@ -95,6 +106,7 @@ export default function AdminDreamsPage() {
       setFormKeywords(dream.keywords.join(', '))
       setFormMetaDesc(dream.metaDescription || '')
       setFormPublished(dream.isPublished)
+      setFormCategory(dream.category || 'genel')
     } else {
       setEditing(null)
       setIsNew(true)
@@ -130,6 +142,7 @@ export default function AdminDreamsPage() {
         summary: formSummary.trim(),
         keywords: formKeywords.split(',').map(k => k.trim()).filter(Boolean),
         metaDescription: formMetaDesc.trim(),
+        category: formCategory,
         isPublished: formPublished,
       }
       if (editing) body.id = editing.id
@@ -201,6 +214,32 @@ export default function AdminDreamsPage() {
       setGenerating(false)
     }
   }
+
+  const toggleSelectDream = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  const toggleSelectAllDreams = () => {
+    if (selectedIds.length === dreams.length) setSelectedIds([])
+    else setSelectedIds(dreams.map(d => d.id))
+  }
+  const handleBulkCategoryMove = async () => {
+    if (!bulkCategoryTarget || selectedIds.length === 0) return
+    setBulkMoving(true)
+    try {
+      const res = await fetch('/api/admin/dreams/bulk-category', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dreamIds: selectedIds, category: bulkCategoryTarget }),
+      })
+      if (res.ok) {
+        setSelectedIds([])
+        setBulkCategoryTarget('')
+        fetchDreams(currentPage, searchQuery)
+      }
+    } catch (e) { console.error(e) }
+    setBulkMoving(false)
+  }
+  const getCatLabel = (val: string) => DREAM_CATEGORIES.find(c => c.value === val)?.label || val
 
   const isEditorOpen = isNew || editing !== null
 
@@ -346,8 +385,20 @@ export default function AdminDreamsPage() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Kategori</label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm"
+                    >
+                      {DREAM_CATS_NO_TUMU.map(c => (
+                        <option key={c.value} value={c.value}>{c.icon} {c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-5">
                     <input
                       type="checkbox"
                       checked={formPublished}
@@ -379,6 +430,33 @@ export default function AdminDreamsPage() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="mb-4 p-3 rounded-xl bg-indigo-900/40 border border-indigo-500/30 flex flex-wrap items-center gap-3">
+            <span className="text-sm text-indigo-200">{selectedIds.length} rüya seçildi</span>
+            <select
+              value={bulkCategoryTarget}
+              onChange={e => setBulkCategoryTarget(e.target.value)}
+              className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm border border-white/10"
+            >
+              <option value="">Kategori seç...</option>
+              {DREAM_CATS_NO_TUMU.map(c => (
+                <option key={c.value} value={c.value}>{c.icon} {c.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleBulkCategoryMove}
+              disabled={!bulkCategoryTarget || bulkMoving}
+              className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition disabled:opacity-50"
+            >
+              {bulkMoving ? 'Taşınıyor...' : 'Kategoriye Taşı'}
+            </button>
+            <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition">
+              İptal
+            </button>
+          </div>
+        )}
+
         {/* Dreams List */}
         {loading ? (
           <div className="flex justify-center py-12"><LoadingSpinner /></div>
@@ -389,14 +467,31 @@ export default function AdminDreamsPage() {
           </div>
         ) : (
           <div className="space-y-2">
+            {/* Select All */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.length === dreams.length && dreams.length > 0}
+                onChange={toggleSelectAllDreams}
+                className="w-4 h-4 rounded accent-indigo-500"
+              />
+              <span className="text-xs text-gray-400">Tümünü Seç</span>
+            </div>
             {dreams.map((dream) => (
               <div
                 key={dream.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedIds.includes(dream.id) ? 'bg-indigo-900/20 border-indigo-500/40' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'}`}
               >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(dream.id)}
+                  onChange={() => toggleSelectDream(dream.id)}
+                  className="w-4 h-4 rounded accent-indigo-500 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-white text-sm font-medium truncate">{dream.title}</h3>
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 text-[10px] flex-shrink-0">{getCatLabel(dream.category || 'genel')}</span>
                     {dream.isAiGenerated && (
                       <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] flex-shrink-0">AI</span>
                     )}
