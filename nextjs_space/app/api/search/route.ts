@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         take: 5,
         select: { id: true, slug: true, title: true, icon: true },
       });
-      gameResults = games.map((g) => ({
+      gameResults = games.map((g: any) => ({
         type: 'game',
         id: g.id,
         title: g.title,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           take: 5,
           select: { id: true, name: true, username: true, image: true },
         });
-        userResults = users.map((u) => ({
+        userResults = users.map((u: any) => ({
           type: 'user',
           id: u.id,
           title: u.name || u.username || 'User',

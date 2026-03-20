@@ -63,11 +63,11 @@ export async function POST(req: NextRequest) {
       personalizationContext += `\nYükselen burcu: ${user.risingSign}`
     }
     if (recentDiaries.length > 0) {
-      const diaryContext = recentDiaries.map(d => `- ${d.title} (semboller: ${d.symbols.join(', ')}, ruh hali: ${d.mood || 'bilinmiyor'})`).join('\n')
+      const diaryContext = recentDiaries.map((d: any) => `- ${d.title} (semboller: ${d.symbols.join(', ')}, ruh hali: ${d.mood || 'bilinmiyor'})`).join('\n')
       personalizationContext += `\n\nKullanıcının son rüya günlüğü kayıtları:\n${diaryContext}`
     }
     if (recentViews.length > 0) {
-      const viewContext = recentViews.filter(v => v.dream).map(v => `- ${v.dream.title}`).join('\n')
+      const viewContext = recentViews.filter((v: any) => v.dream).map((v: any) => `- ${v.dream.title}`).join('\n')
       personalizationContext += `\n\nKullanıcının son baktığı rüya tabirleri:\n${viewContext}`
     }
 

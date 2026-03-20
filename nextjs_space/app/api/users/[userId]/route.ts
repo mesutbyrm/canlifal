@@ -104,7 +104,7 @@ export async function GET(
             viewedUserId: user.id,
             viewerId: currentUserId,
           }
-        }).catch(err => console.error('Profile view tracking error:', err))
+        }).catch((err: any) => console.error('Profile view tracking error:', err))
 
         // Check if we already sent a notification for this viewer recently (last 24h)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -127,7 +127,7 @@ export async function GET(
               fromUserId: currentUserId,
               fromUserName: viewer?.name || viewer?.username || null,
             }
-          }).catch(err => console.error('Profile view notification error:', err))
+          }).catch((err: any) => console.error('Profile view notification error:', err))
         }
       }
     }

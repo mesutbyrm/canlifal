@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existingCategories = await prisma.blogCategory.findMany({ orderBy: { sortOrder: 'asc' } })
-    const categoryList = existingCategories.map(c => `${c.slug} (${c.nameTr})`).join(', ')
+    const categoryList = existingCategories.map((c: any) => `${c.slug} (${c.nameTr})`).join(', ')
 
     const keywordsHint = inputKeywords && inputKeywords.length > 0
       ? `\nKullanıcının belirttiği anahtar kelimeler: ${inputKeywords.join(', ')}. Bu kelimeleri içerikte doğal şekilde kullan ve keyword listesine ekle.`

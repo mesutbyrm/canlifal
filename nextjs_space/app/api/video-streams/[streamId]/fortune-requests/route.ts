@@ -311,7 +311,7 @@ export async function DELETE(
       return NextResponse.json({ 
         success: true, 
         refundedCount: pendingRequests.length,
-        totalRefunded: pendingRequests.reduce((sum, r) => sum + r.jetonAmount, 0)
+        totalRefunded: pendingRequests.reduce((sum: any, r: any) => sum + r.jetonAmount, 0)
       })
     }
     

@@ -33,14 +33,14 @@ export async function GET(req: NextRequest) {
     ])
 
     // Fetch post titles for context
-    const postIds = [...new Set(comments.map(c => c.postId))]
+    const postIds = [...new Set(comments.map((c: any) => c.postId))]
     const posts = postIds.length > 0 ? await prisma.blogPost.findMany({
       where: { id: { in: postIds } },
       select: { id: true, titleTr: true, slug: true },
     }) : []
-    const postMap = Object.fromEntries(posts.map(p => [p.id, p]))
+    const postMap = Object.fromEntries(posts.map((p: any) => [p.id, p]))
 
-    const enriched = comments.map(c => ({
+    const enriched = comments.map((c: any) => ({
       ...c,
       postTitle: postMap[c.postId]?.titleTr || 'Silinen yazı',
       postSlug: postMap[c.postId]?.slug || '',

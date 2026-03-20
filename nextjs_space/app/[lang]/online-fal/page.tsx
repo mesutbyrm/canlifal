@@ -39,12 +39,12 @@ const FORTUNE_CARDS = [
   { id: 'horoscope', nameTr: 'Günlük Burç', image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', href: '/fallar/burc-yorumu' },
   { id: 'numerology', nameTr: 'Numeroloji', image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', href: '/fallar/numeroloji' },
   { id: 'angel', nameTr: 'Melek Kartları', image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', href: '/fallar/melek-kartlari' },
-  { id: 'aura', nameTr: 'Aura Okuma', image: '/fallar/aura-analizi.jpg', href: '/fallar/aura-analizi' },
-  { id: 'birthchart', nameTr: 'Doğum Haritası', image: '/fallar/dogum-haritasi.jpg', href: '/fallar/dogum-haritasi' },
-  { id: 'katina', nameTr: 'Katina Falı', image: '/fallar/katina.jpg', href: '/fallar/katina' },
-  { id: 'yesno', nameTr: 'Evet/Hayır', image: '/fallar/evet-hayir.jpg', href: '/fallar/evet-hayir' },
-  { id: 'kursundokme', nameTr: 'Kurşun Dökme', image: '/fallar/ruya-yorumu.jpg', href: '/fallar/kursundokme' },
-  { id: 'istikhara', nameTr: 'İstikhare', image: '/fallar/melek-kartlari.jpg', href: '/fallar/istihare' },
+  { id: 'aura', nameTr: 'Aura Okuma', image: '/fortunes/aura.jpg', href: '/fallar/aura-analizi' },
+  { id: 'birthchart', nameTr: 'Doğum Haritası', image: '/fortunes/birthchart.jpg', href: '/fallar/dogum-haritasi' },
+  { id: 'katina', nameTr: 'Katina Falı', image: '/fortunes/katina.jpg', href: '/fallar/katina' },
+  { id: 'yesno', nameTr: 'Evet/Hayır', image: '/fortunes/yesno.jpg', href: '/fallar/evet-hayir' },
+  { id: 'kursundokme', nameTr: 'Kurşun Dökme', image: '/fortunes/dream.jpg', href: '/fallar/kursundokme' },
+  { id: 'istikhara', nameTr: 'İstikhare', image: '/fortunes/angel.jpg', href: '/fallar/istihare' },
 ]
 
 export default function OnlineFalPage() {

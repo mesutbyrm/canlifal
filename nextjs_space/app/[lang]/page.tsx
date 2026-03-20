@@ -108,42 +108,42 @@ const FORTUNE_CARDS = [
     id: 'aura',
     nameTr: 'Aura Okuma',
     nameEn: 'Aura Reading',
-    image: '/fallar/aura-analizi.jpg',
+    image: '/fortunes/aura.jpg',
     href: '/fallar/aura-analizi'
   },
   {
     id: 'birthchart',
     nameTr: 'Doğum Haritası',
     nameEn: 'Birth Chart',
-    image: '/fallar/dogum-haritasi.jpg',
+    image: '/fortunes/birthchart.jpg',
     href: '/fallar/dogum-haritasi'
   },
   {
     id: 'katina',
     nameTr: 'Katina Falı',
     nameEn: 'Katina Cards',
-    image: '/fallar/katina.jpg',
+    image: '/fortunes/katina.jpg',
     href: '/fallar/katina'
   },
   {
     id: 'yesno',
     nameTr: 'Evet/Hayır',
     nameEn: 'Yes/No Oracle',
-    image: '/fallar/evet-hayir.jpg',
+    image: '/fortunes/yesno.jpg',
     href: '/fallar/evet-hayir'
   },
   {
     id: 'kursundokme',
     nameTr: 'Kurşun Dökme',
     nameEn: 'Lead Pouring',
-    image: '/fallar/ruya-yorumu.jpg',
+    image: '/fortunes/dream.jpg',
     href: '/fallar/kursundokme'
   },
   {
     id: 'istikhara',
     nameTr: 'İstikhare',
     nameEn: 'Istikhara',
-    image: '/fallar/melek-kartlari.jpg',
+    image: '/fortunes/angel.jpg',
     href: '/fallar/istihare'
   },
 ]

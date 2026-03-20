@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Fetch replies
-    const commentIds = comments.map(c => c.id)
+    const commentIds = comments.map((c: any) => c.id)
     const replies = commentIds.length > 0 ? await prisma.blogComment.findMany({
       where: { parentId: { in: commentIds }, isApproved: true },
       orderBy: { createdAt: 'asc' },

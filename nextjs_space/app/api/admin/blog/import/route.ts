@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     
     // Get existing categories
     const existingCategories = await prisma.blogCategory.findMany()
-    const categorySet = new Set(existingCategories.map(c => c.slug))
+    const categorySet = new Set(existingCategories.map((c: any) => c.slug))
     
     // Track new categories to create
     const newCategories: { slug: string; nameTr: string; nameEn: string }[] = []

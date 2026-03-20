@@ -52,13 +52,13 @@ export async function GET(
     })
 
     // Sort by relevance: keyword match count + same category bonus
-    const scored = similar.map(s => {
+    const scored = similar.map((s: any) => {
       let score = 0
       if (s.category === dream.category) score += 3
-      const matchingKw = s.keywords.filter(k => dream.keywords.includes(k))
+      const matchingKw = s.keywords.filter((k: any) => dream.keywords.includes(k))
       score += matchingKw.length * 2
       return { ...s, _score: score }
-    }).sort((a, b) => b._score - a._score).slice(0, 6)
+    }).sort((a: any, b: any) => b._score - a._score).slice(0, 6)
 
     // Experience stats for this dream
     const experienceStats = await prisma.dreamComment.groupBy({
@@ -76,10 +76,10 @@ export async function GET(
 
     return NextResponse.json({
       dream,
-      similar: scored.map(({ _score, ...rest }) => rest),
+      similar: scored.map(({ _score, ...rest }: any) => rest),
       experienceStats: {
-        comments: experienceStats.find(e => e.experienceType === 'yorum')?._count || 0,
-        experiences: experienceStats.find(e => e.experienceType === 'deneyim')?._count || 0,
+        comments: experienceStats.find((e: any) => e.experienceType === 'yorum')?._count || 0,
+        experiences: experienceStats.find((e: any) => e.experienceType === 'deneyim')?._count || 0,
         cameTrue,
         didNotComeTrue,
       },

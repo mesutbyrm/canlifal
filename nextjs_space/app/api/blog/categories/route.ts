@@ -19,7 +19,7 @@ export async function GET() {
     const countMap: Record<string, number> = {}
     counts.forEach((c: any) => { countMap[c.category] = c._count.id })
 
-    const enriched = categories.map(cat => ({
+    const enriched = categories.map((cat: any) => ({
       ...cat,
       postCount: countMap[cat.slug] || 0,
     }))

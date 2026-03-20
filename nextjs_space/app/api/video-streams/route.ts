@@ -16,12 +16,12 @@ async function notifyFollowersOfLiveStream(userId: string, userName: string, str
 
   if (followers.length === 0) return
 
-  const followerIds = followers.map(f => f.followerId)
+  const followerIds = followers.map((f: any) => f.followerId)
   const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
 
   // Create in-app notifications in bulk
   await prisma.notification.createMany({
-    data: followerIds.map(fId => ({
+    data: followerIds.map((fId: any) => ({
       userId: fId,
       type: 'stream_live',
       title: '🔴 Canlı Yayın Başladı!',

@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
     ])
 
     // Collect all keywords from viewed/favorited dreams
-    const viewedDreamIds = new Set(recentViews.map(v => v.dream.id))
-    const favDreamIds = new Set(favorites.map(f => f.dream.id))
+    const viewedDreamIds = new Set(recentViews.map((v: any) => v.dream.id))
+    const favDreamIds = new Set(favorites.map((f: any) => f.dream.id))
     const allInteractedIds = new Set([...viewedDreamIds, ...favDreamIds])
 
     const keywordFreq: Record<string, number> = {}
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
       const filler = await prisma.dreamInterpretation.findMany({
         where: {
           isPublished: true,
-          id: { notIn: [...Array.from(allInteractedIds), ...recommendations.map(r => r.id)] },
+          id: { notIn: [...Array.from(allInteractedIds), ...recommendations.map((r: any) => r.id)] },
         },
         orderBy: { views: 'desc' },
         take: 6 - recommendations.length,

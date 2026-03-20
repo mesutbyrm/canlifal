@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
             symbolMap[symbol] = (symbolMap[symbol] || 0) + 1
           }
         }
-      } catch (e) { /* skip */ }
+      } catch (e: any) { /* skip */ }
     }
 
     // Process diary entries for mood data
@@ -73,19 +73,19 @@ export async function GET(request: NextRequest) {
 
     // Sort symbols by frequency
     const topSymbols = Object.entries(symbolMap)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 15)
       .map(([symbol, count]) => ({ symbol, count }))
 
     // Monthly data sorted
     const monthlyData = Object.entries(monthlyMap)
-      .sort((a, b) => a[0].localeCompare(b[0]))
+      .sort((a: any, b: any) => a[0].localeCompare(b[0]))
       .slice(-12)
       .map(([month, count]) => ({ month, count }))
 
     // Mood distribution
     const moodData = Object.entries(moodMap)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: any, b: any) => b[1] - a[1])
       .map(([mood, count]) => ({ mood, count }))
 
     // Day of week distribution
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       }
     }
     const lucidityData = Object.entries(lucidityMap)
-      .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+      .sort((a: any, b: any) => parseInt(a[0]) - parseInt(b[0]))
       .map(([level, count]) => ({ level: parseInt(level), count }))
 
     // Streak calculation
@@ -111,13 +111,13 @@ export async function GET(request: NextRequest) {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const sortedDates = diaryEntries
-        .map(e => {
+        .map((e: any) => {
           const d = new Date(e.dreamDate)
           d.setHours(0, 0, 0, 0)
           return d.getTime()
         })
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort((a, b) => b - a)
+        .filter((v: any, i: any, a: any) => a.indexOf(v) === i)
+        .sort((a: any, b: any) => b - a)
 
       for (let i = 0; i < sortedDates.length; i++) {
         const expected = today.getTime() - i * 86400000
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       moodData,
       dayOfWeekData,
       lucidityData,
-      recentDreams: dreamFortunes.slice(0, 5).map(f => ({
+      recentDreams: dreamFortunes.slice(0, 5).map((f: any) => ({
         id: f.id,
         date: f.createdAt,
         preview: (() => {

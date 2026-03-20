@@ -23,7 +23,7 @@ export async function GET(
     })
 
     // Apply nickname/isHidden logic to each comment
-    const processedComments = comments.map(comment => {
+    const processedComments = comments.map((comment: any) => {
       const displayName = comment.isHidden ? (comment.nickname || 'Anonim') : (comment.nickname || comment.user.name)
       return {
         ...comment,
