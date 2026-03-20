@@ -6,6 +6,7 @@ import { Search, Moon, Eye, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Clo
 import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
 import { DREAM_CATEGORIES } from '@/lib/dream-categories'
+import { stripHtml } from '@/lib/utils'
 
 interface Dream {
   id: string
@@ -398,7 +399,7 @@ export default function RuyaPage() {
                             </h3>
                           </div>
                           {dream.summary && (
-                            <p className="text-gray-500 text-xs md:text-sm mt-1 line-clamp-2">{dream.summary}</p>
+                            <p className="text-gray-500 text-xs md:text-sm mt-1 line-clamp-2">{stripHtml(dream.summary || '')}</p>
                           )}
                           {dream.keywords.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -592,7 +593,7 @@ export default function RuyaPage() {
                           {fav.dream.title}
                         </h3>
                         {fav.dream.summary && (
-                          <p className="text-gray-500 text-xs md:text-sm mt-1 line-clamp-2">{fav.dream.summary}</p>
+                          <p className="text-gray-500 text-xs md:text-sm mt-1 line-clamp-2">{stripHtml(fav.dream.summary || '')}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1 text-gray-500 text-xs flex-shrink-0">
@@ -628,7 +629,7 @@ export default function RuyaPage() {
                     {rec.title}
                   </h3>
                   {rec.summary && (
-                    <p className="text-gray-500 text-xs mt-1 line-clamp-2">{rec.summary}</p>
+                    <p className="text-gray-500 text-xs mt-1 line-clamp-2">{stripHtml(rec.summary || '')}</p>
                   )}
                 </button>
               ))}

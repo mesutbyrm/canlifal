@@ -50,15 +50,18 @@ function extractKeywords(title: string, content: string): string[] {
     .map(([w]) => w)
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+}
+
 function generateMetaDescription(title: string, content: string): string {
-  // Take first 150 chars of content as meta description
-  const clean = content.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
+  const clean = stripHtml(content).replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
   const desc = clean.length > 150 ? clean.substring(0, 147) + '...' : clean
   return `${title} - Rüya Tabiri: ${desc}`
 }
 
 function generateSummary(content: string): string {
-  const clean = content.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
+  const clean = stripHtml(content).replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
   return clean.length > 300 ? clean.substring(0, 297) + '...' : clean
 }
 

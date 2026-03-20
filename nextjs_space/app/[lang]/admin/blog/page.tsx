@@ -96,6 +96,11 @@ export default function AdminBlogPage() {
   const [showForm, setShowForm] = useState(false)
   const [aiMessage, setAiMessage] = useState('')
 
+  // Bulk selection for category change
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkCategoryTarget, setBulkCategoryTarget] = useState('')
+  const [bulkMoving, setBulkMoving] = useState(false)
+
   // Bulk generation
   const [bulkTopics, setBulkTopics] = useState('')
   const [bulkCategory, setBulkCategory] = useState('')
