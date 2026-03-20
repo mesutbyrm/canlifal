@@ -859,6 +859,21 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Dream contest seeded')
 
+  // Seed Online Fal Sections
+  const onlineFalSections = [
+    { key: 'fortune_types', title: 'Fal Türleri', icon: '🔮', sortOrder: 0 },
+    { key: 'bana_ozel', title: 'Bana Özel', icon: '✨', sortOrder: 1 },
+    { key: 'custom_buttons', title: 'Hızlı Erişim', icon: '🚀', sortOrder: 2 },
+  ]
+  for (const s of onlineFalSections) {
+    await prisma.onlineFalSection.upsert({
+      where: { key: s.key },
+      update: { title: s.title, icon: s.icon, sortOrder: s.sortOrder },
+      create: s,
+    })
+  }
+  console.log('Online fal sections seeded')
+
   console.log('Seed completed successfully!')
 }
 

@@ -318,7 +318,8 @@ export default function HomePage() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="text-center py-3"
+            className="text-center py-3 cursor-pointer"
+            onClick={() => router.push(`/${language}/online-fal`)}
           >
             <motion.div
               animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}

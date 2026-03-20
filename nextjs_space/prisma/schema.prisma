@@ -1907,3 +1907,40 @@ model WeeklyDreamReport {
   @@index([userId])
   @@map("weekly_dream_reports")
 }
+
+// ==========================================
+// Online Fal Page - Sections & Buttons
+// ==========================================
+
+// Sections that appear on the online-fal page (fallar, bana-ozel, custom_buttons)
+model OnlineFalSection {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g. "fortune_types", "bana_ozel", "custom_buttons"
+  title       String   // Display title
+  icon        String   @default("✨") // Emoji icon
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("online_fal_sections")
+}
+
+// Custom buttons on the online-fal page (game center, send gift, blog, etc.)
+model OnlineFalButton {
+  id          String   @id @default(cuid())
+  label       String   // Button label
+  icon        String   @default("🔗") // Emoji icon
+  href        String   // Destination URL/path
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  bgColor     String   @default("from-purple-600/30 to-fuchsia-600/30") // Gradient classes
+  borderColor String   @default("border-purple-400/50") // Border class
+  textColor   String   @default("text-purple-200") // Text color class
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("online_fal_buttons")
+}
