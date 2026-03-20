@@ -11,7 +11,8 @@ import NavSearch from '@/components/nav-search'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
-  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail, Send, AlertCircle, BookOpen
+  Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail, Send, AlertCircle, BookOpen,
+  Search, Plus, Minus, TrendingDown
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import CfcCoin from './cfc-coin'
@@ -48,6 +49,18 @@ export default function Navbar() {
     notes: ''
   })
   const [submittingPayment, setSubmittingPayment] = useState(false)
+  
+  // Admin Jeton/CFC Management
+  const [showAdminJetonModal, setShowAdminJetonModal] = useState(false)
+  const [adminSearchQuery, setAdminSearchQuery] = useState('')
+  const [adminSearchResults, setAdminSearchResults] = useState<Array<{id: string; name: string; username: string | null; email: string; image: string | null; role: string}>>([])
+  const [adminSearching, setAdminSearching] = useState(false)
+  const [selectedAdminUser, setSelectedAdminUser] = useState<{id: string; name: string; username?: string | null; email: string; image?: string | null; jetonBalance?: number; credits?: number} | null>(null)
+  const [adminAdjustCurrency, setAdminAdjustCurrency] = useState<'jeton' | 'cfc'>('jeton')
+  const [adminAdjustAmount, setAdminAdjustAmount] = useState('')
+  const [adminAdjustReason, setAdminAdjustReason] = useState('')
+  const [adminAdjusting, setAdminAdjusting] = useState(false)
+  const adminSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -212,6 +225,87 @@ export default function Navbar() {
     } finally {
       setUploadingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // Admin: Instant user search for jeton management
+  const adminSearchUsers = (query: string) => {
+    setAdminSearchQuery(query)
+    if (adminSearchTimeoutRef.current) clearTimeout(adminSearchTimeoutRef.current)
+    if (!query || query.length < 1) {
+      setAdminSearchResults([])
+      return
+    }
+    adminSearchTimeoutRef.current = setTimeout(async () => {
+      setAdminSearching(true)
+      try {
+        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}&limit=8`)
+        if (res.ok) {
+          const data = await res.json()
+          setAdminSearchResults(data.users || [])
+        }
+      } catch { setAdminSearchResults([]) }
+      finally { setAdminSearching(false) }
+    }, 150)
+  }
+
+  const handleAdminSelectUser = async (user: typeof adminSearchResults[0]) => {
+    // Fetch user's balance details
+    try {
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(user.email)}&limit=1`)
+      if (res.ok) {
+        const data = await res.json()
+        const users = data.users || data || []
+        const found = users.find((u: any) => u.id === user.id)
+        setSelectedAdminUser({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          email: user.email,
+          jetonBalance: found?.jetonBalance ?? 0,
+          credits: found?.credits ?? 0,
+        })
+      } else {
+        setSelectedAdminUser({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          email: user.email,
+        })
+      }
+    } catch {
+      setSelectedAdminUser({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+      })
+    }
+    setAdminSearchQuery('')
+    setAdminSearchResults([])
+  }
+
+  const handleAdminAdjust = async (isAdd: boolean) => {
+    if (!selectedAdminUser || !adminAdjustAmount) return
+    setAdminAdjusting(true)
+    try {
+      const amount = isAdd ? Math.abs(Number(adminAdjustAmount)) : -Math.abs(Number(adminAdjustAmount))
+      const res = await fetch('/api/admin/finance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedAdminUser.id, amount, currency: adminAdjustCurrency, reason: adminAdjustReason }),
+      })
+      if (res.ok) {
+        // Reset
+        setSelectedAdminUser(null)
+        setAdminAdjustAmount('')
+        setAdminAdjustReason('')
+        setShowAdminJetonModal(false)
+      }
+    } catch (err) {
+      console.error('Admin adjust error:', err)
+    } finally {
+      setAdminAdjusting(false)
     }
   }
 
@@ -392,14 +486,23 @@ export default function Navbar() {
                       
                       {/* Payment Notification / Admin Payment Orders */}
                       {session?.user?.role === 'admin' ? (
-                        <Link
-                          href={`/admin/credits`}
-                          className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <CreditCard className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`} />
-                          {'Ödeme Emri'}
-                        </Link>
+                        <>
+                          <Link
+                            href={`/admin/credits`}
+                            className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
+                            onClick={() => setShowProfileMenu(false)}
+                          >
+                            <CreditCard className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`} />
+                            {'Ödeme Emri'}
+                          </Link>
+                          <button
+                            onClick={() => { setShowProfileMenu(false); setShowAdminJetonModal(true); }}
+                            className={`flex items-center gap-3 px-4 py-2.5 w-full ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
+                          >
+                            <Coins className={`w-5 h-5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
+                            {'Jeton/CFC Yönet'}
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => { setShowProfileMenu(false); setShowPaymentModal(true); }}
@@ -646,6 +749,202 @@ export default function Navbar() {
                     </button>
                   </div>
                 </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Jeton/CFC Management Modal */}
+      <AnimatePresence>
+        {showAdminJetonModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+            onClick={() => { if (!adminAdjusting) { setShowAdminJetonModal(false); setSelectedAdminUser(null); setAdminSearchQuery(''); setAdminSearchResults([]); setAdminAdjustAmount(''); setAdminAdjustReason(''); } }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`${isLight ? 'bg-white border-gray-200' : 'bg-[#1a0a2e] border-fuchsia-500/30'} border rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className={`text-xl font-bold flex items-center gap-2 ${isLight ? 'text-gray-800' : 'text-amber-400'}`}>
+                  <Coins className="w-6 h-6" />
+                  Jeton / CFC Yönet
+                </h3>
+                <button
+                  onClick={() => { setShowAdminJetonModal(false); setSelectedAdminUser(null); setAdminSearchQuery(''); setAdminSearchResults([]); setAdminAdjustAmount(''); setAdminAdjustReason(''); }}
+                  className={`p-2 rounded-lg transition-colors ${isLight ? 'hover:bg-gray-100' : 'hover:bg-fuchsia-800/50'}`}
+                >
+                  <X className={`w-5 h-5 ${isLight ? 'text-gray-500' : 'text-purple-400'}`} />
+                </button>
+              </div>
+
+              {!selectedAdminUser ? (
+                /* Step 1: User Search */
+                <div>
+                  <label className={`block text-sm mb-2 ${isLight ? 'text-gray-600' : 'text-purple-300'}`}>
+                    Kullanıcı Ara (isim, kullanıcı adı veya e-posta)
+                  </label>
+                  <div className="relative">
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isLight ? 'text-gray-400' : 'text-purple-400'}`} />
+                    <input
+                      type="text"
+                      value={adminSearchQuery}
+                      onChange={(e) => {
+                        setAdminSearchQuery(e.target.value);
+                        adminSearchUsers(e.target.value);
+                      }}
+                      placeholder="En az 1 karakter yazın..."
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none ${isLight ? 'bg-gray-100 border border-gray-200 text-gray-800 focus:border-blue-500 placeholder-gray-400' : 'bg-fuchsia-900/30 border border-fuchsia-500/30 text-white focus:border-fuchsia-500 placeholder-purple-400/60'}`}
+                      autoFocus
+                    />
+                    {adminSearching && (
+                      <div className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${isLight ? 'border-blue-500' : 'border-fuchsia-400'}`} />
+                    )}
+                  </div>
+
+                  {adminSearchResults.length > 0 && (
+                    <div className={`mt-2 rounded-lg border max-h-64 overflow-y-auto ${isLight ? 'bg-white border-gray-200' : 'bg-[#120826] border-fuchsia-500/20'}`}>
+                      {adminSearchResults.map((u: any) => (
+                        <button
+                          key={u.id}
+                          onClick={() => handleAdminSelectUser(u)}
+                          className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${isLight ? 'hover:bg-blue-50 border-b border-gray-100 last:border-0' : 'hover:bg-fuchsia-800/30 border-b border-fuchsia-500/10 last:border-0'}`}
+                        >
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isLight ? 'bg-blue-100 text-blue-600' : 'bg-fuchsia-900/50 text-fuchsia-300'}`}>
+                            {u.image ? (
+                              <img src={u.image} alt="" className="w-9 h-9 rounded-full object-cover" />
+                            ) : (
+                              (u.name?.[0] || u.username?.[0] || '?').toUpperCase()
+                            )}
+                          </div>
+                          <div className="text-left flex-1 min-w-0">
+                            <div className={`text-sm font-medium truncate ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                              {u.name || u.username}
+                            </div>
+                            <div className={`text-xs truncate ${isLight ? 'text-gray-500' : 'text-purple-400'}`}>
+                              @{u.username} · {u.email}
+                            </div>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${u.role === 'admin' ? (isLight ? 'bg-red-100 text-red-600' : 'bg-red-900/40 text-red-400') : u.role === 'teller' ? (isLight ? 'bg-purple-100 text-purple-600' : 'bg-purple-900/40 text-purple-400') : (isLight ? 'bg-gray-100 text-gray-500' : 'bg-fuchsia-900/30 text-purple-300')}`}>
+                            {u.role}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {adminSearchQuery.length >= 1 && !adminSearching && adminSearchResults.length === 0 && (
+                    <p className={`text-sm mt-3 text-center ${isLight ? 'text-gray-400' : 'text-purple-400/60'}`}>
+                      Kullanıcı bulunamadı
+                    </p>
+                  )}
+                </div>
+              ) : (
+                /* Step 2: Adjust Balance */
+                <div>
+                  {/* Selected User Card */}
+                  <div className={`flex items-center gap-3 p-3 rounded-lg mb-4 ${isLight ? 'bg-blue-50 border border-blue-100' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isLight ? 'bg-blue-100 text-blue-600' : 'bg-fuchsia-900/50 text-fuchsia-300'}`}>
+                      {selectedAdminUser.image ? (
+                        <img src={selectedAdminUser.image} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        (selectedAdminUser.name?.[0] || selectedAdminUser.username?.[0] || '?').toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium truncate ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                        {selectedAdminUser.name || selectedAdminUser.username}
+                      </div>
+                      <div className={`text-xs ${isLight ? 'text-gray-500' : 'text-purple-400'}`}>
+                        Jeton: {selectedAdminUser.jetonBalance ?? 0} · CFC: {selectedAdminUser.credits ?? 0}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setSelectedAdminUser(null); setAdminSearchQuery(''); setAdminSearchResults([]); setAdminAdjustAmount(''); setAdminAdjustReason(''); }}
+                      className={`text-xs px-2 py-1 rounded ${isLight ? 'text-blue-600 hover:bg-blue-100' : 'text-fuchsia-400 hover:bg-fuchsia-800/40'}`}
+                    >
+                      Değiştir
+                    </button>
+                  </div>
+
+                  {/* Currency Toggle */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setAdminAdjustCurrency('jeton')}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${adminAdjustCurrency === 'jeton' ? (isLight ? 'bg-amber-100 text-amber-700 border-2 border-amber-400' : 'bg-amber-900/40 text-amber-400 border-2 border-amber-500') : (isLight ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-fuchsia-900/20 text-purple-400 border border-fuchsia-500/20')}`}
+                    >
+                      💰 Jeton
+                    </button>
+                    <button
+                      onClick={() => setAdminAdjustCurrency('cfc')}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${adminAdjustCurrency === 'cfc' ? (isLight ? 'bg-purple-100 text-purple-700 border-2 border-purple-400' : 'bg-purple-900/40 text-purple-400 border-2 border-purple-500') : (isLight ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-fuchsia-900/20 text-purple-400 border border-fuchsia-500/20')}`}
+                    >
+                      🎖️ CFC
+                    </button>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="mb-4">
+                    <label className={`block text-sm mb-1 ${isLight ? 'text-gray-600' : 'text-purple-300'}`}>Miktar</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={adminAdjustAmount}
+                      onChange={(e) => setAdminAdjustAmount(e.target.value)}
+                      placeholder="Örn: 100"
+                      className={`w-full px-4 py-3 rounded-lg focus:outline-none ${isLight ? 'bg-gray-100 border border-gray-200 text-gray-800 focus:border-blue-500 placeholder-gray-400' : 'bg-fuchsia-900/30 border border-fuchsia-500/30 text-white focus:border-fuchsia-500 placeholder-purple-400/60'}`}
+                    />
+                  </div>
+
+                  {/* Reason */}
+                  <div className="mb-4">
+                    <label className={`block text-sm mb-1 ${isLight ? 'text-gray-600' : 'text-purple-300'}`}>Sebep (opsiyonel)</label>
+                    <input
+                      type="text"
+                      value={adminAdjustReason}
+                      onChange={(e) => setAdminAdjustReason(e.target.value)}
+                      placeholder="Ör: Hediye, Düzeltme..."
+                      className={`w-full px-4 py-3 rounded-lg focus:outline-none ${isLight ? 'bg-gray-100 border border-gray-200 text-gray-800 focus:border-blue-500 placeholder-gray-400' : 'bg-fuchsia-900/30 border border-fuchsia-500/30 text-white focus:border-fuchsia-500 placeholder-purple-400/60'}`}
+                    />
+                  </div>
+
+                  {/* Profit Warning for Jeton */}
+                  {adminAdjustCurrency === 'jeton' && adminAdjustAmount && (
+                    <div className={`flex items-start gap-2 p-3 rounded-lg mb-4 text-xs ${isLight ? 'bg-orange-50 border border-orange-200 text-orange-700' : 'bg-orange-900/20 border border-orange-500/20 text-orange-300'}`}>
+                      <TrendingDown className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>
+                        Jeton eklerseniz platform kârı otomatik olarak <strong>{(parseFloat(adminAdjustAmount) * 0.5).toFixed(2)} ₺</strong> düşecektir. Çıkardığınızda kâr aynı miktarda artacaktır.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleAdminAdjust(true)}
+                      disabled={adminAdjusting || !adminAdjustAmount || parseFloat(adminAdjustAmount) <= 0}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-green-600/80 text-white hover:bg-green-600'}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      {adminAdjusting ? 'Yükleniyor...' : 'Ekle'}
+                    </button>
+                    <button
+                      onClick={() => handleAdminAdjust(false)}
+                      disabled={adminAdjusting || !adminAdjustAmount || parseFloat(adminAdjustAmount) <= 0}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-600/80 text-white hover:bg-red-600'}`}
+                    >
+                      <Minus className="w-4 h-4" />
+                      {adminAdjusting ? 'Yükleniyor...' : 'Çıkar'}
+                    </button>
+                  </div>
+                </div>
               )}
             </motion.div>
           </motion.div>
