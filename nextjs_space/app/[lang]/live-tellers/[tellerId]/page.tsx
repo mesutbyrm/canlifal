@@ -93,6 +93,7 @@ export default function TellerDetailPage() {
   const [showAd, setShowAd] = useState(false)
   const [adCountdown, setAdCountdown] = useState(5)
   const [adDuration, setAdDuration] = useState(5)
+  const [durationOptions, setDurationOptions] = useState<number[]>([5, 10, 15, 20, 25, 30])
   const [sessionStatus, setSessionStatus] = useState<string>('pending')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -104,18 +105,28 @@ export default function TellerDetailPage() {
       }
     }
     
-    // Fetch settings
-    fetch('/api/admin/settings')
+    // Fetch settings via public API
+    fetch('/api/settings/public?keys=ad_duration_seconds,credits_per_minute,live_session_durations')
       .then(res => res.json())
       .then(data => {
-        const adSetting = data.settings?.find((s: any) => s.key === 'ad_duration_seconds')
-        if (adSetting) {
-          setAdDuration(parseInt(adSetting.value) || 5)
-          setAdCountdown(parseInt(adSetting.value) || 5)
+        if (data.ad_duration_seconds) {
+          const v = parseInt(data.ad_duration_seconds) || 5
+          setAdDuration(v)
+          setAdCountdown(v)
         }
-        const creditsSetting = data.settings?.find((s: any) => s.key === 'credits_per_minute')
-        if (creditsSetting) {
-          setCreditsPerMinute(parseInt(creditsSetting.value) || 10)
+        if (data.credits_per_minute) {
+          setCreditsPerMinute(parseInt(data.credits_per_minute) || 10)
+        }
+        if (data.live_session_durations) {
+          try {
+            const parsed = JSON.parse(data.live_session_durations)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const sorted = parsed.map(Number).filter((n: number) => n > 0).sort((a: number, b: number) => a - b)
+              setDurationOptions(sorted)
+              // If current selection not in options, default to first
+              setSelectedDuration((prev: number) => sorted.includes(prev) ? prev : sorted[0])
+            }
+          } catch {}
         }
       })
       .catch(() => {})
@@ -515,14 +526,8 @@ export default function TellerDetailPage() {
                     {'Süre Seçin'}
                   </label>
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                    {[
-                      { mins: 5, cost: 50 },
-                      { mins: 10, cost: 100 },
-                      { mins: 15, cost: 150 },
-                      { mins: 20, cost: 200 },
-                      { mins: 25, cost: 250 },
-                      { mins: 30, cost: 300 }
-                    ].map(({ mins, cost }) => {
+                    {durationOptions.map((mins) => {
+                      const cost = mins * creditsPerMinute
                       const canAfford = !session?.user || userJetons >= cost
                       return (
                         <button
@@ -545,7 +550,7 @@ export default function TellerDetailPage() {
                     })}
                   </div>
                   <p className="text-xs text-purple-400 mt-2 text-center">
-                    {`10 jeton/dakika • Toplam: ${totalCost} jeton`}
+                    {`${creditsPerMinute} jeton/dakika • Toplam: ${totalCost} jeton`}
                   </p>
                 </div>
 

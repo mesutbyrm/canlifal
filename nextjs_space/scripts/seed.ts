@@ -894,6 +894,14 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Homepage buttons seeded')
 
+  // Seed live session duration options
+  await prisma.platformSettings.upsert({
+    where: { key: 'live_session_durations' },
+    update: {},
+    create: { key: 'live_session_durations', value: JSON.stringify([5, 10, 15, 20, 25, 30]), description: 'Canlı fal süre seçenekleri (dakika)' }
+  })
+  console.log('Live session durations seeded')
+
   console.log('Seed completed successfully!')
 }
 

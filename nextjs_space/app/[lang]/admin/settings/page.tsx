@@ -18,7 +18,10 @@ import {
   Clock,
   Coins,
   Tv,
-  Mail
+  Mail,
+  Plus,
+  X,
+  Timer
 } from 'lucide-react'
 
 interface PlatformSettings {
@@ -56,6 +59,10 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
+  const [durations, setDurations] = useState<number[]>([5, 10, 15, 20, 25, 30])
+  const [newDuration, setNewDuration] = useState('')
+  const [durationSaving, setDurationSaving] = useState(false)
+  const [durationSaved, setDurationSaved] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -72,6 +79,15 @@ export default function AdminSettingsPage() {
       if (res.ok) {
         const data = await res.json()
         setSettings(data)
+        // Load durations
+        if (data.live_session_durations) {
+          try {
+            const parsed = JSON.parse(data.live_session_durations)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setDurations(parsed.map(Number).filter((n: number) => n > 0).sort((a: number, b: number) => a - b))
+            }
+          } catch {}
+        }
       }
     } catch (err) {
       console.error('Fetch settings error:', err)
@@ -222,6 +238,104 @@ export default function AdminSettingsPage() {
           <p className="text-purple-300 mt-2">
             {'Komisyon, bonus ve CFC ayarlarını yönetin'}
           </p>
+        </motion.div>
+
+        {/* Duration Management Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8 bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+        >
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Timer className="w-6 h-6 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white mb-1">Canlı Fal Süre Seçenekleri</h3>
+              <p className="text-sm text-purple-400">Kullanıcıların seçebileceği seans sürelerini yönetin (dakika)</p>
+            </div>
+          </div>
+
+          {/* Current durations */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {durations.map((d) => (
+              <div
+                key={d}
+                className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/15 border border-purple-500/30 rounded-lg"
+              >
+                <span className="text-white font-medium text-sm">{d} dk</span>
+                <button
+                  onClick={() => {
+                    const updated = durations.filter(x => x !== d)
+                    if (updated.length === 0) return
+                    setDurations(updated)
+                  }}
+                  className="ml-1 text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add new duration */}
+          <div className="flex items-center gap-3 mb-4">
+            <input
+              type="number"
+              min={1}
+              max={120}
+              value={newDuration}
+              onChange={(e) => setNewDuration(e.target.value)}
+              placeholder="Yeni süre (dk)"
+              className="w-40 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 placeholder-purple-500/50"
+            />
+            <button
+              onClick={() => {
+                const val = parseInt(newDuration)
+                if (!val || val <= 0 || val > 120 || durations.includes(val)) return
+                setDurations(prev => [...prev, val].sort((a, b) => a - b))
+                setNewDuration('')
+              }}
+              disabled={!newDuration || parseInt(newDuration) <= 0 || durations.includes(parseInt(newDuration))}
+              className="px-3 py-2 bg-purple-600/30 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-sm"
+            >
+              <Plus className="w-4 h-4" /> Ekle
+            </button>
+          </div>
+
+          {/* Save durations */}
+          <button
+            onClick={async () => {
+              setDurationSaving(true)
+              try {
+                const res = await fetch('/api/admin/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ key: 'live_session_durations', value: JSON.stringify(durations) })
+                })
+                if (res.ok) {
+                  setDurationSaved(true)
+                  setTimeout(() => setDurationSaved(false), 2000)
+                }
+              } catch (err) {
+                console.error('Save durations error:', err)
+              } finally {
+                setDurationSaving(false)
+              }
+            }}
+            disabled={durationSaving}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+          >
+            {durationSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : durationSaved ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {durationSaved ? 'Kaydedildi' : 'Süreleri Kaydet'}
+          </button>
         </motion.div>
 
         <div className="space-y-4">
