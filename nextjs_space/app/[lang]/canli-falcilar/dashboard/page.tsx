@@ -108,7 +108,7 @@ export default function TellerDashboard() {
   const fetchTellerData = async () => {
     try {
       // Get teller profile
-      const tellerRes = await fetch('/api/fortune-tellers/my-profilee')
+      const tellerRes = await fetch('/api/fortune-tellers/my-profile')
       if (!tellerRes.ok) {
         if (tellerRes.status === 404) {
           setError('Falcı profiliniz bulunamadı')

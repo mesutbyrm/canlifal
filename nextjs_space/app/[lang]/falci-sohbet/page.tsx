@@ -59,7 +59,7 @@ export default function TellerChatListPage() {
 
   const checkTellerStatus = async () => {
     try {
-      const res = await fetch('/api/fortune-tellers/my-profilee')
+      const res = await fetch('/api/fortune-tellers/my-profile')
       if (res.ok) {
         setIsTeller(true)
         fetchSessions('teller')

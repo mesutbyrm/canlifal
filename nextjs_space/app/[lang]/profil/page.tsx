@@ -275,7 +275,7 @@ export default function ProfilePage() {
   // === Teller Panel Functions ===
   const fetchTellerProfile = async () => {
     try {
-      const res = await fetch('/api/fortune-tellers/my-profilee')
+      const res = await fetch('/api/fortune-tellers/my-profile')
       if (res.ok) {
         const data = await res.json()
         setTellerProfile(data)

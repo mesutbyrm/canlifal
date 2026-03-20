@@ -97,7 +97,7 @@ export default function StreamSetupPage() {
       if (!session?.user) return
       
       try {
-        const res = await fetch('/api/fortune-tellers/my-profilee')
+        const res = await fetch('/api/fortune-tellers/my-profile')
         if (res.status === 404) {
           // No teller profile, redirect to apply page
           setTellerStatus('not_applied')
