@@ -158,7 +158,7 @@ export default function BecomeTellerPage() {
                 : 'Go to your teller panel to start live streaming.'}
             </p>
             <Link
-              href={`/canli-falcilar/panel`}
+              href={`/canli-falcilar/dashboard`}
               className="relative inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-xl sm:rounded-2xl hover:from-emerald-600 hover:to-green-600 transition-all shadow-lg shadow-emerald-500/30"
             >
               <Video className="w-5 h-5" />

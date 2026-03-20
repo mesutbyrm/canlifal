@@ -178,7 +178,7 @@ export default function LiveTellersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/canli-falcilar/panel`}
+                  href={`/canli-falcilar/dashboard`}
                   className="px-4 py-2.5 rounded-lg font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30 transition-all flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-4 h-4" />

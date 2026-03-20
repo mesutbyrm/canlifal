@@ -673,7 +673,7 @@ export default function ProfilePage() {
 
                       {/* Go to full dashboard */}
                       <Link
-                        href={`/canli-falcilar/panel`}
+                        href={`/canli-falcilar/dashboard`}
                         className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
                           isFacebook
                             ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
