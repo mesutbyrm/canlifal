@@ -616,6 +616,19 @@ export default function AdminBlogPage() {
           </div>
         )}
 
+        {/* Bulk Import Link */}
+        {!showForm && (
+          <div className="mb-6">
+            <Link
+              href={`/${lang}/admin/blog/bulk-import`}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border border-fuchsia-500/30 text-fuchsia-200 hover:from-fuchsia-900/60 hover:to-purple-900/60 transition-all text-sm font-medium"
+            >
+              <Upload className="w-5 h-5" />
+              Toplu Blog İçe Aktarma (Kategori Seçimli, Önizleme ile)
+            </Link>
+          </div>
+        )}
+
         {/* FORM */}
         {showForm && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">

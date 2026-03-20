@@ -2,11 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Upload, FileText, Table, Sparkles, Loader2, CheckCircle, AlertCircle, Info, X, Download, FolderOpen, Check } from 'lucide-react'
+import { ArrowLeft, Upload, FileText, Table, Sparkles, Loader2, CheckCircle, AlertCircle, Info, X, Download, FolderOpen, Check, BookOpen } from 'lucide-react'
 import Link from 'next/link'
-import { DREAM_CATEGORIES } from '@/lib/dream-categories'
 
 type ImportStatus = 'idle' | 'parsing' | 'preview' | 'importing' | 'done' | 'error'
+
+interface BlogCategory {
+  id: string
+  slug: string
+  nameTr: string
+  nameEn: string
+  sortOrder: number
+}
 
 interface ParsedItem {
   title: string
@@ -21,7 +28,7 @@ interface ImportResult {
   errors: string[]
 }
 
-export default function BulkImportDreamsPage() {
+export default function BulkImportBlogPage() {
   const params = useParams()
   const lang = (params?.lang as string) || 'tr'
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -34,12 +41,20 @@ export default function BulkImportDreamsPage() {
   const [status, setStatus] = useState<ImportStatus>('idle')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [categories, setCategories] = useState<BlogCategory[]>([])
   const [selectedCategory, setSelectedCategory] = useState('genel')
   const [parsedItems, setParsedItems] = useState<ParsedItem[]>([])
   const [selectAll, setSelectAll] = useState(true)
 
-  // Filter out 'tumu' from categories
-  const importableCategories = DREAM_CATEGORIES.filter(c => c.value !== 'tumu')
+  useEffect(() => {
+    fetch('/api/admin/blog/categories')
+      .then(r => r.json())
+      .then(data => {
+        if (data.categories) setCategories(data.categories)
+        else if (Array.isArray(data)) setCategories(data)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -74,7 +89,7 @@ export default function BulkImportDreamsPage() {
     }
 
     if (items.length === 0) {
-      setErrorMsg('Hiç rüya tabiri bulunamadı. Dosya formatını kontrol edin.')
+      setErrorMsg('Hiç blog yazısı bulunamadı. Dosya formatını kontrol edin.')
       setStatus('error')
       return
     }
@@ -102,8 +117,8 @@ export default function BulkImportDreamsPage() {
     if (lines.length < 2) return []
     const headerLine = lines[0].toLowerCase().trim()
     const headerCols = parseCSVLine(headerLine)
-    let titleIdx = headerCols.findIndex((h: string) => h.includes('title') || h.includes('baslik') || h.includes('başlık') || h === 'ad' || h === 'isim')
-    let contentIdx = headerCols.findIndex((h: string) => h.includes('content') || h.includes('icerik') || h.includes('içerik') || h.includes('anlam') || h.includes('tabir'))
+    let titleIdx = headerCols.findIndex((h: string) => h.includes('title') || h.includes('baslik') || h.includes('başlık') || h === 'ad')
+    let contentIdx = headerCols.findIndex((h: string) => h.includes('content') || h.includes('icerik') || h.includes('içerik') || h.includes('metin'))
     if (titleIdx === -1) titleIdx = 0
     if (contentIdx === -1) contentIdx = headerCols.length > 1 ? 1 : 0
     const items: ParsedItem[] = []
@@ -160,7 +175,7 @@ export default function BulkImportDreamsPage() {
       formData.append('category', selectedCategory)
       formData.append('textContent', JSON.stringify(selectedItems.map(i => ({ title: i.title, content: i.content }))))
 
-      const res = await fetch('/api/admin/dreams/bulk-import', {
+      const res = await fetch('/api/admin/blog/bulk-import', {
         method: 'POST',
         body: formData,
       })
@@ -192,39 +207,40 @@ export default function BulkImportDreamsPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const catLabel = categories.find(c => c.slug === selectedCategory)?.nameTr || selectedCategory
+
   const downloadSampleTxt = () => {
-    const catLabel = importableCategories.find(c => c.value === selectedCategory)?.label || 'Genel'
-    const sample = `Yılan
-Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı, küçük yılan görmek ise zayıf bir düşmanı simgeler. Yılanı öldürmek düşmandan kurtulmaya delalet eder.
+    const sample = `Kahve Falının Tarihçesi
+Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir ve soğuması beklenir. Fincandaki şekiller yorumlanarak gelecek hakkında öngörülerde bulunulur.
 
 ---
 
-Kedi
-Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere, siyah kedi görmek ise dikkatli olunması gereken durumlara yorumlanır. Kedi sesi duymak dedikodu anlamına gelir.
+Tarot Kartları Nasıl Okunur?
+Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır. Her kart farklı bir anlam taşır ve kartların dizilişi yorumu etkiler.
 
 ---
 
-Su
-Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka, bulanık su görmek ise sıkıntıya delalet eder. Akan su görmek bereketli bir dönemin habercisidir.`
+Burç Uyumu Rehberi
+Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir. Ateş burçları (Koç, Aslan, Yay) genellikle hava burçlarıyla (Ikizler, Terazi, Kova) uyumludur.`
     const blob = new Blob([sample], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ornek-ruya-tabirleri-${selectedCategory}.txt`
+    a.download = `ornek-blog-yazilari-${selectedCategory}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
 
   const downloadSampleCsv = () => {
     const sample = `başlık;içerik
-Yılan;"Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı simgeler."
-Kedi;"Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere yorumlanır."
-Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka delalet eder."`
+Kahve Falının Tarihçesi;"Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir."
+Tarot Kartları Nasıl Okunur?;"Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır."
+Burç Uyumu Rehberi;"Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir."`
     const blob = new Blob([sample], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ornek-ruya-tabirleri-${selectedCategory}.csv`
+    a.download = `ornek-blog-yazilari-${selectedCategory}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -237,14 +253,17 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Link
-            href={`/${lang}/admin/dreams`}
+            href={`/${lang}/admin/blog`}
             className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Toplu Rüya Tabiri İçe Aktarma</h1>
-            <p className="text-purple-300/70 text-sm mt-1">TXT veya CSV dosyasından toplu rüya tabiri ekleyin</p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <BookOpen className="w-7 h-7 text-fuchsia-400" />
+              Toplu Blog Yazısı İçe Aktarma
+            </h1>
+            <p className="text-purple-300/70 text-sm mt-1">TXT veya CSV dosyasından toplu blog yazısı ekleyin</p>
           </div>
         </div>
 
@@ -254,23 +273,35 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
             <FolderOpen className="w-5 h-5 text-amber-400" />
             Kategori Seçin
           </label>
-          <div className="flex flex-wrap gap-2">
-            {importableCategories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setSelectedCategory(cat.value)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === cat.value
-                    ? 'bg-purple-600/40 border-2 border-purple-400 text-white shadow-lg shadow-purple-500/20'
-                    : 'bg-purple-900/20 border border-purple-500/20 text-purple-400 hover:border-purple-500/40 hover:text-purple-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-                {selectedCategory === cat.value && <Check className="w-3.5 h-3.5 ml-1" />}
-              </button>
-            ))}
-          </div>
+          {categories.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.slug)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedCategory === cat.slug
+                      ? 'bg-fuchsia-600/40 border-2 border-fuchsia-400 text-white shadow-lg shadow-fuchsia-500/20'
+                      : 'bg-purple-900/20 border border-purple-500/20 text-purple-400 hover:border-purple-500/40 hover:text-purple-300'
+                  }`}
+                >
+                  <span>{cat.nameTr}</span>
+                  {selectedCategory === cat.slug && <Check className="w-3.5 h-3.5 ml-1" />}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                placeholder="Kategori slug yazın (orn: genel, astroloji, tarot)"
+                className="w-full px-4 py-2 rounded-lg bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none text-sm"
+              />
+              <p className="text-purple-400/60 text-xs">Mevcut blog kategorileri yükleniyor veya bulunamadı. Manuel olarak girebilirsiniz.</p>
+            </div>
+          )}
         </div>
 
         {/* Info Box */}
@@ -281,16 +312,16 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
               <p className="font-semibold text-blue-200 mb-2">Desteklenen Formatlar:</p>
               <div className="space-y-2">
                 <div>
-                  <span className="font-medium text-blue-300">TXT Formatı:</span> Her rüya tabiri &quot;---&quot; ile veya üç boş satırla ayrılmalıdır. İlk satır başlık, sonraki satırlar içeriktir.
+                  <span className="font-medium text-blue-300">TXT Formatı:</span> Her blog yazısı &quot;---&quot; ile veya üç boş satırla ayrılmalıdır. İlk satır başlık, sonraki satırlar içeriktir.
                 </div>
                 <div>
-                  <span className="font-medium text-blue-300">CSV Formatı:</span> İlk satır başlık satırı olmalıdır. Sütunlar: başlık/title, içerik/content. Ayraç olarak virgül, noktalı virgül veya tab kullanılabilir.
+                  <span className="font-medium text-blue-300">CSV Formatı:</span> İlk satır başlık satırı olmalıdır. Sütunlar: başlık/title, içerik/content.
                 </div>
                 <div>
-                  <span className="font-medium text-amber-300">🤖 AI SEO:</span> Aktif edildiğinde, anahtar kelimeler, meta açıklaması ve özet AI tarafından Google botlarına uygun şekilde otomatik oluşturulur.
+                  <span className="font-medium text-amber-300">🤖 AI SEO:</span> Anahtar kelimeler, meta açıklaması ve kısa açıklama AI tarafından oluşturulur.
                 </div>
                 <div>
-                  <span className="font-medium text-green-300">✅ Önizleme:</span> Dosyayı yükledikten sonra içerikleri görebilir, teker teker veya toplu olarak seçerek aktarabilirsiniz.
+                  <span className="font-medium text-green-300">✅ Önizleme:</span> İçerikleri görebilir, teker teker veya toplu seçerek aktarabilirsiniz.
                 </div>
               </div>
             </div>
@@ -418,8 +449,8 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
                   value={pasteContent}
                   onChange={(e) => setPasteContent(e.target.value)}
                   placeholder={fileType === 'csv'
-                    ? 'başlık;içerik\nYılan;Rüyada yılan görmek...\nKedi;Rüyada kedi görmek...'
-                    : 'Yılan\nRüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder.\n\n---\n\nKedi\nRüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir.'
+                    ? 'başlık;içerik\nKahve Falı;Kahve falı hakkında...\nTarot;Tarot hakkında...'
+                    : 'Kahve Falının Tarihçesi\nKahve falı yüzyıllardır...\n\n---\n\nTarot Kartları\nTarot okuması 78 karttan...'
                   }
                   className="w-full h-64 p-4 rounded-xl bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none resize-y font-mono text-sm"
                 />
@@ -450,7 +481,7 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
                     <span className="text-white font-medium">AI SEO Optimizasyonu</span>
                   </div>
                   <p className="text-purple-300/60 text-sm mt-0.5">
-                    Anahtar kelimeler, meta açıklaması ve özet Google botlarına uygun şekilde AI tarafından otomatik oluşturulur
+                    Anahtar kelimeler, meta açıklaması ve kısa açıklama AI tarafından otomatik oluşturulur
                   </p>
                 </div>
               </label>
@@ -460,7 +491,7 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
             <button
               onClick={parseContent}
               disabled={(importMode === 'file' ? !selectedFile : !pasteContent.trim()) || status === 'parsing'}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold text-lg hover:from-purple-500 hover:to-fuchsia-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold text-lg hover:from-fuchsia-500 hover:to-purple-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {status === 'parsing' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
               {status === 'parsing' ? 'Ayrıştırılıyor...' : 'Önizle ve Seç'}
@@ -502,13 +533,13 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
                   onClick={() => toggleItem(idx)}
                   className={`w-full text-left p-3 rounded-xl border transition-all ${
                     item.selected
-                      ? 'bg-purple-600/20 border-purple-400/50'
+                      ? 'bg-fuchsia-600/20 border-fuchsia-400/50'
                       : 'bg-purple-900/10 border-purple-500/10 opacity-60'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-5 h-5 rounded border flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                      item.selected ? 'bg-purple-600 border-purple-400' : 'border-purple-500/40'
+                      item.selected ? 'bg-fuchsia-600 border-fuchsia-400' : 'border-purple-500/40'
                     }`}>
                       {item.selected && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
@@ -525,7 +556,7 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
             <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 flex items-center gap-2 text-sm">
               <FolderOpen className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span className="text-amber-200">
-                Seçilen {selectedCount} öğe <strong>&quot;{importableCategories.find(c => c.value === selectedCategory)?.icon} {importableCategories.find(c => c.value === selectedCategory)?.label}&quot;</strong> kategorisine aktarılacak
+                Seçilen {selectedCount} öğe <strong>&quot;{catLabel}&quot;</strong> kategorisine aktarılacak
               </span>
             </div>
 
@@ -604,10 +635,10 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
                 Yeni İçe Aktarma
               </button>
               <Link
-                href={`/${lang}/admin/dreams`}
-                className="flex-1 py-3 rounded-xl bg-purple-600/30 border border-purple-400/60 text-purple-200 font-medium hover:bg-purple-600/50 transition-colors text-center"
+                href={`/${lang}/admin/blog`}
+                className="flex-1 py-3 rounded-xl bg-fuchsia-600/30 border border-fuchsia-400/60 text-fuchsia-200 font-medium hover:bg-fuchsia-600/50 transition-colors text-center"
               >
-                Rüya Tabirlerine Git
+                Blog Yazılarına Git
               </Link>
             </div>
           </div>

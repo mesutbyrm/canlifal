@@ -43,6 +43,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/ruya`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/oyunlar`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    },
   ]
 
   // Fortune types pages
@@ -156,5 +168,71 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching dream symbols for sitemap:', e)
   }
 
-  return [...staticPages, ...fortunePages, ...blogIndex, ...blogCategoryPages, ...blogPages, ...seoPages, ...socialPostPages, ...phase3Pages, ...dreamSymbolPages]
+  // Dream interpretation pages (rüya tabiri)
+  let dreamInterpretationPages: MetadataRoute.Sitemap = []
+  try {
+    const dreams = await prisma.dreamInterpretation.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 2000,
+    })
+    dreamInterpretationPages = dreams.map((d: any) => ({
+      url: `${baseUrl}/ruya/${d.slug}`,
+      lastModified: d.updatedAt || new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+  } catch (e) {
+    console.error('Error fetching dream interpretations for sitemap:', e)
+  }
+
+  // Site pages (dynamic static pages like hakkimizda, gizlilik, etc.)
+  let sitePages: MetadataRoute.Sitemap = []
+  try {
+    const pages = await prisma.sitePage.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+    })
+    sitePages = pages.map((p: any) => ({
+      url: `${baseUrl}/sayfa/${p.slug}`,
+      lastModified: p.updatedAt || new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    }))
+  } catch (e) {
+    console.error('Error fetching site pages for sitemap:', e)
+  }
+
+  // Chat rooms
+  let chatRoomPages: MetadataRoute.Sitemap = []
+  try {
+    const rooms = await prisma.chatRoom.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    })
+    chatRoomPages = rooms.map((r: any) => ({
+      url: `${baseUrl}/sohbet/${r.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.6,
+    }))
+  } catch (e) {
+    console.error('Error fetching chat rooms for sitemap:', e)
+  }
+
+  return [
+    ...staticPages,
+    ...fortunePages,
+    ...blogIndex,
+    ...blogCategoryPages,
+    ...blogPages,
+    ...seoPages,
+    ...socialPostPages,
+    ...phase3Pages,
+    ...dreamSymbolPages,
+    ...dreamInterpretationPages,
+    ...sitePages,
+    ...chatRoomPages,
+  ]
 }

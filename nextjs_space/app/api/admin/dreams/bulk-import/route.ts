@@ -252,8 +252,9 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const textContent = formData.get('textContent') as string | null
-    const fileType = formData.get('fileType') as string | null // 'txt' or 'csv'
+    const fileType = formData.get('fileType') as string | null // 'txt', 'csv', or 'json'
     const useAI = formData.get('useAI') === 'true'
+    const category = (formData.get('category') as string) || 'genel'
 
     let rawContent = ''
     let detectedType = fileType || 'txt'
@@ -275,7 +276,13 @@ export async function POST(req: NextRequest) {
 
     // Parse content
     let parsedDreams: ParsedDream[]
-    if (detectedType === 'csv') {
+    if (detectedType === 'json') {
+      try {
+        parsedDreams = JSON.parse(rawContent) as ParsedDream[]
+      } catch {
+        return NextResponse.json({ error: 'Geçersiz JSON formatı' }, { status: 400 })
+      }
+    } else if (detectedType === 'csv') {
       parsedDreams = parseCsvContent(rawContent)
     } else {
       parsedDreams = parseTxtContent(rawContent)
@@ -345,6 +352,7 @@ export async function POST(req: NextRequest) {
             slug,
             content: dream.content,
             summary: dream.summary,
+            category,
             keywords: [
               ...dream.keywords,
               'rüya tabiri',
