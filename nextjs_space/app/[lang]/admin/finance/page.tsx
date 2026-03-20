@@ -659,6 +659,24 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
         </div>
       </motion.div>
 
+      {/* Dolaşımdaki CFC - Primary Stat */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl p-6 border bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border-blue-500/30"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-blue-500/20">
+            <Crown className="w-8 h-8 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-300">Dolaşımdaki CFC</p>
+            <p className="text-3xl font-bold text-blue-400">{formatNumber(data.totalCfc)} CFC</p>
+            <p className="text-xs text-gray-400 mt-1">Tüm kullanıcıların toplam CFC bakiyesi</p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
@@ -678,12 +696,6 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
           label="Toplam Jeton"
           value={formatNumber(data.totalJeton)}
           color="yellow"
-        />
-        <StatCard
-          icon={<Crown className="w-5 h-5 text-blue-400" />}
-          label="Toplam CFC"
-          value={formatNumber(data.totalCfc)}
-          color="blue"
         />
         <StatCard
           icon={<Gift className="w-5 h-5 text-pink-400" />}
