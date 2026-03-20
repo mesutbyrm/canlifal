@@ -322,6 +322,13 @@ export async function POST(request: Request) {
         create: { key, value: String(numVal), description: descMap[key] || key },
       })
 
+      // Sync commission rate to all tellers when platform commission changes
+      if (key === 'commission_rate') {
+        await prisma.liveFortuneTeller.updateMany({
+          data: { commissionRate: numVal }
+        })
+      }
+
       return NextResponse.json({ success: true, key, value: numVal })
     }
 

@@ -117,6 +117,16 @@ export default function TellerDashboard() {
         throw new Error('Failed to fetch teller profile')
       }
       const tellerData = await tellerRes.json()
+      // Fetch platform commission rate from settings
+      try {
+        const commRes = await fetch('/api/platform/commission-rate')
+        if (commRes.ok) {
+          const commData = await commRes.json()
+          if (commData.commissionRate != null) {
+            tellerData.commissionRate = commData.commissionRate
+          }
+        }
+      } catch {}
       setTeller(tellerData)
       setIsOnline(tellerData.isOnline)
 

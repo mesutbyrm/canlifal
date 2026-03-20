@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get platform commission rate
+    const commissionSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
+    const platformCommission = commissionSetting ? parseInt(commissionSetting.value) : 20
+
     // Create the application
     const teller = await prisma.liveFortuneTeller.create({
       data: {
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
         canViewEarnings: true,
         canWithdraw: false,
         maxSessionsPerDay: 10,
-        commissionRate: 20
+        commissionRate: platformCommission
       }
     })
 
