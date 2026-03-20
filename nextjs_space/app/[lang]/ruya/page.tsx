@@ -200,7 +200,7 @@ export default function RuyaPage() {
   const getCatIcon = (val: string) => DREAM_CATEGORIES.find(c => c.value === val)?.icon || '💭'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 overflow-x-hidden">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 via-purple-900/10 to-transparent" />
@@ -270,11 +270,11 @@ export default function RuyaPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Örneğin: Yılan görmek, Uçmak, Altın bulmak..."
-                    className="w-full pl-12 pr-28 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm md:text-base"
+                    className="w-full pl-10 md:pl-12 pr-20 md:pr-28 py-3 md:py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm md:text-base"
                   />
                   <button
                     type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-sm transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-3 md:px-5 py-2 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-sm transition-colors"
                   >
                     Ara
                   </button>

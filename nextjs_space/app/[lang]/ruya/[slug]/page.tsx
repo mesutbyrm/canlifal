@@ -303,31 +303,31 @@ export default function DreamDetailPage() {
   const isAdmin = (session?.user as any)?.role === 'admin'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 overflow-x-hidden">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="max-w-3xl mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-gray-500 mb-6">
-          <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors">Ana Sayfa</button>
-          <ChevronRight className="w-3 h-3" />
-          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">R\u00fcya Tabirleri</button>
-          <ChevronRight className="w-3 h-3" />
-          <button onClick={() => router.push(`/${lang}/ruya?category=${dream.category}`)} className="hover:text-gray-300 transition-colors">
+        <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-6 overflow-hidden">
+          <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors flex-shrink-0">Ana Sayfa</button>
+          <ChevronRight className="w-3 h-3 flex-shrink-0" />
+          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors flex-shrink-0">R&#252;ya Tabirleri</button>
+          <ChevronRight className="w-3 h-3 flex-shrink-0" />
+          <button onClick={() => router.push(`/${lang}/ruya?category=${dream.category}`)} className="hover:text-gray-300 transition-colors flex-shrink-0 hidden sm:inline">
             {getCategoryIcon(dream.category)} {getCategoryLabel(dream.category)}
           </button>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-indigo-400 truncate max-w-[200px]">{dream.title}</span>
+          <ChevronRight className="w-3 h-3 flex-shrink-0 hidden sm:block" />
+          <span className="text-indigo-400 truncate min-w-0">{dream.title}</span>
         </nav>
 
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-lg">
                 {getCategoryIcon(dream.category)}
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{dream.title}</h1>
+              <h1 className="text-xl md:text-3xl font-bold text-white break-words min-w-0">{dream.title}</h1>
             </div>
             {/* Favorite button */}
             <button
@@ -429,7 +429,7 @@ export default function DreamDetailPage() {
         {/* Social Share Buttons */}
         <div className="mt-6 pt-6 border-t border-white/10">
           <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri payla\u015f\u0131n</p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={shareWhatsApp}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600/20 border border-green-600/30 text-green-400 text-xs hover:bg-green-600/30 transition-all"
@@ -589,39 +589,39 @@ export default function DreamDetailPage() {
                     ? 'bg-teal-500/[0.03] border-teal-500/15'
                     : 'bg-white/[0.03] border-white/[0.06]'
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold ${
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         comment.experienceType === 'deneyim'
                           ? 'bg-teal-500/20 border-teal-500/30 text-teal-400'
                           : 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
                       }`}>
                         {comment.user.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
-                      <div>
-                        <span className="text-white text-sm font-medium">{comment.user.name}</span>
+                      <div className="min-w-0">
+                        <span className="text-white text-sm font-medium truncate block max-w-[150px] sm:max-w-none">{comment.user.name}</span>
                         {comment.user.username && (
-                          <span className="text-gray-600 text-xs ml-1">@{comment.user.username}</span>
+                          <span className="text-gray-600 text-xs">@{comment.user.username}</span>
                         )}
                       </div>
                       {comment.experienceType === 'deneyim' && (
-                        <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px]">
-                          Ben de g\u00f6rd\u00fcm
+                        <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] whitespace-nowrap">
+                          Ben de g&#246;rd&#252;m
                         </span>
                       )}
                       {comment.didComeTrue === true && (
-                        <span className="flex items-center gap-0.5 text-emerald-400 text-[10px]">
-                          <CheckCircle className="w-3 h-3" /> Ger\u00e7ekle\u015fti
+                        <span className="flex items-center gap-0.5 text-emerald-400 text-[10px] whitespace-nowrap">
+                          <CheckCircle className="w-3 h-3" /> Ger&#231;ekle&#351;ti
                         </span>
                       )}
                       {comment.didComeTrue === false && (
-                        <span className="flex items-center gap-0.5 text-red-400 text-[10px]">
-                          <XCircle className="w-3 h-3" /> Ger\u00e7ekle\u015fmedi
+                        <span className="flex items-center gap-0.5 text-red-400 text-[10px] whitespace-nowrap">
+                          <XCircle className="w-3 h-3" /> Ger&#231;ekle&#351;medi
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-600 text-xs">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-gray-600 text-xs whitespace-nowrap">
                         {new Date(comment.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                       {(currentUserId === comment.user.id || isAdmin) && (
@@ -634,7 +634,7 @@ export default function DreamDetailPage() {
                       )}
                     </div>
                   </div>
-                  <p className="text-gray-300 text-sm leading-relaxed">{comment.content}</p>
+                  <p className="text-gray-300 text-sm leading-relaxed break-words overflow-hidden">{comment.content}</p>
                 </div>
               ))}
             </div>

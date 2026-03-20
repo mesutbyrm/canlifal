@@ -338,7 +338,7 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/20 to-gray-950">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/20 to-gray-950 overflow-x-hidden">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
@@ -358,14 +358,14 @@ export default function BlogPostPage() {
 
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6 flex-wrap">
-          <Link href={`/${lang}/blog`} className="hover:text-purple-400 transition">Blog</Link>
-          <ChevronRight className="w-4 h-4 flex-shrink-0" />
-          <Link href={`/${lang}/blog/kategori/${post.category}`} className="hover:text-purple-400 transition">
+        <nav className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-400 mb-6 overflow-hidden">
+          <Link href={`/${lang}/blog`} className="hover:text-purple-400 transition flex-shrink-0">Blog</Link>
+          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+          <Link href={`/${lang}/blog/kategori/${post.category}`} className="hover:text-purple-400 transition flex-shrink-0">
             {getCategoryName(post.category)}
           </Link>
-          <ChevronRight className="w-4 h-4 flex-shrink-0" />
-          <span className="text-gray-500 line-clamp-1">{title}</span>
+          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="text-gray-500 truncate min-w-0">{title}</span>
         </nav>
 
         {/* Cover Image */}
@@ -390,18 +390,18 @@ export default function BlogPostPage() {
               </span>
             )}
           </div>
-          <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight mb-4">{title}</h1>
-          <p className="text-gray-400 text-lg">{post.descTr}</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight mb-4 break-words">{title}</h1>
+          <p className="text-gray-400 text-sm md:text-lg break-words">{post.descTr}</p>
 
-          <div className="flex items-center justify-between flex-wrap gap-4 mt-5 pt-5 border-t border-white/10">
-            <div className="flex items-center gap-4 text-sm text-gray-400">
-              <span className="flex items-center gap-1.5"><User className="w-4 h-4" />{post.authorName}</span>
-              <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{formatDate(publishDate)}</span>
-              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{post.readTime} dk okuma</span>
-              <span className="flex items-center gap-1.5"><Eye className="w-4 h-4" />{formatViews(post.views)}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-3 mt-5 pt-5 border-t border-white/10">
+            <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-400 flex-wrap">
+              <span className="flex items-center gap-1.5"><User className="w-4 h-4 flex-shrink-0" /><span className="truncate max-w-[120px]">{post.authorName}</span></span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap"><Calendar className="w-4 h-4 flex-shrink-0" />{formatDate(publishDate)}</span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap"><Clock className="w-4 h-4 flex-shrink-0" />{post.readTime} dk</span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap"><Eye className="w-4 h-4 flex-shrink-0" />{formatViews(post.views)}</span>
             </div>
             {/* Interaction buttons - header */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={handleLike}
                 disabled={likeLoading}
@@ -540,39 +540,39 @@ export default function BlogPostPage() {
         )}
 
         {/* Interaction Bar */}
-        <div className="mt-8 p-5 rounded-2xl bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/20">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="mt-8 p-4 md:p-5 rounded-2xl bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span className="text-sm text-gray-300">Bu yazıyı beğendiniz mi?</span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 onClick={handleLike}
                 disabled={likeLoading}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition ${
                   liked
                     ? 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30'
                     : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/20'
                 }`}
               >
                 <Heart className={`w-4 h-4 ${liked ? 'fill-red-400' : ''}`} />
-                {liked ? 'Beğenildi' : 'Beğen'} {likesCount > 0 && `(${likesCount})`}
+                <span className="hidden sm:inline">{liked ? 'Beğenildi' : 'Beğen'}</span> {likesCount > 0 && `(${likesCount})`}
               </button>
               <button
                 onClick={handleFavorite}
                 disabled={favLoading}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition ${
                   favorited
                     ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/30'
                     : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-yellow-500/10 hover:text-yellow-300 hover:border-yellow-500/20'
                 }`}
               >
                 <Bookmark className={`w-4 h-4 ${favorited ? 'fill-yellow-400' : ''}`} />
-                {favorited ? 'Kaydedildi' : 'Kaydet'}
+                <span className="hidden sm:inline">{favorited ? 'Kaydedildi' : 'Kaydet'}</span>
               </button>
               <button
                 onClick={() => setShowShareMenu(!showShareMenu)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition"
+                className="flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition"
               >
-                <Share2 className="w-4 h-4" /> Paylaş
+                <Share2 className="w-4 h-4" /> <span className="hidden sm:inline">Paylaş</span>
               </button>
             </div>
           </div>
@@ -655,7 +655,7 @@ export default function BlogPostPage() {
                         <span className="text-sm font-medium text-white">{comment.userName}</span>
                         <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
                       </div>
-                      <p className="text-sm text-gray-300 whitespace-pre-wrap break-words">{comment.content}</p>
+                      <p className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-hidden">{comment.content}</p>
                       <div className="flex items-center gap-3 mt-2">
                         {session?.user && (
                           <button
