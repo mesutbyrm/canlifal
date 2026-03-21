@@ -11,22 +11,37 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const isLoggedIn = !!session?.user;
 
+    // Support polling: client sends ?since=<ISO timestamp>
+    const { searchParams } = new URL(request.url);
+    const since = searchParams.get('since');
+
+    const whereClause: any = {
+      isActive: true,
+      showTo: { in: isLoggedIn ? ['all', 'logged_in'] : ['all', 'guests'] },
+    };
+
+    // If since is provided, only return popups that were sent after that time
+    if (since) {
+      const sinceDate = new Date(since);
+      if (!isNaN(sinceDate.getTime())) {
+        whereClause.lastSentAt = { gt: sinceDate };
+      }
+    }
+
     const popups = await prisma.adminPopup.findMany({
-      where: {
-        isActive: true,
-        showTo: { in: isLoggedIn ? ['all', 'logged_in'] : ['all', 'guests'] },
-      },
-      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      where: whereClause,
+      orderBy: [{ priority: 'desc' }, { lastSentAt: 'desc' }],
       take: 5,
     });
 
-    // For live_streams type, fetch active streams
+    // Enrich popups with live data
     const enrichedPopups = await Promise.all(
       popups.map(async (popup) => {
         const base = {
           ...popup,
           buttons: typeof popup.buttons === 'string' ? JSON.parse(popup.buttons) : popup.buttons,
         };
+
         if (popup.popupType === 'live_streams') {
           try {
             const streams = await prisma.videoStream.findMany({
@@ -37,32 +52,51 @@ export async function GET(request: NextRequest) {
                 viewerCount: true,
                 user: { select: { name: true, image: true } },
               },
-              take: 5,
+              orderBy: { viewerCount: 'desc' },
+              take: 3, // Top 3 live streams
             });
             return { ...base, liveStreams: streams };
           } catch {
             return base;
           }
         }
+
         if (popup.popupType === 'chat_rooms') {
           try {
+            // Get rooms with active user counts (lastSeen within 2 minutes)
+            const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000);
             const rooms = await prisma.chatRoom.findMany({
               where: { isActive: true },
               select: {
                 id: true,
                 nameTr: true,
                 slug: true,
+                icon: true,
                 descTr: true,
+                presences: {
+                  where: { lastSeen: { gte: twoMinAgo } },
+                  select: { id: true },
+                },
               },
-              take: 6,
-              orderBy: { createdAt: 'asc' },
             });
-            const mappedRooms = rooms.map((r: any) => ({ id: r.id, name: r.nameTr, slug: r.slug, description: r.descTr }));
-            return { ...base, chatRooms: mappedRooms };
+            // Sort by active user count desc, take top 2
+            const sorted = rooms
+              .map((r: any) => ({
+                id: r.id,
+                name: r.nameTr,
+                slug: r.slug,
+                icon: r.icon || '💬',
+                description: r.descTr,
+                activeUsers: r.presences.length,
+              }))
+              .sort((a: any, b: any) => b.activeUsers - a.activeUsers)
+              .slice(0, 2);
+            return { ...base, chatRooms: sorted };
           } catch {
             return base;
           }
         }
+
         return base;
       })
     );

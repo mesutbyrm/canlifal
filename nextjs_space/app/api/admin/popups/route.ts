@@ -57,10 +57,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await request.json();
-    const { id, title, message, buttons, isActive, showTo, popupType, priority } = body;
+    const { id, title, message, buttons, isActive, showTo, popupType, priority, action } = body;
     if (!id) {
       return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
+
+    // Special action: resend popup (updates lastSentAt so polling clients pick it up again)
+    if (action === 'resend') {
+      const popup = await prisma.adminPopup.update({
+        where: { id },
+        data: { lastSentAt: new Date(), isActive: true },
+      });
+      return NextResponse.json(popup);
+    }
+
     const popup = await prisma.adminPopup.update({
       where: { id },
       data: {

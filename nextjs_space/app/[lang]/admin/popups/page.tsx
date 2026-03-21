@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, ArrowLeft, X, ChevronDown, Save, Eye, Radio, MessageCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, ArrowLeft, X, Save, RefreshCw, Zap, Send } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 
@@ -23,6 +23,7 @@ interface AdminPopup {
   showTo: string
   popupType: string
   priority: number
+  lastSentAt: string
   createdAt: string
   updatedAt: string
 }
@@ -49,6 +50,7 @@ const COLOR_OPTIONS = [
 ]
 
 const PAGE_OPTIONS = [
+  { value: '/', label: 'Ana Sayfa' },
   { value: '/fallar', label: 'Fallar' },
   { value: '/fallar/burc-yorumu', label: 'Burç Yorumu' },
   { value: '/fallar/kahve-fali', label: 'Kahve Falı' },
@@ -67,7 +69,77 @@ const PAGE_OPTIONS = [
   { value: '/profil', label: 'Profil' },
 ]
 
-const emptyPopup: Omit<AdminPopup, 'id' | 'createdAt' | 'updatedAt'> = {
+// Preset auto-fill templates for quick popup creation
+const PRESET_TEMPLATES = [
+  {
+    label: '🔮 Hoş Geldiniz',
+    title: 'Hoş Geldiniz! 🔮',
+    message: 'Bugün sizi neler bekliyor? Hemen keşfetmeye başlayın!',
+    popupType: 'custom',
+    buttons: [
+      { label: '🌟 Günlük Burcunuz', href: '/fallar/burc-yorumu', color: 'from-purple-600 to-fuchsia-600' },
+      { label: '💬 Sohbet Et', href: '/sohbet', color: 'from-blue-600 to-indigo-600' },
+    ],
+  },
+  {
+    label: '📺 Canlı Yayın Daveti',
+    title: 'Canlı Yayınlar Başladı! 📺',
+    message: 'Şu anda canlı yayınlar devam ediyor, hemen katılın!',
+    popupType: 'live_streams',
+    buttons: [
+      { label: '📺 Tüm Yayınları Gör', href: '/sohbet/video', color: 'from-red-600 to-orange-600' },
+    ],
+  },
+  {
+    label: '💬 Sohbet Odası Daveti',
+    title: 'Sohbet Odaları Aktif! 💬',
+    message: 'En popüler odalarda sohbet devam ediyor, siz de katılın!',
+    popupType: 'chat_rooms',
+    buttons: [
+      { label: '💬 Tüm Odalar', href: '/sohbet', color: 'from-blue-600 to-indigo-600' },
+    ],
+  },
+  {
+    label: '🎮 Oyun Etkinliği',
+    title: 'Oyun Zamanı! 🎮',
+    message: 'Eğlenceli oyunlar sizi bekliyor, hemen oynayın ve puanlarınızı artırın!',
+    popupType: 'custom',
+    buttons: [
+      { label: '🎮 Oyunlara Git', href: '/oyunlar', color: 'from-amber-600 to-yellow-600' },
+    ],
+  },
+  {
+    label: '⭐ Jeton Kampanyası',
+    title: 'Özel Kampanya! ⭐',
+    message: 'Jeton satın alın ve ayrıcalıklı özelliklerin keyfini çıkarın!',
+    popupType: 'custom',
+    buttons: [
+      { label: '💎 Jeton Satın Al', href: '/jeton', color: 'from-amber-600 to-yellow-600' },
+      { label: '🎁 Hediyeler', href: '/hediyeler', color: 'from-pink-600 to-rose-600' },
+    ],
+  },
+  {
+    label: '🔮 Fal Baktırma Daveti',
+    title: 'Falınıza Baktırın! 🔮',
+    message: 'Canlı falcılarımız sizi bekliyor. Geleceğinizi keşfedin!',
+    popupType: 'custom',
+    buttons: [
+      { label: '👁️ Canlı Fal Baktır', href: '/canli-falcilar', color: 'from-pink-600 to-rose-600' },
+      { label: '🔮 Falına Bak', href: '/fallar', color: 'from-purple-600 to-fuchsia-600' },
+    ],
+  },
+  {
+    label: '🌙 Rüya Yorumu',
+    title: 'Rüyanızı Yorumlayın! 🌙',
+    message: 'Gördüğünüz rüyanın anlamını hemen öğrenin.',
+    popupType: 'custom',
+    buttons: [
+      { label: '🌙 Rüya Tabiri', href: '/ruya', color: 'from-indigo-600 to-blue-600' },
+    ],
+  },
+]
+
+const emptyPopup: Omit<AdminPopup, 'id' | 'createdAt' | 'updatedAt' | 'lastSentAt'> = {
   title: '',
   message: '',
   buttons: [],
@@ -88,6 +160,7 @@ export default function AdminPopupsPage() {
   const [form, setForm] = useState(emptyPopup)
   const [buttons, setButtons] = useState<PopupButton[]>([])
   const [saving, setSaving] = useState(false)
+  const [resending, setResending] = useState<string | null>(null)
 
   const isAdmin = session?.user && (session.user as any).role === 'admin'
 
@@ -127,6 +200,16 @@ export default function AdminPopupsPage() {
       setButtons([])
     }
     setShowEditor(true)
+  }
+
+  const applyPreset = (preset: typeof PRESET_TEMPLATES[0]) => {
+    setForm({
+      ...form,
+      title: preset.title,
+      message: preset.message,
+      popupType: preset.popupType,
+    })
+    setButtons(preset.buttons)
   }
 
   const handleSave = async () => {
@@ -170,8 +253,21 @@ export default function AdminPopupsPage() {
     } catch {}
   }
 
+  const handleResend = async (popup: AdminPopup) => {
+    setResending(popup.id)
+    try {
+      await fetch('/api/admin/popups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: popup.id, action: 'resend' }),
+      })
+      fetchPopups()
+    } catch {}
+    setTimeout(() => setResending(null), 1000)
+  }
+
   const addButton = () => {
-    setButtons([...buttons, { label: '', href: '/fallar', color: 'from-purple-600 to-fuchsia-600' }])
+    setButtons([...buttons, { label: '', href: '/', color: 'from-purple-600 to-fuchsia-600' }])
   }
 
   const updateButton = (idx: number, field: string, value: string) => {
@@ -198,6 +294,12 @@ export default function AdminPopupsPage() {
     } catch { return [] }
   }
 
+  const formatDate = (d: string) => {
+    try {
+      return new Date(d).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return d }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0118] text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -209,7 +311,7 @@ export default function AdminPopupsPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-white">Popup Yönetimi</h1>
-              <p className="text-purple-300/60 text-sm">Kullanıcılara gösterilecek popup’ları yönetin</p>
+              <p className="text-purple-300/60 text-sm">Kullanıcılara gösterilecek popup&apos;ları yönetin</p>
             </div>
           </div>
           <motion.button
@@ -273,9 +375,29 @@ export default function AdminPopupsPage() {
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 text-purple-300">
                           Öncelik: {popup.priority}
                         </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300">
+                          Son gönderim: {formatDate(popup.lastSentAt)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Resend Button */}
+                      <button
+                        onClick={() => handleResend(popup)}
+                        disabled={resending === popup.id}
+                        className={`p-2 rounded-lg transition-colors ${
+                          resending === popup.id
+                            ? 'bg-green-900/40 text-green-400'
+                            : 'hover:bg-amber-900/30 text-amber-400 hover:text-amber-300'
+                        }`}
+                        title="Tekrar Gönder (kullanıcılara anında düşer)"
+                      >
+                        {resending === popup.id ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </button>
                       <button
                         onClick={() => toggleActive(popup)}
                         className="p-2 rounded-lg hover:bg-purple-900/30 transition-colors"
@@ -336,6 +458,27 @@ export default function AdminPopupsPage() {
               </div>
 
               <div className="p-4 space-y-4">
+                {/* Preset Templates */}
+                {!editingId && (
+                  <div>
+                    <label className="text-sm font-medium text-purple-200 mb-2 block flex items-center gap-1">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      Hazır Şablonlar
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {PRESET_TEMPLATES.map((preset, i) => (
+                        <button
+                          key={i}
+                          onClick={() => applyPreset(preset)}
+                          className="px-3 py-1.5 rounded-lg bg-purple-900/30 border border-purple-600/30 text-xs text-purple-200 hover:bg-purple-600/30 hover:border-purple-500 transition-colors"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Popup Type */}
                 <div>
                   <label className="text-sm font-medium text-purple-200 mb-1 block">Popup Türü</label>
@@ -355,6 +498,12 @@ export default function AdminPopupsPage() {
                       </button>
                     ))}
                   </div>
+                  {form.popupType === 'live_streams' && (
+                    <p className="text-xs text-amber-400/70 mt-1">📺 En çok izlenen 3 canlı yayın otomatik gösterilecek</p>
+                  )}
+                  {form.popupType === 'chat_rooms' && (
+                    <p className="text-xs text-amber-400/70 mt-1">💬 En kalabalık 2 sohbet odası otomatik gösterilecek</p>
+                  )}
                 </div>
 
                 {/* Title */}
@@ -419,7 +568,7 @@ export default function AdminPopupsPage() {
                   </div>
 
                   {buttons.length === 0 ? (
-                    <p className="text-purple-400/40 text-xs py-2">Henüz buton eklenmedi. “Buton Ekle” ile seçenek ekleyin.</p>
+                    <p className="text-purple-400/40 text-xs py-2">Henüz buton eklenmedi. &quot;Buton Ekle&quot; ile seçenek ekleyin.</p>
                   ) : (
                     <div className="space-y-3">
                       {buttons.map((btn, i) => (

@@ -1973,9 +1973,11 @@ model AdminPopup {
   showTo      String   @default("all") // all, logged_in, guests
   popupType   String   @default("custom") // custom, live_streams, chat_rooms
   priority    Int      @default(0) // higher = shown first
+  lastSentAt  DateTime @default(now()) // Updated when admin re-sends popup
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([isActive, priority])
+  @@index([isActive, lastSentAt])
   @@map("admin_popups")
 }

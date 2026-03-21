@@ -1,9 +1,10 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Sparkles, MessageCircle, Gamepad2, Radio, Star, ChevronRight, Users } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { X, Sparkles, ChevronRight, Users, Home, Radio, LogIn } from 'lucide-react'
 import Image from 'next/image'
 
 interface PopupButton {
@@ -23,7 +24,9 @@ interface ChatRoom {
   id: string
   name: string
   slug: string
+  icon?: string
   description: string | null
+  activeUsers?: number
 }
 
 interface PopupData {
@@ -32,58 +35,90 @@ interface PopupData {
   message: string
   buttons: PopupButton[]
   popupType: string
+  lastSentAt: string
   liveStreams?: LiveStream[]
   chatRooms?: ChatRoom[]
 }
 
 const DEFAULT_QUICK_ACTIONS: PopupButton[] = [
-  { label: '🌟 Günlük Burcunuz', href: '/fallar/burc-yorumu', color: 'from-purple-600 to-fuchsia-600' },
-  { label: '💬 Sohbet Et', href: '/sohbet', color: 'from-blue-600 to-indigo-600' },
-  { label: '🎮 Oyun Oyna', href: '/oyunlar', color: 'from-amber-600 to-yellow-600' },
-  { label: '📺 Canlı Yayına Git', href: '/sohbet/video', color: 'from-red-600 to-orange-600' },
+  { label: '\u{1F31F} G\u00fcnl\u00fck Burcunuz', href: '/fallar/burc-yorumu', color: 'from-purple-600 to-fuchsia-600' },
+  { label: '\u{1F4AC} Sohbet Et', href: '/sohbet', color: 'from-blue-600 to-indigo-600' },
+  { label: '\u{1F3AE} Oyun Oyna', href: '/oyunlar', color: 'from-amber-600 to-yellow-600' },
+  { label: '\u{1F4FA} Canl\u0131 Yay\u0131na Git', href: '/sohbet/video', color: 'from-red-600 to-orange-600' },
 ]
+
+const POLL_INTERVAL = 5000 // 5 seconds
 
 export default function UserPopup() {
   const [popups, setPopups] = useState<PopupData[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const [showDefault, setShowDefault] = useState(false)
+  const lastSeenTimeRef = useRef<string | null>(null)
   const router = useRouter()
+  const { data: session, status: sessionStatus } = useSession() || {}
+  const isGuest = sessionStatus === 'unauthenticated'
+  const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const isFirstLoad = useRef(true)
 
-  useEffect(() => {
-    // Check if already dismissed in this session
-    const dismissedAt = sessionStorage.getItem('popup_dismissed')
-    if (dismissedAt) {
-      setDismissed(true)
-      return
-    }
-
-    const fetchPopups = async () => {
-      try {
-        const res = await fetch('/api/popups')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.length > 0) {
-            setPopups(data)
-          } else {
-            // Show default quick actions popup
-            setShowDefault(true)
-          }
-        } else {
+  const fetchPopups = useCallback(async (since?: string) => {
+    try {
+      const url = since ? `/api/popups?since=${encodeURIComponent(since)}` : '/api/popups'
+      const res = await fetch(url)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.length > 0) {
+          setPopups(data)
+          setShowDefault(false)
+          setDismissed(false) // Re-show popup when new one arrives
+          setCurrentIdx(0)
+          // Track the latest lastSentAt
+          const latestTime = data.reduce((max: string, p: PopupData) => {
+            return p.lastSentAt > max ? p.lastSentAt : max
+          }, data[0].lastSentAt)
+          lastSeenTimeRef.current = latestTime
+        } else if (isFirstLoad.current) {
+          // Only show default on first load if no popups exist
           setShowDefault(true)
         }
-      } catch {
+      } else if (isFirstLoad.current) {
+        setShowDefault(true)
+      }
+    } catch {
+      if (isFirstLoad.current) {
         setShowDefault(true)
       }
     }
-    // Small delay so page loads first
-    const timer = setTimeout(fetchPopups, 1500)
-    return () => clearTimeout(timer)
+    isFirstLoad.current = false
   }, [])
+
+  // Initial fetch + polling
+  useEffect(() => {
+    if (sessionStatus === 'loading') return
+
+    // Small delay so page loads first
+    const initTimer = setTimeout(() => {
+      fetchPopups()
+    }, 1500)
+
+    // Start polling for new popups
+    pollRef.current = setInterval(() => {
+      if (lastSeenTimeRef.current) {
+        fetchPopups(lastSeenTimeRef.current)
+      } else {
+        fetchPopups()
+      }
+    }, POLL_INTERVAL)
+
+    return () => {
+      clearTimeout(initTimer)
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [sessionStatus, fetchPopups])
 
   const handleDismiss = useCallback(() => {
     setDismissed(true)
-    sessionStorage.setItem('popup_dismissed', Date.now().toString())
+    // No sessionStorage block - polling will re-show if admin resends
   }, [])
 
   const handleButtonClick = useCallback((href: string) => {
@@ -119,7 +154,7 @@ export default function UserPopup() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
               <h3 className="text-white font-bold text-base">
-                {currentPopup ? currentPopup.title : 'Hoş Geldiniz! 🔮'}
+                {currentPopup ? currentPopup.title : 'Ho\u015f Geldiniz! \u{1F52E}'}
               </h3>
             </div>
             <button
@@ -133,16 +168,31 @@ export default function UserPopup() {
           {/* Message */}
           {(currentPopup?.message || !currentPopup) && (
             <p className="px-4 text-purple-200/80 text-sm mb-3">
-              {currentPopup ? currentPopup.message : 'Bugün sizi neler bekliyor?'}
+              {currentPopup ? currentPopup.message : 'Bug\u00fcn sizi neler bekliyor?'}
             </p>
           )}
 
-          {/* Content based on popup type */}
+          {/* Content */}
           <div className="px-4 pb-4 space-y-2">
-            {/* Admin popup with live streams */}
+            {/* Ana Sayfaya Git - always shown at top */}
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              onClick={() => handleButtonClick('/')}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 transition-all shadow-md"
+            >
+              <span className="text-white font-medium text-sm flex items-center gap-2">
+                <Home className="w-4 h-4" />
+                🏠 Ana Sayfaya Git
+              </span>
+              <ChevronRight className="w-4 h-4 text-white/70" />
+            </motion.button>
+
+            {/* Live Streams - top 3 */}
             {currentPopup?.popupType === 'live_streams' && currentPopup.liveStreams && currentPopup.liveStreams.length > 0 && (
-              <div className="space-y-2 mb-3">
-                {currentPopup.liveStreams.map((stream) => (
+              <div className="space-y-2 mb-1">
+                {currentPopup.liveStreams.slice(0, 3).map((stream) => (
                   <button
                     key={stream.id}
                     onClick={() => handleButtonClick(`/sohbet/video?watch=${stream.id}`)}
@@ -157,7 +207,7 @@ export default function UserPopup() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{stream.user.name}</p>
-                      <p className="text-red-300/70 text-xs truncate">{stream.title || 'Canlı Yayın'}</p>
+                      <p className="text-red-300/70 text-xs truncate">{stream.title || 'Canl\u0131 Yay\u0131n'}</p>
                     </div>
                     <div className="flex items-center gap-1 text-red-400 text-xs">
                       <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -169,25 +219,34 @@ export default function UserPopup() {
               </div>
             )}
 
-            {/* Admin popup with chat rooms */}
+            {/* Chat Rooms - top 2 by active users */}
             {currentPopup?.popupType === 'chat_rooms' && currentPopup.chatRooms && currentPopup.chatRooms.length > 0 && (
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                {currentPopup.chatRooms.map((room) => (
+              <div className="space-y-2 mb-1">
+                {currentPopup.chatRooms.slice(0, 2).map((room) => (
                   <button
                     key={room.id}
                     onClick={() => handleButtonClick(`/sohbet/${room.slug}`)}
-                    className="p-2.5 rounded-xl bg-blue-900/30 border border-blue-500/30 hover:bg-blue-900/50 transition-colors text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-blue-900/30 border border-blue-500/30 hover:bg-blue-900/50 transition-colors text-left"
                   >
-                    <p className="text-white text-sm font-medium truncate">💬 {room.name}</p>
-                    {room.description && (
-                      <p className="text-blue-300/60 text-[10px] truncate mt-0.5">{room.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{room.icon || '\u{1F4AC}'} {room.name}</p>
+                      {room.description && (
+                        <p className="text-blue-300/60 text-[10px] truncate mt-0.5">{room.description}</p>
+                      )}
+                    </div>
+                    {room.activeUsers !== undefined && room.activeUsers > 0 && (
+                      <div className="flex items-center gap-1 text-green-400 text-xs ml-2 flex-shrink-0">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <Users className="w-3 h-3" />
+                        {room.activeUsers}
+                      </div>
                     )}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Custom Buttons */}
             {(currentPopup ? currentPopup.buttons : DEFAULT_QUICK_ACTIONS).map((btn, i) => {
               const colorClass = btn.color || 'from-purple-600 to-fuchsia-600'
               return (
@@ -204,6 +263,23 @@ export default function UserPopup() {
                 </motion.button>
               )
             })}
+
+            {/* Google Login - for guests */}
+            {isGuest && (
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                onClick={() => handleButtonClick('/giris')}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition-all shadow-md"
+              >
+                <span className="text-white font-medium text-sm flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Giri\u015f Yap / \u00dcye Ol
+                </span>
+                <ChevronRight className="w-4 h-4 text-white/70" />
+              </motion.button>
+            )}
 
             {/* Multiple popups navigation */}
             {popups.length > 1 && (

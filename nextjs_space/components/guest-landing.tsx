@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
 import { Sparkles, Video, MessageCircle, Share2, Gamepad2, BookOpen, Moon, Star, Users, Eye, Radio, Zap } from 'lucide-react'
+import UserPopup from '@/components/user-popup'
 
 interface SectionCounts {
   [key: string]: number
@@ -82,6 +83,8 @@ export default function GuestLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#120525] to-[#0a0118] relative overflow-hidden">
+      {/* Popup for guests too */}
+      <UserPopup />
       {/* Animated Stars */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {stars.map((s) => (
