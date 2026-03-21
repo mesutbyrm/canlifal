@@ -127,8 +127,13 @@ export default function IncomingCallModal() {
   const handleAccept = () => {
     if (!incomingSession) return;
     stopRingtone();
+    // Add to dismissed to prevent re-showing
+    setDismissedSessions(prev => new Set([...prev, incomingSession.id]));
     setIsVisible(false);
-    router.push(`/canli-oda/${incomingSession.id}`);
+    setIncomingSession(null);
+    // Redirect with language prefix
+    const langPrefix = typeof window !== 'undefined' ? (window.location.pathname.split('/')[1] || 'tr') : 'tr';
+    router.push(`/${langPrefix}/canli-oda/${incomingSession.id}`);
   };
 
   const handleDecline = async () => {

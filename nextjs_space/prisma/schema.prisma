@@ -1364,6 +1364,22 @@ model TickerMessage {
   @@map("ticker_messages")
 }
 
+// Homepage Fortune Cards - admin-editable fortune type cards on homepage
+model HomepageFortuneCard {
+  id        String   @id @default(cuid())
+  name      String   // Display name e.g. "Kahve Falı"
+  icon      String   @default("🔮") // Emoji icon
+  image     String   @default("") // Image URL for card
+  href      String   @default("/fallar") // Link destination
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("homepage_fortune_cards")
+}
+
 // Withdrawal Requests - users/tellers request money withdrawal
 model WithdrawalRequest {
   id              String   @id @default(cuid())
