@@ -72,16 +72,36 @@ interface ParsedDream {
 
 function parseTxtContent(text: string): ParsedDream[] {
   const dreams: ParsedDream[] = []
-  // Split by double newline or --- separator
+  
+  // WordPress-style tagged format: [RUYA]...[/RUYA]
+  const taggedPattern = /\[RUYA\]([\s\S]*?)\[\/RUYA\]/gi
+  const taggedMatches = [...text.matchAll(taggedPattern)]
+  
+  if (taggedMatches.length > 0) {
+    for (const match of taggedMatches) {
+      const block = match[1].trim()
+      const titleMatch = block.match(/^BASLIK:\s*(.+)/im)
+      const contentMatch = block.match(/^ICERIK:\s*([\s\S]*?)$/im)
+      
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      let content = ''
+      if (contentMatch) {
+        content = contentMatch[1].trim()
+      }
+      if (title && content) dreams.push({ title, content })
+      else if (title && !content) dreams.push({ title, content: title })
+    }
+    return dreams
+  }
+  
+  // Legacy format: --- separator
   const sections = text.split(/\n---\n|\n\n\n+/).filter(s => s.trim())
 
   for (const section of sections) {
     const lines = section.trim().split('\n').filter(l => l.trim())
     if (lines.length === 0) continue
 
-    // First line is title, rest is content
     let title = lines[0].replace(/^#+\s*/, '').replace(/^\*+\s*/, '').trim()
-    // Remove leading/trailing quotes or special chars
     title = title.replace(/^["']+|["']+$/g, '').trim()
 
     const content = lines.slice(1).join('\n').trim()
@@ -89,7 +109,6 @@ function parseTxtContent(text: string): ParsedDream[] {
     if (title && content) {
       dreams.push({ title, content })
     } else if (title && !content) {
-      // If only one line, use it as both title and content
       dreams.push({ title, content: title })
     }
   }
@@ -99,7 +118,7 @@ function parseTxtContent(text: string): ParsedDream[] {
 
 function parseCsvContent(text: string): ParsedDream[] {
   const dreams: ParsedDream[] = []
-  const lines = text.split('\n').filter(l => l.trim())
+  const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'))
   if (lines.length < 2) return dreams
 
   // Parse header to detect columns

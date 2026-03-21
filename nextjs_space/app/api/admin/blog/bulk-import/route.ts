@@ -38,6 +38,31 @@ interface ParsedBlog {
 
 function parseTxtContent(text: string): ParsedBlog[] {
   const blogs: ParsedBlog[] = []
+  
+  // WordPress-style tagged format: [YAZI]...[/YAZI]
+  const taggedPattern = /\[YAZI\]([\s\S]*?)\[\/YAZI\]/gi
+  const taggedMatches = [...text.matchAll(taggedPattern)]
+  
+  if (taggedMatches.length > 0) {
+    for (const match of taggedMatches) {
+      const block = match[1].trim()
+      const titleMatch = block.match(/^BASLIK:\s*(.+)/im)
+      const coverMatch = block.match(/^KAPAK:\s*(.+)/im)
+      const contentMatch = block.match(/^ICERIK:\s*([\s\S]*?)$/im)
+      
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      const coverImage = coverMatch ? coverMatch[1].trim() : ''
+      let content = ''
+      if (contentMatch) {
+        content = contentMatch[1].trim()
+      }
+      if (title && content) blogs.push({ title, content, coverImage })
+      else if (title && !content) blogs.push({ title, content: title, coverImage })
+    }
+    return blogs
+  }
+  
+  // Legacy format: --- separator
   const sections = text.split(/\n---\n|\n\n\n+/).filter(s => s.trim())
   for (const section of sections) {
     const lines = section.trim().split('\n').filter((l: string) => l.trim())
@@ -63,7 +88,7 @@ function parseTxtContent(text: string): ParsedBlog[] {
 
 function parseCsvContent(text: string): ParsedBlog[] {
   const blogs: ParsedBlog[] = []
-  const lines = text.split('\n').filter((l: string) => l.trim())
+  const lines = text.split('\n').filter((l: string) => l.trim() && !l.trim().startsWith('#'))
   if (lines.length < 2) return blogs
   const header = lines[0].toLowerCase().trim()
   const headerCols = parseCSVLine(header)

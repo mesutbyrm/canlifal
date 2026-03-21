@@ -101,19 +101,41 @@ export default function BulkImportBlogPage() {
   }
 
   const parseTxtLocally = (text: string): ParsedItem[] => {
+    // WordPress-style tagged format: [YAZI]...[/YAZI]
+    const taggedPattern = /\[YAZI\]([\s\S]*?)\[\/YAZI\]/gi
+    const taggedMatches = [...text.matchAll(taggedPattern)]
+    
+    if (taggedMatches.length > 0) {
+      return taggedMatches.map(match => {
+        const block = match[1].trim()
+        const titleMatch = block.match(/^BASLIK:\s*(.+)/im)
+        const coverMatch = block.match(/^KAPAK:\s*(.+)/im)
+        const contentMatch = block.match(/^ICERIK:\s*([\s\S]*?)$/im)
+        
+        const title = titleMatch ? titleMatch[1].trim() : ''
+        const coverImage = coverMatch ? coverMatch[1].trim() : ''
+        let content = ''
+        if (contentMatch) {
+          content = contentMatch[1].trim()
+        }
+        if (!title) return null
+        return { title, content: content || title, coverImage, selected: true }
+      }).filter(Boolean) as ParsedItem[]
+    }
+    
+    // Fallback: legacy format with --- separator
     const sections = text.split(/\n---\n|\n\n\n+/).filter(s => s.trim())
     return sections.map(section => {
       const lines = section.trim().split('\n').filter((l: string) => l.trim())
       if (lines.length === 0) return null
       let title = lines[0].replace(/^#+\s*/, '').replace(/^\*+\s*/, '').trim()
       title = title.replace(/^["']+|["']+$/g, '').trim()
-      // Check for coverImage line (starts with KAPAK: or RESIM: or IMAGE:)
       let coverImage = ''
       let contentStartIdx = 1
       if (lines.length > 1) {
         const secondLine = lines[1].trim()
-        const imgMatch = secondLine.match(/^(?:KAPAK|RESİM|RESIM|IMAGE):\s*(.+)/i)
-        if (imgMatch) {
+        const imgMatch = secondLine.match(/^(?:KAPAK|RES\u0130M|RESIM|IMAGE|BASLIK|ICERIK):\s*(.+)/i)
+        if (imgMatch && secondLine.match(/^(?:KAPAK|RES\u0130M|RESIM|IMAGE):/i)) {
           coverImage = imgMatch[1].trim()
           contentStartIdx = 2
         }
@@ -125,7 +147,7 @@ export default function BulkImportBlogPage() {
   }
 
   const parseCsvLocally = (text: string): ParsedItem[] => {
-    const lines = text.split('\n').filter((l: string) => l.trim())
+    const lines = text.split('\n').filter((l: string) => l.trim() && !l.trim().startsWith('#'))
     if (lines.length < 2) return []
     const headerLine = lines[0].toLowerCase().trim()
     const headerCols = parseCSVLine(headerLine)
@@ -224,45 +246,76 @@ export default function BulkImportBlogPage() {
   const catLabel = categories.find(c => c.slug === selectedCategory)?.nameTr || selectedCategory
 
   const downloadSampleTxt = () => {
-    const sample = `Kahve Falının Tarihçesi
-KAPAK: https://i.ytimg.com/vi/S4jYevtJeB4/maxresdefault.jpg
-Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir ve soğuması beklenir. Fincandaki şekiller yorumlanarak gelecek hakkında öngörülerde bulunulur.
-
-Bu gelenek, sosyal yaşamın ayrılmaz bir parçası olup nesilden nesile aktarılmıştır. Kahve falı sadece geleceği okumak değil, aynı zamanda dostluk ve sohbetin simgesidir.
-
----
-
-Tarot Kartları Nasıl Okunur?
-KAPAK: https://images.unsplash.com/photo-1637757935037-a7837f36807d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8dGFyb3QlMjBjYXJkfGVufDB8fDB8fHww
-Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır. Her kart farklı bir anlam taşır ve kartların dizilişi yorumu etkiler.
-
-Tarot falı, kişinin geçmişi, bugünü ve geleceği hakkında derin içgörüler sunar. Kartların enerjisi ve sembolleri, yaşam yolculuğunuzda size rehberlik eder.
-
----
-
-Burç Uyumu Rehberi
-Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir. Ateş burçları (Koç, Aslan, Yay) genellikle hava burçlarıyla (İkizler, Terazi, Kova) uyumludur.
-
-Su burçları (Yengeç, Akrep, Balık) ise toprak burçlarıyla (Boğa, Başak, Oğlak) doğal bir uyum içindedir. Burç uyumu sadece güneş burcuna değil, yükselen burca ve ay burcuna da bağlıdır.`
+    const sample = [
+      '# ============================================',
+      '# CANLIFAL BLOG YAZISI İÇE AKTARMA ŞABLONU',
+      '# ============================================',
+      '# FORMAT: Her yazı [YAZI] ve [/YAZI] etiketleri arasında olmalıdır.',
+      '# ALANLAR:',
+      '#   BASLIK: Blog yazısının başlığı (zorunlu)',
+      '#   KAPAK: Kapak resmi URL adresi (opsiyonel)',
+      '#   ICERIK: Blog yazısının tam içeriği (zorunlu)',
+      '# NOT: AI SEO aktifse anahtar kelimeler ve meta açıklaması otomatik oluşturulur.',
+      '# ============================================',
+      '',
+      '[YAZI]',
+      'BASLIK: Kahve Falının Tarihçesi ve Kültürel Önemi',
+      'KAPAK: https://i.ytimg.com/vi/S4jYevtJeB4/maxresdefault.jpg',
+      'ICERIK:',
+      'Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir ve soğuması beklenir. Fincandaki şekiller yorumlanarak gelecek hakkında öngörülerde bulunulur.',
+      '',
+      'Bu gelenek, sosyal yaşamın ayrılmaz bir parçası olup nesilden nesile aktarılmıştır. Kahve falı sadece geleceği okumak değil, aynı zamanda dostluk ve sohbetin simgesidir.',
+      '',
+      'Günümüzde kahve falı, hem geleneksel hem de modern yöntemlerle icra edilmektedir. Online platformlar sayesinde dünyanın her yerinden falcılara ulaşmak mümkün hale gelmiştir.',
+      '[/YAZI]',
+      '',
+      '[YAZI]',
+      'BASLIK: Tarot Kartları Nasıl Okunur? Başlangıç Rehberi',
+      'KAPAK: https://images.unsplash.com/photo-1637757935037-a7837f36807d?w=800',
+      'ICERIK:',
+      'Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır. Her kart farklı bir anlam taşır ve kartların dizilişi yorumu etkiler.',
+      '',
+      'Tarot falı, kişinin geçmişi, bugünü ve geleceği hakkında derin içgörüler sunar. Kartların enerjisi ve sembolleri, yaşam yolculuğunuzda size rehberlik eder.',
+      '',
+      'Yeni başlayanlar için en önemli adım, kartlarla bağ kurmaktır. Her gün bir kart çekerek kartların anlamlarını öğrenmeye başlayabilirsiniz.',
+      '[/YAZI]',
+      '',
+      '[YAZI]',
+      'BASLIK: Burç Uyumu Rehberi: Hangi Burçlar Birbiriyle Uyumlu?',
+      'ICERIK:',
+      'Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir. Ateş burçları (Koç, Aslan, Yay) genellikle hava burçlarıyla (İkizler, Terazi, Kova) uyumludur.',
+      '',
+      'Su burçları (Yengeç, Akrep, Balık) ise toprak burçlarıyla (Boğa, Başak, Oğlak) doğal bir uyum içindedir. Burç uyumu sadece güneş burcuna değil, yükselen burca ve ay burcuna da bağlıdır.',
+      '[/YAZI]',
+    ].join('\n')
     const blob = new Blob([sample], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ornek-blog-yazilari-${selectedCategory}.txt`
+    a.download = `canlifal-blog-sablonu-${selectedCategory}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
 
   const downloadSampleCsv = () => {
-    const sample = `başlık;içerik;kapak_resmi
-Kahve Falının Tarihçesi;"Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir ve soğuması beklenir. Fincandaki şekiller yorumlanarak gelecek hakkında öngörülerde bulunulur.";https://ychef.files.bbci.co.uk/624x351/p0hh9v2c.jpg
-Tarot Kartları Nasıl Okunur?;"Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır. Her kart farklı bir anlam taşır ve kartların dizilişi yorumu etkiler.";https://i.pinimg.com/736x/65/a0/0f/65a00f07682a1f896be989076f4a5b1f.jpg
-Burç Uyumu Rehberi;"Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir. Ateş burçları (Koç, Aslan, Yay) genellikle hava burçlarıyla uyumludur.";`
+    const lines = [
+      '# CANLIFAL BLOG YAZISI CSV ŞABLONU',
+      '# Ayraç: noktalı virgül (;)',
+      '# İçerik tırnak içinde yazılmalıdır: "içerik metni"',
+      '# KAPAK sütunu opsiyoneldir, boş bırakılabilir.',
+      '# AI SEO aktifse anahtar kelimeler ve meta açıklaması otomatik oluşturulur.',
+      '#',
+      'BASLIK;ICERIK;KAPAK',
+      'Kahve Falının Tarihçesi ve Kültürel Önemi;"Kahve falı, yüzyıllardır Osmanlı kültürünün önemli bir parçası olmuştur. Türk kahvesi içildikten sonra fincan ters çevrilir ve soğuması beklenir. Fincandaki şekiller yorumlanarak gelecek hakkında öngörülerde bulunulur. Bu gelenek, sosyal yaşamın ayrılmaz bir parçası olup nesilden nesile aktarılmıştır.";https://i.ytimg.com/vi/S4jYevtJeB4/maxresdefault.jpg',
+      'Tarot Kartları Nasıl Okunur? Başlangıç Rehberi;"Tarot okuması, 78 karttan oluşan bir deste ile yapılır. Büyük Arkana ve Küçük Arkana olmak üzere iki gruba ayrılır. Her kart farklı bir anlam taşır ve kartların dizilişi yorumu etkiler. Tarot falı, kişinin geçmişi, bugünü ve geleceği hakkında derin içgörüler sunar.";https://images.unsplash.com/photo-1637757935037-a7837f36807d?w=800',
+      'Burç Uyumu Rehberi;"Astrolojide burç uyumu, iki kişi arasındaki ilişkinin potansiyelini gösterir. Ateş burçları genellikle hava burçlarıyla uyumludur. Su burçları ise toprak burçlarıyla doğal bir uyum içindedir.";',
+    ]
+    const sample = lines.join('\n')
     const blob = new Blob([sample], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ornek-blog-yazilari-${selectedCategory}.csv`
+    a.download = `canlifal-blog-sablonu-${selectedCategory}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -331,22 +384,22 @@ Burç Uyumu Rehberi;"Astrolojide burç uyumu, iki kişi arasındaki ilişkinin p
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-200/80">
-              <p className="font-semibold text-blue-200 mb-2">Desteklenen Formatlar ve Alanlar:</p>
+              <p className="font-semibold text-blue-200 mb-2">WordPress Tarzı İçe Aktarma Formatı:</p>
               <div className="space-y-2">
                 <div>
-                  <span className="font-medium text-blue-300">📝 TXT Formatı:</span> Her blog yazısı &quot;---&quot; ile veya üç boş satırla ayrılır. İlk satır <strong>başlık</strong>, ikinci satır opsiyonel <strong>KAPAK: resim_url</strong>, sonraki satırlar <strong>içerik</strong>.
+                  <span className="font-medium text-blue-300">📝 TXT Formatı (Önerilen):</span> Her yazı <code className="bg-black/30 px-1 rounded text-xs">[YAZI]</code> ve <code className="bg-black/30 px-1 rounded text-xs">[/YAZI]</code> etiketleri arasında yazılır. Alanlar: <strong>BASLIK:</strong> (zorunlu), <strong>KAPAK:</strong> (opsiyonel), <strong>ICERIK:</strong> (zorunlu)
                 </div>
                 <div>
-                  <span className="font-medium text-blue-300">📊 CSV Formatı:</span> İlk satır başlık satırıdır. Sütunlar: <strong>başlık</strong>, <strong>içerik</strong>, <strong>kapak_resmi</strong> (opsiyonel). Ayraç: noktalı virgül (;) veya virgül (,) veya tab.
+                  <span className="font-medium text-blue-300">📊 CSV Formatı:</span> Sütunlar: <strong>BASLIK</strong>, <strong>ICERIK</strong>, <strong>KAPAK</strong> (opsiyonel). Ayraç: noktalı virgül (;). İçerik çift tırnak içinde yazılmalı.
                 </div>
                 <div>
-                  <span className="font-medium text-green-300">🖼️ Kapak Resmi:</span> Her yazıya opsiyonel olarak kapak resmi URL&apos;si ekleyebilirsiniz. Boş bırakılabilir.
+                  <span className="font-medium text-green-300">🖼️ Kapak Resmi:</span> KAPAK alanına resim URL&apos;si yazın. Boş bırakılabilir, zorunlu değil.
                 </div>
                 <div>
                   <span className="font-medium text-amber-300">🤖 AI SEO:</span> Anahtar kelimeler, meta açıklaması ve kısa açıklama AI tarafından otomatik oluşturulur.
                 </div>
                 <div>
-                  <span className="font-medium text-green-300">✅ Önizleme:</span> İçerikleri görebilir, teker teker veya toplu seçerek aktarabilirsiniz.
+                  <span className="font-medium text-purple-300">💡 İpucu:</span> Örnek dosyaları indirip başka bir yapay zekaya verin, aynı formatta içerik üretmesini isteyin.
                 </div>
               </div>
             </div>
@@ -474,8 +527,8 @@ Burç Uyumu Rehberi;"Astrolojide burç uyumu, iki kişi arasındaki ilişkinin p
                   value={pasteContent}
                   onChange={(e) => setPasteContent(e.target.value)}
                   placeholder={fileType === 'csv'
-                    ? 'ba\u015fl\u0131k;i\u00e7erik;kapak_resmi\nKahve Fal\u0131 Rehberi;"Kahve fal\u0131 hakk\u0131nda detayl\u0131 bir yaz\u0131...";https://example.com/kahve.jpg\nTarot Kartlar\u0131;"Tarot kartlar\u0131 hakk\u0131nda...";https://example.com/tarot.jpg'
-                    : 'Kahve Fal\u0131n\u0131n Tarih\u00e7esi\nKAPAK: https://example.com/kahve.jpg\nKahve fal\u0131 y\u00fczy\u0131llard\u0131r...\n\n---\n\nTarot Kartlar\u0131\nKAPAK: https://example.com/tarot.jpg\nTarot okumas\u0131 78 karttan...'
+                    ? 'BASLIK;ICERIK;KAPAK\nKahve Fal\u0131 Rehberi;"Kahve fal\u0131 hakk\u0131nda detayl\u0131 bir yaz\u0131...";https://example.com/kahve.jpg\nTarot Kartlar\u0131;"Tarot kartlar\u0131 hakk\u0131nda...";https://example.com/tarot.jpg'
+                    : '[YAZI]\nBASLIK: Kahve Fal\u0131n\u0131n Tarih\u00e7esi\nKAPAK: https://example.com/kahve.jpg\nICERIK:\nKahve fal\u0131 y\u00fczy\u0131llard\u0131r...\n[/YAZI]\n\n[YAZI]\nBASLIK: Tarot Kartlar\u0131\nKAPAK: https://example.com/tarot.jpg\nICERIK:\nTarot okumas\u0131 78 karttan...\n[/YAZI]'
                   }
                   className="w-full h-64 p-4 rounded-xl bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none resize-y font-mono text-sm"
                 />
