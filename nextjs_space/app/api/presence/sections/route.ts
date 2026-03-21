@@ -6,11 +6,15 @@ export const dynamic = 'force-dynamic';
 // Section path patterns
 const SECTION_PATTERNS: Record<string, string[]> = {
   games: ['/oyunlar', '/game'],
-  fortunes: ['/tarot', '/coffee', '/rune', '/astrology', '/numerology', '/dream', '/hand-reading', '/crystal', '/fortune', '/fal'],
+  fortunes: ['/tarot', '/coffee', '/rune', '/astrology', '/numerology', '/hand-reading', '/crystal', '/fortune', '/fal'],
   social: ['/sosyal'],
   chat: ['/sohbet'],
   gifts: ['/hediyeler', '/gift'],
   blog: ['/blog'],
+  dreams: ['/ruya', '/dream'],
+  live_tellers: ['/canli-falcilar', '/canli-oda', '/falci-sohbet'],
+  live_streams: ['/sohbet/video'],
+  bana_ozel: ['/bana-ozel'],
 };
 
 function classifyPath(path: string | null): string | null {
@@ -40,6 +44,10 @@ export async function GET() {
       chat: 0,
       gifts: 0,
       blog: 0,
+      dreams: 0,
+      live_tellers: 0,
+      live_streams: 0,
+      bana_ozel: 0,
     };
 
     for (const presence of activePresences) {
@@ -52,6 +60,6 @@ export async function GET() {
     return NextResponse.json({ counts, total: activePresences.length });
   } catch (error) {
     console.error('Section presence error:', error);
-    return NextResponse.json({ counts: { games: 0, fortunes: 0, social: 0, chat: 0, gifts: 0, blog: 0 }, total: 0 });
+    return NextResponse.json({ counts: { games: 0, fortunes: 0, social: 0, chat: 0, gifts: 0, blog: 0, dreams: 0, live_tellers: 0, live_streams: 0, bana_ozel: 0 }, total: 0 });
   }
 }

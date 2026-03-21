@@ -1963,3 +1963,19 @@ model HomepageButton {
   @@index([sortOrder])
   @@map("homepage_buttons")
 }
+
+model AdminPopup {
+  id          String   @id @default(cuid())
+  title       String   // Popup title/heading
+  message     String   // Main message text
+  buttons     String   @default("[]") // JSON array: [{label, href, color?}]
+  isActive    Boolean  @default(true)
+  showTo      String   @default("all") // all, logged_in, guests
+  popupType   String   @default("custom") // custom, live_streams, chat_rooms
+  priority    Int      @default(0) // higher = shown first
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, priority])
+  @@map("admin_popups")
+}

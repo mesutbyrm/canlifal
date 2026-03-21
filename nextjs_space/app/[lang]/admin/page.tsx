@@ -170,6 +170,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
       { href: `/admin/notifications`, icon: Bell, trLabel: 'Push Bildirim Yönetimi', enLabel: 'Push Notification Mgmt' },
       { href: `/admin/announcement-settings`, icon: Megaphone, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
+      { href: `/admin/popups`, icon: MessageSquare, trLabel: 'Popup Yönetimi', enLabel: 'Popup Management' },
       { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
       { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
     ],

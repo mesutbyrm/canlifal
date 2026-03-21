@@ -15,6 +15,8 @@ import HomepageTicker from '@/components/homepage-ticker'
 import LiveTicker from '@/components/live-ticker'
 import BanaOzelSection from '@/components/bana-ozel-section'
 import { useSiteTheme } from '@/lib/theme-context'
+import GuestLanding from '@/components/guest-landing'
+import UserPopup from '@/components/user-popup'
 
 interface LiveTeller {
   id: string
@@ -150,7 +152,7 @@ const FORTUNE_CARDS = [
 
 export default function HomePage() {
   const { language } = useLanguage()
-  const { data: session } = useSession() || {}
+  const { data: session, status: sessionStatus } = useSession() || {}
   const router = useRouter()
   const { theme } = useSiteTheme()
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
@@ -239,6 +241,11 @@ export default function HomePage() {
     return 0
   })
 
+  // Show guest landing page for non-logged-in users
+  if (sessionStatus === 'unauthenticated') {
+    return <GuestLanding />
+  }
+
   // FalClub Theme - Premium Neon Pink Design (exact match to provided image)
   if (isFalclub) {
     const sectionVariants = {
@@ -260,6 +267,7 @@ export default function HomePage() {
 
     return (
       <div className="min-h-screen falclub-starry-bg relative overflow-hidden">
+        {session?.user && <UserPopup />}
         {/* Animated Stars background */}
         <div className="fixed inset-0 pointer-events-none">
           {[...Array(60)].map((_, i) => (
@@ -688,6 +696,7 @@ export default function HomePage() {
   if (isFalci) {
     return (
       <div className="min-h-screen falci-starry-bg relative overflow-hidden">
+        {session?.user && <UserPopup />}
         {/* Stars background effect */}
         <div className="fixed inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -813,6 +822,7 @@ export default function HomePage() {
   // Original themes (Mystical, Cosmic, Facebook)
   return (
     <div className={`min-h-screen ${bgColor}`}>
+      {session?.user && <UserPopup />}
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <HomepageTicker />

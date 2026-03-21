@@ -9,6 +9,10 @@ interface SectionCounts {
   chat: number
   gifts: number
   blog: number
+  dreams: number
+  live_tellers: number
+  live_streams: number
+  bana_ozel: number
 }
 
 const DEFAULT_COUNTS: SectionCounts = {
@@ -18,6 +22,10 @@ const DEFAULT_COUNTS: SectionCounts = {
   chat: 0,
   gifts: 0,
   blog: 0,
+  dreams: 0,
+  live_tellers: 0,
+  live_streams: 0,
+  bana_ozel: 0,
 }
 
 export function useSectionPresence(pollInterval = 30000) {
