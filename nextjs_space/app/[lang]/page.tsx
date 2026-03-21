@@ -163,7 +163,7 @@ export default function HomePage() {
   
   // DB-driven fortune cards & hero/ticker settings
   const [dbFortuneCards, setDbFortuneCards] = useState<Array<{ id: string; name: string; icon: string; image: string; href: string }>>([])
-  const [heroSettings, setHeroSettings] = useState({ icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal' })
+  const [heroSettings, setHeroSettings] = useState<{ icon: string; title: string; subtitle: string; link: string; items: Array<{ id: string; icon: string; title: string; subtitle: string; link: string }> }>({ icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal', items: [] })
   
   // Theme detection
   const isFalci = theme === 'falci'
@@ -363,6 +363,27 @@ export default function HomePage() {
             </h1>
             <p className="text-fuchsia-300/70 text-xs mt-0.5">{heroSettings.subtitle}</p>
           </motion.div>
+
+          {/* Extra Hero Buttons */}
+          {heroSettings.items && heroSettings.items.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
+              className="flex flex-wrap justify-center gap-2 -mt-1 mb-1"
+            >
+              {heroSettings.items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/${language}${item.link}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-fuchsia-600/80 to-purple-600/80 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-semibold transition-all shadow-lg shadow-fuchsia-900/30 border border-fuchsia-400/30"
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </motion.div>
+          )}
 
           {/* Action Buttons Row */}
           <motion.div

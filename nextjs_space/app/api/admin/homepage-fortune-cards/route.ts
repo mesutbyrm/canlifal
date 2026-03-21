@@ -70,26 +70,32 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH - update hero/ticker platform settings
+// PATCH - update hero/ticker platform settings (supports string and JSON values)
 export async function PATCH(req: NextRequest) {
   try {
     if (!(await isAdmin())) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     const body = await req.json()
-    const { settings } = body as { settings: Record<string, string> }
+    const { settings } = body as { settings: Record<string, any> }
     
     const allowedKeys = [
       'homepage_hero_icon', 'homepage_hero_title', 'homepage_hero_subtitle', 'homepage_hero_link',
-      'ticker_button_text', 'ticker_button_icon',
+      'homepage_hero_items', // JSON array of hero buttons
+      'ticker_button_text', 'ticker_button_icon', 'ticker_button_link', 'ticker_button_visible',
+      'ticker_scroll_direction', 'ticker_scroll_speed', 'ticker_bg_color', 'ticker_bg_gradient',
+      'ticker_custom_texts', // JSON array of custom scroll texts with effects
+      'ticker_online_display', // 'single' | 'triple' | 'hidden'
+      'ticker_text_effect', // 'none' | 'glow' | 'pulse' | 'rainbow' | 'neon'
     ]
     
     for (const [key, value] of Object.entries(settings || {})) {
       if (!allowedKeys.includes(key)) continue
+      const strVal = typeof value === 'object' ? JSON.stringify(value) : String(value)
       await prisma.platformSettings.upsert({
         where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value), description: `Homepage setting: ${key}` },
+        update: { value: strVal },
+        create: { key, value: strVal, description: `Homepage setting: ${key}` },
       })
     }
     
