@@ -111,6 +111,14 @@ export default function UserPopup() {
   const isFirstLoad = useRef(true)
   const delayTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  const shouldShowDefault = useCallback(() => {
+    // Default popup only shows once per session
+    try {
+      if (sessionStorage.getItem('default_popup_shown')) return false
+    } catch { /* ignore */ }
+    return true
+  }, [])
+
   const fetchPopups = useCallback(async (since?: string) => {
     try {
       const url = since ? `/api/popups?since=${encodeURIComponent(since)}` : '/api/popups'
@@ -130,7 +138,7 @@ export default function UserPopup() {
             setDelayPassed(false)
             if (delayTimerRef.current) clearTimeout(delayTimerRef.current)
             delayTimerRef.current = setTimeout(() => setDelayPassed(true), delaySec * 1000)
-          } else if (isFirstLoad.current) {
+          } else if (isFirstLoad.current && shouldShowDefault()) {
             setShowDefault(true)
             setDelayPassed(true)
           }
@@ -139,22 +147,22 @@ export default function UserPopup() {
             return p.lastSentAt > max ? p.lastSentAt : max
           }, data[0].lastSentAt)
           lastSeenTimeRef.current = latestTime
-        } else if (isFirstLoad.current) {
+        } else if (isFirstLoad.current && shouldShowDefault()) {
           setShowDefault(true)
           setDelayPassed(true)
         }
-      } else if (isFirstLoad.current) {
+      } else if (isFirstLoad.current && shouldShowDefault()) {
         setShowDefault(true)
         setDelayPassed(true)
       }
     } catch {
-      if (isFirstLoad.current) {
+      if (isFirstLoad.current && shouldShowDefault()) {
         setShowDefault(true)
         setDelayPassed(true)
       }
     }
     isFirstLoad.current = false
-  }, [])
+  }, [shouldShowDefault])
 
   // Initial fetch + polling
   useEffect(() => {
@@ -185,6 +193,8 @@ export default function UserPopup() {
       incrementPopupShowCount(p.id)
       markShownThisSession(p.id)
     })
+    // Mark default popup as shown this session
+    try { sessionStorage.setItem('default_popup_shown', '1') } catch { /* ignore */ }
     setDismissed(true)
   }, [visiblePopups])
 

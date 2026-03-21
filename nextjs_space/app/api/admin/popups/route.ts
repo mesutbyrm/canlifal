@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
         showTo: showTo || 'all',
         popupType: popupType || 'custom',
         priority: priority || 0,
-        maxShowCount: maxShowCount !== undefined ? parseInt(maxShowCount) || 0 : 0,
-        showOnRefresh: showOnRefresh !== undefined ? showOnRefresh : true,
+        maxShowCount: maxShowCount !== undefined ? parseInt(maxShowCount) || 0 : 1,
+        showOnRefresh: showOnRefresh !== undefined ? showOnRefresh : false,
         showDelaySeconds: showDelaySeconds !== undefined ? parseInt(showDelaySeconds) || 1 : 1,
       },
     });

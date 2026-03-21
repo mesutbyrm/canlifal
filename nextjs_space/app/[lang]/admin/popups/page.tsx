@@ -150,8 +150,8 @@ const emptyPopup: Omit<AdminPopup, 'id' | 'createdAt' | 'updatedAt' | 'lastSentA
   showTo: 'all',
   popupType: 'custom',
   priority: 0,
-  maxShowCount: 0,
-  showOnRefresh: true,
+  maxShowCount: 1,
+  showOnRefresh: false,
   showDelaySeconds: 1,
 }
 
