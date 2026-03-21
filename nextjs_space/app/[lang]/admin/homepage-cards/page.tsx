@@ -568,8 +568,43 @@ export default function HomepageCardsAdmin() {
                   </div>
                 </div>
                 <div>
-                  <label className={labelCls}>Gradient (CSS)</label>
-                  <input type="text" value={ticker.bgGradient} onChange={e => setTicker(p => ({ ...p, bgGradient: e.target.value }))} className={inputCls} placeholder="linear-gradient(90deg, ...)" />
+                  <label className={labelCls}>Arka Plan Gradyanı</label>
+                  <div className="grid grid-cols-4 gap-2 mb-2">
+                    {[
+                      { label: 'Yok', value: '' },
+                      { label: 'Varsayılan Mor', value: 'linear-gradient(90deg, #0a0118, #1a0530, #0a0118)' },
+                      { label: 'Gece Mavisi', value: 'linear-gradient(90deg, #020024, #090979, #020024)' },
+                      { label: 'Ateş Kırmızı', value: 'linear-gradient(90deg, #1a0000, #4a0000, #1a0000)' },
+                      { label: 'Okyanus', value: 'linear-gradient(90deg, #001219, #005f73, #001219)' },
+                      { label: 'Altın', value: 'linear-gradient(90deg, #1a1000, #3d2b00, #1a1000)' },
+                      { label: 'Yeşil Doğa', value: 'linear-gradient(90deg, #001a00, #004d00, #001a00)' },
+                      { label: 'Pembe', value: 'linear-gradient(90deg, #1a0010, #4a0028, #1a0010)' },
+                      { label: 'Koyu Siyah', value: 'linear-gradient(90deg, #000000, #111111, #000000)' },
+                    ].map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setTicker(p => ({ ...p, bgGradient: preset.value }))}
+                        className={`relative rounded-lg p-1 text-center text-[10px] leading-tight border transition-all ${
+                          ticker.bgGradient === preset.value
+                            ? 'border-fuchsia-400 ring-1 ring-fuchsia-400/50'
+                            : 'border-white/10 hover:border-fuchsia-500/40'
+                        }`}
+                      >
+                        <div
+                          className="h-6 rounded-md mb-0.5"
+                          style={{ background: preset.value || '#0a0118' }}
+                        />
+                        <span className="text-fuchsia-200/80">{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <details className="group">
+                    <summary className="text-fuchsia-400/60 text-xs cursor-pointer hover:text-fuchsia-300 select-none">
+                      ▸ Özel gradient yaz
+                    </summary>
+                    <input type="text" value={ticker.bgGradient} onChange={e => setTicker(p => ({ ...p, bgGradient: e.target.value }))} className={`${inputCls} mt-1`} placeholder="linear-gradient(90deg, #renk1, #renk2, #renk3)" />
+                  </details>
                 </div>
                 <div>
                   <label className={labelCls}>Online Kullanıcı Gösterimi</label>

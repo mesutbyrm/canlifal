@@ -365,7 +365,7 @@ export default function LiveTicker() {
           </div>
         </div>
       </div>
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes live-ticker-rtl {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }
@@ -378,41 +378,45 @@ export default function LiveTicker() {
           will-change: transform;
         }
         /* Text effects */
+        .ticker-effect-glow > span,
         .ticker-effect-glow {
-          text-shadow: 0 0 8px rgba(217, 70, 239, 0.8), 0 0 16px rgba(217, 70, 239, 0.5);
+          text-shadow: 0 0 8px rgba(217, 70, 239, 0.8), 0 0 16px rgba(217, 70, 239, 0.5), 0 0 24px rgba(168, 85, 247, 0.4) !important;
         }
+        .ticker-effect-pulse > span,
         .ticker-effect-pulse {
-          animation: ticker-pulse 1.5s ease-in-out infinite;
+          animation: ticker-pulse 1.5s ease-in-out infinite !important;
         }
         @keyframes ticker-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.97); }
         }
-        .ticker-effect-rainbow {
-          background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          background-size: 200% 100%;
-          animation: ticker-rainbow 3s linear infinite;
+        .ticker-effect-rainbow > span {
+          background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          background-size: 200% 100% !important;
+          animation: ticker-rainbow 3s linear infinite !important;
         }
         @keyframes ticker-rainbow {
           0% { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
+        .ticker-effect-neon > span,
         .ticker-effect-neon {
-          text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 60px #0ff;
-          color: #fff;
+          text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff !important;
+          color: #fff !important;
         }
+        .ticker-effect-typewriter > span,
         .ticker-effect-typewriter {
-          border-right: 2px solid rgba(255,255,255,0.7);
-          animation: ticker-blink 0.8s step-end infinite;
+          border-right: 2px solid rgba(255,255,255,0.7) !important;
+          animation: ticker-blink 0.8s step-end infinite !important;
         }
         @keyframes ticker-blink {
           50% { border-color: transparent; }
         }
         .ticker-effect-bounce {
-          animation: ticker-bounce 1s ease infinite;
+          animation: ticker-bounce 0.8s ease infinite !important;
         }
         @keyframes ticker-bounce {
           0%, 100% { transform: translateY(0); }
