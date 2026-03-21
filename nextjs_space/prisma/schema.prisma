@@ -1965,17 +1965,20 @@ model HomepageButton {
 }
 
 model AdminPopup {
-  id          String   @id @default(cuid())
-  title       String   // Popup title/heading
-  message     String   // Main message text
-  buttons     String   @default("[]") // JSON array: [{label, href, color?}]
-  isActive    Boolean  @default(true)
-  showTo      String   @default("all") // all, logged_in, guests
-  popupType   String   @default("custom") // custom, live_streams, chat_rooms
-  priority    Int      @default(0) // higher = shown first
-  lastSentAt  DateTime @default(now()) // Updated when admin re-sends popup
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           String   // Popup title/heading
+  message         String   // Main message text
+  buttons         String   @default("[]") // JSON array: [{label, href, color?}]
+  isActive        Boolean  @default(true)
+  showTo          String   @default("all") // all, logged_in, guests
+  popupType       String   @default("custom") // custom, live_streams, chat_rooms
+  priority        Int      @default(0) // higher = shown first
+  maxShowCount    Int      @default(0) // 0 = unlimited, otherwise max times per user
+  showOnRefresh   Boolean  @default(true) // false = show only once per session (tab)
+  showDelaySeconds Int     @default(1) // seconds to wait before showing popup
+  lastSentAt      DateTime @default(now()) // Updated when admin re-sends popup
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([isActive, priority])
   @@index([isActive, lastSentAt])

@@ -35,6 +35,9 @@ interface PopupData {
   message: string
   buttons: PopupButton[]
   popupType: string
+  maxShowCount: number
+  showOnRefresh: boolean
+  showDelaySeconds: number
   lastSentAt: string
   liveStreams?: LiveStream[]
   chatRooms?: ChatRoom[]
@@ -49,44 +52,105 @@ const DEFAULT_QUICK_ACTIONS: PopupButton[] = [
 
 const POLL_INTERVAL = 5000 // 5 seconds
 
+// Helper: get show count for a popup from localStorage
+function getPopupShowCount(popupId: string): number {
+  try {
+    const data = JSON.parse(localStorage.getItem('popup_show_counts') || '{}')
+    return data[popupId] || 0
+  } catch { return 0 }
+}
+
+// Helper: increment show count
+function incrementPopupShowCount(popupId: string) {
+  try {
+    const data = JSON.parse(localStorage.getItem('popup_show_counts') || '{}')
+    data[popupId] = (data[popupId] || 0) + 1
+    localStorage.setItem('popup_show_counts', JSON.stringify(data))
+  } catch { /* ignore */ }
+}
+
+// Helper: check session-level visibility (showOnRefresh=false means once per session)
+function isShownThisSession(popupId: string): boolean {
+  try {
+    const data = JSON.parse(sessionStorage.getItem('popup_session_shown') || '{}')
+    return !!data[popupId]
+  } catch { return false }
+}
+
+function markShownThisSession(popupId: string) {
+  try {
+    const data = JSON.parse(sessionStorage.getItem('popup_session_shown') || '{}')
+    data[popupId] = true
+    sessionStorage.setItem('popup_session_shown', JSON.stringify(data))
+  } catch { /* ignore */ }
+}
+
+// Filter popups based on display rules
+function filterVisiblePopups(popups: PopupData[]): PopupData[] {
+  return popups.filter(p => {
+    // Check maxShowCount (0 = unlimited)
+    if (p.maxShowCount > 0 && getPopupShowCount(p.id) >= p.maxShowCount) return false
+    // Check showOnRefresh — if false and already shown this session, skip
+    if (!p.showOnRefresh && isShownThisSession(p.id)) return false
+    return true
+  })
+}
+
 export default function UserPopup() {
   const [popups, setPopups] = useState<PopupData[]>([])
+  const [visiblePopups, setVisiblePopups] = useState<PopupData[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const [showDefault, setShowDefault] = useState(false)
+  const [delayPassed, setDelayPassed] = useState(false)
   const lastSeenTimeRef = useRef<string | null>(null)
   const router = useRouter()
   const { data: session, status: sessionStatus } = useSession() || {}
   const isGuest = sessionStatus === 'unauthenticated'
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const isFirstLoad = useRef(true)
+  const delayTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchPopups = useCallback(async (since?: string) => {
     try {
       const url = since ? `/api/popups?since=${encodeURIComponent(since)}` : '/api/popups'
       const res = await fetch(url)
       if (res.ok) {
-        const data = await res.json()
+        const data: PopupData[] = await res.json()
         if (data.length > 0) {
-          setPopups(data)
-          setShowDefault(false)
-          setDismissed(false) // Re-show popup when new one arrives
-          setCurrentIdx(0)
+          const filtered = filterVisiblePopups(data)
+          if (filtered.length > 0) {
+            setPopups(data)
+            setVisiblePopups(filtered)
+            setShowDefault(false)
+            setDismissed(false)
+            setCurrentIdx(0)
+            // Handle delay — use the first popup's delay setting
+            const delaySec = filtered[0]?.showDelaySeconds ?? 1
+            setDelayPassed(false)
+            if (delayTimerRef.current) clearTimeout(delayTimerRef.current)
+            delayTimerRef.current = setTimeout(() => setDelayPassed(true), delaySec * 1000)
+          } else if (isFirstLoad.current) {
+            setShowDefault(true)
+            setDelayPassed(true)
+          }
           // Track the latest lastSentAt
           const latestTime = data.reduce((max: string, p: PopupData) => {
             return p.lastSentAt > max ? p.lastSentAt : max
           }, data[0].lastSentAt)
           lastSeenTimeRef.current = latestTime
         } else if (isFirstLoad.current) {
-          // Only show default on first load if no popups exist
           setShowDefault(true)
+          setDelayPassed(true)
         }
       } else if (isFirstLoad.current) {
         setShowDefault(true)
+        setDelayPassed(true)
       }
     } catch {
       if (isFirstLoad.current) {
         setShowDefault(true)
+        setDelayPassed(true)
       }
     }
     isFirstLoad.current = false
@@ -96,12 +160,10 @@ export default function UserPopup() {
   useEffect(() => {
     if (sessionStatus === 'loading') return
 
-    // Small delay so page loads first
     const initTimer = setTimeout(() => {
       fetchPopups()
     }, 1500)
 
-    // Start polling for new popups
     pollRef.current = setInterval(() => {
       if (lastSeenTimeRef.current) {
         fetchPopups(lastSeenTimeRef.current)
@@ -113,21 +175,26 @@ export default function UserPopup() {
     return () => {
       clearTimeout(initTimer)
       if (pollRef.current) clearInterval(pollRef.current)
+      if (delayTimerRef.current) clearTimeout(delayTimerRef.current)
     }
   }, [sessionStatus, fetchPopups])
 
   const handleDismiss = useCallback(() => {
+    // Track show counts and session visibility for each visible popup
+    visiblePopups.forEach(p => {
+      incrementPopupShowCount(p.id)
+      markShownThisSession(p.id)
+    })
     setDismissed(true)
-    // No sessionStorage block - polling will re-show if admin resends
-  }, [])
+  }, [visiblePopups])
 
   const handleButtonClick = useCallback((href: string) => {
     handleDismiss()
     router.push(`/tr${href}`)
   }, [handleDismiss, router])
 
-  const currentPopup = popups[currentIdx]
-  const isVisible = !dismissed && (popups.length > 0 || showDefault)
+  const currentPopup = visiblePopups[currentIdx]
+  const isVisible = !dismissed && delayPassed && (visiblePopups.length > 0 || showDefault)
 
   if (!isVisible) return null
 
@@ -282,9 +349,9 @@ export default function UserPopup() {
             )}
 
             {/* Multiple popups navigation */}
-            {popups.length > 1 && (
+            {visiblePopups.length > 1 && (
               <div className="flex items-center justify-center gap-1.5 pt-2">
-                {popups.map((_, i) => (
+                {visiblePopups.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentIdx(i)}

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await request.json();
-    const { title, message, buttons, isActive, showTo, popupType, priority } = body;
+    const { title, message, buttons, isActive, showTo, popupType, priority, maxShowCount, showOnRefresh, showDelaySeconds } = body;
     if (!title || !message) {
       return NextResponse.json({ error: 'title and message required' }, { status: 400 });
     }
@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
         showTo: showTo || 'all',
         popupType: popupType || 'custom',
         priority: priority || 0,
+        maxShowCount: maxShowCount !== undefined ? parseInt(maxShowCount) || 0 : 0,
+        showOnRefresh: showOnRefresh !== undefined ? showOnRefresh : true,
+        showDelaySeconds: showDelaySeconds !== undefined ? parseInt(showDelaySeconds) || 1 : 1,
       },
     });
     return NextResponse.json(popup);
@@ -57,7 +60,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const body = await request.json();
-    const { id, title, message, buttons, isActive, showTo, popupType, priority, action } = body;
+    const { id, title, message, buttons, isActive, showTo, popupType, priority, maxShowCount, showOnRefresh, showDelaySeconds, action } = body;
     if (!id) {
       return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
@@ -81,6 +84,9 @@ export async function PUT(request: NextRequest) {
         ...(showTo !== undefined && { showTo }),
         ...(popupType !== undefined && { popupType }),
         ...(priority !== undefined && { priority }),
+        ...(maxShowCount !== undefined && { maxShowCount: parseInt(maxShowCount) || 0 }),
+        ...(showOnRefresh !== undefined && { showOnRefresh }),
+        ...(showDelaySeconds !== undefined && { showDelaySeconds: parseInt(showDelaySeconds) || 1 }),
       },
     });
     return NextResponse.json(popup);

@@ -23,6 +23,9 @@ interface AdminPopup {
   showTo: string
   popupType: string
   priority: number
+  maxShowCount: number
+  showOnRefresh: boolean
+  showDelaySeconds: number
   lastSentAt: string
   createdAt: string
   updatedAt: string
@@ -147,6 +150,9 @@ const emptyPopup: Omit<AdminPopup, 'id' | 'createdAt' | 'updatedAt' | 'lastSentA
   showTo: 'all',
   popupType: 'custom',
   priority: 0,
+  maxShowCount: 0,
+  showOnRefresh: true,
+  showDelaySeconds: 1,
 }
 
 export default function AdminPopupsPage() {
@@ -192,6 +198,9 @@ export default function AdminPopupsPage() {
         showTo: popup.showTo,
         popupType: popup.popupType,
         priority: popup.priority,
+        maxShowCount: popup.maxShowCount ?? 0,
+        showOnRefresh: popup.showOnRefresh ?? true,
+        showDelaySeconds: popup.showDelaySeconds ?? 1,
       })
       setButtons(btns)
     } else {
@@ -218,6 +227,9 @@ export default function AdminPopupsPage() {
       const payload = {
         ...form,
         buttons: JSON.stringify(buttons),
+        maxShowCount: form.maxShowCount,
+        showOnRefresh: form.showOnRefresh,
+        showDelaySeconds: form.showDelaySeconds,
         ...(editingId && { id: editingId }),
       }
       const method = editingId ? 'PUT' : 'POST'
@@ -375,6 +387,17 @@ export default function AdminPopupsPage() {
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/40 text-purple-300">
                           Öncelik: {popup.priority}
                         </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300">
+                          {popup.maxShowCount === 0 ? 'Sınırsız gösterim' : `Maks ${popup.maxShowCount} kez`}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300">
+                          {popup.showOnRefresh ? 'Her yenilemede' : 'Oturum başına 1 kez'}
+                        </span>
+                        {popup.showDelaySeconds > 1 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300">
+                            {popup.showDelaySeconds}sn gecikme
+                          </span>
+                        )}
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300">
                           Son gönderim: {formatDate(popup.lastSentAt)}
                         </span>
@@ -551,6 +574,55 @@ export default function AdminPopupsPage() {
                       onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value) || 0 })}
                       className="w-full px-3 py-2.5 rounded-xl bg-purple-900/30 border border-purple-500/30 text-white focus:outline-none focus:border-purple-400"
                     />
+                  </div>
+                </div>
+
+                {/* Display Settings */}
+                <div className="p-4 rounded-xl bg-purple-900/10 border border-purple-700/30 space-y-4">
+                  <h4 className="text-sm font-bold text-purple-200 flex items-center gap-2">⚙️ Gösterim Ayarları</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-purple-300 mb-1 block">Maks Gösterim Sayısı</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.maxShowCount}
+                        onChange={(e) => setForm({ ...form, maxShowCount: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-600/30 text-white text-sm focus:outline-none focus:border-purple-400"
+                        placeholder="0"
+                      />
+                      <p className="text-[10px] text-purple-400/60 mt-1">0 = sınırsız, aksi halde kullanıcı başına max gösterim</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-purple-300 mb-1 block">Gösterim Gecikmesi (sn)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.showDelaySeconds}
+                        onChange={(e) => setForm({ ...form, showDelaySeconds: parseInt(e.target.value) || 1 })}
+                        className="w-full px-3 py-2 rounded-lg bg-purple-900/30 border border-purple-600/30 text-white text-sm focus:outline-none focus:border-purple-400"
+                        placeholder="1"
+                      />
+                      <p className="text-[10px] text-purple-400/60 mt-1">Sayfa açıldıktan kaç saniye sonra gösterilsin</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-purple-900/20 border border-purple-700/30">
+                    <div>
+                      <span className="text-sm text-purple-200">Sayfa Yenilemede Tekrar Göster</span>
+                      <p className="text-[10px] text-purple-400/60 mt-0.5">Kapalıysa aynı tarayıcı sekmesinde sadece 1 kez gösterilir</p>
+                    </div>
+                    <button
+                      onClick={() => setForm({ ...form, showOnRefresh: !form.showOnRefresh })}
+                      className="transition-colors flex-shrink-0"
+                    >
+                      {form.showOnRefresh ? (
+                        <ToggleRight className="w-8 h-8 text-green-400" />
+                      ) : (
+                        <ToggleLeft className="w-8 h-8 text-gray-500" />
+                      )}
+                    </button>
                   </div>
                 </div>
 
