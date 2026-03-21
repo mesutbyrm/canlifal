@@ -197,15 +197,26 @@ export default function BulkImportDreamsPage() {
     const sample = `Yılan
 Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı, küçük yılan görmek ise zayıf bir düşmanı simgeler. Yılanı öldürmek düşmandan kurtulmaya delalet eder.
 
+Siyah yılan görmek sinsi bir düşmanın varlığına, beyaz yılan görmek ise şifa ve olumlu gelişmelere işaret eder. Yılanın sokması beklenmedik bir zarara veya hastalığa dikkat çeker.
+
 ---
 
 Kedi
 Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere, siyah kedi görmek ise dikkatli olunması gereken durumlara yorumlanır. Kedi sesi duymak dedikodu anlamına gelir.
 
+Evcil kedi görmek güvenilir bir dost anlamına gelirken, yabani kedi görmek çevrenizdeki kötü niyetli birini simgeler.
+
 ---
 
 Su
-Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka, bulanık su görmek ise sıkıntıya delalet eder. Akan su görmek bereketli bir dönemin habercisidir.`
+Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka, bulanık su görmek ise sıkıntıya delalet eder. Akan su görmek bereketli bir dönemin habercisidir.
+
+Denizde yüzmek yeni fırsatlara, nehirde yüzmek ise hayatın akışına uyum sağlamaya işaret eder.
+
+---
+
+At
+Rüyada at görmek, güç, şeref ve yükselmeye işaret eder. Beyaz at görmek hayırlı haberlere, siyah at görmek ise güçlü bir irade ve kararlılığa delalet eder. At üstünde olmak makam ve mevki sahibi olmaya yorumlanır.`
     const blob = new Blob([sample], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -217,9 +228,10 @@ Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayı
 
   const downloadSampleCsv = () => {
     const sample = `başlık;içerik
-Yılan;"Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı simgeler."
-Kedi;"Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere yorumlanır."
-Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka delalet eder."`
+Yılan;"Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı, küçük yılan görmek ise zayıf bir düşmanı simgeler. Yılanı öldürmek düşmandan kurtulmaya delalet eder."
+Kedi;"Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere, siyah kedi görmek ise dikkatli olunması gereken durumlara yorumlanır."
+Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek hayırlı rızka, bulanık su görmek ise sıkıntıya delalet eder. Akan su görmek bereketli bir dönemin habercisidir."
+At;"Rüyada at görmek, güç, şeref ve yükselmeye işaret eder. Beyaz at görmek hayırlı haberlere, siyah at görmek ise güçlü bir irade ve kararlılığa delalet eder."`
     const blob = new Blob([sample], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -278,13 +290,16 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-200/80">
-              <p className="font-semibold text-blue-200 mb-2">Desteklenen Formatlar:</p>
+              <p className="font-semibold text-blue-200 mb-2">Desteklenen Formatlar ve Alanlar:</p>
               <div className="space-y-2">
                 <div>
-                  <span className="font-medium text-blue-300">TXT Formatı:</span> Her rüya tabiri &quot;---&quot; ile veya üç boş satırla ayrılmalıdır. İlk satır başlık, sonraki satırlar içeriktir.
+                  <span className="font-medium text-blue-300">📝 TXT Formatı:</span> Her rüya tabiri &quot;---&quot; ile veya üç boş satırla ayrılmalıdır. İlk satır <strong>başlık</strong> (rüya sembolü adı), sonraki satırlar <strong>tabir içeriği</strong>dir.
                 </div>
                 <div>
-                  <span className="font-medium text-blue-300">CSV Formatı:</span> İlk satır başlık satırı olmalıdır. Sütunlar: başlık/title, içerik/content. Ayraç olarak virgül, noktalı virgül veya tab kullanılabilir.
+                  <span className="font-medium text-blue-300">📊 CSV Formatı:</span> İlk satır başlık satırıdır. Sütunlar: <strong>başlık</strong>, <strong>içerik</strong>. Ayraç: noktalı virgül (;) veya virgül (,) veya tab.
+                </div>
+                <div>
+                  <span className="font-medium text-purple-300">💡 Not:</span> Başlıklar otomatik olarak &quot;Rüyada ... Görmek&quot; formatına dönüştürülür. Slug, anahtar kelimeler, özet ve meta açıklaması otomatik oluşturulur.
                 </div>
                 <div>
                   <span className="font-medium text-amber-300">🤖 AI SEO:</span> Aktif edildiğinde, anahtar kelimeler, meta açıklaması ve özet AI tarafından Google botlarına uygun şekilde otomatik oluşturulur.
@@ -418,8 +433,8 @@ Su;"Rüyada su görmek, ilim, bereket ve hayata işaret eder. Temiz su görmek h
                   value={pasteContent}
                   onChange={(e) => setPasteContent(e.target.value)}
                   placeholder={fileType === 'csv'
-                    ? 'başlık;içerik\nYılan;Rüyada yılan görmek...\nKedi;Rüyada kedi görmek...'
-                    : 'Yılan\nRüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder.\n\n---\n\nKedi\nRüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir.'
+                    ? 'başlık;içerik\nYılan;"Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan güçlü bir düşmanı simgeler."\nKedi;"Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi iyi haberlere yorumlanır."\nAt;"Rüyada at görmek, güç, özgürlük ve başarıya işaret eder."'
+                    : 'Yılan\nRüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder. Büyük yılan görmek güçlü bir düşmanı simgeler.\n\n---\n\nKedi\nRüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir. Beyaz kedi görmek iyi haberlere yorumlanır.\n\n---\n\nAt\nRüyada at görmek, güç, özgürlük ve başarıya işaret eder.'
                   }
                   className="w-full h-64 p-4 rounded-xl bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none resize-y font-mono text-sm"
                 />

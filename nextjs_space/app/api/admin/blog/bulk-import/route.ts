@@ -33,6 +33,7 @@ function slugify(text: string): string {
 interface ParsedBlog {
   title: string
   content: string
+  coverImage?: string
 }
 
 function parseTxtContent(text: string): ParsedBlog[] {
@@ -43,9 +44,19 @@ function parseTxtContent(text: string): ParsedBlog[] {
     if (lines.length === 0) continue
     let title = lines[0].replace(/^#+\s*/, '').replace(/^\*+\s*/, '').trim()
     title = title.replace(/^["']+|["']+$/g, '').trim()
-    const content = lines.slice(1).join('\n').trim()
-    if (title && content) blogs.push({ title, content })
-    else if (title && !content) blogs.push({ title, content: title })
+    let coverImage = ''
+    let contentStartIdx = 1
+    if (lines.length > 1) {
+      const secondLine = lines[1].trim()
+      const imgMatch = secondLine.match(/^(?:KAPAK|RESİM|RESIM|IMAGE):\s*(.+)/i)
+      if (imgMatch) {
+        coverImage = imgMatch[1].trim()
+        contentStartIdx = 2
+      }
+    }
+    const content = lines.slice(contentStartIdx).join('\n').trim()
+    if (title && content) blogs.push({ title, content, coverImage })
+    else if (title && !content) blogs.push({ title, content: title, coverImage })
   }
   return blogs
 }
@@ -58,13 +69,15 @@ function parseCsvContent(text: string): ParsedBlog[] {
   const headerCols = parseCSVLine(header)
   let titleIdx = headerCols.findIndex((h: string) => h.includes('title') || h.includes('baslik') || h.includes('başlık') || h === 'ad' || h === 'isim')
   let contentIdx = headerCols.findIndex((h: string) => h.includes('content') || h.includes('icerik') || h.includes('içerik') || h.includes('metin') || h.includes('yazi'))
+  let imageIdx = headerCols.findIndex((h: string) => h.includes('kapak') || h.includes('resim') || h.includes('image') || h.includes('cover') || h.includes('görsel'))
   if (titleIdx === -1) titleIdx = 0
   if (contentIdx === -1) contentIdx = headerCols.length > 1 ? 1 : 0
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVLine(lines[i])
     const title = (cols[titleIdx] || '').trim()
     const content = (cols[contentIdx] || '').trim()
-    if (title) blogs.push({ title, content: content || title })
+    const coverImage = imageIdx !== -1 ? (cols[imageIdx] || '').trim() : ''
+    if (title) blogs.push({ title, content: content || title, coverImage })
   }
   return blogs
 }
@@ -88,12 +101,13 @@ function parseCSVLine(line: string): string[] {
 async function generateBlogSEOWithAI(blogs: ParsedBlog[]): Promise<Array<{
   title: string
   content: string
+  coverImage: string
   description: string
   keywords: string[]
   metaDescription: string
 }>> {
   const results: Array<{
-    title: string; content: string; description: string; keywords: string[]; metaDescription: string
+    title: string; content: string; coverImage: string; description: string; keywords: string[]; metaDescription: string
   }> = []
 
   const batchSize = 5
@@ -130,6 +144,7 @@ JSON formatında yanıt ver:
             results.push({
               title: batch[idx].title,
               content: batch[idx].content,
+              coverImage: batch[idx].coverImage || '',
               description: item.description || batch[idx].content.substring(0, 200),
               keywords: item.keywords || [],
               metaDescription: item.metaDescription || batch[idx].content.substring(0, 160),
@@ -142,7 +157,7 @@ JSON formatında yanıt ver:
         const alreadyProcessed = results.some(r => r.title === batch[j].title && r.content === batch[j].content)
         if (!alreadyProcessed) {
           results.push({
-            title: batch[j].title, content: batch[j].content,
+            title: batch[j].title, content: batch[j].content, coverImage: batch[j].coverImage || '',
             description: batch[j].content.substring(0, 200),
             keywords: [], metaDescription: batch[j].content.substring(0, 160),
           })
@@ -152,7 +167,7 @@ JSON formatında yanıt ver:
       console.error('AI SEO blog generation error, using fallback:', aiError)
       for (const blog of batch) {
         results.push({
-          title: blog.title, content: blog.content,
+          title: blog.title, content: blog.content, coverImage: blog.coverImage || '',
           description: blog.content.substring(0, 200),
           keywords: [], metaDescription: blog.content.substring(0, 160),
         })
@@ -213,14 +228,14 @@ export async function POST(req: NextRequest) {
 
     // Generate SEO data
     let processedBlogs: Array<{
-      title: string; content: string; description: string; keywords: string[]; metaDescription: string
+      title: string; content: string; coverImage: string; description: string; keywords: string[]; metaDescription: string
     }>
 
     if (useAI) {
       processedBlogs = await generateBlogSEOWithAI(parsedBlogs)
     } else {
       processedBlogs = parsedBlogs.map(b => ({
-        title: b.title, content: b.content,
+        title: b.title, content: b.content, coverImage: b.coverImage || '',
         description: b.content.replace(/\n+/g, ' ').substring(0, 200),
         keywords: [],
         metaDescription: b.content.replace(/\n+/g, ' ').substring(0, 160),
@@ -266,7 +281,7 @@ export async function POST(req: NextRequest) {
             category,
             keywords: blog.keywords,
             metaDescription: blog.metaDescription.substring(0, 160),
-            coverImage: '',
+            coverImage: blog.coverImage || '',
             readTime,
             isPublished: true,
             isFeatured: false,
