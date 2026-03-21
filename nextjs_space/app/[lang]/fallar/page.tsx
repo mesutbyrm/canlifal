@@ -20,7 +20,7 @@ export default function FortunesPage() {
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
             <Star className="w-8 h-8 text-white" />
           </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-gold-400 mb-2">
+          <h1 className="font-serif text-3xl md:text-4xl text-amber-300 mb-2">
             {'Fallar'}
           </h1>
           <p className="text-purple-300 max-w-2xl mx-auto">
@@ -39,7 +39,7 @@ export default function FortunesPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-8"
         >
-          <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h2 className="text-amber-300 text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             {'Etkileşimli & Görsel Fallar'}
           </h2>
@@ -57,7 +57,7 @@ export default function FortunesPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8"
         >
-          <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
+          <h2 className="text-amber-300 text-sm font-semibold uppercase tracking-wider mb-4">
             {'Kart Falları'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -74,7 +74,7 @@ export default function FortunesPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mb-8"
         >
-          <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
+          <h2 className="text-amber-300 text-sm font-semibold uppercase tracking-wider mb-4">
             {'Astroloji & Numeroloji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -91,7 +91,7 @@ export default function FortunesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <h2 className="text-gold-400 text-sm font-semibold uppercase tracking-wider mb-4">
+          <h2 className="text-amber-300 text-sm font-semibold uppercase tracking-wider mb-4">
             {'Ruhsal & Enerji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

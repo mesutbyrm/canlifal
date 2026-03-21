@@ -29,6 +29,23 @@ const FORTUNE_NAMES: Record<string, string> = {
   kursundokme: 'Kurşun Dökme',
 }
 
+const FORTUNE_SLUGS: Record<string, string> = {
+  coffee: 'kahve-fali',
+  tarot: 'tarot-fali',
+  dream: 'ruya-yorumu',
+  horoscope: 'burc-yorumu',
+  numerology: 'numeroloji',
+  love: 'ask-uyumu',
+  yesno: 'evet-hayir',
+  katina: 'katina',
+  palm: 'el-fali',
+  istikhara: 'istihare',
+  angel: 'melek-kartlari',
+  birthchart: 'dogum-haritasi',
+  aura: 'aura-analizi',
+  kursundokme: 'kursundokme',
+}
+
 const FORTUNE_DESCRIPTIONS: Record<string, string> = {
   coffee: 'Fincan fotoğrafı yükleyerek fal baktırın',
   tarot: 'Kartlar yolunuzu aydınlatsın',
@@ -58,33 +75,33 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
       transition={{ duration: 0.3 }}
       className="group"
     >
-      <Link href={`/fallar/${type}`}>
-        <div className="relative bg-mystical-card border border-mystical rounded-lg overflow-hidden mystical-shadow hover:shadow-2xl transition-all duration-300">
+      <Link href={`/fallar/${FORTUNE_SLUGS[type] || type}`}>
+        <div className="relative bg-purple-900/40 border border-purple-500/30 rounded-lg overflow-hidden shadow-lg shadow-purple-900/30 hover:shadow-2xl hover:shadow-purple-800/30 transition-all duration-300">
           {/* Image */}
-          <div className="relative aspect-[4/3] sm:aspect-square bg-deep-purple-900">
+          <div className="relative aspect-[4/3] sm:aspect-square bg-purple-950">
             <Image
               src={imageSrc}
               alt={fortuneName}
               fill
               className="object-cover group-hover:scale-110 transition-transform duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-deep-purple-950 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0118] via-transparent to-transparent" />
           </div>
 
           {/* Content */}
           <div className="p-3 sm:p-4 md:p-5 space-y-1.5 sm:space-y-2">
-            <h3 className="font-serif text-base sm:text-lg md:text-xl lg:text-2xl text-gold-500 gold-glow group-hover:text-gold-400 transition-colors">
+            <h3 className="font-serif text-base sm:text-lg md:text-xl lg:text-2xl text-amber-300 group-hover:text-amber-200 transition-colors">
               {fortuneName}
             </h3>
-            <p className="text-deep-purple-200 text-xs sm:text-sm line-clamp-2">
+            <p className="text-purple-200 text-xs sm:text-sm line-clamp-2">
               {fortuneDesc}
             </p>
             <div className="flex items-center justify-between pt-1 sm:pt-2">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-gold-500" />
-                <span className="text-gold-400 font-medium text-xs sm:text-sm md:text-base">{cost} CFC</span>
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />
+                <span className="text-amber-300 font-medium text-xs sm:text-sm md:text-base">{cost} CFC</span>
               </div>
-              <span className="text-deep-purple-300 text-xs sm:text-sm group-hover:text-gold-400 transition-colors">
+              <span className="text-purple-300 text-xs sm:text-sm group-hover:text-amber-300 transition-colors">
                 {'Keşfet →'}
               </span>
             </div>

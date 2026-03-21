@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { useSession } from 'next-auth/react'
-import { Circle, Coins, Crown, Sparkles } from 'lucide-react'
+import { Circle, Coins, Crown } from 'lucide-react'
 
 interface TickerBadge {
   name: string
@@ -85,6 +85,7 @@ export default function LiveTicker() {
     recentPurchasers: [],
     bigGifts: []
   })
+  const [tickerButton, setTickerButton] = useState({ text: 'Canlı Falcı', icon: '✨' })
   const tickerRef = useRef<HTMLDivElement>(null)
   
   const bgGradient = 'bg-gradient-to-r from-[#0a0118] via-[#150828] to-[#0a0118] border-fuchsia-800/40'
@@ -105,7 +106,21 @@ export default function LiveTicker() {
         console.error('Live ticker fetch error:', e)
       }
     }
+    // Fetch ticker button settings from DB
+    const fetchTickerSettings = async () => {
+      try {
+        const res = await fetch('/api/homepage-fortune-cards')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.ticker) {
+            setTickerButton({ text: json.ticker.buttonText || 'Canlı Falcı', icon: json.ticker.buttonIcon || '✨' })
+          }
+        }
+      } catch (e) {}
+    }
+
     fetchData()
+    fetchTickerSettings()
     const interval = setInterval(fetchData, 15000)
     return () => clearInterval(interval)
   }, [])
@@ -211,9 +226,9 @@ export default function LiveTicker() {
           href={`/canli-falcilar`}
           className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-fuchsia-700/90 to-purple-700/90 text-white text-xs sm:text-sm font-bold hover:from-fuchsia-600 hover:to-purple-600 transition-all"
         >
-          <Sparkles className="w-4 h-4" />
-          <span className="hidden xs:inline">{'Canlı Falcı'}</span>
-          <span className="xs:hidden">{'Canlı'}</span>
+          <span className="text-sm">{tickerButton.icon}</span>
+          <span className="hidden xs:inline">{tickerButton.text}</span>
+          <span className="xs:hidden">{tickerButton.text.split(' ')[0]}</span>
           {data.onlineTellerCount > 0 && (
             <span className="ml-0.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-green-500 text-white text-[10px] sm:text-xs font-bold animate-pulse">
               {data.onlineTellerCount}

@@ -902,6 +902,31 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Live session durations seeded')
 
+  // Seed homepage fortune cards
+  const fortuneCards = [
+    { name: 'Kahve Falı', icon: '☕', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali', sortOrder: 0 },
+    { name: 'Tarot Falı', icon: '🃏', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fallar/tarot-fali', sortOrder: 1 },
+    { name: 'El Falı', icon: '🤚', image: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png', href: '/fallar/el-fali', sortOrder: 2 },
+    { name: 'Rüya Tabiri', icon: '🌙', image: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png', href: '/fallar/ruya-yorumu', sortOrder: 3 },
+    { name: 'Aşk Uyumu', icon: '❤️', image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png', href: '/fallar/ask-uyumu', sortOrder: 4 },
+    { name: 'Günlük Burç', icon: '⭐', image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', href: '/fallar/burc-yorumu', sortOrder: 5 },
+    { name: 'Numeroloji', icon: '🔢', image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', href: '/fallar/numeroloji', sortOrder: 6 },
+    { name: 'Melek Kartları', icon: '👼', image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', href: '/fallar/melek-kartlari', sortOrder: 7 },
+    { name: 'Aura Okuma', icon: '💫', image: '/fortunes/aura.jpg', href: '/fallar/aura-analizi', sortOrder: 8 },
+    { name: 'Doğum Haritası', icon: '🌟', image: '/fortunes/birthchart.jpg', href: '/fallar/dogum-haritasi', sortOrder: 9 },
+    { name: 'Katina Falı', icon: '🎴', image: '/fortunes/katina.jpg', href: '/fallar/katina', sortOrder: 10 },
+    { name: 'Evet/Hayır', icon: '🔮', image: '/fortunes/yesno.jpg', href: '/fallar/evet-hayir', sortOrder: 11 },
+    { name: 'Kurşun Dökme', icon: '🕯️', image: '/fortunes/dream.jpg', href: '/fallar/kursundokme', sortOrder: 12 },
+    { name: 'İstihare', icon: '📿', image: '/fortunes/angel.jpg', href: '/fallar/istihare', sortOrder: 13 },
+  ]
+  for (const card of fortuneCards) {
+    const existing = await prisma.homepageFortuneCard.findFirst({ where: { name: card.name } })
+    if (!existing) {
+      await prisma.homepageFortuneCard.create({ data: card })
+    }
+  }
+  console.log('Homepage fortune cards seeded')
+
   console.log('Seed completed successfully!')
 }
 

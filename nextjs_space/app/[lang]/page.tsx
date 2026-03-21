@@ -161,6 +161,10 @@ export default function HomePage() {
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const { counts: sectionCounts } = useSectionPresence()
   
+  // DB-driven fortune cards & hero/ticker settings
+  const [dbFortuneCards, setDbFortuneCards] = useState<Array<{ id: string; name: string; icon: string; image: string; href: string }>>([])
+  const [heroSettings, setHeroSettings] = useState({ icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal' })
+  
   // Theme detection
   const isFalci = theme === 'falci'
   const isFalclub = theme === 'falclub'
@@ -199,8 +203,21 @@ export default function HomePage() {
       } catch (e) {}
     }
 
+    // Fetch DB fortune cards + hero settings
+    const fetchHomepageCards = async () => {
+      try {
+        const res = await fetch('/api/homepage-fortune-cards')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.cards?.length > 0) setDbFortuneCards(data.cards)
+          if (data.hero) setHeroSettings(data.hero)
+        }
+      } catch (e) {}
+    }
+
     fetchTellers()
     fetchStreams()
+    fetchHomepageCards()
     const tellerInterval = setInterval(fetchTellers, 45000)
     const streamInterval = setInterval(fetchStreams, 30000)
     return () => {
@@ -233,6 +250,11 @@ export default function HomePage() {
     const interval = setInterval(checkTeller, 30000)
     return () => clearInterval(interval)
   }, [session])
+
+  // Use DB cards if available, fallback to hardcoded FORTUNE_CARDS
+  const activeFortuneCards = dbFortuneCards.length > 0
+    ? dbFortuneCards.map(c => ({ id: c.id, nameTr: c.name, nameEn: c.name, image: c.image, href: c.href }))
+    : FORTUNE_CARDS
 
   // Sort tellers: online first, then offline
   const sortedTellers = [...liveTellers].sort((a, b) => {
@@ -327,19 +349,19 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-center py-3 cursor-pointer"
-            onClick={() => router.push(`/${language}/online-fal`)}
+            onClick={() => router.push(`/${language}${heroSettings.link}`)}
           >
             <motion.div
               animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               className="text-4xl mb-1"
             >
-              🔮
+              {heroSettings.icon}
             </motion.div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-fuchsia-300 via-purple-200 to-fuchsia-300 bg-clip-text text-transparent">
-              Canli Fal
+              {heroSettings.title}
             </h1>
-            <p className="text-fuchsia-300/70 text-xs mt-0.5">Geleceğini keşfet, falına bak</p>
+            <p className="text-fuchsia-300/70 text-xs mt-0.5">{heroSettings.subtitle}</p>
           </motion.div>
 
           {/* Action Buttons Row */}
@@ -444,7 +466,7 @@ export default function HomePage() {
             </h2>
             
             <div className="grid grid-cols-5 gap-3">
-              {FORTUNE_CARDS.slice(0, 10).map((fortune, idx) => (
+              {activeFortuneCards.slice(0, 10).map((fortune, idx) => (
                 <motion.div
                   key={fortune.id}
                   custom={idx}
@@ -786,7 +808,7 @@ export default function HomePage() {
             </h2>
             
             <div className="grid grid-cols-4 gap-4">
-              {FORTUNE_CARDS.slice(0, 8).map((fortune) => (
+              {activeFortuneCards.slice(0, 8).map((fortune) => (
                 <Link
                   key={fortune.id}
                   href={`/${language}${fortune.href}`}
@@ -916,7 +938,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-              {FORTUNE_CARDS.slice(0, 4).map((card) => (
+              {activeFortuneCards.slice(0, 4).map((card) => (
                 <Link key={card.id} href={`/${language}${card.href}`} className="flex-shrink-0 w-32">
                   <div className={`relative aspect-square rounded-xl overflow-hidden ${isCosmic ? 'bg-blue-900/50 border-blue-500/30 hover:border-blue-400/50' : 'bg-purple-900/50 border-purple-500/30 hover:border-purple-400/50'} border transition-all`}>
                     <Image
@@ -953,7 +975,7 @@ export default function HomePage() {
               )}
             </h2>
             <div className="grid grid-cols-4 gap-4">
-              {FORTUNE_CARDS.map((fortune) => (
+              {activeFortuneCards.map((fortune) => (
                 <Link
                   key={fortune.id}
                   href={`/${language}${fortune.href}`}
