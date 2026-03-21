@@ -19,7 +19,7 @@ export async function GET() {
     const cards = await prisma.homepageFortuneCard.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
-      select: { id: true, name: true, icon: true, image: true, href: true, sortOrder: true },
+      select: { id: true, name: true, icon: true, image: true, href: true, isActive: true, sortOrder: true },
     })
 
     const allSettings = await prisma.platformSettings.findMany({

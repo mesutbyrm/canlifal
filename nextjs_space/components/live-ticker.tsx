@@ -150,7 +150,7 @@ export default function LiveTicker() {
               buttonText: t.buttonText || 'Canlı Falcı',
               buttonIcon: t.buttonIcon || '✨',
               buttonLink: t.buttonLink || '/canli-falcilar',
-              buttonVisible: t.buttonVisible !== false,
+              buttonVisible: t.buttonVisible !== 'false' && t.buttonVisible !== false,
               scrollDirection: t.scrollDirection || 'rtl',
               scrollSpeed: t.scrollSpeed || 20,
               bgColor: t.bgColor || '',

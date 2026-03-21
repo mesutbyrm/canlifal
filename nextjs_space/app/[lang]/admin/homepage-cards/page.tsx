@@ -148,10 +148,18 @@ export default function HomepageCardsAdmin() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/homepage-fortune-cards')
-      if (res.ok) {
-        const data = await res.json()
-        if (data.cards) setCards(data.cards.map((c: any) => ({ ...c, isActive: c.isActive !== false, sortOrder: c.sortOrder || 0 })))
+      // Fetch ALL cards from admin API (includes inactive)
+      const cardsRes = await fetch('/api/admin/homepage-fortune-cards')
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json()
+        if (Array.isArray(cardsData)) {
+          setCards(cardsData.map((c: any) => ({ ...c, isActive: c.isActive !== false, sortOrder: c.sortOrder || 0 })))
+        }
+      }
+      // Fetch hero/ticker settings from public API
+      const settingsRes = await fetch('/api/homepage-fortune-cards')
+      if (settingsRes.ok) {
+        const data = await settingsRes.json()
         if (data.hero) {
           setHeroIcon(data.hero.icon || '🔮')
           setHeroTitle(data.hero.title || 'Canli Fal')
@@ -165,9 +173,9 @@ export default function HomepageCardsAdmin() {
             buttonText: t.buttonText || 'Canlı Falcı',
             buttonIcon: t.buttonIcon || '✨',
             buttonLink: t.buttonLink || '/canli-falcilar',
-            buttonVisible: t.buttonVisible !== false,
+            buttonVisible: t.buttonVisible !== 'false' && t.buttonVisible !== false,
             scrollDirection: t.scrollDirection || 'rtl',
-            scrollSpeed: t.scrollSpeed || 20,
+            scrollSpeed: Number(t.scrollSpeed) || 20,
             bgColor: t.bgColor || '',
             bgGradient: t.bgGradient || '',
             onlineDisplay: t.onlineDisplay || 'single',
