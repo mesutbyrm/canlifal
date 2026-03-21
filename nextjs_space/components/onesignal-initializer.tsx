@@ -29,20 +29,27 @@ export default function OneSignalInitializer() {
       if (!sub) return
 
       const token = sub.token
-      if (token) return
+      const isOptedIn = sub.optedIn
+
+      // If already subscribed and opted in, nothing to do
+      if (token && isOptedIn) return
 
       if (Notification.permission === 'granted') {
         try {
-          await sub.optOut()
-          await new Promise(r => setTimeout(r, 1000))
-          await sub.optIn()
-        } catch (_e) { /* ignore */ }
-      } else if (Notification.permission === 'default') {
-        try {
-          await OneSignal.Slidedown.promptPush()
-        } catch (_e) { /* ignore */ }
+          if (!isOptedIn) {
+            await sub.optIn()
+            console.log('OneSignal: opted in via forceResubscribe')
+          }
+          if (!sub.token) {
+            // Token missing despite permission granted - re-subscribe
+            await sub.optOut()
+            await new Promise(r => setTimeout(r, 1000))
+            await sub.optIn()
+            console.log('OneSignal: re-subscribed via forceResubscribe')
+          }
+        } catch (e) { console.log('OneSignal forceResubscribe error:', e) }
       }
-    } catch (_error) { /* ignore */ }
+    } catch (error) { console.log('OneSignal forceResubscribe outer error:', error) }
   }, [])
 
   const syncUser = useCallback(async (userId: string | undefined | null) => {
@@ -77,9 +84,10 @@ export default function OneSignalInitializer() {
     if (!appId) return
 
     // Skip OneSignal on non-production origins (it's configured only for canlifal.com)
-    const isProduction = typeof window !== 'undefined' && window.location.hostname === 'canlifal.com'
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
+    const isProduction = hostname === 'canlifal.com' || hostname === 'www.canlifal.com' || hostname.endsWith('.canlifal.com')
     if (!isProduction) {
-      console.log('OneSignal: skipped on non-production origin')
+      console.log('OneSignal: skipped on non-production origin:', hostname)
       return
     }
 
@@ -90,8 +98,10 @@ export default function OneSignalInitializer() {
         await OneSignal.init({
           appId,
           serviceWorkerParam: { scope: '/' },
-          serviceWorkerPath: '/sw.js',
+          serviceWorkerPath: '/OneSignalSDKWorker.js',
+          autoResubscribe: true,
           notifyButton: { enable: false },
+          allowLocalhostAsSecureOrigin: false,
         })
 
         initialized.current = true

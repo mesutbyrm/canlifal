@@ -1,5 +1,5 @@
-// Import OneSignal service worker for push notifications
-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+// OneSignal push notifications are handled by OneSignalSDKWorker.js (separate worker)
+// This service worker handles only caching for offline support
 
 const CACHE_NAME = 'falci-v2';
 const urlsToCache = [

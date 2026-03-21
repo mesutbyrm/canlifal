@@ -13,6 +13,7 @@ export default function NotificationPermissionPrompt() {
   const { isSupported, permission, requestPermission } = usePushNotifications()
   const [showPrompt, setShowPrompt] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     // Don't show if not logged in, not supported, already granted/denied, or dismissed
@@ -37,8 +38,15 @@ export default function NotificationPermissionPrompt() {
   }, [session?.user, isSupported, permission, dismissed])
 
   const handleAllow = async () => {
-    await requestPermission()
-    setShowPrompt(false)
+    setLoading(true)
+    try {
+      await requestPermission()
+    } catch (e) {
+      console.error('Notification permission error:', e)
+    } finally {
+      setLoading(false)
+      setShowPrompt(false)
+    }
   }
 
   const handleDismiss = () => {
@@ -55,7 +63,7 @@ export default function NotificationPermissionPrompt() {
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
-        className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[100] bg-gradient-to-br from-[#1a0a2e] to-[#2d1b4e] border border-fuchsia-500/30 rounded-2xl p-4 shadow-2xl"
+        className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[10000] bg-gradient-to-br from-[#1a0a2e] to-[#2d1b4e] border border-fuchsia-500/30 rounded-2xl p-4 shadow-2xl"
         style={{ boxShadow: '0 0 30px rgba(217, 70, 239, 0.3)' }}
       >
         <button
@@ -81,10 +89,15 @@ export default function NotificationPermissionPrompt() {
             <div className="flex gap-2">
               <button
                 onClick={handleAllow}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 transition-all"
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 disabled:opacity-60 disabled:cursor-wait rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 transition-all"
               >
-                <Check className="w-4 h-4" />
-                {'İzin Ver'}
+                {loading ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                {loading ? 'Bekleniyor...' : 'İzin Ver'}
               </button>
               <button
                 onClick={handleDismiss}

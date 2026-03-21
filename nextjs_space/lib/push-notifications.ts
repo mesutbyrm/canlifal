@@ -22,50 +22,41 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
   if (!isPushSupported()) return 'unsupported'
   
   try {
-    const OneSignal = getOneSignal()
+    // Always request native browser permission FIRST — this is the most reliable approach
+    console.log('Requesting native notification permission...')
+    const permission = await Notification.requestPermission()
+    console.log('Native notification permission result:', permission)
     
-    if (OneSignal) {
-      // Use OneSignal's native prompt which handles both permission + subscription
-      try {
-        // First try the slidedown prompt
-        await OneSignal.Slidedown.promptPush()
-        console.log('OneSignal: slidedown prompt shown')
-        
-        // After prompt, check if user opted in
-        const sub = OneSignal.User?.PushSubscription
-        if (sub?.optedIn) {
-          console.log('OneSignal: user subscribed via prompt')
-          return 'granted'
-        }
-      } catch (e) {
-        console.log('OneSignal slidedown failed, trying native + optIn:', e)
-      }
-      
-      // Fallback: request native permission, then opt into OneSignal
-      const permission = await Notification.requestPermission()
-      
-      if (permission === 'granted') {
+    if (permission === 'granted') {
+      // Now try to opt into OneSignal push subscription
+      const OneSignal = getOneSignal()
+      if (OneSignal) {
         try {
           const sub = OneSignal.User?.PushSubscription
           if (sub && !sub.optedIn) {
             await sub.optIn()
-            console.log('OneSignal: opted in after native permission grant, token:', sub.token?.substring(0, 20) + '...')
+            console.log('OneSignal: opted in after native permission grant')
           }
+          // Wait a moment and log subscription status
+          await new Promise(r => setTimeout(r, 500))
+          console.log('OneSignal subscription token:', sub?.token ? sub.token.substring(0, 20) + '...' : 'none yet')
         } catch (e) {
           console.log('OneSignal opt-in after native permission failed:', e)
         }
+      } else {
+        console.log('OneSignal not available, native permission granted only')
       }
-      
-      return permission
-    } else {
-      // OneSignal not loaded yet, just request native permission
-      console.log('OneSignal not available, requesting native permission only')
-      const permission = await Notification.requestPermission()
-      return permission
     }
+    
+    return permission
   } catch (error) {
     console.error('Error requesting notification permission:', error)
-    return 'denied'
+    // Try to return actual permission status even on error
+    try {
+      return Notification.permission
+    } catch {
+      return 'denied'
+    }
   }
 }
 
