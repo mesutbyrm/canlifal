@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Cinzel } from 'next/font/google'
 import './globals.css'
 import SessionProviderWrapper from '@/components/session-provider-wrapper'
+import OneSignalProvider from '@/components/onesignal-provider'
 import { LanguageProvider } from '@/lib/language-context'
 import SiteThemeWrapper from '@/components/site-theme-wrapper'
 
@@ -106,61 +107,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
-        {/* OneSignal Web SDK */}
-        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.OneSignalDeferred = window.OneSignalDeferred || [];
-              OneSignalDeferred.push(async function(OneSignal) {
-                await OneSignal.init({
-                  appId: "33f20979-e483-49f7-a494-cd5c2a6e38da",
-                  safari_web_id: "web.onesignal.auto.27d2eba6-7621-43e8-b8d4-d2a9de3b8fea",
-                  notifyButton: {
-                    enable: true,
-                    position: "bottom-right",
-                    offset: {
-                      bottom: "80px",
-                      right: "12px"
-                    },
-                    size: "small",
-                    text: {
-                      "tip.state.unsubscribed": "Bildirimlere abone ol",
-                      "tip.state.subscribed": "Bildirimler açık",
-                      "tip.state.blocked": "Bildirimler engellendi",
-                      "message.prenotify": "Bildirimlere abone olmak için tıklayın",
-                      "message.action.subscribed": "Bildirimlere abone oldunuz!",
-                      "message.action.resubscribed": "Bildirimlere tekrar abone oldunuz!",
-                      "message.action.unsubscribed": "Bildirim aboneliğiniz iptal edildi.",
-                      "dialog.main.title": "Site Bildirimlerini Yönet",
-                      "dialog.main.button.subscribe": "ABONE OL",
-                      "dialog.main.button.unsubscribe": "ABONELIKTEN ÇIK",
-                      "dialog.blocked.title": "Bildirimlerin Engelini Kaldır",
-                      "dialog.blocked.message": "Bildirimlere izin vermek için tarayıcı ayarlarınızdan izin verin."
-                    }
-                  },
-                  promptOptions: {
-                    slidedown: {
-                      prompts: [{
-                        type: "push",
-                        autoPrompt: true,
-                        text: {
-                          actionMessage: "Fal yorumları ve güncellemeler için bildirimlere izin vermek ister misiniz?",
-                          acceptButton: "İzin Ver",
-                          cancelButton: "Hayır"
-                        },
-                        delay: {
-                          pageViews: 1,
-                          timeDelay: 5
-                        }
-                      }]
-                    }
-                  }
-                });
-              });
-            `,
-          }}
-        />
+        {/* OneSignal Web SDK - loaded dynamically by OneSignalProvider component */}
         {/* Google AdSense */}
         <script
           async
@@ -307,6 +254,7 @@ export default function RootLayout({
         <SessionProviderWrapper>
           <SiteThemeWrapper>
             <LanguageProvider>
+              <OneSignalProvider />
               {children}
             </LanguageProvider>
           </SiteThemeWrapper>

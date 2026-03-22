@@ -71,6 +71,10 @@ export default function AdminSettingsPage() {
   const [seoSaving, setSeoSaving] = useState(false)
   const [seoSaved, setSeoSaved] = useState(false)
 
+  // OneSignal toggle state
+  const [onesignalEnabled, setOnesignalEnabled] = useState(true)
+  const [onesignalSaving, setOnesignalSaving] = useState(false)
+
   useEffect(() => {
     if (status === 'loading') return
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
@@ -89,6 +93,9 @@ export default function AdminSettingsPage() {
       if (res.ok) {
         const data = await res.json()
         setSettings(data)
+        if (data.onesignal_enabled !== undefined) {
+          setOnesignalEnabled(data.onesignal_enabled === 'true' || data.onesignal_enabled === '1')
+        }
         if (data.live_session_durations) {
           try {
             const parsed = JSON.parse(data.live_session_durations)
@@ -459,6 +466,46 @@ export default function AdminSettingsPage() {
             >
               {seoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : seoSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {seoSaved ? 'Kaydedildi' : 'SEO Ayarlarını Kaydet'}
+            </button>
+          </div>
+        </motion.div>
+
+        {/* OneSignal Push Bildirimleri */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-purple-500/20 p-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <span className="text-2xl">🔔</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white mb-1">Push Bildirimleri (OneSignal)</h3>
+              <p className="text-sm text-purple-300/70">Kullanıcılara push bildirim gönderme özelliğini açıp kapatın. Aktif olduğunda kullanıcılar siteyi ziyaret ettiğinde &quot;Bildirimlere abone ol&quot; istemi görecektir.</p>
+            </div>
+            <button
+              onClick={async () => {
+                setOnesignalSaving(true)
+                const newVal = !onesignalEnabled
+                try {
+                  const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'onesignal_enabled', value: String(newVal) })
+                  })
+                  if (res.ok) setOnesignalEnabled(newVal)
+                } catch (err) {
+                  console.error('OneSignal toggle error:', err)
+                } finally {
+                  setOnesignalSaving(false)
+                }
+              }}
+              disabled={onesignalSaving}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${onesignalEnabled ? 'bg-green-500' : 'bg-gray-600'} ${onesignalSaving ? 'opacity-50' : ''}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-300 ${onesignalEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
             </button>
           </div>
         </motion.div>
