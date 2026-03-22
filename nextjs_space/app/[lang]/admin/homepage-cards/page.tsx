@@ -107,6 +107,7 @@ export default function HomepageCardsAdmin() {
   const [saving, setSaving] = useState(false)
 
   // Hero
+  const [heroVisible, setHeroVisible] = useState(true)
   const [heroIcon, setHeroIcon] = useState('🔮')
   const [heroTitle, setHeroTitle] = useState('Canli Fal')
   const [heroSubtitle, setHeroSubtitle] = useState('Geleceğini keşfet, falına bak')
@@ -161,6 +162,7 @@ export default function HomepageCardsAdmin() {
       if (settingsRes.ok) {
         const data = await settingsRes.json()
         if (data.hero) {
+          setHeroVisible(data.hero.visible !== false)
           setHeroIcon(data.hero.icon || '🔮')
           setHeroTitle(data.hero.title || 'Canli Fal')
           setHeroSubtitle(data.hero.subtitle || '')
@@ -272,10 +274,17 @@ export default function HomepageCardsAdmin() {
 
   // === HERO ===
   const saveHero = async () => {
+    await saveSetting('homepage_hero_visible', heroVisible ? 'true' : 'false')
     await saveSetting('homepage_hero_icon', heroIcon)
     await saveSetting('homepage_hero_title', heroTitle)
     await saveSetting('homepage_hero_subtitle', heroSubtitle)
     await saveSetting('homepage_hero_link', heroLink)
+  }
+
+  const toggleHeroVisible = async () => {
+    const newVal = !heroVisible
+    setHeroVisible(newVal)
+    await saveSetting('homepage_hero_visible', newVal ? 'true' : 'false')
   }
 
   const openHeroItemModal = (item?: HeroItem) => {
@@ -463,8 +472,21 @@ export default function HomepageCardsAdmin() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             {/* Main hero element */}
             <div className="bg-white/5 rounded-xl border border-fuchsia-500/20 p-4 space-y-3">
-              <h2 className="text-white font-semibold text-lg flex items-center gap-2 mb-1"><Sparkles className="w-5 h-5 text-fuchsia-400" /> Ana Hero Öğesi</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-semibold text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-fuchsia-400" /> Ana Hero Öğesi</h2>
+                <button
+                  onClick={toggleHeroVisible}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${heroVisible ? 'bg-fuchsia-600' : 'bg-white/20'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${heroVisible ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              {!heroVisible && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2.5 text-yellow-300 text-xs flex items-center gap-2">
+                  <Eye className="w-4 h-4 flex-shrink-0" /> Ana hero şu anda gizli. Anasayfada görünmüyor. Göstermek için toggle&apos;ı açın.
+                </div>
+              )}
+              <div className={`grid grid-cols-2 gap-3 ${!heroVisible ? 'opacity-40 pointer-events-none' : ''}`}>
                 <div>
                   <label className={labelCls}>İkon</label>
                   <IconPicker value={heroIcon} onChange={setHeroIcon} pickerId="hero-main" />
@@ -482,7 +504,7 @@ export default function HomepageCardsAdmin() {
                   <LinkPicker value={heroLink} onChange={setHeroLink} />
                 </div>
               </div>
-              <button onClick={saveHero} className={btnPrimary}><Save className="w-4 h-4" /> Hero Kaydet</button>
+              {heroVisible && <button onClick={saveHero} className={btnPrimary}><Save className="w-4 h-4" /> Hero Kaydet</button>}
             </div>
 
             {/* Extra hero buttons */}

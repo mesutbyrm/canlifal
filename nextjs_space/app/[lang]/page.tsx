@@ -163,7 +163,7 @@ export default function HomePage() {
   
   // DB-driven fortune cards & hero/ticker settings
   const [dbFortuneCards, setDbFortuneCards] = useState<Array<{ id: string; name: string; icon: string; image: string; href: string }>>([])
-  const [heroSettings, setHeroSettings] = useState<{ icon: string; title: string; subtitle: string; link: string; items: Array<{ id: string; icon: string; title: string; subtitle: string; link: string }> }>({ icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal', items: [] })
+  const [heroSettings, setHeroSettings] = useState<{ visible: boolean; icon: string; title: string; subtitle: string; link: string; items: Array<{ id: string; icon: string; title: string; subtitle: string; link: string }> }>({ visible: true, icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal', items: [] })
   
   // Theme detection
   const isFalci = theme === 'falci'
@@ -344,25 +344,27 @@ export default function HomePage() {
         {/* Main Content - minimal gap between ticker and content */}
         <div className="pt-[108px] sm:pt-[118px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Hero Welcome */}
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="text-center py-3 cursor-pointer"
-            onClick={() => router.push(`/${language}${heroSettings.link}`)}
-          >
+          {heroSettings.visible && (
             <motion.div
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="text-4xl mb-1"
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="text-center py-3 cursor-pointer"
+              onClick={() => router.push(`/${language}${heroSettings.link}`)}
             >
-              {heroSettings.icon}
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-4xl mb-1"
+              >
+                {heroSettings.icon}
+              </motion.div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-fuchsia-300 via-purple-200 to-fuchsia-300 bg-clip-text text-transparent">
+                {heroSettings.title}
+              </h1>
+              <p className="text-fuchsia-300/70 text-xs mt-0.5">{heroSettings.subtitle}</p>
             </motion.div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-fuchsia-300 via-purple-200 to-fuchsia-300 bg-clip-text text-transparent">
-              {heroSettings.title}
-            </h1>
-            <p className="text-fuchsia-300/70 text-xs mt-0.5">{heroSettings.subtitle}</p>
-          </motion.div>
+          )}
 
           {/* Extra Hero Buttons */}
           {heroSettings.items && heroSettings.items.length > 0 && (
