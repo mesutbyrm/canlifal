@@ -28,9 +28,20 @@ interface UserProfile {
   username: string | null
   image: string | null
   credits: number
+  role?: string
   membership: string
   profileFrame?: { id: string; name: string; imageUrl: string } | null
   adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
+}
+
+function getProfileEffectClass(profile: UserProfile | null): string {
+  if (!profile) return ''
+  if (profile.role === 'admin') return 'effect-glitch'
+  const m = profile.membership?.toLowerCase()
+  if (m === 'diamond') return 'effect-neon-glow'
+  if (m === 'gold') return 'effect-neon-flicker'
+  if (m === 'premium') return 'effect-blink'
+  return ''
 }
 
 export default function FloatingProfile() {
@@ -146,8 +157,8 @@ export default function FloatingProfile() {
                     />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">{user.name}</p>
-                    <p className="text-sm text-purple-400 truncate">@{profile?.username || 'user'}</p>
+                    <p className={`font-semibold text-white truncate ${getProfileEffectClass(profile)}`} data-text={user.name}>{user.name}</p>
+                    <p className={`text-sm text-purple-400 truncate ${getProfileEffectClass(profile)}`} data-text={`@${profile?.username || 'user'}`}>@{profile?.username || 'user'}</p>
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}

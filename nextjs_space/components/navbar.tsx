@@ -425,7 +425,7 @@ export default function Navbar() {
                         <div className="flex items-center gap-3">
                           <ProfileAvatar size="xl" showCamera />
                           <div className="flex-1 min-w-0">
-                            <p className={`font-semibold truncate ${isLight ? 'text-[#050505]' : 'text-white'}`}>{session.user.name}</p>
+                            <p className={`font-semibold truncate ${isLight ? 'text-[#050505]' : 'text-white'} ${(session.user as any).role === 'admin' ? 'effect-glitch' : ''}`} data-text={session.user.name}>{session.user.name}</p>
                             <p className={`text-xs truncate ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>{session.user.email}</p>
                             <div className="mt-1">
                               <UserLevelBadge compact />

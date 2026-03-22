@@ -29,6 +29,8 @@ interface SocialPost {
     id: string
     name: string
     image?: string
+    role?: string
+    membership?: string
     profileFrame?: { imageUrl: string } | null
     adminAssignedFrame?: { imageUrl: string } | null
   }
@@ -48,9 +50,21 @@ interface Comment {
     id: string
     name: string
     image?: string
+    role?: string
+    membership?: string
     profileFrame?: { imageUrl: string } | null
     adminAssignedFrame?: { imageUrl: string } | null
   }
+}
+
+function getSocialEffectClass(user: { role?: string; membership?: string }): string {
+  if (!user) return ''
+  if (user.role === 'admin') return 'effect-glitch'
+  const m = user.membership?.toLowerCase()
+  if (m === 'diamond') return 'effect-neon-glow'
+  if (m === 'gold') return 'effect-neon-flicker'
+  if (m === 'premium') return 'effect-blink'
+  return ''
 }
 
 const FORTUNE_ICONS: Record<string, any> = {
@@ -579,7 +593,7 @@ export default function SocialPage() {
                               borderColor="border-fuchsia-500/50"
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="text-white font-medium group-hover:text-fuchsia-300 transition-colors text-xs sm:text-sm truncate">{post.user.name}</p>
+                              <p className={`text-white font-medium group-hover:text-fuchsia-300 transition-colors text-xs sm:text-sm truncate ${getSocialEffectClass(post.user)}`} data-text={post.user.name}>{post.user.name}</p>
                               <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-fuchsia-400/60 flex-wrap">
                                 <span>{formatDate(post.createdAt)}</span>
                                 {post.fortuneType && (

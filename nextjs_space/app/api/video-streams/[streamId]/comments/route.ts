@@ -16,7 +16,9 @@ export async function GET(
         user: {
           select: {
             name: true,
-            image: true
+            image: true,
+            role: true,
+            membership: true,
           }
         }
       }
@@ -70,7 +72,9 @@ export async function POST(
         user: {
           select: {
             name: true,
-            image: true
+            image: true,
+            role: true,
+            membership: true,
           }
         }
       }

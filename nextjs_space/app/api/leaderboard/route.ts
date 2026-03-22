@@ -5,15 +5,21 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const userSelect = {
+      id: true,
+      name: true,
+      image: true,
+      role: true,
+      membership: true,
+    }
+
     // Top referrers
     const topReferrers = await prisma.user.findMany({
       where: {
         referrals: { some: {} }
       },
       select: {
-        id: true,
-        name: true,
-        image: true,
+        ...userSelect,
         _count: { select: { referrals: true } }
       },
       orderBy: {
@@ -28,9 +34,7 @@ export async function GET() {
         fortunes: { some: {} }
       },
       select: {
-        id: true,
-        name: true,
-        image: true,
+        ...userSelect,
         _count: { select: { fortunes: true } }
       },
       orderBy: {
@@ -45,9 +49,7 @@ export async function GET() {
         socialPosts: { some: {} }
       },
       select: {
-        id: true,
-        name: true,
-        image: true,
+        ...userSelect,
         _count: { select: { socialPosts: true } }
       },
       orderBy: {
@@ -56,25 +58,19 @@ export async function GET() {
       take: 20
     });
 
+    const mapUser = (u: any, countField: string) => ({
+      id: u.id,
+      name: u.name,
+      image: u.image,
+      role: u.role,
+      membership: u.membership,
+      count: u._count[countField]
+    })
+
     return NextResponse.json({
-      topReferrers: topReferrers.map((u: { id: string; name: string | null; image: string | null; _count: { referrals: number } }) => ({
-        id: u.id,
-        name: u.name,
-        image: u.image,
-        count: u._count.referrals
-      })),
-      topFortuneUsers: topFortuneUsers.map((u: { id: string; name: string | null; image: string | null; _count: { fortunes: number } }) => ({
-        id: u.id,
-        name: u.name,
-        image: u.image,
-        count: u._count.fortunes
-      })),
-      topSharers: topSharers.map((u: { id: string; name: string | null; image: string | null; _count: { socialPosts: number } }) => ({
-        id: u.id,
-        name: u.name,
-        image: u.image,
-        count: u._count.socialPosts
-      }))
+      topReferrers: topReferrers.map((u: any) => mapUser(u, 'referrals')),
+      topFortuneUsers: topFortuneUsers.map((u: any) => mapUser(u, 'fortunes')),
+      topSharers: topSharers.map((u: any) => mapUser(u, 'socialPosts'))
     });
   } catch (error) {
     console.error('Leaderboard error:', error);

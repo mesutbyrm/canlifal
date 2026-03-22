@@ -45,7 +45,7 @@ interface VideoStream {
 interface Comment {
   id: string
   content: string
-  user: { name: string; image?: string | null }
+  user: { name: string; image?: string | null; role?: string; membership?: string }
 }
 
 interface GiftType {
@@ -996,12 +996,12 @@ export default function VideoStreamPage() {
     )
   }
 
-  // Get user badge based on their membership/role
-  const getUserBadge = (userName: string) => {
-    // This is simplified - in real app you'd get user tier from comment data
-    if (userName.toLowerCase().includes('vip')) return { icon: '💎', color: 'text-cyan-400', bg: 'bg-cyan-500/20' }
-    if (userName.toLowerCase().includes('gold')) return { icon: '⭐', color: 'text-yellow-400', bg: 'bg-yellow-500/20' }
-    if (userName.toLowerCase().includes('efsane')) return { icon: '✨', color: 'text-purple-400', bg: 'bg-purple-500/20' }
+  // Get user badge + effect based on their membership/role
+  const getUserBadge = (user: { name: string; role?: string; membership?: string }) => {
+    if (user.role === 'admin') return { icon: '👑', color: 'text-red-400', bg: 'bg-red-500/20', effectClass: 'effect-glitch' }
+    if (user.membership === 'diamond') return { icon: '💎', color: 'text-cyan-400', bg: 'bg-cyan-500/20', effectClass: 'effect-neon-glow' }
+    if (user.membership === 'gold') return { icon: '⭐', color: 'text-yellow-400', bg: 'bg-yellow-500/20', effectClass: 'effect-neon-flicker' }
+    if (user.membership === 'premium') return { icon: '✨', color: 'text-purple-400', bg: 'bg-purple-500/20', effectClass: 'effect-blink' }
     return null
   }
 
@@ -1085,12 +1085,14 @@ export default function VideoStreamPage() {
               {/* Comments floating above input - Grid Mode */}
               <div className="absolute left-3 bottom-24 right-20 max-h-32 overflow-hidden z-20 space-y-1">
                 {comments.slice(0, 4).map(c => {
-                  const badge = getUserBadge(c.user.name)
+                  const badge = getUserBadge(c.user)
                   return (
                     <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-1.5 w-fit max-w-[85%]">
                       <div className="flex items-center gap-1.5">
                         {badge && <span className={`text-sm ${badge.color}`}>{badge.icon}</span>}
-                        <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/70'}`}>{c.user.name}:</span>
+                        <span className={`text-xs font-bold ${badge ? `${badge.color} ${badge.effectClass}` : 'text-white/70'}`}
+                          {...(badge?.effectClass === 'effect-glitch' ? { 'data-text': `${c.user.name}:` } : {})}
+                        >{c.user.name}:</span>
                         <span className="text-white text-xs">{c.content}</span>
                       </div>
                     </motion.div>
@@ -1416,7 +1418,7 @@ export default function VideoStreamPage() {
           <div className="absolute left-3 bottom-28 right-20 max-h-44 overflow-hidden z-10 flex flex-col-reverse">
             <div className="space-y-1.5">
               {comments.slice(0, 6).reverse().map(c => {
-                const badge = getUserBadge(c.user.name)
+                const badge = getUserBadge(c.user)
                 return (
                   <motion.div 
                     key={c.id} 
@@ -1433,7 +1435,9 @@ export default function VideoStreamPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <span className={`text-xs font-bold ${badge ? badge.color : 'text-white/80'}`}>{c.user.name}: </span>
+                        <span className={`text-xs font-bold ${badge ? `${badge.color} ${badge.effectClass}` : 'text-white/80'}`}
+                          {...(badge?.effectClass === 'effect-glitch' ? { 'data-text': `${c.user.name}: ` } : {})}
+                        >{c.user.name}: </span>
                         <span className="text-white text-xs">{c.content}</span>
                       </div>
                     </div>

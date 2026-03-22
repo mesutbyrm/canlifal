@@ -10,7 +10,17 @@ interface LeaderboardUser {
   id: string
   name: string
   image?: string
+  role?: string
+  membership?: string
   count: number
+}
+
+const getNameEffectClass = (user: { role?: string; membership?: string }) => {
+  if (user.role === 'admin') return 'effect-glitch'
+  if (user.membership === 'diamond') return 'effect-neon-glow'
+  if (user.membership === 'gold') return 'effect-neon-flicker'
+  if (user.membership === 'premium') return 'effect-blink'
+  return ''
 }
 
 interface LeaderboardData {
@@ -129,7 +139,7 @@ export default function LeaderboardPage() {
                   {currentData[1]?.name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               </div>
-              <p className="text-deep-purple-200 font-medium truncate max-w-[100px]">{currentData[1]?.name}</p>
+              <p className={`text-deep-purple-200 font-medium truncate max-w-[100px] ${currentData[1] ? getNameEffectClass(currentData[1]) : ''}`} data-text={currentData[1]?.name}>{currentData[1]?.name}</p>
               <p className="text-gray-400 text-sm">{currentData[1]?.count} {getCountLabel()}</p>
               <div className="mt-2 h-16 w-20 bg-gradient-to-t from-gray-600 to-gray-400 rounded-t-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">2</span>
@@ -144,7 +154,7 @@ export default function LeaderboardPage() {
                   {currentData[0]?.name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               </div>
-              <p className="text-gold-400 font-bold truncate max-w-[120px]">{currentData[0]?.name}</p>
+              <p className={`text-gold-400 font-bold truncate max-w-[120px] ${currentData[0] ? getNameEffectClass(currentData[0]) : ''}`} data-text={currentData[0]?.name}>{currentData[0]?.name}</p>
               <p className="text-yellow-500 text-sm">{currentData[0]?.count} {getCountLabel()}</p>
               <div className="mt-2 h-24 w-24 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-lg flex items-center justify-center">
                 <span className="text-white font-bold text-2xl">1</span>
@@ -158,7 +168,7 @@ export default function LeaderboardPage() {
                   {currentData[2]?.name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               </div>
-              <p className="text-deep-purple-200 font-medium truncate max-w-[100px]">{currentData[2]?.name}</p>
+              <p className={`text-deep-purple-200 font-medium truncate max-w-[100px] ${currentData[2] ? getNameEffectClass(currentData[2]) : ''}`} data-text={currentData[2]?.name}>{currentData[2]?.name}</p>
               <p className="text-amber-500 text-sm">{currentData[2]?.count} {getCountLabel()}</p>
               <div className="mt-2 h-12 w-20 bg-gradient-to-t from-amber-700 to-amber-500 rounded-t-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">3</span>
@@ -192,7 +202,7 @@ export default function LeaderboardPage() {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-deep-purple-100 font-medium truncate">{user.name}</p>
+                  <p className={`text-deep-purple-100 font-medium truncate ${getNameEffectClass(user)}`} data-text={user.name}>{user.name}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-gold-400 font-bold text-lg">{user.count}</p>

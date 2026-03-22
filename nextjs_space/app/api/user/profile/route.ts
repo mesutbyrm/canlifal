@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         favoriteTeam: true,
         credits: true,
         jetonBalance: true,
+        role: true,
         membership: true,
         membershipExpiresAt: true,
         messagePrivacy: true,

@@ -15,7 +15,7 @@ export async function GET(
       where: { id: params.postId },
       include: {
         user: {
-          select: { id: true, name: true, image: true }
+          select: { id: true, name: true, image: true, role: true, membership: true }
         },
         fortune: {
           select: { viewCount: true }
@@ -23,7 +23,7 @@ export async function GET(
         comments: {
           include: {
             user: {
-              select: { id: true, name: true, image: true }
+              select: { id: true, name: true, image: true, role: true, membership: true }
             }
           },
           orderBy: { createdAt: 'asc' }
