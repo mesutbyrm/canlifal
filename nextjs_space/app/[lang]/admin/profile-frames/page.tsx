@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
-import { ArrowLeft, Plus, Trash2, Save, Image as ImageIcon, Loader2, Search, UserPlus, X, ToggleLeft, ToggleRight } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, Image as ImageIcon, Loader2, Search, UserPlus, X, ToggleLeft, ToggleRight, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import NextImage from 'next/image'
@@ -49,6 +49,9 @@ export default function AdminProfileFramesPage() {
   const [searching, setSearching] = useState(false)
   const [assigning, setAssigning] = useState<string | null>(null)
   const [selectedFrameForAssign, setSelectedFrameForAssign] = useState('')
+
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isMystical = theme === 'mystical'
   const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-fuchsia-900/30' : 'bg-white border-gray-200'
@@ -160,6 +163,70 @@ export default function AdminProfileFramesPage() {
     setShowForm(true)
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate PNG
+    if (file.type !== 'image/png') {
+      alert(language === 'tr' ? 'Sadece PNG dosyaları yüklenebilir. Şeffaf çerçeve için PNG kullanın.' : 'Only PNG files are allowed. Use PNG for transparent frames.')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert(language === 'tr' ? 'Dosya boyutu 10MB\'den küçük olmalıdır.' : 'File size must be less than 10MB.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      // Get presigned URL
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+      })
+      if (!presignedRes.ok) throw new Error('Failed to get upload URL')
+      const { uploadUrl, cloud_storage_path } = await presignedRes.json()
+
+      // Check signed headers to determine if Content-Disposition is needed
+      const signedHeadersMatch = uploadUrl.match(/X-Amz-SignedHeaders=([^&]+)/)
+      const signedHeaders = signedHeadersMatch ? decodeURIComponent(signedHeadersMatch[1]) : 'host'
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (signedHeaders.includes('content-disposition')) {
+        headers['Content-Disposition'] = 'attachment'
+      }
+
+      // Upload to S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers,
+        body: file,
+      })
+      if (!uploadRes.ok) throw new Error('Upload failed')
+
+      // Get public URL
+      const getUrlRes = await fetch('/api/upload/get-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_storage_path, isPublic: true })
+      })
+      if (getUrlRes.ok) {
+        const urlData = await getUrlRes.json()
+        setForm(prev => ({ ...prev, imageUrl: urlData.url }))
+      } else {
+        // Fallback: construct URL manually
+        setForm(prev => ({ ...prev, imageUrl: cloud_storage_path }))
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(language === 'tr' ? 'Yükleme sırasında hata oluştu.' : 'Error during upload.')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -208,13 +275,34 @@ export default function AdminProfileFramesPage() {
                 />
               </div>
               <div>
-                <label className={`block text-sm mb-1 ${subText}`}>{language === 'tr' ? 'Görsel URL' : 'Image URL'}</label>
-                <input
-                  value={form.imageUrl}
-                  onChange={e => setForm({ ...form, imageUrl: e.target.value })}
-                  className={`w-full px-3 py-2 rounded-lg border ${inputBg}`}
-                  placeholder="/frames/frame-butterfly-1.png"
-                />
+                <label className={`block text-sm mb-1 ${subText}`}>{language === 'tr' ? 'Çerçeve Görseli (PNG, şeffaf)' : 'Frame Image (PNG, transparent)'}</label>
+                <div className="flex gap-2">
+                  <input
+                    value={form.imageUrl}
+                    onChange={e => setForm({ ...form, imageUrl: e.target.value })}
+                    className={`flex-1 px-3 py-2 rounded-lg border ${inputBg}`}
+                    placeholder="/frames/frame-butterfly-1.png"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap ${isMystical ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} border ${isMystical ? 'border-purple-600' : 'border-gray-300'}`}
+                  >
+                    {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                    {uploading ? (language === 'tr' ? 'Yükleniyor...' : 'Uploading...') : (language === 'tr' ? 'PNG Yükle' : 'Upload PNG')}
+                  </button>
+                </div>
+                <p className={`text-xs mt-1 ${subText}`}>
+                  {language === 'tr' ? '💡 Şeffaf merkezli PNG çerçeve yükleyin (512x512 önerilir). Avatar, çerçevenin şeffaf merkezinden görünecektir.' : '💡 Upload PNG frame with transparent center (512x512 recommended). Avatar will show through the transparent center.'}
+                </p>
               </div>
               <div>
                 <label className={`block text-sm mb-1 ${subText}`}>Tier</label>
@@ -240,10 +328,28 @@ export default function AdminProfileFramesPage() {
             </div>
             {/* Preview */}
             {form.imageUrl && (
-              <div className="mt-4 flex items-center gap-4">
-                <p className={`text-sm ${subText}`}>{language === 'tr' ? 'Önizleme:' : 'Preview:'}</p>
-                <div className="relative w-20 h-20">
-                  <NextImage src={form.imageUrl} alt="Preview" width={80} height={80} className="object-contain" unoptimized />
+              <div className="mt-4">
+                <p className={`text-sm mb-2 ${subText}`}>{language === 'tr' ? 'Önizleme:' : 'Preview:'}</p>
+                <div className="flex items-center gap-6">
+                  {/* Frame only */}
+                  <div className="text-center">
+                    <div className="relative w-24 h-24 rounded-lg" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '16px 16px', backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px' }}>
+                      <NextImage src={form.imageUrl} alt="Preview" width={96} height={96} className="object-contain w-full h-full" unoptimized />
+                    </div>
+                    <p className={`text-xs mt-1 ${subText}`}>{language === 'tr' ? 'Çerçeve' : 'Frame'}</p>
+                  </div>
+                  {/* Frame with sample avatar */}
+                  <div className="text-center">
+                    <div className="relative w-24 h-24">
+                      <div className="absolute rounded-full overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600" style={{ width: 64, height: 64, top: 14, left: 14 }}>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-white font-bold text-2xl">A</span>
+                        </div>
+                      </div>
+                      <NextImage src={form.imageUrl} alt="Preview with avatar" width={96} height={96} className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" unoptimized />
+                    </div>
+                    <p className={`text-xs mt-1 ${subText}`}>{language === 'tr' ? 'Avatar ile' : 'With Avatar'}</p>
+                  </div>
                 </div>
               </div>
             )}
