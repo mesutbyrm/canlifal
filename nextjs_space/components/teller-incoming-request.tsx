@@ -133,16 +133,14 @@ export default function TellerIncomingRequest() {
         setDismissedSessions(prev => new Set([...prev, pendingRequest.id]))
         setIsVisible(false)
         setPendingRequest(null)
-        // Redirect to live room with language prefix
-        const lang = pathname?.split('/')[1] || 'tr'
-        router.push(`/${lang}/canli-oda/${pendingRequest.id}`)
+        // Redirect to live room
+        router.push(`/canli-oda/${pendingRequest.id}`)
       } else if (data.error === 'Session is not pending') {
         // Session was already accepted (e.g. double-click), still redirect
         setDismissedSessions(prev => new Set([...prev, pendingRequest.id]))
         setIsVisible(false)
         setPendingRequest(null)
-        const lang = pathname?.split('/')[1] || 'tr'
-        router.push(`/${lang}/canli-oda/${pendingRequest.id}`)
+        router.push(`/canli-oda/${pendingRequest.id}`)
       } else {
         console.error('Accept failed:', data.error)
         // Dismiss popup to prevent stuck state

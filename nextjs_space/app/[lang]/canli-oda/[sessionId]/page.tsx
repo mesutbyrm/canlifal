@@ -327,8 +327,8 @@ export default function LiveRoomPage() {
   const fetchMessages = useCallback(async () => {
     try {
       const url = lastMessageTimeRef.current 
-        ? `/api/room/${sessionId}/mesajlar?after=${encodeURIComponent(lastMessageTimeRef.current)}`
-        : `/api/room/${sessionId}/mesajlar`;
+        ? `/api/room/${sessionId}/messages?after=${encodeURIComponent(lastMessageTimeRef.current)}`
+        : `/api/room/${sessionId}/messages`;
       
       const res = await fetch(url);
       if (!res.ok) return;
@@ -366,7 +366,7 @@ export default function LiveRoomPage() {
     setNewMessage(''); // Clear immediately
 
     try {
-      const res = await fetch(`/api/room/${sessionId}/mesajlar`, {
+      const res = await fetch(`/api/room/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageToSend })
