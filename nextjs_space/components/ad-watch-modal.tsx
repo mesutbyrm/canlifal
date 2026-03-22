@@ -102,7 +102,7 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
       <div className="w-full min-h-[250px] flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-lg border border-purple-500/30">
         <div className="text-center">
           <Monitor className="w-12 h-12 text-purple-300 mx-auto mb-2" />
-          <p className="text-purple-200 text-sm">Reklam y\u00fckleniyor...</p>
+          <p className="text-purple-200 text-sm">Reklam yükleniyor...</p>
           <p className="text-purple-400 text-xs mt-1">{adData.adNetwork.name}</p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-purple-500/20">
-            <h3 className="text-white font-bold">\u00dccretsiz Fal Hakk\u0131</h3>
+            <h3 className="text-white font-bold">Ücretsiz Fal Hakkı</h3>
             {phase !== 'watching' && (
               <button onClick={onClose} className="text-purple-300 hover:text-white p-1">
                 <X className="w-5 h-5" />
@@ -140,7 +140,7 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
             {phase === 'loading' && (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gold-500 mx-auto" />
-                <p className="text-purple-300 mt-3 text-sm">Reklam haz\u0131rlan\u0131yor...</p>
+                <p className="text-purple-300 mt-3 text-sm">Reklam hazırlanıyor...</p>
               </div>
             )}
 
@@ -148,8 +148,8 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
             {phase === 'no_ads' && (
               <div className="text-center py-8">
                 <Monitor className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-                <p className="text-purple-200">\u015eu an aktif reklam bulunmuyor</p>
-                <p className="text-purple-400 text-sm mt-1">L\u00fctfen daha sonra tekrar deneyin veya CFC sat\u0131n al\u0131n</p>
+                <p className="text-purple-200">Şu an aktif reklam bulunmuyor</p>
+                <p className="text-purple-400 text-sm mt-1">Lütfen daha sonra tekrar deneyin veya CFC satın alın</p>
                 <button
                   onClick={onClose}
                   className="mt-4 px-6 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 rounded-lg transition-colors"
@@ -164,15 +164,15 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
               <div className="text-center py-4">
                 <div className="mb-4 p-4 bg-gold-500/10 border border-gold-500/30 rounded-xl">
                   <Play className="w-10 h-10 text-gold-500 mx-auto mb-2" />
-                  <p className="text-white font-medium">Reklam izleyerek \u00fccretsiz fal bakt\u0131r\u0131n!</p>
-                  <p className="text-purple-300 text-sm mt-1">15 saniyelik bir reklam izleyin ve \u00fccretsiz fal hakk\u0131 kazan\u0131n</p>
+                  <p className="text-white font-medium">Reklam izleyerek ücretsiz fal baktırın!</p>
+                  <p className="text-purple-300 text-sm mt-1">15 saniyelik bir reklam izleyin ve ücretsiz fal hakkı kazanın</p>
                 </div>
                 <button
                   onClick={startWatching}
                   className="w-full py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   <Play className="w-5 h-5" />
-                  Reklam\u0131 \u0130zle
+                  Reklamı İzle
                 </button>
               </div>
             )}
@@ -193,7 +193,7 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
                   </div>
                   <span className="text-gold-400 font-mono text-sm min-w-[30px]">{countdown}s</span>
                 </div>
-                <p className="text-center text-purple-400 text-xs mt-2">Reklam bitmeden kapatmay\u0131n</p>
+                <p className="text-center text-purple-400 text-xs mt-2">Reklam bitmeden kapatmayın</p>
               </div>
             )}
 
@@ -208,12 +208,12 @@ export default function AdWatchModal({ isOpen, onClose, onRewardEarned }: AdWatc
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
                 </motion.div>
                 <h4 className="text-white font-bold text-lg">Tebrikler!</h4>
-                <p className="text-green-400 mt-1">\u00dccretsiz fal hakk\u0131n\u0131z\u0131 kazand\u0131n\u0131z</p>
+                <p className="text-green-400 mt-1">Ücretsiz fal hakkınızı kazandınız</p>
                 <button
                   onClick={handleComplete}
                   className="mt-4 w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors"
                 >
-                  Fal\u0131ma Devam Et
+                  Falıma Devam Et
                 </button>
               </div>
             )}

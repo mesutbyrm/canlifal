@@ -7,20 +7,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Monitor, Plus, Trash2, Save, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Info } from 'lucide-react'
 
 const AD_PROVIDERS = [
-  { id: 'google_adsense', name: 'Google AdSense', description: 'Web siteleri i\u00e7in en pop\u00fcler reklam a\u011f\u0131. Banner, metin ve video reklamlar\u0131 destekler.', fields: ['adCode', 'adUnitId'], placeholders: { adCode: 'AdSense reklam kodu (script tag)', adUnitId: 'ca-pub-XXXXXXX / slot-XXXXX' } },
-  { id: 'google_admob', name: 'Google AdMob', description: 'Mobil uygulamalar i\u00e7in Google reklam a\u011f\u0131. \u00d6d\u00fcll\u00fc video reklamlar\u0131 destekler.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'ca-app-pub-XXXXXXX', adUnitId: 'ca-app-pub-XXXXXXX/XXXXXXXXXX' } },
-  { id: 'unity_ads', name: 'Unity Ads', description: 'Oyun ve uygulama i\u00e7in \u00f6d\u00fcll\u00fc video reklamlar\u0131.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Unity Game ID', adUnitId: 'Rewarded Video Ad Unit' } },
-  { id: 'facebook_audience', name: 'Facebook Audience Network', description: 'Meta reklam a\u011f\u0131 \u00fczerinden g\u00f6sterilen reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Facebook App ID', adUnitId: 'Placement ID' } },
-  { id: 'applovin', name: 'AppLovin MAX', description: 'Y\u00fcksek eCPM ile \u00f6d\u00fcll\u00fc reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'AppLovin SDK Key', adUnitId: 'Ad Unit ID' } },
-  { id: 'ironsource', name: 'IronSource', description: 'Oyun i\u00e7i reklam mediasyonu ve \u00f6d\u00fcll\u00fc videolar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App Key', adUnitId: 'Placement Name' } },
-  { id: 'vungle', name: 'Vungle (Liftoff)', description: 'Y\u00fcksek kaliteli video reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Vungle App ID', adUnitId: 'Placement ID' } },
-  { id: 'chartboost', name: 'Chartboost', description: 'Oyun odakl\u0131 reklam a\u011f\u0131.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Ad Location' } },
+  { id: 'google_adsense', name: 'Google AdSense', description: 'Web siteleri için en popüler reklam ağı. Banner, metin ve video reklamları destekler.', fields: ['adCode', 'adUnitId'], placeholders: { adCode: 'AdSense reklam kodu (script tag)', adUnitId: 'ca-pub-XXXXXXX / slot-XXXXX' } },
+  { id: 'google_admob', name: 'Google AdMob', description: 'Mobil uygulamalar için Google reklam ağı. Ödüllü video reklamları destekler.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'ca-app-pub-XXXXXXX', adUnitId: 'ca-app-pub-XXXXXXX/XXXXXXXXXX' } },
+  { id: 'unity_ads', name: 'Unity Ads', description: 'Oyun ve uygulama için ödüllü video reklamları.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Unity Game ID', adUnitId: 'Rewarded Video Ad Unit' } },
+  { id: 'facebook_audience', name: 'Facebook Audience Network', description: 'Meta reklam ağı üzerinden gösterilen reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Facebook App ID', adUnitId: 'Placement ID' } },
+  { id: 'applovin', name: 'AppLovin MAX', description: 'Yüksek eCPM ile ödüllü reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'AppLovin SDK Key', adUnitId: 'Ad Unit ID' } },
+  { id: 'ironsource', name: 'IronSource', description: 'Oyun içi reklam mediasyonu ve ödüllü videolar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App Key', adUnitId: 'Placement Name' } },
+  { id: 'vungle', name: 'Vungle (Liftoff)', description: 'Yüksek kaliteli video reklamlar.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Vungle App ID', adUnitId: 'Placement ID' } },
+  { id: 'chartboost', name: 'Chartboost', description: 'Oyun odaklı reklam ağı.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Ad Location' } },
   { id: 'adcolony', name: 'AdColony', description: 'HD video reklamlar ve instant-play teknolojisi.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Zone ID' } },
-  { id: 'tapjoy', name: 'Tapjoy', description: '\u00d6d\u00fcll\u00fc reklamlar ve offerwall.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'SDK Key', adUnitId: 'Placement Name' } },
-  { id: 'mintegral', name: 'Mintegral', description: 'Global reklam a\u011f\u0131, \u00f6d\u00fcll\u00fc video ve interstitial.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Unit ID' } },
-  { id: 'inmobi', name: 'InMobi', description: 'Mobil reklam a\u011f\u0131, banner ve video.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Account ID', adUnitId: 'Placement ID' } },
+  { id: 'tapjoy', name: 'Tapjoy', description: 'Ödüllü reklamlar ve offerwall.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'SDK Key', adUnitId: 'Placement Name' } },
+  { id: 'mintegral', name: 'Mintegral', description: 'Global reklam ağı, ödüllü video ve interstitial.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Unit ID' } },
+  { id: 'inmobi', name: 'InMobi', description: 'Mobil reklam ağı, banner ve video.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'Account ID', adUnitId: 'Placement ID' } },
   { id: 'startio', name: 'Start.io', description: 'Mobil reklam platformu.', fields: ['appId', 'adUnitId'], placeholders: { appId: 'App ID', adUnitId: 'Ad Tag' } },
-  { id: 'custom', name: '\u00d6zel Reklam Kodu', description: 'Kendi reklam kodunuzu yap\u0131\u015ft\u0131r\u0131n.', fields: ['adCode'], placeholders: { adCode: 'Reklam HTML/JS kodu' } },
+  { id: 'custom', name: 'Özel Reklam Kodu', description: 'Kendi reklam kodunuzu yapıştırın.', fields: ['adCode'], placeholders: { adCode: 'Reklam HTML/JS kodu' } },
 ]
 
 interface AdNetwork {
@@ -85,7 +85,7 @@ export default function AdNetworksPage() {
         await fetchNetworks()
         setShowAdd(false)
         setSelectedProvider('')
-        setMessage('Reklam a\u011f\u0131 eklendi')
+        setMessage('Reklam ağı eklendi')
         setTimeout(() => setMessage(''), 3000)
       }
     } catch (err) {
@@ -143,7 +143,7 @@ export default function AdNetworksPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu reklam a\u011f\u0131n\u0131 silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu reklam ağını silmek istediğinize emin misiniz?')) return
     try {
       await fetch(`/api/admin/ad-networks?id=${id}`, { method: 'DELETE' })
       await fetchNetworks()
@@ -173,8 +173,8 @@ export default function AdNetworksPage() {
           <div className="flex items-center gap-3">
             <Monitor className="w-8 h-8 text-gold-500" />
             <div>
-              <h1 className="text-2xl font-bold text-white">Reklam A\u011f\u0131 Y\u00f6netimi</h1>
-              <p className="text-purple-300 text-sm">Reklam a\u011flar\u0131n\u0131 yap\u0131land\u0131r\u0131n. Sadece bir a\u011f ayn\u0131 anda aktif olabilir.</p>
+              <h1 className="text-2xl font-bold text-white">Reklam Ağı Yönetimi</h1>
+              <p className="text-purple-300 text-sm">Reklam ağlarını yapılandırın. Sadece bir ağ aynı anda aktif olabilir.</p>
             </div>
           </div>
           <button
@@ -209,7 +209,7 @@ export default function AdNetworksPage() {
               exit={{ opacity: 0, height: 0 }}
               className="mb-6 bg-deep-purple-900/50 border border-purple-500/30 rounded-xl p-4"
             >
-              <h3 className="text-white font-medium mb-3">Yeni Reklam A\u011f\u0131 Ekle</h3>
+              <h3 className="text-white font-medium mb-3">Yeni Reklam Ağı Ekle</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 max-h-[300px] overflow-y-auto">
                 {AD_PROVIDERS.filter(p => !existingProviders.includes(p.id)).map(provider => (
                   <button
@@ -238,7 +238,7 @@ export default function AdNetworksPage() {
                   onClick={() => { setShowAdd(false); setSelectedProvider('') }}
                   className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 rounded-lg transition-colors"
                 >
-                  \u0130ptal
+                  İptal
                 </button>
               </div>
             </motion.div>
@@ -250,8 +250,8 @@ export default function AdNetworksPage() {
           {networks.length === 0 && (
             <div className="text-center py-12 text-purple-300">
               <Monitor className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Hen\u00fcz reklam a\u011f\u0131 eklenmemi\u015f</p>
-              <p className="text-sm mt-1 text-purple-400">Yukar\u0131daki &quot;Ekle&quot; butonuyla ba\u015flay\u0131n</p>
+              <p>Henüz reklam ağı eklenmemiş</p>
+              <p className="text-sm mt-1 text-purple-400">Yukarıdaki &quot;Ekle&quot; butonuyla başlayın</p>
             </div>
           )}
 
@@ -281,7 +281,7 @@ export default function AdNetworksPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggle(network) }}
                       className={`p-1.5 rounded-lg transition-colors ${network.isActive ? 'text-green-400 hover:bg-green-500/20' : 'text-gray-400 hover:bg-purple-500/20'}`}
-                      title={network.isActive ? 'Devre d\u0131\u015f\u0131 b\u0131rak' : 'Aktif et'}
+                      title={network.isActive ? 'Devre dışı bırak' : 'Aktif et'}
                     >
                       {network.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                     </button>

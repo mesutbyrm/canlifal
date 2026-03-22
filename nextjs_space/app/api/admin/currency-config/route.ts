@@ -7,26 +7,26 @@ export const dynamic = 'force-dynamic'
 
 const DEFAULT_CONFIGS = [
   // Fortune types - default CFC
-  { area: 'fortune_tarot', areaName: 'Tarot Fal\u0131', currencyType: 'cfc', cost: 7 },
-  { area: 'fortune_coffee', areaName: 'Kahve Fal\u0131', currencyType: 'cfc', cost: 5 },
-  { area: 'fortune_dream', areaName: 'R\u00fcya Yorumu', currencyType: 'cfc', cost: 5 },
-  { area: 'fortune_horoscope', areaName: 'G\u00fcnl\u00fck Bur\u00e7', currencyType: 'cfc', cost: 3 },
+  { area: 'fortune_tarot', areaName: 'Tarot Falı', currencyType: 'cfc', cost: 7 },
+  { area: 'fortune_coffee', areaName: 'Kahve Falı', currencyType: 'cfc', cost: 5 },
+  { area: 'fortune_dream', areaName: 'Rüya Yorumu', currencyType: 'cfc', cost: 5 },
+  { area: 'fortune_horoscope', areaName: 'Günlük Burç', currencyType: 'cfc', cost: 3 },
   { area: 'fortune_numerology', areaName: 'Numeroloji', currencyType: 'cfc', cost: 4 },
-  { area: 'fortune_love', areaName: 'A\u015fk Uyumu', currencyType: 'cfc', cost: 5 },
-  { area: 'fortune_yesno', areaName: 'Evet/Hay\u0131r', currencyType: 'cfc', cost: 2 },
-  { area: 'fortune_katina', areaName: 'Katina Fal\u0131', currencyType: 'cfc', cost: 6 },
-  { area: 'fortune_palm', areaName: 'El Fal\u0131', currencyType: 'cfc', cost: 8 },
-  { area: 'fortune_istikhara', areaName: '\u0130stihare', currencyType: 'cfc', cost: 4 },
-  { area: 'fortune_angel', areaName: 'Melek Kartlar\u0131', currencyType: 'cfc', cost: 5 },
-  { area: 'fortune_birthchart', areaName: 'Do\u011fum Haritas\u0131', currencyType: 'cfc', cost: 10 },
+  { area: 'fortune_love', areaName: 'Aşk Uyumu', currencyType: 'cfc', cost: 5 },
+  { area: 'fortune_yesno', areaName: 'Evet/Hayır', currencyType: 'cfc', cost: 2 },
+  { area: 'fortune_katina', areaName: 'Katina Falı', currencyType: 'cfc', cost: 6 },
+  { area: 'fortune_palm', areaName: 'El Falı', currencyType: 'cfc', cost: 8 },
+  { area: 'fortune_istikhara', areaName: 'İstihare', currencyType: 'cfc', cost: 4 },
+  { area: 'fortune_angel', areaName: 'Melek Kartları', currencyType: 'cfc', cost: 5 },
+  { area: 'fortune_birthchart', areaName: 'Doğum Haritası', currencyType: 'cfc', cost: 10 },
   { area: 'fortune_aura', areaName: 'Aura Analizi', currencyType: 'cfc', cost: 6 },
-  { area: 'fortune_kursundokme', areaName: 'Kur\u015fun D\u00f6kme', currencyType: 'cfc', cost: 6 },
-  { area: 'fortune_bana_ozel', areaName: 'Bana \u00d6zel Fallar', currencyType: 'cfc', cost: 0 },
+  { area: 'fortune_kursundokme', areaName: 'Kurşun Dökme', currencyType: 'cfc', cost: 6 },
+  { area: 'fortune_bana_ozel', areaName: 'Bana Özel Fallar', currencyType: 'cfc', cost: 0 },
   // Live/Gift areas - default Jeton
-  { area: 'live_session', areaName: 'Canl\u0131 Falc\u0131 Seans\u0131', currencyType: 'jeton', cost: 0 },
-  { area: 'live_stream_gift', areaName: 'Canl\u0131 Yay\u0131n Hediyeleri', currencyType: 'jeton', cost: 0 },
-  { area: 'chat_room_gift', areaName: 'Sohbet Odas\u0131 Hediyeleri', currencyType: 'jeton', cost: 0 },
-  { area: 'game_entry', areaName: 'Oyun Kat\u0131l\u0131m', currencyType: 'jeton', cost: 0 },
+  { area: 'live_session', areaName: 'Canlı Falcı Seansı', currencyType: 'jeton', cost: 0 },
+  { area: 'live_stream_gift', areaName: 'Canlı Yayın Hediyeleri', currencyType: 'jeton', cost: 0 },
+  { area: 'chat_room_gift', areaName: 'Sohbet Odası Hediyeleri', currencyType: 'jeton', cost: 0 },
+  { area: 'game_entry', areaName: 'Oyun Katılım', currencyType: 'jeton', cost: 0 },
 ]
 
 export async function GET() {

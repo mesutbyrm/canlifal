@@ -108,9 +108,9 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
         >
           <div className="p-4 bg-gold-500/10 border border-gold-500/30 rounded-xl">
             <Play className="w-10 h-10 text-gold-500 mx-auto mb-2" />
-            <h3 className="text-white font-bold text-lg">G\u00fcnl\u00fck \u00dccretsiz Fal\u0131n\u0131z\u0131 Kulland\u0131n\u0131z</h3>
+            <h3 className="text-white font-bold text-lg">Günlük Ücretsiz Falınızı Kullandınız</h3>
             <p className="text-purple-300 text-sm mt-2">
-              K\u0131sa bir reklam izleyerek 2. \u00fccretsiz fal hakk\u0131n\u0131z\u0131 kazanabilirsiniz!
+              Kısa bir reklam izleyerek 2. ücretsiz fal hakkınızı kazanabilirsiniz!
             </p>
           </div>
           <button
@@ -118,7 +118,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
             className="w-full py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <Play className="w-5 h-5" />
-            Reklam \u0130zle & \u00dccretsiz Fal Bakt\u0131r
+            Reklam İzle & Ücretsiz Fal Baktır
           </button>
           <div className="text-center">
             <p className="text-purple-400 text-xs">veya</p>
@@ -126,7 +126,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
               onClick={() => router.push('/kayit-ol')}
               className="mt-2 text-gold-400 hover:text-gold-300 text-sm underline"
             >
-              \u00dcye olarak s\u0131n\u0131rs\u0131z fal bakt\u0131r\u0131n
+              Üye olarak sınırsız fal baktırın
             </button>
           </div>
         </motion.div>
@@ -145,9 +145,9 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
       >
         <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
           <LogIn className="w-10 h-10 text-purple-400 mx-auto mb-2" />
-          <h3 className="text-white font-bold text-lg">G\u00fcnl\u00fck \u00dccretsiz Fal Hakk\u0131n\u0131z Doldu</h3>
+          <h3 className="text-white font-bold text-lg">Günlük Ücretsiz Fal Hakkınız Doldu</h3>
           <p className="text-purple-300 text-sm mt-2">
-            Daha fazla fal bakt\u0131rmak i\u00e7in giri\u015f yap\u0131n veya \u00fcye olun
+            Daha fazla fal baktırmak için giriş yapın veya üye olun
           </p>
         </div>
         <div className="flex gap-3">
@@ -156,14 +156,14 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
             className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <LogIn className="w-4 h-4" />
-            Giri\u015f Yap
+            Giriş Yap
           </button>
           <button
             onClick={() => router.push('/kayit-ol')}
             className="flex-1 py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <UserPlus className="w-4 h-4" />
-            \u00dcye Ol
+            Üye Ol
           </button>
         </div>
       </motion.div>
@@ -194,7 +194,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
             className="w-full py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <Play className="w-5 h-5" />
-            Reklam \u0130zle & \u00dccretsiz Fal Bakt\u0131r
+            Reklam İzle & Ücretsiz Fal Baktır
           </button>
 
           <div className="flex gap-3">
@@ -203,14 +203,14 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
               className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
-              CFC Sat\u0131n Al
+              CFC Satın Al
             </button>
             <button
               onClick={() => router.push('/panel')}
               className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
-              G\u00fcnl\u00fck Bonus
+              Günlük Bonus
             </button>
           </div>
         </motion.div>
@@ -222,7 +222,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
   // Error fallback
   return (
     <div className="text-center py-6">
-      <p className="text-red-400">{message || 'Bir hata olu\u015ftu'}</p>
+      <p className="text-red-400">{message || 'Bir hata oluştu'}</p>
       <button onClick={checkAccess} className="mt-3 text-gold-400 underline text-sm">Tekrar Dene</button>
     </div>
   )
