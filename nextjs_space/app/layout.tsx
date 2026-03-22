@@ -108,6 +108,22 @@ export default function RootLayout({
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
         {/* OneSignal Web SDK */}
         <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.OneSignalDeferred = window.OneSignalDeferred || [];
+              OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.init({
+                  appId: "33f20979-e483-49f7-a494-cd5c2a6e38da",
+                  safari_web_id: "web.onesignal.auto.27d2eba6-7621-43e8-b8d4-d2a9de3b8fea",
+                  notifyButton: {
+                    enable: true,
+                  },
+                });
+              });
+            `,
+          }}
+        />
         {/* Google AdSense */}
         <script
           async
