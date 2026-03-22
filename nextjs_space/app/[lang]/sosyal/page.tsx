@@ -761,7 +761,7 @@ export default function SocialPage() {
                                     />
                                   </Link>
                                   <div className="bg-fuchsia-500/10 border border-fuchsia-500/15 rounded-xl p-2 sm:p-2.5 flex-1 min-w-0">
-                                    <Link href={`/profil/${comment.user.id}`} className="text-[10px] sm:text-xs text-fuchsia-300 font-medium hover:text-fuchsia-200">{comment.user.name}</Link>
+                                    <Link href={`/profil/${comment.user.id}`} className={`text-[10px] sm:text-xs text-fuchsia-300 font-medium hover:text-fuchsia-200 ${getSocialEffectClass(comment.user)}`} data-text={comment.user.name}>{comment.user.name}</Link>
                                     <p className="text-xs sm:text-sm text-purple-100/80 mt-0.5 break-words">{comment.content}</p>
                                   </div>
                                 </div>
