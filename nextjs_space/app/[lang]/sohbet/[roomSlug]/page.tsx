@@ -300,7 +300,7 @@ export default function ChatRoomPage() {
   const fetchMessages = useCallback(async () => {
     if (!room) return
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/mesajlar`)
+      const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (res.ok) {
         const data = await res.json()
         setMessages(data.messages || [])
@@ -358,7 +358,7 @@ export default function ChatRoomPage() {
   const checkBan = useCallback(async () => {
     if (!room || !session?.user) return
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/mesajlar`)
+      const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (!res.ok) {
         const data = await res.json()
         if (data.error === 'banned') {
@@ -955,7 +955,7 @@ export default function ChatRoomPage() {
 
     setSending(true)
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/mesajlar`, {
+      const res = await fetch(`/api/chat/rooms/${room.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newMessage })
@@ -1115,7 +1115,7 @@ export default function ChatRoomPage() {
   const fetchLeaderboard = useCallback(async () => {
     if (!room) return
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/hediyeler?after=${encodeURIComponent(lastGiftPollRef.current)}`)
+      const res = await fetch(`/api/chat/rooms/${room.id}/gifts?after=${encodeURIComponent(lastGiftPollRef.current)}`)
       if (res.ok) {
         const data = await res.json()
         setLeaderboard(data.leaderboard || [])
@@ -1166,7 +1166,7 @@ export default function ChatRoomPage() {
     if (!room || !giftTargetUser || !selectedGiftType || sendingGift) return
     setSendingGift(true)
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/hediyeler`, {
+      const res = await fetch(`/api/chat/rooms/${room.id}/gifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType })
