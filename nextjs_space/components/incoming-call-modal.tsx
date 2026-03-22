@@ -131,9 +131,8 @@ export default function IncomingCallModal() {
     setDismissedSessions(prev => new Set([...prev, incomingSession.id]));
     setIsVisible(false);
     setIncomingSession(null);
-    // Redirect with language prefix
-    const langPrefix = typeof window !== 'undefined' ? (window.location.pathname.split('/')[1] || 'tr') : 'tr';
-    router.push(`/${langPrefix}/canli-oda/${incomingSession.id}`);
+    // Redirect to live room (middleware handles /tr prefix internally)
+    router.push(`/canli-oda/${incomingSession.id}`);
   };
 
   const handleDecline = async () => {
