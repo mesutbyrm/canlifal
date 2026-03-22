@@ -118,7 +118,44 @@ export default function RootLayout({
                   safari_web_id: "web.onesignal.auto.27d2eba6-7621-43e8-b8d4-d2a9de3b8fea",
                   notifyButton: {
                     enable: true,
+                    position: "bottom-right",
+                    offset: {
+                      bottom: "80px",
+                      right: "12px"
+                    },
+                    size: "small",
+                    text: {
+                      "tip.state.unsubscribed": "Bildirimlere abone ol",
+                      "tip.state.subscribed": "Bildirimler açık",
+                      "tip.state.blocked": "Bildirimler engellendi",
+                      "message.prenotify": "Bildirimlere abone olmak için tıklayın",
+                      "message.action.subscribed": "Bildirimlere abone oldunuz!",
+                      "message.action.resubscribed": "Bildirimlere tekrar abone oldunuz!",
+                      "message.action.unsubscribed": "Bildirim aboneliğiniz iptal edildi.",
+                      "dialog.main.title": "Site Bildirimlerini Yönet",
+                      "dialog.main.button.subscribe": "ABONE OL",
+                      "dialog.main.button.unsubscribe": "ABONELIKTEN ÇIK",
+                      "dialog.blocked.title": "Bildirimlerin Engelini Kaldır",
+                      "dialog.blocked.message": "Bildirimlere izin vermek için tarayıcı ayarlarınızdan izin verin."
+                    }
                   },
+                  promptOptions: {
+                    slidedown: {
+                      prompts: [{
+                        type: "push",
+                        autoPrompt: true,
+                        text: {
+                          actionMessage: "Fal yorumları ve güncellemeler için bildirimlere izin vermek ister misiniz?",
+                          acceptButton: "İzin Ver",
+                          cancelButton: "Hayır"
+                        },
+                        delay: {
+                          pageViews: 1,
+                          timeDelay: 5
+                        }
+                      }]
+                    }
+                  }
                 });
               });
             `,
