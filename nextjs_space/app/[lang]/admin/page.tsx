@@ -136,6 +136,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
       { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
       { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
+      { href: `/admin/profile-frames`, icon: Shield, trLabel: 'Profil Çerçeve Yönetimi', enLabel: 'Profile Frame Management' },
       { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation' },
     ],
   },

@@ -1068,6 +1068,40 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
 
   console.log('Site pages seeded!')
 
+  // Seed Profile Frames
+  const profileFrames = [
+    { id: 'frame-butterfly-1', name: 'Kelebek Çerçeve 1', imageUrl: '/frames/frame-butterfly-1.png', tier: 'gold', sortOrder: 1 },
+    { id: 'frame-butterfly-2', name: 'Kelebek Çerçeve 2', imageUrl: '/frames/frame-butterfly-2.png', tier: 'gold', sortOrder: 2 },
+    { id: 'frame-butterfly-3', name: 'Kelebek Çerçeve 3', imageUrl: '/frames/frame-butterfly-3.png', tier: 'gold', sortOrder: 3 },
+    { id: 'frame-butterfly-4', name: 'Kelebek Çerçeve 4', imageUrl: '/frames/frame-butterfly-4.png', tier: 'gold', sortOrder: 4 },
+    { id: 'frame-lion-1', name: 'Aslan Çerçeve 1', imageUrl: '/frames/frame-lion-1.png', tier: 'gold', sortOrder: 5 },
+    { id: 'frame-lion-2', name: 'Aslan Çerçeve 2', imageUrl: '/frames/frame-lion-2.png', tier: 'gold', sortOrder: 6 },
+    { id: 'frame-lion-3', name: 'Aslan Çerçeve 3', imageUrl: '/frames/frame-lion-3.png', tier: 'gold', sortOrder: 7 },
+    { id: 'frame-lion-4', name: 'Aslan Çerçeve 4', imageUrl: '/frames/frame-lion-4.png', tier: 'gold', sortOrder: 8 },
+  ]
+
+  for (const frame of profileFrames) {
+    await prisma.profileFrame.upsert({
+      where: { id: frame.id },
+      update: {
+        name: frame.name,
+        imageUrl: frame.imageUrl,
+        tier: frame.tier,
+        sortOrder: frame.sortOrder,
+        isActive: true,
+      },
+      create: {
+        id: frame.id,
+        name: frame.name,
+        imageUrl: frame.imageUrl,
+        tier: frame.tier,
+        sortOrder: frame.sortOrder,
+        isActive: true,
+      },
+    })
+  }
+  console.log('Profile frames seeded!')
+
   console.log('Seed completed successfully!')
 }
 

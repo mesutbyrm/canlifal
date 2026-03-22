@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
         membershipExpiresAt: true,
         messagePrivacy: true,
         hideProfileViews: true,
+        profileFrameId: true,
+        adminAssignedFrameId: true,
+        profileFrame: { select: { id: true, name: true, imageUrl: true } },
+        adminAssignedFrame: { select: { id: true, name: true, imageUrl: true } },
         createdAt: true,
         _count: {
           select: {
@@ -105,9 +109,11 @@ export async function PATCH(request: NextRequest) {
     // Check username uniqueness
     if (username !== undefined) {
       if (username) {
+        // Auto-lowercase username
+        const normalizedUsername = username.toLowerCase().trim();
         // Validate username format (alphanumeric, underscore, 3-20 chars)
         const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-        if (!usernameRegex.test(username)) {
+        if (!usernameRegex.test(normalizedUsername)) {
           return NextResponse.json({ 
             error: 'username_invalid',
             message: 'Kullanıcı adı 3-20 karakter, sadece harf, rakam ve alt çizgi içerebilir'
@@ -115,7 +121,7 @@ export async function PATCH(request: NextRequest) {
         }
         
         const existingUsername = await prisma.user.findFirst({
-          where: { username, NOT: { id: session.user.id } }
+          where: { username: normalizedUsername, NOT: { id: session.user.id } }
         });
         if (existingUsername) {
           return NextResponse.json({ 
@@ -123,8 +129,10 @@ export async function PATCH(request: NextRequest) {
             message: 'Bu kullanıcı adı zaten kullanılıyor'
           }, { status: 400 });
         }
+        updateData.username = normalizedUsername;
+      } else {
+        updateData.username = null;
       }
-      updateData.username = username || null;
     }
 
     // Check email uniqueness

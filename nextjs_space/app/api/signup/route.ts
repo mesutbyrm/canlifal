@@ -22,9 +22,21 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Geçersiz e-posta adresi' },
+        { status: 400 }
+      )
+    }
+
+    // Auto-lowercase username
+    const normalizedUsername = username.toLowerCase().trim()
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     })
 
     if (existingUser) {
@@ -36,7 +48,7 @@ export async function POST(request: Request) {
 
     // Check if username is taken
     const existingUsername = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizedUsername },
     })
 
     if (existingUsername) {
@@ -73,10 +85,10 @@ export async function POST(request: Request) {
     // Create user
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         name,
-        username,
+        username: normalizedUsername,
         birthDate: new Date(birthDate),
         birthTime,
         preferredLanguage: preferredLanguage || 'tr',
