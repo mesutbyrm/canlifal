@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import YouTubeSearchModal from '@/components/youtube-search-modal'
 import ShareCard from '@/components/share-card'
+import FramedAvatar from '@/components/framed-avatar'
 
 interface SocialPost {
   id: string
@@ -28,6 +29,8 @@ interface SocialPost {
     id: string
     name: string
     image?: string
+    profileFrame?: { imageUrl: string } | null
+    adminAssignedFrame?: { imageUrl: string } | null
   }
   comments: Comment[]
   likes: { userId: string }[]
@@ -45,6 +48,8 @@ interface Comment {
     id: string
     name: string
     image?: string
+    profileFrame?: { imageUrl: string } | null
+    adminAssignedFrame?: { imageUrl: string } | null
   }
 }
 
@@ -565,15 +570,14 @@ export default function SocialPage() {
                       <div className="p-3 sm:p-4 pb-2">
                         <div className="flex items-start justify-between gap-2">
                           <Link href={`/profil/${post.user.id}`} className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden flex-shrink-0 border-2 border-fuchsia-500/50 group-hover:border-fuchsia-400 transition-colors">
-                              {post.user.image ? (
-                                <Image src={post.user.image} alt="" width={44} height={44} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex items-center justify-center text-white font-bold text-sm">
-                                  {post.user.name?.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
+                            <FramedAvatar
+                              src={post.user.image}
+                              alt={post.user.name || ''}
+                              size={44}
+                              frameUrl={post.user.adminAssignedFrame?.imageUrl || post.user.profileFrame?.imageUrl}
+                              fallbackInitial={post.user.name?.charAt(0) || '?'}
+                              borderColor="border-fuchsia-500/50"
+                            />
                             <div className="min-w-0 flex-1">
                               <p className="text-white font-medium group-hover:text-fuchsia-300 transition-colors text-xs sm:text-sm truncate">{post.user.name}</p>
                               <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-fuchsia-400/60 flex-wrap">
@@ -732,14 +736,15 @@ export default function SocialPage() {
                             <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                               {post.comments?.map(comment => (
                                 <div key={comment.id} className="flex gap-2">
-                                  <Link href={`/profil/${comment.user.id}`} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm flex-shrink-0 overflow-hidden border border-fuchsia-500/30 hover:border-fuchsia-400 transition-colors">
-                                    {comment.user.image ? (
-                                      <Image src={comment.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full bg-gradient-to-br from-fuchsia-700 to-purple-700 flex items-center justify-center">
-                                        {comment.user.name?.charAt(0).toUpperCase()}
-                                      </div>
-                                    )}
+                                  <Link href={`/profil/${comment.user.id}`} className="flex-shrink-0">
+                                    <FramedAvatar
+                                      src={comment.user.image}
+                                      alt={comment.user.name || ''}
+                                      size={32}
+                                      frameUrl={comment.user.adminAssignedFrame?.imageUrl || comment.user.profileFrame?.imageUrl}
+                                      fallbackInitial={comment.user.name?.charAt(0) || '?'}
+                                      borderColor="border-fuchsia-500/30"
+                                    />
                                   </Link>
                                   <div className="bg-fuchsia-500/10 border border-fuchsia-500/15 rounded-xl p-2 sm:p-2.5 flex-1 min-w-0">
                                     <Link href={`/profil/${comment.user.id}`} className="text-[10px] sm:text-xs text-fuchsia-300 font-medium hover:text-fuchsia-200">{comment.user.name}</Link>

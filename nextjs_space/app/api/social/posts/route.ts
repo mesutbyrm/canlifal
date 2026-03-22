@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           user: {
-            select: { id: true, name: true, image: true }
+            select: { id: true, name: true, image: true, profileFrame: { select: { imageUrl: true } }, adminAssignedFrame: { select: { imageUrl: true } } }
           },
           fortune: {
             select: { viewCount: true }
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
           comments: {
             include: {
               user: {
-                select: { id: true, name: true, image: true }
+                select: { id: true, name: true, image: true, profileFrame: { select: { imageUrl: true } }, adminAssignedFrame: { select: { imageUrl: true } } }
               }
             },
             orderBy: { createdAt: 'asc' }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         user: {
-          select: { id: true, name: true, image: true }
+          select: { id: true, name: true, image: true, profileFrame: { select: { imageUrl: true } }, adminAssignedFrame: { select: { imageUrl: true } } }
         },
         _count: {
           select: { comments: true, likes: true }

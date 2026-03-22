@@ -20,6 +20,7 @@ import {
   Crown
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import FramedAvatar from './framed-avatar'
 
 interface UserProfile {
   id: string
@@ -28,6 +29,8 @@ interface UserProfile {
   image: string | null
   credits: number
   membership: string
+  profileFrame?: { id: string; name: string; imageUrl: string } | null
+  adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
 }
 
 export default function FloatingProfile() {
@@ -86,26 +89,21 @@ export default function FloatingProfile() {
       {/* Floating Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-500/30 flex items-center justify-center overflow-hidden border-2 border-purple-400/30"
+        className="fixed bottom-6 right-6 z-50 shadow-lg shadow-purple-500/30"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        {profile?.image || user.image ? (
-          <Image
-            src={profile?.image || user.image || ''}
-            alt="Profile"
-            width={56}
-            height={56}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-white bg-gradient-to-br from-purple-700 to-pink-700">
-            {(user.name || 'U').charAt(0).toUpperCase()}
-          </div>
-        )}
+        <FramedAvatar
+          src={profile?.image || user.image}
+          alt="Profile"
+          size={56}
+          frameUrl={profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl}
+          fallbackInitial={(user.name || 'U').charAt(0)}
+          borderColor="border-purple-400/30"
+        />
         {/* Unread badge */}
         {unreadMessages > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center z-20">
             {unreadMessages > 9 ? '9+' : unreadMessages}
           </span>
         )}
@@ -137,21 +135,15 @@ export default function FloatingProfile() {
                   <Link
                     href={`/profil/${profile?.username || user.id}`}
                     onClick={() => setIsOpen(false)}
-                    className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-400/50"
                   >
-                    {profile?.image || user.image ? (
-                      <Image
-                        src={profile?.image || user.image || ''}
-                        alt="Profile"
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-gradient-to-br from-purple-700 to-pink-700">
-                        {(user.name || 'U').charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <FramedAvatar
+                      src={profile?.image || user.image}
+                      alt="Profile"
+                      size={48}
+                      frameUrl={profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl}
+                      fallbackInitial={(user.name || 'U').charAt(0)}
+                      borderColor="border-purple-400/50"
+                    />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white truncate">{user.name}</p>

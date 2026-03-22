@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
+import FramedAvatar from './framed-avatar'
 
 interface SearchResult {
   type: string
@@ -14,6 +15,7 @@ interface SearchResult {
   href: string
   icon: string
   image?: string
+  frameUrl?: string
 }
 
 const TYPE_LABELS: Record<string, { tr: string; en: string }> = {
@@ -178,10 +180,15 @@ export default function NavSearch() {
                         : 'text-white hover:bg-purple-600/40'
                     }`}
                   >
-                    {result.image ? (
-                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-fuchsia-500/30">
-                        <Image src={result.image} alt={result.title} width={32} height={32} className="w-full h-full object-cover" />
-                      </div>
+                    {result.image || result.frameUrl ? (
+                      <FramedAvatar
+                        src={result.image}
+                        alt={result.title}
+                        size={32}
+                        frameUrl={result.frameUrl}
+                        fallbackInitial={result.title?.[0] || '?'}
+                        borderColor="border-fuchsia-500/30"
+                      />
                     ) : (
                       <span className="w-8 h-8 rounded-full bg-fuchsia-900/40 flex items-center justify-center text-base flex-shrink-0">
                         {result.icon}

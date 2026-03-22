@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Search users from DB
-    let userResults: Array<{ type: string; id: string; title: string; href: string; icon: string; image?: string }> = [];
+    let userResults: Array<{ type: string; id: string; title: string; href: string; icon: string; image?: string; frameUrl?: string }> = [];
     if (query.length >= 2) {
       try {
         const users = await prisma.user.findMany({
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
             ],
           },
           take: 5,
-          select: { id: true, name: true, username: true, image: true },
+          select: { id: true, name: true, username: true, image: true, profileFrame: { select: { imageUrl: true } }, adminAssignedFrame: { select: { imageUrl: true } } },
         });
         userResults = users.map((u: any) => ({
           type: 'user',
@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
           href: `/profil/${u.id}`,
           icon: '👤',
           image: u.image || undefined,
+          frameUrl: u.adminAssignedFrame?.imageUrl || u.profileFrame?.imageUrl || undefined,
         }));
       } catch {
         // DB query failed, skip

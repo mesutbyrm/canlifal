@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Star, Users, MessageCircle, Crown, BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
+import FramedAvatar from './framed-avatar'
 
 interface UserProfile {
   id: string
@@ -18,6 +19,8 @@ interface UserProfile {
   followerCount: number
   followingCount: number
   postCount: number
+  profileFrame?: { id: string; name: string; imageUrl: string } | null
+  adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
 }
 
 interface ProfilePopupContextType {
@@ -115,17 +118,18 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
 
             {/* Avatar */}
             <div className="-mt-10 px-4 flex justify-center">
-              <div className="w-16 h-16 rounded-full border-3 border-purple-500 overflow-hidden bg-purple-900/50">
-                {loading ? (
-                  <div className="w-full h-full animate-pulse bg-purple-700/50" />
-                ) : profile?.image ? (
-                  <Image src={profile.image} alt={profile.name} width={64} height={64} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-purple-300">
-                    {profile?.name?.[0] || '?'}
-                  </div>
-                )}
-              </div>
+              {loading ? (
+                <div className="w-16 h-16 rounded-full animate-pulse bg-purple-700/50 border-3 border-purple-500" />
+              ) : (
+                <FramedAvatar
+                  src={profile?.image}
+                  alt={profile?.name || '?'}
+                  size={64}
+                  frameUrl={profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl}
+                  fallbackInitial={profile?.name?.[0] || '?'}
+                  borderColor="border-purple-500"
+                />
+              )}
             </div>
 
             {/* Content */}
