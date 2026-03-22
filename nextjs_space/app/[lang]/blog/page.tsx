@@ -188,7 +188,6 @@ export default function BlogPage() {
                     href={`/${lang}/blog/kategori/${cat.slug}`}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/10 transition-all group whitespace-nowrap"
                   >
-                    <span className="text-lg">{CATEGORY_ICONS[cat.icon] || '📄'}</span>
                     <span className="text-sm font-medium text-gray-300 group-hover:text-purple-300 transition">{cat.nameTr}</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">{cat.postCount}</span>
                   </Link>

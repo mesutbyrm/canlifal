@@ -3,6 +3,7 @@
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { ArrowLeft, Sparkles, LucideIcon } from 'lucide-react'
 
@@ -15,6 +16,7 @@ interface FortunePageLayoutProps {
   cost: number
   children: ReactNode
   showBackButton?: boolean
+  seoDescription?: string
 }
 
 export default function FortunePageLayout({
@@ -25,12 +27,28 @@ export default function FortunePageLayout({
   icon: Icon,
   cost,
   children,
-  showBackButton = true
+  showBackButton = true,
+  seoDescription
 }: FortunePageLayoutProps) {
   const { language } = useLanguage()
+  const pathname = usePathname()
+  // Remove /tr/ or /en/ prefix for canonical URL
+  const cleanPath = pathname?.replace(/^\/(tr|en)/, '') || ''
+  const canonicalUrl = `https://canlifal.com${cleanPath}`
+  const desc = seoDescription || subtitle
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-deep-purple-975 to-[#0a0118]">
+      <head>
+        <meta property="og:title" content={`${title} | Canlifal`} />
+        <meta property="og:description" content={desc} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:title" content={`${title} | Canlifal`} />
+        <meta name="twitter:description" content={desc} />
+        <meta name="description" content={desc} />
+        <link rel="canonical" href={canonicalUrl} />
+      </head>
       {/* Fixed Header */}
       <div className="sticky top-0 z-30 bg-deep-purple-975/95 backdrop-blur-sm border-b border-purple-500/20">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">

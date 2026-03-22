@@ -70,11 +70,7 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION || '',
   },
   alternates: {
-    canonical: process.env.NEXTAUTH_URL || 'https://canlifal.com',
-    languages: {
-      'tr': '/tr',
-      'en': '/en',
-    },
+    canonical: 'https://canlifal.com',
   },
   appleWebApp: {
     capable: true,

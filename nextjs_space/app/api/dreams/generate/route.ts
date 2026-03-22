@@ -105,7 +105,7 @@ Kategori seçenekleri (sadece bunlardan birini yaz): genel, hayvanlar, doga, ins
     sendNotification({
       title: '\u{1F319} Yeni Rüya Tabiri',
       message: dream.title,
-      url: `${baseUrl}/tr/ruya/${dream.slug}`,
+      url: `${baseUrl}/ruya/${dream.slug}`,
       targetType: 'all',
     }).catch((err) => console.error('OneSignal dream notification error:', err))
 

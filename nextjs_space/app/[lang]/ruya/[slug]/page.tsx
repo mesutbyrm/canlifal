@@ -237,7 +237,7 @@ export default function DreamDetailPage() {
   }
 
   // Share functions
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://canlifal.com/${lang}/ruya/${slug}`
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://canlifal.com/ruya/${slug}`
   const shareTitle = dream?.title || 'R\u00fcya Tabiri'
 
   const shareWhatsApp = () => {
@@ -294,7 +294,7 @@ export default function DreamDetailPage() {
     publisher: { '@type': 'Organization', name: 'Canlifal' },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://canlifal.com/${lang}/ruya/${dream.slug}`,
+      '@id': `https://canlifal.com/ruya/${dream.slug}`,
     },
     keywords: dream.keywords.join(', '),
   }
@@ -304,6 +304,16 @@ export default function DreamDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 overflow-x-hidden">
+      <head>
+        <meta property="og:title" content={`${dream.title} - Rüya Tabiri`} />
+        <meta property="og:description" content={dream.metaDescription || dream.summary || ''} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://canlifal.com/ruya/${dream.slug}`} />
+        <meta name="twitter:title" content={`${dream.title} - Rüya Tabiri`} />
+        <meta name="twitter:description" content={dream.metaDescription || dream.summary || ''} />
+        <meta name="description" content={dream.metaDescription || dream.summary || ''} />
+        <link rel="canonical" href={`https://canlifal.com/ruya/${dream.slug}`} />
+      </head>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="max-w-3xl mx-auto px-4 pt-6 pb-12">

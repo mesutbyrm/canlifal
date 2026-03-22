@@ -55,17 +55,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/canli-falcilar`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/online-fal`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/ruya-istatistikleri`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/ruya-trendleri`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/iletisim`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
   ]
 
-  // Fortune types pages
-  const fortuneTypes = [
-    'coffee', 'tarot', 'dream', 'horoscope', 'palm', 'angel',
-    'numerology', 'aura', 'birthchart', 'istikhara', 'katina',
-    'kursundokme', 'yesno', 'love'
+  // Fortune types pages - Turkish slugs matching actual routes
+  const fortuneSlugs = [
+    'kahve-fali', 'tarot-fali', 'el-fali', 'ruya-yorumu', 'ask-uyumu',
+    'burc-yorumu', 'numeroloji', 'melek-kartlari', 'aura-analizi',
+    'dogum-haritasi', 'katina', 'evet-hayir', 'kursundokme', 'istihare'
   ]
   
-  const fortunePages: MetadataRoute.Sitemap = fortuneTypes.map(type => ({
-    url: `${baseUrl}/fallar/${type}`,
+  const fortunePages: MetadataRoute.Sitemap = fortuneSlugs.map(slug => ({
+    url: `${baseUrl}/fallar/${slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,

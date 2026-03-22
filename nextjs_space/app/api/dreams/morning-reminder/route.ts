@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const result = await sendNotification({
       title: randomMsg.title,
       message: randomMsg.message,
-      url: `${baseUrl}/tr/ruya-takvimi`,
+      url: `${baseUrl}/ruya-takvimi`,
       targetType: 'all',
     })
 

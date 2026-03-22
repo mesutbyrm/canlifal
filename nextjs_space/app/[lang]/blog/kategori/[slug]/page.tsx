@@ -146,7 +146,6 @@ export default function CategoryPage() {
         {/* Category Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            {category?.icon && <span className="text-2xl">{category.icon}</span>}
             <h1 className="text-3xl md:text-4xl font-bold text-white">{catName}</h1>
           </div>
           {catDesc && <p className="text-gray-400 text-lg mt-2">{catDesc}</p>}
@@ -238,7 +237,6 @@ export default function CategoryPage() {
                   href={`/${lang}/blog/kategori/${c.slug}`}
                   className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-purple-500/10 hover:border-purple-500/20 hover:text-purple-300 transition"
                 >
-                  {c.icon && <span className="mr-1.5">{c.icon}</span>}
                   {c.nameTr}
                   {c.postCount > 0 && <span className="ml-1.5 text-gray-500">({c.postCount})</span>}
                 </Link>

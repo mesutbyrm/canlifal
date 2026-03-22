@@ -23,6 +23,14 @@ export default function DreamSymbolDetailPage() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
+      <head>
+        <meta property="og:title" content={`${symbol.name} - Rüya Sözlüğü | Canlifal`} />
+        <meta property="og:description" content={symbol.meaning || ''} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://canlifal.com/ruya-sozlugu/${slug}`} />
+        <meta name="description" content={symbol.meaning || ''} />
+        <link rel="canonical" href={`https://canlifal.com/ruya-sozlugu/${slug}`} />
+      </head>
       <button onClick={() => router.back()} className="flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors">
         <ArrowLeft size={18} /> Geri
       </button>
