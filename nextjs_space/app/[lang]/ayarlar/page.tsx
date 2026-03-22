@@ -83,6 +83,12 @@ export default function SettingsPage() {
   const [risingSign, setRisingSign] = useState('')
   const [messagePrivacy, setMessagePrivacy] = useState('everyone')
   const [hideProfileViews, setHideProfileViews] = useState(false)
+  const [membership, setMembership] = useState('')
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null)
+  const [adminAssignedFrameId, setAdminAssignedFrameId] = useState<string | null>(null)
+  const [availableFrames, setAvailableFrames] = useState<{id: string, name: string, imageUrl: string, tier: string}[]>([])
+  const [activeFrameUrl, setActiveFrameUrl] = useState<string | null>(null)
+  const [savingFrame, setSavingFrame] = useState(false)
   
   // Blocked users
   interface BlockedUser {
@@ -166,11 +172,27 @@ export default function SettingsPage() {
         setRisingSign(data.risingSign || '')
         setMessagePrivacy(data.messagePrivacy || 'everyone')
         setHideProfileViews(data.hideProfileViews || false)
+        setMembership(data.membership || 'basic')
+        setSelectedFrameId(data.profileFrameId || null)
+        setAdminAssignedFrameId(data.adminAssignedFrameId || null)
+        // Determine active frame URL (admin override takes priority)
+        const activeFrame = data.adminAssignedFrame || data.profileFrame
+        setActiveFrameUrl(activeFrame?.imageUrl || null)
       }
     } catch (err) {
       console.error('Fetch profile error:', err)
     } finally {
       setLoading(false)
+    }
+    // Fetch available frames
+    try {
+      const framesRes = await fetch('/api/profile-frames')
+      if (framesRes.ok) {
+        const framesData = await framesRes.json()
+        setAvailableFrames(framesData)
+      }
+    } catch (err) {
+      console.error('Fetch frames error:', err)
     }
   }
 
@@ -288,6 +310,26 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSelectFrame = async (frameId: string | null) => {
+    setSavingFrame(true)
+    try {
+      const res = await fetch('/api/profile-frames', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frameId })
+      })
+      if (res.ok) {
+        setSelectedFrameId(frameId)
+        const frame = availableFrames.find(f => f.id === frameId)
+        setActiveFrameUrl(adminAssignedFrameId ? activeFrameUrl : (frame?.imageUrl || null))
+      }
+    } catch (err) {
+      console.error('Select frame error:', err)
+    } finally {
+      setSavingFrame(false)
+    }
+  }
+
   // FalClub theme colors
   const bgColor = 'falclub-starry-bg'
   const cardBg = 'bg-gradient-to-br from-[#2d1145]/60 to-[#1a0a2e]/60 border-fuchsia-500/20'
@@ -349,6 +391,50 @@ export default function SettingsPage() {
             </div>
             <p className={`${labelColor} text-sm`}>{'Profil resmini değiştir'}</p>
           </div>
+
+          {/* Profile Frame Selection */}
+          {availableFrames.length > 0 && (
+            <div>
+              <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
+                <Sparkles className="w-4 h-4" />
+                {'Profil Çerçevesi'}
+              </label>
+              {adminAssignedFrameId && (
+                <p className="text-xs text-yellow-400 mb-2">✨ Admin tarafından özel bir çerçeve atandı</p>
+              )}
+              <div className="flex flex-wrap gap-3">
+                {/* No frame option */}
+                <button
+                  onClick={() => handleSelectFrame(null)}
+                  disabled={savingFrame}
+                  className={`relative w-16 h-16 rounded-xl border-2 transition-all flex items-center justify-center ${
+                    !selectedFrameId ? 'border-fuchsia-500 bg-fuchsia-500/20' : 'border-fuchsia-800/30 hover:border-fuchsia-600/50 bg-[#1a0a2e]/40'
+                  }`}
+                >
+                  <span className="text-xs text-fuchsia-300">Yok</span>
+                  {!selectedFrameId && <div className="absolute -top-1 -right-1 w-4 h-4 bg-fuchsia-500 rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>}
+                </button>
+                {availableFrames.map(frame => (
+                  <button
+                    key={frame.id}
+                    onClick={() => handleSelectFrame(frame.id)}
+                    disabled={savingFrame}
+                    className={`relative w-16 h-16 rounded-xl border-2 transition-all overflow-hidden ${
+                      selectedFrameId === frame.id ? 'border-fuchsia-500 bg-fuchsia-500/20' : 'border-fuchsia-800/30 hover:border-fuchsia-600/50 bg-[#1a0a2e]/40'
+                    }`}
+                    title={frame.name}
+                  >
+                    <img src={frame.imageUrl} alt={frame.name} className="w-full h-full object-contain" />
+                    {selectedFrameId === frame.id && <div className="absolute -top-1 -right-1 w-4 h-4 bg-fuchsia-500 rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>}
+                  </button>
+                ))}
+              </div>
+              {savingFrame && <p className="text-xs text-fuchsia-400 mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Kaydediliyor...</p>}
+              {membership !== 'gold' && availableFrames.some(f => f.tier === 'gold') && (
+                <p className="text-xs text-yellow-400/70 mt-2">💎 Gold üyelik ile daha fazla çerçeveye erişebilirsiniz</p>
+              )}
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

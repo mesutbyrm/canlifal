@@ -46,6 +46,10 @@ interface UserProfile {
   isOwnProfile: boolean
   specialBadges?: SpecialBadgeType[]
   profileEffect?: ProfileEffect
+  profileFrameId?: string | null
+  adminAssignedFrameId?: string | null
+  profileFrame?: { id: string; name: string; imageUrl: string } | null
+  adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
 }
 
 interface Post {
@@ -328,21 +332,39 @@ export default function ProfilePage() {
         {/* Avatar with Tier Effects */}
         <div className="flex flex-col items-center">
           <div className="relative">
-            <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
-              {profile.image ? (
-                <Image
-                  src={profile.image}
-                  alt={profile.name}
-                  width={112}
-                  height={112}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
-                  {profile.name.charAt(0).toUpperCase()}
+            {(profile.adminAssignedFrame?.imageUrl || profile.profileFrame?.imageUrl) ? (
+              <div className="relative" style={{ width: 140, height: 140 }}>
+                <div className="absolute" style={{ top: 14, left: 14, width: 112, height: 112 }}>
+                  <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
+                    {profile.image ? (
+                      <Image src={profile.image} alt={profile.name} width={112} height={112} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
+                        {profile.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </TierAvatarWrapper>
                 </div>
-              )}
-            </TierAvatarWrapper>
+                <Image
+                  src={profile.adminAssignedFrame?.imageUrl || profile.profileFrame?.imageUrl || ''}
+                  alt="Profil çerçevesi"
+                  width={140}
+                  height={140}
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
+                {profile.image ? (
+                  <Image src={profile.image} alt={profile.name} width={112} height={112} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
+                    {profile.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </TierAvatarWrapper>
+            )}
             {/* Edit photo button - only for own profile */}
             {profile.isOwnProfile && (
               <label className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-[#0a0118] cursor-pointer hover:opacity-80 transition-opacity z-30">

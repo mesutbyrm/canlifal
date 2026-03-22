@@ -31,6 +31,10 @@ export async function GET(
         membershipExpiresAt: true,
         specialBadges: true,
         profileEffect: true,
+        profileFrameId: true,
+        adminAssignedFrameId: true,
+        profileFrame: { select: { id: true, name: true, imageUrl: true } },
+        adminAssignedFrame: { select: { id: true, name: true, imageUrl: true } },
         _count: {
           select: {
             socialPosts: true
@@ -144,6 +148,10 @@ export async function GET(
       membershipExpiresAt: user.membershipExpiresAt,
       specialBadges,
       profileEffect: user.profileEffect,
+      profileFrameId: user.profileFrameId,
+      adminAssignedFrameId: user.adminAssignedFrameId,
+      profileFrame: user.profileFrame,
+      adminAssignedFrame: user.adminAssignedFrame,
       followerCount,
       followingCount,
       postCount: user._count.socialPosts,
