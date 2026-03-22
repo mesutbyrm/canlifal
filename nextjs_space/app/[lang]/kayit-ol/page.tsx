@@ -307,6 +307,15 @@ export default function RegisterPage() {
                 {'Giriş Yap'}
               </Link>
             </p>
+            <div className="mt-4 flex items-center justify-center gap-3 text-xs text-deep-purple-400">
+              <Link href="/sayfa/gizlilik-politikasi" className="hover:text-deep-purple-200 transition-colors">
+                Gizlilik Politikası
+              </Link>
+              <span>•</span>
+              <Link href="/sayfa/kullanim-sartlari" className="hover:text-deep-purple-200 transition-colors">
+                Kullanım Şartları
+              </Link>
+            </div>
           </div>
         </div>
       </motion.div>

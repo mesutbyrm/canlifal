@@ -927,6 +927,147 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Homepage fortune cards seeded')
 
+  // === SITE PAGES: Privacy Policy & Terms ===
+  console.log('Seeding site pages...')
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'gizlilik-politikasi' },
+    update: {},
+    create: {
+      title: 'Gizlilik Politikası',
+      slug: 'gizlilik-politikasi',
+      content: `<h2>Gizlilik Politikası</h2>
+<p><strong>Son güncelleme:</strong> 22 Mart 2026</p>
+<p>CanliFal.com olarak kullanıcılarımızın gizliliğine büyük önem veriyoruz. Bu gizlilik politikası, hizmetlerimizi kullanırken kişisel verilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklamaktadır.</p>
+
+<h3>1. Toplanan Bilgiler</h3>
+<p>Hizmetlerimizi kullanırken aşağıdaki bilgiler toplanabilir:</p>
+<ul>
+<li><strong>Hesap Bilgileri:</strong> Ad, e-posta adresi, kullanıcı adı, doğum tarihi, burç bilgisi</li>
+<li><strong>Profil Bilgileri:</strong> Profil fotoğrafı, biyografi ve iletişim tercihleri</li>
+<li><strong>Kullanım Verileri:</strong> Sayfa görüntülemeleri, tıklamalar, oturum süreleri</li>
+<li><strong>Ödeme Bilgileri:</strong> Jeton satın alma işlemlerinde gerekli ödeme verileri (kredi kartı bilgileri tarafımızda saklanmaz)</li>
+<li><strong>Cihaz Bilgileri:</strong> IP adresi, tarayıcı türü, cihaz bilgileri</li>
+</ul>
+
+<h3>2. Bilgilerin Kullanımı</h3>
+<p>Toplanan bilgiler şu amaçlarla kullanılır:</p>
+<ul>
+<li>Hesabınızın oluşturulması ve yönetimi</li>
+<li>Fal, rüya yorumu ve astroloji hizmetlerinin sunulması</li>
+<li>Canlı fal seanslarının gerçekleştirilmesi</li>
+<li>Kullanıcı deneyiminin iyileştirilmesi</li>
+<li>Bildirim ve iletişim gönderimi</li>
+<li>Güvenlik ve dolandırıcılık önleme</li>
+</ul>
+
+<h3>3. Bilgi Paylaşımı</h3>
+<p>Kişisel bilgileriniz üçüncü taraflarla <strong>satılmaz</strong>. Yalnızca şu durumlarda paylaşılabilir:</p>
+<ul>
+<li>Yasal zorunluluklar gereği</li>
+<li>Hizmet sağlayıcılarımız ile (ödeme işlemleri, e-posta gönderimi)</li>
+<li>Açık onayınız doğrultusunda</li>
+</ul>
+
+<h3>4. Çerezler (Cookies)</h3>
+<p>Sitemiz, oturum yönetimi ve kullanıcı deneyimini iyileştirmek amacıyla çerezler kullanmaktadır. Tarayıcı ayarlarınızdan çerezleri yönetebilirsiniz.</p>
+
+<h3>5. Veri Güvenliği</h3>
+<p>Verileriniz şifreleme ve güvenli protokoller (SSL/TLS) ile korunmaktadır. Ancak internet üzerinden yapılan hiçbir iletimin %100 güvenli olmadığını hatırlatırız.</p>
+
+<h3>6. Kullanıcı Hakları</h3>
+<p>KVKK (6698 sayılı Kişisel Verilerin Korunması Kanunu) kapsamında:</p>
+<ul>
+<li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+<li>Verilerinizin düzeltilmesini veya silinmesini talep etme</li>
+<li>Verilerinizin aktarıldığı üçüncü kişileri öğrenme</li>
+<li>Verilerinizin işlenmesine itiraz etme hakkına sahipsiniz</li>
+</ul>
+
+<h3>7. İletişim</h3>
+<p>Gizlilik politikamız ile ilgili sorularınız için <strong>İletişim</strong> sayfamızdan bize ulaşabilirsiniz.</p>`,
+      isPublished: true,
+      showInFooter: true,
+      showInHeader: false,
+      sortOrder: 100,
+    }
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'kullanim-sartlari' },
+    update: {},
+    create: {
+      title: 'Kullanım Şartları',
+      slug: 'kullanim-sartlari',
+      content: `<h2>Kullanım Şartları</h2>
+<p><strong>Son güncelleme:</strong> 22 Mart 2026</p>
+<p>CanliFal.com hizmetlerini kullanarak aşağıdaki şartları kabul etmiş sayılırsınız. Lütfen bu şartları dikkatle okuyunuz.</p>
+
+<h3>1. Hizmet Tanımı</h3>
+<p>CanliFal.com; online fal bakma, rüya yorumlama, astroloji, canlı falcı seansları ve ilgili eğlence hizmetleri sunan bir platformdur. Sunulan tüm hizmetler <strong>eğlence amaçlıdır</strong> ve profesyonel danışmanlık yerine geçmez.</p>
+
+<h3>2. Üyelik Koşulları</h3>
+<ul>
+<li>Üye olmak için 18 yaşından büyük olmanız gerekmektedir</li>
+<li>Kayıt sırasında doğru ve güncel bilgiler vermeniz zorunludur</li>
+<li>Hesap güvenliğinden siz sorumlusunuz; şifrenizi kimseyle paylaşmayın</li>
+<li>Her kullanıcının yalnızca bir hesabı olabilir</li>
+</ul>
+
+<h3>3. Jeton Sistemi ve Ödemeler</h3>
+<ul>
+<li>Platform içi hizmetler jeton (CFC) ile satın alınır</li>
+<li>Satın alınan jetonlar <strong>iade edilmez</strong> (yasal zorunluluklar hariç)</li>
+<li>Jeton fiyatları önceden bildirilmeksizin değiştirilebilir</li>
+<li>Kullanılmayan jetonların süresi dolmaz</li>
+</ul>
+
+<h3>4. Kullanıcı Davranış Kuralları</h3>
+<p>Platformumuzda aşağıdaki davranışlar <strong>kesinlikle yasaktır:</strong></p>
+<ul>
+<li>Hakaret, küfür, tehdit veya taciz içerikli mesajlar</li>
+<li>Uygunsuz, müstehcen veya yasadışı içerik paylaşımı</li>
+<li>Diğer kullanıcıların kişisel bilgilerini izinsiz paylaşma</li>
+<li>Sahte kimlik veya yanıltıcı profil bilgileri kullanma</li>
+<li>Platform güvenliğini tehdit eden herhangi bir eylem</li>
+<li>Spam, reklam veya ticari amaçlı istenmeyen mesajlar</li>
+</ul>
+
+<h3>5. Canlı Fal Seansları</h3>
+<ul>
+<li>Canlı falcılar bağımsız hizmet sağlayıcılardır</li>
+<li>Seans süresince saygılı iletişim beklenmektedir</li>
+<li>Teknik aksaklıklardan kaynaklanan kesintilerde jeton iadesi değerlendirilebilir</li>
+<li>Seans içerikleri gizlidir ve kayıt altına alınmaz</li>
+</ul>
+
+<h3>6. Fikri Mülkiyet</h3>
+<p>CanliFal.com üzerindeki tüm içerik, tasarım, logo ve yazılım fikri mülkiyet hakları saklıdır. İzinsiz kopyalama, dağıtma veya değiştirme yasaktır.</p>
+
+<h3>7. Sorumluluk Sınırlaması</h3>
+<ul>
+<li>Platformda sunulan fal ve yorum hizmetleri eğlence amaçlıdır</li>
+<li>Kullanıcıların bu hizmetlere dayanarak aldıkları kararlardan CanliFal.com sorumlu tutulamaz</li>
+<li>Teknik aksaklıklar ve kesintiler için azami özen gösterilir ancak kesintisiz hizmet garanti edilmez</li>
+</ul>
+
+<h3>8. Hesap Askıya Alma ve Fesih</h3>
+<p>Kullanım şartlarına aykırı davranan hesaplar uyarılabilir, geçici veya kalıcı olarak askıya alınabilir. Bu durumda mevcut jeton bakiyesi için iade yapılmaz.</p>
+
+<h3>9. Değişiklikler</h3>
+<p>Bu kullanım şartları önceden bildirilmeksizin güncellenebilir. Güncellemeler sitede yayınlandığı anda yürürlüğe girer.</p>
+
+<h3>10. İletişim</h3>
+<p>Kullanım şartları hakkında sorularınız için <strong>İletişim</strong> sayfamızdan bize ulaşabilirsiniz.</p>`,
+      isPublished: true,
+      showInFooter: true,
+      showInHeader: false,
+      sortOrder: 101,
+    }
+  })
+
+  console.log('Site pages seeded!')
+
   console.log('Seed completed successfully!')
 }
 
