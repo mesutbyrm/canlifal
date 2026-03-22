@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { Eye, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 const MOOD_OPTIONS = {
   en: ['Happy', 'Calm', 'Anxious', 'Sad', 'Excited', 'Tired', 'Confused', 'Peaceful'],

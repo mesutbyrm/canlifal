@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { Layers, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 export default function KatinaPage() {
   const { language } = useLanguage()

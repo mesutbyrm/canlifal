@@ -11,8 +11,15 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    // Access control: IP-based for unregistered, CFC for registered
+    const __body_raw = await request.clone().json().catch(() => ({}))
+    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const ip = getClientIp(request)
+      const ipAccess = await checkIpFortuneAccess(ip, adWatched)
+      if (!ipAccess.allowed) {
+        return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
+      }
     }
 
     let shapes: string
@@ -27,12 +34,12 @@ export async function POST(request: Request) {
     }
 
     // Check and deduct credits
-    const creditResult = await checkAndDeductCredits(session.user.id, 'kursundokme')
-    if (!creditResult.success) {
-      return NextResponse.json(
-        { error: creditResult.message },
-        { status: 402 }
-      )
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'kursundokme')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     // Generate mystical shape descriptions if none provided

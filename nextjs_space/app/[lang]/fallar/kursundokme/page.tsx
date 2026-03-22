@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, AlertCircle, RotateCw, Droplets, Smartphone } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 type Phase = 'ready' | 'waiting_flip' | 'pouring' | 'settling' | 'interpreting' | 'complete'
 
@@ -360,7 +361,7 @@ export default function KursunDokmePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shapes: shapesDescription,
-          language,, adWatched }),
+          language, adWatched }),
       })
 
       // Check if response is JSON error

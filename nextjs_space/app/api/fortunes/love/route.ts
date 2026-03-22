@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -11,8 +12,15 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Access control: IP-based for unregistered, CFC for registered
+    const __body_raw = await request.clone().json().catch(() => ({}))
+    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const ip = getClientIp(request)
+      const ipAccess = await checkIpFortuneAccess(ip, adWatched)
+      if (!ipAccess.allowed) {
+        return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
+      }
     }
 
     const body = await request.json()
@@ -22,10 +30,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Both zodiac signs are required' }, { status: 400 })
     }
 
-    const creditResult = await checkAndDeductCredits(session.user.id, 'love')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'love')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     const names = yourName && partnerName ? `${yourName} ve ${partnerName}` : 'siz ve partneriniz'
@@ -67,6 +77,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
+                  if (session?.user?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -82,6 +93,8 @@ export async function POST(request: Request) {
                   // Send fortune summary email (non-blocking)
                   sendFortuneSummaryEmail(session.user.id, 'love', fullResponse, language || 'en')
                     .catch(err => console.error('Fortune email error:', err))
+                  }
+
                   continue
                 }
                 try {

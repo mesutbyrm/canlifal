@@ -12,8 +12,15 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Access control: IP-based for unregistered, CFC for registered
+    const __body_raw = await request.clone().json().catch(() => ({}))
+    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const ip = getClientIp(request)
+      const ipAccess = await checkIpFortuneAccess(ip, adWatched)
+      if (!ipAccess.allowed) {
+        return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
+      }
     }
 
     const body = await request.json()

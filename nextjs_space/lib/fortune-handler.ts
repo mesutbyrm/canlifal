@@ -115,7 +115,7 @@ export async function handleFortuneRequest(options: FortuneHandlerOptions) {
           // Save to DB only for registered users
           if (session?.user?.id && fullResponse) {
             try {
-              await prisma.fortune.create({
+              const savedFortune = await prisma.fortune.create({
                 data: {
                   userId: session.user.id,
                   fortuneType,
@@ -126,7 +126,7 @@ export async function handleFortuneRequest(options: FortuneHandlerOptions) {
               })
 
               // Auto-share and email
-              autoShareFortune(session.user.id, fortuneType, fullResponse).catch(() => {})
+              autoShareFortune(session.user.id, savedFortune.id, fortuneType, fullResponse, 'tr').catch(() => {})
               sendFortuneSummaryEmail(session.user.id, fortuneType, fullResponse, 'tr').catch(() => {})
             } catch (dbErr) {
               console.error('Fortune DB save error:', dbErr)

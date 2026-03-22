@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
 import { getFileUrl } from '@/lib/s3'
@@ -11,8 +12,15 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Access control: IP-based for unregistered, CFC for registered
+    const __body_raw = await request.clone().json().catch(() => ({}))
+    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const ip = getClientIp(request)
+      const ipAccess = await checkIpFortuneAccess(ip, adWatched)
+      if (!ipAccess.allowed) {
+        return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
+      }
     }
 
     const body = await request.json()
@@ -26,10 +34,12 @@ export async function POST(request: Request) {
     }
 
     // Check and deduct credits
-    const creditResult = await checkAndDeductCredits(session.user.id, 'coffee')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'coffee')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     // Get signed URLs for the images
@@ -103,7 +113,8 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
-                  // Save fortune to database
+                  // Save fortune to database (only for registered users)
+                  if (session?.user?.id) {
                   await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -113,6 +124,7 @@ export async function POST(request: Request) {
                       language: language || 'en',
                     },
                   })
+                  }
                   continue
                 }
                 try {

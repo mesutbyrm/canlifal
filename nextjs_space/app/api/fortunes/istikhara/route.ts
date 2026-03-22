@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -11,8 +12,15 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Access control: IP-based for unregistered, CFC for registered
+    const __body_raw = await request.clone().json().catch(() => ({}))
+    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const ip = getClientIp(request)
+      const ipAccess = await checkIpFortuneAccess(ip, adWatched)
+      if (!ipAccess.allowed) {
+        return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
+      }
     }
 
     const body = await request.json()
@@ -22,10 +30,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 })
     }
 
-    const creditResult = await checkAndDeductCredits(session.user.id, 'istikhara')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'istikhara')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     const systemPrompt = `Sen manevi bir rehbersin ve İstihare duanın yorumunu yapıyorsun. Kullanıcının sorusu: "${question}"${situation ? `. Durum: ${situation}` : ''}. İstihare duasının manevi önemi hakkında bilgi ver, ardından bu konuda manevi bir rehberlik sun. Olumlu ve olumsuz işaretleri açıkla. Cevabın 250-350 kelime arasında, saygılı ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
@@ -65,6 +75,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
+                  if (session?.user?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -77,6 +88,8 @@ export async function POST(request: Request) {
                   // Auto-share to social feed (non-blocking)
                   await autoShareFortune(session.user.id, fortune.id, 'istikhara', fullResponse, language || 'en')
                     
+                  }
+
                   continue
                 }
                 try {

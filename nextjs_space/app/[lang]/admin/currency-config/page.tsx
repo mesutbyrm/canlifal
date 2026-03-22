@@ -64,7 +64,7 @@ export default function CurrencyConfigPage() {
 
   const getConfigValue = (config: CurrencyConfigItem, field: keyof CurrencyConfigItem) => {
     const edited = editedConfigs[config.area]
-    if (edited && field in edited) return edited[field as string]
+    if (edited && field in edited) return (edited as any)[field]
     return config[field]
   }
 
