@@ -110,7 +110,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
 
     const allowedKeys = [
-      'homepage_hero_icon', 'homepage_hero_title', 'homepage_hero_subtitle', 'homepage_hero_link',
+      'homepage_hero_visible', 'homepage_hero_icon', 'homepage_hero_title', 'homepage_hero_subtitle', 'homepage_hero_link',
       'homepage_hero_items',
       'ticker_button_text', 'ticker_button_icon', 'ticker_button_link', 'ticker_button_visible',
       'ticker_scroll_direction', 'ticker_scroll_speed', 'ticker_bg_color', 'ticker_bg_gradient',
