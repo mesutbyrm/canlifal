@@ -481,8 +481,8 @@ export default function BulkImportDreamsPage() {
                   value={pasteContent}
                   onChange={(e) => setPasteContent(e.target.value)}
                   placeholder={fileType === 'csv'
-                    ? 'BASLIK;ICERIK\nY\u0131lan;"R\u00fcyada y\u0131lan g\u00f6rmek, d\u00fc\u015fmanl\u0131k ve k\u00f6t\u00fc niyetli insanlara i\u015faret eder."\nKedi;"R\u00fcyada kedi g\u00f6rmek, h\u0131rs\u0131zl\u0131k ve hainli\u011fe i\u015faret edebilir."\nAt;"R\u00fcyada at g\u00f6rmek, g\u00fc\u00e7 ve y\u00fckselmeye i\u015faret eder."'
-                    : '[RUYA]\nBASLIK: Y\u0131lan\nICERIK:\nR\u00fcyada y\u0131lan g\u00f6rmek, d\u00fc\u015fmanl\u0131k ve k\u00f6t\u00fc niyetli insanlara i\u015faret eder.\n[/RUYA]\n\n[RUYA]\nBASLIK: Kedi\nICERIK:\nR\u00fcyada kedi g\u00f6rmek, h\u0131rs\u0131zl\u0131k ve hainli\u011fe i\u015faret edebilir.\n[/RUYA]\n\n[RUYA]\nBASLIK: At\nICERIK:\nR\u00fcyada at g\u00f6rmek, g\u00fc\u00e7 ve y\u00fckselmeye i\u015faret eder.\n[/RUYA]'
+                    ? 'BASLIK;ICERIK\nYılan;"Rüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder."\nKedi;"Rüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir."\nAt;"Rüyada at görmek, güç ve yükselmeye işaret eder."'
+                    : '[RUYA]\nBASLIK: Yılan\nICERIK:\nRüyada yılan görmek, düşmanlık ve kötü niyetli insanlara işaret eder.\n[/RUYA]\n\n[RUYA]\nBASLIK: Kedi\nICERIK:\nRüyada kedi görmek, hırsızlık ve hainliğe işaret edebilir.\n[/RUYA]\n\n[RUYA]\nBASLIK: At\nICERIK:\nRüyada at görmek, güç ve yükselmeye işaret eder.\n[/RUYA]'
                   }
                   className="w-full h-64 p-4 rounded-xl bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none resize-y font-mono text-sm"
                 />

@@ -220,7 +220,7 @@ export default function ZodiacCompatibilityPage() {
 
               {/* Advice */}
               <div className="bg-fuchsia-900/20 border border-fuchsia-700/30 rounded-2xl p-5">
-                <h4 className="text-fuchsia-300 font-semibold mb-3">\ud83d\udca1 Tavsiye</h4>
+                <h4 className="text-fuchsia-300 font-semibold mb-3">💡 Tavsiye</h4>
                 <p className="text-fuchsia-200 text-sm leading-relaxed">{result.advice}</p>
               </div>
             </motion.div>

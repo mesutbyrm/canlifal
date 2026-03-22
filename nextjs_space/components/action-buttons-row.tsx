@@ -60,7 +60,7 @@ function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean):
 
 // Dynamic label for teller button
 function getEffectiveLabel(btn: HomepageButton, isTeller: boolean): string {
-  if (btn.specialBehavior === 'teller' && isTeller) return 'Falc\u0131 Paneli'
+  if (btn.specialBehavior === 'teller' && isTeller) return 'Falcı Paneli'
   return btn.label
 }
 

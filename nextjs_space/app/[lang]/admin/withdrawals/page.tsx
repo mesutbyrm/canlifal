@@ -261,7 +261,7 @@ export default function AdminWithdrawalsPage() {
                       </div>
                     )}
                     {wr.adminNote && (
-                      <p className="mt-2 text-xs text-purple-300 bg-purple-900/30 rounded-lg p-2">\ud83d\udcdd {wr.adminNote}</p>
+                      <p className="mt-2 text-xs text-purple-300 bg-purple-900/30 rounded-lg p-2">📝 {wr.adminNote}</p>
                     )}
                   </motion.div>
                 ))}

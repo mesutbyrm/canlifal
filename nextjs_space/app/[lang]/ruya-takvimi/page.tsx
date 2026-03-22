@@ -27,11 +27,11 @@ interface WeeklyReport {
 }
 
 const MOODS = [
-  { value: 'happy', label: 'Mutlu', emoji: '\ud83d\ude0a' },
-  { value: 'sad', label: 'Üzgün', emoji: '\ud83d\ude22' },
-  { value: 'scared', label: 'Korkmuş', emoji: '\ud83d\ude28' },
-  { value: 'confused', label: 'Kafası karışık', emoji: '\ud83d\ude15' },
-  { value: 'neutral', label: 'Nötr', emoji: '\ud83d\ude10' },
+  { value: 'happy', label: 'Mutlu', emoji: '😊' },
+  { value: 'sad', label: 'Üzgün', emoji: '😢' },
+  { value: 'scared', label: 'Korkmuş', emoji: '😨' },
+  { value: 'confused', label: 'Kafası karışık', emoji: '😕' },
+  { value: 'neutral', label: 'Nötr', emoji: '😐' },
 ]
 
 const MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']

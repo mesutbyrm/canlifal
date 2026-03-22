@@ -137,7 +137,7 @@ export default function DreamContestPage() {
                 <h2 className="text-xl font-bold text-white mb-2">{selectedContest.title}</h2>
                 <p className="text-white/60 text-sm mb-4">{selectedContest.description}</p>
                 <div className="bg-white/5 rounded-xl p-4 mb-4">
-                  <p className="text-purple-300 font-semibold mb-2">\ud83d\udcad Rüya:</p>
+                  <p className="text-purple-300 font-semibold mb-2">💭 Rüya:</p>
                   <p className="text-white/80 italic">{selectedContest.dreamPrompt}</p>
                 </div>
                 <div className="flex gap-4 text-sm text-white/40">

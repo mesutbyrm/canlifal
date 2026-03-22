@@ -41,7 +41,7 @@ export async function GET() {
             senderName: data.senderName || 'Anonim',
             recipientName: notif.user.name || 'Anonim',
             giftType: 'Jeton',
-            giftIcon: '\ud83e\ude99',
+            giftIcon: '🪙',
             amount: data.amount,
             createdAt: notif.createdAt.toISOString()
           })
@@ -56,7 +56,7 @@ export async function GET() {
               senderName: data.senderName || 'Anonim',
               recipientName: notif.user.name || 'Anonim',
               giftType: data.giftName,
-              giftIcon: data.giftIcon || '\ud83e\udd81',
+              giftIcon: data.giftIcon || '🦁',
               amount: giftType.price,
               createdAt: notif.createdAt.toISOString()
             })

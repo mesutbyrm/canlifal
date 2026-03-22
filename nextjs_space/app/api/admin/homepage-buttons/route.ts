@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     data: {
       key,
       label,
-      icon: icon || '\ud83d\udd17',
+      icon: icon || '🔗',
       href,
       sortOrder: nextOrder,
       specialBehavior: specialBehavior || null,

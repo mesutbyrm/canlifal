@@ -143,7 +143,7 @@ export default function AdminModerationPage() {
                       <p className="text-sm text-purple-200 mb-2 line-clamp-3">{post.content}</p>
                       <div className="flex items-center gap-4 text-xs text-purple-400">
                         <span>❤️ {post._count.likes}</span>
-                        <span>\ud83d\udcac {post._count.comments}</span>
+                        <span>💬 {post._count.comments}</span>
                       </div>
                     </div>
                     <div className="flex gap-1">

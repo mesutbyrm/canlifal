@@ -3,7 +3,7 @@ export const DREAM_CATEGORIES = [
   { value: 'genel', label: 'Genel', icon: '💭', color: 'gray' },
   { value: 'hayvanlar', label: 'Hayvanlar', icon: '🐾', color: 'amber' },
   { value: 'doga', label: 'Doğa & Hava', icon: '🌿', color: 'emerald' },
-  { value: 'insanlar', label: 'İnsanlar & Aile', icon: '👨\u200D👩\u200D👧', color: 'blue' },
+  { value: 'insanlar', label: 'İnsanlar & Aile', icon: '👨‍👩‍👧', color: 'blue' },
   { value: 'nesneler', label: 'Nesneler & Eşyalar', icon: '💎', color: 'purple' },
   { value: 'duygusal', label: 'Duygusal', icon: '❤️', color: 'pink' },
   { value: 'korkulu', label: 'Korkulu & Kabus', icon: '😨', color: 'red' },

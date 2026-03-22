@@ -134,8 +134,8 @@ export default function BulkImportBlogPage() {
       let contentStartIdx = 1
       if (lines.length > 1) {
         const secondLine = lines[1].trim()
-        const imgMatch = secondLine.match(/^(?:KAPAK|RES\u0130M|RESIM|IMAGE|BASLIK|ICERIK):\s*(.+)/i)
-        if (imgMatch && secondLine.match(/^(?:KAPAK|RES\u0130M|RESIM|IMAGE):/i)) {
+        const imgMatch = secondLine.match(/^(?:KAPAK|RESİM|RESIM|IMAGE|BASLIK|ICERIK):\s*(.+)/i)
+        if (imgMatch && secondLine.match(/^(?:KAPAK|RESİM|RESIM|IMAGE):/i)) {
           coverImage = imgMatch[1].trim()
           contentStartIdx = 2
         }
@@ -527,8 +527,8 @@ export default function BulkImportBlogPage() {
                   value={pasteContent}
                   onChange={(e) => setPasteContent(e.target.value)}
                   placeholder={fileType === 'csv'
-                    ? 'BASLIK;ICERIK;KAPAK\nKahve Fal\u0131 Rehberi;"Kahve fal\u0131 hakk\u0131nda detayl\u0131 bir yaz\u0131...";https://example.com/kahve.jpg\nTarot Kartlar\u0131;"Tarot kartlar\u0131 hakk\u0131nda...";https://example.com/tarot.jpg'
-                    : '[YAZI]\nBASLIK: Kahve Fal\u0131n\u0131n Tarih\u00e7esi\nKAPAK: https://example.com/kahve.jpg\nICERIK:\nKahve fal\u0131 y\u00fczy\u0131llard\u0131r...\n[/YAZI]\n\n[YAZI]\nBASLIK: Tarot Kartlar\u0131\nKAPAK: https://example.com/tarot.jpg\nICERIK:\nTarot okumas\u0131 78 karttan...\n[/YAZI]'
+                    ? 'BASLIK;ICERIK;KAPAK\nKahve Falı Rehberi;"Kahve falı hakkında detaylı bir yazı...";https://example.com/kahve.jpg\nTarot Kartları;"Tarot kartları hakkında...";https://example.com/tarot.jpg'
+                    : '[YAZI]\nBASLIK: Kahve Falının Tarihçesi\nKAPAK: https://example.com/kahve.jpg\nICERIK:\nKahve falı yüzyıllardır...\n[/YAZI]\n\n[YAZI]\nBASLIK: Tarot Kartları\nKAPAK: https://example.com/tarot.jpg\nICERIK:\nTarot okuması 78 karttan...\n[/YAZI]'
                   }
                   className="w-full h-64 p-4 rounded-xl bg-black/30 border border-purple-500/30 text-white placeholder-purple-500/40 focus:border-purple-400 focus:outline-none resize-y font-mono text-sm"
                 />

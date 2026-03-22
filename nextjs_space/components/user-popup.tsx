@@ -44,10 +44,10 @@ interface PopupData {
 }
 
 const DEFAULT_QUICK_ACTIONS: PopupButton[] = [
-  { label: '\u{1F31F} G\u00fcnl\u00fck Burcunuz', href: '/fallar/burc-yorumu', color: 'from-purple-600 to-fuchsia-600' },
+  { label: '\u{1F31F} Günlük Burcunuz', href: '/fallar/burc-yorumu', color: 'from-purple-600 to-fuchsia-600' },
   { label: '\u{1F4AC} Sohbet Et', href: '/sohbet', color: 'from-blue-600 to-indigo-600' },
   { label: '\u{1F3AE} Oyun Oyna', href: '/oyunlar', color: 'from-amber-600 to-yellow-600' },
-  { label: '\u{1F4FA} Canl\u0131 Yay\u0131na Git', href: '/sohbet/video', color: 'from-red-600 to-orange-600' },
+  { label: '\u{1F4FA} Canlı Yayına Git', href: '/sohbet/video', color: 'from-red-600 to-orange-600' },
 ]
 
 const POLL_INTERVAL = 5000 // 5 seconds
@@ -231,7 +231,7 @@ export default function UserPopup() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
               <h3 className="text-white font-bold text-base">
-                {currentPopup ? currentPopup.title : 'Ho\u015f Geldiniz! \u{1F52E}'}
+                {currentPopup ? currentPopup.title : 'Hoş Geldiniz! \u{1F52E}'}
               </h3>
             </div>
             <button
@@ -245,7 +245,7 @@ export default function UserPopup() {
           {/* Message */}
           {(currentPopup?.message || !currentPopup) && (
             <p className="px-4 text-purple-200/80 text-sm mb-3">
-              {currentPopup ? currentPopup.message : 'Bug\u00fcn sizi neler bekliyor?'}
+              {currentPopup ? currentPopup.message : 'Bugün sizi neler bekliyor?'}
             </p>
           )}
 
@@ -284,7 +284,7 @@ export default function UserPopup() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{stream.user.name}</p>
-                      <p className="text-red-300/70 text-xs truncate">{stream.title || 'Canl\u0131 Yay\u0131n'}</p>
+                      <p className="text-red-300/70 text-xs truncate">{stream.title || 'Canlı Yayın'}</p>
                     </div>
                     <div className="flex items-center gap-1 text-red-400 text-xs">
                       <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -352,7 +352,7 @@ export default function UserPopup() {
               >
                 <span className="text-white font-medium text-sm flex items-center gap-2">
                   <LogIn className="w-4 h-4" />
-                  Giri\u015f Yap / \u00dcye Ol
+                  Giriş Yap / Üye Ol
                 </span>
                 <ChevronRight className="w-4 h-4 text-white/70" />
               </motion.button>

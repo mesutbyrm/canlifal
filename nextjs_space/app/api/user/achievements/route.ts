@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
               userId,
               type: 'achievement',
               message: `"${achievement.nameTr}" başarımını kazandın! ${achievement.icon}`,
-              title: '\ud83c\udfc6 Yeni Başarım!'
+              title: '🏆 Yeni Başarım!'
             }).catch(e => console.error('Achievement notification error:', e))
           }
         }).catch(e => console.error('Achievement update error:', e))

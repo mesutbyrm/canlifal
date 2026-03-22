@@ -160,14 +160,14 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
                     {(cardData.likes !== undefined || cardData.comments !== undefined) && (
                       <div className="flex gap-4 text-white/60 text-sm">
                         {cardData.likes !== undefined && <span>❤️ {cardData.likes} beğeni</span>}
-                        {cardData.comments !== undefined && <span>\ud83d\udcac {cardData.comments} yorum</span>}
+                        {cardData.comments !== undefined && <span>💬 {cardData.comments} yorum</span>}
                       </div>
                     )}
 
                     {/* Watermark */}
                     <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                       <span className="text-xs text-white/40">canlifal.com</span>
-                      <span className="text-lg">\ud83d\udd2e</span>
+                      <span className="text-lg">🔮</span>
                     </div>
                   </div>
 

@@ -159,7 +159,7 @@ export default function DreamDetailPage() {
   // Update document title
   useEffect(() => {
     if (dream) {
-      document.title = `${dream.title} - R\u00fcya Tabiri | Canlifal`
+      document.title = `${dream.title} - Rüya Tabiri | Canlifal`
       const metaDesc = document.querySelector('meta[name="description"]')
       if (metaDesc && dream.metaDescription) {
         metaDesc.setAttribute('content', dream.metaDescription)
@@ -238,7 +238,7 @@ export default function DreamDetailPage() {
 
   // Share functions
   const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://canlifal.com/ruya/${slug}`
-  const shareTitle = dream?.title || 'R\u00fcya Tabiri'
+  const shareTitle = dream?.title || 'Rüya Tabiri'
 
   const shareWhatsApp = () => {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareTitle + ' - ' + shareUrl)}`, '_blank')
@@ -266,13 +266,13 @@ export default function DreamDetailPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <Moon className="w-16 h-16 text-indigo-500/30 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">R\u00fcya Tabiri Bulunamad\u0131</h2>
-          <p className="text-gray-400 mb-4">Arad\u0131\u011f\u0131n\u0131z r\u00fcya tabiri mevcut de\u011fil.</p>
+          <h2 className="text-xl font-semibold text-white mb-2">Rüya Tabiri Bulunamadı</h2>
+          <p className="text-gray-400 mb-4">Aradığınız rüya tabiri mevcut değil.</p>
           <button
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
           </button>
         </div>
       </div>
@@ -358,7 +358,7 @@ export default function DreamDetailPage() {
               <Calendar className="w-3.5 h-3.5" /> {formattedDate}
             </span>
             <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} g\u00f6r\u00fcnt\u00fclenme
+              <Eye className="w-3.5 h-3.5" /> {dream.views + 1} görüntülenme
             </span>
             <span className="flex items-center gap-1">
               <MessageCircle className="w-3.5 h-3.5" /> {commentTotal} yorum
@@ -379,16 +379,16 @@ export default function DreamDetailPage() {
           <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/15 flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2 text-sm">
               <Users className="w-4 h-4 text-teal-400" />
-              <span className="text-teal-300">{expStats.experiences} ki\u015fi bu r\u00fcyay\u0131 g\u00f6rd\u00fc\u011f\u00fcn\u00fc payla\u015ft\u0131</span>
+              <span className="text-teal-300">{expStats.experiences} kişi bu rüyayı gördüğünü paylaştı</span>
             </div>
             {expStats.cameTrue > 0 && (
               <span className="flex items-center gap-1 text-emerald-400 text-xs">
-                <CheckCircle className="w-3.5 h-3.5" /> {expStats.cameTrue} ger\u00e7ekle\u015fti
+                <CheckCircle className="w-3.5 h-3.5" /> {expStats.cameTrue} gerçekleşti
               </span>
             )}
             {expStats.didNotComeTrue > 0 && (
               <span className="flex items-center gap-1 text-red-400 text-xs">
-                <XCircle className="w-3.5 h-3.5" /> {expStats.didNotComeTrue} ger\u00e7ekle\u015fmedi
+                <XCircle className="w-3.5 h-3.5" /> {expStats.didNotComeTrue} gerçekleşmedi
               </span>
             )}
           </div>
@@ -438,7 +438,7 @@ export default function DreamDetailPage() {
 
         {/* Social Share Buttons */}
         <div className="mt-6 pt-6 border-t border-white/10">
-          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri payla\u015f\u0131n</p>
+          <p className="text-gray-500 text-xs font-medium mb-3">Bu tabiri paylaşın</p>
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={shareWhatsApp}
@@ -498,7 +498,7 @@ export default function DreamDetailPage() {
                   : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
               }`}
             >
-              <Users className="w-3.5 h-3.5" /> Ben de G\u00f6rd\u00fcm
+              <Users className="w-3.5 h-3.5" /> Ben de Gördüm
             </button>
           </div>
 
@@ -509,8 +509,8 @@ export default function DreamDetailPage() {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={commentType === 'deneyim'
-                  ? 'Bu r\u00fcyay\u0131 siz de g\u00f6rd\u00fcn\u00fcz m\u00fc? Deneyiminizi payla\u015f\u0131n...'
-                  : session?.user ? 'Yorumunuzu yaz\u0131n...' : 'Yorum yapmak i\u00e7in giri\u015f yap\u0131n'
+                  ? 'Bu rüyayı siz de gördünüz mü? Deneyiminizi paylaşın...'
+                  : session?.user ? 'Yorumunuzu yazın...' : 'Yorum yapmak için giriş yapın'
                 }
                 rows={3}
                 maxLength={1000}
@@ -522,7 +522,7 @@ export default function DreamDetailPage() {
             {/* Experience came true toggle */}
             {commentType === 'deneyim' && (
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-gray-400 text-xs">Bu r\u00fcya ger\u00e7ekle\u015fti mi?</span>
+                <span className="text-gray-400 text-xs">Bu rüya gerçekleşti mi?</span>
                 <button
                   type="button"
                   onClick={() => setDidComeTrue(didComeTrue === true ? null : true)}
@@ -543,7 +543,7 @@ export default function DreamDetailPage() {
                       : 'bg-white/5 border border-white/10 text-gray-500 hover:text-gray-300'
                   }`}
                 >
-                  <XCircle className="w-3.5 h-3.5" /> Hay\u0131r
+                  <XCircle className="w-3.5 h-3.5" /> Hayır
                 </button>
               </div>
             )}
@@ -556,7 +556,7 @@ export default function DreamDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {commentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                G\u00f6nder
+                Gönder
               </button>
             </div>
           </form>
@@ -573,7 +573,7 @@ export default function DreamDetailPage() {
                     : 'bg-white/5 border border-white/10 text-gray-400 hover:text-gray-300'
                 }`}
               >
-                {f === 'all' ? 'T\u00fcm\u00fc' : f === 'yorum' ? 'Yorumlar' : 'Deneyimler'}
+                {f === 'all' ? 'Tümü' : f === 'yorum' ? 'Yorumlar' : 'Deneyimler'}
               </button>
             ))}
           </div>
@@ -586,8 +586,8 @@ export default function DreamDetailPage() {
               <MessageCircle className="w-10 h-10 text-gray-700 mx-auto mb-2" />
               <p className="text-gray-500 text-sm">
                 {commentFilter === 'deneyim'
-                  ? 'Hen\u00fcz deneyim payla\u015f\u0131lmam\u0131\u015f. Bu r\u00fcyay\u0131 siz de g\u00f6rd\u00fcyseniz payla\u015f\u0131n!'
-                  : 'Hen\u00fcz yorum yap\u0131lmam\u0131\u015f. \u0130lk yorumu siz yap\u0131n!'
+                  ? 'Henüz deneyim paylaşılmamış. Bu rüyayı siz de gördüyseniz paylaşın!'
+                  : 'Henüz yorum yapılmamış. İlk yorumu siz yapın!'
                 }
               </p>
             </div>
@@ -654,8 +654,8 @@ export default function DreamDetailPage() {
         {/* Related Dreams (Enhanced with categories) */}
         {similar.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-1">\u0130li\u015fkili R\u00fcya Tabirleri</h2>
-            <p className="text-gray-500 text-xs mb-4">Bu r\u00fcyay\u0131 g\u00f6rd\u00fcyseniz bunlara da bak\u0131n</p>
+            <h2 className="text-lg font-semibold text-white mb-1">İlişkili Rüya Tabirleri</h2>
+            <p className="text-gray-500 text-xs mb-4">Bu rüyayı gördüyseniz bunlara da bakın</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {similar.map((s) => (
                 <button
@@ -695,8 +695,8 @@ export default function DreamDetailPage() {
         {/* Smart Recommendations */}
         {recommendations.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-lg font-semibold text-white mb-1">Size \u00d6zel \u00d6neriler</h2>
-            <p className="text-gray-500 text-xs mb-4">\u0130lgi alanlar\u0131n\u0131za g\u00f6re se\u00e7ilmi\u015f r\u00fcya tabirleri</p>
+            <h2 className="text-lg font-semibold text-white mb-1">Size Özel Öneriler</h2>
+            <p className="text-gray-500 text-xs mb-4">İlgi alanlarınıza göre seçilmiş rüya tabirleri</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recommendations.filter(r => r.id !== dream.id).slice(0, 6).map((rec) => (
                 <button
@@ -722,7 +722,7 @@ export default function DreamDetailPage() {
             onClick={() => router.push(`/${lang}/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white hover:border-white/20 transition-all"
           >
-            <ArrowLeft className="w-4 h-4" /> T\u00fcm R\u00fcya Tabirleri
+            <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
           </button>
         </div>
       </div>
