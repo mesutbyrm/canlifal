@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -124,8 +125,8 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
             }
           }
 
-          // Save fortune to database if we got a response
-          if (fullResponse.length > 0) {
+          // Save fortune to database if we got a response (only for registered users)
+          if (session?.user?.id && fullResponse.length > 0) {
             const fortune = await prisma.fortune.create({
               data: {
                 userId: session.user.id,

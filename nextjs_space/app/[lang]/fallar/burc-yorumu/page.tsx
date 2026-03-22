@@ -10,6 +10,7 @@ import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 const ZODIAC_SIGNS = [
   { id: 'aries', emoji: '♈', en: 'Aries', tr: 'Koç' },
@@ -33,6 +34,7 @@ export default function HoroscopePage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
   const [formattedDate, setFormattedDate] = useState('')
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function HoroscopePage() {
       const res = await fetch('/api/fortunes/burc-yorumu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zodiacSign: selectedSign, language }),
+        body: JSON.stringify({ zodiacSign: selectedSign, language, adWatched }),
       })
 
       if (!res.ok) {

@@ -12,6 +12,7 @@ import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 export default function DreamFortunePage() {
   const { data: session } = useSession() || {}
@@ -21,6 +22,7 @@ export default function DreamFortunePage() {
   const [fortune, setFortune] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +34,7 @@ export default function DreamFortunePage() {
       const response = await fetch('/api/fortunes/ruya-yorumu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dreamDescription, language }),
+        body: JSON.stringify({ dreamDescription, language, adWatched }),
       })
 
       if (!response?.ok) {
@@ -90,6 +92,8 @@ export default function DreamFortunePage() {
       cost={5}
     >
       {!fortune ? (
+        <FortuneAccessGate fortuneType="dream" cost={5} onAccessGranted={() => setAdWatched(true)}>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Error */}
           {error && (
@@ -144,6 +148,7 @@ export default function DreamFortunePage() {
             )}
           </button>
         </form>
+        </FortuneAccessGate>
       ) : (
         /* Fortune Result */
         <div className="space-y-5">

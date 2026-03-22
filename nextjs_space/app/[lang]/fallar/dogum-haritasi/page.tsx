@@ -17,6 +17,7 @@ export default function BirthChartPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +34,7 @@ export default function BirthChartPage() {
       const res = await fetch('/api/fortunes/dogum-haritasi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ birthDate, birthTime, birthPlace, language }),
+        body: JSON.stringify({ birthDate, birthTime, birthPlace, language, adWatched }),
       })
 
       if (!res.ok) {
@@ -88,6 +89,8 @@ export default function BirthChartPage() {
 
         {!response && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
+            <FortuneAccessGate fortuneType="birthchart" cost={10} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -131,6 +134,7 @@ export default function BirthChartPage() {
                 {isLoading ? <LoadingSpinner /> : <><Sun className="w-5 h-5" />{'Haritamı Oluştur'}</>}
               </button>
             </form>
+            </FortuneAccessGate>
           </motion.div>
         )}
 

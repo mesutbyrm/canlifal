@@ -15,6 +15,7 @@ export default function YesNoOraclePage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +32,7 @@ export default function YesNoOraclePage() {
       const res = await fetch('/api/fortunes/evet-hayir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question.trim(), language }),
+        body: JSON.stringify({ question: question.trim(), language, adWatched }),
       })
 
       if (!res.ok) {
@@ -97,6 +98,8 @@ export default function YesNoOraclePage() {
             animate={{ opacity: 1 }}
             className="bg-mystical-card border border-mystical rounded-xl p-8"
           >
+            <FortuneAccessGate fortuneType="yesno" cost={2} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">
@@ -139,6 +142,7 @@ export default function YesNoOraclePage() {
                 )}
               </button>
             </form>
+            </FortuneAccessGate>
           </motion.div>
         )}
 

@@ -11,6 +11,7 @@ import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 
 export default function TarotFortunePage() {
   const { data: session } = useSession() || {}
@@ -21,6 +22,7 @@ export default function TarotFortunePage() {
   const [fortune, setFortune] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +34,7 @@ export default function TarotFortunePage() {
       const response = await fetch('/api/fortunes/tarot-fali', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, cardCount, language }),
+        body: JSON.stringify({ question, cardCount, language, adWatched }),
       })
 
       if (!response?.ok) {
@@ -90,6 +92,7 @@ export default function TarotFortunePage() {
       cost={7}
     >
       {!fortune ? (
+        <FortuneAccessGate fortuneType="tarot" cost={7} onAccessGranted={() => setAdWatched(true)}>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Error */}
           {error && (
@@ -164,6 +167,7 @@ export default function TarotFortunePage() {
             )}
           </button>
         </form>
+        </FortuneAccessGate>
       ) : (
         /* Fortune Result */
         <div className="space-y-5">

@@ -10,6 +10,7 @@ import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
 import TextToSpeech from '@/components/text-to-speech'
 import FortunePageLayout from '@/components/fortune-page-layout'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 import Image from 'next/image'
 
 export default function PalmReadingPage() {
@@ -21,6 +22,7 @@ export default function PalmReadingPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
   const [showCamera, setShowCamera] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -122,7 +124,7 @@ export default function PalmReadingPage() {
       const res = await fetch('/api/fortunes/el-fali', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ palmImagePath: palmPath, hand, language }),
+        body: JSON.stringify({ palmImagePath: palmPath, hand, language, adWatched }),
       })
 
       if (!res.ok) {

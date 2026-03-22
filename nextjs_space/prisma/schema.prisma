@@ -2023,3 +2023,52 @@ model ProfileFrame {
   @@index([tier, isActive])
   @@map("profile_frames")
 }
+
+
+// IP-based fortune usage tracking for unregistered users
+model IpFortuneUsage {
+  id        String   @id @default(cuid())
+  ipAddress String
+  date      DateTime @db.Date // Date only (no time)
+  count     Int      @default(1) // Number of fortunes used today
+  adWatched Boolean  @default(false) // Whether ad was watched for 2nd fortune
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ipAddress, date])
+  @@index([ipAddress])
+  @@index([date])
+  @@map("ip_fortune_usage")
+}
+
+// Admin-configurable ad networks
+model AdNetwork {
+  id          String   @id @default(cuid())
+  name        String   // Display name (Google AdSense, Unity Ads, etc.)
+  provider    String   @unique // google_adsense, google_admob, unity_ads, facebook_audience, applovin, ironsource, vungle, chartboost, adcolony, tapjoy, mintegral, inmobi, startio
+  adCode      String?  @db.Text // Ad code/script from the provider
+  adUnitId    String?  // Ad unit/slot ID
+  appId       String?  // App ID (for SDK-based networks)
+  isActive    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("ad_networks")
+}
+
+// Currency usage configuration (which currency is used where)
+model CurrencyConfig {
+  id           String   @id @default(cuid())
+  area         String   @unique // fortune_tarot, fortune_coffee, live_session, live_gift, chat_gift, stream_gift, bana_ozel etc.
+  areaName     String   // Display name in Turkish
+  currencyType String   @default("cfc") // cfc, jeton, free
+  cost         Int      @default(0) // Cost in the specified currency
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([currencyType])
+  @@map("currency_config")
+}

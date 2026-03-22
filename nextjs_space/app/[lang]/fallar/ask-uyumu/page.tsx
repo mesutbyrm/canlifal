@@ -33,6 +33,7 @@ export default function LoveCompatibilityPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async () => {
     if (!yourSign || !partnerSign) {
@@ -48,7 +49,7 @@ export default function LoveCompatibilityPage() {
       const res = await fetch('/api/fortunes/ask-uyumu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yourSign, partnerSign, yourName, partnerName, language }),
+        body: JSON.stringify({ yourSign, partnerSign, yourName, partnerName, language, adWatched }),
       })
 
       if (!res.ok) {

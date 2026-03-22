@@ -16,6 +16,7 @@ export default function IstikharaPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +33,7 @@ export default function IstikharaPage() {
       const res = await fetch('/api/fortunes/istihare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question.trim(), situation: situation.trim(), language }),
+        body: JSON.stringify({ question: question.trim(), situation: situation.trim(), language, adWatched }),
       })
 
       if (!res.ok) {
@@ -87,6 +88,8 @@ export default function IstikharaPage() {
 
         {!response && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
+            <FortuneAccessGate fortuneType="istikhara" cost={4} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">{'Sorunuz *'}</label>
@@ -120,6 +123,7 @@ export default function IstikharaPage() {
                 {isLoading ? <LoadingSpinner /> : <><Moon className="w-5 h-5" />{'Rehberlik Al'}</>}
               </button>
             </form>
+            </FortuneAccessGate>
           </motion.div>
         )}
 

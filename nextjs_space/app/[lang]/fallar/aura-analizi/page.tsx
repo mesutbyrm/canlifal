@@ -23,6 +23,7 @@ export default function AuraReadingPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const moods = MOOD_OPTIONS.tr
 
@@ -41,7 +42,7 @@ export default function AuraReadingPage() {
       const res = await fetch('/api/fortunes/aura-analizi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), birthDate, currentMood, recentExperiences: recentExperiences.trim(), language }),
+        body: JSON.stringify({ name: name.trim(), birthDate, currentMood, recentExperiences: recentExperiences.trim(), language, adWatched }),
       })
 
       if (!res.ok) {
@@ -96,6 +97,8 @@ export default function AuraReadingPage() {
 
         {!response && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mystical-card border border-mystical rounded-xl p-8">
+            <FortuneAccessGate fortuneType="aura" cost={6} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -156,6 +159,7 @@ export default function AuraReadingPage() {
                 {isLoading ? <LoadingSpinner /> : <><Eye className="w-5 h-5" />{'Auramı Oku'}</>}
               </button>
             </form>
+            </FortuneAccessGate>
           </motion.div>
         )}
 

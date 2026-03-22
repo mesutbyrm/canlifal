@@ -12,6 +12,7 @@ import ShareToSocial from '@/components/share-to-social'
 import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
 import FortunePageLayout from '@/components/fortune-page-layout'
+import FortuneAccessGate from '@/components/fortune-access-gate'
 import Image from 'next/image'
 
 type InputMode = 'text' | 'image'
@@ -26,6 +27,7 @@ export default function CoffeeFortunePage() {
   const [fortune, setFortune] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
   
   // Image upload states
   const [cupImage, setCupImage] = useState<File | null>(null)
@@ -118,8 +120,7 @@ export default function CoffeeFortunePage() {
         body: JSON.stringify({
           cupImagePath: cupPath,
           saucerImagePath: saucerPath || null,
-          language,
-        }),
+          language, adWatched }),
       })
 
       if (!response?.ok) {
@@ -495,6 +496,8 @@ export default function CoffeeFortunePage() {
 
           {/* Text Mode */}
           {inputMode === 'text' && (
+            <FortuneAccessGate fortuneType="coffee" cost={5} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleTextSubmit} className="space-y-4">
               <div>
                 <label className="text-deep-purple-200 text-sm font-medium flex items-center justify-between mb-2">
@@ -528,6 +531,7 @@ export default function CoffeeFortunePage() {
                 )}
               </button>
             </form>
+            </FortuneAccessGate>
           )}
         </div>
       ) : (

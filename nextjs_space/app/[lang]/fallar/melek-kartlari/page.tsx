@@ -16,6 +16,7 @@ export default function AngelCardsPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async () => {
     setIsLoading(true)
@@ -26,7 +27,7 @@ export default function AngelCardsPage() {
       const res = await fetch('/api/fortunes/melek-kartlari', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question.trim(), cardCount, language }),
+        body: JSON.stringify({ question: question.trim(), cardCount, language, adWatched }),
       })
 
       if (!res.ok) {

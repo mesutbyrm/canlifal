@@ -127,6 +127,8 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
       { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
       { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
+      { href: `/admin/currency-config`, icon: Coins, trLabel: 'Jeton / CFC Yönetimi', enLabel: 'Jeton / CFC Management' },
+      { href: `/admin/ad-networks`, icon: Monitor, trLabel: 'Reklam Ağı Yönetimi', enLabel: 'Ad Network Management' },
     ],
   },
   {

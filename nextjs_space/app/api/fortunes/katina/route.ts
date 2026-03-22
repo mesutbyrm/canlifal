@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -22,10 +23,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 })
     }
 
-    const creditResult = await checkAndDeductCredits(session.user.id, 'katina')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'katina')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     const systemPrompt = `Sen deneyimli bir Katina falcısısın. Kullanıcının sorusu: "${question}". 32 Katina kartından rastgele 5 kart seç ve her kartın anlamını açıkla. Kartların kombinasyonunu yorumla ve kullanıcının sorusuna mistik bir cevap ver. Cevabın 300-400 kelime arasında, gizemli ve aydınlatıcı olmalı. Her kart için ismini ve anlamını belirt. Tamamen Türkçe cevap ver.`
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
+                  if (session?.user?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -77,6 +81,8 @@ export async function POST(request: Request) {
                   // Auto-share to social feed (non-blocking)
                   await autoShareFortune(session.user.id, fortune.id, 'katina', fullResponse, language || 'en')
                     
+                  }
+
                   continue
                 }
                 try {

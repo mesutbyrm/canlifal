@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -22,10 +23,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Birth date and place are required' }, { status: 400 })
     }
 
-    const creditResult = await checkAndDeductCredits(session.user.id, 'birthchart')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'birthchart')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     const systemPrompt = `Sen deneyimli bir astrologsun ve doğum haritası analizi yapıyorsun. Kullanıcının bilgileri: Doğum Tarihi: ${birthDate}, Doğum Saati: ${birthTime || 'bilinmiyor'}, Doğum Yeri: ${birthPlace}. Detaylı bir doğum haritası analizi yap. Güneş burcu, Yükselen burç, Ay burcu, gezegen pozisyonları ve evler hakkında bilgi ver. Kişilik özellikleri, güçlü yönler, zorluklar, kariyer eğilimleri, ilişki dinamiği ve yaşam amacı hakkında detaylı yorum yap. Cevabın 450-550 kelime arasında olmalı. Tamamen Türkçe cevap ver.`
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
+                  if (session?.user?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -77,6 +81,8 @@ export async function POST(request: Request) {
                   // Auto-share to social feed (non-blocking)
                   await autoShareFortune(session.user.id, fortune.id, 'birthchart', fullResponse, language || 'en')
                     
+                  }
+
                   continue
                 }
                 try {

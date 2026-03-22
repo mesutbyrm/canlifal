@@ -19,6 +19,7 @@ export default function KursunDokmePage() {
   const [phase, setPhase] = useState<Phase>('ready')
   const [fortune, setFortune] = useState('')
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
   const [shapes, setShapes] = useState<{x: number, y: number, size: number, type: string}[]>([])
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -359,8 +360,7 @@ export default function KursunDokmePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shapes: shapesDescription,
-          language,
-        }),
+          language,, adWatched }),
       })
 
       // Check if response is JSON error

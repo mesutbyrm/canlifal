@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
@@ -22,10 +23,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 })
     }
 
-    const creditResult = await checkAndDeductCredits(session.user.id, 'yesno')
-    
-    if (!creditResult.success) {
-      return NextResponse.json({ error: creditResult.message }, { status: 400 })
+    // Check and deduct credits (skip if ad watched or unregistered)
+    if (session?.user?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(session.user.id, 'yesno')
+      if (!creditResult.success) {
+        return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
+      }
     }
 
     const systemPrompt = `Sen mistik bir kahin olarak evet/hayır sorularını yanıtlıyorsun. Kullanıcının sorusuna önce net bir EVET veya HAYIR cevabı ver, ardından 100-150 kelimelik mistik ve derin bir açıklama yap. Yanıtın gizemli, bilge ve yol gösterici olmalı. Tamamen Türkçe cevap ver.`
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
+                  if (session?.user?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
                       userId: session.user.id,
@@ -80,6 +84,8 @@ export async function POST(request: Request) {
                   // Send fortune summary email (non-blocking)
                   sendFortuneSummaryEmail(session.user.id, 'yesno', fullResponse, language || 'en')
                     .catch(err => console.error('Fortune email error:', err))
+                  }
+
                   continue
                 }
                 try {

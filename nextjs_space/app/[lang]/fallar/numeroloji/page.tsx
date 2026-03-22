@@ -16,6 +16,7 @@ export default function NumerologyPage() {
   const [response, setResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [adWatched, setAdWatched] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +33,7 @@ export default function NumerologyPage() {
       const res = await fetch('/api/fortunes/numeroloji', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), birthDate, language }),
+        body: JSON.stringify({ name: name.trim(), birthDate, language, adWatched }),
       })
 
       if (!res.ok) {
@@ -98,6 +99,8 @@ export default function NumerologyPage() {
             animate={{ opacity: 1 }}
             className="bg-mystical-card border border-mystical rounded-xl p-8"
           >
+            <FortuneAccessGate fortuneType="numerology" cost={4} onAccessGranted={() => setAdWatched(true)}>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-deep-purple-200 mb-2">
@@ -145,6 +148,7 @@ export default function NumerologyPage() {
                 )}
               </button>
             </form>
+            </FortuneAccessGate>
           </motion.div>
         )}
 
