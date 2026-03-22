@@ -98,9 +98,9 @@ export const FORTUNE_SEO: Record<string, { titleTr: string; titleEn: string; des
     keywords: ['kurşun dökme', 'kurşun falı', 'nazar', 'kötü enerji', 'lead pouring'],
   },
   istikhara: {
-    titleTr: 'İstikhare - Online İstikhare Duası',
+    titleTr: 'İstihare - Online İstihare Duası',
     titleEn: 'Istikhara Prayer - Online Guidance',
-    descTr: 'İstikhare duası ile karar vermekte zorlandığınız konularda ilahi rehberlik alın.',
+    descTr: 'İstihare duası ile karar vermekte zorlandığınız konularda ilahi rehberlik alın.',
     descEn: 'Get divine guidance through Istikhara prayer for decisions you struggle with.',
     keywords: ['istikhare', 'istikhare duası', 'istikhare namazı', 'ilahi rehberlik'],
   },

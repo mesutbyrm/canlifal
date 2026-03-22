@@ -19,7 +19,7 @@ const STATIC_ITEMS = [
   { type: 'fortune', id: 'katina', titleTr: 'Katina Falı', titleEn: 'Katina Reading', href: '/fallar/katina', icon: '🎴' },
   { type: 'fortune', id: 'yesno', titleTr: 'Evet/Hayır', titleEn: 'Yes/No Oracle', href: '/fallar/evet-hayir', icon: '❓' },
   { type: 'fortune', id: 'kursundokme', titleTr: 'Kurşun Dökme', titleEn: 'Lead Pouring', href: '/fallar/kursundokme', icon: '🫠' },
-  { type: 'fortune', id: 'istikhara', titleTr: 'İstikhare', titleEn: 'Istikhara', href: '/fallar/istihare', icon: '🕌' },
+  { type: 'fortune', id: 'istikhara', titleTr: 'İstihare', titleEn: 'Istikhara', href: '/fallar/istihare', icon: '🕌' },
   // Pages
   { type: 'page', id: 'games', titleTr: 'Oyun Merkezi', titleEn: 'Game Center', href: '/oyunlar', icon: '🎮' },
   { type: 'page', id: 'social', titleTr: 'Sosyal', titleEn: 'Social', href: '/sosyal', icon: '👥' },

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: creditResult.message }, { status: 400 })
     }
 
-    const systemPrompt = `Sen manevi bir rehbersin ve İstikhare duanın yorumunu yapıyorsun. Kullanıcının sorusu: "${question}"${situation ? `. Durum: ${situation}` : ''}. İstikhare duasının manevi önemi hakkında bilgi ver, ardından bu konuda manevi bir rehberlik sun. Olumlu ve olumsuz işaretleri açıkla. Cevabın 250-350 kelime arasında, saygılı ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen manevi bir rehbersin ve İstihare duanın yorumunu yapıyorsun. Kullanıcının sorusu: "${question}"${situation ? `. Durum: ${situation}` : ''}. İstihare duasının manevi önemi hakkında bilgi ver, ardından bu konuda manevi bir rehberlik sun. Olumlu ve olumsuz işaretleri açıkla. Cevabın 250-350 kelime arasında, saygılı ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     const risingName = user.risingSign ? ZODIAC_NAMES[user.risingSign]?.[lang as 'tr' | 'en'] : null;
 
     const prompt = lang === 'tr'
-      ? `Sen deneyimli bir astrologsun. Bugün ${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} için ${zodiacName} burcunun günlük yorumunu yaz.${risingName ? ` Kişinin yüselen burcu ${risingName}.` : ''}
+      ? `Sen deneyimli bir astrologsun. Bugün ${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} için ${zodiacName} burcunun günlük yorumunu yaz.${risingName ? ` Kişinin yükselen burcu ${risingName}.` : ''}
 
 Yorum şunları içersin:
 - Genel enerji ve günün teması

@@ -143,7 +143,7 @@ const FORTUNE_CARDS = [
   },
   {
     id: 'istikhara',
-    nameTr: 'İstikhare',
+    nameTr: 'İstihare',
     nameEn: 'Istikhara',
     image: '/fortunes/angel.jpg',
     href: '/fallar/istihare'

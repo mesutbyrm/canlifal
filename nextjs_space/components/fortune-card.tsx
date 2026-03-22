@@ -22,7 +22,7 @@ const FORTUNE_NAMES: Record<string, string> = {
   yesno: 'Evet/Hayır Falı',
   katina: 'Katina Falı',
   palm: 'El Falı',
-  istikhara: 'İstikhare',
+  istikhara: 'İstihare',
   angel: 'Melek Kartları',
   birthchart: 'Doğum Haritası',
   aura: 'Aura Okuma',

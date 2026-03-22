@@ -75,7 +75,7 @@ export default function IstikharaPage() {
             <Moon className="w-16 h-16 text-gold-500" />
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-gold-500 gold-glow mb-4">
-            {'İstikhare'}
+            {'İstihare'}
           </h1>
           <p className="text-deep-purple-200 text-lg">
             {'Manevi rehberlik ve iç huzur arayışı'}
@@ -130,7 +130,7 @@ export default function IstikharaPage() {
               <h2 className="font-serif text-2xl text-gold-500">{'Manevi Rehberlik'}</h2>
             </div>
             <div className="prose prose-invert max-w-none"><p className="text-deep-purple-100 leading-relaxed whitespace-pre-wrap">{response}</p></div>
-            <SocialShare title={'İstikhare Rehberliğim'} text={response} />
+            <SocialShare title={'İstihare Rehberliğim'} text={response} />
             <button onClick={() => { setResponse(''); setQuestion(''); setSituation(''); }} className="mt-6 w-full py-3 border border-gold-500/50 text-gold-500 hover:bg-gold-500/10 rounded-lg transition-all">
               {'Yeni Soru Sor'}
             </button>

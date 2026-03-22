@@ -44,7 +44,7 @@ const FORTUNE_CARDS = [
   { id: 'katina', nameTr: 'Katina Falı', image: '/fortunes/katina.jpg', href: '/fallar/katina' },
   { id: 'yesno', nameTr: 'Evet/Hayır', image: '/fortunes/yesno.jpg', href: '/fallar/evet-hayir' },
   { id: 'kursundokme', nameTr: 'Kurşun Dökme', image: '/fortunes/dream.jpg', href: '/fallar/kursundokme' },
-  { id: 'istikhara', nameTr: 'İstikhare', image: '/fortunes/angel.jpg', href: '/fallar/istihare' },
+  { id: 'istikhara', nameTr: 'İstihare', image: '/fortunes/angel.jpg', href: '/fallar/istihare' },
 ]
 
 export default function OnlineFalPage() {
