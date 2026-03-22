@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import CfcCoin from './cfc-coin'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
+import FramedAvatar from './framed-avatar'
 import TellerIncomingRequest from './teller-incoming-request'
 import UserLevelBadge from './user-level-badge'
 // ThemeToggle removed - color mode is now controlled from admin panel
@@ -34,6 +35,7 @@ export default function Navbar() {
   const [jetonTlRate, setJetonTlRate] = useState<number>(0.5)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [profileImage, setProfileImage] = useState<string>('')
+  const [profileFrameUrl, setProfileFrameUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [hasLiveStreams, setHasLiveStreams] = useState(false)
   const [liveStreamCount, setLiveStreamCount] = useState(0)
@@ -87,7 +89,11 @@ export default function Navbar() {
       // Fetch profile image
       fetch('/api/user/profile')
         .then(res => res.json())
-        .then(data => setProfileImage(data.image || ''))
+        .then(data => {
+          setProfileImage(data.image || '')
+          const frameUrl = data.adminAssignedFrame?.imageUrl || data.profileFrame?.imageUrl || null
+          setProfileFrameUrl(frameUrl)
+        })
         .catch(() => {})
       
       // Fetch unread messages count
@@ -311,34 +317,18 @@ export default function Navbar() {
 
   // Profile avatar component
   const ProfileAvatar = ({ size = 'md', showCamera = false }: { size?: 'sm' | 'md' | 'lg' | 'xl', showCamera?: boolean }) => {
-    const sizeClasses = {
-      sm: 'w-8 h-8',
-      md: 'w-9 h-9',
-      lg: 'w-10 h-10',
-      xl: 'w-16 h-16'
-    }
-
-    const currentImage = profileImage || session?.user?.image
+    const sizePixels = { sm: 32, md: 36, lg: 40, xl: 64 }
 
     return (
       <div className="relative">
-        {currentImage ? (
-          <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gold-500 flex-shrink-0`}>
-            <Image
-              src={currentImage}
-              alt={session?.user?.name || 'Profil'}
-              width={64}
-              height={64}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-2 border-gold-500 flex-shrink-0`}>
-            <span className="text-white font-bold text-sm">
-              {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
-        )}
+        <FramedAvatar
+          src={profileImage || session?.user?.image}
+          alt={session?.user?.name || 'Profil'}
+          size={sizePixels[size]}
+          frameUrl={profileFrameUrl}
+          fallbackInitial={session?.user?.name?.charAt(0) || 'U'}
+          borderColor="border-gold-500"
+        />
         {showCamera && (
           <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors shadow-lg">
             {uploadingImage ? (
@@ -409,31 +399,19 @@ export default function Navbar() {
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg ${isLight ? 'hover:bg-[#F0F2F5]' : 'hover:bg-purple-900/30'}`}
                   >
-                    {/* Gold border for admin */}
-                    <div className={`relative ${session.user.role === 'admin' ? 'p-0.5' : ''}`}>
-                      {session.user.role === 'admin' && (
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gold-500 to-gold-600" />
-                      )}
-                      <div className={`relative ${session.user.role === 'admin' ? 'w-10 h-10' : 'w-9 h-9'} rounded-full overflow-hidden border-2 ${session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}`}>
-                        {profileImage || session.user.image ? (
-                          <Image
-                            src={profileImage || session.user.image || ''}
-                            alt={session.user.name || 'Profil'}
-                            width={40}
-                            height={40}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {session.user.name?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                    {/* Profile avatar with frame */}
+                    <div className="relative">
+                      <FramedAvatar
+                        src={profileImage || session.user.image}
+                        alt={session.user.name || 'Profil'}
+                        size={session.user.role === 'admin' ? 40 : 36}
+                        frameUrl={profileFrameUrl}
+                        fallbackInitial={session.user.name?.charAt(0) || 'U'}
+                        borderColor={session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}
+                      />
                       {/* Admin badge overlay */}
                       {session.user.role === 'admin' && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[7px] font-bold text-black px-1.5 rounded">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[7px] font-bold text-black px-1.5 rounded z-20">
                           ADMIN
                         </div>
                       )}

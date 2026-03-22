@@ -27,6 +27,7 @@ import ProfileAchievements from '@/components/profile-achievements'
 import ProfileSpecialBadges, { SpecialBadgeType } from '@/components/profile-special-badges'
 import { ProfileBackground, ProfileEffect } from '@/components/profile-effects'
 import { Trophy } from 'lucide-react'
+import FramedAvatar from '@/components/framed-avatar'
 
 interface UserProfile {
   id: string
@@ -333,27 +334,13 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center">
           <div className="relative">
             {(profile.adminAssignedFrame?.imageUrl || profile.profileFrame?.imageUrl) ? (
-              <div className="relative" style={{ width: 140, height: 140 }}>
-                <div className="absolute" style={{ top: 14, left: 14, width: 112, height: 112 }}>
-                  <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
-                    {profile.image ? (
-                      <Image src={profile.image} alt={profile.name} width={112} height={112} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl text-purple-300 bg-gradient-to-br from-purple-900 to-pink-900">
-                        {profile.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </TierAvatarWrapper>
-                </div>
-                <Image
-                  src={profile.adminAssignedFrame?.imageUrl || profile.profileFrame?.imageUrl || ''}
-                  alt="Profil çerçevesi"
-                  width={140}
-                  height={140}
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-                  unoptimized
-                />
-              </div>
+              <FramedAvatar
+                src={profile.image}
+                alt={profile.name}
+                size={112}
+                frameUrl={profile.adminAssignedFrame?.imageUrl || profile.profileFrame?.imageUrl}
+                fallbackInitial={profile.name.charAt(0)}
+              />
             ) : (
               <TierAvatarWrapper tier={(profile.membership || 'faluser') as MembershipTier} size="lg">
                 {profile.image ? (

@@ -20,6 +20,7 @@ import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
 import ChatRoomReceivedGifts from '@/components/chat-room-received-gifts'
 import UserLevelBadge from '@/components/user-level-badge'
+import FramedAvatar from '@/components/framed-avatar'
 
 interface UserProfile {
   id: string
@@ -457,46 +458,14 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="flex justify-center">
           <div className="relative">
-            {/* Frame overlay container */}
-            {(profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl) ? (
-              <div className="relative" style={{ width: 140, height: 140 }}>
-                <div className="absolute" style={{ top: 18, left: 18, width: 104, height: 104 }}>
-                  <div className={`w-full h-full rounded-full p-0.5 bg-gradient-to-br ${avatarBorder}`}>
-                    <div className={`w-full h-full rounded-full overflow-hidden bg-gradient-to-br ${avatarBorder}`}>
-                      {profile?.image || session.user.image ? (
-                        <Image src={profile?.image || session.user.image || ''} alt="Profile" width={104} height={104} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-white text-4xl font-bold">{(profile?.name || session.user.name)?.charAt(0).toUpperCase()}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Image
-                  src={profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl || ''}
-                  alt="Profil çerçevesi"
-                  width={140}
-                  height={140}
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <div className={`w-28 h-28 rounded-full p-1 bg-gradient-to-br ${avatarBorder}`}>
-                <div className={`w-full h-full rounded-full overflow-hidden ${bgColor} p-0.5`}>
-                  <div className={`w-full h-full rounded-full overflow-hidden bg-gradient-to-br ${avatarBorder}`}>
-                    {profile?.image || session.user.image ? (
-                      <Image src={profile?.image || session.user.image || ''} alt="Profile" width={112} height={112} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-white text-4xl font-bold">{(profile?.name || session.user.name)?.charAt(0).toUpperCase()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            <FramedAvatar
+              src={profile?.image || session.user.image}
+              alt={profile?.name || session.user.name || 'Profil'}
+              size={112}
+              frameUrl={profile?.adminAssignedFrame?.imageUrl || profile?.profileFrame?.imageUrl}
+              fallbackInitial={(profile?.name || session.user.name)?.charAt(0) || 'U'}
+              borderColor={`border-transparent bg-gradient-to-br ${avatarBorder}`}
+            />
             <Link href={`/ayarlar`}
               className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-r ${isFacebook ? 'from-blue-500 to-blue-600' : isCosmic ? 'from-blue-500 to-cyan-500' : 'from-fuchsia-500 to-purple-500'} rounded-full flex items-center justify-center border-2 ${isFacebook ? 'border-[#f0f2f5]' : isCosmic ? 'border-[#0a1628]' : 'border-[#0f0520]'} z-20`}>
               <Camera className="w-4 h-4 text-white" />

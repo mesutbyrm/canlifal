@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import { User, Home, Camera, MessageCircle, Coins } from 'lucide-react'
 import Image from 'next/image'
 import { useSiteTheme } from '@/lib/theme-context'
+import FramedAvatar from './framed-avatar'
 
 export default function MobileFooter() {
   const { data: session } = useSession()
@@ -19,6 +20,7 @@ export default function MobileFooter() {
   const isLight = colorMode === 'light'
   const [unreadCount, setUnreadCount] = useState(0)
   const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [profileFrameUrl, setProfileFrameUrl] = useState<string | null>(null)
   
   // Hide footer on certain pages
   const hiddenPaths = ['/canli-oda', '/sohbet/video', '/giris', '/kayit-ol']
@@ -55,6 +57,8 @@ export default function MobileFooter() {
         if (res.ok) {
           const data = await res.json()
           if (data.image) setProfileImage(data.image)
+          const frameUrl = data.adminAssignedFrame?.imageUrl || data.profileFrame?.imageUrl || null
+          setProfileFrameUrl(frameUrl)
         }
       } catch (e) {}
     }
@@ -125,23 +129,16 @@ export default function MobileFooter() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className={`w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg ${isLight ? 'border-[#1877F2] shadow-[#1877F2]/15' : 'border-fuchsia-400 shadow-fuchsia-500/30'}`}
+            className="shadow-lg"
           >
-            {profileImage || session.user.image ? (
-              <Image
-                src={profileImage || session.user.image || ''}
-                alt={session.user.name || 'Profil'}
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-fuchsia-600 to-pink-600">
-                <span className="text-white font-bold text-sm">
-                  {session.user.name?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-            )}
+            <FramedAvatar
+              src={profileImage || session.user.image}
+              alt={session.user.name || 'Profil'}
+              size={48}
+              frameUrl={profileFrameUrl}
+              fallbackInitial={session.user.name?.charAt(0) || 'U'}
+              borderColor={isLight ? 'border-[#1877F2]' : 'border-fuchsia-400'}
+            />
           </motion.div>
         </Link>
       )}
