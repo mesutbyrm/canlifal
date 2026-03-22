@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       { role: 'user', content: question },
     ]
 
-    const response = await fetch('https://apps.abacus.ai/v1/sohbet/completions', {
+    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

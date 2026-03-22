@@ -56,7 +56,7 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
     const userPrompt = `Kurşun döküldü ve şu şekiller oluştu: ${finalShapes}. Bu şekillerin anlamını yorumla ve falımı söyle.`
 
     // Call LLM API
-    const llmResponse = await fetch('https://routellm.abacus.ai/v1/sohbet/completions', {
+    const llmResponse = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
