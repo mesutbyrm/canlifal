@@ -19,6 +19,8 @@ interface Message {
     nickname?: string
     chatRole?: string
     roleSymbol?: string
+    membership?: string
+    role?: string
   }
 }
 
@@ -1094,6 +1096,17 @@ export default function ChatRoomPage() {
     return user.nickname || user.name
   }
 
+  // Get username effect class based on role/membership
+  const getNameEffectClass = (user: { chatRole?: string; membership?: string; role?: string }) => {
+    if (user.role === 'admin') return 'effect-glitch'
+    if (user.chatRole === 'founder') return 'effect-glitch-flash'
+    if (user.chatRole === 'admin' || user.chatRole === 'op') return 'effect-glitch-flash'
+    if (user.membership === 'diamond') return 'effect-neon-glow'
+    if (user.membership === 'gold') return 'effect-neon-flicker'
+    if (user.membership === 'premium') return 'effect-blink'
+    return ''
+  }
+
   // Check if user is room owner
   const isRoomOwner = (userId: string) => {
     return room?.ownerId === userId
@@ -1708,7 +1721,9 @@ export default function ChatRoomPage() {
                         )}
                         {/* Dark gradient overlay at bottom */}
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-6 pb-1 px-1">
-                          <p className={`text-[10px] font-bold truncate text-center ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white'}`}>
+                          <p className={`text-[10px] font-bold truncate text-center ${getNameEffectClass(user)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white'}`}
+                            {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
+                          >
                             {getDisplayName(user)}
                           </p>
                         </div>
@@ -1968,7 +1983,7 @@ export default function ChatRoomPage() {
                       )}
                       <button
                         onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
-                        className={`font-medium hover:underline ${
+                        className={`font-medium hover:underline ${getNameEffectClass(msg.user)} ${
                           isOwner
                             ? 'text-yellow-300'
                             : msg.user.chatRole 
@@ -1977,6 +1992,7 @@ export default function ChatRoomPage() {
                                 ? 'text-gold-400' 
                                 : 'text-purple-300'
                         }`}
+                        {...(getNameEffectClass(msg.user) === 'effect-glitch' ? { 'data-text': `<${displayName}>` } : {})}
                       >
                         &lt;{displayName}&gt;
                       </button>
@@ -2219,7 +2235,7 @@ export default function ChatRoomPage() {
                       )}
                       
                       <div className="flex-1 min-w-0 flex items-center gap-1">
-                        <span className={`text-xs truncate ${
+                        <span className={`text-xs truncate ${getNameEffectClass(user)} ${
                           isOwner
                             ? 'text-yellow-300 font-bold'
                             : user.chatRole 
@@ -2227,7 +2243,9 @@ export default function ChatRoomPage() {
                               : user.isAdmin 
                                 ? 'text-red-400'
                                 : 'text-purple-200'
-                        }`} title={getDisplayName(user)}>
+                        }`} title={getDisplayName(user)}
+                        {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
+                        >
                           {getDisplayName(user)}
                         </span>
                         {/* Role Badge */}

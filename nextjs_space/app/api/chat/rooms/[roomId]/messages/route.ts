@@ -42,7 +42,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            membership: true,
           }
         }
       },
@@ -200,7 +201,8 @@ export async function POST(
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            membership: true,
           }
         }
       }

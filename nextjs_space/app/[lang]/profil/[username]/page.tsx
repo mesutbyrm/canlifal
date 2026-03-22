@@ -37,6 +37,7 @@ interface UserProfile {
   bio: string | null
   zodiacSign: string | null
   createdAt: string
+  role: string
   membership: string
   membershipExpiresAt: string | null
   followerCount: number
@@ -375,7 +376,8 @@ export default function ProfilePage() {
           <h2 className="mt-4 text-xl font-bold">
             <TierNameBadge 
               tier={(profile.membership || 'faluser') as MembershipTier} 
-              name={profile.name} 
+              name={profile.name}
+              role={profile.role}
             />
           </h2>
 

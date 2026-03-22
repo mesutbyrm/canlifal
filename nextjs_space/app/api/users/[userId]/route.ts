@@ -27,6 +27,7 @@ export async function GET(
         bio: true,
         createdAt: true,
         zodiacSign: true,
+        role: true,
         membership: true,
         membershipExpiresAt: true,
         specialBadges: true,

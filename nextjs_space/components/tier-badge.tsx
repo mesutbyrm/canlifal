@@ -180,17 +180,37 @@ export function TierAvatarWrapper({ tier, children, size = 'lg', className = '' 
   )
 }
 
-export function TierNameBadge({ tier, name, className = '' }: { tier: MembershipTier; name: string; className?: string }) {
+export function TierNameBadge({ tier, name, role, chatRole, isLive, className = '' }: { tier: MembershipTier; name: string; role?: string; chatRole?: string; isLive?: boolean; className?: string }) {
   const config = TIER_CONFIG[tier] || TIER_CONFIG.faluser
 
-  if (tier === 'faluser') {
+  // Determine effect class based on role/tier/context
+  const getEffectClass = () => {
+    if (role === 'admin') return 'effect-glitch'
+    if (chatRole === 'founder') return 'effect-glitch-flash'
+    if (chatRole === 'admin' || chatRole === 'op') return 'effect-glitch-flash'
+    if (tier === 'diamond') return 'effect-neon-glow'
+    if (tier === 'gold') return 'effect-neon-flicker'
+    if (tier === 'premium') return 'effect-blink'
+    if (isLive) return 'effect-live-pulse'
+    return ''
+  }
+
+  const effectClass = getEffectClass()
+  const needsDataText = effectClass === 'effect-glitch'
+
+  if (tier === 'faluser' && !effectClass) {
     return <span className={`text-white ${className}`}>{name}</span>
   }
 
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>
-      <span className={`tier-name-${tier}`}>{name}</span>
-      <span className="text-base">{config.emoji}</span>
+      <span 
+        className={`tier-name-${tier} ${effectClass}`}
+        {...(needsDataText ? { 'data-text': name } : {})}
+      >
+        {name}
+      </span>
+      {tier !== 'faluser' && <span className="text-base">{config.emoji}</span>}
     </span>
   )
 }
