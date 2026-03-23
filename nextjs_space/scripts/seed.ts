@@ -27,6 +27,24 @@ async function main() {
   })
   console.log('Admin user created:', admin.email)
 
+  // Create system "CanlıFal User" account for guest fortune social posts
+  const systemPassword = await bcrypt.hash('canlifal-system-2024!', 10)
+  const systemUser = await prisma.user.upsert({
+    where: { email: 'system@canlifal.com' },
+    update: {
+      name: 'CanlıFal User',
+    },
+    create: {
+      email: 'system@canlifal.com',
+      password: systemPassword,
+      name: 'CanlıFal User',
+      preferredLanguage: 'tr',
+      credits: 0,
+      role: 'user',
+    },
+  })
+  console.log('System user created:', systemUser.email)
+
   // Create test user for testing (john@doe.com / johndoe123)
   const testPassword = await bcrypt.hash('johndoe123', 10)
   

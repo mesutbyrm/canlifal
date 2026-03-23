@@ -91,6 +91,9 @@ export async function POST(request: Request) {
                   // Send fortune summary email (non-blocking)
                   sendFortuneSummaryEmail(session.user.id, 'yesno', fullResponse, language || 'en')
                     .catch(err => console.error('Fortune email error:', err))
+                  } else {
+                    // Auto-share guest fortune to social feed
+                    await autoShareFortune(null, null, 'yesno', fullResponse, language || 'en')
                   }
 
                   continue

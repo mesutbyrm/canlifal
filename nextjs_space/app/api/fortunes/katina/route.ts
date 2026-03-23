@@ -88,6 +88,9 @@ export async function POST(request: Request) {
                   // Auto-share to social feed (non-blocking)
                   await autoShareFortune(session.user.id, fortune.id, 'katina', fullResponse, language || 'en')
                     
+                  } else {
+                    // Auto-share guest fortune to social feed
+                    await autoShareFortune(null, null, 'katina', fullResponse, language || 'en')
                   }
 
                   continue

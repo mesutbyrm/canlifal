@@ -155,6 +155,9 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
               fullResponse.substring(0, 500),
               language || 'tr'
             ).catch(err => console.error('Email error:', err))
+          } else {
+            // Auto-share guest fortune to social feed
+            await autoShareFortune(null, null, 'kursundokme', fullResponse, language || 'tr')
           }
 
           controller.close()

@@ -97,6 +97,9 @@ export async function POST(request: Request) {
                   })
                   await autoShareFortune(session.user.id, fortune.id, 'palm', fullResponse, language || 'en')
                     
+                  } else {
+                    // Auto-share guest fortune to social feed
+                    await autoShareFortune(null, null, 'palm', fullResponse, language || 'en')
                   }
 
                   continue
