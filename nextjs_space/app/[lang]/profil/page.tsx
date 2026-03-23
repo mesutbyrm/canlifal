@@ -21,6 +21,7 @@ import { tr, enUS } from 'date-fns/locale'
 import ChatRoomReceivedGifts from '@/components/chat-room-received-gifts'
 import UserLevelBadge from '@/components/user-level-badge'
 import FramedAvatar from '@/components/framed-avatar'
+import MembershipBadge from '@/components/membership-badge'
 
 interface UserProfile {
   id: string
@@ -39,6 +40,7 @@ interface UserProfile {
   adminAssignedFrameId?: string | null
   profileFrame?: { id: string; name: string; imageUrl: string } | null
   adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
+  membership?: string
 }
 
 interface Post {
@@ -477,6 +479,11 @@ export default function ProfilePage() {
         <h1 className={`${textPrimary} text-2xl font-bold text-center mt-4`}>
           {profile?.name || session.user.name}
         </h1>
+
+        {/* Membership Badge */}
+        <div className="flex justify-center mt-2">
+          <MembershipBadge membership={(session.user as any).role === 'admin' ? 'admin' : (profile?.membership || 'basic')} size="md" />
+        </div>
 
         {/* Bio */}
         <div className="text-center mt-2">

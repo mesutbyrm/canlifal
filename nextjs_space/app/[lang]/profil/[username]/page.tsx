@@ -28,6 +28,7 @@ import ProfileSpecialBadges, { SpecialBadgeType } from '@/components/profile-spe
 import { ProfileBackground, ProfileEffect } from '@/components/profile-effects'
 import { Trophy } from 'lucide-react'
 import FramedAvatar from '@/components/framed-avatar'
+import MembershipBadge from '@/components/membership-badge'
 
 interface UserProfile {
   id: string
@@ -387,15 +388,12 @@ export default function ProfilePage() {
           </p>
 
           {/* Membership Badge */}
-          {profile.membership && profile.membership !== 'faluser' && (
-            <div className="mt-2">
-              <TierBadge 
-                tier={(profile.membership || 'faluser') as MembershipTier} 
-                size="sm" 
-                showLabel 
-              />
-            </div>
-          )}
+          <div className="mt-2">
+            <MembershipBadge 
+              membership={profile.role === 'admin' ? 'admin' : (profile.membership || 'basic')} 
+              size="md" 
+            />
+          </div>
 
           {/* Special Badges - VIP, Beta Tester, etc. */}
           {profile.specialBadges && profile.specialBadges.length > 0 && (

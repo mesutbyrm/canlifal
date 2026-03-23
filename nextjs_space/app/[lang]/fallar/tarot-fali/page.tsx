@@ -38,8 +38,12 @@ export default function TarotFortunePage() {
       })
 
       if (!response?.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData?.error || 'Fal yorumu oluşturulamadı')
+        let errorMsg = 'Fal yorumu oluşturulamadı'
+        try {
+          const errorData = await response.json()
+          errorMsg = errorData?.error || errorMsg
+        } catch (_) {}
+        throw new Error(errorMsg)
       }
 
       const reader = response?.body?.getReader()

@@ -2025,6 +2025,21 @@ model ProfileFrame {
 }
 
 
+// Membership badge images - admin uploads banners per tier, text is overlaid
+model MembershipBadge {
+  id          String   @id @default(cuid())
+  name        String   // Display name (e.g., "Gold Şerit", "Premium Rozet")
+  tier        String   // basic, premium, gold, diamond, admin
+  imageUrl    String   // URL to banner/ribbon image
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("membership_badges")
+}
+
 // IP-based fortune usage tracking for unregistered users
 model IpFortuneUsage {
   id        String   @id @default(cuid())

@@ -19,6 +19,7 @@ import CfcCoin from './cfc-coin'
 import NotificationBell from './notification-bell'
 import IncomingCallModal from './incoming-call-modal'
 import FramedAvatar from './framed-avatar'
+import MembershipBadge from './membership-badge'
 import TellerIncomingRequest from './teller-incoming-request'
 import UserLevelBadge from './user-level-badge'
 // ThemeToggle removed - color mode is now controlled from admin panel
@@ -36,6 +37,7 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [profileImage, setProfileImage] = useState<string>('')
   const [profileFrameUrl, setProfileFrameUrl] = useState<string | null>(null)
+  const [userMembership, setUserMembership] = useState<string>('basic')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [hasLiveStreams, setHasLiveStreams] = useState(false)
   const [liveStreamCount, setLiveStreamCount] = useState(0)
@@ -93,6 +95,7 @@ export default function Navbar() {
           setProfileImage(data.image || '')
           const frameUrl = data.adminAssignedFrame?.imageUrl || data.profileFrame?.imageUrl || null
           setProfileFrameUrl(frameUrl)
+          if (data.membership) setUserMembership(data.membership)
         })
         .catch(() => {})
       
@@ -427,7 +430,8 @@ export default function Navbar() {
                           <div className="flex-1 min-w-0">
                             <p className={`font-semibold truncate ${isLight ? 'text-[#050505]' : 'text-white'} ${(session.user as any).role === 'admin' ? 'effect-glitch' : ''}`} data-text={session.user.name}>{session.user.name}</p>
                             <p className={`text-xs truncate ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>{session.user.email}</p>
-                            <div className="mt-1">
+                            <div className="mt-1 flex items-center gap-2 flex-wrap">
+                              <MembershipBadge membership={(session.user as any).role === 'admin' ? 'admin' : userMembership} size="sm" />
                               <UserLevelBadge compact />
                             </div>
                           </div>
