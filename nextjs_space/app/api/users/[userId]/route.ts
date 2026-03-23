@@ -78,9 +78,9 @@ export async function GET(
       isFollowing = !!follow
     }
 
-    // Check if membership is active
-    const membershipActive = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) > new Date() : false
-    const effectiveMembership = membershipActive ? user.membership : 'faluser'
+    // Check if membership is active (null expiry = lifetime/permanent membership)
+    const membershipActive = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) > new Date() : true
+    const effectiveMembership = membershipActive ? user.membership : 'basic'
 
     // Parse special badges from JSON string
     let specialBadges: string[] = []

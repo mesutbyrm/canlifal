@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 
 interface BadgeData {
   id: string
@@ -61,6 +60,7 @@ function fetchBadges(): Promise<BadgeData[]> {
 export default function MembershipBadge({ membership, size = 'sm', className = '' }: MembershipBadgeProps) {
   const [badges, setBadges] = useState<BadgeData[]>(badgeCache || [])
   const [loaded, setLoaded] = useState(!!badgeCache)
+  const [imgError, setImgError] = useState(false)
 
   useEffect(() => {
     if (!badgeCache) {
@@ -73,7 +73,9 @@ export default function MembershipBadge({ membership, size = 'sm', className = '
     }
   }, [])
 
-  const tier = membership || 'basic'
+  const rawTier = membership || 'basic'
+  // Map faluser to basic for badge lookup
+  const tier = rawTier === 'faluser' ? 'basic' : rawTier
   const label = TIER_LABELS[tier] || tier.toUpperCase()
 
   // Find a badge image for this tier
@@ -88,16 +90,16 @@ export default function MembershipBadge({ membership, size = 'sm', className = '
   const { w, h, text } = sizeConfig[size]
 
   // If there's a badge image, show it with text overlay
-  if (tierBadge) {
+  if (tierBadge && !imgError) {
     return (
       <div className={`relative inline-flex items-center justify-center flex-shrink-0 ${className}`} style={{ width: w, height: h }}>
-        <Image
+        <img
           src={tierBadge.imageUrl}
           alt={`${label} rozeti`}
           width={w}
           height={h}
           className="object-contain w-full h-full"
-          unoptimized
+          onError={() => setImgError(true)}
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <span

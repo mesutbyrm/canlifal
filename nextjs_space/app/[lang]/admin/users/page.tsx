@@ -519,6 +519,7 @@ export default function AdminUsersPage() {
             <option value="basic">Basic</option>
             <option value="premium">Premium</option>
             <option value="gold">Gold</option>
+            <option value="diamond">Diamond</option>
           </select>
         </div>
 
@@ -581,11 +582,12 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          user.membership === 'diamond' ? 'bg-cyan-500/20 text-cyan-400' :
                           user.membership === 'gold' ? 'bg-yellow-500/20 text-yellow-400' :
                           user.membership === 'premium' ? 'bg-purple-500/20 text-purple-400' :
                           'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {user.membership}
+                          {user.membership?.toUpperCase()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-purple-300 text-sm">
@@ -700,11 +702,12 @@ export default function AdminUsersPage() {
                           💰 {selectedUser.jetonBalance} Jeton
                         </span>
                         <span className={`px-2 py-1 rounded text-sm ${
+                          selectedUser.membership === 'diamond' ? 'bg-cyan-500/20 text-cyan-400' :
                           selectedUser.membership === 'gold' ? 'bg-yellow-500/20 text-yellow-400' :
                           selectedUser.membership === 'premium' ? 'bg-purple-500/20 text-purple-400' :
                           'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {selectedUser.membership.toUpperCase()}
+                          {selectedUser.membership?.toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -864,6 +867,7 @@ export default function AdminUsersPage() {
                             <option value="basic">Basic</option>
                             <option value="premium">Premium</option>
                             <option value="gold">Gold</option>
+                            <option value="diamond">Diamond</option>
                           </select>
                         </div>
                       </div>
