@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 600 }),
     })
 
-    if (!response?.ok) throw new Error('LLM API request failed')
+    if (!response?.ok) throw new Error('Yapay zeka servisi yanıt vermedi')
 
     const stream = new ReadableStream({
       async start(controller) {

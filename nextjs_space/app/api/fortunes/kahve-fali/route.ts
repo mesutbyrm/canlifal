@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     if (!description) {
       return NextResponse.json(
-        { error: 'Description is required' },
+        { error: 'Açıklama gereklidir' },
         { status: 400 }
       )
     }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     })
 
     if (!response?.ok) {
-      throw new Error('LLM API request failed')
+      throw new Error('Yapay zeka servisi yanıt vermedi')
     }
 
     // Stream the response back to client
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Coffee fortune error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate fortune' },
+      { error: 'Fal yorumu oluşturulamadı. Lütfen tekrar deneyin.' },
       { status: 500 }
     )
   }

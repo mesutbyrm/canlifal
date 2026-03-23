@@ -38,7 +38,7 @@ export default function KatinaPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get katina reading')
+        throw new Error(errorData.error || 'Katina falı alınamadı')
       }
 
       const reader = res.body?.getReader()

@@ -60,7 +60,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { status, title, description, broadcastImage, isImageMode } = await request.json()
@@ -71,7 +71,7 @@ export async function PATCH(
     })
 
     if (!stream || stream.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 403 })
     }
 
     const updated = await prisma.videoStream.update({

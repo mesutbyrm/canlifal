@@ -51,7 +51,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
     // Check if user is the broadcaster
@@ -97,7 +97,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
     // Check if user is the broadcaster

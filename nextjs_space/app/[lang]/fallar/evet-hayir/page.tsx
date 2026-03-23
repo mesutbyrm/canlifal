@@ -38,7 +38,7 @@ export default function YesNoOraclePage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get oracle answer')
+        throw new Error(errorData.error || 'Fal yorumu alınamadı')
       }
 
       const reader = res.body?.getReader()

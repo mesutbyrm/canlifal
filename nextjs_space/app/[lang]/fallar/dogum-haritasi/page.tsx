@@ -40,7 +40,7 @@ export default function BirthChartPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get birth chart')
+        throw new Error(errorData.error || 'Doğum haritası alınamadı')
       }
 
       const reader = res.body?.getReader()

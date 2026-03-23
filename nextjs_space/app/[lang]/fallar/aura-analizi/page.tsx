@@ -48,7 +48,7 @@ export default function AuraReadingPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get aura reading')
+        throw new Error(errorData.error || 'Aura okuması alınamadı')
       }
 
       const reader = res.body?.getReader()

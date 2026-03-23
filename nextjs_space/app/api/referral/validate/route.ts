@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!referrer) {
-      return NextResponse.json({ valid: false, error: 'Invalid referral code' });
+      return NextResponse.json({ valid: false, error: 'Geçersiz davet kodu' });
     }
 
     return NextResponse.json({ 

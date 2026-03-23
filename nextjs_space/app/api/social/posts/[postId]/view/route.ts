@@ -32,6 +32,6 @@ export async function POST(
     return NextResponse.json({ viewCount: fortune.viewCount })
   } catch (error) {
     console.error('View tracking error:', error)
-    return NextResponse.json({ error: 'Failed to track view' }, { status: 500 })
+    return NextResponse.json({ error: 'Görüntülenme kaydedilemedi' }, { status: 500 })
   }
 }

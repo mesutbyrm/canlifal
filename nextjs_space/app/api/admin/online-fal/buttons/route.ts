@@ -12,14 +12,14 @@ async function isAdmin() {
 
 // GET all buttons (admin)
 export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const buttons = await prisma.onlineFalButton.findMany({ orderBy: { sortOrder: 'asc' } })
   return NextResponse.json({ buttons })
 }
 
 // POST - create new button
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { label, icon, href, bgColor, borderColor, textColor } = body
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH - update button
 export async function PATCH(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { id, label, icon, href, isVisible, sortOrder, bgColor, borderColor, textColor } = body
 
@@ -66,7 +66,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE - delete button
 export async function DELETE(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
 

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ tellers });
   } catch (error) {
     console.error('Error fetching live tellers:', error);
-    return NextResponse.json({ error: 'Failed to fetch tellers' }, { status: 500 });
+    return NextResponse.json({ error: 'Falcılar alınamadı' }, { status: 500 });
   }
 }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { userId, displayName, bio, specialties, pricePerSession, isVerified } = await request.json();
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Check if user exists
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
     }
 
     // Check if already a teller
@@ -115,6 +115,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ teller });
   } catch (error) {
     console.error('Error creating live teller:', error);
-    return NextResponse.json({ error: 'Failed to create teller' }, { status: 500 });
+    return NextResponse.json({ error: 'Falcı oluşturulamadı' }, { status: 500 });
   }
 }

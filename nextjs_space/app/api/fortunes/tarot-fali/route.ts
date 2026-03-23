@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     if (!question || !cardCount) {
       return NextResponse.json(
-        { error: 'Question and card count are required' },
+        { error: 'Soru ve kart sayısı gereklidir' },
         { status: 400 }
       )
     }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     })
 
     if (!response?.ok) {
-      throw new Error('LLM API request failed')
+      throw new Error('Yapay zeka servisi yanıt vermedi')
     }
 
     // Stream the response back to client
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Tarot fortune error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate fortune' },
+      { error: 'Fal yorumu oluşturulamadı. Lütfen tekrar deneyin.' },
       { status: 500 }
     )
   }

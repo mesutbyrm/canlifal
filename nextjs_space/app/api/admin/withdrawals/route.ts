@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ requests: enrichedRequests });
   } catch (error) {
     console.error('Admin fetch withdrawals error:', error);
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+    return NextResponse.json({ error: 'Veriler alınamadı' }, { status: 500 });
   }
 }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { requestId, action, adminNote } = await request.json();

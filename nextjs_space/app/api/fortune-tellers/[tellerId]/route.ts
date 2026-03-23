@@ -32,13 +32,13 @@ export async function GET(
     });
 
     if (!teller) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
     }
 
     return NextResponse.json(teller);
   } catch (error) {
     console.error('Fortune teller error:', error);
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+    return NextResponse.json({ error: 'Veriler alınamadı' }, { status: 500 });
   }
 }
 
@@ -50,7 +50,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const teller = await prisma.liveFortuneTeller.findUnique({
@@ -58,14 +58,14 @@ export async function PATCH(
     });
 
     if (!teller) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
     }
 
     const isAdmin = (session.user as { role?: string }).role === 'admin';
     const isOwner = teller.userId === session.user.id;
 
     if (!isAdmin && !isOwner) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -93,6 +93,6 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Update teller error:', error);
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+    return NextResponse.json({ error: 'Güncelleme başarısız' }, { status: 500 });
   }
 }

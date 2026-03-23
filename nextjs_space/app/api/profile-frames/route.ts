@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -18,7 +18,7 @@ export async function GET() {
       select: { membership: true, profileFrameId: true, adminAssignedFrameId: true }
     })
 
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     // Determine which tiers user can access
     const accessibleTiers = ['free']
@@ -42,7 +42,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Fetch frames error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { frameId } = await request.json()
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       select: { membership: true }
     })
 
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     // If removing frame
     if (!frameId) {
@@ -94,6 +94,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Select frame error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

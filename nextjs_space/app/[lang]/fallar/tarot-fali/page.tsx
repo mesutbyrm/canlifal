@@ -39,7 +39,7 @@ export default function TarotFortunePage() {
 
       if (!response?.ok) {
         const errorData = await response.json()
-        throw new Error(errorData?.error || 'Failed to generate fortune')
+        throw new Error(errorData?.error || 'Fal yorumu oluşturulamadı')
       }
 
       const reader = response?.body?.getReader()

@@ -35,13 +35,13 @@ export async function checkAndDeductCredits(
     })
 
     if (!user) {
-      return { success: false, message: 'User not found' }
+      return { success: false, message: 'Kullanıcı bulunamadı' }
     }
 
     if (user.credits < cost) {
       return { 
         success: false, 
-        message: `Insufficient credits. Need ${cost}, have ${user.credits}` 
+        message: `Yetersiz CFC. Bu işlem ${cost} CFC gerektiriyor, bakiyeniz: ${user.credits}` 
       }
     }
 
@@ -65,12 +65,12 @@ export async function checkAndDeductCredits(
 
     return { 
       success: true, 
-      message: 'Credits deducted successfully',
+      message: 'CFC başarıyla düşüldü',
       newBalance: updatedUser.credits,
     }
   } catch (error) {
     console.error('Credit check error:', error)
-    return { success: false, message: 'Failed to process credits' }
+    return { success: false, message: 'CFC işlemi sırasında bir hata oluştu' }
   }
 }
 

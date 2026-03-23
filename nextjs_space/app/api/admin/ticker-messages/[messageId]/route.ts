@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { messageId:
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await req.json()
@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { messageId:
     return NextResponse.json(message)
   } catch (error) {
     console.error('Update ticker message error:', error)
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+    return NextResponse.json({ error: 'Güncelleme başarısız' }, { status: 500 })
   }
 }
 
@@ -36,7 +36,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { messageId
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     await prisma.tickerMessage.delete({
@@ -46,6 +46,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { messageId
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete ticker message error:', error)
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+    return NextResponse.json({ error: 'Silme başarısız' }, { status: 500 })
   }
 }

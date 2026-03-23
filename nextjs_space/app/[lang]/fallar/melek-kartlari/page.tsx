@@ -33,7 +33,7 @@ export default function AngelCardsPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get angel card reading')
+        throw new Error(errorData.error || 'Melek kartı okuması alınamadı')
       }
 
       const reader = res.body?.getReader()

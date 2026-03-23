@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     
     if (!session?.user?.id || session?.user?.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
       )
     }
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     if (!userId || typeof amount !== 'number') {
       return NextResponse.json(
-        { error: 'Invalid request' },
+        { error: 'Geçersiz istek' },
         { status: 400 }
       )
     }
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Update credits error:', error)
     return NextResponse.json(
-      { error: 'Failed to update credits' },
+      { error: 'Jeton güncellenemedi' },
       { status: 500 }
     )
   }

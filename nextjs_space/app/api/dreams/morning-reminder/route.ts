@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     // Simple auth via header
     const authHeader = req.headers.get('x-cron-secret')
     if (authHeader !== process.env.CRON_SECRET && authHeader !== 'dream-reminder-cron') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const messages = [

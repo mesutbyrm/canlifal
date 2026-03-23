@@ -13,7 +13,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -37,7 +37,7 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Update package error:', error);
-    return NextResponse.json({ error: 'Failed to update package' }, { status: 500 });
+    return NextResponse.json({ error: 'Paket güncellenemedi' }, { status: 500 });
   }
 }
 
@@ -49,7 +49,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     await prisma.creditPackage.delete({
@@ -59,6 +59,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete package error:', error);
-    return NextResponse.json({ error: 'Failed to delete package' }, { status: 500 });
+    return NextResponse.json({ error: 'Paket silinemedi' }, { status: 500 });
   }
 }

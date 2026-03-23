@@ -17,7 +17,7 @@ async function handleUpdate(req: NextRequest, postId: string) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await req.json()
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { postId: s
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     await prisma.blogPost.delete({ where: { id: params.postId } })

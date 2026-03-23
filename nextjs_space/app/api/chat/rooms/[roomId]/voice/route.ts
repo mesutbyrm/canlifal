@@ -123,7 +123,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     })
   } catch (error) {
     console.error('Voice GET error:', error)
-    return NextResponse.json({ error: 'Failed to get signals' }, { status: 500 })
+    return NextResponse.json({ error: 'Sinyaller alınamadı' }, { status: 500 })
   }
 }
 
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = await params
@@ -212,6 +212,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ success: true, timestamp: Date.now() })
   } catch (error) {
     console.error('Voice POST error:', error)
-    return NextResponse.json({ error: 'Failed to send signal' }, { status: 500 })
+    return NextResponse.json({ error: 'Sinyal gönderilemedi' }, { status: 500 })
   }
 }

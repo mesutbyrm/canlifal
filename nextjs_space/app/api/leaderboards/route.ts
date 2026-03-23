@@ -230,6 +230,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Leaderboards error:', error)
-    return NextResponse.json({ error: 'Failed to fetch leaderboards' }, { status: 500 })
+    return NextResponse.json({ error: 'Sıralama verileri alınamadı' }, { status: 500 })
   }
 }

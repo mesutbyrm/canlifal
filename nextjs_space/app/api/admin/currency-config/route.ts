@@ -33,7 +33,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     let configs = await prisma.currencyConfig.findMany({
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -87,14 +87,14 @@ export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await request.json()
     const { configs } = body
 
     if (!Array.isArray(configs)) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz veri' }, { status: 400 })
     }
 
     for (const cfg of configs) {

@@ -50,7 +50,7 @@ export async function GET(
     return NextResponse.json(postWithViewCount)
   } catch (error) {
     console.error('Social post fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch post' }, { status: 500 })
+    return NextResponse.json({ error: 'Gönderi alınamadı' }, { status: 500 })
   }
 }
 
@@ -62,7 +62,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const post = await prisma.socialPost.findUnique({
@@ -75,7 +75,7 @@ export async function DELETE(
 
     // Only owner or admin can delete
     if (post.userId !== session.user.id && session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     await prisma.socialPost.delete({
@@ -85,6 +85,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Social post delete error:', error)
-    return NextResponse.json({ error: 'Failed to delete post' }, { status: 500 })
+    return NextResponse.json({ error: 'Gönderi silinemedi' }, { status: 500 })
   }
 }

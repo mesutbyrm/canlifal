@@ -65,7 +65,7 @@ export default function HoroscopePage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get horoscope')
+        throw new Error(errorData.error || 'Burç yorumu alınamadı')
       }
 
       const reader = res.body?.getReader()

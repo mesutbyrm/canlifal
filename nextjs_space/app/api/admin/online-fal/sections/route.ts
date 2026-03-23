@@ -12,14 +12,14 @@ async function isAdmin() {
 
 // GET all sections (admin)
 export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const sections = await prisma.onlineFalSection.findMany({ orderBy: { sortOrder: 'asc' } })
   return NextResponse.json({ sections })
 }
 
 // PATCH - update section visibility/order
 export async function PATCH(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { id, isVisible, sortOrder, title, icon } = body
 
@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest) {
 
 // POST - batch reorder sections
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { order } = body // array of { id, sortOrder }
 

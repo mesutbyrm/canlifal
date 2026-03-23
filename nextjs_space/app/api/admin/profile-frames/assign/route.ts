@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { userId, frameId } = await request.json()
@@ -25,6 +25,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(user)
   } catch (error) {
     console.error('Assign frame error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

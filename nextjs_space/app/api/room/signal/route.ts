@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { sessionId, receiverId, signalType, signalData } = await request.json();
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const isTeller = liveSession.teller.userId === session.user.id;
 
     if (!isUser && !isTeller) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     // Create the signal
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(signal);
   } catch (error) {
     console.error('Signal send error:', error);
-    return NextResponse.json({ error: 'Failed to send signal' }, { status: 500 });
+    return NextResponse.json({ error: 'Sinyal gönderilemedi' }, { status: 500 });
   }
 }
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -98,6 +98,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(parsedSignals);
   } catch (error) {
     console.error('Get signals error:', error);
-    return NextResponse.json({ error: 'Failed to get signals' }, { status: 500 });
+    return NextResponse.json({ error: 'Sinyaller alınamadı' }, { status: 500 });
   }
 }

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -223,6 +223,6 @@ Use a warm, positive and motivating tone. Write 150-200 words.`;
     });
   } catch (error) {
     console.error('Daily horoscope error:', error);
-    return NextResponse.json({ error: 'Failed to get horoscope' }, { status: 500 });
+    return NextResponse.json({ error: 'Burç yorumu alınamadı' }, { status: 500 });
   }
 }

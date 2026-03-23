@@ -13,7 +13,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const liveSession = await prisma.liveSession.findUnique({
@@ -41,7 +41,7 @@ export async function GET(
     const isTeller = liveSession.teller.userId === session.user.id;
 
     if (!isUser && !isTeller) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     // Get session duration settings
@@ -87,7 +87,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Get room error:', error);
-    return NextResponse.json({ error: 'Failed to get room' }, { status: 500 });
+    return NextResponse.json({ error: 'Oda bilgisi alınamadı' }, { status: 500 });
   }
 }
 
@@ -99,7 +99,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -118,7 +118,7 @@ export async function PATCH(
     const isTeller = liveSession.teller.userId === session.user.id;
 
     if (!isUser && !isTeller) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     switch (action) {
@@ -312,10 +312,10 @@ export async function PATCH(
       }
 
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
     }
   } catch (error) {
     console.error('Room action error:', error);
-    return NextResponse.json({ error: 'Failed to update room' }, { status: 500 });
+    return NextResponse.json({ error: 'Oda güncellenemedi' }, { status: 500 });
   }
 }

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const { question, language } = body
 
     if (!question) {
-      return NextResponse.json({ error: 'Question is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Lütfen bir soru yazın' }, { status: 400 })
     }
 
     // Check and deduct credits (skip if ad watched or unregistered)
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 600 }),
     })
 
-    if (!response?.ok) throw new Error('LLM API request failed')
+    if (!response?.ok) throw new Error('Yapay zeka servisi yanıt vermedi')
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -114,6 +114,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Katina error:', error)
-    return NextResponse.json({ error: 'Failed to generate katina reading' }, { status: 500 })
+    return NextResponse.json({ error: 'Katina falı oluşturulamadı. Lütfen tekrar deneyin.' }, { status: 500 })
   }
 }

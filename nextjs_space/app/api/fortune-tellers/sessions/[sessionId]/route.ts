@@ -13,14 +13,14 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action } = body;
 
     if (!['accept', 'complete', 'cancel', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
     }
 
     // Get the session
@@ -38,7 +38,7 @@ export async function PATCH(
 
     // Verify the current user owns this teller profile
     if (liveSession.teller.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     let updateData: Record<string, unknown> = {};

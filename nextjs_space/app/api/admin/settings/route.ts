@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const settings = await prisma.platformSettings.findMany();
@@ -38,7 +38,7 @@ export async function GET() {
     return NextResponse.json(settingsObj);
   } catch (error) {
     console.error('Fetch settings error:', error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json({ error: 'Ayarlar alınamadı' }, { status: 500 });
   }
 }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -66,6 +66,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(setting);
   } catch (error) {
     console.error('Update setting error:', error);
-    return NextResponse.json({ error: 'Failed to update setting' }, { status: 500 });
+    return NextResponse.json({ error: 'Ayar güncellenemedi' }, { status: 500 });
   }
 }

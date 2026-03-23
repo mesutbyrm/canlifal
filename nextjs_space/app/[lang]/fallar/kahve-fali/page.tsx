@@ -74,7 +74,7 @@ export default function CoffeeFortunePage() {
     })
 
     if (!presignedRes.ok) {
-      throw new Error('Failed to get upload URL')
+      throw new Error('Yükleme bağlantısı alınamadı')
     }
 
     const { uploadUrl, cloud_storage_path } = await presignedRes.json()
@@ -86,7 +86,7 @@ export default function CoffeeFortunePage() {
     })
 
     if (!uploadRes.ok) {
-      throw new Error('Failed to upload image')
+      throw new Error('Fotoğraf yüklenemedi')
     }
 
     return cloud_storage_path
@@ -125,7 +125,7 @@ export default function CoffeeFortunePage() {
 
       if (!response?.ok) {
         const errorData = await response.json()
-        throw new Error(errorData?.error || 'Failed to generate fortune')
+        throw new Error(errorData?.error || 'Fal yorumu oluşturulamadı')
       }
 
       setUploadProgress('')
@@ -180,7 +180,7 @@ export default function CoffeeFortunePage() {
 
       if (!response?.ok) {
         const errorData = await response.json()
-        throw new Error(errorData?.error || 'Failed to generate fortune')
+        throw new Error(errorData?.error || 'Fal yorumu oluşturulamadı')
       }
 
       const reader = response?.body?.getReader()

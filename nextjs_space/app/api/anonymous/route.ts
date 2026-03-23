@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(anonymousUser)
   } catch (error) {
     console.error('Anonymous user error:', error)
-    return NextResponse.json({ error: 'Failed to create anonymous user' }, { status: 500 })
+    return NextResponse.json({ error: 'Anonim kullanıcı oluşturulamadı' }, { status: 500 })
   }
 }
 
@@ -74,6 +74,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ exists: true, user: anonymousUser })
   } catch (error) {
     console.error('Anonymous user fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch anonymous user' }, { status: 500 })
+    return NextResponse.json({ error: 'Anonim kullanıcı bilgisi alınamadı' }, { status: 500 })
   }
 }

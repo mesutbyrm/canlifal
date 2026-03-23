@@ -39,7 +39,7 @@ export default function IstikharaPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get istikhara reading')
+        throw new Error(errorData.error || 'İstihare okuması alınamadı')
       }
 
       const reader = res.body?.getReader()

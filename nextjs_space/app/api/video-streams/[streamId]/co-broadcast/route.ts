@@ -49,7 +49,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { userId, action } = await request.json()
@@ -160,7 +160,7 @@ export async function POST(
       return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
   } catch (error) {
     console.error('Error managing co-broadcaster:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
@@ -175,7 +175,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { action } = await request.json()
@@ -256,7 +256,7 @@ export async function PATCH(
       return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
   } catch (error) {
     console.error('Error updating co-broadcast status:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

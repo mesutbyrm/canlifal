@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { planId, paymentMethod } = await req.json()
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
     // Allow payment with jeton or CFC
@@ -135,6 +135,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Membership purchase error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

@@ -137,7 +137,7 @@ export async function POST(
     
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
       )
     }
@@ -236,7 +236,7 @@ export async function POST(
   } catch (error) {
     console.error('Error sending message:', error)
     return NextResponse.json(
-      { error: 'Failed to send message' },
+      { error: 'Mesaj gönderilemedi' },
       { status: 500 }
     )
   }

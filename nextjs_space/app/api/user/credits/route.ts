@@ -11,7 +11,7 @@ export async function GET() {
     
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
       )
     }
@@ -23,7 +23,7 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Kullanıcı bulunamadı' },
         { status: 404 }
       )
     }

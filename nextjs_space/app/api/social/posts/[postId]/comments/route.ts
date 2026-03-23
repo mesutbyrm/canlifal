@@ -25,7 +25,7 @@ export async function GET(
     return NextResponse.json(comments)
   } catch (error) {
     console.error('Comments fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch comments' }, { status: 500 })
+    return NextResponse.json({ error: 'Yorumlar alınamadı' }, { status: 500 })
   }
 }
 
@@ -37,7 +37,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { content } = await request.json()
@@ -87,7 +87,7 @@ export async function POST(
     return NextResponse.json(comment, { status: 201 })
   } catch (error) {
     console.error('Comment create error:', error)
-    return NextResponse.json({ error: 'Failed to add comment' }, { status: 500 })
+    return NextResponse.json({ error: 'Yorum eklenemedi' }, { status: 500 })
   }
 }
 
@@ -99,7 +99,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -119,7 +119,7 @@ export async function DELETE(
 
     // Only owner or admin can delete
     if (comment.userId !== session.user.id && session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     await prisma.socialComment.delete({
@@ -129,6 +129,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Comment delete error:', error)
-    return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 })
+    return NextResponse.json({ error: 'Yorum silinemedi' }, { status: 500 })
   }
 }

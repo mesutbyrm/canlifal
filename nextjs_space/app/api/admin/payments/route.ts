@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if admin
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     })
 
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ notifications, stats })
   } catch (error) {
     console.error('Admin get payments error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -58,7 +58,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if admin
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest) {
     })
 
     if (admin?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const { notificationId, action, jetonAmount } = await req.json()
@@ -172,10 +172,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Ödeme reddedildi.' })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
   } catch (error) {
     console.error('Admin process payment error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if admin
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (admin?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const { userId, jetonAmount, reason } = await req.json()
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
     const currentBalance = targetUser.jetonBalance || 0
@@ -251,6 +251,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Admin manual jeton load error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || session?.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -276,7 +276,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(topHolders)
     }
 
-    return NextResponse.json({ error: 'Invalid section' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz bölüm' }, { status: 400 })
   } catch (error) {
     console.error('Finance API error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
@@ -288,7 +288,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || session?.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await request.json()

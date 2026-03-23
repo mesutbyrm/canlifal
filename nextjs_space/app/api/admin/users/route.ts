@@ -7,7 +7,7 @@ import prisma from '@/lib/db'
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user || (session.user as any).role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {

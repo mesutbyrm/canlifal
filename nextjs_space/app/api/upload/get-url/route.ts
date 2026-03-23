@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Get URL error:', error)
     return NextResponse.json(
-      { error: 'Failed to get file URL' },
+      { error: 'Dosya bağlantısı alınamadı' },
       { status: 500 }
     )
   }

@@ -263,6 +263,24 @@ export default function HomePage() {
     return 0
   })
 
+  // Show loading state while session is being fetched
+  if (sessionStatus === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-5xl mb-4"
+          >
+            🔮
+          </motion.div>
+          <p className="text-purple-300 animate-pulse">Yükleniyor...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Show guest landing page for non-logged-in users
   if (sessionStatus === 'unauthenticated') {
     return <GuestLanding />
@@ -1030,6 +1048,26 @@ export default function HomePage() {
           <BanaOzelSection />
         </div>
       )}
+
+      {/* Footer - Legal Links */}
+      <div className="px-4 pb-24 pt-6">
+        <div className="border-t border-purple-800/30 pt-4 text-center space-y-2">
+          <div className="flex items-center justify-center gap-4 text-xs text-purple-400/60">
+            <Link href={`/${language}/sayfa/gizlilik-politikasi`} className="hover:text-purple-300 transition-colors">
+              Gizlilik Politikası
+            </Link>
+            <span>•</span>
+            <Link href={`/${language}/sayfa/kullanim-sartlari`} className="hover:text-purple-300 transition-colors">
+              Kullanım Şartları
+            </Link>
+            <span>•</span>
+            <Link href={`/${language}/iletisim`} className="hover:text-purple-300 transition-colors">
+              İletişim
+            </Link>
+          </div>
+          <p className="text-[10px] text-purple-500/40">© 2025 CanliFal.com - Tüm hakları saklıdır.</p>
+        </div>
+      </div>
       </div>
 
       

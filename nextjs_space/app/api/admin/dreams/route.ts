@@ -13,7 +13,7 @@ async function isAdmin() {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search')?.trim() || ''
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const body = await req.json()
     const { title, content, summary, keywords, metaDescription, category, isPublished } = body
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const body = await req.json()
     const { id, title, content, summary, keywords, metaDescription, category, isPublished } = body
@@ -122,7 +122,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')

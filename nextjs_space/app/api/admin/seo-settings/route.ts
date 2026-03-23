@@ -14,7 +14,7 @@ const SEO_KEYS = ['site_name', 'site_description', 'site_keywords', 'site_logo',
 
 export async function GET() {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const settings = await prisma.siteSetting.findMany({
       where: { key: { in: [...SEO_KEYS] } },
     })
@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const body = await req.json()
     const updates: Promise<any>[] = []
     for (const key of SEO_KEYS) {

@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const packages = await prisma.creditPackage.findMany({
@@ -20,7 +20,7 @@ export async function GET() {
     return NextResponse.json(packages);
   } catch (error) {
     console.error('Fetch packages error:', error);
-    return NextResponse.json({ error: 'Failed to fetch packages' }, { status: 500 });
+    return NextResponse.json({ error: 'Paketler alınamadı' }, { status: 500 });
   }
 }
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -56,6 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newPackage, { status: 201 });
   } catch (error) {
     console.error('Create package error:', error);
-    return NextResponse.json({ error: 'Failed to create package' }, { status: 500 });
+    return NextResponse.json({ error: 'Paket oluşturulamadı' }, { status: 500 });
   }
 }

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { recipientUsername, giftTypeId, jetonAmount, type } = await req.json()
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!recipient) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
     if (recipient.id === session.user.id) {
@@ -214,6 +214,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request type' }, { status: 400 })
   } catch (error) {
     console.error('Gift send error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

@@ -13,7 +13,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if admin
@@ -23,7 +23,7 @@ export async function PUT(
     })
 
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -59,6 +59,6 @@ export async function PUT(
     return NextResponse.json({ success: true, teller })
   } catch (error) {
     console.error('Update permissions error:', error)
-    return NextResponse.json({ error: 'Failed to update permissions' }, { status: 500 })
+    return NextResponse.json({ error: 'İzinler güncellenemedi' }, { status: 500 })
   }
 }

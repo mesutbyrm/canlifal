@@ -14,7 +14,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
@@ -40,7 +40,7 @@ export async function POST(
     return NextResponse.json({ warning, warningCount });
   } catch (error) {
     console.error('Error adding warning:', error);
-    return NextResponse.json({ error: 'Failed to add warning' }, { status: 500 });
+    return NextResponse.json({ error: 'Uyarı eklenemedi' }, { status: 500 });
   }
 }
 
@@ -53,7 +53,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -70,6 +70,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error removing warning:', error);
-    return NextResponse.json({ error: 'Failed to remove warning' }, { status: 500 });
+    return NextResponse.json({ error: 'Uyarı kaldırılamadı' }, { status: 500 });
   }
 }

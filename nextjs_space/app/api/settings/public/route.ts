@@ -39,6 +39,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ value: setting?.value || null })
   } catch (error) {
     console.error('Public settings error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

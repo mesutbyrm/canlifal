@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Social posts fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 })
+    return NextResponse.json({ error: 'Gönderiler alınamadı' }, { status: 500 })
   }
 }
 
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { content, postType, fortuneType, fortuneId, imageUrl, youtubeUrl, isPublic = true } = await request.json()
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     // Validate postType
     if (!['fortune', 'text', 'horoscope'].includes(postType)) {
-      return NextResponse.json({ error: 'Invalid postType' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz gönderi türü' }, { status: 400 })
     }
 
     // If fortune post, verify the fortune belongs to the user
@@ -136,6 +136,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(post, { status: 201 })
   } catch (error) {
     console.error('Social post create error:', error)
-    return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
+    return NextResponse.json({ error: 'Gönderi oluşturulamadı' }, { status: 500 })
   }
 }

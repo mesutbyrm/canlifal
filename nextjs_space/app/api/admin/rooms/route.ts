@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
 
     const rooms = await prisma.chatRoom.findMany({
       select: {
@@ -28,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ rooms })
   } catch (error) {
     console.error('Admin rooms error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -36,9 +36,9 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
 
     const { roomId, giftCommissionPercent, giftBeneficiaryId } = await req.json()
     if (!roomId) return NextResponse.json({ error: 'roomId required' }, { status: 400 })
@@ -63,6 +63,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, room })
   } catch (error) {
     console.error('Admin room update error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

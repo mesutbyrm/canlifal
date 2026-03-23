@@ -10,11 +10,11 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const rooms = await prisma.chatRoom.findMany({
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(rooms)
   } catch (error) {
     console.error('Admin chat rooms error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -37,11 +37,11 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const { name, description, icon } = await req.json()
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, room })
   } catch (error) {
     console.error('Admin create room error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -82,11 +82,11 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId } = await req.json()
@@ -134,7 +134,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true, room })
   } catch (error) {
     console.error('Admin update room error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -143,11 +143,11 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
     if (user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     let roomId: string | null = null
@@ -174,6 +174,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Admin delete room error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

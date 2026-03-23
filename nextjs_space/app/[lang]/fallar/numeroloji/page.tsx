@@ -39,7 +39,7 @@ export default function NumerologyPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get numerology reading')
+        throw new Error(errorData.error || 'Numeroloji okuması alınamadı')
       }
 
       const reader = res.body?.getReader()

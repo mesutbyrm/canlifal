@@ -21,7 +21,7 @@ export async function GET() {
   } catch (error) {
     console.error('Translation fetch error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch translations' },
+      { error: 'Çeviriler alınamadı' },
       { status: 500 }
     )
   }

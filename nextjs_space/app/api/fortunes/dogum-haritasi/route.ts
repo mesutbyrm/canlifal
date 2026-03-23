@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const { birthDate, birthTime, birthPlace, language } = body
 
     if (!birthDate || !birthPlace) {
-      return NextResponse.json({ error: 'Birth date and place are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Doğum tarihi ve yeri gereklidir' }, { status: 400 })
     }
 
     // Check and deduct credits (skip if ad watched or unregistered)
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 800 }),
     })
 
-    if (!response?.ok) throw new Error('LLM API request failed')
+    if (!response?.ok) throw new Error('Yapay zeka servisi yanıt vermedi')
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -114,6 +114,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Birth chart error:', error)
-    return NextResponse.json({ error: 'Failed to generate birth chart' }, { status: 500 })
+    return NextResponse.json({ error: 'Doğum haritası oluşturulamadı. Lütfen tekrar deneyin.' }, { status: 500 })
   }
 }

@@ -62,7 +62,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -71,7 +71,7 @@ export async function GET() {
     })
 
     if (!user || !['admin', 'moderator', 'site_manager'].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const setting = await prisma.platformSettings.findUnique({
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user || !['admin', 'moderator', 'site_manager'].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       // Full save (backward compatible)
       current = migrateSettings(categorySettings)
     } else {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz veri' }, { status: 400 })
     }
 
     await prisma.platformSettings.upsert({

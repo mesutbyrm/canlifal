@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const messages = await prisma.tickerMessage.findMany({
@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json(messages)
   } catch (error) {
     console.error('Fetch ticker messages error:', error)
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 })
+    return NextResponse.json({ error: 'Veriler alınamadı' }, { status: 500 })
   }
 }
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { text, icon } = await req.json()
@@ -49,6 +49,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(message)
   } catch (error) {
     console.error('Create ticker message error:', error)
-    return NextResponse.json({ error: 'Failed to create' }, { status: 500 })
+    return NextResponse.json({ error: 'Oluşturma başarısız' }, { status: 500 })
   }
 }

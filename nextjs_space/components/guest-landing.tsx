@@ -133,16 +133,16 @@ export default function GuestLanding() {
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-6"
+          className="text-center mb-4"
         >
           <motion.div
             animate={{ scale: [1, 1.15, 1], rotate: [0, 10, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-6xl mb-3"
+            className="text-5xl mb-2"
           >
             🔮
           </motion.div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-fuchsia-200 to-purple-300 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-fuchsia-200 to-purple-300 bg-clip-text text-transparent mb-1">
             Canli Fal
           </h1>
           <p className="text-purple-300/80 text-sm">Geleceğini keşfet, kaderini oku</p>
@@ -152,12 +152,46 @@ export default function GuestLanding() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-900/40 border border-purple-500/30"
+              className="mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-900/40 border border-purple-500/30"
             >
               <Users className="w-4 h-4 text-green-400" />
               <span className="text-green-400 text-sm font-medium">{total} kişi online</span>
             </motion.div>
           )}
+        </motion.div>
+
+        {/* Register CTA - TOP */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="mb-5"
+        >
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 p-4 border border-amber-400/30 shadow-xl" style={{ boxShadow: '0 0 30px rgba(245,158,11,0.3)' }}>
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              animate={{ x: ['-100%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <div className="relative z-10 text-center">
+              <p className="text-white/90 text-xs mb-2">🎁 Kayıt ol, <span className="font-bold">50 CFC</span> hediye kazan!</p>
+              <Link href="/tr/kayit-ol">
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white text-amber-700 font-bold text-base shadow-lg"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Hemen Ücretsiz Kayıt Ol
+                </motion.div>
+              </Link>
+              <div className="mt-2">
+                <Link href="/tr/giris" className="text-white/80 text-xs hover:text-white underline underline-offset-2">
+                  Zaten hesabın var mı? Giriş Yap
+                </Link>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Action Buttons Grid */}
@@ -170,7 +204,7 @@ export default function GuestLanding() {
                 key={btn.key}
                 initial={{ opacity: 0, x: i % 2 === 0 ? -40 : 40 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.08, duration: 0.5 }}
+                transition={{ delay: 0.4 + i * 0.08, duration: 0.5 }}
               >
                 <Link href={`/tr${btn.href}`} className="block">
                   <motion.div
@@ -205,7 +239,7 @@ export default function GuestLanding() {
           })}
         </div>
 
-        {/* Register CTA */}
+        {/* Bottom Register Reminder */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -216,26 +250,35 @@ export default function GuestLanding() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg shadow-xl"
-              style={{ boxShadow: '0 0 30px rgba(245,158,11,0.4)' }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold text-sm shadow-lg border border-purple-400/30"
             >
-              <Sparkles className="w-5 h-5" />
-              Hemen Ücretsiz Kayıt Ol
+              <Sparkles className="w-4 h-4" />
+              Ücretsiz Kayıt Ol
             </motion.div>
           </Link>
-          <p className="text-purple-400/60 text-xs mt-3">Kayıt ol ve tüm özelliklerin keyfini çıkar</p>
         </motion.div>
 
-        {/* Login link */}
+        {/* Footer - Legal Links (AdSense requirement) */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5 }}
-          className="mt-4 text-center"
+          className="mt-10 pt-6 border-t border-purple-800/30 text-center space-y-2"
         >
-          <Link href="/tr/giris" className="text-purple-300/70 text-sm hover:text-purple-200 underline underline-offset-2">
-            Zaten hesabın var mı? Giriş Yap
-          </Link>
+          <div className="flex items-center justify-center gap-4 text-xs text-purple-400/60">
+            <Link href="/tr/sayfa/gizlilik-politikasi" className="hover:text-purple-300 transition-colors">
+              Gizlilik Politikası
+            </Link>
+            <span>•</span>
+            <Link href="/tr/sayfa/kullanim-sartlari" className="hover:text-purple-300 transition-colors">
+              Kullanım Şartları
+            </Link>
+            <span>•</span>
+            <Link href="/tr/iletisim" className="hover:text-purple-300 transition-colors">
+              İletişim
+            </Link>
+          </div>
+          <p className="text-[10px] text-purple-500/40">© 2025 CanliFal.com - Tüm hakları saklıdır.</p>
         </motion.div>
       </div>
     </div>

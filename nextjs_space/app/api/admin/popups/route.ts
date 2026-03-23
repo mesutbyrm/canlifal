@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const popups = await prisma.adminPopup.findMany({
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
@@ -17,7 +17,7 @@ export async function GET() {
     return NextResponse.json(popups);
   } catch (error) {
     console.error('Admin popups GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+    return NextResponse.json({ error: 'Veriler alınamadı' }, { status: 500 });
   }
 }
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const body = await request.json();
     const { title, message, buttons, isActive, showTo, popupType, priority, maxShowCount, showOnRefresh, showDelaySeconds } = body;
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(popup);
   } catch (error) {
     console.error('Admin popups POST error:', error);
-    return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
+    return NextResponse.json({ error: 'Oluşturma başarısız' }, { status: 500 });
   }
 }
 
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const body = await request.json();
     const { id, title, message, buttons, isActive, showTo, popupType, priority, maxShowCount, showOnRefresh, showDelaySeconds, action } = body;
@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(popup);
   } catch (error) {
     console.error('Admin popups PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+    return NextResponse.json({ error: 'Güncelleme başarısız' }, { status: 500 });
   }
 }
 
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -111,6 +111,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Admin popups DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+    return NextResponse.json({ error: 'Silme başarısız' }, { status: 500 });
   }
 }

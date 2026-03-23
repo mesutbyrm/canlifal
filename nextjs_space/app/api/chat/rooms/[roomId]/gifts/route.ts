@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = params
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     })
   } catch (error) {
     console.error('Chat room gift error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -308,6 +308,6 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     return NextResponse.json({ leaderboard, recentGifts: recentGiftsFormatted })
   } catch (error) {
     console.error('Gift leaderboard error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

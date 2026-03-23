@@ -55,7 +55,7 @@ export default function LoveCompatibilityPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to get love reading')
+        throw new Error(errorData.error || 'Aşk uyumu okuması alınamadı')
       }
 
       const reader = res.body?.getReader()

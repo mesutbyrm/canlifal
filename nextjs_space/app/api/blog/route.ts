@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         where: { slug, isPublished: true },
       })
       if (!post) {
-        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+        return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
       }
       // Increment views
       await prisma.blogPost.update({

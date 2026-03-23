@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const { palmImagePath, hand, language } = body
 
     if (!palmImagePath) {
-      return NextResponse.json({ error: 'Palm image is required' }, { status: 400 })
+      return NextResponse.json({ error: 'El fotoğrafı gereklidir' }, { status: 400 })
     }
 
     // Check and deduct credits (skip if ad watched or unregistered)
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 700 }),
     })
 
-    if (!response?.ok) throw new Error('LLM API request failed')
+    if (!response?.ok) throw new Error('Yapay zeka servisi yanıt vermedi')
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -123,6 +123,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Palm reading error:', error)
-    return NextResponse.json({ error: 'Failed to generate palm reading' }, { status: 500 })
+    return NextResponse.json({ error: 'El falı oluşturulamadı. Lütfen tekrar deneyin.' }, { status: 500 })
   }
 }

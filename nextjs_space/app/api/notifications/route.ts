@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ notifications, unreadCount })
   } catch (error) {
     console.error('Notifications fetch error:', error)
-    return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 })
+    return NextResponse.json({ error: 'Bildirimler alınamadı' }, { status: 500 })
   }
 }
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { notificationIds, markAll } = await request.json()
@@ -66,6 +66,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Mark notifications error:', error)
-    return NextResponse.json({ error: 'Failed to mark notifications' }, { status: 500 })
+    return NextResponse.json({ error: 'Bildirimler güncellenemedi' }, { status: 500 })
   }
 }

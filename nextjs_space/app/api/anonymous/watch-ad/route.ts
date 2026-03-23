@@ -56,6 +56,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Watch ad error:', error)
-    return NextResponse.json({ error: 'Failed to process ad watch' }, { status: 500 })
+    return NextResponse.json({ error: 'Reklam izleme işlemi başarısız' }, { status: 500 })
   }
 }

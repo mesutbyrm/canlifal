@@ -12,6 +12,6 @@ export async function GET() {
     return NextResponse.json(types)
   } catch (error) {
     console.error('Error fetching fortune request types:', error)
-    return NextResponse.json({ error: 'Failed to fetch types' }, { status: 500 })
+    return NextResponse.json({ error: 'Türler alınamadı' }, { status: 500 })
   }
 }

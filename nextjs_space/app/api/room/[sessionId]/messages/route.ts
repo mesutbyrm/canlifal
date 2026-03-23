@@ -13,7 +13,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(
     const isTeller = liveSession.teller.userId === session.user.id;
 
     if (!isUser && !isTeller) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     // Get messages
@@ -49,7 +49,7 @@ export async function GET(
     return NextResponse.json(messages);
   } catch (error) {
     console.error('Get messages error:', error);
-    return NextResponse.json({ error: 'Failed to get messages' }, { status: 500 });
+    return NextResponse.json({ error: 'Mesajlar alınamadı' }, { status: 500 });
   }
 }
 
@@ -61,7 +61,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { message } = await request.json();
@@ -84,7 +84,7 @@ export async function POST(
     const isTeller = liveSession.teller.userId === session.user.id;
 
     if (!isUser && !isTeller) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
     if (liveSession.status !== 'active') {
@@ -103,6 +103,6 @@ export async function POST(
     return NextResponse.json(newMessage);
   } catch (error) {
     console.error('Send message error:', error);
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+    return NextResponse.json({ error: 'Mesaj gönderilemedi' }, { status: 500 });
   }
 }

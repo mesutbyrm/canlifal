@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userId = session.user.id
 
@@ -151,6 +151,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Dream stats error:', error)
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
+    return NextResponse.json({ error: 'İstatistikler alınamadı' }, { status: 500 })
   }
 }

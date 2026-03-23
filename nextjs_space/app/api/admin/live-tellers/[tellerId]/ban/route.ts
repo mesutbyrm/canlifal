@@ -14,14 +14,14 @@ export async function POST(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
     const { action, reason } = await request.json(); // action: 'ban' | 'unban'
 
     if (!['ban', 'unban'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
     }
 
     const updateData = action === 'ban'
@@ -50,6 +50,6 @@ export async function POST(
     return NextResponse.json({ teller });
   } catch (error) {
     console.error('Error processing ban:', error);
-    return NextResponse.json({ error: 'Failed to process ban' }, { status: 500 });
+    return NextResponse.json({ error: 'Yasaklama işlemi başarısız' }, { status: 500 });
   }
 }

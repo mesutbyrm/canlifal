@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Contact form error:', error)
     return NextResponse.json(
-      { error: 'Failed to send message' },
+      { error: 'Mesaj gönderilemedi' },
       { status: 500 }
     )
   }

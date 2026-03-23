@@ -14,7 +14,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
@@ -55,7 +55,7 @@ export async function GET(
     return NextResponse.json({ teller });
   } catch (error) {
     console.error('Error fetching teller:', error);
-    return NextResponse.json({ error: 'Failed to fetch teller' }, { status: 500 });
+    return NextResponse.json({ error: 'Falcı bilgisi alınamadı' }, { status: 500 });
   }
 }
 
@@ -68,7 +68,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
@@ -92,7 +92,7 @@ export async function PUT(
     return NextResponse.json({ teller });
   } catch (error) {
     console.error('Error updating teller:', error);
-    return NextResponse.json({ error: 'Failed to update teller' }, { status: 500 });
+    return NextResponse.json({ error: 'Falcı güncellenemedi' }, { status: 500 });
   }
 }
 
@@ -105,7 +105,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
@@ -117,6 +117,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting teller:', error);
-    return NextResponse.json({ error: 'Failed to delete teller' }, { status: 500 });
+    return NextResponse.json({ error: 'Falcı silinemedi' }, { status: 500 });
   }
 }

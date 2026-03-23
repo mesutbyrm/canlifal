@@ -14,7 +14,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
@@ -59,6 +59,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error giving bonus:', error);
-    return NextResponse.json({ error: 'Failed to give bonus' }, { status: 500 });
+    return NextResponse.json({ error: 'Bonus verilemedi' }, { status: 500 });
   }
 }

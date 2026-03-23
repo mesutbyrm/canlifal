@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db'
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ request: messageRequest })
   } catch (error) {
     console.error('Error creating message request:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest) {
     const userId = session.user.id
 
     if (!requestId || !['accept', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
     }
 
     // Find the request
@@ -115,6 +115,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ request: updatedRequest })
   } catch (error) {
     console.error('Error processing message request:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

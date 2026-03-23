@@ -14,14 +14,14 @@ export async function POST(
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const { tellerId } = await params;
     const { action, reason } = await request.json(); // action: 'freeze' | 'unfreeze'
 
     if (!['freeze', 'unfreeze'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
     }
 
     const updateData = action === 'freeze'
@@ -47,6 +47,6 @@ export async function POST(
     return NextResponse.json({ teller });
   } catch (error) {
     console.error('Error processing freeze:', error);
-    return NextResponse.json({ error: 'Failed to process freeze' }, { status: 500 });
+    return NextResponse.json({ error: 'Dondurma işlemi başarısız' }, { status: 500 });
   }
 }

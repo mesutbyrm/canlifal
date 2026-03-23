@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       shapes = body.shapes || ''
       language = body.language || 'tr'
     } catch (e) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
     }
 
     // Check and deduct credits
@@ -174,7 +174,7 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
   } catch (error: any) {
     console.error('Kursun dokme fortune error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error.message || 'Bir hata oluştu' },
       { status: 500 }
     )
   }

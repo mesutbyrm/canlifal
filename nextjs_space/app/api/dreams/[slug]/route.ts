@@ -15,7 +15,7 @@ export async function GET(
     })
 
     if (!dream) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
     }
 
     // Increment views

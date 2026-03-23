@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -41,7 +41,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
     }
 
     // Calculate milestone rewards
@@ -64,6 +64,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Referral info error:', error);
-    return NextResponse.json({ error: 'Failed to fetch referral info' }, { status: 500 });
+    return NextResponse.json({ error: 'Davet bilgisi alınamadı' }, { status: 500 });
   }
 }
