@@ -11,26 +11,20 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    
+    // Parse body once
+    const body = await request.json().catch(() => ({}))
+    const adWatched = body?.adWatched === true
+    const shapes: string = body?.shapes || ''
+    const language: string = body?.language || 'tr'
+
     // Access control: IP-based for unregistered, CFC for registered
-    const __body_raw = await request.clone().json().catch(() => ({}))
-    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
       const ip = getClientIp(request)
       const ipAccess = await checkIpFortuneAccess(ip, adWatched)
       if (!ipAccess.allowed) {
         return NextResponse.json({ error: ipAccess.message, reason: ipAccess.reason }, { status: 403 })
       }
-    }
-
-    let shapes: string
-    let language: string
-    
-    try {
-      const body = await request.json()
-      shapes = body.shapes || ''
-      language = body.language || 'tr'
-    } catch (e) {
-      return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
     }
 
     // Check and deduct credits

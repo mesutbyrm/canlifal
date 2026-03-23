@@ -12,9 +12,11 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Parse body once
+    const body = await request.json().catch(() => ({}))
+    const adWatched = body?.adWatched === true
+
     // Access control: IP-based for unregistered, CFC for registered
-    const __body_raw = await request.clone().json().catch(() => ({}))
-    const adWatched = __body_raw?.adWatched === true
     if (!session?.user?.id) {
       const ip = getClientIp(request)
       const ipAccess = await checkIpFortuneAccess(ip, adWatched)
@@ -23,7 +25,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const body = await request.json()
     const { birthDate, birthTime, birthPlace, language } = body
 
     if (!birthDate || !birthPlace) {
