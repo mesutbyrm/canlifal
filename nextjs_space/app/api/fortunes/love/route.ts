@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
+import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
 
@@ -48,14 +49,7 @@ export async function POST(request: Request) {
       { role: 'user', content: `Analyze love compatibility between ${yourSign} and ${partnerSign}` },
     ]
 
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
-      },
-      body: JSON.stringify({ model: 'gpt-4.1-nano', messages, stream: true, max_tokens: 600 }),
-    })
+    const response = await callLLM({ messages, max_tokens: 600 })
 
     if (!response?.ok) throw new Error('Yapay zeka servisi yanıt vermedi')
 

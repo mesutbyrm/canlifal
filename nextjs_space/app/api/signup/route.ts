@@ -79,8 +79,8 @@ export async function POST(request: Request) {
       attempts++;
     }
 
-    // Calculate initial credits (10 base + 50 if referred)
-    const initialCredits = 10 + (referrer ? REFERRAL_BONUS : 0);
+    // Calculate initial credits (50 base + 50 if referred)
+    const initialCredits = 50 + (referrer ? REFERRAL_BONUS : 0);
 
     // Create user
     const user = await prisma.user.create({

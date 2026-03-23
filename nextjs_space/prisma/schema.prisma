@@ -19,7 +19,7 @@ model User {
   phone                 String?
   image                 String?
   preferredLanguage     String               @default("tr")
-  credits               Int                  @default(10)
+  credits               Int                  @default(50)
   role                  String               @default("user")
   membership            String               @default("basic") // basic, premium, gold
   membershipExpiresAt   DateTime?
@@ -41,7 +41,7 @@ model User {
   // Theme preference
   theme                 String               @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
-  jetonBalance          Int                  @default(50)
+  jetonBalance          Int                  @default(0)
   // Profile customization
   specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
   profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)

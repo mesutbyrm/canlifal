@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
+import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
 
@@ -57,24 +58,13 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
 
     const userPrompt = `Kurşun döküldü ve şu şekiller oluştu: ${finalShapes}. Bu şekillerin anlamını yorumla ve falımı söyle.`
 
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]
+
     // Call LLM API
-    const llmResponse = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-nano',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: 1500,
-        temperature: 0.8,
-        stream: true,
-      }),
-    })
+    const llmResponse = await callLLM({ messages, max_tokens: 1500, temperature: 0.8 })
 
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text()
