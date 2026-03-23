@@ -206,11 +206,11 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
               CFC Satın Al
             </button>
             <button
-              onClick={() => router.push('/panel')}
+              onClick={() => setShowAdModal(true)}
               className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-4 h-4" />
-              Günlük Bonus
+              <Play className="w-4 h-4" />
+              Reklam İzle & Bonus
             </button>
           </div>
         </motion.div>
