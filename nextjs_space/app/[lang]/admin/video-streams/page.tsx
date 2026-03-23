@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Video,
   Users,
@@ -149,9 +150,7 @@ export default function AdminVideoStreamsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href={`/admin`} className="text-purple-400 hover:text-purple-300">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
+            <AdminBackButton variant="link" className="text-purple-400 hover:text-purple-300" label="" />
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <Video className="w-7 h-7 text-red-500" />
               {'Canlı Yayın Yönetimi'}

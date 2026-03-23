@@ -6,6 +6,7 @@ import { useSiteTheme } from '@/lib/theme-context'
 import { ArrowLeft, Plus, Trash2, Save, FileText, Loader2, ToggleLeft, ToggleRight, GripVertical, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { motion, Reorder } from 'framer-motion'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface SitePage {
   id: string
@@ -137,9 +138,7 @@ export default function AdminSitePagesPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/admin`} className={`p-2 rounded-lg ${cardBg} border`}>
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <AdminBackButton className="p-2 rounded-lg ${cardBg} border" />
           <div>
             <h1 className={`text-2xl font-bold ${textColor}`}>
               {'📄 Sayfa Yönetimi'}

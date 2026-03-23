@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Trash2, Edit2, Image, Save, X, GripVertical, Eye, EyeOff, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import NextImage from 'next/image'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface BroadcastImage {
   id: string
@@ -175,9 +176,7 @@ export default function AdminBroadcastImagesPage() {
       <div className="sticky top-0 z-50 bg-[#0a0118]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href={`/admin`} className="p-2 hover:bg-white/10 rounded-full transition">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+            <AdminBackButton variant="link" className="p-2 hover:bg-white/10 rounded-full transition" label="" />
             <div className="flex items-center gap-2">
               <Image className="w-6 h-6 text-purple-400" />
               <h1 className="text-xl font-bold">

@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Building2,
   Loader2,
@@ -219,13 +220,7 @@ export default function PaymentMethodsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <Link
-            href={`/admin`}
-            className="inline-flex items-center gap-2 text-purple-300 hover:text-purple-200 mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {'Admin Panel'}
-          </Link>
+          <AdminBackButton variant="link" className="inline-flex items-center gap-2 text-purple-300 hover:text-purple-200 mb-6" label="Admin Panel" />
 
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">

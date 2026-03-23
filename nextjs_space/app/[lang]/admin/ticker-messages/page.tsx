@@ -146,7 +146,7 @@ export default function AdminTickerMessagesPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.push(`/admin`)} className={`p-2 rounded-lg ${cardBg} border`}>
+          <button onClick={() => router.back()} className={`p-2 rounded-lg ${cardBg} border`}>
             <ArrowLeft className="w-5 h-5 text-purple-300" />
           </button>
           <div>

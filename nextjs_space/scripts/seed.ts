@@ -315,57 +315,8 @@ async function main() {
   ]
 
   // Seed Chat Rooms
-  const chatRooms = [
-    {
-      slug: 'coffee',
-      nameEn: 'Coffee Fortune Room',
-      nameTr: 'Kahve Falı Odası',
-      descEn: 'Discuss coffee readings and share experiences',
-      descTr: 'Kahve falı yorumlarını tartışın ve deneyimlerinizi paylaşın',
-      icon: '☕',
-    },
-    {
-      slug: 'tarot',
-      nameEn: 'Tarot Room',
-      nameTr: 'Tarot Odası',
-      descEn: 'Talk about tarot cards and their meanings',
-      descTr: 'Tarot kartları ve anlamları hakkında konuşun',
-      icon: '🎴',
-    },
-    {
-      slug: 'astrology',
-      nameEn: 'Astrology Room',
-      nameTr: 'Astroloji Odası',
-      descEn: 'Discuss zodiac signs, horoscopes and birth charts',
-      descTr: 'Burçlar, günlük fallar ve doğum haritaları hakkında konuşun',
-      icon: '⭐',
-    },
-    {
-      slug: 'dreams',
-      nameEn: 'Dream Interpretation Room',
-      nameTr: 'Rüya Tabiri Odası',
-      descEn: 'Share your dreams and their interpretations',
-      descTr: 'Rüyalarınızı ve yorumlarınızı paylaşın',
-      icon: '🌙',
-    },
-    {
-      slug: 'general',
-      nameEn: 'General Chat',
-      nameTr: 'Genel Sohbet',
-      descEn: 'Chat about anything mystical and spiritual',
-      descTr: 'Mistik ve ruhani her konuda sohbet edin',
-      icon: '💬',
-    },
-  ]
-
-  for (const room of chatRooms) {
-    await prisma.chatRoom.upsert({
-      where: { slug: room.slug },
-      update: {},
-      create: room,
-    })
-  }
-  console.log(`Seeded ${chatRooms.length} chat rooms`)
+  // Chat rooms are managed via admin panel - no seed needed
+  console.log('Chat rooms managed via admin panel')
 
   // Insert translations
   for (const translation of translations) {

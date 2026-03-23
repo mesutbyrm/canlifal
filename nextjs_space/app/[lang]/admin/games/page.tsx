@@ -148,7 +148,7 @@ export default function AdminGamesPage() {
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0118]/90 border-b border-purple-500/20 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push(`/admin`)} className="p-2 rounded-lg hover:bg-purple-500/20 transition">
+            <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-purple-500/20 transition">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <Gamepad2 className="w-6 h-6 text-amber-400" />

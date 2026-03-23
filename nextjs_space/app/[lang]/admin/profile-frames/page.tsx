@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2, Save, Image as ImageIcon, Loader2, Search, Use
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import NextImage from 'next/image'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface ProfileFrame {
   id: string
@@ -232,11 +233,7 @@ export default function AdminProfileFramesPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href={`/${language}/admin`}>
-            <motion.button whileHover={{ scale: 1.05 }} className={`p-2 rounded-lg ${cardBg} border`}>
-              <ArrowLeft className={textColor} size={20} />
-            </motion.button>
-          </Link>
+          <AdminBackButton className={`p-2 rounded-lg ${cardBg} border`} />
           <div>
             <h1 className={`text-2xl font-bold ${textColor}`}>
               {language === 'tr' ? '🖼️ Profil Çerçeve Yönetimi' : '🖼️ Profile Frame Management'}

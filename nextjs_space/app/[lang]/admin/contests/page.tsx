@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Trophy, Calendar, Loader2, Eye, EyeOff, Users } from 'lucide-react'
 import Link from 'next/link'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface Contest {
   id: string
@@ -112,9 +113,7 @@ export default function AdminContestsPage() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="p-2 rounded-lg bg-white/5 hover:bg-white/10">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+            <AdminBackButton className="p-2 rounded-lg bg-white/5 hover:bg-white/10" />
             <div>
               <h1 className="text-xl font-bold">Rüya Yarışması Yönetimi</h1>
               <p className="text-sm text-purple-400">Haftalık rüya yarışmalarını oluştur ve yönet</p>

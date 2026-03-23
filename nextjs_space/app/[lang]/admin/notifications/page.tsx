@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   Bell, Send, Clock, Users, BarChart3, ArrowLeft, Loader2,
   CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2,
   Target, Tag, User, Globe, Calendar, Image as ImageIcon,
@@ -525,9 +526,7 @@ export default function AdminNotificationsPage() {
       <div className="sticky top-0 z-20 bg-[#0a0118]/95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+            <AdminBackButton className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" />
             <div>
               <h1 className="text-xl font-bold flex items-center gap-2">
                 <Bell className="w-6 h-6 text-purple-400" />

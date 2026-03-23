@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, ArrowLeft, X, Save, RefreshCw, Zap, Send } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface PopupButton {
   label: string
@@ -318,9 +319,7 @@ export default function AdminPopupsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link href={`/${language}/admin`} className="p-2 rounded-lg hover:bg-purple-900/30 transition-colors">
-              <ArrowLeft className="w-5 h-5 text-purple-300" />
-            </Link>
+            <AdminBackButton className="p-2 rounded-lg hover:bg-purple-900/30 transition-colors" />
             <div>
               <h1 className="text-2xl font-bold text-white">Popup Yönetimi</h1>
               <p className="text-purple-300/60 text-sm">Kullanıcılara gösterilecek popup&apos;ları yönetin</p>

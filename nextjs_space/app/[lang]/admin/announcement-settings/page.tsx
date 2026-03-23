@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import { 
+import AdminBackButton from '@/components/admin-back-button'
   Settings, Save, Loader2, 
   MessageCircle, Gamepad2, Users, Gift, BookOpen, 
   Sparkles, Home, User, LayoutDashboard, Crown,
@@ -181,12 +182,7 @@ export default function AnnouncementSettingsPage() {
       <div className="bg-gradient-to-r from-purple-900/50 to-fuchsia-900/50 border-b border-fuchsia-500/30 px-4 py-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
-            <Link
-              href={`/admin`}
-              className="p-2 rounded-lg bg-purple-800/30 border border-purple-500/30 hover:bg-purple-700/40 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-fuchsia-300" />
-            </Link>
+            <AdminBackButton variant="link" className="p-2 rounded-lg bg-purple-800/30 border border-purple-500/30 hover:bg-purple-700/40 transition-colors" label="" />
             <Settings className="w-6 h-6 text-fuchsia-400" />
             <h1 className="text-xl font-bold text-white">
               Giriş Duyurusu Ayarları

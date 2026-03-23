@@ -196,6 +196,16 @@ export default function AdminPage() {
   const [creditAmount, setCreditAmount] = useState(10)
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [adminSearch, setAdminSearch] = useState('')
+  const [lastVisitedHref, setLastVisitedHref] = useState<string | null>(null)
+
+  // Load last visited link from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('admin_last_visited')
+      if (saved) setLastVisitedHref(saved)
+    } catch {}
+  }, [])
 
   // Chat management state
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -444,24 +454,53 @@ export default function AdminPage() {
         <StatCard icon={Coins} label={'Dolaşımdaki Jeton'} value={statistics?.economy?.jetonInCirculation ?? 0} color="text-amber-500" />
       </div>
 
+      {/* Search Bar for Admin Sections */}
+      <div className="relative mb-2">
+        <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${textMuted}`} />
+        <input
+          type="text"
+          placeholder="Ayar veya bölüm ara..."
+          value={adminSearch}
+          onChange={(e) => setAdminSearch(e.target.value)}
+          className={`w-full pl-12 pr-4 py-3 rounded-xl ${cardBg} ${textPrimary} placeholder:${textMuted} border ${isFacebook ? 'border-gray-200 focus:border-blue-400' : isCosmic ? 'border-blue-900/30 focus:border-blue-400' : 'border-fuchsia-900/30 focus:border-fuchsia-400'} outline-none transition-colors`}
+        />
+        {adminSearch && (
+          <button onClick={() => setAdminSearch('')} className={`absolute right-4 top-1/2 -translate-y-1/2 ${textMuted} hover:${textPrimary}`}>
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* Quick Actions Grid - Grouped */}
       <div className="space-y-6">
         <h3 className={`${textPrimary} text-lg font-semibold`}>{'Hızlı Erişim'}</h3>
-        {MANAGEMENT_GROUPS.map(group => (
+        {MANAGEMENT_GROUPS.map(group => {
+          const searchLower = adminSearch.toLowerCase()
+          const filteredLinks = searchLower
+            ? group.links.filter(link =>
+                link.trLabel.toLowerCase().includes(searchLower) ||
+                link.enLabel.toLowerCase().includes(searchLower) ||
+                link.href.toLowerCase().includes(searchLower)
+              )
+            : group.links
+          if (filteredLinks.length === 0) return null
+          return (
           <div key={group.groupLabel}>
             <h4 className={`${textSecondary} text-sm font-medium mb-3 flex items-center gap-2`}>
               <span>{group.groupLabel}</span>
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {group.links.map(link => {
+              {filteredLinks.map(link => {
                 const Icon = link.icon
+                const isLastVisited = lastVisitedHref === link.href
                 return (
                   <Link key={link.href} href={link.href}
-                    className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105`}>
-                    <div className={`w-12 h-12 rounded-full ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
-                      <Icon className={`w-6 h-6 ${accentColor}`} />
+                    onClick={() => { try { localStorage.setItem('admin_last_visited', link.href); setLastVisitedHref(link.href) } catch {} }}
+                    className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105 ${isLastVisited ? 'ring-2 ring-amber-400 shadow-lg shadow-amber-400/20' : ''}`}>
+                    <div className={`w-12 h-12 rounded-full ${isLastVisited ? 'bg-amber-500/20' : isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
+                      <Icon className={`w-6 h-6 ${isLastVisited ? 'text-amber-400' : accentColor}`} />
                     </div>
-                    <span className={`${textPrimary} text-xs font-medium leading-tight`}>
+                    <span className={`${isLastVisited ? 'text-amber-400 font-semibold' : textPrimary} text-xs font-medium leading-tight`}>
                       {link.trLabel}
                     </span>
                   </Link>
@@ -469,7 +508,8 @@ export default function AdminPage() {
               })}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Recent Activity */}

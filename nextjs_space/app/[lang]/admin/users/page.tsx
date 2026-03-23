@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   Users, Search, Filter, ChevronLeft, ChevronRight, X, Save, Loader2,
   User, Mail, Phone, AtSign, Crown, Shield, Coins, Calendar, Camera,
   Key, Ban, Video, Radio, Eye, EyeOff, Trash2, Edit, MoreVertical,
@@ -471,9 +472,7 @@ export default function AdminUsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href={`/admin`} className="text-purple-400 hover:text-purple-300">
-              <ChevronLeft className="w-6 h-6" />
-            </Link>
+            <AdminBackButton className="text-purple-400 hover:text-purple-300" />
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                 <Users className="w-7 h-7 text-gold-400" />

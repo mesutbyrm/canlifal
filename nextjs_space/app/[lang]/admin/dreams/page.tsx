@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Lo
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { DREAM_CATEGORIES } from '@/lib/dream-categories'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface Dream {
   id: string
@@ -248,9 +249,7 @@ export default function AdminDreamsPage() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/${lang}/admin`} className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <AdminBackButton className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors" />
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-2">
               <Moon className="w-5 h-5 text-indigo-400" /> Rüya Tabirleri Yönetimi

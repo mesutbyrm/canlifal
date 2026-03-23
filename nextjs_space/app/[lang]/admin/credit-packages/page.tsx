@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Package,
   Plus,
@@ -238,13 +239,7 @@ export default function CreditPackagesPage() {
   return (
     <div className="min-h-screen bg-[#0a0118] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <Link
-          href={`/admin`}
-          className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          {'Admin Paneli'}
-        </Link>
+        <AdminBackButton variant="link" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6" label="Admin Paneli" />
 
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -197,7 +197,7 @@ export default function AdminOnlineFalPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
-            onClick={() => router.push(`/${lang}/admin`)}
+            onClick={() => router.back()}
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 text-gray-400" />

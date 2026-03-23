@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { Save, Loader2, ToggleLeft, ToggleRight, Coins, ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import AdminBackButton from '@/components/admin-back-button'
 
 interface BanaOzelItem {
   id: string
@@ -87,9 +88,7 @@ export default function AdminBanaOzelPage() {
       <div className="max-w-4xl mx-auto p-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href={`/admin`} className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 hover:bg-purple-800/40 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-fuchsia-300" />
-          </Link>
+          <AdminBackButton variant="link" className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 hover:bg-purple-800/40 transition-colors" label="" />
           <div>
             <h1 className="text-xl font-bold text-white">🔮 Bana Özel Yönetimi</h1>
             <p className="text-fuchsia-300/70 text-sm">Tüm içerikleri yönetin, jeton fiyatlarını belirleyin</p>

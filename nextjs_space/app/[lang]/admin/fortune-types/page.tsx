@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
+import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Plus,
   Edit2,
@@ -197,9 +198,7 @@ export default function FortuneTypesAdminPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href={`/admin`} className="p-2 bg-white/10 rounded-xl text-white hover:bg-white/20">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <AdminBackButton variant="link" className="p-2 bg-white/10 rounded-xl text-white hover:bg-white/20" label="" />
           <div>
             <h1 className="text-2xl font-bold text-white">
               {'Fal İstek Türleri'}
