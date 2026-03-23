@@ -115,6 +115,7 @@ export default function CurrencyConfigPage() {
     switch (type) {
       case 'cfc': return <Sparkles className="w-4 h-4 text-gold-500" />
       case 'jeton': return <Gem className="w-4 h-4 text-blue-400" />
+      case 'cfc_jeton': return <><Sparkles className="w-4 h-4 text-gold-500" /><span className="text-purple-400">/</span><Gem className="w-4 h-4 text-blue-400" /></>
       case 'free': return <CircleDot className="w-4 h-4 text-green-400" />
       default: return null
     }
@@ -174,6 +175,10 @@ export default function CurrencyConfigPage() {
             <span className="text-sm text-purple-200"><strong className="text-blue-400">Jeton</strong> — Canlı falcı, yayın, hediye, oyun</span>
           </div>
           <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-gold-500" /><Gem className="w-4 h-4 text-blue-400" />
+            <span className="text-sm text-purple-200"><strong className="text-amber-300">CFC/Jeton</strong> — Her ikisi de kullanılabilir</span>
+          </div>
+          <div className="flex items-center gap-2">
             <CircleDot className="w-4 h-4 text-green-400" />
             <span className="text-sm text-purple-200"><strong className="text-green-400">Ücretsiz</strong> — Hiçbir ücret alınmaz</span>
           </div>
@@ -220,6 +225,7 @@ export default function CurrencyConfigPage() {
                         >
                           <option value="cfc">CFC</option>
                           <option value="jeton">Jeton</option>
+                          <option value="cfc_jeton">CFC/Jeton</option>
                           <option value="free">Ücretsiz</option>
                         </select>
                       </div>

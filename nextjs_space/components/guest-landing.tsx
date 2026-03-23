@@ -135,17 +135,9 @@ export default function GuestLanding() {
           transition={{ duration: 0.8 }}
           className="text-center mb-4"
         >
-          <motion.div
-            animate={{ scale: [1, 1.15, 1], rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-5xl mb-2"
-          >
-            🔮
-          </motion.div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-fuchsia-200 to-purple-300 bg-clip-text text-transparent mb-1">
             Canli Fal
           </h1>
-          <p className="text-purple-300/80 text-sm">Geleceğini keşfet, kaderini oku</p>
           
           {/* Total online */}
           {total > 0 && (

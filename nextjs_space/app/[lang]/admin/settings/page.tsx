@@ -1,5 +1,7 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -7,7 +9,6 @@ import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
-import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Settings,
   Save,
@@ -37,6 +38,9 @@ interface PlatformSettings {
   site_email: string
   admin_email: string
   support_email: string
+  ad_daily_limit_registered: string
+  ad_daily_limit_unregistered: string
+  ad_credits_per_watch: string
 }
 
 export default function AdminSettingsPage() {
@@ -55,7 +59,10 @@ export default function AdminSettingsPage() {
     jeton_tl_rate: '0.5',
     site_email: '',
     admin_email: '',
-    support_email: ''
+    support_email: '',
+    ad_daily_limit_registered: '10',
+    ad_daily_limit_unregistered: '10',
+    ad_credits_per_watch: '5'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -252,6 +259,30 @@ export default function AdminSettingsPage() {
       icon: Mail,
       type: 'email' as const,
       placeholder: 'destek@site.com'
+    },
+    {
+      key: 'ad_daily_limit_registered',
+      label: 'Kayıtlı Kullanıcı Günlük Reklam Limiti',
+      description: 'Kayıtlı kullanıcıların günde izleyebileceği maksimum reklam sayısı',
+      icon: Tv,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'ad_daily_limit_unregistered',
+      label: 'Kayıtsız Kullanıcı Günlük Reklam Limiti',
+      description: 'Misafir kullanıcıların günde izleyebileceği maksimum reklam sayısı',
+      icon: Tv,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'ad_credits_per_watch',
+      label: 'Reklam Başına CFC',
+      description: 'Her reklam izleme için verilecek CFC miktarı',
+      icon: Coins,
+      min: 1,
+      max: 100
     },
   ]
 

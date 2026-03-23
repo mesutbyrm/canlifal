@@ -1,12 +1,13 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload, FolderPlus } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { DREAM_CATEGORIES } from '@/lib/dream-categories'
-import AdminBackButton from '@/components/admin-back-button'
 
 interface Dream {
   id: string

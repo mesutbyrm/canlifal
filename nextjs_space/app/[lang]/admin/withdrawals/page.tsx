@@ -1,5 +1,7 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -7,7 +9,6 @@ import { useLanguage } from '@/lib/language-context'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
-import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft, Wallet, Check, X, Loader2, Clock, User,
   ChevronDown, ChevronUp, Trophy, Award, Plus, Trash2
 } from 'lucide-react'

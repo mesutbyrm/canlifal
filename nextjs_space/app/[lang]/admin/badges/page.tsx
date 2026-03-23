@@ -1,12 +1,13 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { ArrowLeft, Plus, Trash2, Save, Shield, Users, Star, Loader2, ToggleLeft, ToggleRight } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import AdminBackButton from '@/components/admin-back-button'
 
 interface Badge {
   id: string

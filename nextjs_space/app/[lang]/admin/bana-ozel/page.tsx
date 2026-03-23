@@ -1,5 +1,7 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
@@ -7,7 +9,6 @@ import { motion } from 'framer-motion'
 import { Save, Loader2, ToggleLeft, ToggleRight, Coins, ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import AdminBackButton from '@/components/admin-back-button'
 
 interface BanaOzelItem {
   id: string

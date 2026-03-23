@@ -1,5 +1,7 @@
 'use client'
 
+import AdminBackButton from '@/components/admin-back-button'
+
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -8,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-import AdminBackButton from '@/components/admin-back-button'
   ArrowLeft,
   Video,
   Users,
