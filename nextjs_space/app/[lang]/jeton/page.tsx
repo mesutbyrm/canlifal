@@ -20,7 +20,8 @@ import {
   ExternalLink,
   CreditCard,
   User,
-  Crown
+  Crown,
+  Sparkles
 } from 'lucide-react'
 
 interface CreditPackage {
@@ -66,6 +67,8 @@ export default function CreditsPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [userCredits, setUserCredits] = useState(0)
   const [userJetons, setUserJetons] = useState(0)
+  const [userMembership, setUserMembership] = useState('basic')
+  const [membershipExpiresAt, setMembershipExpiresAt] = useState<string | null>(null)
   const [showPaymentMethodsPopup, setShowPaymentMethodsPopup] = useState(false)
   const [activePaymentPopup, setActivePaymentPopup] = useState<string | null>(null)
 
@@ -133,6 +136,8 @@ export default function CreditsPage() {
         const data = await res.json()
         setUserCredits(data.credits || 0)
         setUserJetons(data.jetonBalance || 0)
+        setUserMembership(data.membership || 'basic')
+        setMembershipExpiresAt(data.membershipExpiresAt || null)
       }
     } catch (err) {
       console.error('Fetch credits error:', err)
@@ -224,9 +229,9 @@ export default function CreditsPage() {
                 <span className={`${goldColor} font-bold`}>{userJetons}</span>
               </div>
               <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
-                <span className="text-sm">🪙</span>
-                <span className={textSecondary}>Jeton:</span>
-                <span className={`${goldColor} font-bold`}>{userCredits}</span>
+                <Sparkles className={`w-3.5 h-3.5 ${isFacebook ? 'text-purple-600' : 'text-purple-400'}`} />
+                <span className={textSecondary}>CFC:</span>
+                <span className={`${isFacebook ? 'text-purple-600' : 'text-purple-400'} font-bold`}>{userCredits}</span>
               </div>
             </div>
           )}
@@ -251,7 +256,9 @@ export default function CreditsPage() {
           >
             <Crown className={`w-5 h-5 ${goldColor}`} />
             <span className={`${goldColor} font-bold`}>
-              {'Gold Üyelikler'}
+              {userMembership !== 'basic' 
+                ? `${userMembership.charAt(0).toUpperCase() + userMembership.slice(1)} üyesiniz, uzatın`
+                : 'Gold üyelik al'}
             </span>
             <Star className={`w-4 h-4 ${goldColor}`} />
           </button>

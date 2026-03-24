@@ -18,7 +18,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true, jetonBalance: true, withdrawalLimit: true },
+      select: { credits: true, jetonBalance: true, withdrawalLimit: true, membership: true, membershipExpiresAt: true },
     })
 
     if (!user) {
@@ -39,6 +39,8 @@ export async function GET() {
       jetonBalance: user.jetonBalance ?? 0,
       jetonTlRate,
       withdrawalLimit: user.withdrawalLimit ?? 0,
+      membership: user.membership ?? 'basic',
+      membershipExpiresAt: user.membershipExpiresAt?.toISOString() ?? null,
     })
   } catch (error) {
     console.error('Fetch credits error:', error)

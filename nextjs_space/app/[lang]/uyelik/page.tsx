@@ -75,10 +75,16 @@ export default function MembershipsPage() {
     }
   }, [session])
 
+  const tierOrder: Record<string, number> = { basic: 1, premium: 2, gold: 3, diamond: 4 }
+
   const fetchPlans = async () => {
     try {
       const res = await fetch('/api/memberships')
-      if (res.ok) setPlans(await res.json())
+      if (res.ok) {
+        const data: MembershipPlan[] = await res.json()
+        data.sort((a, b) => (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99))
+        setPlans(data)
+      }
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -160,7 +166,7 @@ export default function MembershipsPage() {
             <Crown className="w-8 h-8 text-black" />
           </div>
           <h1 className={`text-2xl font-bold ${textPrimary} mb-2`}>
-            {'Gold Üyelikler'}
+            {'Üyelikler'}
           </h1>
           <p className={textSecondary}>
             {'Ayrıcalıklı özellikler için üyelik seçin'}
@@ -180,13 +186,21 @@ export default function MembershipsPage() {
               </div>
               <div>
                 <p className={`${goldColor} font-bold text-lg uppercase`}>
-                  {userMembership.membership}
+                  {userMembership.membership} üyesiniz
                 </p>
-                {formatExpiry(userMembership.membershipExpiresAt) && (
-                  <p className={`${textSecondary} text-sm`}>
-                    {'Bitiş:'} {formatExpiry(userMembership.membershipExpiresAt)}
-                  </p>
-                )}
+                {userMembership.membershipExpiresAt && (() => {
+                  const d = new Date(userMembership.membershipExpiresAt!)
+                  const now = new Date()
+                  if (d > now) {
+                    const daysLeft = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                    return (
+                      <p className={`${textSecondary} text-sm`}>
+                        {daysLeft} gün kaldı, uzatın
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
               </div>
             </div>
           </motion.div>
@@ -207,8 +221,8 @@ export default function MembershipsPage() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{'Jeton Bakiyeniz:'}</span>
-              <span className={`${accentColor} font-bold text-lg flex items-center gap-1`}>
+              <span className={textSecondary}>{'CFC Bakiyeniz:'}</span>
+              <span className={`${isFacebook ? 'text-purple-600' : 'text-purple-400'} font-bold text-lg flex items-center gap-1`}>
                 <Sparkles className="w-4 h-4" /> {userMembership.credits}
               </span>
             </div>
@@ -258,6 +272,19 @@ export default function MembershipsPage() {
                   <h3 className={`${textPrimary} font-bold text-lg`}>
                     {plan.name}
                   </h3>
+                  {userMembership && userMembership.membership === plan.tier && userMembership.membershipExpiresAt && (() => {
+                    const d = new Date(userMembership.membershipExpiresAt!)
+                    const now = new Date()
+                    if (d > now) {
+                      const daysLeft = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                      return (
+                        <p className={`${goldColor} text-xs font-semibold mb-1`}>
+                          {`${plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1)} üyesiniz, ${daysLeft} gün kaldı, uzatın`}
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
                   <p className={`${textSecondary} text-sm mb-3`}>
                     {plan.description}
                   </p>
@@ -298,10 +325,11 @@ export default function MembershipsPage() {
                         }
                         setSelectedPlan(plan)
                         setShowConfirm(true)
+                        setErrorMsg('')
                       }}
                       className={`px-5 py-2 bg-gradient-to-r ${getTierGradient(plan.tier)} text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95`}
                     >
-                      {'Satın Al'}
+                      {userMembership && userMembership.membership === plan.tier ? 'Uzat' : 'Satın Al'}
                     </button>
                   </div>
                 </div>
@@ -355,7 +383,7 @@ export default function MembershipsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className={textSecondary}>{'Fiyat:'}</span>
-                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'Jeton' : 'Jeton'}</span>
+                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'CFC' : 'Jeton'}</span>
                   </div>
                 </div>
 
@@ -379,10 +407,10 @@ export default function MembershipsPage() {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('cfc')}
-                      className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${paymentMethod === 'cfc' ? 'border-fuchsia-500 bg-fuchsia-500/10' : `border ${modalBorder} opacity-60`}`}
+                      className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${paymentMethod === 'cfc' ? 'border-purple-500 bg-purple-500/10' : `border ${modalBorder} opacity-60`}`}
                     >
-                      <Sparkles className={`w-5 h-5 ${accentColor}`} />
-                      <span className={`${textPrimary} text-sm font-medium`}>Jeton</span>
+                      <Sparkles className={`w-5 h-5 ${isFacebook ? 'text-purple-600' : 'text-purple-400'}`} />
+                      <span className={`${textPrimary} text-sm font-medium`}>CFC</span>
                       {userMembership && (
                         <span className={`text-xs ${userMembership.credits >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
                           {userMembership.credits} {'mevcut'}
@@ -398,7 +426,7 @@ export default function MembershipsPage() {
                 ) && (
                   <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
                     <p className="text-red-400 text-sm">
-                      {`Yetersiz ${paymentMethod === 'cfc' ? 'Jeton' : 'jeton'} bakiyesi`}
+                      {`Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi`}
                     </p>
                     <Link href={`/jeton`} className="text-amber-400 text-sm underline">
                       {'Bakiye yükle'}
