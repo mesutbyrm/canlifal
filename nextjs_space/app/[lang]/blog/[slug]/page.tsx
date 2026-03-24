@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { SITE_NAME, SITE_URL } from '@/lib/seo-config'
+import { addInternalLinks } from '@/lib/auto-linker'
 import { ArrowLeft, BookOpen, Calendar, Tag, Clock, Eye, ChevronRight, Share2, Heart, ThumbsUp, User, Bookmark, MessageCircle, Send, Reply, Trash2, Facebook, Loader2, Check, Copy, LinkIcon, Crown, Lock } from 'lucide-react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
@@ -301,7 +302,7 @@ export default function BlogPostPage() {
 
   const title = post.titleTr
   const desc = post.metaDescription || post.descTr
-  const content = post.contentTr
+  const content = addInternalLinks(post.contentTr || '')
   const publishDate = post.publishedAt || post.createdAt
 
   const articleJsonLd = {

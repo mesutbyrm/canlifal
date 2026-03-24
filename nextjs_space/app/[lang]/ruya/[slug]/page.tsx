@@ -6,6 +6,7 @@ import { ArrowLeft, Moon, Eye, Calendar, Tag, ChevronRight, Heart, MessageCircle
 import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
 import { getCategoryLabel, getCategoryIcon } from '@/lib/dream-categories'
+import { addInternalLinks } from '@/lib/auto-linker'
 
 interface Dream {
   id: string
@@ -415,7 +416,7 @@ export default function DreamDetailPage() {
             prose-strong:text-indigo-300
             prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
           "
-          dangerouslySetInnerHTML={{ __html: dream.content }}
+          dangerouslySetInnerHTML={{ __html: addInternalLinks(dream.content || '') }}
         />
 
         {/* Keywords */}
