@@ -21,16 +21,33 @@ export default function DreamSymbolDetailPage() {
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-purple-400" size={32} /></div>
   if (!symbol) return <div className="text-center py-20 text-white/40">Sembol bulunamadı</div>
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://canlifal.com'
+  const symbolJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `Rüyada ${symbol.name} Görmek Ne Anlama Gelir?`,
+    description: symbol.meaning || '',
+    image: `${siteUrl}/fortunes/dream.jpg`,
+    author: { '@type': 'Organization', name: 'Canlifal', url: siteUrl },
+    publisher: { '@type': 'Organization', name: 'Canlifal', url: siteUrl, logo: { '@type': 'ImageObject', url: `${siteUrl}/canlifal-logo.png` } },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteUrl}/ruya-sozlugu/${slug}` },
+    keywords: [`rüyada ${symbol.name?.toLowerCase()} görmek`, `${symbol.name?.toLowerCase()} rüya tabiri`, 'rüya sözlüğü'].join(', '),
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: 'Rüya Sözlüğü', item: `${siteUrl}/ruya-sozlugu` },
+      { '@type': 'ListItem', position: 3, name: symbol.name, item: `${siteUrl}/ruya-sozlugu/${slug}` },
+    ],
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
-      <head>
-        <meta property="og:title" content={`${symbol.name} - Rüya Sözlüğü | Canlifal`} />
-        <meta property="og:description" content={symbol.meaning || ''} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://canlifal.com/ruya-sozlugu/${slug}`} />
-        <meta name="description" content={symbol.meaning || ''} />
-        <link rel="canonical" href={`https://canlifal.com/ruya-sozlugu/${slug}`} />
-      </head>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(symbolJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <button onClick={() => router.back()} className="flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors">
         <ArrowLeft size={18} /> Geri
       </button>

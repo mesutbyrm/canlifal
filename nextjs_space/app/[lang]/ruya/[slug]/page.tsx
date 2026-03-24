@@ -283,20 +283,32 @@ export default function DreamDetailPage() {
     year: 'numeric', month: 'long', day: 'numeric'
   })
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://canlifal.com'
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: dream.title,
     description: dream.metaDescription || dream.summary || '',
+    image: `${siteUrl}/fortunes/dream.jpg`,
     datePublished: dream.createdAt,
-    dateModified: dream.updatedAt,
-    author: { '@type': 'Organization', name: 'Canlifal' },
-    publisher: { '@type': 'Organization', name: 'Canlifal' },
+    dateModified: dream.updatedAt || dream.createdAt,
+    author: { '@type': 'Organization', name: 'Canlifal', url: siteUrl },
+    publisher: { '@type': 'Organization', name: 'Canlifal', url: siteUrl, logo: { '@type': 'ImageObject', url: `${siteUrl}/canlifal-logo.png` } },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://canlifal.com/ruya/${dream.slug}`,
+      '@id': `${siteUrl}/ruya/${dream.slug}`,
     },
     keywords: dream.keywords.join(', '),
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: 'Rüya Tabirleri', item: `${siteUrl}/ruya` },
+      { '@type': 'ListItem', position: 3, name: dream.title, item: `${siteUrl}/ruya/${dream.slug}` },
+    ],
   }
 
   const currentUserId = (session?.user as any)?.id
@@ -304,17 +316,8 @@ export default function DreamDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 overflow-x-hidden">
-      <head>
-        <meta property="og:title" content={`${dream.title} - Rüya Tabiri`} />
-        <meta property="og:description" content={dream.metaDescription || dream.summary || ''} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://canlifal.com/ruya/${dream.slug}`} />
-        <meta name="twitter:title" content={`${dream.title} - Rüya Tabiri`} />
-        <meta name="twitter:description" content={dream.metaDescription || dream.summary || ''} />
-        <meta name="description" content={dream.metaDescription || dream.summary || ''} />
-        <link rel="canonical" href={`https://canlifal.com/ruya/${dream.slug}`} />
-      </head>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <div className="max-w-3xl mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}

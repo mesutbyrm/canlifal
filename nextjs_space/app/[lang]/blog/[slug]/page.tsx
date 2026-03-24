@@ -30,6 +30,7 @@ interface BlogPost {
   isPremium: boolean
   publishedAt: string | null
   createdAt: string
+  updatedAt: string
 }
 
 interface RelatedPost {
@@ -311,7 +312,7 @@ export default function BlogPostPage() {
     image: post.coverImage || undefined,
     url: `${SITE_URL}/blog/${post.slug}`,
     datePublished: publishDate,
-    dateModified: post.createdAt,
+    dateModified: post.updatedAt || post.createdAt,
     author: { '@type': 'Person', name: post.authorName },
     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${post.slug}` },
@@ -342,20 +343,6 @@ export default function BlogPostPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <head>
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={desc} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`${SITE_URL}/blog/${post.slug}`} />
-        {post.coverImage && <meta property="og:image" content={post.coverImage} />}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={title} />
-        <meta name="twitter:description" content={desc} />
-        <meta name="description" content={desc} />
-        <meta name="keywords" content={post.keywords.join(', ')} />
-        <link rel="canonical" href={`${SITE_URL}/blog/${post.slug}`} />
-      </head>
-
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-400 mb-6 overflow-hidden">
@@ -369,9 +356,16 @@ export default function BlogPostPage() {
         </nav>
 
         {/* Cover Image */}
-        {post.coverImage && (
+        {(post.coverImage || '/hero_background.jpg') && (
           <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 bg-gray-800">
-            <Image src={post.coverImage} alt={title} fill className="object-cover" priority />
+            <Image
+              src={post.coverImage || '/hero_background.jpg'}
+              alt={`${title} - ${getCategoryName(post.category)} | ${SITE_NAME}`}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, 896px"
+            />
           </div>
         )}
 
