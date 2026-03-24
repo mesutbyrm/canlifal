@@ -43,11 +43,11 @@ export default function AdminBadgesPage() {
   const [form, setForm] = useState({ name: '', icon: '⭐', color: '#fbbf24', bgColor: '#78350f', description: '', tier: '', userId: '' })
 
   const isMystical = theme === 'mystical'
-  const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-fuchsia-900/30' : 'bg-white border-gray-200'
+  const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-purple-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
-  const subText = isMystical ? 'text-fuchsia-200' : 'text-gray-500'
-  const inputBg = isMystical ? 'bg-[#2a1a3e] border-fuchsia-800/50 text-white' : 'bg-white border-gray-300 text-gray-900'
-  const btnPrimary = isMystical ? 'bg-fuchsia-600 hover:bg-fuchsia-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
+  const subText = isMystical ? 'text-purple-200' : 'text-gray-500'
+  const inputBg = isMystical ? 'bg-[#2a1a3e] border-purple-800/50 text-white' : 'bg-white border-gray-300 text-gray-900'
+  const btnPrimary = isMystical ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
 
   useEffect(() => { fetchBadges() }, [])
 
@@ -226,7 +226,7 @@ export default function AdminBadgesPage() {
 
         {/* Badge List */}
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-fuchsia-400" /></div>
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-400" /></div>
         ) : badges.length === 0 ? (
           <div className={`${cardBg} border rounded-xl p-12 text-center`}>
             <Shield className={`w-12 h-12 mx-auto mb-3 ${subText}`} />

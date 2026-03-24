@@ -55,11 +55,11 @@ export default function AdminProfileFramesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isMystical = theme === 'mystical'
-  const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-fuchsia-900/30' : 'bg-white border-gray-200'
+  const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-purple-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
-  const subText = isMystical ? 'text-fuchsia-200' : 'text-gray-500'
-  const inputBg = isMystical ? 'bg-[#2a1a3e] border-fuchsia-800/50 text-white' : 'bg-white border-gray-300 text-gray-900'
-  const btnPrimary = isMystical ? 'bg-fuchsia-600 hover:bg-fuchsia-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
+  const subText = isMystical ? 'text-purple-200' : 'text-gray-500'
+  const inputBg = isMystical ? 'bg-[#2a1a3e] border-purple-800/50 text-white' : 'bg-white border-gray-300 text-gray-900'
+  const btnPrimary = isMystical ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
 
   useEffect(() => { fetchFrames() }, [])
 
@@ -364,7 +364,7 @@ export default function AdminProfileFramesPage() {
 
         {/* Frames Grid */}
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-fuchsia-400" size={32} /></div>
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-400" size={32} /></div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-12">
             {frames.map(frame => (
@@ -440,7 +440,7 @@ export default function AdminProfileFramesPage() {
                     {user.image ? (
                       <NextImage src={user.image} alt="" width={40} height={40} className="object-cover w-full h-full" unoptimized />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-fuchsia-300 text-lg">👤</div>
+                      <div className="w-full h-full flex items-center justify-center text-purple-300 text-lg">👤</div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

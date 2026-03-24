@@ -127,7 +127,7 @@ export async function PATCH(req: NextRequest) {
         data: {
           status: 'approved',
           jetonLoaded: jetonAmount,
-          processedBy: admin.name || 'Admin',
+          processedBy: admin?.name || 'Admin',
           processedAt: new Date()
         }
       })
@@ -154,7 +154,7 @@ export async function PATCH(req: NextRequest) {
         where: { id: notificationId },
         data: {
           status: 'rejected',
-          processedBy: admin.name || 'Admin',
+          processedBy: admin?.name || 'Admin',
           processedAt: new Date()
         }
       })
@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
         userId,
         amount: parseInt(jetonAmount),
         type: 'admin_load',
-        description: reason || `Admin tarafından yüklendi - ${admin.name}`,
+        description: reason || `Admin tarafından yüklendi - ${admin?.name || 'Admin'}`,
         balanceBefore: currentBalance,
         balanceAfter: newBalance
       }

@@ -507,12 +507,13 @@ export default function AdminUsersPage() {
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
           >
             <option value="all">{'Tüm Roller'}</option>
-            <option value="all">{'Tüm Roller'}</option>
             <option value="user">Kullanıcı</option>
             <option value="moderator">Moderatör</option>
             <option value="finans">Finans</option>
             <option value="admin">Admin</option>
             <option value="yonetici">Yönetici</option>
+          </select>
+          <select
             value={membershipFilter}
             onChange={(e) => { setMembershipFilter(e.target.value); setPage(1) }}
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
