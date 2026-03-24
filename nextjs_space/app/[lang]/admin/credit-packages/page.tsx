@@ -63,7 +63,7 @@ export default function CreditPackagesPage() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       router.push(`/giris`)
       return
     }
@@ -246,10 +246,10 @@ export default function CreditPackagesPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
               <Package className="w-8 h-8 text-gold-400" />
-              {'CFC Paketleri'}
+              {'Jeton Paketleri'}
             </h1>
             <p className="text-purple-300 mt-2">
-              {'Satışa sunulan CFC paketlerini yönetin'}
+              {'Satışa sunulan jeton paketlerini yönetin'}
             </p>
           </div>
           <button
@@ -311,7 +311,7 @@ export default function CreditPackagesPage() {
                       <span className="text-lg text-green-400"> +{pkg.bonusCredits}</span>
                     )}
                   </div>
-                  <p className="text-purple-300 text-sm">{'CFC'}</p>
+                  <p className="text-purple-300 text-sm">{'Jeton'}</p>
                 </div>
 
                 <div className="text-center mb-4">
@@ -426,7 +426,7 @@ export default function CreditPackagesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {'CFC Miktarı'}
+                      {'Jeton Miktarı'}
                     </label>
                     <input
                       type="number"
@@ -437,7 +437,7 @@ export default function CreditPackagesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-purple-300 mb-1">
-                      {'Bonus CFC'}
+                      {'Bonus Jeton'}
                     </label>
                     <input
                       type="number"

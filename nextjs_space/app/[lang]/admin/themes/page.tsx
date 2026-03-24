@@ -146,7 +146,7 @@ export default function AdminThemesPage() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       router.push(`/giris`)
       return
     }

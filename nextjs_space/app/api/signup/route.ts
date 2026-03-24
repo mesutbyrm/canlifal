@@ -4,7 +4,13 @@ import prisma from '@/lib/db'
 import { sendNotificationEmail, getWelcomeEmailHtml, getNewUserSignupEmailHtml } from '@/lib/email-service'
 import { randomBytes } from 'crypto'
 
-const REFERRAL_BONUS = 50; // Credits for both referrer and referred
+// Dynamic values from platform_settings, loaded per request
+async function getPlatformSetting(key: string, defaultVal: number): Promise<number> {
+  try {
+    const setting = await prisma.platformSettings.findUnique({ where: { key } });
+    return setting ? parseInt(setting.value) || defaultVal : defaultVal;
+  } catch { return defaultVal; }
+}
 
 function generateReferralCode(): string {
   return randomBytes(4).toString('hex').toUpperCase();
@@ -79,8 +85,12 @@ export async function POST(request: Request) {
       attempts++;
     }
 
-    // Calculate initial credits (50 base + 50 if referred)
-    const initialCredits = 50 + (referrer ? REFERRAL_BONUS : 0);
+    // Load dynamic settings from admin panel
+    const WELCOME_CFC = await getPlatformSetting('welcome_credits', 50);
+    const REFERRAL_BONUS = await getPlatformSetting('referral_bonus', 50);
+    
+    // Calculate initial CFC credits (welcome bonus + referral bonus if referred)
+    const initialCredits = WELCOME_CFC + (referrer ? REFERRAL_BONUS : 0);
 
     // Create user
     const user = await prisma.user.create({

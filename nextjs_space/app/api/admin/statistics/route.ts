@@ -18,7 +18,7 @@ export async function GET() {
       select: { role: true }
     })
 
-    if (!user || user.role !== 'admin') {
+    if (!user || user.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

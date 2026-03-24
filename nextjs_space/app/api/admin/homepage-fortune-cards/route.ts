@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 async function isAdmin() {
   const session = await getServerSession(authOptions)
   const role = ((session?.user as any)?.role || '').toLowerCase()
-  return session?.user && (role === 'admin' || role === 'superadmin')
+  return session?.user && ['admin', 'yonetici', 'moderator', 'finans'].includes(role)
 }
 
 // GET - list all fortune cards

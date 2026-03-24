@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || (session.user as any).role !== 'admin') {
+  if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
@@ -97,7 +97,7 @@ export async function PATCH(
   { params }: { params: { userId: string } }
 ) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || (session.user as any).role !== 'admin') {
+  if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
@@ -290,7 +290,7 @@ export async function DELETE(
   { params }: { params: { userId: string } }
 ) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || (session.user as any).role !== 'admin') {
+  if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 

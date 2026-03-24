@@ -6,7 +6,7 @@ import prisma from '@/lib/db'
 // GET - List all users with pagination and filtering
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || (session.user as any).role !== 'admin') {
+  if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 

@@ -22,7 +22,7 @@ export async function PUT(
       select: { role: true }
     })
 
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

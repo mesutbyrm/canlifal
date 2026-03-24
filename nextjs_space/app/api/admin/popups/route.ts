@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const popups = await prisma.adminPopup.findMany({
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const body = await request.json();
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const body = await request.json();
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
     const { searchParams } = new URL(request.url);

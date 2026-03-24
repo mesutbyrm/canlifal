@@ -70,7 +70,8 @@ export default withAuth(
 
     // Admin routes
     if (pathname.includes('/admin')) {
-      if (!isAuth || token?.role !== 'admin') {
+      const adminRoles = ['admin', 'yonetici', 'moderator', 'finans']
+      if (!isAuth || !adminRoles.includes(token?.role as string)) {
         return NextResponse.redirect(new URL('/giris', req.url))
       }
     }

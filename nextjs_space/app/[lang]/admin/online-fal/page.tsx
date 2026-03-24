@@ -24,7 +24,7 @@ export default function AdminOnlineFalPage() {
   const router = useRouter()
   const { data: session } = useSession() || {}
   const lang = (params?.lang as string) || 'tr'
-  const isAdmin = session?.user?.role === 'admin'
+  const isAdmin = ['admin','yonetici','moderator','finans'].includes((session?.user as any)?.role)
 
   const [sections, setSections] = useState<any[]>([])
   const [buttons, setButtons] = useState<any[]>([])

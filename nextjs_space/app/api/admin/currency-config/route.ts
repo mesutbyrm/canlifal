@@ -32,7 +32,7 @@ const DEFAULT_CONFIGS = [
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -58,7 +58,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

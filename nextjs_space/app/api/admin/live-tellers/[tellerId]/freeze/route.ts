@@ -13,7 +13,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session || session.user.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 

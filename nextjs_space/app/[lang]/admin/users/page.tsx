@@ -507,10 +507,12 @@ export default function AdminUsersPage() {
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
           >
             <option value="all">{'Tüm Roller'}</option>
-            <option value="user">User</option>
+            <option value="all">{'Tüm Roller'}</option>
+            <option value="user">Kullanıcı</option>
+            <option value="moderator">Moderatör</option>
+            <option value="finans">Finans</option>
             <option value="admin">Admin</option>
-          </select>
-          <select
+            <option value="yonetici">Yönetici</option>
             value={membershipFilter}
             onChange={(e) => { setMembershipFilter(e.target.value); setPage(1) }}
             className="bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none"
@@ -575,9 +577,16 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          user.role === 'admin' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                          user.role === 'yonetici' ? 'bg-red-500/20 text-red-400' :
+                          user.role === 'admin' ? 'bg-orange-500/20 text-orange-400' :
+                          user.role === 'finans' ? 'bg-green-500/20 text-green-400' :
+                          user.role === 'moderator' ? 'bg-cyan-500/20 text-cyan-400' :
+                          'bg-blue-500/20 text-blue-400'
                         }`}>
-                          {user.role === 'admin' ? '👑 Admin' : 'User'}
+                          {user.role === 'yonetici' ? '🛡️ Yönetici' :
+                           user.role === 'admin' ? '👑 Admin' :
+                           user.role === 'finans' ? '💰 Finans' :
+                           user.role === 'moderator' ? '🔧 Moderatör' : '👤 Kullanıcı'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -689,7 +698,7 @@ export default function AdminUsersPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-xl font-bold text-white">{selectedUser.name}</h3>
-                        {selectedUser.role === 'admin' && <Crown className="w-5 h-5 text-yellow-400" />}
+                        {(selectedUser.role === 'admin' || selectedUser.role === 'yonetici') && <Crown className="w-5 h-5 text-yellow-400" />}
                         {selectedUser.isStreamBanned && <Ban className="w-5 h-5 text-red-500" />}
                       </div>
                       {selectedUser.username && <p className="text-purple-400">@{selectedUser.username}</p>}
@@ -853,8 +862,11 @@ export default function AdminUsersPage() {
                             onChange={(e) => setEditData({ ...editData, role: e.target.value })}
                             className="w-full bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white"
                           >
-                            <option value="user">User</option>
+                            <option value="user">Kullanıcı</option>
+                            <option value="moderator">Moderatör</option>
+                            <option value="finans">Finans</option>
                             <option value="admin">Admin</option>
+                            <option value="yonetici">Yönetici</option>
                           </select>
                         </div>
                         <div>

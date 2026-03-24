@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || (session.user as any).role !== 'admin') {
+    if (!session?.user?.id || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || (session.user as any).role !== 'admin') {
+    if (!session?.user?.id || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

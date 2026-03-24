@@ -193,7 +193,7 @@ export default function HomepageCardsAdmin() {
   useEffect(() => { fetchData() }, [fetchData])
 
   // Admin check
-  const isAdmin = (session?.user as any)?.role === 'admin' || (session?.user as any)?.role === 'superadmin'
+  const isAdmin = ['admin','yonetici','moderator','finans'].includes((session?.user as any)?.role)
   useEffect(() => {
     if (session && !isAdmin) router.push(`/${language}`)
   }, [session, isAdmin, router, language])

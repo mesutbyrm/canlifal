@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       select: { role: true }
     })
 
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
       select: { role: true, name: true }
     })
 
-    if (admin?.role !== 'admin') {
+    if (admin?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
       select: { role: true, name: true }
     })
 
-    if (admin?.role !== 'admin') {
+    if (admin?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

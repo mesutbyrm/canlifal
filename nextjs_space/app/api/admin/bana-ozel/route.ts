@@ -9,7 +9,7 @@ import prisma from '@/lib/db'
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -28,7 +28,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user as { role?: string }).role !== 'admin') {
+    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
