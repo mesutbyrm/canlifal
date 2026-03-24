@@ -27,7 +27,7 @@ export async function sendOneSignalPush(payload: OneSignalNotificationPayload): 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Key ${ONESIGNAL_REST_API_KEY}`,
+        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
@@ -78,7 +78,7 @@ export async function sendOneSignalPushToMany(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Key ${ONESIGNAL_REST_API_KEY}`,
+        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
