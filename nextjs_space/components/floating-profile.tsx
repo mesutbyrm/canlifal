@@ -138,7 +138,7 @@ export default function FloatingProfile() {
               initial={{ opacity: 0, y: 100, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 100, scale: 0.9 }}
-              className="fixed bottom-24 right-6 z-50 w-72 bg-[#0a0118] border border-purple-800 rounded-2xl shadow-2xl shadow-purple-500/20 overflow-hidden"
+              className="fixed bottom-24 right-6 z-50 w-72 bg-purple-950/95 border border-purple-800 rounded-2xl shadow-2xl shadow-purple-500/20 overflow-hidden"
             >
               {/* Header */}
               <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 border-b border-purple-800">

@@ -171,14 +171,14 @@ export default function AnnouncementSettingsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white pb-8">
+    <div className="min-h-screen  text-white pb-8">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-900/50 to-fuchsia-900/50 border-b border-fuchsia-500/30 px-4 py-4">
         <div className="max-w-4xl mx-auto">

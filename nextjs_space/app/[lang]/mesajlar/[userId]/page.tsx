@@ -65,8 +65,8 @@ export default function ChatPage() {
   const isCosmic = theme === 'cosmic'
 
   // Theme colors
-  const bgColor = isFalclub ? 'bg-[#0f0520]' : isFalci ? 'bg-[#1a0a2e]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
-  const headerBg = isFalclub ? 'bg-[#0f0520]/95' : isFalci ? 'bg-[#1a0a2e]/95' : isCosmic ? 'bg-[#0a1628]/95' : 'bg-[#0a0118]/95'
+  const bgColor = isFalclub ? '' : isFalci ? '' : isCosmic ? '' : ''
+  const headerBg = isFalclub ? 'bg-purple-950/95' : isFalci ? 'bg-purple-950/95' : isCosmic ? 'bg-purple-950/95' : 'bg-purple-950/95'
   const borderColor = isFalclub ? 'border-fuchsia-900/30' : isFalci ? 'border-indigo-900/30' : isCosmic ? 'border-blue-900/30' : 'border-purple-900/30'
   const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
   const inputBg = isFalclub ? 'bg-fuchsia-900/30 border-fuchsia-700/50' : isFalci ? 'bg-indigo-900/30 border-indigo-700/50' : isCosmic ? 'bg-blue-900/30 border-blue-700/50' : 'bg-purple-900/30 border-purple-800'

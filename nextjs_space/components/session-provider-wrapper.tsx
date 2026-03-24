@@ -11,7 +11,7 @@ export default function SessionProviderWrapper({ children }: { children: ReactNo
   }, [])
 
   if (!isMounted) {
-    return <div className="min-h-screen bg-[#0a0118]" />
+    return <div className="min-h-screen bg-transparent" />
   }
 
   return <SessionProvider>{children}</SessionProvider>

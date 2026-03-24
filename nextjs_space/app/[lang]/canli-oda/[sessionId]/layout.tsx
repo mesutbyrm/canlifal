@@ -5,7 +5,7 @@ export default function LiveRoomLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="fixed inset-0 bg-[#0a0118] z-50">
+    <div className="fixed inset-0  z-50">
       {children}
     </div>
   )

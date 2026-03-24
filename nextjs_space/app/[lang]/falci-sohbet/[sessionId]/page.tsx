@@ -189,7 +189,7 @@ export default function ChatPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     )
@@ -202,7 +202,7 @@ export default function ChatPage() {
   const isClosed = chatData.chatSession.status === 'closed'
 
   return (
-    <div className="min-h-screen bg-[#0a0118] flex flex-col">
+    <div className="min-h-screen  flex flex-col">
       {/* Header */}
       <div className="bg-deep-purple-900/80 backdrop-blur-sm border-b border-purple-500/20 p-4 sticky top-16 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-4">

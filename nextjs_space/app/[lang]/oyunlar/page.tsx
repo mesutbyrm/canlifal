@@ -968,14 +968,14 @@ export default function GameCenterPage() {
   // ========== MAIN RENDER ==========
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white">
+    <div className="min-h-screen  text-white">
       {/* Reward Animation */}
       <AnimatePresence>
         {rewardAnimation !== null && (
@@ -991,7 +991,7 @@ export default function GameCenterPage() {
       </AnimatePresence>
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-[#0f0520]/95 backdrop-blur-md border-b border-fuchsia-500/30 px-4 py-3">
+      <nav className="sticky top-0 z-40 bg-purple-950/90 backdrop-blur-md border-b border-fuchsia-500/30 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href={`/`} className="text-fuchsia-400 hover:text-fuchsia-300 transition">

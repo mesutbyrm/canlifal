@@ -493,7 +493,7 @@ export default function AdminNotificationsPage() {
 
   if (sessionStatus === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
       </div>
     )
@@ -522,9 +522,9 @@ export default function AdminNotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white">
+    <div className="min-h-screen  text-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-[#0a0118]/95 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-20 /95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AdminBackButton className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" />

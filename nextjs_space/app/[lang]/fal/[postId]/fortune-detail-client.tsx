@@ -140,7 +140,7 @@ export default function FortuneDetailClient({ post, lang, fortuneLabel }: Props)
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0118] via-[#1a0a2e] to-[#0a0118]">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-500/20">
+      <header className="sticky top-0 z-50 /95 backdrop-blur-md border-b border-purple-500/20">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link href={`/sosyal`} className="text-white/70 hover:text-white">
             <ArrowLeft className="w-6 h-6" />

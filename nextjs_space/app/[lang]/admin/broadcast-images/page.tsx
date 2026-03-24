@@ -164,16 +164,16 @@ export default function AdminBroadcastImagesPage() {
   
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
       </div>
     )
   }
   
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white">
+    <div className="min-h-screen  text-white">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0a0118]/95 backdrop-blur-sm border-b border-white/10">
+      <div className="sticky top-0 z-50 /95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AdminBackButton variant="link" className="p-2 hover:bg-white/10 rounded-full transition" label="" />

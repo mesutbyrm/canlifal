@@ -285,7 +285,7 @@ export default function TellerDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     )
@@ -293,7 +293,7 @@ export default function TellerDetailPage() {
 
   if (error || !teller) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen  flex flex-col items-center justify-center p-4">
         <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
         <p className="text-white text-xl mb-4">{error || ('Falcı bulunamadı')}</p>
         <Link
@@ -312,7 +312,7 @@ export default function TellerDetailPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+    <div className="min-h-screen  py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link

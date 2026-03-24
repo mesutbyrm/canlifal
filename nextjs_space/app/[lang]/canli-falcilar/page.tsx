@@ -119,7 +119,7 @@ export default function LiveTellersPage() {
   const offlineTellers = tellers.filter(t => !t.isOnline)
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-[#0a0118]">
+    <div className="min-h-screen py-20 px-4 ">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div

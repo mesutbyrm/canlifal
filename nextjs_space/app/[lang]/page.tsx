@@ -171,9 +171,9 @@ export default function HomePage() {
   const isCosmic = theme === 'cosmic'
   
   // Theme-based colors with improved readability
-  const bgColor = isFalci ? '' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const bgColor = isFalci ? '' : isCosmic ? '' : ''
   const cardBg = isCosmic ? 'bg-white/15 border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
-  const cardBgSolid = isCosmic ? 'bg-[#1e3a5f] border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
+  const cardBgSolid = isCosmic ? 'bg-blue-900/30 border-blue-400/40' : 'bg-purple-900/30 border-purple-400/40'
   const accentColor = isCosmic ? 'text-amber-300' : 'text-amber-300'
   const accentColorFill = isCosmic ? 'text-amber-300 fill-amber-300' : 'text-amber-300 fill-amber-300'
   const textSecondary = isCosmic ? 'text-slate-200' : 'text-gray-200'
@@ -266,7 +266,7 @@ export default function HomePage() {
   // Show loading state while session is being fetched
   if (sessionStatus === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <motion.div
             animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
@@ -920,7 +920,7 @@ export default function HomePage() {
                   {/* Circular Avatar with Gradient Border */}
                   <div className="relative">
                     <div className={`w-20 h-20 rounded-full p-[3px] ${teller.isOnline ? gradientBorder : 'bg-gray-600'}`}>
-                      <div className={`w-full h-full rounded-full overflow-hidden ${isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'} ${!teller.isOnline ? 'opacity-60' : ''}`}>
+                      <div className={`w-full h-full rounded-full overflow-hidden ${isCosmic ? '' : ''} ${!teller.isOnline ? 'opacity-60' : ''}`}>
                         {teller.avatar || teller.user.image ? (
                           <Image
                             src={teller.avatar || teller.user.image || ''}

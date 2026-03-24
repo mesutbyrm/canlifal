@@ -165,7 +165,7 @@ export function TierAvatarWrapper({ tier, children, size = 'lg', className = '' 
 
       {/* Animated border */}
       <div className={`${sizeConfig.avatar} rounded-full p-1 ${config.borderClass}`}>
-        <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0118] p-0.5">
+        <div className="w-full h-full rounded-full overflow-hidden bg-purple-950 p-0.5">
           <div className="w-full h-full rounded-full overflow-hidden bg-purple-900/50">
             {children}
           </div>

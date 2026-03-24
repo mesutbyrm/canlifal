@@ -482,7 +482,7 @@ export default function KursunDokmePage() {
             width={400}
             height={400}
             onClick={handleManualPour}
-            className="w-full aspect-square bg-[#0a0118] rounded-lg cursor-pointer"
+            className="w-full aspect-square  rounded-lg cursor-pointer"
           />
         </motion.div>
 

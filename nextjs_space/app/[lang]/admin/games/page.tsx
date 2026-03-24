@@ -42,7 +42,7 @@ export default function AdminGamesPage() {
     entryFee: 0, minReward: 1, maxReward: 10, sortOrder: 0, config: '{}'
   })
 
-  const bgMain = 'bg-[#0a0118]'
+  const bgMain = ''
   const cardBg = 'bg-[#1a0a2e]/80 border-purple-500/20'
   const textPrimary = 'text-white'
   const textSecondary = 'text-purple-200'
@@ -145,7 +145,7 @@ export default function AdminGamesPage() {
   return (
     <div className={`min-h-screen ${bgMain} ${textPrimary}`}>
       {/* Header */}
-      <div className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0118]/90 border-b border-purple-500/20 px-4 py-3">
+      <div className="sticky top-0 z-50 backdrop-blur-xl /90 border-b border-purple-500/20 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-purple-500/20 transition">

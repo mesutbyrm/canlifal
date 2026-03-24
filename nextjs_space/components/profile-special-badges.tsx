@@ -156,7 +156,7 @@ export function SpecialBadge({ type, size = 'md' }: { type: SpecialBadgeType; si
         whileHover={{ scale: 1.1 }}
         className={`${sizeConfig.container} rounded-full bg-gradient-to-br ${config.gradient} p-0.5 shadow-lg ${config.glow} ${config.animation || ''}`}
       >
-        <div className="w-full h-full rounded-full bg-[#0a0118]/80 flex items-center justify-center">
+        <div className="w-full h-full rounded-full bg-purple-950/80 flex items-center justify-center">
           <Icon className={`${sizeConfig.icon} text-white drop-shadow-lg`} />
         </div>
       </motion.div>

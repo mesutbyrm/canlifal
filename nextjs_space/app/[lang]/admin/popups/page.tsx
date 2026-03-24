@@ -296,7 +296,7 @@ export default function AdminPopupsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <p className="text-white">Yetkisiz erişim</p>
       </div>
     )
@@ -315,7 +315,7 @@ export default function AdminPopupsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white">
+    <div className="min-h-screen  text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

@@ -262,11 +262,11 @@ export default function AdminFinancePage() {
   ]
 
   if (status === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center bg-[#0a0118]"><Loader2 className="w-8 h-8 animate-spin text-purple-400" /></div>
+    return <div className="min-h-screen flex items-center justify-center "><Loader2 className="w-8 h-8 animate-spin text-purple-400" /></div>
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] text-white p-4 md:p-6">
+    <div className="min-h-screen  text-white p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

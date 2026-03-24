@@ -412,10 +412,10 @@ export default function HomepageCardsAdmin() {
     </div>
   )
 
-  if (loading) return <div className="min-h-screen bg-[#0a0118] flex items-center justify-center"><div className="text-fuchsia-400 animate-pulse">Yükleniyor...</div></div>
+  if (loading) return <div className="min-h-screen  flex items-center justify-center"><div className="text-fuchsia-400 animate-pulse">Yükleniyor...</div></div>
 
   return (
-    <div className="min-h-screen bg-[#0a0118] p-4 sm:p-6">
+    <div className="min-h-screen  p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

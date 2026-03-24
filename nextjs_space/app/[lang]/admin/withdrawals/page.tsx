@@ -148,14 +148,14 @@ export default function AdminWithdrawalsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+    <div className="min-h-screen  py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <AdminBackButton variant="link" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6" label="Admin Paneli" />
 

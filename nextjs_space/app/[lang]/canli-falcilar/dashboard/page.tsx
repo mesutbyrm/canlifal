@@ -193,7 +193,7 @@ export default function TellerDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     )
@@ -201,7 +201,7 @@ export default function TellerDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen  flex flex-col items-center justify-center p-4">
         <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
         <p className="text-white text-xl mb-4">{error}</p>
         <Link
@@ -217,7 +217,7 @@ export default function TellerDashboard() {
   if (!teller) return null
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-6 px-4">
+    <div className="min-h-screen  py-6 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Page Title with Refresh */}
         <div className="flex items-center justify-between mb-6">

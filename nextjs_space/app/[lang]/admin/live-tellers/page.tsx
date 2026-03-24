@@ -357,7 +357,7 @@ export default function AdminLiveTellersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+    <div className="min-h-screen  py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">

@@ -16,7 +16,7 @@ export default function LiveTellerDashboardLayout({
   const language = (params.lang as string) || 'tr'
 
   return (
-    <div className="min-h-screen bg-[#0a0118]">
+    <div className="min-h-screen ">
       {/* Independent header for teller dashboard */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-deep-purple-950/95 backdrop-blur-sm border-b border-purple-800">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">

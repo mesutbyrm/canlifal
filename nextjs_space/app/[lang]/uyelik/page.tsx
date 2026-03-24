@@ -58,7 +58,7 @@ export default function MembershipsPage() {
   const isCosmic = theme === 'cosmic'
   const isFacebook = theme === 'facebook'
 
-  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0f0520]'
+  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? '' : ''
   const cardBg = isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-white/5 border-blue-500/20' : 'bg-[#1a0a2e]/80 border-fuchsia-500/20'
   const cardBgFeatured = isFacebook ? 'bg-blue-50 border-blue-400' : isCosmic ? 'bg-blue-500/10 border-blue-400/50' : 'bg-gradient-to-br from-amber-500/10 to-amber-600/10 border-amber-500/40'
   const textPrimary = isFacebook ? 'text-gray-900' : 'text-white'

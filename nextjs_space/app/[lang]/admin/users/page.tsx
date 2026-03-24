@@ -468,7 +468,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
+    <div className="min-h-screen  py-20 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

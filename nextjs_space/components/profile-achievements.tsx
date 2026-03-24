@@ -169,7 +169,7 @@ export default function ProfileAchievements({ userId, isOwnProfile }: ProfileAch
                 className="relative group"
               >
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 p-0.5 achievement-glow cursor-pointer">
-                  <div className="w-full h-full rounded-full bg-[#0a0118] flex items-center justify-center text-2xl">
+                  <div className="w-full h-full rounded-full bg-purple-950 flex items-center justify-center text-2xl">
                     {achievement.icon}
                   </div>
                 </div>

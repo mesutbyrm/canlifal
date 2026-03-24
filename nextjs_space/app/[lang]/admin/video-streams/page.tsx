@@ -136,7 +136,7 @@ export default function AdminVideoStreamsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     )
@@ -146,7 +146,7 @@ export default function AdminVideoStreamsPage() {
   const endedStreams = streams.filter(s => s.status === 'ended')
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-8 px-4">
+    <div className="min-h-screen  py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

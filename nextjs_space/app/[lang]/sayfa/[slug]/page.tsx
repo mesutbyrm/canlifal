@@ -48,7 +48,7 @@ export default function SitePageView({ params }: { params: { slug: string; lang:
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} flex items-center justify-center`}>
+      <div className={`min-h-screen ${isMystical ? 'bg-transparent' : 'bg-gray-50'} flex items-center justify-center`}>
         <Loader2 className="w-8 h-8 animate-spin text-fuchsia-400" />
       </div>
     )
@@ -56,7 +56,7 @@ export default function SitePageView({ params }: { params: { slug: string; lang:
 
   if (notFound || !page) {
     return (
-      <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} flex flex-col items-center justify-center gap-4`}>
+      <div className={`min-h-screen ${isMystical ? 'bg-transparent' : 'bg-gray-50'} flex flex-col items-center justify-center gap-4`}>
         <p className={`text-xl ${textColor}`}>{'Sayfa bulunamadı'}</p>
         <Link href={`/`} className={`text-sm ${subText} underline`}>
           {'Ana Sayfaya Dön'}
@@ -69,7 +69,7 @@ export default function SitePageView({ params }: { params: { slug: string; lang:
   const content = page.content
 
   return (
-    <div className={`min-h-screen ${isMystical ? 'bg-[#0f0520]' : 'bg-gray-50'} p-4 sm:p-6`}>
+    <div className={`min-h-screen ${isMystical ? 'bg-transparent' : 'bg-gray-50'} p-4 sm:p-6`}>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Link href={`/`} className={`p-2 rounded-lg ${cardBg} border`}>

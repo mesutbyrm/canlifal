@@ -111,7 +111,7 @@ export default function ChatRoomsPage() {
 
   const totalOnline = rooms.reduce((sum, r) => sum + r.onlineCount, 0)
 
-  const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const bgColor = isFalclub ? 'falclub-starry-bg' : isFalci ? 'falci-starry-bg' : isCosmic ? '' : ''
   const cardBg = isFalclub ? 'bg-gradient-to-br from-[#2d1145]/90 to-[#1a0a2e]/90 border-fuchsia-500/30 hover:border-fuchsia-400/60'
     : isFalci ? 'bg-gradient-to-br from-[#2d1b4e]/90 to-[#1a0b2e]/90 border-indigo-500/30 hover:border-indigo-400/60'
     : isCosmic ? 'bg-white/10 border-blue-500/30 hover:border-blue-400/60'
@@ -128,7 +128,7 @@ export default function ChatRoomsPage() {
     : isFalci ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30'
     : isCosmic ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
     : 'bg-purple-500/20 text-purple-200 border-purple-500/30'
-  const modalBg = isFalclub ? 'bg-[#1a0a2e]' : isFalci ? 'bg-[#1a0b2e]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#1a0b2e]'
+  const modalBg = isFalclub ? 'bg-purple-950/95' : isFalci ? 'bg-purple-950/95' : isCosmic ? '' : 'bg-purple-950/95'
   const inputBg = isFalclub ? 'bg-fuchsia-900/30 border-fuchsia-500/30 text-white placeholder-fuchsia-300/40'
     : isFalci ? 'bg-indigo-900/30 border-indigo-500/30 text-white placeholder-indigo-300/40'
     : isCosmic ? 'bg-blue-900/30 border-blue-500/30 text-white placeholder-blue-300/40'

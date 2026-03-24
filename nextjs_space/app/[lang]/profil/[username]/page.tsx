@@ -309,7 +309,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
       </div>
     )
@@ -317,7 +317,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <p className="text-gray-400">
           {'Kullanıcı bulunamadı'}
         </p>
@@ -326,7 +326,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118]">
+    <div className="min-h-screen ">
       {/* Header spacer */}
       <div className="h-2" />
 
@@ -551,7 +551,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-12 z-30 bg-[#0a0118]/95 backdrop-blur-md border-b border-purple-900/30 mt-4">
+      <div className="sticky top-12 z-30 /95 backdrop-blur-md border-b border-purple-900/30 mt-4">
         <div className="max-w-lg mx-auto flex items-center">
           <button
             onClick={() => setActiveTab('posts')}
@@ -622,7 +622,7 @@ export default function ProfilePage() {
                 <Link
                   key={post.id}
                   href={`/fal/${post.id}`}
-                  className="relative aspect-[3/4] bg-[#0a0118] group"
+                  className="relative aspect-[3/4]  group"
                 >
                   {thumbnail ? (
                     <Image
@@ -684,7 +684,7 @@ export default function ProfilePage() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="w-full bg-[#0a0118] border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
+              className="w-full  border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               <div className="p-4 border-b border-purple-800 flex items-center justify-between">
@@ -755,7 +755,7 @@ export default function ProfilePage() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="w-full bg-[#0a0118] border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
+              className="w-full  border-t border-purple-800 rounded-t-3xl max-h-[70vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               <div className="p-4 border-b border-purple-800 flex items-center justify-between">

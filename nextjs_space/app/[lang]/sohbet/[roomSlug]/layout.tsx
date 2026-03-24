@@ -32,7 +32,7 @@ export default function ChatRoomLayout({
 
   return (
     <div 
-      className="fixed inset-0 bg-[#0a0118] overflow-hidden"
+      className="fixed inset-0  overflow-hidden"
       style={{ 
         position: 'fixed',
         top: 0, 

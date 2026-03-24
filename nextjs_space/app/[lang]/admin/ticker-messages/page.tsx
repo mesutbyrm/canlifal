@@ -37,7 +37,7 @@ export default function AdminTickerMessagesPage() {
   const [saving, setSaving] = useState<string | null>(null)
 
   const isCosmic = true
-  const bgMain = 'bg-[#0a0118]'
+  const bgMain = ''
   const cardBg = 'bg-[#1a0a2e]/80 border-purple-500/20'
   const textPrimary = 'text-white'
   const textSecondary = 'text-purple-200'

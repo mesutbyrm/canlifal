@@ -680,7 +680,7 @@ export default function LiveRoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gold-500"></div>
       </div>
     );
@@ -688,7 +688,7 @@ export default function LiveRoomPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <p className="text-white text-xl">{error}</p>
@@ -705,7 +705,7 @@ export default function LiveRoomPage() {
 
   if (!roomData || roomData.status !== 'active') {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <p className="text-white text-xl">
@@ -725,7 +725,7 @@ export default function LiveRoomPage() {
   const peerName = roomData.isUser ? roomData.teller.displayName : roomData.user.name;
 
   return (
-    <div className="h-screen w-screen bg-[#0a0118] flex flex-col overflow-hidden">
+    <div className="h-screen w-screen  flex flex-col overflow-hidden">
       {/* Top bar - minimal */}
       <div className="absolute top-0 left-0 right-0 z-20 p-3 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
         {/* Peer info */}

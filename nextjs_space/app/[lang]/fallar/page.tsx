@@ -9,7 +9,7 @@ export default function FortunesPage() {
   const { language, t } = useLanguage()
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-[#0a0118]">
+    <div className="min-h-screen py-20 px-4 ">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

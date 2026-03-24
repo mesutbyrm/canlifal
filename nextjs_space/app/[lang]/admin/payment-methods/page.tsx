@@ -206,14 +206,14 @@ export default function PaymentMethodsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0118] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] py-20 px-4">
+    <div className="min-h-screen  py-20 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div

@@ -205,7 +205,7 @@ export default function MembershipBadgesPage() {
 
   const getTierInfo = (tier: string) => TIER_OPTIONS.find(t => t.value === tier) || TIER_OPTIONS[0]
 
-  const bgColor = isLight ? 'bg-white' : 'bg-[#0a0118]'
+  const bgColor = isLight ? 'bg-white' : ''
   const cardBg = isLight ? 'bg-gray-50 border-gray-200' : 'bg-purple-900/20 border-purple-500/30'
   const textPrimary = isLight ? 'text-gray-900' : 'text-white'
   const textSecondary = isLight ? 'text-gray-600' : 'text-purple-300'

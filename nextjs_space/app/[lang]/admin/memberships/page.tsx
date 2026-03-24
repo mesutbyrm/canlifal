@@ -136,7 +136,7 @@ export default function AdminMembershipsPage() {
   // Theme colors
   const isFacebook = theme === 'facebook'
   const isCosmic = theme === 'cosmic'
-  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0f0520]'
+  const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? '' : ''
   const cardBg = isFacebook ? 'bg-white border-gray-200' : isCosmic ? 'bg-white/5 border-blue-500/20' : 'bg-[#1a0a2e]/80 border-fuchsia-500/30'
   const textPrimary = isFacebook ? 'text-gray-900' : 'text-white'
   const textSecondary = isFacebook ? 'text-gray-500' : isCosmic ? 'text-blue-300' : 'text-purple-300'

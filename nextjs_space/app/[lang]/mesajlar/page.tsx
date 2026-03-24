@@ -60,7 +60,7 @@ export default function MessagesPage() {
   const isCosmic = theme === 'cosmic'
 
   // Theme colors
-  const bgColor = isFalclub ? 'bg-[#0f0520]' : isFalci ? 'bg-[#1a0a2e]' : isCosmic ? 'bg-[#0a1628]' : 'bg-[#0a0118]'
+  const bgColor = isFalclub ? '' : isFalci ? '' : isCosmic ? '' : ''
   const cardBg = isFalclub ? 'bg-fuchsia-900/20 border-fuchsia-500/30' : isFalci ? 'bg-indigo-900/20 border-indigo-500/30' : isCosmic ? 'bg-blue-900/20 border-blue-500/30' : 'bg-purple-900/20 border-purple-500/30'
   const inputBg = isFalclub ? 'bg-fuchsia-900/30 border-fuchsia-700/50' : isFalci ? 'bg-indigo-900/30 border-indigo-700/50' : isCosmic ? 'bg-blue-900/30 border-blue-700/50' : 'bg-purple-900/30 border-purple-800'
   const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
