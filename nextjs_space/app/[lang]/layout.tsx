@@ -5,8 +5,6 @@ import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
 import PresenceTracker from '@/components/presence-tracker'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import LoginAnnouncementBanner from '@/components/login-announcement-banner'
-import PushNotificationProvider from '@/components/push-notification-provider'
-import NotificationPermissionPrompt from '@/components/notification-permission-prompt'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
 import DeviceGuard from '@/components/device-guard'
 import OneSignalInitializer from '@/components/onesignal-initializer'
@@ -18,7 +16,6 @@ export default function LangLayout({
   children: React.ReactNode
 }) {
   return (
-    <PushNotificationProvider>
       <ProfilePopupProvider>
       <div className="min-h-screen relative">
         {/* Twinkling star background */}
@@ -42,9 +39,6 @@ export default function LangLayout({
         <MobileFooter />
         <CoBroadcastInviteModal />
         
-        {/* Push notification permission prompt */}
-        <NotificationPermissionPrompt />
-        
         {/* Single device session enforcement */}
         <DeviceGuard />
         
@@ -55,6 +49,5 @@ export default function LangLayout({
         <DailyLoginReward />
       </div>
     </ProfilePopupProvider>
-    </PushNotificationProvider>
   )
 }

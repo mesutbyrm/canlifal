@@ -6,8 +6,6 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { usePushNotifications } from './push-notification-provider'
-
 interface Notification {
   id: string
   type: string
@@ -25,7 +23,12 @@ export default function NotificationBell() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
   const router = useRouter()
-  const { isSupported, permission, requestPermission } = usePushNotifications()
+  // Browser notification status (read-only, OneSignal handles the actual push)
+  const isSupported = typeof window !== 'undefined' && 'Notification' in window
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
+  useEffect(() => {
+    if (isSupported) setPermission(Notification.permission)
+  }, [])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
@@ -52,7 +55,10 @@ export default function NotificationBell() {
   }, [])
 
   const handleEnableNotifications = async () => {
-    await requestPermission()
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const result = await Notification.requestPermission()
+      setPermission(result)
+    }
   }
 
   const fetchNotifications = useCallback(async () => {
