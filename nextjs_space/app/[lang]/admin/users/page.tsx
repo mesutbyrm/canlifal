@@ -1087,7 +1087,7 @@ export default function AdminUsersPage() {
               {selectedUser && (
                 <div className="flex gap-3 mb-5">
                   <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-                    <p className="text-emerald-400 text-xs mb-1">Mevcut Jeton</p>
+                    <p className="text-emerald-400 text-xs mb-1">Mevcut CFC</p>
                     <p className="text-emerald-300 text-xl font-bold">{selectedUser.credits}</p>
                   </div>
                   <div className="flex-1 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">

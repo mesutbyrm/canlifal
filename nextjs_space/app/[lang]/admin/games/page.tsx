@@ -216,7 +216,7 @@ export default function AdminGamesPage() {
                   />
                 </div>
                 <div>
-                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Giriş Ücreti (Jeton)'}</label>
+                  <label className={`text-xs ${textSecondary} mb-1 block`}>{'Giriş Ücreti (CFC)'}</label>
                   <input
                     type="number"
                     value={newGame.entryFee}
