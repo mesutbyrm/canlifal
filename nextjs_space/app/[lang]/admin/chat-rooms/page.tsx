@@ -54,6 +54,10 @@ export default function AdminChatRoomsPage() {
   const [searchingUsers, setSearchingUsers] = useState(false)
   const [assigningOwner, setAssigningOwner] = useState(false)
   
+  // Grid user limit setting
+  const [gridUserLimit, setGridUserLimit] = useState(6)
+  const [savingGridLimit, setSavingGridLimit] = useState(false)
+  
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push(`/giris`)
@@ -76,7 +80,33 @@ export default function AdminChatRoomsPage() {
   
   useEffect(() => {
     fetchRooms()
+    fetchGridLimit()
   }, [fetchRooms])
+  
+  const fetchGridLimit = async () => {
+    try {
+      const res = await fetch('/api/settings/public?key=chat_grid_user_limit')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.value) setGridUserLimit(parseInt(data.value))
+      }
+    } catch (e) { console.error(e) }
+  }
+  
+  const saveGridLimit = async () => {
+    setSavingGridLimit(true)
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'chat_grid_user_limit', value: String(gridUserLimit) })
+      })
+      if (res.ok) {
+        alert('Kayıt başarılı!')
+      }
+    } catch (e) { console.error(e) }
+    setSavingGridLimit(false)
+  }
   
   const handleCreateRoom = async () => {
     if (!createName.trim()) return
@@ -203,14 +233,14 @@ export default function AdminChatRoomsPage() {
   
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0a0118] to-[#1a0b2e] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0118] to-[#1a0b2e] pt-16 pb-24 px-4">
+    <div className="min-h-screen  pt-16 pb-24 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -232,6 +262,35 @@ export default function AdminChatRoomsPage() {
           </button>
         </div>
         
+        {/* Grid User Limit Setting */}
+        <div className="bg-purple-900/30 border border-fuchsia-500/30 rounded-xl p-4 mb-6">
+          <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-fuchsia-400" />
+            Sohbet Odası Yetkili Grid Ayarı
+          </h3>
+          <div className="flex items-center gap-3">
+            <label className="text-fuchsia-300/70 text-sm whitespace-nowrap">Üst kısımdaki kare sayısı (max):</label>
+            <select
+              value={gridUserLimit}
+              onChange={(e) => setGridUserLimit(parseInt(e.target.value))}
+              className="bg-purple-900/50 border border-fuchsia-500/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
+            >
+              {[1,2,3,4,5,6,7,8].map(n => (
+                <option key={n} value={n} className="bg-purple-950 text-white">{n}</option>
+              ))}
+            </select>
+            <button
+              onClick={saveGridLimit}
+              disabled={savingGridLimit}
+              className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {savingGridLimit ? 'Kaydediliyor...' : 'Kaydet'}
+            </button>
+          </div>
+          <p className="text-fuchsia-300/50 text-xs mt-2">Sohbet odasına girildiğinde üst kısımda gösterilen yetkili kullanıcı kare sayısını belirler (1-8 arası).</p>
+        </div>
+
         {/* Rooms List */}
         <div className="space-y-3">
           {rooms.map((room) => (

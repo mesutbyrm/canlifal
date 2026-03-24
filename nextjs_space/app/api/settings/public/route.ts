@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const keys = searchParams.get('keys')
 
     // Only allow certain public settings
-    const allowedKeys = ['chat_room_creation_cost', 'live_session_durations', 'credits_per_minute', 'ad_duration_seconds', 'onesignal_enabled']
+    const allowedKeys = ['chat_room_creation_cost', 'live_session_durations', 'credits_per_minute', 'ad_duration_seconds', 'onesignal_enabled', 'chat_grid_user_limit']
 
     // Support fetching multiple keys at once: ?keys=key1,key2
     if (keys) {

@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
       `${symbol.name.toLowerCase()} rüya tabiri`,
       'rüya sözlüğü',
       'rüya tabiri',
-      ...(symbol.relatedSymbols || []).map(s => `rüyada ${s.toLowerCase()} görmek`),
+      ...(symbol.relatedSymbols || []).map((s: string) => `rüyada ${s.toLowerCase()} görmek`),
     ]
 
     return {

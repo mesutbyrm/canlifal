@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Enrich popups with live data
     const enrichedPopups = await Promise.all(
-      popups.map(async (popup) => {
+      popups.map(async (popup: any) => {
         const base = {
           ...popup,
           buttons: typeof popup.buttons === 'string' ? JSON.parse(popup.buttons) : popup.buttons,

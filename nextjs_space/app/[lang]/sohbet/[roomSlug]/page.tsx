@@ -165,6 +165,9 @@ export default function ChatRoomPage() {
   const [showImagePicker, setShowImagePicker] = useState(false)
   const [myBroadcastImage, setMyBroadcastImage] = useState<string | null>(null)
   
+  // Grid user limit from admin settings
+  const [gridUserLimit, setGridUserLimit] = useState(6)
+  
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -422,6 +425,14 @@ export default function ChatRoomPage() {
       console.error('Error fetching typing users:', error)
     }
   }, [room, session?.user?.id])
+
+  // Fetch grid limit from settings
+  useEffect(() => {
+    fetch('/api/settings/public?key=chat_grid_user_limit')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.value) setGridUserLimit(Math.min(8, Math.max(1, parseInt(data.value)))) })
+      .catch(() => {})
+  }, [])
 
   // Initialize
   useEffect(() => {
@@ -1664,7 +1675,7 @@ export default function ChatRoomPage() {
             const ownerInList = room.owner && !privilegedUsers.find(u => u.id === room.owner?.id)
             const ownerUser = ownerInList ? activeUsers.find(u => u.id === room.owner?.id) : null
             const gridUsers = ownerUser ? [ownerUser, ...privilegedUsers.filter(u => u.id !== room.owner?.id)] : privilegedUsers
-            const displayUsers = gridUsers.slice(0, 6)
+            const displayUsers = gridUsers.slice(0, gridUserLimit)
             
             if (displayUsers.length === 0 && !room.owner) return null
             
@@ -1697,7 +1708,7 @@ export default function ChatRoomPage() {
                   )}
                 </div>
                 {/* Grid */}
-                <div className={`grid gap-1.5 ${displayUsers.length <= 3 ? 'grid-cols-3' : displayUsers.length <= 4 ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-6'}`}>
+                <div className={`grid gap-1.5 ${displayUsers.length <= 3 ? 'grid-cols-3' : displayUsers.length <= 4 ? 'grid-cols-4' : displayUsers.length <= 6 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-4 sm:grid-cols-8'}`}>
                   {displayUsers.map((user) => {
                     const isOwner = isRoomOwner(user.id)
                     const isMe = user.id === session?.user?.id

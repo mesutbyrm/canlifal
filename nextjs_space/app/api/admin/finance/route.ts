@@ -323,17 +323,17 @@ export async function GET(request: NextRequest) {
       })
 
       // Resolve teller gift sender/teller info
-      const tellerGiftUserIds = [...new Set(tellerGiftsRaw.map(g => g.senderId))]
-      const tellerGiftTellerIds = [...new Set(tellerGiftsRaw.map(g => g.tellerId))]
-      const tellerGiftTypeIds = [...new Set(tellerGiftsRaw.map(g => g.giftTypeId))]
+      const tellerGiftUserIds = [...new Set(tellerGiftsRaw.map((g: any) => g.senderId))]
+      const tellerGiftTellerIds = [...new Set(tellerGiftsRaw.map((g: any) => g.tellerId))]
+      const tellerGiftTypeIds = [...new Set(tellerGiftsRaw.map((g: any) => g.giftTypeId))]
       const [tgUsers, tgTellers, tgGiftTypes] = await Promise.all([
         prisma.user.findMany({ where: { id: { in: tellerGiftUserIds } }, select: { id: true, name: true, username: true, image: true } }),
         prisma.liveFortuneTeller.findMany({ where: { id: { in: tellerGiftTellerIds } }, select: { id: true, displayName: true, userId: true, user: { select: { id: true, name: true, username: true, image: true } } } }),
         prisma.giftType.findMany({ where: { id: { in: tellerGiftTypeIds } }, select: { id: true, name: true, icon: true } }),
       ])
-      const tgUserMap = Object.fromEntries(tgUsers.map(u => [u.id, u]))
-      const tgTellerMap = Object.fromEntries(tgTellers.map(t => [t.id, t]))
-      const tgGiftTypeMap = Object.fromEntries(tgGiftTypes.map(g => [g.id, g]))
+      const tgUserMap = Object.fromEntries(tgUsers.map((u: any) => [u.id, u]))
+      const tgTellerMap = Object.fromEntries(tgTellers.map((t: any) => [t.id, t]))
+      const tgGiftTypeMap = Object.fromEntries(tgGiftTypes.map((g: any) => [g.id, g]))
 
       // Merge and sort by date
       const allGifts = [
@@ -347,7 +347,7 @@ export async function GET(request: NextRequest) {
           createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
           sender: g.sender, receiver: g.stream?.user || null, sourceName: g.stream?.title || 'Canlı Yayın', sourceSlug: null,
         })),
-        ...tellerGiftsRaw.map((g) => {
+        ...tellerGiftsRaw.map((g: any) => {
           const gt = tgGiftTypeMap[g.giftTypeId]
           const teller = tgTellerMap[g.tellerId]
           return {
@@ -381,7 +381,7 @@ export async function GET(request: NextRequest) {
         where: { id: { in: streamIds } },
         select: { id: true, userId: true },
       }) : []
-      const streamUserMap = new Map(streams.map((s: any) => [s.id, s.userId]))
+      const streamUserMap = new Map<string, string>(streams.map((s: any) => [s.id, s.userId]))
 
       // Teller session earnings
       const tellerEarnings = await prisma.liveFortuneTeller.findMany({
