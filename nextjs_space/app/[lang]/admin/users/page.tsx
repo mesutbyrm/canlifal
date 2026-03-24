@@ -536,7 +536,7 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-purple-500/20">
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Kullanıcı</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Email</th>
-                    <th className="text-left px-4 py-3 text-purple-300 font-medium">CFC</th>
+                    <th className="text-left px-4 py-3 text-purple-300 font-medium">Jeton</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Jeton</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Rol</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Üyelik</th>
@@ -696,7 +696,7 @@ export default function AdminUsersPage() {
                       <p className="text-purple-300 text-sm">{selectedUser.email}</p>
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-sm">
-                          🪙 {selectedUser.credits} CFC
+                          🪙 {selectedUser.credits} Jeton
                         </span>
                         <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-sm">
                           💰 {selectedUser.jetonBalance} Jeton
@@ -720,7 +720,7 @@ export default function AdminUsersPage() {
                       className="p-3 bg-gradient-to-br from-emerald-500/20 to-yellow-500/20 rounded-xl text-center hover:from-emerald-500/30 hover:to-yellow-500/30 transition-colors"
                     >
                       <Coins className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <span className="text-emerald-300 text-xs">CFC / Jeton</span>
+                      <span className="text-emerald-300 text-xs">Jeton / CFC</span>
                     </button>
                     <button
                       onClick={() => setShowPasswordModal(true)}
@@ -1068,13 +1068,13 @@ export default function AdminUsersPage() {
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/80 z-50" />
             <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a0b2e] rounded-2xl z-50 p-6">
-              <Dialog.Title className="text-xl font-bold text-white mb-4">CFC / Jeton Yönetimi</Dialog.Title>
+              <Dialog.Title className="text-xl font-bold text-white mb-4">Jeton / CFC Yönetimi</Dialog.Title>
 
               {/* Current Balances */}
               {selectedUser && (
                 <div className="flex gap-3 mb-5">
                   <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-                    <p className="text-emerald-400 text-xs mb-1">Mevcut CFC</p>
+                    <p className="text-emerald-400 text-xs mb-1">Mevcut Jeton</p>
                     <p className="text-emerald-300 text-xl font-bold">{selectedUser.credits}</p>
                   </div>
                   <div className="flex-1 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">

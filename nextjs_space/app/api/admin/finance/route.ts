@@ -276,6 +276,232 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(topHolders)
     }
 
+    // Gift history with sender, receiver, source
+    if (section === 'gift-history') {
+      const page = parseInt(searchParams.get('page') || '1')
+      const limit = 30
+
+      // Chat room gifts
+      const chatGifts = await prisma.chatRoomGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true, commissionAmount: true,
+          sender: { select: { id: true, name: true, username: true, image: true } },
+          recipient: { select: { id: true, name: true, username: true, image: true } },
+          giftType: { select: { name: true, icon: true } },
+          room: { select: { nameTr: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Stream gifts
+      const streamGifts = await prisma.streamGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true,
+          sender: { select: { id: true, name: true, username: true, image: true } },
+          giftType: { select: { name: true, icon: true } },
+          stream: { select: { id: true, title: true, user: { select: { id: true, name: true, username: true, image: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Teller gifts (no relations in schema, use raw IDs)
+      const tellerGiftsRaw = await prisma.tellerGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true,
+          senderId: true, tellerId: true, giftTypeId: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Resolve teller gift sender/teller info
+      const tellerGiftUserIds = [...new Set(tellerGiftsRaw.map(g => g.senderId))]
+      const tellerGiftTellerIds = [...new Set(tellerGiftsRaw.map(g => g.tellerId))]
+      const tellerGiftTypeIds = [...new Set(tellerGiftsRaw.map(g => g.giftTypeId))]
+      const [tgUsers, tgTellers, tgGiftTypes] = await Promise.all([
+        prisma.user.findMany({ where: { id: { in: tellerGiftUserIds } }, select: { id: true, name: true, username: true, image: true } }),
+        prisma.liveFortuneTeller.findMany({ where: { id: { in: tellerGiftTellerIds } }, select: { id: true, displayName: true, userId: true, user: { select: { id: true, name: true, username: true, image: true } } } }),
+        prisma.giftType.findMany({ where: { id: { in: tellerGiftTypeIds } }, select: { id: true, name: true, icon: true } }),
+      ])
+      const tgUserMap = Object.fromEntries(tgUsers.map(u => [u.id, u]))
+      const tgTellerMap = Object.fromEntries(tgTellers.map(t => [t.id, t]))
+      const tgGiftTypeMap = Object.fromEntries(tgGiftTypes.map(g => [g.id, g]))
+
+      // Merge and sort by date
+      const allGifts = [
+        ...chatGifts.map((g: any) => ({
+          id: g.id, type: 'chat_room' as const, amount: g.totalPrice, quantity: g.quantity, commission: g.commissionAmount || 0,
+          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
+          sender: g.sender, receiver: g.recipient, sourceName: g.room?.nameTr || 'Sohbet Odası', sourceSlug: g.room?.slug,
+        })),
+        ...streamGifts.map((g: any) => ({
+          id: g.id, type: 'stream' as const, amount: g.totalPrice, quantity: g.quantity, commission: Math.floor(g.totalPrice * 0.3),
+          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
+          sender: g.sender, receiver: g.stream?.user || null, sourceName: g.stream?.title || 'Canlı Yayın', sourceSlug: null,
+        })),
+        ...tellerGiftsRaw.map((g) => {
+          const gt = tgGiftTypeMap[g.giftTypeId]
+          const teller = tgTellerMap[g.tellerId]
+          return {
+            id: g.id, type: 'teller' as const, amount: g.totalPrice, quantity: g.quantity, commission: 0,
+            createdAt: g.createdAt, giftName: gt?.name || 'Hediye', giftIcon: gt?.icon || '🎁',
+            sender: tgUserMap[g.senderId] || null, receiver: teller?.user || null, sourceName: teller?.displayName || 'Falcı', sourceSlug: null,
+          }
+        }),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit)
+
+      return NextResponse.json({ gifts: allGifts, page })
+    }
+
+    // Top earners (users who earned the most from all sources)
+    if (section === 'top-earners') {
+      // Earn from chat room gifts (as recipient)
+      const chatEarnings = await prisma.chatRoomGift.groupBy({
+        by: ['recipientId'],
+        where: dateFilter,
+        _sum: { totalPrice: true, commissionAmount: true },
+      })
+      // Earn from stream gifts (broadcaster earns 70%)
+      const streamEarnings = await prisma.streamGift.groupBy({
+        by: ['streamId'],
+        where: dateFilter,
+        _sum: { totalPrice: true },
+      })
+      // Map streamId to user
+      const streamIds = streamEarnings.map((s: any) => s.streamId)
+      const streams = streamIds.length > 0 ? await prisma.videoStream.findMany({
+        where: { id: { in: streamIds } },
+        select: { id: true, userId: true },
+      }) : []
+      const streamUserMap = new Map(streams.map((s: any) => [s.id, s.userId]))
+
+      // Teller session earnings
+      const tellerEarnings = await prisma.liveFortuneTeller.findMany({
+        where: { totalEarnings: { gt: 0 } },
+        select: { userId: true, totalEarnings: true },
+      })
+
+      // Merge all into earnerMap
+      const earnerMap = new Map<string, number>()
+      for (const c of chatEarnings) {
+        const net = (c._sum.totalPrice || 0) - (c._sum.commissionAmount || 0)
+        earnerMap.set(c.recipientId, (earnerMap.get(c.recipientId) || 0) + net)
+      }
+      for (const s of streamEarnings) {
+        const userId = streamUserMap.get(s.streamId)
+        if (userId) {
+          const earnerShare = Math.floor((s._sum.totalPrice || 0) * 0.7)
+          earnerMap.set(userId, (earnerMap.get(userId) || 0) + earnerShare)
+        }
+      }
+      for (const t of tellerEarnings) {
+        earnerMap.set(t.userId, (earnerMap.get(t.userId) || 0) + t.totalEarnings)
+      }
+
+      const sorted = Array.from(earnerMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20)
+
+      const userIds = sorted.map(([id]) => id)
+      const users = userIds.length > 0 ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, username: true, email: true, image: true, jetonBalance: true, credits: true },
+      }) : []
+      const userMap = new Map(users.map((u: any) => [u.id, u]))
+
+      return NextResponse.json(
+        sorted.map(([id, earnings]) => ({
+          user: userMap.get(id) || { id, name: 'Bilinmeyen' },
+          totalEarnings: earnings,
+        }))
+      )
+    }
+
+    // User financial profile (for popup)
+    if (section === 'user-profile') {
+      const userId = searchParams.get('userId')
+      if (!userId) return NextResponse.json({ error: 'userId gerekli' }, { status: 400 })
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true, name: true, username: true, email: true, image: true,
+          credits: true, jetonBalance: true, role: true, membership: true, createdAt: true,
+          _count: { select: { fortunes: true } },
+        },
+      })
+      if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+
+      // Gift sent totals
+      const giftsSent = await prisma.chatRoomGift.aggregate({
+        where: { senderId: userId, ...dateFilter },
+        _sum: { totalPrice: true },
+        _count: true,
+      })
+      const streamGiftsSent = await prisma.streamGift.aggregate({
+        where: { senderId: userId, ...dateFilter },
+        _sum: { totalPrice: true },
+        _count: true,
+      })
+      const tellerGiftsSent = await prisma.tellerGift.aggregate({
+        where: { senderId: userId, ...dateFilter },
+        _sum: { totalPrice: true },
+        _count: true,
+      })
+
+      // Gift received totals
+      const giftsReceived = await prisma.chatRoomGift.aggregate({
+        where: { recipientId: userId, ...dateFilter },
+        _sum: { totalPrice: true },
+        _count: true,
+      })
+
+      // Jeton transactions summary
+      const jetonTxs = await prisma.jetonTransaction.findMany({
+        where: { userId, ...dateFilter },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { id: true, amount: true, type: true, description: true, createdAt: true, balanceBefore: true, balanceAfter: true },
+      })
+
+      // Session spending
+      const sessionSpending = await prisma.liveSession.aggregate({
+        where: { userId, status: { in: ['completed', 'active'] }, ...dateFilter },
+        _sum: { creditsCharged: true },
+      })
+
+      // Teller earnings (if user is a teller)
+      const tellerProfile = await prisma.liveFortuneTeller.findUnique({
+        where: { userId },
+        select: { totalEarnings: true, totalSessions: true },
+      })
+
+      const totalSent = (giftsSent._sum.totalPrice || 0) + (streamGiftsSent._sum.totalPrice || 0) + (tellerGiftsSent._sum.totalPrice || 0)
+      const totalReceived = giftsReceived._sum.totalPrice || 0
+
+      return NextResponse.json({
+        user,
+        financials: {
+          totalGiftsSent: totalSent,
+          totalGiftsReceived: totalReceived,
+          giftsSentCount: (giftsSent._count || 0) + (streamGiftsSent._count || 0) + (tellerGiftsSent._count || 0),
+          giftsReceivedCount: giftsReceived._count || 0,
+          sessionSpending: sessionSpending._sum.creditsCharged || 0,
+          tellerEarnings: tellerProfile?.totalEarnings || 0,
+          tellerSessions: tellerProfile?.totalSessions || 0,
+        },
+        recentTransactions: jetonTxs,
+      })
+    }
+
     return NextResponse.json({ error: 'Geçersiz bölüm' }, { status: 400 })
   } catch (error) {
     console.error('Finance API error:', error)

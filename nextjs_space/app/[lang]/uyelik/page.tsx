@@ -207,7 +207,7 @@ export default function MembershipsPage() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className={textSecondary}>{'CFC Bakiyeniz:'}</span>
+              <span className={textSecondary}>{'Jeton Bakiyeniz:'}</span>
               <span className={`${accentColor} font-bold text-lg flex items-center gap-1`}>
                 <Sparkles className="w-4 h-4" /> {userMembership.credits}
               </span>
@@ -355,7 +355,7 @@ export default function MembershipsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className={textSecondary}>{'Fiyat:'}</span>
-                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'CFC' : 'Jeton'}</span>
+                    <span className={`${goldColor} font-bold`}>{selectedPlan.price} {paymentMethod === 'cfc' ? 'Jeton' : 'Jeton'}</span>
                   </div>
                 </div>
 
@@ -382,7 +382,7 @@ export default function MembershipsPage() {
                       className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${paymentMethod === 'cfc' ? 'border-fuchsia-500 bg-fuchsia-500/10' : `border ${modalBorder} opacity-60`}`}
                     >
                       <Sparkles className={`w-5 h-5 ${accentColor}`} />
-                      <span className={`${textPrimary} text-sm font-medium`}>CFC</span>
+                      <span className={`${textPrimary} text-sm font-medium`}>Jeton</span>
                       {userMembership && (
                         <span className={`text-xs ${userMembership.credits >= selectedPlan.price ? 'text-green-400' : 'text-red-400'}`}>
                           {userMembership.credits} {'mevcut'}
@@ -398,7 +398,7 @@ export default function MembershipsPage() {
                 ) && (
                   <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
                     <p className="text-red-400 text-sm">
-                      {`Yetersiz ${paymentMethod === 'cfc' ? 'CFC' : 'jeton'} bakiyesi`}
+                      {`Yetersiz ${paymentMethod === 'cfc' ? 'Jeton' : 'jeton'} bakiyesi`}
                     </p>
                     <Link href={`/jeton`} className="text-amber-400 text-sm underline">
                       {'Bakiye yükle'}

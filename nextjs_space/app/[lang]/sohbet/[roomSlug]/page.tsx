@@ -2495,11 +2495,11 @@ export default function ChatRoomPage() {
                     onClick={() => setGiftPaymentType('cfc')}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'cfc' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
                   >
-                    💰 CFC
+                    💰 Jeton
                   </button>
                 </div>
                 <p className="text-xs text-purple-400/70 mt-1 text-center">
-                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler gerçek paraya dönüşür' : '⚠️ CFC ile gönderilen hediyeler paraya dönüşmez'}
+                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler gerçek paraya dönüşür' : '⚠️ Jeton ile gönderilen hediyeler paraya dönüşmez'}
                 </p>
               </div>
 
@@ -2529,7 +2529,7 @@ export default function ChatRoomPage() {
                   disabled={!selectedGiftType || sendingGift}
                   className="w-full py-2.5 bg-gradient-to-r from-gold-500 to-yellow-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-gold-400 hover:to-yellow-400 transition-all"
                 >
-                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'CFC'})`}
+                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'Jeton'})`}
                 </button>
               </div>
             </motion.div>

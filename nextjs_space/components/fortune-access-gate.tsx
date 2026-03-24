@@ -48,7 +48,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
           setAccessStatus('needs_login')
         }
       } else {
-        // Registered user - check CFC
+        // Registered user - check Jeton
         const res = await fetch('/api/fortune-access/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -170,7 +170,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
     )
   }
 
-  // Needs CFC (registered user, insufficient credits)
+  // Needs Jeton (registered user, insufficient credits)
   if (accessStatus === 'needs_cfc') {
     return (
       <>
@@ -181,10 +181,10 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
         >
           <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <Coins className="w-10 h-10 text-red-400 mx-auto mb-2" />
-            <h3 className="text-white font-bold text-lg">Yetersiz CFC</h3>
+            <h3 className="text-white font-bold text-lg">Yetersiz Jeton</h3>
             <p className="text-purple-300 text-sm mt-2">
-              Bu fal <span className="text-gold-400 font-bold">{cost} CFC</span> gerektiriyor.
-              Bakiyeniz: <span className="text-red-400 font-bold">{userCredits ?? 0} CFC</span>
+              Bu fal <span className="text-gold-400 font-bold">{cost} Jeton</span> gerektiriyor.
+              Bakiyeniz: <span className="text-red-400 font-bold">{userCredits ?? 0} Jeton</span>
             </p>
           </div>
 
@@ -203,7 +203,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
               className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
-              CFC Satın Al
+              Jeton Satın Al
             </button>
             <button
               onClick={() => setShowAdModal(true)}

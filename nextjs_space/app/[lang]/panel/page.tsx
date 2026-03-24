@@ -383,7 +383,7 @@ export default function DashboardPage() {
                 <Coins className="h-4 w-4" />
                 <span className="font-bold">{statistics.coins.currentBalance}</span>
               </div>
-              <p className="text-white/40 text-xs">{'CFC'}</p>
+              <p className="text-white/40 text-xs">{'Jeton'}</p>
             </div>
           </div>
 

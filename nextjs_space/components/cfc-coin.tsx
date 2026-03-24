@@ -28,7 +28,7 @@ export default function CfcCoin({ size = 24, className = '' }: CfcCoinProps) {
       {/* Shine effect */}
       <ellipse cx="38" cy="32" rx="18" ry="12" fill="rgba(255,255,255,0.15)" transform="rotate(-20, 38, 32)" />
       
-      {/* CFC text */}
+      {/* Jeton text */}
       <text
         x="50"
         y="56"
@@ -42,7 +42,7 @@ export default function CfcCoin({ size = 24, className = '' }: CfcCoinProps) {
         strokeWidth="1"
         letterSpacing="-1"
       >
-        CFC
+        Jeton
       </text>
       
       {/* Small sparkle dots */}

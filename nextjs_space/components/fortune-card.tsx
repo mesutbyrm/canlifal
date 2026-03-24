@@ -99,7 +99,7 @@ export default function FortuneCard({ type, imageSrc, cost }: FortuneCardProps) 
             <div className="flex items-center justify-between pt-1 sm:pt-2">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />
-                <span className="text-amber-300 font-medium text-xs sm:text-sm md:text-base">{cost} CFC</span>
+                <span className="text-amber-300 font-medium text-xs sm:text-sm md:text-base">{cost} Jeton</span>
               </div>
               <span className="text-purple-300 text-xs sm:text-sm group-hover:text-amber-300 transition-colors">
                 {'Keşfet →'}

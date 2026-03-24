@@ -58,7 +58,7 @@ export default function CfcJetonInfoPopup({ isOpen, onClose }: CfcJetonInfoPopup
                   <CfcCoin size={36} />
                   <div>
                     <h4 className="text-gold-400 font-bold text-base">
-                      CFC <span className="text-gold-400/70 text-sm font-normal">(Canlı Fal Coini)</span>
+                      Jeton <span className="text-gold-400/70 text-sm font-normal">(Site Jetonu)</span>
                     </h4>
                   </div>
                 </div>

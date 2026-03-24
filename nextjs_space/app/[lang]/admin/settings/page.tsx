@@ -183,7 +183,7 @@ export default function AdminSettingsPage() {
     {
       key: 'min_withdrawal',
       label: 'Minimum Çekim Miktarı',
-      description: 'Falcıların çekim yapabileceği minimum CFC',
+      description: 'Falcıların çekim yapabileceği minimum Jeton',
       icon: CreditCard,
       min: 0,
       max: 10000

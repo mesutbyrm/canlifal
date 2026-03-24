@@ -69,7 +69,7 @@ export default function FortunePageLayout({
           </div>
           <div className="flex items-center gap-1 text-gold-400 text-sm">
             <Sparkles className="w-4 h-4" />
-            <span>{cost} CFC</span>
+            <span>{cost} Jeton</span>
           </div>
         </div>
       </div>
