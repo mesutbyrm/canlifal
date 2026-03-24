@@ -30,7 +30,7 @@ export async function GET() {
       take: 2000,
     })
 
-    blogEntries = posts.map((p) => {
+    blogEntries = posts.map((p: any) => {
       const lastmod = (p.updatedAt || p.publishedAt || new Date()).toISOString()
       const imageTag = p.coverImage
         ? `\n    <image:image>\n      <image:loc>${escapeXml(p.coverImage)}</image:loc>\n      <image:title>${escapeXml(p.titleTr)}</image:title>\n    </image:image>`
@@ -43,7 +43,7 @@ export async function GET() {
       where: { isActive: true },
       select: { slug: true },
     })
-    categoryEntries = categories.map((c) =>
+    categoryEntries = categories.map((c: any) =>
       `  <url>\n    <loc>${baseUrl}/blog/kategori/${escapeXml(c.slug)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`
     )
   } catch (e) {

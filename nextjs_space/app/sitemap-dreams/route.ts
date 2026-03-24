@@ -31,7 +31,7 @@ export async function GET() {
       take: 5000,
     })
 
-    dreamEntries = dreams.map((d) => {
+    dreamEntries = dreams.map((d: any) => {
       const lastmod = (d.updatedAt || new Date()).toISOString()
       return `  <url>\n    <loc>${baseUrl}/ruya/${escapeXml(d.slug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`
     })
@@ -43,7 +43,7 @@ export async function GET() {
       take: 2000,
     })
 
-    symbolEntries = symbols.map((s) => {
+    symbolEntries = symbols.map((s: any) => {
       const lastmod = (s.updatedAt || new Date()).toISOString()
       return `  <url>\n    <loc>${baseUrl}/ruya-sozlugu/${escapeXml(s.slug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`
     })
