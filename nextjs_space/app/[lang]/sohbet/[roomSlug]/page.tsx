@@ -2529,7 +2529,7 @@ export default function ChatRoomPage() {
                   disabled={!selectedGiftType || sendingGift}
                   className="w-full py-2.5 bg-gradient-to-r from-gold-500 to-yellow-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-gold-400 hover:to-yellow-400 transition-all"
                 >
-                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'Jeton'})`}
+                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'CFC'})`}
                 </button>
               </div>
             </motion.div>

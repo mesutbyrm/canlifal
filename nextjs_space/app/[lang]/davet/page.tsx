@@ -64,7 +64,7 @@ export default function ReferralPage() {
       try {
         await navigator.share({
           title: 'Canlifal - Davet',
-          text: 'Canlifal\'a katıl ve 50 ücretsiz Jeton kazan!',
+          text: 'Canlifal\'a katıl ve 50 ücretsiz CFC kazan!',
           url: data.referralLink
         })
       } catch (err) {
@@ -116,7 +116,7 @@ export default function ReferralPage() {
             {'Davet Et & Kazan'}
           </h1>
           <p className="text-deep-purple-200">
-            {'Arkadaşlarını davet et, her ikimiz de 50 Jeton kazanalım!'}
+            {'Arkadaşlarını davet et, her ikimiz de 50 CFC kazanalım!'}
           </p>
         </motion.div>
 
@@ -139,7 +139,7 @@ export default function ReferralPage() {
           >
             <Sparkles className="w-8 h-8 text-gold-400 mx-auto mb-2" />
             <p className="text-3xl font-bold text-gold-400">{data?.totalCreditsEarned || 0}</p>
-            <p className="text-deep-purple-300 text-sm">{'Kazanılan Jeton'}</p>
+            <p className="text-deep-purple-300 text-sm">{'Kazanılan CFC'}</p>
           </motion.div>
         </div>
 

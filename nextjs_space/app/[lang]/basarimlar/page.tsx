@@ -33,7 +33,7 @@ const CATEGORY_INFO: Record<string, { label: string; emoji: string; color: strin
   fortune: { label: 'Fal', emoji: '🔮', color: 'from-purple-600 to-indigo-600' },
   social: { label: 'Sosyal', emoji: '🦋', color: 'from-pink-600 to-rose-600' },
   stream: { label: 'Yayın', emoji: '📺', color: 'from-blue-600 to-cyan-600' },
-  coin: { label: 'Jeton', emoji: '💰', color: 'from-yellow-600 to-amber-600' },
+  coin: { label: 'CFC', emoji: '💰', color: 'from-yellow-600 to-amber-600' },
   activity: { label: 'Aktivite', emoji: '⚡', color: 'from-green-600 to-emerald-600' }
 }
 

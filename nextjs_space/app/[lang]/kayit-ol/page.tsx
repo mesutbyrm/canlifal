@@ -125,7 +125,7 @@ export default function RegisterPage() {
                     {`${referrerName} seni davet etti!`}
                   </p>
                   <p className="text-gold-300/80 text-xs">
-                    {'Kayıt olunca 50 bonus Jeton kazanacaksın!'}
+                    {'Kayıt olunca 50 bonus CFC kazanacaksın!'}
                   </p>
                 </div>
               </div>

@@ -383,7 +383,7 @@ export default function DashboardPage() {
                 <Coins className="h-4 w-4" />
                 <span className="font-bold">{statistics.coins.currentBalance}</span>
               </div>
-              <p className="text-white/40 text-xs">{'Jeton'}</p>
+              <p className="text-white/40 text-xs">{'CFC'}</p>
             </div>
           </div>
 
@@ -605,7 +605,7 @@ export default function DashboardPage() {
         {/* 3. COIN/TOKEN ECONOMY STATISTICS */}
         <Section
           id="coins"
-          title={'Jeton Ekonomisi'}
+          title={'CFC Ekonomisi'}
           icon={Coins}
           gradient="bg-gradient-to-r from-yellow-600/40 to-orange-600/30"
         >
@@ -966,7 +966,7 @@ export default function DashboardPage() {
                     {category === 'stream' && <Radio className="h-4 w-4 text-red-400" />}
                     {category === 'coin' && <Coins className="h-4 w-4 text-yellow-400" />}
                     {category === 'activity' && <Activity className="h-4 w-4 text-blue-400" />}
-                    {{ fortune: 'Fal', social: 'Sosyal', stream: 'Yayın', coin: 'Jeton', activity: 'Aktivite' }[category]}
+                    {{ fortune: 'Fal', social: 'Sosyal', stream: 'Yayın', coin: 'CFC', activity: 'Aktivite' }[category]}
                   </h5>
                   <div className="space-y-3">
                     {categoryAchievements.map((achievement: Achievement) => (

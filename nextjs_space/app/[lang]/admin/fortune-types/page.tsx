@@ -354,7 +354,7 @@ export default function FortuneTypesAdminPage() {
 
                 {/* Jeton Cost */}
                 <div>
-                  <label className="text-white/70 text-sm mb-2 block">Jeton Maliyeti</label>
+                  <label className="text-white/70 text-sm mb-2 block">CFC Maliyeti</label>
                   <input
                     type="number"
                     value={formData.jetonCost}
@@ -453,7 +453,7 @@ export default function FortuneTypesAdminPage() {
 
                 {/* Jeton Cost */}
                 <div>
-                  <label className="text-white/70 text-sm mb-2 block">Jeton Maliyeti</label>
+                  <label className="text-white/70 text-sm mb-2 block">CFC Maliyeti</label>
                   <input
                     type="number"
                     value={formData.jetonCost}

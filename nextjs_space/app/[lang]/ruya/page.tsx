@@ -515,7 +515,7 @@ export default function RuyaPage() {
                   onClick={() => router.push(`/${lang}/jeton`)}
                   className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm transition-colors"
                 >
-                  <Coins className="w-4 h-4" /> Jeton Satın Al
+                  <Coins className="w-4 h-4" /> CFC Satın Al
                 </button>
               </div>
             )}

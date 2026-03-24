@@ -539,7 +539,7 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-purple-500/20">
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Kullanıcı</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Email</th>
-                    <th className="text-left px-4 py-3 text-purple-300 font-medium">Jeton</th>
+                    <th className="text-left px-4 py-3 text-purple-300 font-medium">CFC</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Jeton</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Rol</th>
                     <th className="text-left px-4 py-3 text-purple-300 font-medium">Üyelik</th>
@@ -706,7 +706,7 @@ export default function AdminUsersPage() {
                       <p className="text-purple-300 text-sm">{selectedUser.email}</p>
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-sm">
-                          🪙 {selectedUser.credits} Jeton
+                          🪙 {selectedUser.credits} CFC
                         </span>
                         <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-sm">
                           💰 {selectedUser.jetonBalance} Jeton

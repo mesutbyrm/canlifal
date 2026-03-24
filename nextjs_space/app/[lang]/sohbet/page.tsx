@@ -408,7 +408,7 @@ export default function ChatRoomsPage() {
                 >
                   {creating
                     ? ('Oluşturuluyor...')
-                    : (`Oda Oluştur (${roomCost} ${createForm.paymentType === 'jeton' ? 'Jeton' : 'Jeton'})`)}
+                    : (`Oda Oluştur (${roomCost} ${createForm.paymentType === 'jeton' ? 'Jeton' : 'CFC'})`)}
                 </button>
               </div>
             </motion.div>

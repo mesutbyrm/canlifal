@@ -258,7 +258,7 @@ export default function AdminFinancePage() {
     { key: 'top-gift-receivers', label: 'Hediye Alan', icon: <Gift className="w-4 h-4" /> },
     { key: 'top-gift-senders', label: 'Hediye Atan', icon: <ArrowUpRight className="w-4 h-4" /> },
     { key: 'top-jeton-holders', label: 'Jeton Sıralaması', icon: <Coins className="w-4 h-4" /> },
-    { key: 'top-cfc-holders', label: 'Jeton (CFC) Sıralaması', icon: <Crown className="w-4 h-4" /> },
+    { key: 'top-cfc-holders', label: 'CFC Sıralaması', icon: <Crown className="w-4 h-4" /> },
   ]
 
   if (status === 'loading') {
@@ -341,7 +341,7 @@ export default function AdminFinancePage() {
               {activeTab === 'top-gift-receivers' && <RankingSection title="En Çok Hediye Alanlar" data={rankedUsers} type="receiver" onAdjust={(u) => setAdjustModal({ user: u.user })} formatNumber={formatNumber} ClickableUser={ClickableUser} />}
               {activeTab === 'top-gift-senders' && <RankingSection title="En Çok Hediye Atanlar" data={rankedUsers} type="sender" onAdjust={(u) => setAdjustModal({ user: u.user })} formatNumber={formatNumber} ClickableUser={ClickableUser} />}
               {activeTab === 'top-jeton-holders' && <HoldersSection title="En Çok Jetona Sahip Kullanıcılar" data={holders} type="jeton" onAdjust={(u) => { setAdjustModal({ user: u }); setAdjustCurrency('jeton') }} formatNumber={formatNumber} ClickableUser={ClickableUser} />}
-              {activeTab === 'top-cfc-holders' && <HoldersSection title="En Çok Jeton (CFC) Sahibi Kullanıcılar" data={holders} type="cfc" onAdjust={(u) => { setAdjustModal({ user: u }); setAdjustCurrency('cfc') }} formatNumber={formatNumber} ClickableUser={ClickableUser} />}
+              {activeTab === 'top-cfc-holders' && <HoldersSection title="En Çok CFC Sahibi Kullanıcılar" data={holders} type="cfc" onAdjust={(u) => { setAdjustModal({ user: u }); setAdjustCurrency('cfc') }} formatNumber={formatNumber} ClickableUser={ClickableUser} />}
             </motion.div>
           </AnimatePresence>
         )}
@@ -364,7 +364,7 @@ export default function AdminFinancePage() {
               </div>
               <div className="flex gap-2 mb-4">
                 <button onClick={() => setAdjustCurrency('jeton')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${adjustCurrency === 'jeton' ? 'bg-yellow-600/40 border border-yellow-400/50 text-yellow-200' : 'bg-white/5 border border-white/10 text-gray-400'}`}>🪙 Jeton</button>
-                <button onClick={() => setAdjustCurrency('cfc')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${adjustCurrency === 'cfc' ? 'bg-blue-600/40 border border-blue-400/50 text-blue-200' : 'bg-white/5 border border-white/10 text-gray-400'}`}>💎 Jeton (CFC)</button>
+                <button onClick={() => setAdjustCurrency('cfc')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${adjustCurrency === 'cfc' ? 'bg-blue-600/40 border border-blue-400/50 text-blue-200' : 'bg-white/5 border border-white/10 text-gray-400'}`}>💎 CFC</button>
               </div>
               <input type="number" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} placeholder="Miktar" className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-purple-400/50 focus:outline-none mb-3" />
               <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Sebep (isteğe bağlı)" className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-purple-400/50 focus:outline-none mb-3" />
@@ -487,7 +487,7 @@ export default function AdminFinancePage() {
                     {/* CFC Balance */}
                     <div className="bg-blue-900/20 border border-blue-500/20 rounded-xl p-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-400/80">💎 Jeton (CFC)</p>
+                        <p className="text-xs text-blue-400/80">💎 CFC</p>
                         <button onClick={() => { setEditField('cfc'); setEditValue(String(userProfile.user.credits)) }} className="text-gray-500 hover:text-blue-400"><Edit3 className="w-3 h-3" /></button>
                       </div>
                       {editField === 'cfc' ? (
@@ -578,7 +578,7 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<Coins className="w-5 h-5 text-yellow-400" />} label="Dolaşımdaki Jeton" value={formatNumber(data.totalJeton)} color="yellow" />
-        <StatCard icon={<Crown className="w-5 h-5 text-blue-400" />} label="Dolaşımdaki Jeton (CFC)" value={formatNumber(data.totalCfc)} color="blue" />
+        <StatCard icon={<Crown className="w-5 h-5 text-blue-400" />} label="Dolaşımdaki CFC" value={formatNumber(data.totalCfc)} color="blue" />
         <StatCard icon={<DollarSign className="w-5 h-5 text-green-400" />} label="Toplam Gelir (TRY)" value={formatCurrency(data.totalRevenue)} color="green" />
         <StatCard icon={<Users className="w-5 h-5 text-orange-400" />} label="Yayıncı Kazançları" value={formatNumber(data.totalTellerEarnings) + ' jeton'} color="orange" />
         <StatCard icon={<Gift className="w-5 h-5 text-pink-400" />} label="Hediye Harcamaları" value={formatNumber(data.totalGiftSpent) + ' jeton'} color="pink" />

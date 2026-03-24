@@ -89,7 +89,7 @@ export default function KatinaPage() {
           </p>
           <p className="text-gold-400 text-sm mt-2">
             <Sparkles className="inline w-4 h-4 mr-1" />
-            6 {'Jeton'}
+            6 {'CFC'}
           </p>
         </motion.div>
 

@@ -227,7 +227,7 @@ export default function GameCenterPage() {
     setSpinDegree(prev => prev + degree)
     setTimeout(async () => {
       const result = await recordPlay('fal-carki')
-      if (result) setResultMessage(`🎉 ${result.reward} Jeton kazandınız!`)
+      if (result) setResultMessage(`🎉 ${result.reward} CFC kazandınız!`)
       setIsSpinning(false)
     }, 3500)
   }
@@ -238,7 +238,7 @@ export default function GameCenterPage() {
     setSelectedTarot(index)
     setTarotRevealed(true)
     const result = await recordPlay('tarot-sec')
-    if (result) setResultMessage(`🃏 Tarot kartı ${result.reward} Jeton getirdi!`)
+    if (result) setResultMessage(`🃏 Tarot kartı ${result.reward} CFC getirdi!`)
   }
 
   const resetTarot = () => {
@@ -282,7 +282,7 @@ export default function GameCenterPage() {
         if (newCards.every(c => c.matched)) {
           setMemoryComplete(true)
           recordPlay('memory', memoryMoves + 1).then(result => {
-            if (result) setResultMessage(`☕ Tebrikler! ${result.reward} Jeton kazandınız!`)
+            if (result) setResultMessage(`☕ Tebrikler! ${result.reward} CFC kazandınız!`)
           })
         }
       } else {
@@ -320,7 +320,7 @@ export default function GameCenterPage() {
         setQuizFinished(true)
         const finalScore = quizScore + (correct ? 1 : 0)
         recordPlay('quiz', finalScore).then(result => {
-          if (result) setResultMessage(`⭐ Quiz bitti! ${finalScore}/5 doğru - ${result.reward} Jeton!`)
+          if (result) setResultMessage(`⭐ Quiz bitti! ${finalScore}/5 doğru - ${result.reward} CFC!`)
         })
       }
     }, 1000)
@@ -334,7 +334,7 @@ export default function GameCenterPage() {
       setLuckyBoxOpened(true)
       setLuckyBoxOpening(false)
       const result = await recordPlay('sans-kutusu')
-      if (result) setResultMessage(`🎁 Kutuda ${result.reward} Jeton vardı!`)
+      if (result) setResultMessage(`🎁 Kutuda ${result.reward} CFC vardı!`)
     }, 1500)
   }
 
@@ -368,7 +368,7 @@ export default function GameCenterPage() {
       setGuessWon(true)
       setGuessHint(`🎯 Tebrikler! ${newAttempts} denemede buldunuz!`)
       const result = await recordPlay('sayi-tahmin', newAttempts)
-      if (result) setResultMessage(`🔢 ${result.reward} Jeton kazandınız!`)
+      if (result) setResultMessage(`🔢 ${result.reward} CFC kazandınız!`)
     } else if (num < guessTarget) {
       setGuessHint(`⬆️ Daha yüksek! (${newAttempts}. deneme)`)
     } else {
@@ -455,9 +455,9 @@ export default function GameCenterPage() {
             setLambaGenieMsg('Bu sefer şansın yaver gitmedi... Tekrar dene! 😔')
           } else if (data.reward.type === 'free_fortune') {
             setLambaGenieMsg('✨ Tebrikler! Ücretsiz bir fal hakkı kazandın! 🔮')
-            setResultMessage('🔮 Ücretsiz Fal kazandınız! (+5 Jeton)')
+            setResultMessage('🔮 Ücretsiz Fal kazandınız! (+5 CFC)')
           } else {
-            setLambaGenieMsg(`🎉 Tebrikler! ${data.reward.amount} Jeton kazandın!`)
+            setLambaGenieMsg(`🎉 Tebrikler! ${data.reward.amount} CFC kazandın!`)
             setResultMessage(`🎉 ${data.reward.label} kazandınız!`)
           }
           if (data.reward.amount > 0) {
@@ -940,7 +940,7 @@ export default function GameCenterPage() {
                     <p className="text-yellow-400 text-sm">+{lambaReward.amount} CFC</p>
                   )}
                   {lambaReward.type === 'free_fortune' && (
-                    <p className="text-purple-300 text-sm">+5 Jeton (Fal Hakkı)</p>
+                    <p className="text-purple-300 text-sm">+5 CFC (Fal Hakkı)</p>
                   )}
                 </motion.div>
 
@@ -1011,7 +1011,7 @@ export default function GameCenterPage() {
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
                   <Coins className="w-4 h-4 text-yellow-400" />
                   <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
-                  <span className="text-fuchsia-400/60 text-xs">Jeton</span>
+                  <span className="text-fuchsia-400/60 text-xs">CFC</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 rounded-full border border-purple-500/30">
                   <Crown className="w-4 h-4 text-amber-400" />
@@ -1186,7 +1186,7 @@ export default function GameCenterPage() {
                       <Crown className="w-5 h-5 text-amber-400" />
                       <span className="text-white font-bold text-sm">Seviye {profile.level} - {profile.levelTitle}</span>
                     </div>
-                    <span className="text-fuchsia-300/60 text-xs">{profile.totalJetons} toplam Jeton</span>
+                    <span className="text-fuchsia-300/60 text-xs">{profile.totalJetons} toplam CFC</span>
                   </div>
                   <div className="w-full bg-purple-900/50 rounded-full h-2.5">
                     <div className="bg-gradient-to-r from-fuchsia-500 to-amber-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${getLevelProgress()}%` }} />
@@ -1206,7 +1206,7 @@ export default function GameCenterPage() {
                     <Share2 className="w-5 h-5 text-fuchsia-400" />
                     <div>
                       <p className="text-white font-bold text-sm">Davet Et & Kazan</p>
-                      <p className="text-fuchsia-300/60 text-xs">Davet eden → 50 Jeton • Üye olan → 50 Jeton</p>
+                      <p className="text-fuchsia-300/60 text-xs">Davet eden → 50 CFC • Üye olan → 50 CFC</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
