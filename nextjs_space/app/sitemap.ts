@@ -28,6 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/sosyal`,
       lastModified: new Date(),
       changeFrequency: 'hourly',
@@ -37,18 +43,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/sohbet`,
       lastModified: new Date(),
       changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/sohbet/video`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/hediyeler`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/oyunlar`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
       url: `${baseUrl}/siralama`,
       lastModified: new Date(),
       changeFrequency: 'daily',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/oyunlar`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
       priority: 0.6,
     },
     {
@@ -61,6 +79,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/online-fal`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/ruya`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
       priority: 0.8,
     },
     {

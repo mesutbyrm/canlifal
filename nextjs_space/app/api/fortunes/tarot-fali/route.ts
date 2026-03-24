@@ -52,7 +52,17 @@ export async function POST(request: Request) {
 
     // Call LLM API with streaming
     const response = await callLLM({ messages, max_tokens: 600 })
-// Stream the response back to client
+    
+    if (!response || !response.ok) {
+      const errText = await response?.text?.().catch(() => '') || ''
+      console.error('LLM API error for tarot:', response?.status, errText)
+      return NextResponse.json(
+        { error: 'Fal yorumu oluşturulamadı. Lütfen tekrar deneyin.' },
+        { status: 502 }
+      )
+    }
+
+    // Stream the response back to client
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response?.body?.getReader()
