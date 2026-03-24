@@ -52,6 +52,20 @@ export async function POST(
         where: { id: existingFollow.id }
       })
 
+      // Notify the unfollowed user
+      createNotificationWithPush({
+        userId: targetUser.id,
+        type: 'unfollow',
+        message: 'seni takipten çıktı',
+        fromUserId: currentUserId,
+        fromUserName: session.user.name || 'Birisi',
+        data: JSON.stringify({
+          followerId: currentUserId,
+          followerName: session.user.name,
+          followerImage: session.user.image
+        })
+      }).catch((err: any) => console.error('Unfollow notification error:', err))
+
       return NextResponse.json({ 
         success: true, 
         action: 'unfollowed',

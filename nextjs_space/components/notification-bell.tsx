@@ -171,10 +171,16 @@ export default function NotificationBell() {
       return notif.title || notif.message
     }
     switch (notif.type) {
-      case 'like': return `${senderName} ${'paylaşımını beğendi'}`
-      case 'comment': return `${senderName} ${'yorum yaptı'}`
-      case 'share': return `${senderName} ${'paylaştı'}`
-      default: return notif.message
+      case 'like': return `${senderName} paylaşımını beğendi`
+      case 'comment': return `${senderName} yorum yaptı`
+      case 'share': return `${senderName} paylaştı`
+      case 'follow': return `${senderName} seni takip etmeye başladı`
+      case 'unfollow': return `${senderName} seni takipten çıktı`
+      case 'profile_view': return `${senderName} profilini görüntüledi`
+      case 'message': return `${senderName} sana mesaj gönderdi`
+      case 'stream_start': return `${senderName} canlı yayın başlattı`
+      case 'gift': return `${senderName} sana hediye gönderdi`
+      default: return notif.fromUserName ? `${senderName} ${notif.message}` : notif.message
     }
   }
 

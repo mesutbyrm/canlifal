@@ -108,7 +108,7 @@ export default function VideoStreamPage() {
   const [streams, setStreams] = useState<VideoStream[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [isMuted, setIsMuted] = useState(true) // Start muted for browser autoplay policy
+  const [isMuted, setIsMuted] = useState(false) // Start unmuted - user navigated here via interaction
   const [showGifts, setShowGifts] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')

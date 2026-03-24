@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export async function GET(
   request: NextRequest,
@@ -123,15 +124,14 @@ export async function GET(
         })
 
         if (!recentNotification) {
-          prisma.notification.create({
-            data: {
-              userId: user.id,
-              type: 'profile_view',
-              title: '👁️ Profil Görüntüleme',
-              message: `${viewer?.name || viewer?.username || 'Birisi'} profilinizi görüntüledi`,
-              fromUserId: currentUserId,
-              fromUserName: viewer?.name || viewer?.username || null,
-            }
+          createNotificationWithPush({
+            userId: user.id,
+            type: 'profile_view',
+            title: '👁️ Profil Görüntüleme',
+            message: 'profilinizi görüntüledi',
+            fromUserId: currentUserId,
+            fromUserName: viewer?.name || viewer?.username || 'Birisi',
+            data: JSON.stringify({ viewerId: currentUserId, viewerName: viewer?.name || viewer?.username })
           }).catch((err: any) => console.error('Profile view notification error:', err))
         }
       }

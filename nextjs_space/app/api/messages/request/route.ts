@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // POST create a message request
 export async function POST(request: NextRequest) {
@@ -44,14 +45,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        userId: receiverId,
-        type: 'message_request',
-        message: `${session.user.name} size mesaj göndermek istiyor`,
-        data: JSON.stringify({ senderId })
-      }
+    // Create notification with push
+    await createNotificationWithPush({
+      userId: receiverId,
+      fromUserId: senderId,
+      fromUserName: session.user.name || 'Kullanıcı',
+      type: 'message',
+      message: 'size mesaj göndermek istiyor',
+      data: JSON.stringify({ senderId })
     })
 
     return NextResponse.json({ request: messageRequest })
@@ -100,16 +101,16 @@ export async function PATCH(request: NextRequest) {
       data: { status: action === 'accept' ? 'accepted' : 'rejected' }
     })
 
-    // Notify the sender
-    await prisma.notification.create({
-      data: {
-        userId: messageRequest.senderId,
-        type: 'message_request_response',
-        message: action === 'accept'
-          ? `${session.user.name} mesaj isteğinizi kabul etti`
-          : `${session.user.name} mesaj isteğinizi reddetti`,
-        data: JSON.stringify({ action, receiverId: userId })
-      }
+    // Notify the sender with push
+    await createNotificationWithPush({
+      userId: messageRequest.senderId,
+      fromUserId: userId,
+      fromUserName: session.user.name || 'Kullanıcı',
+      type: 'message',
+      message: action === 'accept'
+        ? 'mesaj isteğinizi kabul etti'
+        : 'mesaj isteğinizi reddetti',
+      data: JSON.stringify({ action, receiverId: userId })
     })
 
     return NextResponse.json({ request: updatedRequest })

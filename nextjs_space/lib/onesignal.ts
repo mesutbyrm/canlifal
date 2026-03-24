@@ -117,7 +117,10 @@ export function getNotificationTitle(type: string): string {
     'payment_rejected': '❌ Ödeme Reddedildi',
     'gift': '🎁 Yeni Hediye',
     'follow': '👤 Yeni Takipçi',
+    'unfollow': '👤 Takipten Çıkıldı',
+    'profile_view': '👁️ Profil Görüntüleme',
     'message': '✉️ Yeni Mesaj',
+    'stream_start': '🔴 Canlı Yayın',
     'co_broadcast_invite': '📹 Ortak Yayın Daveti',
     'achievement': '🏆 Yeni Başarım',
     'contest_result': '🎉 Yarışma Sonucu',
@@ -142,11 +145,17 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
   if (type === 'like' || type === 'comment' || type === 'share') {
     return data?.postId ? `${baseUrl}/sosyal?postId=${data.postId}` : `${baseUrl}/sosyal`
   }
-  if (type === 'follow') {
-    return `${baseUrl}/sosyal`
+  if (type === 'follow' || type === 'unfollow') {
+    return data?.followerId ? `${baseUrl}/profil/${data.followerId}` : `${baseUrl}/sosyal`
+  }
+  if (type === 'profile_view') {
+    return data?.viewerId ? `${baseUrl}/profil/${data.viewerId}` : `${baseUrl}/panel`
   }
   if (type === 'message') {
-    return `${baseUrl}/panel`
+    return data?.senderId ? `${baseUrl}/mesajlar/${data.senderId}` : `${baseUrl}/mesajlar`
+  }
+  if (type === 'stream_start') {
+    return `${baseUrl}/sohbet/video`
   }
   if (type === 'achievement') {
     return `${baseUrl}/basarimlar`

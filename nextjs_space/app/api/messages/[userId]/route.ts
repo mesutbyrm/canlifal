@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // GET messages with a specific user
 export async function GET(
@@ -206,15 +207,15 @@ export async function POST(
       }
     })
 
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        userId: otherUserId,
-        type: 'message',
-        message: `${session.user.name} size bir mesaj gönderdi`,
-        data: JSON.stringify({ senderId: currentUserId })
-      }
-    })
+    // Create notification + push
+    createNotificationWithPush({
+      userId: otherUserId,
+      type: 'message',
+      message: 'size bir mesaj gönderdi',
+      fromUserId: currentUserId,
+      fromUserName: session.user.name || 'Birisi',
+      data: JSON.stringify({ senderId: currentUserId })
+    }).catch((err: any) => console.error('Message notification error:', err))
 
     return NextResponse.json({ message })
   } catch (error) {
