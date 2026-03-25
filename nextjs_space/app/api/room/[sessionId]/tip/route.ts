@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
+import prisma from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+// Send a tip to the teller during live session
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { sessionId: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
+    }
+
+    const { amount } = await request.json();
+    
+    // Validate amount
+    const validAmounts = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+    if (!validAmounts.includes(amount)) {
+      return NextResponse.json({ error: 'Geçersiz bahşiş miktarı' }, { status: 400 });
+    }
+
+    const liveSession = await prisma.liveSession.findUnique({
+      where: { id: params.sessionId },
+      include: { 
+        teller: { include: { user: { select: { id: true, name: true } } } },
+        user: { select: { id: true, name: true, jetonBalance: true } }
+      }
+    });
+
+    if (!liveSession) {
+      return NextResponse.json({ error: 'Seans bulunamadı' }, { status: 404 });
+    }
+
+    // Only user (fal baktıran) can tip
+    if (liveSession.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Sadece kullanıcı bahşiş verebilir' }, { status: 403 });
+    }
+
+    // Check jeton balance
+    if ((liveSession.user.jetonBalance ?? 0) < amount) {
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
+    }
+
+    // Get commission rate
+    const commissionSetting = await prisma.platformSettings.findUnique({
+      where: { key: 'commission_rate' }
+    });
+    const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
+    const commissionAmount = Math.floor(amount * commissionRate / 100);
+    const tellerEarnings = amount - commissionAmount;
+
+    // Transaction: deduct jetons, add to teller earnings, create system messages
+    await prisma.$transaction([
+      // Deduct jetons from user
+      prisma.user.update({
+        where: { id: liveSession.userId },
+        data: { jetonBalance: { decrement: amount } }
+      }),
+      // Add earnings to teller
+      prisma.liveFortuneTeller.update({
+        where: { id: liveSession.tellerId },
+        data: { totalEarnings: { increment: tellerEarnings } }
+      }),
+      // Create tip message for teller (shows popup on teller's screen)
+      prisma.liveSessionMessage.create({
+        data: {
+          sessionId: params.sessionId,
+          senderId: 'system',
+          message: `[TIP:${amount}:${liveSession.user.name || 'Kullanıcı'}]`
+        }
+      }),
+      // Create thank you message for user (shows popup on user's screen)
+      prisma.liveSessionMessage.create({
+        data: {
+          sessionId: params.sessionId,
+          senderId: 'system',
+          message: `[TIP_THANKS:${amount}:${liveSession.teller.user.name || 'Falcı'}]`
+        }
+      })
+    ]);
+
+    // Get updated balance
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: liveSession.userId },
+      select: { jetonBalance: true }
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      amount,
+      jetonsRemaining: updatedUser?.jetonBalance ?? 0
+    });
+  } catch (error) {
+    console.error('Tip error:', error);
+    return NextResponse.json({ error: 'Bahşiş gönderilemedi' }, { status: 500 });
+  }
+}

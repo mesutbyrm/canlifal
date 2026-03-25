@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer, Gift, Heart
 } from 'lucide-react';
 import {
   getRTCConfiguration,
@@ -85,6 +85,12 @@ export default function LiveRoomPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   
+  // Tip state
+  const [showTipPopup, setShowTipPopup] = useState(false);
+  const [tipNotification, setTipNotification] = useState<{ amount: number; name: string } | null>(null);
+  const [tipThanks, setTipThanks] = useState<{ amount: number; name: string } | null>(null);
+  const processedTipIdsRef = useRef<Set<string>>(new Set());
+  
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -122,6 +128,23 @@ export default function LiveRoomPage() {
       const data = await res.json();
       setRoomData(data);
       roomDataRef.current = data;
+      
+      // Sync timer state from server on every fetch
+      if (data.maxMinutes !== undefined) {
+        const maxSec = data.maxMinutes * 60;
+        maxSecondsRef.current = maxSec;
+        const serverElapsed = data.elapsedSeconds || 0;
+        setElapsedSeconds(serverElapsed);
+        setRemainingSeconds(Math.max(0, maxSec - serverElapsed));
+        setTimerStarted(data.timerStarted);
+        if (data.isUser) {
+          setMyJetons(data.user?.jetonBalance ?? 0);
+        }
+        if (data.isTeller) {
+          setUserJetons(data.user?.jetonBalance ?? 0);
+        }
+      }
+      
       return data;
     } catch (err) {
       console.error('Error fetching room:', err);
@@ -451,13 +474,66 @@ export default function LiveRoomPage() {
           const lastMsg = uniqueNewMessages[uniqueNewMessages.length - 1];
           lastMessageTimeRef.current = lastMsg.createdAt;
           
-          setMessages(prev => [...prev, ...uniqueNewMessages]);
+          // Process tip messages before adding to chat
+          const regularMessages: ChatMessage[] = [];
+          const rd = roomDataRef.current;
+          for (const msg of uniqueNewMessages) {
+            if (msg.senderId === 'system') {
+              // Check for tip notification (for teller)
+              const tipMatch = msg.message.match(/^\[TIP:(\d+):(.+)\]$/);
+              if (tipMatch && rd?.isTeller && !processedTipIdsRef.current.has(msg.id)) {
+                processedTipIdsRef.current.add(msg.id);
+                setTipNotification({ amount: parseInt(tipMatch[1]), name: tipMatch[2] });
+                setTimeout(() => setTipNotification(null), 6000);
+                continue;
+              }
+              // Check for tip thanks (for user)
+              const thanksMatch = msg.message.match(/^\[TIP_THANKS:(\d+):(.+)\]$/);
+              if (thanksMatch && rd?.isUser && !processedTipIdsRef.current.has(msg.id)) {
+                processedTipIdsRef.current.add(msg.id);
+                setTipThanks({ amount: parseInt(thanksMatch[1]), name: thanksMatch[2] });
+                setTimeout(() => setTipThanks(null), 5000);
+                continue;
+              }
+              // Skip system messages from chat display
+              if (msg.message.startsWith('[TIP:') || msg.message.startsWith('[TIP_THANKS:')) {
+                continue;
+              }
+            }
+            regularMessages.push(msg);
+          }
+          
+          if (regularMessages.length > 0) {
+            setMessages(prev => [...prev, ...regularMessages]);
+          }
         }
       }
     } catch (err) {
       console.error('Fetch messages error:', err);
     }
   }, [sessionId]);
+
+  // Send tip to teller
+  const sendTip = async (amount: number) => {
+    try {
+      const res = await fetch(`/api/room/${sessionId}/tip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMyJetons(data.jetonsRemaining);
+        setShowTipPopup(false);
+      } else {
+        const err = await res.json();
+        alert(err.error);
+      }
+    } catch (err) {
+      console.error('Tip error:', err);
+    }
+  };
 
   // Send message
   const sendMessage = async () => {
@@ -746,8 +822,8 @@ export default function LiveRoomPage() {
           });
         }, 1000);
         
-        // Ping server every minute
-        pingRef.current = setInterval(pingServer, 60000);
+        // Ping server every 15 seconds for timer sync
+        pingRef.current = setInterval(pingServer, 15000);
         
         // Poll for signals every 1.5 seconds
         signalPollRef.current = setInterval(pollSignals, 1500);
@@ -891,6 +967,17 @@ export default function LiveRoomPage() {
             >
               <Plus className="w-4 h-4" />
               {'Süre Ekle'}
+            </button>
+          )}
+
+          {/* User can tip the teller */}
+          {roomData.isUser && (
+            <button 
+              onClick={() => setShowTipPopup(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full text-sm font-bold hover:from-pink-400 hover:to-rose-400 shadow-lg"
+            >
+              <Gift className="w-4 h-4" />
+              {'Bahşiş'}
             </button>
           )}
 
@@ -1241,6 +1328,96 @@ export default function LiveRoomPage() {
             >
               İptal
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tip Popup - Only for User */}
+      {showTipPopup && roomData.isUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-purple-900 to-deep-purple-900 rounded-2xl p-6 max-w-sm mx-4 border border-pink-500/50 shadow-2xl">
+            <div className="text-center mb-5">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Gift className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                💝 Bahşiş Ver
+              </h3>
+              <p className="text-gray-300 text-sm">
+                {roomData.teller.displayName} falcıya bahşiş gönderin
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <span className="text-yellow-400 text-sm font-bold">
+                  💰 Jetonunuz: {myJetons}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 gap-2 mb-4">
+              {[50, 100, 150, 200, 250, 300, 350, 400, 450, 500].map((amount) => {
+                const canAfford = myJetons >= amount;
+                return (
+                  <button
+                    key={amount}
+                    onClick={() => canAfford && sendTip(amount)}
+                    disabled={!canAfford}
+                    className={`py-3 px-1 rounded-xl text-sm font-medium transition-all ${
+                      canAfford 
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-400 hover:to-rose-400 shadow-md' 
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="text-base font-bold">{amount}</div>
+                    <div className="text-[10px] opacity-80">💰</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowTipPopup(false)}
+              className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tip Notification Popup - Shows on Teller's screen when user tips */}
+      {tipNotification && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
+          <div className="bg-gradient-to-r from-pink-600 via-rose-500 to-pink-600 text-white rounded-2xl px-8 py-5 shadow-2xl border-2 border-pink-300/50 min-w-[300px]">
+            <div className="text-center">
+              <div className="text-4xl mb-2">💝🎉</div>
+              <p className="text-lg font-bold mb-1">Bahşiş Aldınız!</p>
+              <p className="text-2xl font-extrabold text-yellow-200">
+                {tipNotification.amount} Jeton
+              </p>
+              <p className="text-sm mt-2 opacity-90">
+                {tipNotification.name} bahşiş gönderdi
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tip Thanks Popup - Shows on User's screen after tipping */}
+      {tipThanks && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
+          <div className="bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600 text-white rounded-2xl px-8 py-5 shadow-2xl border-2 border-purple-300/50 min-w-[300px]">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🤗✨</div>
+              <p className="text-lg font-bold mb-1">
+                {tipThanks.name}
+              </p>
+              <p className="text-base">
+                Bahşişiniz için teşekkür ederim 🤗
+              </p>
+              <p className="text-yellow-300 text-sm mt-1 font-semibold">
+                {tipThanks.amount} Jeton
+              </p>
+            </div>
           </div>
         </div>
       )}
