@@ -141,6 +141,13 @@ export default function NotificationBell() {
       } else {
         router.push(`/panel`)
       }
+    } else if (notif.type === 'stream_live' || notif.type === 'stream_start') {
+      const streamId = parsedData?.streamId
+      if (streamId) {
+        router.push(`/sohbet/video?stream=${streamId}`)
+      } else {
+        router.push(`/sohbet/video`)
+      }
     } else if (notif.type === 'profile_view' && notif.fromUserId) {
       router.push(`/profil/${notif.fromUserId}`)
     } else if (notif.type === 'like' || notif.type === 'comment' || notif.type === 'share' || notif.postId) {
@@ -161,6 +168,7 @@ export default function NotificationBell() {
       case 'payment_approved': return <Coins className="w-4 h-4 text-green-400" />
       case 'payment_rejected': return <CreditCard className="w-4 h-4 text-red-400" />
       case 'profile_view': return <Eye className="w-4 h-4 text-cyan-400" />
+      case 'stream_live': case 'stream_start': return <Video className="w-4 h-4 text-red-400" />
       default: return <Bell className="w-4 h-4 text-fuchsia-300" />
     }
   }
@@ -178,7 +186,7 @@ export default function NotificationBell() {
       case 'unfollow': return `${senderName} seni takipten çıktı`
       case 'profile_view': return `${senderName} profilini görüntüledi`
       case 'message': return `${senderName} sana mesaj gönderdi`
-      case 'stream_start': return `${senderName} canlı yayın başlattı`
+      case 'stream_start': case 'stream_live': return `${senderName} canlı yayın başlattı`
       case 'gift': return `${senderName} sana hediye gönderdi`
       default: return notif.fromUserName ? `${senderName} ${notif.message}` : notif.message
     }

@@ -154,8 +154,8 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
   if (type === 'message') {
     return data?.senderId ? `${baseUrl}/mesajlar/${data.senderId}` : `${baseUrl}/mesajlar`
   }
-  if (type === 'stream_start') {
-    return `${baseUrl}/sohbet/video`
+  if (type === 'stream_start' || type === 'stream_live') {
+    return data?.streamId ? `${baseUrl}/sohbet/video?stream=${data.streamId}` : `${baseUrl}/sohbet/video`
   }
   if (type === 'achievement') {
     return `${baseUrl}/basarimlar`

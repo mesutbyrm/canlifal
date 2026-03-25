@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, TouchEvent } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
@@ -114,6 +114,8 @@ const getHeartLevelText = (count: number): string => {
 export default function VideoStreamPage() {
   const { data: session } = useSession() || {}
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const targetStreamId = searchParams?.get('stream') || null
   const { language } = useLanguage()
   
   const [streams, setStreams] = useState<VideoStream[]>([])
@@ -694,10 +696,22 @@ export default function VideoStreamPage() {
     } catch (e) {}
   }
 
+  const targetStreamAppliedRef = useRef(false)
   const fetchStreams = async () => {
     try {
       const res = await fetch('/api/video-streams')
-      if (res.ok) setStreams(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        setStreams(data)
+        // Auto-select target stream from URL
+        if (targetStreamId && !targetStreamAppliedRef.current && data.length > 0) {
+          const idx = data.findIndex((s: VideoStream) => s.id === targetStreamId)
+          if (idx >= 0) {
+            setCurrentIndex(idx)
+            targetStreamAppliedRef.current = true
+          }
+        }
+      }
     } catch (e) {}
     setLoading(false)
   }
@@ -893,6 +907,42 @@ export default function VideoStreamPage() {
         x: 30 + Math.random() * 40,
         y: 20 + Math.random() * 30,
         delay: i * 0.12,
+        rotation: Math.random() * 360,
+      }))
+      setFlyingCoins(newCoins)
+      setTimeout(() => setFlyingCoins([]), 3500)
+    } else if (anim === 'heart_rain') {
+      // Kalp yağmuru - flying hearts
+      const heartCount = 8
+      const newCoins: FlyingCoin[] = Array.from({ length: heartCount }, (_, i) => ({
+        id: Date.now() + i,
+        x: 10 + Math.random() * 80,
+        y: 10 + Math.random() * 40,
+        delay: i * 0.15,
+        rotation: Math.random() * 60 - 30,
+      }))
+      setFlyingCoins(newCoins)
+      setTimeout(() => setFlyingCoins([]), 4000)
+    } else if (anim === 'star_burst') {
+      // Yıldız patlaması
+      const starCount = 12
+      const newCoins: FlyingCoin[] = Array.from({ length: starCount }, (_, i) => ({
+        id: Date.now() + i,
+        x: 20 + Math.random() * 60,
+        y: 15 + Math.random() * 40,
+        delay: i * 0.08,
+        rotation: Math.random() * 360,
+      }))
+      setFlyingCoins(newCoins)
+      setTimeout(() => setFlyingCoins([]), 3500)
+    } else if (anim === 'sparkle_burst') {
+      // Genel parlama efekti - for rose, crown, diamond, crystal
+      const sparkleCount = 6
+      const newCoins: FlyingCoin[] = Array.from({ length: sparkleCount }, (_, i) => ({
+        id: Date.now() + i,
+        x: 25 + Math.random() * 50,
+        y: 20 + Math.random() * 30,
+        delay: i * 0.1,
         rotation: Math.random() * 360,
       }))
       setFlyingCoins(newCoins)

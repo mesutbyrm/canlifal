@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSiteTheme } from '@/lib/theme-context'
+import Image from 'next/image'
 
 interface BigGiftNotification {
   id: string
@@ -11,6 +12,10 @@ interface BigGiftNotification {
   giftIcon: string
   amount: number
   createdAt: string
+}
+
+function isImagePath(icon: string) {
+  return icon.startsWith('/') || icon.startsWith('http')
 }
 
 export default function GiftNotificationBanner() {
@@ -100,9 +105,10 @@ export default function GiftNotificationBanner() {
   if (!currentNotif || passCount >= 2) return null
 
   const isJeton = currentNotif.giftType === 'Jeton'
+  const iconIsImage = isImagePath(currentNotif.giftIcon)
   const displayText = isJeton
     ? `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.amount.toLocaleString()} Jeton Hediye!`
-    : `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.giftIcon} ${currentNotif.giftType} Hediye Attı!`
+    : `${currentNotif.senderName} ➜ ${currentNotif.recipientName} • ${currentNotif.giftType} Hediye Attı!`
 
   // FalClub theme gradient
   const bannerBg = 'linear-gradient(90deg, #2d0a4e, #d946ef, #ec4899, #d946ef, #2d0a4e)'
@@ -177,7 +183,13 @@ export default function GiftNotificationBanner() {
           {/* Left celebration cluster */}
           <span className="inline-flex items-center gap-1">
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite' }}>🎉</span>
-            <span style={{ fontSize: '24px', WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s' }}>{currentNotif.giftIcon}</span>
+            <span style={{ WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s', display: 'inline-flex', alignItems: 'center' }}>
+              {iconIsImage ? (
+                <Image src={currentNotif.giftIcon} alt={currentNotif.giftType} width={32} height={32} className="w-8 h-8 object-contain drop-shadow-[0_0_6px_rgba(255,215,0,0.8)]" />
+              ) : (
+                <span style={{ fontSize: '24px' }}>{currentNotif.giftIcon}</span>
+              )}
+            </span>
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>🎊</span>
           </span>
 
@@ -200,7 +212,13 @@ export default function GiftNotificationBanner() {
           {/* Right celebration cluster */}
           <span className="inline-flex items-center gap-1">
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>✨</span>
-            <span style={{ fontSize: '24px', WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite' }}>{currentNotif.giftIcon}</span>
+            <span style={{ WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', display: 'inline-flex', alignItems: 'center' }}>
+              {iconIsImage ? (
+                <Image src={currentNotif.giftIcon} alt={currentNotif.giftType} width={32} height={32} className="w-8 h-8 object-contain drop-shadow-[0_0_6px_rgba(255,215,0,0.8)]" />
+              ) : (
+                <span style={{ fontSize: '24px' }}>{currentNotif.giftIcon}</span>
+              )}
+            </span>
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>🌟</span>
           </span>
         </span>

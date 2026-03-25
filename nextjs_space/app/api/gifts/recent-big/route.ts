@@ -34,8 +34,8 @@ export async function GET() {
       try {
         const data = JSON.parse(notif.data as string)
 
-        // Check if it's a big jeton gift (1000+)
-        if (data.type === 'jeton' && data.amount >= 1000) {
+        // Check if it's a big jeton gift (500+)
+        if (data.type === 'jeton' && data.amount >= 500) {
           notifications.push({
             id: notif.id,
             senderName: data.senderName || 'Anonim',
@@ -46,17 +46,17 @@ export async function GET() {
             createdAt: notif.createdAt.toISOString()
           })
         } else if (data.giftName) {
-          // Check if this gift is a high-value one (price >= 1000)
+          // Check if this gift is a high-value one (price >= 500)
           const giftType = await prisma.giftType.findFirst({
-            where: { name: data.giftName, price: { gte: 1000 } }
+            where: { name: data.giftName, price: { gte: 500 } }
           })
           if (giftType) {
             notifications.push({
               id: notif.id,
               senderName: data.senderName || 'Anonim',
               recipientName: notif.user.name || 'Anonim',
-              giftType: data.giftName,
-              giftIcon: data.giftIcon || '🦁',
+              giftType: giftType.name,
+              giftIcon: giftType.icon || data.giftIcon || '🎁',
               amount: giftType.price,
               createdAt: notif.createdAt.toISOString()
             })
