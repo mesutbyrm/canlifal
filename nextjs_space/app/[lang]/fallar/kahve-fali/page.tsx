@@ -317,8 +317,8 @@ export default function CoffeeFortunePage() {
               onClick={() => setInputMode('image')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 inputMode === 'image'
-                  ? 'bg-gold-500 text-deep-purple-950'
-                  : 'text-deep-purple-300 hover:text-white'
+                  ? 'bg-gold-400 text-black'
+                  : 'text-deep-purple-200 hover:text-white'
               }`}
             >
               <Camera className="w-4 h-4" />
@@ -328,8 +328,8 @@ export default function CoffeeFortunePage() {
               onClick={() => setInputMode('text')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 inputMode === 'text'
-                  ? 'bg-gold-500 text-deep-purple-950'
-                  : 'text-deep-purple-300 hover:text-white'
+                  ? 'bg-gold-400 text-black'
+                  : 'text-deep-purple-200 hover:text-white'
               }`}
             >
               <FileText className="w-4 h-4" />

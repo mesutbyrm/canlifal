@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, TouchEvent } from 'react'
+import { useState, useEffect, useRef, TouchEvent, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -111,7 +111,7 @@ const getHeartLevelText = (count: number): string => {
 }
 // ICE sunucuları merkezi yapılandırmadan alınıyor (webrtc-config.ts)
 
-export default function VideoStreamPage() {
+function VideoStreamPageInner() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -2292,5 +2292,13 @@ export default function VideoStreamPage() {
       </AnimatePresence>
 
     </div>
+  )
+}
+
+export default function VideoStreamPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><div className="w-10 h-10 border-4 border-fuchsia-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <VideoStreamPageInner />
+    </Suspense>
   )
 }
