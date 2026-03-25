@@ -24,6 +24,26 @@ interface OverviewData {
   totalCommission: number
   platformProfit: number
   manualProfitAdjustment: number
+  breakdown?: {
+    streamGiftSpent: number
+    chatGiftSpent: number
+    tellerGiftSpent: number
+    sessionSpent: number
+    banaOzelSpent: number
+    membershipSpent: number
+    banaOzelCount: number
+    membershipCount: number
+  }
+  commissions?: {
+    streamCommission: number
+    sessionCommission: number
+    chatCommission: number
+    totalBurnedJetons: number
+    commissionRate: number
+    broadcasterCommRate: number
+  }
+  jetonSpendBreakdown?: Record<string, { amount: number; count: number }>
+  jetonIncomeBreakdown?: Record<string, { amount: number; count: number }>
 }
 
 interface CommissionSettings {
@@ -555,8 +575,24 @@ export default function AdminFinancePage() {
 
 function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }: { data: OverviewData; formatNumber: (n: number) => string; formatCurrency: (n: number) => string; onAdjustProfit: () => void }) {
   const isProfit = data.platformProfit >= 0
+  const bd = data.breakdown
+  const cm = data.commissions
+
+  // Jeton harcama türleri label map
+  const spendLabels: Record<string, string> = {
+    spend: 'Bana Özel', gift: 'Hediye', purchase: 'Satın Alma', stream: 'Canlı Yayın',
+    fortune: 'Fal', membership: 'Üyelik', room: 'Oda Oluşturma', session: 'Canlı Seans',
+    dream: 'Rüya Yorumu', bana_ozel: 'Bana Özel', live_session: 'Canlı Seans',
+  }
+  const incomeLabels: Record<string, string> = {
+    purchase: 'Satın Alma', daily_bonus: 'Günlük Bonus', streak_bonus: 'Seri Bonusu',
+    task: 'Görev Bonusu', welcome: 'Hoşgeldin', referral: 'Referans', gift_received: 'Hediye Alındı',
+    admin: 'Admin Ekleme', refund: 'İade',
+  }
+
   return (
     <div className="space-y-6">
+      {/* Kâr/Zarar Ana Kartı */}
       <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
         className={`relative overflow-hidden rounded-2xl p-6 border ${isProfit ? 'bg-gradient-to-r from-green-900/40 to-emerald-900/40 border-green-500/30' : 'bg-gradient-to-r from-red-900/40 to-rose-900/40 border-red-500/30'}`}>
         <div className="flex items-center justify-between">
@@ -567,7 +603,7 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
             <div>
               <p className="text-sm text-gray-300">{isProfit ? '✅ Siteniz KÂRDA' : '⚠️ Siteniz ZARARDA'}</p>
               <p className={`text-3xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(Math.abs(data.platformProfit))}</p>
-              <p className="text-xs text-gray-400 mt-1">Yayıncı yüzdeleri düşüldükten sonraki net durum</p>
+              <p className="text-xs text-gray-400 mt-1">Yayıncı/falcı yüzdeleri düşüldükten sonraki net durum</p>
             </div>
           </div>
           <button onClick={onAdjustProfit} className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-all text-xs font-medium text-gray-300">
@@ -576,16 +612,100 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
         </div>
       </motion.div>
 
+      {/* Genel Bakış Kartları */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<Coins className="w-5 h-5 text-yellow-400" />} label="Dolaşımdaki Jeton" value={formatNumber(data.totalJeton)} color="yellow" />
         <StatCard icon={<Crown className="w-5 h-5 text-blue-400" />} label="Dolaşımdaki CFC" value={formatNumber(data.totalCfc)} color="blue" />
         <StatCard icon={<DollarSign className="w-5 h-5 text-green-400" />} label="Toplam Gelir (TRY)" value={formatCurrency(data.totalRevenue)} color="green" />
-        <StatCard icon={<Users className="w-5 h-5 text-orange-400" />} label="Yayıncı Kazançları" value={formatNumber(data.totalTellerEarnings) + ' jeton'} color="orange" />
+        <StatCard icon={<Users className="w-5 h-5 text-orange-400" />} label="Yayıncı/Falcı Kazançları" value={formatNumber(data.totalTellerEarnings) + ' jeton'} color="orange" />
         <StatCard icon={<Gift className="w-5 h-5 text-pink-400" />} label="Hediye Harcamaları" value={formatNumber(data.totalGiftSpent) + ' jeton'} color="pink" />
         <StatCard icon={<Star className="w-5 h-5 text-amber-400" />} label="Seans Harcamaları" value={formatNumber(data.totalSessionSpent) + ' jeton'} color="amber" />
         <StatCard icon={<Wallet className="w-5 h-5 text-purple-400" />} label="Komisyon Geliri" value={formatNumber(data.totalCommission) + ' jeton'} color="purple" />
         <StatCard icon={<Award className="w-5 h-5 text-cyan-400" />} label="Net Durum" value={formatCurrency(data.platformProfit)} color={isProfit ? 'green' : 'red'} />
       </div>
+
+      {/* Jeton Harcama Kaynakları Detaylı */}
+      {bd && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-purple-200 mb-4 flex items-center gap-2">
+            <ArrowDownRight className="w-4 h-4 text-red-400" /> Jeton Harcama Kaynakları (Nereden Harcandı?)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <MiniStat label="🎁 Yayın Hediyeleri" value={formatNumber(bd.streamGiftSpent)} sub="jeton" />
+            <MiniStat label="💬 Sohbet Hediyeleri" value={formatNumber(bd.chatGiftSpent)} sub="jeton" />
+            <MiniStat label="⭐ Falcı Hediyeleri" value={formatNumber(bd.tellerGiftSpent)} sub="jeton" />
+            <MiniStat label="📹 Canlı Seanslar" value={formatNumber(bd.sessionSpent)} sub="jeton" />
+            <MiniStat label="✨ Bana Özel" value={formatNumber(bd.banaOzelSpent)} sub={`${bd.banaOzelCount} kullanım`} />
+            <MiniStat label="👑 Üyelik Satışları" value={formatNumber(bd.membershipSpent)} sub={`${bd.membershipCount} satış`} />
+          </div>
+        </div>
+      )}
+
+      {/* Komisyon Detayları */}
+      {cm && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-green-200 mb-4 flex items-center gap-2">
+            <ArrowUpRight className="w-4 h-4 text-green-400" /> Siteye Kalan Gelirler (Komisyon & Yakılan Jetonlar)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <MiniStat label={`📹 Yayın Komisyonu (%${cm.broadcasterCommRate})`} value={formatNumber(cm.streamCommission)} sub="jeton" highlight />
+            <MiniStat label={`⭐ Seans Komisyonu (%${cm.commissionRate})`} value={formatNumber(cm.sessionCommission)} sub="jeton" highlight />
+            <MiniStat label="💬 Sohbet Komisyonu" value={formatNumber(cm.chatCommission)} sub="jeton" highlight />
+            <MiniStat label="🔥 Yakılan Jetonlar" value={formatNumber(cm.totalBurnedJetons)} sub="Bana Özel + Üyelik" highlight />
+          </div>
+          <p className="text-[10px] text-gray-500 mt-3">💡 Yakılan jetonlar: Herhangi bir kullanıcıya gitmeyen, tamamen siteye kalan jeton harcamaları</p>
+        </div>
+      )}
+
+      {/* Jeton Harcama & Gelir Detayları (JetonTransaction bazlı) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {data.jetonSpendBreakdown && Object.keys(data.jetonSpendBreakdown).length > 0 && (
+          <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-5">
+            <h3 className="text-sm font-bold text-red-300 mb-3 flex items-center gap-2">
+              <Minus className="w-4 h-4" /> Jeton Çıkışları (İşlem Bazlı)
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(data.jetonSpendBreakdown).sort((a, b) => b[1].amount - a[1].amount).map(([type, info]) => (
+                <div key={type} className="flex items-center justify-between py-1.5 border-b border-white/5">
+                  <span className="text-xs text-gray-300">{spendLabels[type] || type}</span>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-red-400">{formatNumber(info.amount)}</span>
+                    <span className="text-[10px] text-gray-500 ml-1">({info.count}x)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {data.jetonIncomeBreakdown && Object.keys(data.jetonIncomeBreakdown).length > 0 && (
+          <div className="bg-green-900/10 border border-green-500/20 rounded-2xl p-5">
+            <h3 className="text-sm font-bold text-green-300 mb-3 flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Jeton Girişleri (İşlem Bazlı)
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(data.jetonIncomeBreakdown).sort((a, b) => b[1].amount - a[1].amount).map(([type, info]) => (
+                <div key={type} className="flex items-center justify-between py-1.5 border-b border-white/5">
+                  <span className="text-xs text-gray-300">{incomeLabels[type] || type}</span>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-green-400">{formatNumber(info.amount)}</span>
+                    <span className="text-[10px] text-gray-500 ml-1">({info.count}x)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MiniStat({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: boolean }) {
+  return (
+    <div className={`rounded-xl p-3 ${highlight ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/5 border border-white/10'}`}>
+      <p className="text-[10px] text-gray-400 mb-1">{label}</p>
+      <p className={`text-lg font-bold ${highlight ? 'text-green-400' : 'text-white'}`}>{value}</p>
+      {sub && <p className="text-[10px] text-gray-500">{sub}</p>}
     </div>
   )
 }

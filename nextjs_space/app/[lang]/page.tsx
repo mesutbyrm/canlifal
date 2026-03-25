@@ -503,7 +503,7 @@ export default function HomePage() {
               <Sparkles className="w-5 h-5" />
               {'FALLAR'}
               {sectionCounts.fortunes > 0 && (
-                <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
+                <span className="text-yellow-400 text-xs font-bold ml-2 animate-pulse">
                   🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}
@@ -847,7 +847,7 @@ export default function HomePage() {
             <h2 className="text-gray-800 font-bold text-lg mb-4">
               Fallar
               {sectionCounts.fortunes > 0 && (
-                <span className="text-red-500 text-xs font-bold ml-2 animate-pulse">
+                <span className="text-yellow-400 text-xs font-bold ml-2 animate-pulse">
                   🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}
@@ -1017,7 +1017,7 @@ export default function HomePage() {
               <Sparkles className={`w-5 h-5 ${accentColor}`} />
               {'Fallar'}
               {sectionCounts.fortunes > 0 && (
-                <span className="text-red-400 text-xs font-bold ml-2 animate-pulse">
+                <span className="text-yellow-400 text-xs font-bold ml-2 animate-pulse">
                   🔮 {sectionCounts.fortunes} {'kişi fal baktırıyor'}
                 </span>
               )}

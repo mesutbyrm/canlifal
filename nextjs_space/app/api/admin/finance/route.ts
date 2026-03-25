@@ -84,18 +84,49 @@ export async function GET(request: NextRequest) {
         _sum: { creditsCharged: true },
       })
 
+      // Bana Özel harcamaları
+      const banaOzelSpent = await prisma.banaOzelHistory.aggregate({
+        where: dateFilter,
+        _sum: { jetonSpent: true },
+        _count: true,
+      })
+
+      // Üyelik satın alma (jeton ile)
+      const membershipPurchases = await prisma.membershipPurchase.aggregate({
+        where: { status: 'active', ...dateFilter },
+        _sum: { pricePaid: true },
+        _count: true,
+      }).catch(() => ({ _sum: { pricePaid: 0 }, _count: 0 }))
+
+      // Jeton transaction bazlı kaynak analizi
+      const jetonSpendByType = await prisma.jetonTransaction.groupBy({
+        by: ['type'],
+        where: { amount: { lt: 0 }, ...dateFilter },
+        _sum: { amount: true },
+        _count: true,
+      }).catch(() => [])
+
+      // Jeton gelir kaynak analizi  
+      const jetonIncomeByType = await prisma.jetonTransaction.groupBy({
+        by: ['type'],
+        where: { amount: { gt: 0 }, ...dateFilter },
+        _sum: { amount: true },
+        _count: true,
+      }).catch(() => [])
+
       // Teller earnings - not easily filtered by date on the aggregate, 
       // so for filtered view we calculate from sessions
       let totalTellerEarnings = 0
+      const commSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
+      const commRate = commSetting ? parseInt(commSetting.value) : 20
+      const broadcasterCommSetting = await prisma.platformSettings.findUnique({ where: { key: 'broadcaster_commission_rate' } })
+      const broadcasterCommRate = broadcasterCommSetting ? parseInt(broadcasterCommSetting.value) : 20
+
       if (dateFrom && dateTo) {
-        // When filtered, calculate from completed sessions in the period
         const sessionsInRange = await prisma.liveSession.findMany({
           where: { status: 'completed', ...dateFilter },
           select: { creditsCharged: true },
         })
-        // Get commission rate 
-        const commSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
-        const commRate = commSetting ? parseInt(commSetting.value) : 20
         const totalCharged = sessionsInRange.reduce((s: any, x: any) => s + x.creditsCharged, 0)
         totalTellerEarnings = totalCharged - Math.floor(totalCharged * commRate / 100)
       } else {
@@ -110,10 +141,22 @@ export async function GET(request: NextRequest) {
       // Commission earned by platform from gifts
       const totalCommission = chatGiftTotal._sum.commissionAmount || 0
 
-      const totalGiftSpent = (streamGiftTotal._sum.totalPrice || 0) + 
-                             (chatGiftTotal._sum.totalPrice || 0) + 
-                             (tellerGiftTotal._sum.totalPrice || 0)
+      const streamGiftSpent = streamGiftTotal._sum.totalPrice || 0
+      const chatGiftSpent = chatGiftTotal._sum.totalPrice || 0
+      const tellerGiftSpent = tellerGiftTotal._sum.totalPrice || 0
+      const totalGiftSpent = streamGiftSpent + chatGiftSpent + tellerGiftSpent
       const totalSessionSpent = sessionCharges._sum.creditsCharged || 0
+      const totalBanaOzelSpent = banaOzelSpent._sum.jetonSpent || 0
+      const totalMembershipSpent = membershipPurchases._sum.pricePaid || 0
+
+      // Platform komisyon gelirleri detaylı
+      const streamCommission = Math.floor(streamGiftSpent * broadcasterCommRate / 100) // Yayıncıdan kesilen
+      const sessionCommission = Math.floor(totalSessionSpent * commRate / 100) // Falcıdan kesilen
+      const chatCommission = totalCommission // Sohbet odası komisyonu
+
+      // Siteye kalan toplam (tüm jeton harcamalarından kullanıcılara dağıtılan düşülür)
+      const totalDistributed = totalTellerEarnings + Math.floor(streamGiftSpent * (100 - broadcasterCommRate) / 100)
+      const totalBurnedJetons = totalBanaOzelSpent + totalMembershipSpent // Bu jetonlar tamamen siteye kalır
 
       // Manual profit adjustments from platform_settings
       const manualAdjSetting = await prisma.platformSettings.findUnique({
@@ -121,8 +164,18 @@ export async function GET(request: NextRequest) {
       })
       const manualProfitAdjustment = manualAdjSetting ? parseFloat(manualAdjSetting.value) : 0
 
-      // Platform profit: revenue - (total distributed to tellers) + manual adjustments
+      // Platform profit: revenue - (total distributed to users) + burned jetons + manual adjustments
       const platformProfit = totalRevenue - totalTellerEarnings + (dateFrom ? 0 : manualProfitAdjustment)
+
+      // Jeton spend/income breakdowns
+      const jetonSpendBreakdown: Record<string, { amount: number; count: number }> = {}
+      for (const item of jetonSpendByType) {
+        jetonSpendBreakdown[item.type] = { amount: Math.abs(item._sum.amount || 0), count: item._count }
+      }
+      const jetonIncomeBreakdown: Record<string, { amount: number; count: number }> = {}
+      for (const item of jetonIncomeByType) {
+        jetonIncomeBreakdown[item.type] = { amount: item._sum.amount || 0, count: item._count }
+      }
 
       return NextResponse.json({
         totalCfc: totals._sum.credits || 0,
@@ -137,6 +190,29 @@ export async function GET(request: NextRequest) {
         period,
         dateFrom: dateFrom?.toISOString() || null,
         dateTo: dateTo?.toISOString() || null,
+        // Detaylı jeton harcama kaynakları
+        breakdown: {
+          streamGiftSpent,
+          chatGiftSpent,
+          tellerGiftSpent,
+          sessionSpent: totalSessionSpent,
+          banaOzelSpent: totalBanaOzelSpent,
+          membershipSpent: totalMembershipSpent,
+          banaOzelCount: banaOzelSpent._count || 0,
+          membershipCount: (membershipPurchases as any)?._count || 0,
+        },
+        // Platform komisyon detayları
+        commissions: {
+          streamCommission,
+          sessionCommission,
+          chatCommission,
+          totalBurnedJetons,
+          commissionRate: commRate,
+          broadcasterCommRate,
+        },
+        // Jeton akış analizi
+        jetonSpendBreakdown,
+        jetonIncomeBreakdown,
       })
     }
 
