@@ -53,6 +53,7 @@ interface GiftType {
   name: string
   nameEn: string
   icon: string
+  animation?: string
   price: number
 }
 
@@ -62,6 +63,16 @@ interface CenterGift {
   senderImage?: string | null
   icon: string
   giftName: string
+  animation?: string
+  price?: number
+}
+
+interface FlyingCoin {
+  id: number
+  x: number
+  y: number
+  delay: number
+  rotation: number
 }
 
 interface Viewer {
@@ -125,6 +136,8 @@ export default function VideoStreamPage() {
   const [sendingGift, setSendingGift] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
+  const [flyingCoins, setFlyingCoins] = useState<FlyingCoin[]>([])
+  const [showCoffeeAnim, setShowCoffeeAnim] = useState(false)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [coBroadcastInvite, setCoBroadcastInvite] = useState<CoBroadcastInvite | null>(null)
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
@@ -654,7 +667,7 @@ export default function VideoStreamPage() {
 
   const pollGifts = async (streamId: string) => {
     try {
-      const res = await fetch(`/api/video-streams/${streamId}/hediyeler`)
+      const res = await fetch(`/api/video-streams/${streamId}/gifts`)
       if (!res.ok) return
       const gifts = await res.json()
       
@@ -663,20 +676,19 @@ export default function VideoStreamPage() {
         const newGift = gifts[0]
         lastGiftIdRef.current = newGift.id
         
-        setCenterGift({
-          id: newGift.id,
-          senderName: newGift.sender.name,
-          senderImage: newGift.sender.image,
-          icon: newGift.giftType.icon,
-          giftName: newGift.giftType.name
-        })
+        triggerGiftAnimation(
+          { 
+            animation: newGift.giftType?.animation || '', 
+            icon: newGift.giftType?.icon || '🎁', 
+            name: newGift.giftType?.name || 'Hediye',
+            price: newGift.giftType?.price || 0
+          },
+          newGift.sender?.name || 'Kullanıcı',
+          newGift.sender?.image
+        )
         
-        // Clear after 3 seconds
-        setTimeout(() => setCenterGift(null), 3000)
-        
-        // Add floating hearts
-        for (let i = 0; i < 5; i++) {
-          setTimeout(() => addFloatingHeart(), i * 100)
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => addFloatingHeart(), i * 150)
         }
       }
     } catch (e) {}
@@ -865,6 +877,40 @@ export default function VideoStreamPage() {
     }
   }
 
+  // Hediye animasyonu tetikleyici
+  const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number }, senderName: string, senderImage?: string | null) => {
+    const anim = gift.animation || ''
+    
+    if (anim === 'coffee_pour') {
+      // Kahve animasyonu
+      setShowCoffeeAnim(true)
+      setTimeout(() => setShowCoffeeAnim(false), 5000)
+    } else if (anim.startsWith('coin_spread') || anim === 'coin_single') {
+      // Para animasyonu
+      const coinCount = anim === 'coin_single' ? 1 : anim === 'coin_spread_5' ? 5 : 10
+      const newCoins: FlyingCoin[] = Array.from({ length: coinCount }, (_, i) => ({
+        id: Date.now() + i,
+        x: 30 + Math.random() * 40,
+        y: 20 + Math.random() * 30,
+        delay: i * 0.12,
+        rotation: Math.random() * 360,
+      }))
+      setFlyingCoins(newCoins)
+      setTimeout(() => setFlyingCoins([]), 3500)
+    }
+    
+    setCenterGift({
+      id: Date.now().toString(),
+      senderName,
+      senderImage,
+      icon: gift.icon,
+      giftName: gift.name,
+      animation: anim,
+      price: gift.price,
+    })
+    setTimeout(() => setCenterGift(null), 4000)
+  }
+
   const handleSendGift = async (gift: GiftType) => {
     if (!currentStream || !session?.user || userJetons < gift.price) {
       if (userJetons < gift.price) alert('Yetersiz jeton!')
@@ -872,7 +918,7 @@ export default function VideoStreamPage() {
     }
     setSendingGift(gift.id)
     try {
-      const res = await fetch(`/api/video-streams/${currentStream.id}/hediyeler`, {
+      const res = await fetch(`/api/video-streams/${currentStream.id}/gifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ giftTypeId: gift.id, quantity: 1 })
@@ -882,19 +928,11 @@ export default function VideoStreamPage() {
         setUserJetons(data.newBalance)
         setShowGifts(false)
         
-        // Show center gift animation
-        setCenterGift({
-          id: Date.now().toString(),
-          senderName: session.user?.name || 'Sen',
-          senderImage: session.user?.image,
-          icon: gift.icon,
-          giftName: gift.name
-        })
-        setTimeout(() => setCenterGift(null), 3000)
+        triggerGiftAnimation(gift, session.user?.name || 'Sen', session.user?.image)
         
         // Add floating hearts
-        for (let i = 0; i < 5; i++) {
-          setTimeout(() => addFloatingHeart(), i * 100)
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => addFloatingHeart(), i * 150)
         }
       }
     } catch (e) {}
@@ -1207,32 +1245,107 @@ export default function VideoStreamPage() {
                 exit={{ scale: 0, opacity: 0 }}
                 className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
               >
-                <motion.div
-                  initial={{ y: 50 }}
-                  animate={{ y: 0 }}
-                  className="text-center"
-                >
+                <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="text-center">
+                  {/* Gift icon - image or emoji */}
                   <motion.div
                     animate={{ scale: [1, 1.3, 1], rotate: [0, 5, -5, 0] }}
                     transition={{ repeat: 3, duration: 0.4 }}
-                    className="text-8xl mb-4 drop-shadow-2xl"
+                    className="mb-4 drop-shadow-2xl flex justify-center"
                   >
-                    {centerGift.icon}
+                    {centerGift.icon.startsWith('/') ? (
+                      <Image src={centerGift.icon} alt={centerGift.giftName} width={120} height={120} className="w-28 h-28 object-contain drop-shadow-[0_0_20px_rgba(139,0,0,0.6)]" />
+                    ) : (
+                      <span className="text-8xl">{centerGift.icon}</span>
+                    )}
                   </motion.div>
                   <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-purple-900/90 to-pink-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-pink-500/30">
                     {centerGift.senderImage ? (
                       <Image src={centerGift.senderImage} alt="" width={44} height={44} className="w-11 h-11 rounded-full object-cover border-2 border-pink-400" />
                     ) : (
                       <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-pink-400">
-                        <span className="text-white font-bold text-lg">{centerGift.senderName[0]}</span>
+                        <span className="text-white font-bold text-lg">{centerGift.senderName?.[0] || '?'}</span>
                       </div>
                     )}
                     <div className="text-left">
                       <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                      <p className="text-pink-300 text-sm">{centerGift.giftName} {'gönderdi'} ✨</p>
+                      <p className="text-pink-300 text-sm">{centerGift.giftName} gönderdi ✨</p>
                     </div>
                   </div>
                 </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Flying Coins Animation */}
+          <AnimatePresence>
+            {flyingCoins.map(coin => (
+              <motion.div
+                key={coin.id}
+                initial={{ opacity: 0, y: '110%', x: `${coin.x}%`, scale: 0.3, rotate: 0 }}
+                animate={{ 
+                  opacity: [0, 1, 1, 0.8, 0],
+                  y: [`110%`, `${coin.y}%`, `${coin.y - 15}%`, `${coin.y + 5}%`],
+                  x: [`${coin.x}%`, `${coin.x + (Math.random() - 0.5) * 30}%`],
+                  scale: [0.3, 1.1, 0.9, 0.7],
+                  rotate: [0, coin.rotation, coin.rotation + 180, coin.rotation + 360],
+                }}
+                exit={{ opacity: 0, scale: 0 }}
+                transition={{ duration: 2.5, delay: coin.delay, ease: 'easeOut' }}
+                className="absolute z-40 pointer-events-none"
+                style={{ left: 0, top: 0 }}
+              >
+                <div className="relative">
+                  <Image src="/gifts/cfc-coin.png" alt="CFC" width={60} height={60} className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(139,0,0,0.8)]" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[8px] font-black text-yellow-300 drop-shadow-md" style={{ textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>CFC</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Coffee Pour Animation */}
+          <AnimatePresence>
+            {showCoffeeAnim && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center"
+              >
+                <div className="relative">
+                  {/* Cezve pouring */}
+                  <motion.div
+                    initial={{ rotate: 0, y: -80 }}
+                    animate={{ rotate: [0, -25, -25, 0], y: [-80, -40, -40, -80] }}
+                    transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
+                  >
+                    <Image src="/gifts/kahve.png" alt="Kahve" width={180} height={180} className="w-44 h-44 object-contain drop-shadow-[0_0_30px_rgba(139,69,19,0.7)]" />
+                  </motion.div>
+                  {/* Steam particles */}
+                  {[...Array(8)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 0, x: 0, scale: 0.5 }}
+                      animate={{ 
+                        opacity: [0, 0.7, 0.4, 0], 
+                        y: [-20, -60 - i * 15], 
+                        x: [(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 60],
+                        scale: [0.5, 1.2, 0.8]
+                      }}
+                      transition={{ duration: 2.5, delay: 0.8 + i * 0.2, repeat: 1 }}
+                      className="absolute top-10 left-1/2 -translate-x-1/2 text-2xl"
+                    >
+                      ☕
+                    </motion.div>
+                  ))}
+                  {/* Glow effect */}
+                  <motion.div
+                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: 2 }}
+                    className="absolute inset-0 bg-gradient-radial from-amber-500/20 to-transparent rounded-full blur-xl"
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1470,26 +1583,28 @@ export default function VideoStreamPage() {
             </motion.div>
           </div>
 
-          {/* Special Gift Animation - Bottom Right (Coffee example) */}
-          {centerGift && (
-            <div className="absolute bottom-24 right-16 z-15 pointer-events-none">
+          {/* Coffee gift - bottom right mini banner */}
+          <AnimatePresence>
+            {centerGift && centerGift.animation === 'coffee_pour' && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="bg-gradient-to-br from-amber-900/90 to-orange-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-500/30"
+                initial={{ scale: 0, opacity: 0, x: 50 }}
+                animate={{ scale: 1, opacity: 1, x: 0 }}
+                exit={{ scale: 0, opacity: 0, x: 50 }}
+                className="absolute bottom-24 right-4 z-35 pointer-events-none"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-4xl">☕</span>
-                  <div>
-                    <div className="text-amber-300 text-sm font-bold">KAHVE</div>
-                    <div className="text-white text-xs">{centerGift.senderName}</div>
-                    <div className="text-amber-400 text-xs">{'Kahve ikramı!'}</div>
+                <div className="bg-gradient-to-br from-amber-900/90 to-orange-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-500/30">
+                  <div className="flex items-center gap-2">
+                    <Image src="/gifts/kahve.png" alt="Kahve" width={40} height={40} className="w-10 h-10 object-contain" />
+                    <div>
+                      <div className="text-amber-300 text-sm font-bold">☕ KAHVE İKRAMI</div>
+                      <div className="text-white text-xs">{centerGift.senderName}</div>
+                      <div className="text-amber-400 text-[10px]">1000 Jeton 🔥</div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
-            </div>
-          )}
+            )}
+          </AnimatePresence>
 
           {/* Floating Hearts Animation */}
           <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -1568,12 +1683,24 @@ export default function VideoStreamPage() {
               <div className="grid grid-cols-4 gap-3">
                 {giftTypes.map(gift => (
                   <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userJetons < gift.price}
-                    className={`flex flex-col items-center p-3 rounded-xl ${userJetons >= gift.price ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-50'}`}>
-                    <span className="text-3xl mb-1">{gift.icon}</span>
+                    className={`flex flex-col items-center p-3 rounded-xl transition-all ${userJetons >= gift.price ? 'bg-white/10 hover:bg-white/20 hover:scale-105' : 'bg-white/5 opacity-50'} ${sendingGift === gift.id ? 'animate-pulse' : ''}`}>
+                    {gift.icon.startsWith('/') ? (
+                      <div className="relative w-12 h-12 mb-1">
+                        <Image src={gift.icon} alt={gift.name} width={48} height={48} className="w-12 h-12 object-contain" />
+                        {/* CFC label overlay for coin gifts */}
+                        {gift.animation?.startsWith('coin') && (
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-600 to-yellow-500 rounded-full px-1.5 py-0.5 border border-yellow-300/50">
+                            <span className="text-[8px] font-black text-white">{gift.price === 1 ? '1' : gift.price} CFC</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-3xl mb-1">{gift.icon}</span>
+                    )}
                     <span className="text-white text-xs font-medium">{gift.name}</span>
                     <div className="flex items-center gap-1 mt-1">
                       <Coins className="w-3 h-3 text-yellow-400" />
-                      <span className="text-yellow-400 text-xs">{gift.price}</span>
+                      <span className="text-yellow-400 text-xs font-bold">{gift.price}</span>
                     </div>
                   </button>
                 ))}

@@ -314,6 +314,18 @@ async function main() {
     { languageCode: 'tr', translationKey: 'chat.login_required', translationValue: 'Sohbete katılmak için lütfen giriş yapın' },
   ]
 
+  // Seed Gift Types
+  const giftTypes = [
+    { id: 'canlifal_1', name: 'CanlıFal', nameEn: 'LiveFortune', icon: '/gifts/cfc-coin.png', animation: 'coin_single', price: 1, sortOrder: 1 },
+    { id: 'canlifal_5', name: '5 CFC', nameEn: '5 CFC', icon: '/gifts/cfc-coin.png', animation: 'coin_spread_5', price: 5, sortOrder: 2 },
+    { id: 'canlifal_10', name: '10 CFC', nameEn: '10 CFC', icon: '/gifts/cfc-coin.png', animation: 'coin_spread_10', price: 10, sortOrder: 3 },
+    { id: 'kahve', name: 'Kahve', nameEn: 'Coffee', icon: '/gifts/kahve.png', animation: 'coffee_pour', price: 1000, sortOrder: 4 },
+  ]
+  for (const g of giftTypes) {
+    await prisma.giftType.upsert({ where: { id: g.id }, create: { ...g, isActive: true }, update: { ...g, isActive: true } })
+  }
+  console.log('Gift types seeded')
+
   // Seed Chat Rooms
   // Chat rooms are managed via admin panel - no seed needed
   console.log('Chat rooms managed via admin panel')
