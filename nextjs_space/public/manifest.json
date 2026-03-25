@@ -5,6 +5,7 @@
   "description": "Canlı falcılarla birebir görüşme ve yapay zeka destekli fal platformu. Kahve Falı, Tarot, Burç Yorumu, Rüya Tabiri ve daha fazlası.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0a0118",
   "theme_color": "#1a0a2e",
   "orientation": "portrait-primary",
@@ -116,5 +117,14 @@
     }
   ],
   "related_applications": [],
-  "handle_links": "preferred"
+  "handle_links": "preferred",
+  "share_target": {
+    "action": "/fallar/ruya-yorumu",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
