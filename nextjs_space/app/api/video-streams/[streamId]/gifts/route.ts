@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
+import { isExcludedFromFinance } from '@/lib/admin-check'
 
 // Get recent gifts for a stream
 export async function GET(
@@ -77,8 +78,10 @@ export async function POST(
       return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
     }
 
-    // Transaction: deduct jetons from sender, create gift record, add jetons to broadcaster
-    const [gift] = await prisma.$transaction([
+    // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
+    const senderExcluded = await isExcludedFromFinance(session.user.id)
+
+    const txOps: any[] = [
       prisma.streamGift.create({
         data: {
           streamId: params.streamId,
@@ -96,12 +99,19 @@ export async function POST(
         where: { id: session.user.id },
         data: { jetonBalance: { decrement: totalPrice } }
       }),
-      // Give 70% to broadcaster (as jetons)
-      prisma.user.update({
-        where: { id: stream.userId },
-        data: { jetonBalance: { increment: Math.floor(totalPrice * 0.7) } }
-      })
-    ])
+    ]
+
+    // Sadece normal kullanıcıların hediyeleri yayıncıya bakiye olarak yansır
+    if (!senderExcluded) {
+      txOps.push(
+        prisma.user.update({
+          where: { id: stream.userId },
+          data: { jetonBalance: { increment: Math.floor(totalPrice * 0.7) } }
+        })
+      )
+    }
+
+    const [gift] = await prisma.$transaction(txOps)
 
     // Log gift activity
     logActivity({

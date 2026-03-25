@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { isExcludedFromFinance } from '@/lib/admin-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,6 +84,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const beneficiaryUser = room.giftBeneficiary || room.owner
     const beneficiaryId = beneficiaryUser?.id || null
 
+    // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
+    const senderExcluded = await isExcludedFromFinance(sender.id)
+
     // Deduct from sender
     if (paymentType === 'jeton') {
       await prisma.user.update({
@@ -100,8 +104,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
           balanceAfter: (sender.jetonBalance ?? 0) - price
         }
       })
-      // Add jetons to recipient (minus commission)
-      if (recipientAmount > 0) {
+      // Add jetons to recipient (minus commission) - sadece normal kullanıcılardan
+      if (recipientAmount > 0 && !senderExcluded) {
         const recipientBefore = recipient.jetonBalance ?? 0
         await prisma.user.update({
           where: { id: recipient.id },
@@ -118,8 +122,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
           }
         })
       }
-      // Give commission to beneficiary
-      if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id) {
+      // Give commission to beneficiary - sadece normal kullanıcılardan
+      if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id && !senderExcluded) {
         const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })
         const bBefore = beneficiary?.jetonBalance ?? 0
         await prisma.user.update({

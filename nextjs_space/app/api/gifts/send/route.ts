@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { isExcludedFromFinance } from '@/lib/admin-check'
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
     if (!sender) {
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
+
+    // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
+    const senderExcluded = await isExcludedFromFinance(sender.id)
 
     if (type === 'gift' && giftTypeId) {
       // Send a gift item
@@ -152,11 +156,13 @@ export async function POST(req: NextRequest) {
         data: { jetonBalance: { decrement: amount } }
       })
 
-      // Add to recipient
-      await prisma.user.update({
-        where: { id: recipient.id },
-        data: { jetonBalance: { increment: amount } }
-      })
+      // Add to recipient - sadece normal kullanıcılardan
+      if (!senderExcluded) {
+        await prisma.user.update({
+          where: { id: recipient.id },
+          data: { jetonBalance: { increment: amount } }
+        })
+      }
 
       // Record jeton transactions
       await prisma.jetonTransaction.create({

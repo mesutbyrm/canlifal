@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getExcludedUserIds } from '@/lib/admin-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,11 @@ export async function GET(request: NextRequest) {
     const dateFilter = dateFrom && dateTo ? { createdAt: { gte: dateFrom, lte: dateTo } } : {}
 
     if (section === 'overview') {
+      // Admin/yönetici kullanıcıların işlemlerini kar/zarar hesabından hariç tut
+      const excludedUserIds = await getExcludedUserIds()
+      const excludeSenderFilter = excludedUserIds.length > 0 ? { senderId: { notIn: excludedUserIds } } : {}
+      const excludeUserFilter = excludedUserIds.length > 0 ? { userId: { notIn: excludedUserIds } } : {}
+
       // Total CFC (credits) and Jeton across all users (always total, not filtered)
       const totals = await prisma.user.aggregate({
         _sum: { credits: true, jetonBalance: true },
@@ -64,52 +70,52 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true, creditsAwarded: true },
       })
 
-      // Total gifts sent (StreamGift + ChatRoomGift + TellerGift) - filtered
+      // Total gifts sent (StreamGift + ChatRoomGift + TellerGift) - filtered, admin/yönetici hariç
       const streamGiftTotal = await prisma.streamGift.aggregate({
-        where: dateFilter,
+        where: { ...dateFilter, ...excludeSenderFilter },
         _sum: { totalPrice: true },
       })
       const chatGiftTotal = await prisma.chatRoomGift.aggregate({
-        where: dateFilter,
+        where: { ...dateFilter, ...excludeSenderFilter },
         _sum: { totalPrice: true, commissionAmount: true },
       })
       const tellerGiftTotal = await prisma.tellerGift.aggregate({
-        where: dateFilter,
+        where: { ...dateFilter, ...excludeSenderFilter },
         _sum: { totalPrice: true },
       })
 
-      // Live session total credits charged - filtered
+      // Live session total credits charged - filtered, admin/yönetici hariç
       const sessionCharges = await prisma.liveSession.aggregate({
-        where: { status: { in: ['completed', 'active'] }, ...dateFilter },
+        where: { status: { in: ['completed', 'active'] }, ...dateFilter, ...excludeUserFilter },
         _sum: { creditsCharged: true },
       })
 
-      // Bana Özel harcamaları
+      // Bana Özel harcamaları - admin/yönetici hariç
       const banaOzelSpent = await prisma.banaOzelHistory.aggregate({
-        where: dateFilter,
+        where: { ...dateFilter, ...excludeUserFilter },
         _sum: { jetonSpent: true },
         _count: true,
       })
 
-      // Üyelik satın alma (jeton ile)
+      // Üyelik satın alma (jeton ile) - admin/yönetici hariç
       const membershipPurchases = await prisma.membershipPurchase.aggregate({
-        where: { status: 'active', ...dateFilter },
+        where: { status: 'active', ...dateFilter, ...excludeUserFilter },
         _sum: { pricePaid: true },
         _count: true,
       }).catch(() => ({ _sum: { pricePaid: 0 }, _count: 0 }))
 
-      // Jeton transaction bazlı kaynak analizi
+      // Jeton transaction bazlı kaynak analizi - admin/yönetici hariç
       const jetonSpendByType = await prisma.jetonTransaction.groupBy({
         by: ['type'],
-        where: { amount: { lt: 0 }, ...dateFilter },
+        where: { amount: { lt: 0 }, ...dateFilter, ...excludeUserFilter },
         _sum: { amount: true },
         _count: true,
       }).catch(() => [])
 
-      // Jeton gelir kaynak analizi  
+      // Jeton gelir kaynak analizi - admin/yönetici hariç
       const jetonIncomeByType = await prisma.jetonTransaction.groupBy({
         by: ['type'],
-        where: { amount: { gt: 0 }, ...dateFilter },
+        where: { amount: { gt: 0 }, ...dateFilter, ...excludeUserFilter },
         _sum: { amount: true },
         _count: true,
       }).catch(() => [])
@@ -124,16 +130,19 @@ export async function GET(request: NextRequest) {
 
       if (dateFrom && dateTo) {
         const sessionsInRange = await prisma.liveSession.findMany({
-          where: { status: 'completed', ...dateFilter },
+          where: { status: 'completed', ...dateFilter, ...excludeUserFilter },
           select: { creditsCharged: true },
         })
         const totalCharged = sessionsInRange.reduce((s: any, x: any) => s + x.creditsCharged, 0)
         totalTellerEarnings = totalCharged - Math.floor(totalCharged * commRate / 100)
       } else {
-        const tellerEarnings = await prisma.liveFortuneTeller.aggregate({
-          _sum: { totalEarnings: true },
+        // Tüm seanslardan admin/yönetici hariç hesapla
+        const allSessions = await prisma.liveSession.findMany({
+          where: { status: 'completed', ...excludeUserFilter },
+          select: { creditsCharged: true },
         })
-        totalTellerEarnings = tellerEarnings._sum.totalEarnings || 0
+        const totalCharged = allSessions.reduce((s: any, x: any) => s + (x.creditsCharged || 0), 0)
+        totalTellerEarnings = totalCharged - Math.floor(totalCharged * commRate / 100)
       }
 
       // Total revenue from payments
