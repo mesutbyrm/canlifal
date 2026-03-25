@@ -101,6 +101,7 @@ model User {
   dreamContestEntries   DreamContestEntry[]
   dreamContestVotes     DreamContestVote[]
   weeklyDreamReports    WeeklyDreamReport[]
+  liveActivities        LiveActivity[]       @relation("userActivities")
   // XP & Level system
   xp                    Int                  @default(0)
   level                 Int                  @default(1)
@@ -2086,4 +2087,41 @@ model CurrencyConfig {
 
   @@index([currencyType])
   @@map("currency_config")
+}
+
+model LiveActivity {
+  id          String   @id @default(cuid())
+  userId      String?  // null for anonymous users
+  userName    String   // display name (can be anonymous)
+  userAvatar  String?  // avatar URL
+  activityType String  // fortune_read, chat_join, dream_shared, stream_started, gift_sent, signup, blog_read, etc.
+  detail      String?  // e.g. "Tarot Falı baktırdı", "Sohbete katıldı"
+  targetUrl   String?  // link to related page
+  createdAt   DateTime @default(now())
+
+  user User? @relation("userActivities", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([activityType])
+  @@map("live_activities")
+}
+
+model ActivityFeedConfig {
+  id              String   @id @default(cuid())
+  isEnabled       Boolean  @default(true)
+  maxItems        Int      @default(20) // max items to show
+  // Visibility - which groups can see
+  visibleToGuests     Boolean @default(true)  // kayıtsız kullanıcılar
+  visibleToBasic      Boolean @default(true)  // basic üyeler
+  visibleToPremium    Boolean @default(true)  // premium üyeler
+  visibleToGold       Boolean @default(true)  // gold üyeler
+  visibleToDiamond    Boolean @default(true)  // diamond üyeler
+  visibleToModerator  Boolean @default(true)  // moderatörler
+  visibleToAdmin      Boolean @default(true)  // adminler
+  // Specific user IDs (comma-separated) - if set, ONLY these users see it
+  specificUserIds     String? // comma-separated user IDs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("activity_feed_config")
 }

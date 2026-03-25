@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { logActivity } from '@/lib/activity-logger'
 
 // Fortune type labels for social posts
 const FORTUNE_TYPE_LABELS: Record<string, Record<string, string>> = {
@@ -100,6 +101,31 @@ export async function autoShareFortune(
     })
     
     console.log(`[AUTO-SHARE] Successfully created social post ${post.id}`)
+
+    // Log activity for the live feed
+    try {
+      let userName = 'Misafir'
+      let userAvatar: string | null = null
+      if (userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, image: true },
+        })
+        if (user) {
+          userName = user.name || 'Kullanıcı'
+          userAvatar = user.image
+        }
+      }
+      const trLabel = FORTUNE_TYPE_LABELS[fortuneType]?.tr || fortuneType
+      logActivity({
+        userId: userId || null,
+        userName,
+        userAvatar,
+        activityType: 'fortune_read',
+        detail: `${trLabel} baktırdı`,
+        targetUrl: `/fallar/${fortuneType === 'coffee' ? 'kahve-fali' : fortuneType === 'tarot' ? 'tarot-fali' : fortuneType}`,
+      })
+    } catch {}
   } catch (error) {
     console.error('[AUTO-SHARE] Error creating social post:', error)
     // Don't throw - auto-sharing failure shouldn't break the fortune flow

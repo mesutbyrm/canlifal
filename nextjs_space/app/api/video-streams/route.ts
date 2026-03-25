@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { sendOneSignalPushToMany } from '@/lib/onesignal'
+import { logActivity } from '@/lib/activity-logger'
 
 /**
  * Notify all followers of a user that they went live.

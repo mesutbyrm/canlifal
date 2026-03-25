@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import OpenAI from 'openai'
 import { slugifyTurkish } from '@/lib/dream-utils'
 import { sendNotification } from '@/lib/onesignal-admin'
+import { logActivity } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,14 @@ Kategori seçenekleri (sadece bunlardan birini yaz): genel, hayvanlar, doga, ins
         isPublished: true,
         isAiGenerated: true,
       },
+    })
+
+    // Log dream activity
+    logActivity({
+      userName: 'Sistem',
+      activityType: 'dream_shared',
+      detail: `"${dream.title}" rüya tabiri eklendi`,
+      targetUrl: `/ruya/${dream.slug}`,
     })
 
     // Send OneSignal push notification to all subscribers

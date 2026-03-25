@@ -17,6 +17,7 @@ import BanaOzelSection from '@/components/bana-ozel-section'
 import { useSiteTheme } from '@/lib/theme-context'
 import GuestLanding from '@/components/guest-landing'
 import UserPopup from '@/components/user-popup'
+import LiveActivityFeed from '@/components/live-activity-feed'
 
 interface LiveTeller {
   id: string
@@ -414,6 +415,9 @@ export default function HomePage() {
             <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
           </motion.div>
 
+          {/* Live Activity Feed */}
+          <LiveActivityFeed />
+
           {/* CANLI YAYINLAR Section */}
           <motion.div
             className="falclub-card p-4 relative overflow-hidden"
@@ -787,6 +791,9 @@ export default function HomePage() {
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
 
+          {/* Live Activity Feed */}
+          <LiveActivityFeed />
+
           {/* Live Streams Section - White Card */}
           <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
             <h2 className="text-gray-800 font-bold text-lg mb-4">Fallar</h2>
@@ -898,6 +905,9 @@ export default function HomePage() {
         {/* Action Buttons Row */}
         <div className="px-3 sm:px-4 pb-3 sm:pb-4">
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="cosmic" />
+
+          {/* Live Activity Feed */}
+          <LiveActivityFeed />
         </div>
 
         {/* Live Tellers Section */}

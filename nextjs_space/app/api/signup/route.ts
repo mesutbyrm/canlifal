@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 import { sendNotificationEmail, getWelcomeEmailHtml, getNewUserSignupEmailHtml } from '@/lib/email-service'
 import { randomBytes } from 'crypto'
+import { logActivity } from '@/lib/activity-logger'
 
 // Dynamic values from platform_settings, loaded per request
 async function getPlatformSetting(key: string, defaultVal: number): Promise<number> {
@@ -107,6 +108,14 @@ export async function POST(request: Request) {
         referralCode: newUserReferralCode,
         referredById: referrer?.id || null,
       },
+    })
+
+    // Log signup activity
+    logActivity({
+      userId: user.id,
+      userName: user.name,
+      activityType: 'signup',
+      detail: 'siteye katıldı 🎉',
     })
 
     // If referred, create referral record and give referrer credits
