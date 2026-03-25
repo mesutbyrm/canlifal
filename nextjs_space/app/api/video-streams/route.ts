@@ -157,6 +157,16 @@ export async function POST(request: NextRequest) {
       console.error('Live stream follower notification error:', err)
     )
 
+    // Log activity
+    logActivity({
+      userId: session.user.id,
+      userName: session.user.name || 'Kullanıcı',
+      userAvatar: (session.user as any)?.image || null,
+      activityType: 'stream_started',
+      detail: 'canlı yayın başlattı 🔴',
+      targetUrl: `/sohbet/video`,
+    })
+
     return NextResponse.json(stream)
   } catch (error) {
     console.error('Error creating stream:', error)

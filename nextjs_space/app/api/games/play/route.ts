@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { logActivity } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,16 @@ export async function POST(req: NextRequest) {
     await prisma.user.update({
       where: { id: session.user.id },
       data: { credits: { increment: netCfc } },
+    })
+
+    // Log game activity
+    logActivity({
+      userId: session.user.id,
+      userName: (session.user as any)?.name || 'Kullanıcı',
+      userAvatar: (session.user as any)?.image || null,
+      activityType: 'game_played',
+      detail: `${game.title} oynadı 🎮`,
+      targetUrl: `/oyunlar`,
     })
 
     // Update or create game profile

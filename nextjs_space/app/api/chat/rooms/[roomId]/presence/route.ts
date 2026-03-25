@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
+import { logActivity } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -252,6 +253,18 @@ export async function POST(
       }
     }
     
+    // Log chat join activity (only on new joins)
+    if (isNewJoin) {
+      logActivity({
+        userId: session.user.id,
+        userName: nickname || session.user.name || 'Kullanıcı',
+        userAvatar: (session.user as any)?.image || null,
+        activityType: 'chat_join',
+        detail: 'sohbete katıldı 💬',
+        targetUrl: `/sohbet`,
+      })
+    }
+
     // If new join, create a system message (but only once per 5 minutes)
     if (isNewJoin) {
       // Check if we already announced this user's entry in the last 5 minutes

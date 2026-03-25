@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { logActivity } from '@/lib/activity-logger'
 
 // Get recent gifts for a stream
 export async function GET(
@@ -101,6 +102,16 @@ export async function POST(
         data: { jetonBalance: { increment: Math.floor(totalPrice * 0.7) } }
       })
     ])
+
+    // Log gift activity
+    logActivity({
+      userId: session.user.id,
+      userName: session.user.name || 'Kullanıcı',
+      userAvatar: (session.user as any)?.image || null,
+      activityType: 'gift_sent',
+      detail: `hediye gönderdi 🎁`,
+      targetUrl: `/sohbet/video`,
+    })
 
     return NextResponse.json({
       success: true,

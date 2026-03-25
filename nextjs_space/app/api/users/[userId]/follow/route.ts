@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { logActivity } from '@/lib/activity-logger'
 
 // Follow or unfollow a user
 export async function POST(
@@ -78,6 +79,16 @@ export async function POST(
           followerId: currentUserId,
           followingId: targetUser.id
         }
+      })
+
+      // Log follow activity
+      logActivity({
+        userId: currentUserId,
+        userName: session.user.name || 'Kullanıcı',
+        userAvatar: (session.user as any)?.image || null,
+        activityType: 'follow',
+        detail: `${targetUser.name || 'bir kullanıcıyı'} takip etti`,
+        targetUrl: `/profil/${targetUser.username || targetUser.id}`,
       })
 
       // Create notification + push for the followed user
