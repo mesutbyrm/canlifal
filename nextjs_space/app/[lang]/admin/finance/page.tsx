@@ -583,11 +583,15 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
     spend: 'Bana Özel', gift: 'Hediye', purchase: 'Satın Alma', stream: 'Canlı Yayın',
     fortune: 'Fal', membership: 'Üyelik', room: 'Oda Oluşturma', session: 'Canlı Seans',
     dream: 'Rüya Yorumu', bana_ozel: 'Bana Özel', live_session: 'Canlı Seans',
+    admin_remove: 'Admin Çıkarma', admin_deduct: 'Admin Düşme', withdrawal: 'Çekim',
+    game: 'Oyun', chat: 'Sohbet', tip: 'Bahşiş',
   }
   const incomeLabels: Record<string, string> = {
     purchase: 'Satın Alma', daily_bonus: 'Günlük Bonus', streak_bonus: 'Seri Bonusu',
     task: 'Görev Bonusu', welcome: 'Hoşgeldin', referral: 'Referans', gift_received: 'Hediye Alındı',
-    admin: 'Admin Ekleme', refund: 'İade',
+    admin: 'Admin Ekleme', admin_add: 'Admin Ekleme', refund: 'İade',
+    bonus: 'Bonus', reward: 'Ödül', promo: 'Promosyon', signup_bonus: 'Kayıt Bonusu',
+    earning: 'Kazanç', commission: 'Komisyon',
   }
 
   return (
@@ -602,8 +606,8 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
             </div>
             <div>
               <p className="text-sm text-gray-300">{isProfit ? '✅ Siteniz KÂRDA' : '⚠️ Siteniz ZARARDA'}</p>
-              <p className={`text-3xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(Math.abs(data.platformProfit))}</p>
-              <p className="text-xs text-gray-400 mt-1">Yayıncı/falcı yüzdeleri düşüldükten sonraki net durum</p>
+              <p className={`text-3xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatNumber(Math.abs(data.platformProfit))} jeton</p>
+              <p className="text-xs text-gray-400 mt-1">Komisyonlar + yakılan jetonlar (Bana Özel, üyelik vb.) = siteye kalan net jeton</p>
             </div>
           </div>
           <button onClick={onAdjustProfit} className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-all text-xs font-medium text-gray-300">
@@ -621,7 +625,7 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
         <StatCard icon={<Gift className="w-5 h-5 text-pink-400" />} label="Hediye Harcamaları" value={formatNumber(data.totalGiftSpent) + ' jeton'} color="pink" />
         <StatCard icon={<Star className="w-5 h-5 text-amber-400" />} label="Seans Harcamaları" value={formatNumber(data.totalSessionSpent) + ' jeton'} color="amber" />
         <StatCard icon={<Wallet className="w-5 h-5 text-purple-400" />} label="Komisyon Geliri" value={formatNumber(data.totalCommission) + ' jeton'} color="purple" />
-        <StatCard icon={<Award className="w-5 h-5 text-cyan-400" />} label="Net Durum" value={formatCurrency(data.platformProfit)} color={isProfit ? 'green' : 'red'} />
+        <StatCard icon={<Award className="w-5 h-5 text-cyan-400" />} label="Siteye Kalan Jeton" value={formatNumber(data.platformProfit) + ' jeton'} color={isProfit ? 'green' : 'red'} />
       </div>
 
       {/* Jeton Harcama Kaynakları Detaylı */}

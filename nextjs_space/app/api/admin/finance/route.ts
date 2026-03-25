@@ -164,8 +164,12 @@ export async function GET(request: NextRequest) {
       })
       const manualProfitAdjustment = manualAdjSetting ? parseFloat(manualAdjSetting.value) : 0
 
-      // Platform profit: revenue - (total distributed to users) + burned jetons + manual adjustments
-      const platformProfit = totalRevenue - totalTellerEarnings + (dateFrom ? 0 : manualProfitAdjustment)
+      // Platform jeton profit: komisyonlar + yakılan jetonlar (Bana Özel, üyelik gibi siteye kalan)
+      // Bu hesap jeton bazlıdır - sitenin jeton olarak ne kadar kazandığını gösterir
+      const platformJetonProfit = streamCommission + sessionCommission + chatCommission + totalBurnedJetons
+      
+      // TRY bazlı platform karı: gelir - (falcılara/yayıncılara ödenmesi gereken)
+      const platformProfit = platformJetonProfit
 
       // Jeton spend/income breakdowns
       const jetonSpendBreakdown: Record<string, { amount: number; count: number }> = {}
