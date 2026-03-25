@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import BanaOzelPopup from '@/components/bana-ozel-popup'
 
 interface Announcement {
   id: string
@@ -196,6 +197,7 @@ export default function LoginAnnouncementBanner() {
   const queueRef = useRef<Announcement[]>([])
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [trigger, setTrigger] = useState(0)
+  const [showBanaOzel, setShowBanaOzel] = useState(false)
 
   const fetchAnnouncements = useCallback(async () => {
     try {
@@ -270,10 +272,19 @@ export default function LoginAnnouncementBanner() {
   if (!currentAnnouncement || passCount >= (currentAnnouncement.maxPasses || 1)) return null
 
   const colors = getTeamColors(currentAnnouncement.color)
+  const isBanaOzelAnnouncement = currentAnnouncement.message.toLowerCase().includes('bana özel') || currentAnnouncement.message.toLowerCase().includes('bana ozel')
+
+  const handleBannerClick = () => {
+    if (isBanaOzelAnnouncement) {
+      setShowBanaOzel(true)
+    }
+  }
 
   return (
+    <>
     <div
-      className="w-full overflow-hidden relative"
+      className={`w-full overflow-hidden relative ${isBanaOzelAnnouncement ? 'cursor-pointer' : ''}`}
+      onClick={handleBannerClick}
       style={{
         height: '48px',
         zIndex: 9998,
@@ -350,5 +361,7 @@ export default function LoginAnnouncementBanner() {
         }
       `}</style>
     </div>
+    <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
+    </>
   )
 }

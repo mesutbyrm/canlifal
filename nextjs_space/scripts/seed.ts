@@ -316,16 +316,16 @@ async function main() {
 
   // Seed Gift Types
   const giftTypes = [
-    { id: 'canlifal_1', name: 'CanlıFal', nameEn: 'LiveFortune', icon: '/gifts/cfc-coin.png', animation: 'coin_single', price: 1, sortOrder: 1 },
-    { id: 'canlifal_5', name: '5 CFC', nameEn: '5 CFC', icon: '/gifts/cfc-coin.png', animation: 'coin_spread_5', price: 5, sortOrder: 2 },
-    { id: 'canlifal_10', name: '10 CFC', nameEn: '10 CFC', icon: '/gifts/cfc-coin.png', animation: 'coin_spread_10', price: 10, sortOrder: 3 },
-    { id: 'gul', name: 'Gül', nameEn: 'Rose', icon: '/gifts/gul.png', animation: 'sparkle_burst', price: 25, sortOrder: 4 },
-    { id: 'kalp', name: 'Kalp', nameEn: 'Heart', icon: '/gifts/kalp.png', animation: 'heart_rain', price: 50, sortOrder: 5 },
-    { id: 'yildiz', name: 'Yıldız', nameEn: 'Star', icon: '/gifts/yildiz.png', animation: 'star_burst', price: 100, sortOrder: 6 },
-    { id: 'tac', name: 'Taç', nameEn: 'Crown', icon: '/gifts/tac.png', animation: 'sparkle_burst', price: 250, sortOrder: 7 },
-    { id: 'elmas', name: 'Elmas', nameEn: 'Diamond', icon: '/gifts/elmas.png', animation: 'sparkle_burst', price: 500, sortOrder: 8 },
-    { id: 'kristal', name: 'Kristal Küre', nameEn: 'Crystal Ball', icon: '/gifts/kristal.png', animation: 'sparkle_burst', price: 750, sortOrder: 9 },
-    { id: 'kahve', name: 'Kahve', nameEn: 'Coffee', icon: '/gifts/kahve.png', animation: 'coffee_pour', price: 1000, sortOrder: 10 },
+    { id: 'canlifal_1', name: 'CanlıFal', nameEn: 'LiveFortune', icon: '🪙', animation: 'coin_single', price: 1, sortOrder: 1 },
+    { id: 'canlifal_5', name: '5 CFC', nameEn: '5 CFC', icon: '🪙', animation: 'coin_spread_5', price: 5, sortOrder: 2 },
+    { id: 'canlifal_10', name: '10 CFC', nameEn: '10 CFC', icon: '🪙', animation: 'coin_spread_10', price: 10, sortOrder: 3 },
+    { id: 'gul', name: 'Gül', nameEn: 'Rose', icon: '🌹', animation: 'sparkle_burst', price: 25, sortOrder: 4 },
+    { id: 'kalp', name: 'Kalp', nameEn: 'Heart', icon: '❤️', animation: 'heart_rain', price: 50, sortOrder: 5 },
+    { id: 'yildiz', name: 'Yıldız', nameEn: 'Star', icon: '⭐', animation: 'star_burst', price: 100, sortOrder: 6 },
+    { id: 'tac', name: 'Taç', nameEn: 'Crown', icon: '👑', animation: 'sparkle_burst', price: 250, sortOrder: 7 },
+    { id: 'elmas', name: 'Elmas', nameEn: 'Diamond', icon: '💎', animation: 'sparkle_burst', price: 500, sortOrder: 8 },
+    { id: 'kristal', name: 'Kristal Küre', nameEn: 'Crystal Ball', icon: '🔮', animation: 'sparkle_burst', price: 750, sortOrder: 9 },
+    { id: 'kahve', name: 'Kahve', nameEn: 'Coffee', icon: '☕', animation: 'coffee_pour', price: 1000, sortOrder: 10 },
   ]
   for (const g of giftTypes) {
     await prisma.giftType.upsert({ where: { id: g.id }, create: { ...g, isActive: true }, update: { ...g, isActive: true } })

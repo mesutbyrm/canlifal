@@ -1644,7 +1644,7 @@ function VideoStreamPageInner() {
               >
                 <div className="bg-gradient-to-br from-amber-900/90 to-orange-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-500/30">
                   <div className="flex items-center gap-2">
-                    <Image src="/gifts/kahve.png" alt="Kahve" width={40} height={40} className="w-10 h-10 object-contain" />
+                    <span className="text-4xl">☕</span>
                     <div>
                       <div className="text-amber-300 text-sm font-bold">☕ KAHVE İKRAMI</div>
                       <div className="text-white text-xs">{centerGift.senderName}</div>
