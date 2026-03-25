@@ -49,6 +49,14 @@ interface GiftAnnouncementSettings {
   maxPasses: number
   expireMinutes: number
   minAmount: number
+  selectedGiftTypes: string[] // empty = all gift types trigger announcements
+}
+
+interface GiftTypeOption {
+  id: string
+  name: string
+  icon: string
+  price: number
 }
 
 type AllSettings = Record<string, CategoryConfig>
@@ -77,10 +85,11 @@ export default function AnnouncementSettingsPage() {
     return initial
   })
   const [giftSettings, setGiftSettings] = useState<GiftAnnouncementSettings>({
-    enabled: true, maxPasses: 2, expireMinutes: 3, minAmount: 1000
+    enabled: true, maxPasses: 2, expireMinutes: 3, minAmount: 1000, selectedGiftTypes: []
   })
   const [savingGift, setSavingGift] = useState(false)
   const [savedGift, setSavedGift] = useState(false)
+  const [giftTypes, setGiftTypes] = useState<GiftTypeOption[]>([])
 
   useEffect(() => {
     if (status === 'loading') return
@@ -106,12 +115,21 @@ export default function AnnouncementSettingsPage() {
             })
           }
           if (data.giftAnnouncementSettings) {
-            setGiftSettings(data.giftAnnouncementSettings)
+            setGiftSettings(prev => ({ ...prev, ...data.giftAnnouncementSettings, selectedGiftTypes: data.giftAnnouncementSettings.selectedGiftTypes || [] }))
           }
         }
       } catch (error) {
         console.error('Failed to load announcement settings:', error)
-      } finally {
+      }
+      // Fetch gift types
+      try {
+        const gtRes = await fetch('/api/gifts/types')
+        if (gtRes.ok) {
+          const gtData = await gtRes.json()
+          setGiftTypes(gtData.map((g: any) => ({ id: g.id, name: g.name, icon: g.icon, price: g.price })))
+        }
+      } catch {}
+      finally {
         setLoading(false)
       }
     }
@@ -252,9 +270,9 @@ export default function AnnouncementSettingsPage() {
               🎁
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-white">Hediye Duyuruları (1000+ Jeton)</p>
+              <p className="font-semibold text-white">Hediye Duyuruları</p>
               <p className="text-xs text-pink-300">
-                1000 jeton ve üzeri hediyeler gönderildiğinde otomatik kayan duyuru oluşturulur
+                Belirlenen kriterlere uyan hediyeler gönderildiğinde otomatik kayan duyuru oluşturulur
               </p>
             </div>
             <button
@@ -315,7 +333,73 @@ export default function AnnouncementSettingsPage() {
                     >+</button>
                   </div>
                 </div>
+
+                {/* Min Amount */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-pink-200">💰 Min Jeton:</span>
+                  <input
+                    type="number" min={0} max={100000}
+                    value={giftSettings.minAmount}
+                    onChange={(e) => setGiftSettings(prev => ({ ...prev, minAmount: Math.max(0, parseInt(e.target.value) || 0) }))}
+                    className="w-20 h-7 rounded-lg bg-purple-900/50 border border-purple-500/30 text-white text-center text-sm focus:outline-none focus:border-fuchsia-400"
+                  />
+                </div>
               </div>
+
+              {/* Gift Type Selector */}
+              {giftTypes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-pink-200">🎁 Duyuru Yapılacak Hediye Türleri:</span>
+                    <button
+                      onClick={() => setGiftSettings(prev => ({ ...prev, selectedGiftTypes: prev.selectedGiftTypes.length === giftTypes.length ? [] : giftTypes.map(g => g.id) }))}
+                      className="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors"
+                    >
+                      {giftSettings.selectedGiftTypes.length === giftTypes.length ? 'Tümünü Kaldır' : giftSettings.selectedGiftTypes.length === 0 ? '(Tümü seçili - filtre yok)' : 'Tümünü Seç'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {giftTypes.map(gt => {
+                      const isSelected = giftSettings.selectedGiftTypes.length === 0 || giftSettings.selectedGiftTypes.includes(gt.id)
+                      return (
+                        <button
+                          key={gt.id}
+                          onClick={() => {
+                            setGiftSettings(prev => {
+                              let newSelected = [...prev.selectedGiftTypes]
+                              if (newSelected.length === 0) {
+                                // Currently "all" - switch to all-except-this
+                                newSelected = giftTypes.filter(g => g.id !== gt.id).map(g => g.id)
+                              } else if (newSelected.includes(gt.id)) {
+                                newSelected = newSelected.filter(id => id !== gt.id)
+                                // If none left, go back to "all"
+                                if (newSelected.length === 0) newSelected = []
+                              } else {
+                                newSelected.push(gt.id)
+                                // If all selected, reset to empty (= all)
+                                if (newSelected.length === giftTypes.length) newSelected = []
+                              }
+                              return { ...prev, selectedGiftTypes: newSelected }
+                            })
+                          }}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                            isSelected
+                              ? 'bg-fuchsia-600/40 border-fuchsia-400/60 text-white shadow-md shadow-fuchsia-500/20'
+                              : 'bg-purple-900/30 border-purple-600/30 text-purple-400 hover:border-purple-400/50'
+                          }`}
+                        >
+                          <span className="mr-1">{gt.icon}</span> {gt.name} ({gt.price}₺)
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-purple-400">
+                    {giftSettings.selectedGiftTypes.length === 0
+                      ? '✨ Tüm hediye türleri duyuru tetikler (filtre yok)'
+                      : `✅ ${giftSettings.selectedGiftTypes.length} hediye türü seçili`}
+                  </p>
+                </div>
+              )}
 
               {/* Save Button */}
               <motion.button

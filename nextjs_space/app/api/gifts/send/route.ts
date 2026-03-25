@@ -8,23 +8,33 @@ import { isExcludedFromFinance } from '@/lib/admin-check'
 async function createGiftAnnouncement(
   senderName: string | null, senderUsername: string | null,
   recipientName: string | null, recipientUsername: string | null,
-  giftIcon: string, giftTypeName: string, amount: number
+  giftIcon: string, giftTypeName: string, amount: number,
+  giftTypeId?: string
 ) {
   // Check if gift announcements are enabled in admin settings
   const giftAnnouncementSettings = await prisma.platformSettings.findUnique({
     where: { key: 'gift_announcement_settings' }
   })
-  let enabled = true
-  let maxPasses = 2
+  let maxPasses = 1
   let expireMinutes = 3
+  let minAmount = 1000
+  let selectedGiftTypes: string[] = []
   if (giftAnnouncementSettings) {
     try {
       const s = JSON.parse(giftAnnouncementSettings.value)
       if (s.enabled === false) return
-      maxPasses = s.maxPasses ?? 2
+      maxPasses = s.maxPasses ?? 1
       expireMinutes = s.expireMinutes ?? 3
+      minAmount = s.minAmount ?? 1000
+      selectedGiftTypes = s.selectedGiftTypes ?? []
     } catch {}
   }
+
+  // Check minimum amount threshold
+  if (amount < minAmount) return
+
+  // Check if this gift type is allowed (empty array = all allowed)
+  if (selectedGiftTypes.length > 0 && giftTypeId && !selectedGiftTypes.includes(giftTypeId)) return
 
   const sender = senderUsername || senderName || 'Kullanıcı'
   const recipient = recipientUsername || recipientName || 'Kullanıcı'
@@ -151,12 +161,10 @@ export async function POST(req: NextRequest) {
         })
       }).catch(err => console.error('Gift notification error:', err))
 
-      const isBigGift = giftType.price >= 1000
-      // Auto-create scrolling announcement for big gifts
-      if (isBigGift) {
-        createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price).catch(err => console.error('Gift announcement error:', err))
-      }
+      // Auto-create scrolling announcement (settings determine threshold)
+      createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price, giftType.id).catch(err => console.error('Gift announcement error:', err))
 
+      const isBigGift = giftType.price >= 1000
       return NextResponse.json({
         success: true,
         message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
@@ -244,11 +252,9 @@ export async function POST(req: NextRequest) {
         })
       }).catch(err => console.error('Jeton gift notification error:', err))
 
+      // Auto-create scrolling announcement (settings determine threshold)
+      createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
       const isBigJetonGift = amount >= 1000
-      // Auto-create scrolling announcement for big jeton gifts
-      if (isBigJetonGift) {
-        createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
-      }
 
       return NextResponse.json({
         success: true,

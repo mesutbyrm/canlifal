@@ -9,21 +9,32 @@ import { createNotificationWithPush } from '@/lib/notify'
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
   recipientName: string, recipientUsername: string | null,
-  giftIcon: string, giftTypeName: string, amount: number
+  giftIcon: string, giftTypeName: string, amount: number,
+  giftTypeId?: string
 ) {
   const giftAnnouncementSettings = await prisma.platformSettings.findUnique({
     where: { key: 'gift_announcement_settings' }
   })
-  let maxPasses = 2
+  let maxPasses = 1
   let expireMinutes = 3
+  let minAmount = 1000
+  let selectedGiftTypes: string[] = []
   if (giftAnnouncementSettings) {
     try {
       const s = JSON.parse(giftAnnouncementSettings.value)
       if (s.enabled === false) return
-      maxPasses = s.maxPasses ?? 2
+      maxPasses = s.maxPasses ?? 1
       expireMinutes = s.expireMinutes ?? 3
+      minAmount = s.minAmount ?? 1000
+      selectedGiftTypes = s.selectedGiftTypes ?? []
     } catch {}
   }
+
+  // Check minimum amount threshold
+  if (amount < minAmount) return
+
+  // Check if this gift type is allowed (empty array = all allowed)
+  if (selectedGiftTypes.length > 0 && giftTypeId && !selectedGiftTypes.includes(giftTypeId)) return
 
   const sender = senderUsername || senderName
   const recipient = recipientUsername || recipientName
@@ -178,15 +189,13 @@ export async function POST(
       })
     }).catch(err => console.error('Stream gift notification error:', err))
 
-    // Auto-create scrolling announcement for big stream gifts (1000+ jeton)
-    if (totalPrice >= 1000) {
-      const streamUser = await prisma.user.findUnique({ where: { id: stream.userId }, select: { name: true, username: true } })
-      createStreamGiftAnnouncement(
-        session.user.name || 'Kullanıcı', (session.user as any).username || null,
-        streamUser?.name || 'Kullanıcı', streamUser?.username || null,
-        giftType.icon, giftType.name, totalPrice
-      ).catch(err => console.error('Stream gift announcement error:', err))
-    }
+    // Auto-create scrolling announcement (settings determine threshold)
+    const streamUser = await prisma.user.findUnique({ where: { id: stream.userId }, select: { name: true, username: true } })
+    createStreamGiftAnnouncement(
+      session.user.name || 'Kullanıcı', (session.user as any).username || null,
+      streamUser?.name || 'Kullanıcı', streamUser?.username || null,
+      giftType.icon, giftType.name, totalPrice, giftType.id
+    ).catch(err => console.error('Stream gift announcement error:', err))
 
     return NextResponse.json({
       success: true,

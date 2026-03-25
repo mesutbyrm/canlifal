@@ -198,6 +198,25 @@ function getTeamColors(color: string) {
   return DEFAULT_COLORS
 }
 
+const SESSION_STORAGE_KEY = 'shown_announcement_ids'
+
+function getSessionSeenIds(): Set<string> {
+  try {
+    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (stored) return new Set(JSON.parse(stored))
+  } catch {}
+  return new Set()
+}
+
+function saveSessionSeenIds(ids: Set<string>) {
+  try {
+    // Keep last 200 to avoid bloat
+    const arr = Array.from(ids)
+    const trimmed = arr.length > 200 ? arr.slice(-200) : arr
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(trimmed))
+  } catch {}
+}
+
 export default function LoginAnnouncementBanner() {
   const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null)
   const [passCount, setPassCount] = useState(0)
@@ -207,6 +226,16 @@ export default function LoginAnnouncementBanner() {
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [trigger, setTrigger] = useState(0)
   const [showBanaOzel, setShowBanaOzel] = useState(false)
+  const initializedRef = useRef(false)
+
+  // Load seen IDs from sessionStorage on mount
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true
+      const sessionSeen = getSessionSeenIds()
+      sessionSeen.forEach(id => seenIdsRef.current.add(id))
+    }
+  }, [])
 
   const fetchAnnouncements = useCallback(async () => {
     try {
@@ -217,7 +246,11 @@ export default function LoginAnnouncementBanner() {
         const newOnes = loginAnnouncements.filter(a => !seenIdsRef.current.has(a.id))
         if (newOnes.length > 0) {
           queueRef.current = [...queueRef.current, ...newOnes]
-          newOnes.forEach(a => seenIdsRef.current.add(a.id))
+          newOnes.forEach(a => {
+            seenIdsRef.current.add(a.id)
+          })
+          // Persist to sessionStorage so refresh doesn't re-show
+          saveSessionSeenIds(seenIdsRef.current)
           setTrigger(prev => prev + 1)
         }
       }
@@ -267,12 +300,13 @@ export default function LoginAnnouncementBanner() {
     }
   }, [isAnimating, currentAnnouncement, passCount])
 
-  // Cleanup old seen IDs
+  // Cleanup old seen IDs (keep in sync with sessionStorage)
   useEffect(() => {
     const cleanup = setInterval(() => {
-      if (seenIdsRef.current.size > 100) {
+      if (seenIdsRef.current.size > 200) {
         const arr = Array.from(seenIdsRef.current)
-        seenIdsRef.current = new Set(arr.slice(-50))
+        seenIdsRef.current = new Set(arr.slice(-100))
+        saveSessionSeenIds(seenIdsRef.current)
       }
     }, 60000)
     return () => clearInterval(cleanup)
