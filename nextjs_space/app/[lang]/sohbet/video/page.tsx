@@ -385,12 +385,18 @@ function VideoStreamPageInner() {
           setConnectionStatus('connected')
         } else if (pc.iceConnectionState === 'failed') {
           setConnectionStatus('failed')
+          // Auto-retry on ICE failure
+          setTimeout(() => retryConnection(), 2000)
         }
       }
 
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') {
           setConnectionStatus('connected')
+        } else if (pc.connectionState === 'failed') {
+          setConnectionStatus('failed')
+          // Auto-retry on connection failure
+          setTimeout(() => retryConnection(), 2000)
         }
       }
 

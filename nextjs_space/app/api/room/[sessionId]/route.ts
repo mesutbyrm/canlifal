@@ -44,41 +44,27 @@ export async function GET(
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
-    // Get session duration settings
-    const durationSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'session_duration_minutes' }
-    });
-    const defaultDuration = durationSetting ? parseInt(durationSetting.value) : 5;
-
     // Get credits per minute setting
     const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
       where: { key: 'credits_per_minute' }
     });
     const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
 
-    // Calculate max minutes based on user's membership and jetons
-    let maxMinutes = defaultDuration;
-    if (isUser) {
-      const userJetons = liveSession.user.jetonBalance ?? 0;
-      const membership = liveSession.user.membership;
-      
-      // Membership bonuses
-      if (membership === 'gold') {
-        maxMinutes = defaultDuration + 10; // Gold gets +10 minutes
-      } else if (membership === 'premium') {
-        maxMinutes = defaultDuration + 5; // Premium gets +5 minutes
-      }
-      
-      // Can extend with jetons
-      const extraMinutesFromJetons = Math.floor(userJetons / creditsPerMinute);
-      // Allow unlimited extension based on jetons
-      maxMinutes += extraMinutesFromJetons;
+    // Use the actual DB maxMinutes (allocated time, incremented by extend actions)
+    const maxMinutes = liveSession.maxMinutes;
+
+    // Calculate actual elapsed seconds from timerStartedAt
+    let elapsedSeconds = 0;
+    if (liveSession.timerStarted && liveSession.timerStartedAt) {
+      const now = new Date();
+      elapsedSeconds = Math.floor((now.getTime() - new Date(liveSession.timerStartedAt).getTime()) / 1000);
     }
 
     return NextResponse.json({
       ...liveSession,
       maxMinutes,
       creditsPerMinute,
+      elapsedSeconds,
       isUser,
       isTeller,
       peerId: isUser ? liveSession.teller.userId : liveSession.userId,
@@ -227,10 +213,9 @@ export async function PATCH(
 
         const extendMinutes = minutes || 5;
         
-        // Fixed pricing: 10 jetons per minute
-        // 5dk=50, 10dk=100, 15dk=150, 20dk=200, 25dk=250, 30dk=300
-        const PRICE_PER_MINUTE = 10;
-        const jetonsNeeded = extendMinutes * PRICE_PER_MINUTE;
+        // Use session's creditsPerMinute (jeton cost per minute)
+        const sessionRate = liveSession.creditsPerMinute || 10;
+        const jetonsNeeded = extendMinutes * sessionRate;
 
         // Get latest user jeton balance
         const currentUser = await prisma.user.findUnique({

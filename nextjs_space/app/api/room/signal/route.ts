@@ -54,6 +54,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Delete old signals for reconnection
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
+    }
+
+    // Delete all signals for this session (both sent and received by this user)
+    await prisma.roomSignal.deleteMany({
+      where: {
+        sessionId,
+        OR: [
+          { senderId: session.user.id },
+          { receiverId: session.user.id }
+        ]
+      }
+    });
+
+    return NextResponse.json({ cleared: true });
+  } catch (error) {
+    console.error('Clear signals error:', error);
+    return NextResponse.json({ error: 'Sinyaller temizlenemedi' }, { status: 500 });
+  }
+}
+
 // Get pending signals for current user
 export async function GET(request: NextRequest) {
   try {

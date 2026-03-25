@@ -24,6 +24,7 @@ interface RoomData {
   maxMinutes: number;
   minutesUsed: number;
   creditsPerMinute: number;
+  elapsedSeconds: number;
   isUser: boolean;
   isTeller: boolean;
   peerId: string;
@@ -99,6 +100,7 @@ export default function LiveRoomPage() {
   const roomDataRef = useRef<RoomData | null>(null);
   const isInitialized = useRef(false);
   const hasCreatedOffer = useRef(false);
+  const reconnectingRef = useRef(false);
 
   // Update roomDataRef when roomData changes
   useEffect(() => {
@@ -130,60 +132,60 @@ export default function LiveRoomPage() {
     }
   }, [sessionId, language]);
 
-  // Initialize WebRTC
-  const initializeWebRTC = useCallback(async (roomInfo: RoomData) => {
-    if (isInitialized.current) return peerConnectionRef.current;
-    isInitialized.current = true;
-    
+  // Create a fresh PeerConnection with media
+  const createPeerConnection = useCallback(async (roomInfo: RoomData): Promise<RTCPeerConnection | null> => {
     try {
       setConnectionStatus('Kamera/mikrofon erişimi isteniyor...');
       
-      // Optimize edilmiş getUserMedia - mobil cihazlarda zoom-out sorununu önler
-      const constraints = getMediaConstraints('high', facingMode);
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (mediaErr) {
-        // Yüksek kalite başarısız olursa düşük kaliteyle dene
-        console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr);
-        const fallback = getMediaConstraints('medium', facingMode);
-        stream = await navigator.mediaDevices.getUserMedia(fallback);
+      // Get media if not already available
+      if (!localStreamRef.current || localStreamRef.current.getTracks().every(t => t.readyState === 'ended')) {
+        const constraints = getMediaConstraints('high', facingMode);
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (mediaErr) {
+          console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr);
+          const fallback = getMediaConstraints('medium', facingMode);
+          stream = await navigator.mediaDevices.getUserMedia(fallback);
+        }
+        localStreamRef.current = stream;
       }
-      localStreamRef.current = stream;
       
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.srcObject = localStreamRef.current;
       }
 
       setConnectionStatus('Bağlantı kuruluyor...');
 
-      // STUN + TURN sunucuları ile RTCPeerConnection
+      // Close old PC if exists
+      if (peerConnectionRef.current) {
+        try { peerConnectionRef.current.close(); } catch {}
+      }
+
       const configuration = getRTCConfiguration();
       const pc = new RTCPeerConnection(configuration);
       peerConnectionRef.current = pc;
 
-      // Add local tracks to peer connection
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
+      // Add local tracks
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current!);
       });
 
-      // H264 codec tercihini ayarla (mobilde donanım hızlandırma desteği)
       setPreferredCodec(pc, 'video/H264');
 
-      // Handle remote stream
       pc.ontrack = (event) => {
         console.log('Received remote track:', event.track.kind);
         if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
+          // Try to play immediately (handles autoplay restrictions)
+          remoteVideoRef.current.play().catch(() => {});
           setIsConnected(true);
           setConnectionStatus('');
         }
       };
 
-      // Handle ICE candidates
       pc.onicecandidate = async (event) => {
         if (event.candidate && roomDataRef.current) {
-          console.log('Sending ICE candidate');
           await fetch('/api/room/signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -197,15 +199,15 @@ export default function LiveRoomPage() {
         }
       };
 
-      // Otomatik bağlantı kurtarma (ICE restart)
       const cleanupRecovery = setupConnectionRecovery(
         pc,
         () => setConnectionStatus('Bağlantı kesildi, yeniden bağlanılıyor...'),
+        () => { setIsConnected(true); setConnectionStatus(''); },
         () => {
-          setIsConnected(true);
-          setConnectionStatus('');
+          setConnectionStatus('Bağlantı başarısız, yeniden deneniyor...');
+          // Auto-retry on recovery failure
+          setTimeout(() => reconnect(), 2000);
         },
-        () => setConnectionStatus('Bağlantı başarısız'),
         3
       );
 
@@ -222,41 +224,127 @@ export default function LiveRoomPage() {
         if (pc.connectionState === 'connected') {
           setIsConnected(true);
           setConnectionStatus('');
-          // Bağlantı kurulduğunda başlangıç bitrate ve adaptif yönetim başlat
           applyInitialBitrate(pc, 'high');
           const abm = new AdaptiveBitrateManager(pc, (quality) => {
             console.log('📊 Video kalitesi değişti:', quality);
           });
           abm.start(3000);
-          // Cleanup'a ekle (pc kapanırken durdurulacak)
           const origClose = pc.close.bind(pc);
           pc.close = () => { abm.stop(); cleanupRecovery(); origClose(); };
         } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
           setIsConnected(false);
+          // Auto-reconnect after a short delay
+          if (pc.connectionState === 'failed') {
+            setTimeout(() => reconnect(), 2000);
+          }
         }
       };
 
-      // If user is the initiator (the person who booked), create offer
-      if (roomInfo.isUser && !hasCreatedOffer.current) {
-        hasCreatedOffer.current = true;
-        console.log('Creating offer as user...');
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true
+      return pc;
+    } catch (err) {
+      console.error('WebRTC initialization error:', err);
+      setError('Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.');
+      return null;
+    }
+  }, [sessionId, facingMode]);
+
+  // Send a fresh offer
+  const sendOffer = useCallback(async (pc: RTCPeerConnection, peerId: string) => {
+    try {
+      hasCreatedOffer.current = true;
+      console.log('Creating and sending offer...');
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
+      await pc.setLocalDescription(offer);
+      
+      await fetch('/api/room/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          receiverId: peerId,
+          signalType: 'offer',
+          signalData: offer
+        })
+      });
+      console.log('Offer sent');
+    } catch (err) {
+      console.error('Error sending offer:', err);
+    }
+  }, [sessionId]);
+
+  // Reconnect function - clears signals and re-establishes connection
+  const reconnect = useCallback(async () => {
+    if (reconnectingRef.current) return;
+    reconnectingRef.current = true;
+    
+    const currentRoom = roomDataRef.current;
+    if (!currentRoom) { reconnectingRef.current = false; return; }
+
+    console.log('🔄 Reconnecting WebRTC...');
+    setIsConnected(false);
+    setConnectionStatus('Yeniden bağlanılıyor...');
+
+    try {
+      // Clear old signals
+      await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
+      
+      // Create new peer connection
+      const pc = await createPeerConnection(currentRoom);
+      if (!pc) { reconnectingRef.current = false; return; }
+
+      // User always creates offer, teller sends need-offer signal
+      if (currentRoom.isUser) {
+        await sendOffer(pc, currentRoom.peerId);
+      } else {
+        // Teller: send need-offer signal to tell user to re-send offer
+        await fetch('/api/room/signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            receiverId: currentRoom.peerId,
+            signalType: 'need-offer',
+            signalData: { reconnect: true }
+          })
         });
-        await pc.setLocalDescription(offer);
-        
+      }
+    } catch (err) {
+      console.error('Reconnect error:', err);
+    } finally {
+      reconnectingRef.current = false;
+    }
+  }, [sessionId, createPeerConnection, sendOffer]);
+
+  // Initialize WebRTC
+  const initializeWebRTC = useCallback(async (roomInfo: RoomData) => {
+    if (isInitialized.current) return peerConnectionRef.current;
+    isInitialized.current = true;
+    
+    try {
+      // Clear old signals first (handles page refresh scenario)
+      await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
+      
+      const pc = await createPeerConnection(roomInfo);
+      if (!pc) { isInitialized.current = false; return null; }
+
+      // User creates offer, teller sends need-offer
+      if (roomInfo.isUser) {
+        await sendOffer(pc, roomInfo.peerId);
+      } else {
+        // Teller: signal the user to send a fresh offer
         await fetch('/api/room/signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId,
             receiverId: roomInfo.peerId,
-            signalType: 'offer',
-            signalData: offer
+            signalType: 'need-offer',
+            signalData: { reconnect: true }
           })
         });
-        console.log('Offer sent');
       }
 
       return pc;
@@ -266,7 +354,7 @@ export default function LiveRoomPage() {
       setError('Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.');
       return null;
     }
-  }, [sessionId, language]);
+  }, [sessionId, createPeerConnection, sendOffer]);
 
   // Poll for WebRTC signals
   const pollSignals = useCallback(async () => {
@@ -284,10 +372,24 @@ export default function LiveRoomPage() {
       for (const signal of signals) {
         console.log('Processing signal:', signal.signalType);
         
+        if (signal.signalType === 'need-offer') {
+          // Other party needs a fresh offer (they refreshed/reconnected)
+          if (currentRoomData.isUser) {
+            console.log('Received need-offer, creating fresh offer...');
+            // Clear old signals and send fresh offer
+            await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
+            await sendOffer(pc, currentRoomData.peerId);
+          }
+          continue;
+        }
+        
         if (signal.signalType === 'offer') {
+          // Accept offer even if not in stable state (handle reconnection)
           if (pc.signalingState !== 'stable') {
-            console.log('Ignoring offer, not in stable state');
-            continue;
+            // Force rollback for reconnection scenario
+            try {
+              await pc.setLocalDescription({ type: 'rollback' } as RTCSessionDescriptionInit);
+            } catch { /* ignore rollback errors */ }
           }
           await pc.setRemoteDescription(new RTCSessionDescription(signal.signalData));
           const answer = await pc.createAnswer();
@@ -314,14 +416,13 @@ export default function LiveRoomPage() {
         } else if (signal.signalType === 'ice-candidate') {
           if (pc.remoteDescription) {
             await pc.addIceCandidate(new RTCIceCandidate(signal.signalData));
-            console.log('ICE candidate added');
           }
         }
       }
     } catch (err) {
       console.error('Signal polling error:', err);
     }
-  }, [sessionId]);
+  }, [sessionId, sendOffer]);
 
   // Fetch messages - fixed to avoid duplicates
   const fetchMessages = useCallback(async () => {
@@ -606,12 +707,12 @@ export default function LiveRoomPage() {
       if (roomInfo && roomInfo.status === 'active') {
         await initializeWebRTC(roomInfo);
         
-        // Set up timers
+        // Set up timers - use server-calculated elapsed time
         const maxSeconds = roomInfo.maxMinutes * 60;
-        const usedSeconds = roomInfo.minutesUsed * 60;
+        const serverElapsed = roomInfo.elapsedSeconds || 0;
         maxSecondsRef.current = maxSeconds;
-        setRemainingSeconds(maxSeconds - usedSeconds);
-        setElapsedSeconds(usedSeconds);
+        setElapsedSeconds(serverElapsed);
+        setRemainingSeconds(Math.max(0, maxSeconds - serverElapsed));
         setTimerStarted(roomInfo.timerStarted);
         setUserJetons(roomInfo.user.jetonBalance);
         // Set user's own jetons for the extension popup
@@ -661,7 +762,28 @@ export default function LiveRoomPage() {
 
     init();
 
+    // Handle page visibility change (tab switch, minimize)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Page became visible - check connection
+        const pc = peerConnectionRef.current;
+        if (pc) {
+          const state = pc.connectionState;
+          if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+            reconnect();
+          } else {
+            // Try to play remote video again (autoplay restrictions)
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.play().catch(() => {});
+            }
+          }
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanup();
     };
   }, [session, sessionId]);
@@ -761,11 +883,11 @@ export default function LiveRoomPage() {
             </div>
           )}
           
-          {/* User can extend session - popup button */}
-          {roomData.isUser && timerStarted && (
+          {/* User can extend session - visible always */}
+          {roomData.isUser && (
             <button 
               onClick={() => setShowUserAddTimePopup(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gold-600 text-black rounded-full text-sm font-semibold hover:bg-gold-500"
+              className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black rounded-full text-sm font-bold hover:from-yellow-400 hover:to-amber-400 shadow-lg"
             >
               <Plus className="w-4 h-4" />
               {'Süre Ekle'}
@@ -826,11 +948,17 @@ export default function LiveRoomPage() {
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gold-500 mx-auto mb-4"></div>
               <p className="text-white text-lg">
-                {connectionStatus || ('Bağlantı kuruluyor...')}
+                {connectionStatus || 'Bağlantı kuruluyor...'}
               </p>
               <p className="text-gray-400 text-sm mt-2">
                 {'Diğer tarafın odaya girmesini bekliyorsunuz'}
               </p>
+              <button
+                onClick={() => reconnect()}
+                className="mt-4 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors text-sm font-medium"
+              >
+                🔄 Yeniden Bağlan
+              </button>
             </div>
           </div>
         )}
@@ -1065,30 +1193,28 @@ export default function LiveRoomPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-gradient-to-br from-purple-900 to-deep-purple-900 rounded-2xl p-6 max-w-sm mx-4 border border-purple-600 shadow-2xl">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-gold-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
                 {'Süre Ekle'}
               </h3>
               <p className="text-gray-300 text-sm">
-                {'Seansa ek süre ekleyin'
-                }
+                {'Seansa ek süre ekleyin'}
               </p>
-              <p className="text-gold-400 text-sm mt-2">
-                {`Mevcut Jetonunuz: ${myJetons}`}
-              </p>
+              <div className="flex items-center justify-center gap-3 mt-3">
+                <span className="text-yellow-400 text-sm font-bold">
+                  💰 Jetonunuz: {myJetons}
+                </span>
+                <span className="text-gray-400 text-xs">
+                  ({roomData.creditsPerMinute} jeton/dk)
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { mins: 5, cost: 50 },
-                { mins: 10, cost: 100 },
-                { mins: 15, cost: 150 },
-                { mins: 20, cost: 200 },
-                { mins: 25, cost: 250 },
-                { mins: 30, cost: 300 }
-              ].map(({ mins, cost }) => {
+              {[5, 10, 15, 20, 25, 30].map((mins) => {
+                const cost = mins * roomData.creditsPerMinute;
                 const canAfford = myJetons >= cost;
                 return (
                   <button
@@ -1097,13 +1223,13 @@ export default function LiveRoomPage() {
                     disabled={!canAfford}
                     className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${
                       canAfford 
-                        ? 'bg-gradient-to-r from-gold-500 to-yellow-500 text-black hover:from-gold-600 hover:to-yellow-600' 
+                        ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400' 
                         : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     }`}
                   >
                     <div className="text-lg font-bold">{mins}</div>
-                    <div className="text-xs opacity-80">{'dakika'}</div>
-                    <div className="text-xs mt-1 font-semibold">{cost} ₺</div>
+                    <div className="text-xs opacity-80">dakika</div>
+                    <div className="text-xs mt-1 font-semibold">{cost} 💰</div>
                   </button>
                 );
               })}
@@ -1113,7 +1239,7 @@ export default function LiveRoomPage() {
               onClick={() => setShowUserAddTimePopup(false)}
               className="w-full py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all"
             >
-              {'İptal'}
+              İptal
             </button>
           </div>
         </div>
