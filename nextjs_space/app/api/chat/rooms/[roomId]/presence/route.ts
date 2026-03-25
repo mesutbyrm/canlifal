@@ -40,12 +40,12 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
-    const oneMinuteAgo = new Date(Date.now() - 60000)
+    const twoMinutesAgo = new Date(Date.now() - 120000)
 
     const presences = await prisma.chatPresence.findMany({
       where: {
         roomId,
-        lastSeen: { gte: oneMinuteAgo }
+        lastSeen: { gte: twoMinutesAgo }
       },
       include: {
         user: {
@@ -303,11 +303,11 @@ export async function POST(
     }
 
     // Return updated active users
-    const oneMinuteAgo = new Date(Date.now() - 60000)
+    const twoMinutesAgo = new Date(Date.now() - 120000)
     const presences = await prisma.chatPresence.findMany({
       where: {
         roomId,
-        lastSeen: { gte: oneMinuteAgo }
+        lastSeen: { gte: twoMinutesAgo }
       },
       include: {
         user: {

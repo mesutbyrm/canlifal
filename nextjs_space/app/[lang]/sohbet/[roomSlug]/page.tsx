@@ -85,14 +85,7 @@ const ROLE_BADGE_STYLES: Record<string, { bg: string; border: string; text: stri
 }
 
 const GIFT_IMAGES: Record<string, string> = {
-  gul: '/hediyeler/gul.png',
-  kalp: '/hediyeler/kalp.png',
-  yildiz: '/hediyeler/yildiz.png',
-  tac: '/hediyeler/tac.png',
-  elmas: '/hediyeler/elmas.png',
-  roket: '/hediyeler/roket.png',
-  galaksi: '/hediyeler/galaksi.png',
-  aslan: '/hediyeler/aslan.png',
+  // Gift types now use emoji icons - no image files needed
 }
 
 export default function ChatRoomPage() {
@@ -132,7 +125,10 @@ export default function ChatRoomPage() {
   
   // Combined Management Popup
   const [showManagePopup, setShowManagePopup] = useState(false)
-  const [manageTab, setManageTab] = useState<'chat' | 'users'>('chat')
+  const [manageTab, setManageTab] = useState<'chat' | 'users' | 'modlist'>('chat')
+  const [bannedUsers, setBannedUsers] = useState<Array<{id: string; userId: string; user: {id: string; name: string}}>>([])
+  const [mutedUsers, setMutedUsers] = useState<Array<{id: string; userId: string; user: {id: string; name: string}; expiresAt: string | null}>>([])
+  const [loadingModList, setLoadingModList] = useState(false)
   
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
@@ -449,12 +445,12 @@ export default function ChatRoomPage() {
       fetchBroadcastImages()
       setLoading(false)
 
-      const messageInterval = setInterval(fetchMessages, 2000)
-      const userInterval = setInterval(fetchActiveUsers, 3000)
-      const presenceInterval = setInterval(updatePresence, 8000)
-      const roomsInterval = setInterval(fetchAllRooms, 30000)
-      const voiceUsersInterval = setInterval(fetchVoiceUsers, 3000)
-      const typingInterval = setInterval(fetchTypingUsers, 1500) // Poll typing every 1.5 seconds
+      const messageInterval = setInterval(fetchMessages, 3000)
+      const userInterval = setInterval(fetchActiveUsers, 5000)
+      const presenceInterval = setInterval(updatePresence, 10000)
+      const roomsInterval = setInterval(fetchAllRooms, 60000)
+      const voiceUsersInterval = setInterval(fetchVoiceUsers, 5000)
+      const typingInterval = setInterval(fetchTypingUsers, 2000)
 
       updatePresence()
 
@@ -1075,6 +1071,33 @@ export default function ChatRoomPage() {
     performModAction(roomMuted ? 'unmute_room' : 'mute_room', '')
   }
 
+  const fetchModList = useCallback(async () => {
+    if (!room) return
+    setLoadingModList(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/moderation`)
+      if (res.ok) {
+        const data = await res.json()
+        setBannedUsers(data.bans || [])
+        setMutedUsers(data.mutes || [])
+      }
+    } catch (err) {
+      console.error('Mod list fetch error:', err)
+    } finally {
+      setLoadingModList(false)
+    }
+  }, [room])
+
+  const handleUnban = async (userId: string) => {
+    await performModAction('unban_user', userId)
+    fetchModList()
+  }
+
+  const handleUnmute = async (userId: string) => {
+    await performModAction('unmute_user', userId)
+    fetchModList()
+  }
+
   const clearAllMessages = async () => {
     if (!room) return
     if (!confirm('Tüm mesajları silmek istediğinize emin misiniz?')) return
@@ -1375,19 +1398,27 @@ export default function ChatRoomPage() {
                   onClick={() => setManageTab('chat')}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'chat' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
                 >
-                  {'Sohbet Yönetimi'}
+                  {'Sohbet'}
                 </button>
                 <button
                   onClick={() => setManageTab('users')}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'users' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
                 >
-                  {'Kullanıcı Yönetimi'}
+                  {'Kullanıcılar'}
                 </button>
+                {(myPermissions?.canBanUsers || myPermissions?.canMuteUsers) && (
+                  <button
+                    onClick={() => { setManageTab('modlist'); fetchModList(); }}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${manageTab === 'modlist' ? 'bg-purple-600/30 text-white' : 'text-purple-400 hover:bg-purple-600/10'}`}
+                  >
+                    {'Cezalılar'}
+                  </button>
+                )}
               </div>
               
               {/* Tab Content */}
               <div className="p-4 max-h-[50vh] overflow-y-auto">
-                {manageTab === 'chat' ? (
+                {manageTab === 'chat' && (
                   <div className="space-y-3">
                     {/* Room owner and global admin always see room mute option */}
                     {myPermissions?.canMuteRoom && (
@@ -1424,7 +1455,8 @@ export default function ChatRoomPage() {
                       {'Takma Adı Değiştir'}
                     </button>
                   </div>
-                ) : (
+                )}
+                {manageTab === 'users' && (
                   <div className="space-y-2">
                     {activeUsers.length === 0 ? (
                       <p className="text-purple-400/50 text-sm text-center py-4">
@@ -1507,6 +1539,76 @@ export default function ChatRoomPage() {
                           </div>
                         </div>
                       ))
+                    )}
+                  </div>
+                )}
+                {manageTab === 'modlist' && (
+                  <div className="space-y-4">
+                    {loadingModList ? (
+                      <p className="text-purple-400/50 text-sm text-center py-4">Yükleniyor...</p>
+                    ) : (
+                      <>
+                        {/* Banned Users */}
+                        {myPermissions?.canBanUsers && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-1">
+                              <Ban className="w-4 h-4" /> Engellenen Kullanıcılar ({bannedUsers.length})
+                            </h4>
+                            {bannedUsers.length === 0 ? (
+                              <p className="text-purple-400/50 text-xs">Engellenen kullanıcı yok</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {bannedUsers.map(ban => (
+                                  <div key={ban.id} className="flex items-center justify-between bg-red-900/20 rounded-lg px-3 py-2">
+                                    <span className="text-sm text-red-200">{ban.user.name}</span>
+                                    <button
+                                      onClick={() => handleUnban(ban.userId)}
+                                      className="px-3 py-1 bg-green-600/30 text-green-300 rounded text-xs hover:bg-green-600/50 font-medium"
+                                    >
+                                      Engeli Kaldır
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Muted Users */}
+                        {myPermissions?.canMuteUsers && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-orange-400 mb-2 flex items-center gap-1">
+                              <MicOff className="w-4 h-4" /> Susturulan Kullanıcılar ({mutedUsers.length})
+                            </h4>
+                            {mutedUsers.length === 0 ? (
+                              <p className="text-purple-400/50 text-xs">Susturulan kullanıcı yok</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {mutedUsers.map(mute => (
+                                  <div key={mute.id} className="flex items-center justify-between bg-orange-900/20 rounded-lg px-3 py-2">
+                                    <div>
+                                      <span className="text-sm text-orange-200">{mute.user.name}</span>
+                                      {mute.expiresAt && (
+                                        <span className="text-[10px] text-orange-400/60 ml-2">
+                                          {new Date(mute.expiresAt) > new Date() 
+                                            ? `${Math.ceil((new Date(mute.expiresAt).getTime() - Date.now()) / 60000)} dk kaldı`
+                                            : 'Süresi doldu'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => handleUnmute(mute.userId)}
+                                      className="px-3 py-1 bg-green-600/30 text-green-300 rounded text-xs hover:bg-green-600/50 font-medium"
+                                    >
+                                      Susturmayı Kaldır
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

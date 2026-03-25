@@ -219,10 +219,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     const turkeyNow = new Date(now.getTime() + turkeyOffset)
     const todayStart = new Date(Date.UTC(turkeyNow.getUTCFullYear(), turkeyNow.getUTCMonth(), turkeyNow.getUTCDate()) - turkeyOffset)
 
-    // Get currently active users in the room (present in last 60s)
-    const oneMinuteAgo = new Date(Date.now() - 60000)
+    // Get currently active users in the room (present in last 120s)
+    const twoMinutesAgo = new Date(Date.now() - 120000)
     const activePresences = await prisma.chatPresence.findMany({
-      where: { roomId, lastSeen: { gte: oneMinuteAgo } },
+      where: { roomId, lastSeen: { gte: twoMinutesAgo } },
       select: { userId: true }
     })
     const activeUserIds = activePresences.map((p: { userId: string }) => p.userId)
@@ -303,7 +303,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       giftTypeId: g.giftType.id,
       giftName: g.giftType.name,
       giftIcon: g.giftType.icon,
-      giftImage: `/hediyeler/${g.giftType.id}.png`,
+      giftImage: '',
       amount: g.totalPrice,
       currencyType: g.currencyType,
       createdAt: g.createdAt.toISOString()
