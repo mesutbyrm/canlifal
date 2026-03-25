@@ -47,6 +47,7 @@ interface Post {
   id: string
   imageUrl: string | null
   content: string
+  fortuneType?: string
   viewCount: number
   isPinned?: boolean
   _count: { likes: number }
@@ -148,6 +149,44 @@ const FORTUNE_ICONS: Record<string, string> = {
   palm: '✋', dream: '💤', love: '❤️', numerology: '🔢',
   angel: '👼', aura: '🌈', birthchart: '🌟', yesno: '❓',
   katina: '🂴', kursundokme: '🧊', istikhara: '🌙'
+}
+
+const FORTUNE_THUMBNAIL_IMAGES: Record<string, string> = {
+  coffee: '/fortunes/coffee.jpg',
+  tarot: '/fortunes/tarot.jpg',
+  horoscope: '/fortunes/horoscope.jpg',
+  daily_horoscope: '/fortunes/horoscope.jpg',
+  palm: '/fortunes/palm.jpg',
+  dream: '/fortunes/dream.jpg',
+  love: '/fortunes/love.jpg',
+  numerology: '/fortunes/numerology.jpg',
+  angel: '/fortunes/angel.jpg',
+  aura: '/fortunes/aura.jpg',
+  birthchart: '/fortunes/birthchart.jpg',
+  yesno: '/fortunes/yesno.jpg',
+  katina: '/fortunes/katina.jpg',
+  kursundokme: '/fortunes/dream.jpg',
+  istikhara: '/fortunes/angel.jpg',
+  askuyumu: '/fortunes/love.jpg'
+}
+
+const FORTUNE_THUMBNAIL_LABELS: Record<string, string> = {
+  coffee: 'Kahve Falı',
+  tarot: 'Tarot Falı',
+  horoscope: 'Burç Yorumu',
+  daily_horoscope: 'Günlük Burç',
+  palm: 'El Falı',
+  dream: 'Rüya Yorumu',
+  love: 'Aşk Falı',
+  numerology: 'Numeroloji',
+  angel: 'Melek Kartları',
+  aura: 'Aura Analizi',
+  birthchart: 'Doğum Haritası',
+  yesno: 'Evet/Hayır',
+  katina: 'Katina Falı',
+  kursundokme: 'Kurşun Dökme',
+  istikhara: 'İstihare',
+  askuyumu: 'Aşk Uyumu'
 }
 
 const FORTUNE_NAMES: Record<string, { tr: string; en: string }> = {
@@ -1072,6 +1111,16 @@ export default function ProfilePage() {
                     )}
                     {post.imageUrl ? (
                       <Image src={post.imageUrl} alt="Post" fill className="object-cover" />
+                    ) : post.fortuneType && FORTUNE_THUMBNAIL_IMAGES[post.fortuneType] ? (
+                      <div className="w-full h-full relative">
+                        <Image src={FORTUNE_THUMBNAIL_IMAGES[post.fortuneType]} alt={FORTUNE_THUMBNAIL_LABELS[post.fortuneType] || post.fortuneType} fill className="object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-2 left-0 right-0 text-center px-1">
+                          <span className="text-white text-[11px] font-semibold drop-shadow-lg leading-tight">
+                            {FORTUNE_THUMBNAIL_LABELS[post.fortuneType] || post.fortuneType}
+                          </span>
+                        </div>
+                      </div>
                     ) : (
                       <div className={`w-full h-full flex items-center justify-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/30' : 'bg-gradient-to-br from-purple-900/50 to-pink-900/50'}`}>
                         <Sparkles className={`w-8 h-8 ${accentColor}`} />

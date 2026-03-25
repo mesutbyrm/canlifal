@@ -98,6 +98,44 @@ const FORTUNE_ICONS: Record<string, string> = {
   kursundokme: '🧊'
 }
 
+const FORTUNE_IMAGES: Record<string, string> = {
+  coffee: '/fortunes/coffee.jpg',
+  tarot: '/fortunes/tarot.jpg',
+  horoscope: '/fortunes/horoscope.jpg',
+  daily_horoscope: '/fortunes/horoscope.jpg',
+  palm: '/fortunes/palm.jpg',
+  dream: '/fortunes/dream.jpg',
+  love: '/fortunes/love.jpg',
+  numerology: '/fortunes/numerology.jpg',
+  angel: '/fortunes/angel.jpg',
+  aura: '/fortunes/aura.jpg',
+  birthchart: '/fortunes/birthchart.jpg',
+  yesno: '/fortunes/yesno.jpg',
+  katina: '/fortunes/katina.jpg',
+  kursundokme: '/fortunes/dream.jpg',
+  istikhara: '/fortunes/angel.jpg',
+  askuyumu: '/fortunes/love.jpg'
+}
+
+const FORTUNE_LABELS: Record<string, string> = {
+  coffee: 'Kahve Falı',
+  tarot: 'Tarot Falı',
+  horoscope: 'Burç Yorumu',
+  daily_horoscope: 'Günlük Burç',
+  palm: 'El Falı',
+  dream: 'Rüya Yorumu',
+  love: 'Aşk Falı',
+  numerology: 'Numeroloji',
+  angel: 'Melek Kartları',
+  aura: 'Aura Analizi',
+  birthchart: 'Doğum Haritası',
+  yesno: 'Evet/Hayır',
+  katina: 'Katina Falı',
+  kursundokme: 'Kurşun Dökme',
+  istikhara: 'İstihare',
+  askuyumu: 'Aşk Uyumu'
+}
+
 export default function ProfilePage() {
   const { data: session } = useSession() || {}
   const router = useRouter()
@@ -631,6 +669,21 @@ export default function ProfilePage() {
                       fill
                       className="object-cover"
                     />
+                  ) : post.fortuneType && FORTUNE_IMAGES[post.fortuneType] ? (
+                    <div className="w-full h-full relative">
+                      <Image
+                        src={FORTUNE_IMAGES[post.fortuneType]}
+                        alt={FORTUNE_LABELS[post.fortuneType] || post.fortuneType}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-2 left-0 right-0 text-center px-1">
+                        <span className="text-white text-[11px] font-semibold drop-shadow-lg leading-tight">
+                          {FORTUNE_LABELS[post.fortuneType] || post.fortuneType}
+                        </span>
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 via-pink-900/30 to-purple-900/50">
                       <span className="text-5xl">

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
-import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink, Eye, Radio } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Send, Trash2, User, Coffee, Moon, Star, Sparkles, X, Twitter, Facebook, Link2, Check, ImagePlus, Loader2, Youtube, ExternalLink, Eye, Radio, Hand, Flame, Sun, Gem, Hash, CircleDot } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -72,7 +72,38 @@ const FORTUNE_ICONS: Record<string, any> = {
   tarot: Star,
   dream: Moon,
   horoscope: Sparkles,
+  daily_horoscope: Sun,
+  palm: Hand,
+  love: Heart,
+  numerology: Hash,
+  angel: Sparkles,
+  aura: CircleDot,
+  birthchart: Sun,
+  yesno: Gem,
+  katina: Star,
+  kursundokme: Flame,
+  istikhara: Moon,
+  askuyumu: Heart,
   default: Sparkles
+}
+
+const FORTUNE_IMAGES: Record<string, string> = {
+  coffee: '/fortunes/coffee.jpg',
+  tarot: '/fortunes/tarot.jpg',
+  horoscope: '/fortunes/horoscope.jpg',
+  daily_horoscope: '/fortunes/horoscope.jpg',
+  palm: '/fortunes/palm.jpg',
+  dream: '/fortunes/dream.jpg',
+  love: '/fortunes/love.jpg',
+  numerology: '/fortunes/numerology.jpg',
+  angel: '/fortunes/angel.jpg',
+  aura: '/fortunes/aura.jpg',
+  birthchart: '/fortunes/birthchart.jpg',
+  yesno: '/fortunes/yesno.jpg',
+  katina: '/fortunes/katina.jpg',
+  kursundokme: '/fortunes/dream.jpg',
+  istikhara: '/fortunes/angel.jpg',
+  askuyumu: '/fortunes/love.jpg'
 }
 
 const FORTUNE_LABELS: Record<string, Record<string, string>> = {
@@ -600,7 +631,13 @@ export default function SocialPage() {
                                   <>
                                     <span className="text-fuchsia-500/40">•</span>
                                     <span className="flex items-center gap-1 text-fuchsia-300/70 truncate">
-                                      <IconComponent className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                                      {FORTUNE_IMAGES[post.fortuneType] ? (
+                                        <span className="relative w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden flex-shrink-0 border border-fuchsia-500/30">
+                                          <Image src={FORTUNE_IMAGES[post.fortuneType]} alt={FORTUNE_LABELS[post.fortuneType]?.[language] || post.fortuneType} fill className="object-cover" />
+                                        </span>
+                                      ) : (
+                                        <IconComponent className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                                      )}
                                       <span className="truncate">{FORTUNE_LABELS[post.fortuneType]?.[language] || post.fortuneType}</span>
                                     </span>
                                   </>
