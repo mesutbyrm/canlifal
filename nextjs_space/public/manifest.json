@@ -1,62 +1,77 @@
 {
+  "id": "/",
   "name": "Canlifal - Canlı Fal Platformu",
   "short_name": "Canlifal",
-  "description": "Canlı falcılarla birebir görüşme ve yapay zeka destekli fal platformu",
-  "start_url": "/tr",
+  "description": "Canlı falcılarla birebir görüşme ve yapay zeka destekli fal platformu. Kahve Falı, Tarot, Burç Yorumu, Rüya Tabiri ve daha fazlası.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0118",
   "theme_color": "#1a0a2e",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "tr",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -64,7 +79,8 @@
       "src": "/screenshots/screenshot1.png",
       "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Canlifal Ana Sayfa"
     }
   ],
   "gcm_sender_id": "482941778795",
@@ -73,23 +89,32 @@
     {
       "name": "Kahve Falı",
       "short_name": "Kahve",
-      "description": "Kahve falı baktır",
-      "url": "/tr/fortunes/coffee",
+      "description": "Yapay zeka ile kahve falı baktır",
+      "url": "/fallar/kahve-fali",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Tarot",
+      "name": "Tarot Falı",
       "short_name": "Tarot",
-      "description": "Tarot falı baktır",
-      "url": "/tr/fortunes/tarot",
+      "description": "Yapay zeka ile tarot falı baktır",
+      "url": "/fallar/tarot-fali",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Burç Yorumu",
+      "short_name": "Burç",
+      "description": "Günlük burç yorumlarını oku",
+      "url": "/burclar",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Sohbet",
       "short_name": "Sohbet",
-      "description": "Sohbet odalarına katıl",
-      "url": "/tr/chat",
+      "description": "Canlı sohbet odalarına katıl",
+      "url": "/sohbet",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "related_applications": [],
+  "handle_links": "preferred"
 }
