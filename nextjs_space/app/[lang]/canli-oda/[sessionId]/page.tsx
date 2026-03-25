@@ -670,11 +670,19 @@ export default function LiveRoomPage() {
     if (!confirm) return;
 
     try {
-      await fetch(`/api/room/${sessionId}`, {
+      const res = await fetch(`/api/room/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'end' })
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Show refund info if there was a refund
+        if (data.refundAmount > 0 && roomDataRef.current?.isUser) {
+          alert(`Görüşme ${data.actualMinutesUsed} dakika sürdü.\n${data.refundAmount} jeton hesabınıza iade edildi.`);
+        }
+      }
 
       // Cleanup
       cleanup();
@@ -1384,17 +1392,17 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      {/* Tip Notification Popup - Shows on Teller's screen when user tips */}
+      {/* Tip Notification Popup - Shows on Teller's screen CENTER */}
       {tipNotification && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
-          <div className="bg-gradient-to-r from-pink-600 via-rose-500 to-pink-600 text-white rounded-2xl px-8 py-5 shadow-2xl border-2 border-pink-300/50 min-w-[300px]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+          <div className="bg-gradient-to-r from-pink-600 via-rose-500 to-pink-600 text-white rounded-2xl px-10 py-8 shadow-2xl border-2 border-pink-300/50 min-w-[320px] animate-bounce pointer-events-auto">
             <div className="text-center">
-              <div className="text-4xl mb-2">💝🎉</div>
-              <p className="text-lg font-bold mb-1">Bahşiş Aldınız!</p>
-              <p className="text-2xl font-extrabold text-yellow-200">
+              <div className="text-5xl mb-3">💝🎉</div>
+              <p className="text-xl font-bold mb-2">Bahşiş Aldınız!</p>
+              <p className="text-3xl font-extrabold text-yellow-200">
                 {tipNotification.amount} Jeton
               </p>
-              <p className="text-sm mt-2 opacity-90">
+              <p className="text-base mt-3 opacity-90">
                 {tipNotification.name} bahşiş gönderdi
               </p>
             </div>
@@ -1402,19 +1410,19 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      {/* Tip Thanks Popup - Shows on User's screen after tipping */}
+      {/* Tip Thanks Popup - Shows on User's screen CENTER */}
       {tipThanks && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
-          <div className="bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600 text-white rounded-2xl px-8 py-5 shadow-2xl border-2 border-purple-300/50 min-w-[300px]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+          <div className="bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600 text-white rounded-2xl px-10 py-8 shadow-2xl border-2 border-purple-300/50 min-w-[320px] animate-bounce pointer-events-auto">
             <div className="text-center">
-              <div className="text-4xl mb-2">🤗✨</div>
-              <p className="text-lg font-bold mb-1">
+              <div className="text-5xl mb-3">🤗✨</div>
+              <p className="text-xl font-bold mb-2">
                 {tipThanks.name}
               </p>
-              <p className="text-base">
+              <p className="text-lg">
                 Bahşişiniz için teşekkür ederim 🤗
               </p>
-              <p className="text-yellow-300 text-sm mt-1 font-semibold">
+              <p className="text-yellow-300 text-base mt-2 font-semibold">
                 {tipThanks.amount} Jeton
               </p>
             </div>

@@ -251,28 +251,56 @@ export async function PATCH(
       }
 
       case 'end': {
-        // End the session
+        const now = new Date();
+        
+        // Calculate actual minutes used
+        let actualMinutesUsed = liveSession.minutesUsed;
+        if (liveSession.timerStarted && liveSession.timerStartedAt) {
+          const elapsedMs = now.getTime() - new Date(liveSession.timerStartedAt).getTime();
+          actualMinutesUsed = Math.ceil(elapsedMs / 60000); // Round up to nearest minute
+        }
+        
+        // Cap at maxMinutes
+        actualMinutesUsed = Math.min(actualMinutesUsed, liveSession.maxMinutes);
+        
+        // Calculate actual cost based on minutes used
+        const sessionRate = liveSession.creditsPerMinute || 10;
+        const actualCost = actualMinutesUsed * sessionRate;
+        const totalCharged = liveSession.creditsCharged;
+        const refundAmount = Math.max(0, totalCharged - actualCost);
+
+        // End the session with actual usage data
         await prisma.liveSession.update({
           where: { id: params.sessionId },
           data: {
             status: 'completed',
-            endedAt: new Date()
+            endedAt: now,
+            minutesUsed: actualMinutesUsed,
+            creditsCharged: actualCost
           }
         });
 
         // Close chat session
         await prisma.tellerChatSession.updateMany({
           where: { liveSessionId: params.sessionId },
-          data: { status: 'closed', closedAt: new Date() }
+          data: { status: 'closed', closedAt: now }
         });
+
+        // Refund unused jetons to user
+        if (refundAmount > 0) {
+          await prisma.user.update({
+            where: { id: liveSession.userId },
+            data: { jetonBalance: { increment: refundAmount } }
+          });
+        }
 
         // Get commission rate
         const commissionSetting = await prisma.platformSettings.findUnique({
           where: { key: 'commission_rate' }
         });
         const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
-        const commissionAmount = Math.floor(liveSession.creditsCharged * commissionRate / 100);
-        const tellerEarnings = liveSession.creditsCharged - commissionAmount;
+        const commissionAmount = Math.floor(actualCost * commissionRate / 100);
+        const tellerEarnings = actualCost - commissionAmount;
 
         // Update teller earnings
         await prisma.liveFortuneTeller.update({
@@ -283,17 +311,40 @@ export async function PATCH(
           }
         });
 
-        // Send notification
-        await prisma.notification.create({
-          data: {
-            userId: isUser ? liveSession.teller.userId : liveSession.userId,
-            type: 'session_ended',
-            title: 'Seans Sona Erdi',
-            message: 'Canlı fal seansı tamamlandı.'
-          }
-        });
+        // Notification to the other party
+        if (isTeller) {
+          // Teller ended: notify user with refund info
+          const refundMsg = refundAmount > 0
+            ? `Görüşme ${actualMinutesUsed} dakika sürdü. ${refundAmount} jeton hesabınıza iade edildi.`
+            : `Görüşme ${actualMinutesUsed} dakika sürdü. Toplam ${actualCost} jeton kullanıldı.`;
+          
+          await prisma.notification.create({
+            data: {
+              userId: liveSession.userId,
+              type: 'session_ended',
+              title: refundAmount > 0 ? '💰 Seans Sona Erdi - Jeton İadesi' : 'Seans Sona Erdi',
+              message: refundMsg
+            }
+          });
+        } else {
+          // User ended: notify teller
+          await prisma.notification.create({
+            data: {
+              userId: liveSession.teller.userId,
+              type: 'session_ended',
+              title: 'Seans Sona Erdi',
+              message: `Canlı fal seansı tamamlandı. ${actualMinutesUsed} dakika sürdü.`
+            }
+          });
+        }
 
-        return NextResponse.json({ ended: true });
+        return NextResponse.json({ 
+          ended: true, 
+          actualMinutesUsed, 
+          actualCost, 
+          refundAmount,
+          endedBy: isTeller ? 'teller' : 'user'
+        });
       }
 
       default:
