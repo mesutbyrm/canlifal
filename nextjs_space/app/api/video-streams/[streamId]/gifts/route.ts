@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
 import { isExcludedFromFinance } from '@/lib/admin-check'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // Get recent gifts for a stream
 export async function GET(
@@ -122,6 +123,26 @@ export async function POST(
       detail: `hediye gönderdi 🎁`,
       targetUrl: `/sohbet/video`,
     })
+
+    // Create notification for the banner (so gifts appear in scrolling banner)
+    createNotificationWithPush({
+      userId: stream.userId,
+      type: 'stream_gift',
+      title: 'Canlı Yayın Hediyesi! 🎁',
+      message: `${giftType.name} hediye gönderdi!`,
+      fromUserId: session.user.id,
+      fromUserName: session.user.name || 'Kullanıcı',
+      data: JSON.stringify({
+        giftTypeId: giftType.id,
+        giftName: giftType.name,
+        giftIcon: giftType.icon,
+        senderId: session.user.id,
+        senderName: session.user.name || 'Kullanıcı',
+        recipientName: '', // will be filled from user relation
+        streamId: params.streamId,
+        amount: totalPrice
+      })
+    }).catch(err => console.error('Stream gift notification error:', err))
 
     return NextResponse.json({
       success: true,

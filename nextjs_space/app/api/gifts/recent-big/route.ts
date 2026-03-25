@@ -6,10 +6,10 @@ export async function GET() {
   try {
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000)
 
-    // Get recent gift_received notifications that are high value
+    // Get recent gift notifications that are high value
     const recentGiftNotifs = await prisma.notification.findMany({
       where: {
-        type: 'gift_received',
+        type: { in: ['gift_received', 'gift', 'stream_gift'] },
         createdAt: { gte: fifteenMinutesAgo }
       },
       include: {
@@ -46,18 +46,29 @@ export async function GET() {
             createdAt: notif.createdAt.toISOString()
           })
         } else if (data.giftName) {
-          // Check if this gift is a high-value one (price >= 500)
+          // Show all gifts on the banner
           const giftType = await prisma.giftType.findFirst({
-            where: { name: data.giftName, price: { gte: 500 } }
+            where: { name: data.giftName }
           })
           if (giftType) {
             notifications.push({
               id: notif.id,
               senderName: data.senderName || 'Anonim',
-              recipientName: notif.user.name || 'Anonim',
+              recipientName: notif.user?.name || data.recipientName || 'Anonim',
               giftType: giftType.name,
               giftIcon: giftType.icon || data.giftIcon || '🎁',
               amount: giftType.price,
+              createdAt: notif.createdAt.toISOString()
+            })
+          } else {
+            // Gift type not found in DB, use stored data
+            notifications.push({
+              id: notif.id,
+              senderName: data.senderName || 'Anonim',
+              recipientName: notif.user?.name || data.recipientName || 'Anonim',
+              giftType: data.giftName,
+              giftIcon: data.giftIcon || '🎁',
+              amount: data.amount || 0,
               createdAt: notif.createdAt.toISOString()
             })
           }

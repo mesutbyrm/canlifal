@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         userId: recipient.id,
         type: 'gift',
         title: 'Hediye Aldınız! 🎁',
-        message: `size ${giftType.icon} ${giftType.name} hediye gönderdi!`,
+        message: `size ${giftType.name} hediye gönderdi!`,
         fromUserId: sender.id,
         fromUserName: sender.name,
         data: JSON.stringify({
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       const isBigGift = giftType.price >= 1000
       return NextResponse.json({
         success: true,
-        message: `${giftType.icon} ${giftType.name} hediyesi ${recipient.name} kişisine gönderildi!`,
+        message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
         bigGift: isBigGift ? {
           senderName: sender.name,
           recipientName: recipient.name,
