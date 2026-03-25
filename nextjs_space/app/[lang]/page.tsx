@@ -16,7 +16,7 @@ import LiveTicker from '@/components/live-ticker'
 import BanaOzelSection from '@/components/bana-ozel-section'
 import { useSiteTheme } from '@/lib/theme-context'
 import GuestLanding from '@/components/guest-landing'
-import UserPopup from '@/components/user-popup'
+// UserPopup is now only shown in GuestLanding for unauthenticated users
 import LiveActivityFeed from '@/components/live-activity-feed'
 
 interface LiveTeller {
@@ -308,7 +308,6 @@ export default function HomePage() {
 
     return (
       <div className="min-h-screen falclub-starry-bg relative overflow-hidden">
-        {session?.user && <UserPopup />}
         {/* Animated Stars background */}
         <div className="fixed inset-0 pointer-events-none">
           {[...Array(60)].map((_, i) => (
@@ -763,7 +762,6 @@ export default function HomePage() {
   if (isFalci) {
     return (
       <div className="min-h-screen falci-starry-bg relative overflow-hidden">
-        {session?.user && <UserPopup />}
         {/* Stars background effect */}
         <div className="fixed inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -892,7 +890,6 @@ export default function HomePage() {
   // Original themes (Mystical, Cosmic, Facebook)
   return (
     <div className={`min-h-screen ${bgColor}`}>
-      {session?.user && <UserPopup />}
       {/* Ticker - Scrolling Online/Credits/Gifts - stuck to navbar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <HomepageTicker />
