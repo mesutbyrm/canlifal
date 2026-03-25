@@ -468,10 +468,14 @@ export default function BroadcastPage() {
         if (!viewerId) continue
         
         if (signal.type === 'viewer-join') {
-          if (!processedViewersRef.current.has(viewerId)) {
-            processedViewersRef.current.add(viewerId)
-            await createConnectionForViewer(viewerId)
+          // Always recreate connection for viewer (handles page refresh reconnection)
+          const existingPc = peerConnectionsRef.current.get(viewerId)
+          if (existingPc) {
+            try { existingPc.close() } catch {}
+            peerConnectionsRef.current.delete(viewerId)
           }
+          processedViewersRef.current.add(viewerId)
+          await createConnectionForViewer(viewerId)
         } else if (signal.type === 'answer' && signal.data?.answer) {
           const pc = peerConnectionsRef.current.get(viewerId)
           if (pc && pc.signalingState === 'have-local-offer') {
@@ -888,7 +892,7 @@ export default function BroadcastPage() {
 
   const fetchGifts = async () => {
     try {
-      const res = await fetch(`/api/video-streams/${streamId}/hediyeler`)
+      const res = await fetch(`/api/video-streams/${streamId}/gifts`)
       if (res.ok) {
         const gifts = await res.json()
         const total = gifts.reduce((sum: number, g: any) => sum + Math.floor(g.giftType.price * g.quantity * 0.7), 0)
