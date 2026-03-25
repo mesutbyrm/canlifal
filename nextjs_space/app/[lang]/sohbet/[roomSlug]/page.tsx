@@ -2608,11 +2608,11 @@ export default function ChatRoomPage() {
                     onClick={() => setGiftPaymentType('cfc')}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'cfc' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
                   >
-                    💰 Jeton
+                    💰 CFC
                   </button>
                 </div>
                 <p className="text-xs text-purple-400/70 mt-1 text-center">
-                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler gerçek paraya dönüşür' : '⚠️ Jeton ile gönderilen hediyeler paraya dönüşmez'}
+                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler bakiyenizden düşer' : '💰 CFC ile gönderilen hediyeler CFC bakiyenizden düşer'}
                 </p>
               </div>
 
