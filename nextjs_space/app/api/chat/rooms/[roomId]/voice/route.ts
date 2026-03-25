@@ -7,22 +7,22 @@ export const dynamic = 'force-dynamic'
 
 // Cleanup old signals and inactive voice sessions
 async function cleanupOldData(roomId: string) {
+  const oneMinuteAgo = new Date(Date.now() - 60000)
   const thirtySecondsAgo = new Date(Date.now() - 30000)
-  const tenSecondsAgo = new Date(Date.now() - 10000)
   
   // Delete old signals
   await prisma.voiceSignal.deleteMany({
     where: {
       roomId,
-      createdAt: { lt: thirtySecondsAgo }
+      createdAt: { lt: oneMinuteAgo }
     }
   })
   
-  // Mark inactive sessions (no ping in 10 seconds)
+  // Mark inactive sessions (no ping in 30 seconds — gives enough buffer for network jitter)
   await prisma.voiceSession.updateMany({
     where: {
       roomId,
-      lastPing: { lt: tenSecondsAgo },
+      lastPing: { lt: thirtySecondsAgo },
       isActive: true
     },
     data: { isActive: false }

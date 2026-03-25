@@ -156,6 +156,10 @@ export default function ChatRoomPage() {
   const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
   const [showMobileUsers, setShowMobileUsers] = useState(false)
   
+  // User balance
+  const [userJetonBalance, setUserJetonBalance] = useState(0)
+  const [userCfcBalance, setUserCfcBalance] = useState(0)
+  
   // Broadcast images for profile pictures in grid
   const [broadcastImages, setBroadcastImages] = useState<Array<{id: string; name: string; imageUrl: string}>>([])
   const [showImagePicker, setShowImagePicker] = useState(false)
@@ -422,6 +426,19 @@ export default function ChatRoomPage() {
     }
   }, [room, session?.user?.id])
 
+  // Fetch user balance
+  const fetchBalance = useCallback(async () => {
+    if (!session?.user) return
+    try {
+      const res = await fetch('/api/user/credits')
+      if (res.ok) {
+        const data = await res.json()
+        setUserJetonBalance(data.jetonBalance ?? 0)
+        setUserCfcBalance(data.credits ?? 0)
+      }
+    } catch {}
+  }, [session?.user])
+
   // Fetch grid limit from settings
   useEffect(() => {
     fetch('/api/settings/public?key=chat_grid_user_limit')
@@ -443,6 +460,7 @@ export default function ChatRoomPage() {
       fetchVoiceUsers()
       fetchTypingUsers()
       fetchBroadcastImages()
+      fetchBalance()
       setLoading(false)
 
       const messageInterval = setInterval(fetchMessages, 3000)
@@ -451,6 +469,7 @@ export default function ChatRoomPage() {
       const roomsInterval = setInterval(fetchAllRooms, 60000)
       const voiceUsersInterval = setInterval(fetchVoiceUsers, 5000)
       const typingInterval = setInterval(fetchTypingUsers, 2000)
+      const balanceInterval = setInterval(fetchBalance, 30000)
 
       updatePresence()
 
@@ -469,14 +488,13 @@ export default function ChatRoomPage() {
         clearInterval(roomsInterval)
         clearInterval(voiceUsersInterval)
         clearInterval(typingInterval)
+        clearInterval(balanceInterval)
         window.removeEventListener('beforeunload', handleBeforeUnload)
-        // Clean up presence on component unmount (no leave message - might be re-render)
-        if (room?.id) {
-          fetch(`/api/chat/rooms/${room.id}/presence`, { method: 'DELETE' }).catch(() => {})
-        }
+        // Don't DELETE presence on unmount — may be a React re-render, not a real leave.
+        // Presence will naturally expire via the 120s threshold.
       }
     }
-  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers, fetchBroadcastImages])
+  }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers, fetchBroadcastImages, fetchBalance])
 
   // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
@@ -1223,6 +1241,7 @@ export default function ChatRoomPage() {
         setGiftTargetUser(null)
         // Gift animation will be triggered via polling for ALL users
         fetchLeaderboard()
+        fetchBalance()
       } else {
         const err = await res.json()
         alert(err.error || 'Hediye gönderilemedi')
@@ -1748,6 +1767,14 @@ export default function ChatRoomPage() {
             </div>
             
             <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Balance Display */}
+              {session?.user && (
+                <div className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-purple-900/40 border border-purple-500/20 text-[10px]">
+                  <span className="text-yellow-400 font-bold" title="Jeton">💎{userJetonBalance}</span>
+                  <span className="text-purple-500/50">|</span>
+                  <span className="text-blue-400 font-bold" title="CFC">🪙{userCfcBalance}</span>
+                </div>
+              )}
               {/* Yönet Button */}
               {hasManagePermission && (
                 <button

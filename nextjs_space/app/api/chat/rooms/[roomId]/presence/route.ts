@@ -7,31 +7,7 @@ import { logActivity } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic'
 
-// Auto-clean ALL messages when room becomes empty for 30 seconds
-async function cleanEmptyRoom(roomId: string) {
-  try {
-    // Check if any user is active in the room (lastSeen within last 30 seconds)
-    const threshold = new Date(Date.now() - 30000)
-    const activeCount = await prisma.chatPresence.count({
-      where: {
-        roomId,
-        lastSeen: { gt: threshold }
-      }
-    })
-
-    if (activeCount === 0) {
-      // Room is empty for 30+ seconds - delete ALL messages
-      const deleted = await prisma.chatMessage.deleteMany({
-        where: { roomId }
-      })
-      if (deleted.count > 0) {
-        console.log(`Auto-cleaned ${deleted.count} messages from empty room ${roomId}`)
-      }
-    }
-  } catch (error) {
-    console.error('Error cleaning empty room:', error)
-  }
-}
+// Auto-clean disabled — messages are only deleted manually by admins
 
 // GET active users in a room with their roles
 export async function GET(
@@ -100,11 +76,6 @@ export async function GET(
       if (b.roleLevel !== a.roleLevel) return b.roleLevel - a.roleLevel
       return a.name.localeCompare(b.name)
     })
-
-    // If room is empty, trigger auto-clean in background
-    if (activeUsers.length === 0) {
-      cleanEmptyRoom(roomId).catch(() => {})
-    }
 
     return NextResponse.json({
       users: activeUsers,
@@ -186,8 +157,6 @@ export async function POST(
           data: { lastSeen: new Date(0) }
         })
       } catch { /* ignore */ }
-      // Check if room is empty and auto-clean
-      cleanEmptyRoom(roomId).catch(() => {})
       return NextResponse.json({ success: true })
     }
 
@@ -428,11 +397,6 @@ export async function DELETE(
       })
     }
     
-    // Messages are NOT auto-deleted - only deleted when room empties
-
-    // Check if room is empty and auto-clean
-    cleanEmptyRoom(roomId).catch(() => {})
-
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error removing presence:', error)
