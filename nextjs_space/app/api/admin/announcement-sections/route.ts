@@ -74,21 +74,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
-    const setting = await prisma.platformSettings.findUnique({
-      where: { key: 'announcement_category_sections' }
-    })
+    const [setting, giftSetting] = await Promise.all([
+      prisma.platformSettings.findUnique({ where: { key: 'announcement_category_sections' } }),
+      prisma.platformSettings.findUnique({ where: { key: 'gift_announcement_settings' } })
+    ])
 
+    let categorySettings = getDefaultSettings()
     if (setting) {
       try {
-        const raw = JSON.parse(setting.value)
-        const categorySettings = migrateSettings(raw)
-        return NextResponse.json({ categorySettings })
-      } catch {
-        return NextResponse.json({ categorySettings: getDefaultSettings() })
-      }
+        categorySettings = migrateSettings(JSON.parse(setting.value))
+      } catch {}
     }
 
-    return NextResponse.json({ categorySettings: getDefaultSettings() })
+    let giftAnnouncementSettings = { enabled: true, maxPasses: 2, expireMinutes: 3, minAmount: 1000 }
+    if (giftSetting) {
+      try {
+        giftAnnouncementSettings = { ...giftAnnouncementSettings, ...JSON.parse(giftSetting.value) }
+      } catch {}
+    }
+
+    return NextResponse.json({ categorySettings, giftAnnouncementSettings })
   } catch (error) {
     console.error('Error fetching announcement sections:', error)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
@@ -113,7 +118,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { categoryKey, categoryConfig, categorySettings } = body
+    const { categoryKey, categoryConfig, categorySettings, giftAnnouncementSettings } = body
+
+    // Handle gift announcement settings save
+    if (giftAnnouncementSettings) {
+      await prisma.platformSettings.upsert({
+        where: { key: 'gift_announcement_settings' },
+        update: { value: JSON.stringify(giftAnnouncementSettings) },
+        create: {
+          key: 'gift_announcement_settings',
+          value: JSON.stringify(giftAnnouncementSettings),
+          description: 'Gift announcement banner settings (enabled, maxPasses, expireMinutes, minAmount)'
+        }
+      })
+      return NextResponse.json({ ok: true })
+    }
 
     // Load existing settings
     const existing = await prisma.platformSettings.findUnique({

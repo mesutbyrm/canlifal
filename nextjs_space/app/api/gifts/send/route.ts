@@ -5,6 +5,42 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 
+async function createGiftAnnouncement(
+  senderName: string | null, senderUsername: string | null,
+  recipientName: string | null, recipientUsername: string | null,
+  giftIcon: string, giftTypeName: string, amount: number
+) {
+  // Check if gift announcements are enabled in admin settings
+  const giftAnnouncementSettings = await prisma.platformSettings.findUnique({
+    where: { key: 'gift_announcement_settings' }
+  })
+  let enabled = true
+  let maxPasses = 2
+  let expireMinutes = 3
+  if (giftAnnouncementSettings) {
+    try {
+      const s = JSON.parse(giftAnnouncementSettings.value)
+      if (s.enabled === false) return
+      maxPasses = s.maxPasses ?? 2
+      expireMinutes = s.expireMinutes ?? 3
+    } catch {}
+  }
+
+  const sender = senderUsername || senderName || 'Kullanıcı'
+  const recipient = recipientUsername || recipientName || 'Kullanıcı'
+  const message = `🎁 ${sender} → ${giftIcon} ${giftTypeName} (${amount} Jeton) → ${recipient} 🎁`
+
+  await prisma.siteAnnouncement.create({
+    data: {
+      type: 'gift_announcement',
+      message,
+      color: 'gift',
+      maxPasses,
+      expiresAt: new Date(Date.now() + expireMinutes * 60 * 1000)
+    }
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -116,6 +152,11 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('Gift notification error:', err))
 
       const isBigGift = giftType.price >= 1000
+      // Auto-create scrolling announcement for big gifts
+      if (isBigGift) {
+        createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price).catch(err => console.error('Gift announcement error:', err))
+      }
+
       return NextResponse.json({
         success: true,
         message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
@@ -204,6 +245,11 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('Jeton gift notification error:', err))
 
       const isBigJetonGift = amount >= 1000
+      // Auto-create scrolling announcement for big jeton gifts
+      if (isBigJetonGift) {
+        createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
+      }
+
       return NextResponse.json({
         success: true,
         message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,

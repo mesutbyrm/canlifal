@@ -44,6 +44,13 @@ interface CategoryConfig {
   sections: Record<string, boolean>
 }
 
+interface GiftAnnouncementSettings {
+  enabled: boolean
+  maxPasses: number
+  expireMinutes: number
+  minAmount: number
+}
+
 type AllSettings = Record<string, CategoryConfig>
 
 function getDefaultConfig(catKey: string): CategoryConfig {
@@ -69,6 +76,11 @@ export default function AnnouncementSettingsPage() {
     })
     return initial
   })
+  const [giftSettings, setGiftSettings] = useState<GiftAnnouncementSettings>({
+    enabled: true, maxPasses: 2, expireMinutes: 3, minAmount: 1000
+  })
+  const [savingGift, setSavingGift] = useState(false)
+  const [savedGift, setSavedGift] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -92,6 +104,9 @@ export default function AnnouncementSettingsPage() {
               })
               return merged
             })
+          }
+          if (data.giftAnnouncementSettings) {
+            setGiftSettings(data.giftAnnouncementSettings)
           }
         }
       } catch (error) {
@@ -169,6 +184,25 @@ export default function AnnouncementSettingsPage() {
     }
   }
 
+  const handleSaveGiftSettings = async () => {
+    setSavingGift(true)
+    try {
+      const res = await fetch('/api/admin/announcement-sections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ giftAnnouncementSettings: giftSettings })
+      })
+      if (res.ok) {
+        setSavedGift(true)
+        setTimeout(() => setSavedGift(false), 3000)
+      }
+    } catch (error) {
+      console.error('Failed to save gift settings:', error)
+    } finally {
+      setSavingGift(false)
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen  flex items-center justify-center">
@@ -203,6 +237,108 @@ export default function AnnouncementSettingsPage() {
             Her kullanıcı grubu için ayrı ayrı onay verebilir, duyurunun kaç kez geçeceğini belirleyebilir ve hangi sayfalarda gösterileceğini seçebilirsiniz. Her grubun kendi Kaydet butonu vardır.
           </p>
         </div>
+      </div>
+
+      {/* Gift Announcement Settings */}
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-pink-500/30 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, rgba(168, 28, 135, 0.2) 0%, rgba(60, 10, 60, 0.4) 100%)' }}
+        >
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-xl shadow-lg">
+              🎁
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-white">Hediye Duyuruları (1000+ Jeton)</p>
+              <p className="text-xs text-pink-300">
+                1000 jeton ve üzeri hediyeler gönderildiğinde otomatik kayan duyuru oluşturulur
+              </p>
+            </div>
+            <button
+              onClick={() => setGiftSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className="flex-shrink-0"
+              title={giftSettings.enabled ? 'Kapat' : 'Aç'}
+            >
+              {giftSettings.enabled ? (
+                <ToggleRight className="w-8 h-8 text-green-400" />
+              ) : (
+                <ToggleLeft className="w-8 h-8 text-gray-500" />
+              )}
+            </button>
+          </div>
+
+          {giftSettings.enabled && (
+            <div className="border-t border-pink-500/20 p-4 space-y-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Max Passes */}
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-pink-300" />
+                  <span className="text-sm text-pink-200">Geçiş Sayısı:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setGiftSettings(prev => ({ ...prev, maxPasses: Math.max(1, prev.maxPasses - 1) }))}
+                      className="w-7 h-7 rounded-lg bg-purple-800/40 border border-purple-500/30 text-purple-200 hover:bg-purple-700/50 transition-colors flex items-center justify-center text-sm font-bold"
+                    >−</button>
+                    <input
+                      type="number" min={1} max={10}
+                      value={giftSettings.maxPasses}
+                      onChange={(e) => setGiftSettings(prev => ({ ...prev, maxPasses: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)) }))}
+                      className="w-12 h-7 rounded-lg bg-purple-900/50 border border-purple-500/30 text-white text-center text-sm focus:outline-none focus:border-fuchsia-400"
+                    />
+                    <button
+                      onClick={() => setGiftSettings(prev => ({ ...prev, maxPasses: Math.min(10, prev.maxPasses + 1) }))}
+                      className="w-7 h-7 rounded-lg bg-purple-800/40 border border-purple-500/30 text-purple-200 hover:bg-purple-700/50 transition-colors flex items-center justify-center text-sm font-bold"
+                    >+</button>
+                  </div>
+                </div>
+
+                {/* Expire Minutes */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-pink-200">⏱️ Süre (dk):</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setGiftSettings(prev => ({ ...prev, expireMinutes: Math.max(1, prev.expireMinutes - 1) }))}
+                      className="w-7 h-7 rounded-lg bg-purple-800/40 border border-purple-500/30 text-purple-200 hover:bg-purple-700/50 transition-colors flex items-center justify-center text-sm font-bold"
+                    >−</button>
+                    <input
+                      type="number" min={1} max={30}
+                      value={giftSettings.expireMinutes}
+                      onChange={(e) => setGiftSettings(prev => ({ ...prev, expireMinutes: Math.max(1, Math.min(30, parseInt(e.target.value) || 1)) }))}
+                      className="w-12 h-7 rounded-lg bg-purple-900/50 border border-purple-500/30 text-white text-center text-sm focus:outline-none focus:border-fuchsia-400"
+                    />
+                    <button
+                      onClick={() => setGiftSettings(prev => ({ ...prev, expireMinutes: Math.min(30, prev.expireMinutes + 1) }))}
+                      className="w-7 h-7 rounded-lg bg-purple-800/40 border border-purple-500/30 text-purple-200 hover:bg-purple-700/50 transition-colors flex items-center justify-center text-sm font-bold"
+                    >+</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSaveGiftSettings}
+                disabled={savingGift}
+                className={`w-full px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  savedGift
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+                    : 'bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-500 hover:to-orange-500 text-white'
+                }`}
+              >
+                {savingGift ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</>
+                ) : savedGift ? (
+                  <><CheckCircle className="w-4 h-4" /> Kaydedildi!</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Hediye Duyuru Ayarlarını Kaydet</>
+                )}
+              </motion.button>
+            </div>
+          )}
+        </motion.div>
       </div>
 
       {/* User Categories */}

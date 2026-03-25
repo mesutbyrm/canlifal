@@ -6,6 +6,40 @@ import { logActivity } from '@/lib/activity-logger'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 
+async function createStreamGiftAnnouncement(
+  senderName: string, senderUsername: string | null,
+  recipientName: string, recipientUsername: string | null,
+  giftIcon: string, giftTypeName: string, amount: number
+) {
+  const giftAnnouncementSettings = await prisma.platformSettings.findUnique({
+    where: { key: 'gift_announcement_settings' }
+  })
+  let maxPasses = 2
+  let expireMinutes = 3
+  if (giftAnnouncementSettings) {
+    try {
+      const s = JSON.parse(giftAnnouncementSettings.value)
+      if (s.enabled === false) return
+      maxPasses = s.maxPasses ?? 2
+      expireMinutes = s.expireMinutes ?? 3
+    } catch {}
+  }
+
+  const sender = senderUsername || senderName
+  const recipient = recipientUsername || recipientName
+  const message = `🎁 ${sender} → ${giftIcon} ${giftTypeName} (${amount} Jeton) → ${recipient} 🎁`
+
+  await prisma.siteAnnouncement.create({
+    data: {
+      type: 'gift_announcement',
+      message,
+      color: 'gift',
+      maxPasses,
+      expiresAt: new Date(Date.now() + expireMinutes * 60 * 1000)
+    }
+  })
+}
+
 // Get recent gifts for a stream
 export async function GET(
   request: NextRequest,
@@ -138,11 +172,21 @@ export async function POST(
         giftIcon: giftType.icon,
         senderId: session.user.id,
         senderName: session.user.name || 'Kullanıcı',
-        recipientName: '', // will be filled from user relation
+        recipientName: '',
         streamId: params.streamId,
         amount: totalPrice
       })
     }).catch(err => console.error('Stream gift notification error:', err))
+
+    // Auto-create scrolling announcement for big stream gifts (1000+ jeton)
+    if (totalPrice >= 1000) {
+      const streamUser = await prisma.user.findUnique({ where: { id: stream.userId }, select: { name: true, username: true } })
+      createStreamGiftAnnouncement(
+        session.user.name || 'Kullanıcı', (session.user as any).username || null,
+        streamUser?.name || 'Kullanıcı', streamUser?.username || null,
+        giftType.icon, giftType.name, totalPrice
+      ).catch(err => console.error('Stream gift announcement error:', err))
+    }
 
     return NextResponse.json({
       success: true,

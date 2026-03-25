@@ -181,7 +181,16 @@ const DEFAULT_COLORS = {
   emoji: '🔴'
 }
 
+const GIFT_COLORS = {
+  bg: 'linear-gradient(90deg, #1a0020, #4a0080, #8b00cc, #ff6600, #8b00cc, #4a0080, #1a0020)',
+  border: 'linear-gradient(90deg, transparent, #ff00ff, #ffd700, #ff00ff, transparent)',
+  text: 'linear-gradient(90deg, #ff66ff, #ffd700, #ff66ff, #ffee88, #ff66ff)',
+  shimmer: 'linear-gradient(90deg, transparent 0%, rgba(255,0,255,0.1) 20%, rgba(255,215,0,0.15) 50%, rgba(255,0,255,0.1) 80%, transparent 100%)',
+  emoji: '🎁' as React.ReactNode
+}
+
 function getTeamColors(color: string) {
+  if (color === 'gift') return GIFT_COLORS
   if (color.startsWith('team:')) {
     const teamName = color.substring(5)
     return TEAM_COLORS[teamName] || DEFAULT_COLORS
@@ -204,7 +213,7 @@ export default function LoginAnnouncementBanner() {
       const res = await fetch('/api/announcements')
       if (res.ok) {
         const data: Announcement[] = await res.json()
-        const loginAnnouncements = data.filter(a => a.type === 'login' || a.type === 'section_entry')
+        const loginAnnouncements = data.filter(a => a.type === 'login' || a.type === 'section_entry' || a.type === 'gift_announcement')
         const newOnes = loginAnnouncements.filter(a => !seenIdsRef.current.has(a.id))
         if (newOnes.length > 0) {
           queueRef.current = [...queueRef.current, ...newOnes]
