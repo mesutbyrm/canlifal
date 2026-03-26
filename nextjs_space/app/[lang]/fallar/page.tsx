@@ -44,9 +44,9 @@ export default function FortunesPage() {
             {'Etkileşimli & Görsel Fallar'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FortuneCard type="coffee" imageSrc="/coffee_fortune_icon.jpg" cost={5} />
-            <FortuneCard type="palm" imageSrc="/palm_icon.jpg" cost={8} />
-            <FortuneCard type="kursundokme" imageSrc="/kursun_dokme_icon.jpg" cost={6} />
+            <FortuneCard type="coffee" imageSrc="/coffee_fortune_icon.webp" cost={5} />
+            <FortuneCard type="palm" imageSrc="/palm_icon.webp" cost={8} />
+            <FortuneCard type="kursundokme" imageSrc="/kursun_dokme_icon.webp" cost={6} />
           </div>
         </motion.div>
 
@@ -61,9 +61,9 @@ export default function FortunesPage() {
             {'Kart Falları'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FortuneCard type="tarot" imageSrc="/tarot_reading_icon.jpg" cost={7} />
-            <FortuneCard type="katina" imageSrc="/katina_icon.jpg" cost={6} />
-            <FortuneCard type="angel" imageSrc="/angel_icon.jpg" cost={5} />
+            <FortuneCard type="tarot" imageSrc="/tarot_reading_icon.webp" cost={7} />
+            <FortuneCard type="katina" imageSrc="/katina_icon.webp" cost={6} />
+            <FortuneCard type="angel" imageSrc="/angel_icon.webp" cost={5} />
           </div>
         </motion.div>
 
@@ -78,10 +78,10 @@ export default function FortunesPage() {
             {'Astroloji & Numeroloji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FortuneCard type="horoscope" imageSrc="/horoscope_icon.jpg" cost={3} />
-            <FortuneCard type="birthchart" imageSrc="/birthchart_icon.jpg" cost={10} />
-            <FortuneCard type="numerology" imageSrc="/numerology_icon.jpg" cost={4} />
-            <FortuneCard type="love" imageSrc="/love_compatibility_icon.jpg" cost={5} />
+            <FortuneCard type="horoscope" imageSrc="/horoscope_icon.webp" cost={3} />
+            <FortuneCard type="birthchart" imageSrc="/birthchart_icon.webp" cost={10} />
+            <FortuneCard type="numerology" imageSrc="/numerology_icon.webp" cost={4} />
+            <FortuneCard type="love" imageSrc="/love_compatibility_icon.webp" cost={5} />
           </div>
         </motion.div>
 
@@ -95,10 +95,10 @@ export default function FortunesPage() {
             {'Ruhsal & Enerji'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FortuneCard type="dream" imageSrc="/dream_interpretation_icon.jpg" cost={5} />
-            <FortuneCard type="istikhara" imageSrc="/istikhara_icon.jpg" cost={4} />
-            <FortuneCard type="aura" imageSrc="/aura_icon.jpg" cost={6} />
-            <FortuneCard type="yesno" imageSrc="/yesno_oracle_icon.jpg" cost={2} />
+            <FortuneCard type="dream" imageSrc="/dream_interpretation_icon.webp" cost={5} />
+            <FortuneCard type="istikhara" imageSrc="/istikhara_icon.webp" cost={4} />
+            <FortuneCard type="aura" imageSrc="/aura_icon.webp" cost={6} />
+            <FortuneCard type="yesno" imageSrc="/yesno_oracle_icon.webp" cost={2} />
           </div>
         </motion.div>
       </div>

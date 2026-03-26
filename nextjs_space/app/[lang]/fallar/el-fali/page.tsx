@@ -12,6 +12,7 @@ import TextToSpeech from '@/components/text-to-speech'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
 import Image from 'next/image'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function PalmReadingPage() {
   const { language } = useLanguage()
@@ -447,6 +448,12 @@ export default function PalmReadingPage() {
           </button>
         </div>
       )}
+
+        <RelatedContentLinks
+          currentSlug="el-fali"
+          relatedSlugs={['kahve-fali', 'aura-analizi', 'dogum-haritasi', 'numeroloji', 'tarot-fali']}
+          introText="El falı gibi kişiye özel fal türlerini keşfedin. Doğum haritanız ve aura renginizle kendinizi daha iyi tanıyın."
+        />
     </FortunePageLayout>
   )
 }

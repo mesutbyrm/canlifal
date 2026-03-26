@@ -9,6 +9,7 @@ import { Sparkles, AlertCircle, RotateCw, Droplets, Smartphone } from 'lucide-re
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 type Phase = 'ready' | 'waiting_flip' | 'pouring' | 'settling' | 'interpreting' | 'complete'
 
@@ -602,6 +603,12 @@ export default function KursunDokmePage() {
           </motion.button>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="kursundokme"
+          relatedSlugs={['aura-analizi', 'istihare', 'melek-kartlari', 'kahve-fali', 'tarot-fali']}
+          introText="Kurşun dökme ile enerji temizliği yaptınız. Aura analizi ve diğer manevi yöntemleri de deneyebilirsiniz."
+        />
     </div>
   )
 }

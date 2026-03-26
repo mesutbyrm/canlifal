@@ -8,6 +8,7 @@ import { Sun, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function BirthChartPage() {
   const { language } = useLanguage()
@@ -156,6 +157,12 @@ export default function BirthChartPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="dogum-haritasi"
+          relatedSlugs={['burc-yorumu', 'numeroloji', 'ask-uyumu', 'aura-analizi', 'tarot-fali']}
+          introText="Doğum haritanızı incelediniz. Burç yorumları ve numeroloji ile astrolojik profilinizi tamamlayın."
+        />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { Layers, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function KatinaPage() {
   const { language } = useLanguage()
@@ -170,6 +171,12 @@ export default function KatinaPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="katina"
+          relatedSlugs={['tarot-fali', 'kahve-fali', 'melek-kartlari', 'evet-hayir', 'el-fali']}
+          introText="Katina falı ile geleceğe baktınız. Benzer kart falları ve geleneksel yöntemleri de keşfedin."
+        />
     </div>
   )
 }

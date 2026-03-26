@@ -8,6 +8,7 @@ import { Moon, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function IstikharaPage() {
   const { language } = useLanguage()
@@ -142,6 +143,12 @@ export default function IstikharaPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="istihare"
+          relatedSlugs={['melek-kartlari', 'evet-hayir', 'ruya-yorumu', 'kursundokme', 'tarot-fali']}
+          introText="İstihare ile ilahi rehberlik aldınız. Rüya yorumu ve melek kartları ile manevi yolculuğunuza devam edin."
+        />
     </div>
   )
 }

@@ -11,6 +11,7 @@ import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 const ZODIAC_SIGNS = [
   { id: 'aries', emoji: '♈', en: 'Aries', tr: 'Koç' },
@@ -223,6 +224,12 @@ export default function HoroscopePage() {
           </button>
         </div>
       )}
+
+        <RelatedContentLinks
+          currentSlug="burc-yorumu"
+          relatedSlugs={['ask-uyumu', 'dogum-haritasi', 'numeroloji', 'tarot-fali', 'kahve-fali']}
+          introText="Günlük burç yorumunuzun yanı sıra aşk uyumunuzu, doğum haritanızı ve numeroloji analizinizi de keşfedebilirsiniz."
+        />
     </FortunePageLayout>
   )
 }

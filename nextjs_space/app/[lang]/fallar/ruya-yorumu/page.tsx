@@ -13,6 +13,7 @@ import VoiceInput from '@/components/voice-input'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function DreamFortunePage() {
   const { data: session } = useSession() || {}
@@ -193,6 +194,12 @@ export default function DreamFortunePage() {
           </button>
         </div>
       )}
+
+        <RelatedContentLinks
+          currentSlug="ruya-yorumu"
+          relatedSlugs={['ruya', 'ruya-sozlugu', 'kahve-fali', 'istihare', 'melek-kartlari']}
+          introText="Rüya yorumu ile ilgili daha fazla içerik keşfedin. Rüya sözlüğümüzde binlerce sembol ve anlam sizi bekliyor."
+        />
     </FortunePageLayout>
   )
 }

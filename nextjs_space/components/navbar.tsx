@@ -801,7 +801,7 @@ export default function Navbar() {
                         >
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isLight ? 'bg-blue-100 text-blue-600' : 'bg-fuchsia-900/50 text-fuchsia-300'}`}>
                             {u.image ? (
-                              <img src={u.image} alt="" className="w-9 h-9 rounded-full object-cover" />
+                              <img loading="lazy" src={u.image} alt="" className="w-9 h-9 rounded-full object-cover" />
                             ) : (
                               (u.name?.[0] || u.username?.[0] || '?').toUpperCase()
                             )}
@@ -835,7 +835,7 @@ export default function Navbar() {
                   <div className={`flex items-center gap-3 p-3 rounded-lg mb-4 ${isLight ? 'bg-blue-50 border border-blue-100' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'}`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isLight ? 'bg-blue-100 text-blue-600' : 'bg-fuchsia-900/50 text-fuchsia-300'}`}>
                       {selectedAdminUser.image ? (
-                        <img src={selectedAdminUser.image} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img loading="lazy" src={selectedAdminUser.image} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         (selectedAdminUser.name?.[0] || selectedAdminUser.username?.[0] || '?').toUpperCase()
                       )}

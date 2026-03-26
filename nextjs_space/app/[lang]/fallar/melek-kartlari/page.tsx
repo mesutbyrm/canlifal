@@ -8,6 +8,7 @@ import { Sparkles, Feather } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function AngelCardsPage() {
   const { language } = useLanguage()
@@ -137,6 +138,12 @@ export default function AngelCardsPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="melek-kartlari"
+          relatedSlugs={['tarot-fali', 'istihare', 'katina', 'evet-hayir', 'aura-analizi']}
+          introText="Melek kartları ile ruhani rehberlik aldınız. Diğer kart falları ve manevi yorumları da deneyebilirsiniz."
+        />
     </div>
   )
 }

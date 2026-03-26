@@ -88,22 +88,22 @@ const FORTUNE_ICONS: Record<string, any> = {
 }
 
 const FORTUNE_IMAGES: Record<string, string> = {
-  coffee: '/fortunes/coffee.jpg',
-  tarot: '/fortunes/tarot.jpg',
-  horoscope: '/fortunes/horoscope.jpg',
-  daily_horoscope: '/fortunes/horoscope.jpg',
-  palm: '/fortunes/palm.jpg',
-  dream: '/fortunes/dream.jpg',
-  love: '/fortunes/love.jpg',
-  numerology: '/fortunes/numerology.jpg',
-  angel: '/fortunes/angel.jpg',
-  aura: '/fortunes/aura.jpg',
-  birthchart: '/fortunes/birthchart.jpg',
-  yesno: '/fortunes/yesno.jpg',
-  katina: '/fortunes/katina.jpg',
-  kursundokme: '/fortunes/dream.jpg',
-  istikhara: '/fortunes/angel.jpg',
-  askuyumu: '/fortunes/love.jpg'
+  coffee: '/fortunes/coffee.webp',
+  tarot: '/fortunes/tarot.webp',
+  horoscope: '/fortunes/horoscope.webp',
+  daily_horoscope: '/fortunes/horoscope.webp',
+  palm: '/fortunes/palm.webp',
+  dream: '/fortunes/dream.webp',
+  love: '/fortunes/love.webp',
+  numerology: '/fortunes/numerology.webp',
+  angel: '/fortunes/angel.webp',
+  aura: '/fortunes/aura.webp',
+  birthchart: '/fortunes/birthchart.webp',
+  yesno: '/fortunes/yesno.webp',
+  katina: '/fortunes/katina.webp',
+  kursundokme: '/fortunes/dream.webp',
+  istikhara: '/fortunes/angel.webp',
+  askuyumu: '/fortunes/love.webp'
 }
 
 const FORTUNE_LABELS: Record<string, Record<string, string>> = {

@@ -14,6 +14,7 @@ import VoiceInput from '@/components/voice-input'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
 import Image from 'next/image'
+import RelatedContentLinks from '@/components/related-content-links'
 
 type InputMode = 'text' | 'image'
 
@@ -598,6 +599,12 @@ export default function CoffeeFortunePage() {
           </button>
         </div>
       )}
+
+        <RelatedContentLinks
+          currentSlug="kahve-fali"
+          relatedSlugs={['tarot-fali', 'katina', 'el-fali', 'ruya-yorumu', 'ruya-sozlugu']}
+          introText="Kahve falı yorumları hakkında daha fazla bilgi almak ve diğer fal türlerini keşfetmek için aşağıdaki bağlantıları inceleyebilirsiniz."
+        />
     </FortunePageLayout>
   )
 }

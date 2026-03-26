@@ -1351,7 +1351,7 @@ function VideoStreamPageInner() {
                 style={{ left: 0, top: 0 }}
               >
                 <div className="relative">
-                  <Image src="/gifts/cfc-coin.png" alt="CFC" width={60} height={60} className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(139,0,0,0.8)]" />
+                  <Image src="/gifts/cfc-coin.webp" alt="CFC" width={60} height={60} className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(139,0,0,0.8)]" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-[8px] font-black text-yellow-300 drop-shadow-md" style={{ textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>CFC</span>
                   </div>
@@ -1376,7 +1376,7 @@ function VideoStreamPageInner() {
                     animate={{ rotate: [0, -25, -25, 0], y: [-80, -40, -40, -80] }}
                     transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
                   >
-                    <Image src="/gifts/kahve.png" alt="Kahve" width={180} height={180} className="w-44 h-44 object-contain drop-shadow-[0_0_30px_rgba(139,69,19,0.7)]" />
+                    <Image src="/gifts/kahve.webp" alt="Kahve" width={180} height={180} className="w-44 h-44 object-contain drop-shadow-[0_0_30px_rgba(139,69,19,0.7)]" />
                   </motion.div>
                   {/* Steam particles */}
                   {[...Array(8)].map((_, i) => (

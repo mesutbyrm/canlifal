@@ -8,6 +8,7 @@ import { Heart, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 const ZODIAC_SIGNS = [
   { id: 'aries', emoji: '♈', en: 'Aries', tr: 'Koç' },
@@ -241,6 +242,12 @@ export default function LoveCompatibilityPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="ask-uyumu"
+          relatedSlugs={['burc-yorumu', 'tarot-fali', 'kahve-fali', 'numeroloji', 'melek-kartlari']}
+          introText="Aşk uyumunuzu öğrendiniz. İlişkiniz hakkında daha fazla bilgi için tarot ve kahve falı da baktırabilirsiniz."
+        />
     </div>
   )
 }

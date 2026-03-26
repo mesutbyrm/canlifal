@@ -10,6 +10,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import LoadingSpinner from '@/components/loading-spinner'
+import RelatedContentLinks from '@/components/related-content-links'
 
 interface BlogPost {
   id: string
@@ -357,10 +358,10 @@ export default function BlogPostPage() {
         </nav>
 
         {/* Cover Image */}
-        {(post.coverImage || '/hero_background.jpg') && (
+        {(post.coverImage || '/hero_background.webp') && (
           <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 bg-gray-800">
             <Image
-              src={post.coverImage || '/hero_background.jpg'}
+              src={post.coverImage || '/hero_background.webp'}
               alt={`${title} - ${getCategoryName(post.category)} | ${SITE_NAME}`}
               fill
               className="object-cover"
@@ -768,6 +769,15 @@ export default function BlogPostPage() {
             </div>
           </section>
         )}
+      </div>
+
+      {/* Related Fortune Links */}
+      <div className="max-w-4xl mx-auto px-4">
+        <RelatedContentLinks
+          currentSlug=""
+          relatedSlugs={['kahve-fali', 'tarot-fali', 'ruya-yorumu', 'burc-yorumu', 'ruya-sozlugu', 'numeroloji']}
+          introText="Fal ve astroloji dünyasını keşfetmeye devam edin. Online fal baktırın, rüya tabirlerinizi öğrenin ve günlük burç yorumlarınızı okuyun."
+        />
       </div>
 
       {/* Click outside to close share menu */}

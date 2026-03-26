@@ -7,17 +7,18 @@ import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2, MessageCircle } from 'lucide-react'
-import ActionButtonsRow from '@/components/action-buttons-row'
 import { useSectionPresence } from '@/hooks/use-section-presence'
 import { AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import HomepageTicker from '@/components/homepage-ticker'
-import LiveTicker from '@/components/live-ticker'
-import BanaOzelSection from '@/components/bana-ozel-section'
 import { useSiteTheme } from '@/lib/theme-context'
-import GuestLanding from '@/components/guest-landing'
-// UserPopup is now only shown in GuestLanding for unauthenticated users
-import LiveActivityFeed from '@/components/live-activity-feed'
+import dynamic from 'next/dynamic'
+
+const ActionButtonsRow = dynamic(() => import('@/components/action-buttons-row'), { ssr: false })
+const HomepageTicker = dynamic(() => import('@/components/homepage-ticker'), { ssr: false })
+const LiveTicker = dynamic(() => import('@/components/live-ticker'), { ssr: false })
+const BanaOzelSection = dynamic(() => import('@/components/bana-ozel-section'), { ssr: false })
+const GuestLanding = dynamic(() => import('@/components/guest-landing'), { ssr: false })
+const LiveActivityFeed = dynamic(() => import('@/components/live-activity-feed'), { ssr: false })
 
 interface LiveTeller {
   id: string

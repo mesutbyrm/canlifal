@@ -131,7 +131,7 @@ export default function ShareCard({ fortuneId, postId, trigger }: ShareCardProps
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">
                         {cardData.userAvatar ? (
-                          <img src={cardData.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          <img loading="lazy" src={cardData.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
                         ) : (
                           cardData.userName.charAt(0).toUpperCase()
                         )}

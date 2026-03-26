@@ -7,6 +7,7 @@ import LoadingSpinner from '@/components/loading-spinner'
 import { useSession } from 'next-auth/react'
 import { getCategoryLabel, getCategoryIcon } from '@/lib/dream-categories'
 import { addInternalLinks } from '@/lib/auto-linker'
+import RelatedContentLinks from '@/components/related-content-links'
 
 interface Dream {
   id: string
@@ -719,6 +720,13 @@ export default function DreamDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Related Content Links */}
+        <RelatedContentLinks
+          currentSlug="ruya"
+          relatedSlugs={['ruya-sozlugu', 'kahve-fali', 'tarot-fali', 'istihare', 'melek-kartlari']}
+          introText="Rüya tabirleri hakkında daha fazla bilgi almak, rüya sözlüğüne göz atmak veya farklı fal türlerini denemek için aşağıdaki bağlantıları inceleyebilirsiniz."
+        />
 
         {/* Back button */}
         <div className="mt-8 text-center">

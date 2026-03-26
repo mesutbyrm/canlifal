@@ -8,6 +8,7 @@ import { Hash, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function NumerologyPage() {
   const { language, t } = useLanguage()
@@ -184,6 +185,12 @@ export default function NumerologyPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="numeroloji"
+          relatedSlugs={['dogum-haritasi', 'burc-yorumu', 'ask-uyumu', 'aura-analizi', 'tarot-fali']}
+          introText="Numeroloji ile sayıların gücünü keşfettiniz. Doğum haritanız ve aura analizinizle kendinizi daha iyi tanıyın."
+        />
     </div>
   )
 }

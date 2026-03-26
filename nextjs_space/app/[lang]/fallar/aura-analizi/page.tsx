@@ -8,6 +8,7 @@ import { Eye, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 const MOOD_OPTIONS = {
   en: ['Happy', 'Calm', 'Anxious', 'Sad', 'Excited', 'Tired', 'Confused', 'Peaceful'],
@@ -181,6 +182,12 @@ export default function AuraReadingPage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="aura-analizi"
+          relatedSlugs={['dogum-haritasi', 'numeroloji', 'melek-kartlari', 'el-fali', 'kursundokme']}
+          introText="Aura analizinin yanı sıra enerji alanınızı etkileyen diğer manevi yöntemleri de keşfedebilirsiniz."
+        />
     </div>
   )
 }

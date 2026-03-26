@@ -84,7 +84,7 @@ export function UserBadge({ badge, size = 'md', showLabel = false, animate = tru
         <div 
           className="w-full h-full bg-cover bg-no-repeat"
           style={{
-            backgroundImage: 'url(/badges/all-badges.jpg)',
+            backgroundImage: 'url(/badges/all-badges.webp)',
             backgroundPosition: config.bgPosition,
             backgroundSize: '400% 100%'
           }}

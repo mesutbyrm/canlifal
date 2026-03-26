@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, BookOpen, Loader2, Tag, Share2 } from 'lucide-react'
 import Link from 'next/link'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function DreamSymbolDetailPage() {
   const { lang, slug } = useParams()
@@ -88,6 +89,12 @@ export default function DreamSymbolDetailPage() {
           </div>
         )}
       </div>
+
+      <RelatedContentLinks
+        currentSlug="ruya-sozlugu"
+        relatedSlugs={['ruya', 'ruya-yorumu', 'kahve-fali', 'tarot-fali', 'istihare', 'melek-kartlari']}
+        introText="Rüya sembollerinin anlamlarını öğrendiniz. Rüya tabirlerinizi daha detaylı yorumlatmak veya farklı fal türlerini keşfetmek için aşağıdaki bağlantıları inceleyebilirsiniz."
+      />
 
       <div className="mt-6 text-center">
         <Link href={`/${lang}/ruya-sozlugu`} className="text-purple-400 hover:text-purple-300 transition-colors">

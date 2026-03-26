@@ -12,6 +12,7 @@ import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function TarotFortunePage() {
   const { data: session } = useSession() || {}
@@ -212,6 +213,12 @@ export default function TarotFortunePage() {
           </button>
         </div>
       )}
+
+        <RelatedContentLinks
+          currentSlug="tarot-fali"
+          relatedSlugs={['kahve-fali', 'melek-kartlari', 'katina', 'evet-hayir', 'numeroloji']}
+          introText="Tarot falı dışında diğer kart bazlı fal türlerini ve astroloji yorumlarını da deneyebilirsiniz."
+        />
     </FortunePageLayout>
   )
 }

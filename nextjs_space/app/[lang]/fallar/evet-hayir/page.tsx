@@ -8,6 +8,7 @@ import { HelpCircle, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import FortuneAccessGate from '@/components/fortune-access-gate'
+import RelatedContentLinks from '@/components/related-content-links'
 
 export default function YesNoOraclePage() {
   const { language, t } = useLanguage()
@@ -175,6 +176,12 @@ export default function YesNoOraclePage() {
           </motion.div>
         )}
       </div>
+
+        <RelatedContentLinks
+          currentSlug="evet-hayir"
+          relatedSlugs={['kahve-fali', 'tarot-fali', 'melek-kartlari', 'istihare', 'katina']}
+          introText="Evet/Hayır sorusuna cevap aldınız. Daha detaylı yorumlar için kahve falı veya tarot falı baktırabilirsiniz."
+        />
     </div>
   )
 }
