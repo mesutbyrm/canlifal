@@ -83,6 +83,58 @@ const QUIZ_QUESTIONS = [
 const MEMORY_SYMBOLS = ['☕', '🔮', '⭐', '🌙', '🎴', '🕯️', '💎', '🪬']
 
 // ========== MAIN COMPONENT ==========
+// SOS Game Card with live player count
+function SosGameCard({ lang }: { lang: string }) {
+  const [sosActivePlayers, setSosActivePlayers] = useState(0)
+
+  useEffect(() => {
+    const fetchSosStats = async () => {
+      try {
+        const res = await fetch('/api/games/sos?type=stats')
+        if (res.ok) {
+          const d = await res.json()
+          setSosActivePlayers(d.activePlayers || 0)
+        }
+      } catch {}
+    }
+    fetchSosStats()
+    const iv = setInterval(fetchSosStats, 15000)
+    return () => clearInterval(iv)
+  }, [])
+
+  return (
+    <Link href={`/${lang}/oyunlar/sos`} className="block">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl group-hover:scale-110 transition-transform">🔠</span>
+            <div>
+              <p className="text-white font-bold text-base">SOS Oyunu</p>
+              <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis yapabilirsin!</p>
+              {sosActivePlayers > 0 && (
+                <p className="text-green-400 text-xs mt-0.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse inline-block" />
+                  {sosActivePlayers} aktif oyuncu
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
+              Oyna
+            </span>
+            <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
 export default function GameCenterPage() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
@@ -1158,29 +1210,7 @@ export default function GameCenterPage() {
               </div>
 
               {/* SOS Game Special Card */}
-              <Link href={`/${lang}/oyunlar/sos`} className="block">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-4xl group-hover:scale-110 transition-transform">🔠</span>
-                      <div>
-                        <p className="text-white font-bold text-base">SOS Oyunu</p>
-                        <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis yapabilirsin!</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
-                        Oyna
-                      </span>
-                      <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
+              <SosGameCard lang={lang} />
 
               {/* Daily Spin Section */}
               {session?.user && (

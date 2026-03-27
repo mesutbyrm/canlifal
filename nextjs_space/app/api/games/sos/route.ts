@@ -13,10 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
-    const { gridSize, isAI, betAmount, betCurrency } = await req.json()
+    const { gridSize, isAI, betAmount, betCurrency, turnTimer } = await req.json()
     const size = [6, 8, 10].includes(gridSize) ? gridSize : 6
     const currency = ['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE'
     const amount = currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0))
+    const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0
 
     // Check balance
     if (amount > 0) {
@@ -63,6 +64,8 @@ export async function POST(req: NextRequest) {
         status: isAI ? 'active' : 'waiting',
         player1Name: userName,
         player2Name: isAI ? 'Yapay Zeka' : 'Oyuncu 2',
+        turnTimer: timer,
+        lastMoveAt: isAI ? new Date() : null,
       },
     })
 
@@ -119,6 +122,28 @@ export async function GET(req: NextRequest) {
         waitingRooms: waitingCount,
         recentWinners: winners,
       })
+    }
+
+    // List active games for spectating
+    if (type === 'active') {
+      const activeGames = await prisma.sosGame.findMany({
+        where: { status: 'active', isAI: false },
+        orderBy: { updatedAt: 'desc' },
+        take: 30,
+        include: { _count: { select: { viewers: true } } },
+      })
+      return NextResponse.json(activeGames.map(g => ({
+        id: g.id,
+        gridSize: g.gridSize,
+        player1Name: g.player1Name,
+        player2Name: g.player2Name,
+        player1Score: g.player1Score,
+        player2Score: g.player2Score,
+        betAmount: g.betAmount,
+        betCurrency: g.betCurrency,
+        turnTimer: g.turnTimer,
+        viewerCount: g._count.viewers,
+      })))
     }
 
     const games = await prisma.sosGame.findMany({

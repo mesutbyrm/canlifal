@@ -1517,14 +1517,48 @@ model SosGame {
   winnerId      String?
   player1Name   String   @default("Oyuncu 1")
   player2Name   String   @default("Oyuncu 2")
+  turnTimer     Int      @default(0)            // 0=no timer, 10/15/20 seconds
+  chatEnabled   Boolean  @default(true)
+  lastMoveAt    DateTime?                       // for timer enforcement
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  chatMessages  SosGameChat[]
+  viewers       SosGameViewer[]
 
   @@index([status])
   @@index([player1Id])
   @@index([player2Id])
   @@index([createdAt])
   @@map("sos_games")
+}
+
+model SosGameChat {
+  id        String   @id @default(cuid())
+  gameId    String
+  userId    String
+  userName  String
+  message   String
+  createdAt DateTime @default(now())
+
+  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, createdAt])
+  @@map("sos_game_chats")
+}
+
+model SosGameViewer {
+  id        String   @id @default(cuid())
+  gameId    String
+  userId    String
+  userName  String
+  joinedAt  DateTime @default(now())
+
+  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@map("sos_game_viewers")
 }
 
 // Daily login rewards & streak tracking

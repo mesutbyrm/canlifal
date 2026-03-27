@@ -5,12 +5,37 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Get game state
+// GET: Get game state (with timer timeout auto-check)
 export async function GET(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const game = await prisma.sosGame.findUnique({ where: { id: params.gameId } })
+    let game = await prisma.sosGame.findUnique({
+      where: { id: params.gameId },
+      include: { _count: { select: { viewers: true } } },
+    })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
-    return NextResponse.json(game)
+
+    // Auto-check timer timeout for active 2-player games
+    if (game.status === 'active' && !game.isAI && game.turnTimer > 0 && game.lastMoveAt) {
+      const elapsed = (Date.now() - new Date(game.lastMoveAt).getTime()) / 1000
+      if (elapsed > game.turnTimer + 2) { // +2s grace
+        // Current turn player loses their turn, switch to other player
+        const board: string[][] = JSON.parse(game.board)
+        const isBoardFull = board.every(r => r.every(c => c !== ''))
+        
+        if (!isBoardFull) {
+          // Just switch turns
+          const nextTurn = game.currentTurn === 1 ? 2 : 1
+          game = await prisma.sosGame.update({
+            where: { id: params.gameId },
+            data: { currentTurn: nextTurn, lastMoveAt: new Date() },
+            include: { _count: { select: { viewers: true } } },
+          })
+        }
+      }
+    }
+
+    const { _count, ...gameData } = game
+    return NextResponse.json({ ...gameData, viewerCount: _count.viewers })
   } catch (error: any) {
     console.error('SOS get error:', error)
     return NextResponse.json({ error: 'Oyun yüklenemedi' }, { status: 500 })
@@ -61,6 +86,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
         player2Id: session.user.id,
         player2Name: userName,
         status: 'active',
+        lastMoveAt: new Date(),
       },
     })
 
@@ -224,6 +250,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
         currentTurn: nextTurn,
         status,
         winnerId,
+        lastMoveAt: new Date(),
       },
     })
 
