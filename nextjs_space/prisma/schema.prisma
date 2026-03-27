@@ -1561,6 +1561,63 @@ model SosGameViewer {
   @@map("sos_game_viewers")
 }
 
+// Generic multiplayer game room (XOX, Tombala, Tavla, Pişti, Sayı Tahmin, Zar)
+model GameRoom {
+  id            String   @id @default(cuid())
+  gameType      String                            // xox, tombala, tavla, pisti, sayi_tahmin, zar
+  player1Id     String
+  player2Id     String?
+  isAI          Boolean  @default(false)
+  betAmount     Int      @default(0)
+  betCurrency   String   @default("FREE")
+  state         String   @default("{}")           // JSON game state
+  currentTurn   Int      @default(1)
+  player1Score  Int      @default(0)
+  player2Score  Int      @default(0)
+  status        String   @default("waiting")
+  winnerId      String?
+  player1Name   String   @default("Oyuncu 1")
+  player2Name   String   @default("Oyuncu 2")
+  turnTimer     Int      @default(0)
+  chatEnabled   Boolean  @default(true)
+  lastMoveAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  chatMessages  GameRoomChat[]
+  viewers       GameRoomViewer[]
+
+  @@index([gameType, status])
+  @@index([status])
+  @@index([player1Id])
+  @@index([createdAt])
+  @@map("game_rooms")
+}
+
+model GameRoomChat {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  userName  String
+  message   String
+  createdAt DateTime @default(now())
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@index([roomId, createdAt])
+  @@map("game_room_chats")
+}
+
+model GameRoomViewer {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  userName  String
+  joinedAt  DateTime @default(now())
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("game_room_viewers")
+}
+
 // Daily login rewards & streak tracking
 model DailyReward {
   id            String   @id @default(cuid())

@@ -135,6 +135,58 @@ function SosGameCard({ lang }: { lang: string }) {
   )
 }
 
+function MultiplayerGameCard({ lang, slug, emoji, name, desc }: { lang: string; slug: string; emoji: string; name: string; desc: string }) {
+  const [activePlayers, setActivePlayers] = useState(0)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const gameType = slug === 'sayi-tahmin' ? 'sayi_tahmin' : slug
+        const res = await fetch(`/api/games/room?type=stats&gameType=${gameType}`)
+        if (res.ok) {
+          const d = await res.json()
+          setActivePlayers(d.activePlayers || 0)
+        }
+      } catch {}
+    }
+    fetchStats()
+    const iv = setInterval(fetchStats, 15000)
+    return () => clearInterval(iv)
+  }, [slug])
+
+  return (
+    <Link href={`/${lang}/oyunlar/${slug}`} className="block">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl group-hover:scale-110 transition-transform">{emoji}</span>
+            <div>
+              <p className="text-white font-bold text-base">{name}</p>
+              <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis!</p>
+              {activePlayers > 0 && (
+                <p className="text-green-400 text-xs mt-0.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse inline-block" />
+                  {activePlayers} aktif oyuncu
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
+              Oyna
+            </span>
+            <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
 export default function GameCenterPage() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
@@ -1209,8 +1261,21 @@ export default function GameCenterPage() {
                 ))}
               </div>
 
-              {/* SOS Game Special Card */}
-              <SosGameCard lang={lang} />
+              {/* Multiplayer Games Section */}
+              <div className="space-y-3">
+                <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
+                <SosGameCard lang={lang} />
+                {[
+                  { slug: 'xox', emoji: '❌⭕', name: 'XOX', desc: '3x3 klasik strateji oyunu' },
+                  { slug: 'sayi-tahmin', emoji: '🔢', name: 'Sayı Tahmin', desc: '4 basamaklı gizli sayıyı bul (Bulls & Cows)' },
+                  { slug: 'zar', emoji: '🎲', name: 'Zar Atma', desc: '3 el zar at, en çok kazanan galip!' },
+                  { slug: 'tombala', emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamlayan kazanır' },
+                  { slug: 'tavla', emoji: '🎲', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı' },
+                  { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Klasik Türk kart oyunu! Eşleştir & topla' },
+                ].map((g) => (
+                  <MultiplayerGameCard key={g.slug} lang={lang} slug={g.slug} emoji={g.emoji} name={g.name} desc={g.desc} />
+                ))}
+              </div>
 
               {/* Daily Spin Section */}
               {session?.user && (
