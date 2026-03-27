@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Users, Bot, Coins, Trophy, RotateCcw,
   Zap, X, Loader2, RefreshCw, Volume2, VolumeX, Gamepad2,
-  MessageCircle, Send, Eye, EyeOff, Timer
+  MessageCircle, Send, Eye, EyeOff, Timer, Plus, LogIn, Clock
 } from 'lucide-react'
 
 export interface GameRoom {
@@ -66,6 +66,69 @@ function playSound(type: 'win' | 'lose' | 'draw') {
   } catch {}
 }
 
+// Win popup overlay
+function WinPopup({ room, userId, onDone }: { room: GameRoom; userId: string | undefined; onDone: () => void }) {
+  const [visible, setVisible] = useState(true)
+  const isWinner = room.winnerId === userId
+  const isDraw = room.status === 'completed' && !room.winnerId
+  const winnerName = room.winnerId === room.player1Id ? room.player1Name : room.player2Name
+  const payout = Math.floor(room.betAmount * 2 * 0.9)
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setVisible(false); setTimeout(onDone, 500) }, 4000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => { setVisible(false); setTimeout(onDone, 300) }}
+        >
+          <motion.div
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: [0, 1.2, 1], rotate: [0, 5, 0] }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.6, type: 'spring' }}
+            className="text-center px-8 py-6 rounded-3xl border-2 max-w-sm mx-4"
+            style={{
+              background: isDraw ? 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(99,102,241,0.3))' : isWinner ? 'linear-gradient(135deg, rgba(234,179,8,0.3), rgba(245,158,11,0.3))' : 'linear-gradient(135deg, rgba(239,68,68,0.3), rgba(185,28,28,0.3))',
+              borderColor: isDraw ? 'rgba(168,85,247,0.5)' : isWinner ? 'rgba(234,179,8,0.5)' : 'rgba(239,68,68,0.5)',
+            }}
+          >
+            <motion.div
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ repeat: 3, duration: 0.5 }}
+              className="text-6xl mb-3"
+            >
+              {isDraw ? '🤝' : isWinner ? '🏆' : '😔'}
+            </motion.div>
+            <h2 className={`text-2xl font-bold mb-2 ${isDraw ? 'text-purple-300' : isWinner ? 'text-yellow-400' : 'text-red-400'}`}>
+              {isDraw ? 'Berabere!' : `${winnerName} Kazandı!`}
+            </h2>
+            <p className="text-fuchsia-300/70 text-sm mb-2">
+              {room.player1Name}: {room.player1Score} - {room.player2Name}: {room.player2Score}
+            </p>
+            {room.betAmount > 0 && !isDraw && room.winnerId && (
+              <motion.p
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ repeat: 2, duration: 0.6 }}
+                className="text-yellow-300 font-bold text-lg"
+              >
+                +{payout} {room.betCurrency}
+              </motion.p>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // Mini chat component
 function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; isOwner: boolean; chatEnabled: boolean; onToggle: (v: boolean) => void }) {
   const [open, setOpen] = useState(false)
@@ -100,39 +163,38 @@ function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; 
     if (!input.trim() || sending) return
     setSending(true)
     try {
-      const r = await fetch(`/api/games/room/${roomId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: input.trim() }) })
-      if (r.ok) { const m = await r.json(); setMsgs(prev => [...prev, m]); lastRef.current = m.createdAt; setInput('') }
+      await fetch(`/api/games/room/${roomId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: input.trim() }) })
+      setInput('')
     } catch {}
     setSending(false)
   }
 
   return (
-    <>
-      <button onClick={() => setOpen(!open)} className="fixed bottom-4 right-4 z-40 w-12 h-12 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all">
-        <MessageCircle className="w-5 h-5 text-white" />
-        {unread > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unread > 9 ? '9+' : unread}</span>}
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="fixed bottom-20 right-4 z-40 w-72 sm:w-80 bg-[#0d0225]/95 backdrop-blur-xl border border-fuchsia-500/30 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 bg-purple-900/50 border-b border-fuchsia-500/20">
-              <span className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><MessageCircle className="w-4 h-4" /> Sohbet</span>
-              <div className="flex items-center gap-1">
-                {isOwner && <button onClick={async () => { try { const r = await fetch(`/api/games/room/${roomId}/chat`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chatEnabled: !chatEnabled }) }); if (r.ok) { const d = await r.json(); onToggle(d.chatEnabled) } } catch {} }} className={`p-1.5 rounded-lg text-xs transition ${chatEnabled ? 'text-green-400' : 'text-red-400'}`}>{chatEnabled ? <MessageCircle className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}</button>}
-                <button onClick={() => setOpen(false)} className="p-1.5 text-fuchsia-400/60 hover:text-fuchsia-300"><X className="w-4 h-4" /></button>
-              </div>
-            </div>
-            <div className="h-52 overflow-y-auto px-3 py-2 space-y-2">
-              {!chatEnabled && <div className="text-center text-red-400/70 text-xs py-4"><EyeOff className="w-5 h-5 mx-auto mb-1" />Sohbet kapalı</div>}
-              {chatEnabled && msgs.length === 0 && <p className="text-fuchsia-400/40 text-xs text-center py-4">Henüz mesaj yok</p>}
-              {chatEnabled && msgs.map((m: any) => <div key={m.id} className="text-xs"><span className="text-purple-400 font-medium">{m.userName}: </span><span className="text-fuchsia-200/80">{m.message}</span></div>)}
-              <div ref={endRef} />
-            </div>
-            {chatEnabled && <div className="flex items-center gap-2 px-3 py-2 border-t border-fuchsia-500/20"><input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Mesaj yazın..." maxLength={200} className="flex-1 bg-purple-900/40 border border-fuchsia-500/20 rounded-lg px-2.5 py-1.5 text-xs text-fuchsia-200 placeholder:text-fuchsia-400/40 focus:outline-none focus:border-fuchsia-400/50" /><button onClick={send} disabled={sending || !input.trim()} className="p-1.5 text-fuchsia-400 hover:text-fuchsia-300 disabled:opacity-30"><Send className="w-4 h-4" /></button></div>}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    <div className="fixed bottom-4 right-4 z-50">
+      {!open ? (
+        <button onClick={() => setOpen(true)} className="relative p-3 bg-purple-700 rounded-full shadow-lg hover:bg-purple-600 transition">
+          <MessageCircle className="w-5 h-5 text-white" />
+          {unread > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
+        </button>
+      ) : (
+        <div className="w-72 h-80 bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-fuchsia-500/20">
+            <span className="text-fuchsia-300 text-xs font-medium">Sohbet</span>
+            <button onClick={() => setOpen(false)}><X className="w-4 h-4 text-fuchsia-400" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {msgs.map((m: any, i: number) => (
+              <div key={i} className="text-xs"><span className="text-cyan-400 font-medium">{m.userName}:</span> <span className="text-fuchsia-200">{m.message}</span></div>
+            ))}
+            <div ref={endRef} />
+          </div>
+          <div className="flex items-center gap-1 p-2 border-t border-fuchsia-500/20">
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Mesaj..." className="flex-1 px-2 py-1.5 bg-purple-900/50 border border-fuchsia-500/20 rounded-lg text-white text-xs focus:outline-none" />
+            <button onClick={send} disabled={sending} className="p-1.5 bg-purple-600 rounded-lg"><Send className="w-3.5 h-3.5 text-white" /></button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -153,18 +215,26 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [waitingGames, setWaitingGames] = useState<GameRoom[]>([])
   const [activeGames, setActiveGames] = useState<any[]>([])
   const [myWaiting, setMyWaiting] = useState<string | null>(null)
-  const [lobbyTab, setLobbyTab] = useState<'play' | 'watch'>('play')
   const [lobbyLoading, setLobbyLoading] = useState(false)
   const [roomId, setRoomId] = useState<string | null>(null)
   const [room, setRoom] = useState<GameRoom | null>(null)
   const [isSpectator, setIsSpectator] = useState(false)
   const [chatEnabled, setChatEnabled] = useState(true)
+  const [showWinPopup, setShowWinPopup] = useState(false)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Recent winners ticker
+  const [recentWinners, setRecentWinners] = useState<any[]>([])
 
   const fetchStats = useCallback(async () => {
     try {
       const r = await fetch(`/api/games/room?type=stats&gameType=${gameType}`)
-      if (r.ok) { const d = await r.json(); setActivePlayers(d.activePlayers || 0); setWaitingRooms(d.waitingRooms || 0) }
+      if (r.ok) {
+        const d = await r.json()
+        setActivePlayers(d.activePlayers || 0)
+        setWaitingRooms(d.waitingRooms || 0)
+        if (d.recentWinners) setRecentWinners(d.recentWinners)
+      }
     } catch {}
   }, [gameType])
 
@@ -179,7 +249,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     try { const r = await fetch(`/api/games/room?type=active&gameType=${gameType}`); if (r.ok) setActiveGames(await r.json()) } catch {}
   }, [gameType])
 
-  useEffect(() => { if (phase === 'lobby') { fetchLobby(); const iv = setInterval(fetchLobby, 5000); return () => clearInterval(iv) } }, [phase, fetchLobby])
+  useEffect(() => { if (phase === 'menu') { fetchLobby(); fetchActive(); const iv = setInterval(() => { fetchLobby(); fetchActive() }, 5000); return () => clearInterval(iv) } }, [phase, fetchLobby, fetchActive])
 
   // Poll game state
   useEffect(() => {
@@ -191,13 +261,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
             const g: GameRoom = await r.json()
             setRoom(g); setChatEnabled(g.chatEnabled)
             if (g.status === 'completed') {
-              setPhase('result')
-              if (pollRef.current) clearInterval(pollRef.current)
-              if (soundEnabled && !isSpectator) {
-                if (g.winnerId === session?.user?.id) playSound('win')
-                else if (!g.winnerId) playSound('draw')
-                else playSound('lose')
-              }
+              handleGameEnd(g)
             }
           }
         } catch {}
@@ -205,6 +269,22 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       pollRef.current = setInterval(poll, 2000); return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
   }, [phase, roomId, room?.isAI, session?.user?.id, soundEnabled, isSpectator])
+
+  const handleGameEnd = (g: GameRoom) => {
+    setPhase('result')
+    if (pollRef.current) clearInterval(pollRef.current)
+    // Show win popup only once per game (use sessionStorage)
+    const popupKey = `win_popup_${g.id}`
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(popupKey)) {
+      sessionStorage.setItem(popupKey, '1')
+      setShowWinPopup(true)
+    }
+    if (soundEnabled && !isSpectator) {
+      if (g.winnerId === session?.user?.id) playSound('win')
+      else if (!g.winnerId) playSound('draw')
+      else playSound('lose')
+    }
+  }
 
   const createGame = async (isAI: boolean) => {
     if (!session?.user) return
@@ -253,8 +333,22 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     setMyWaiting(null); if (pollRef.current) clearInterval(pollRef.current); setPhase('menu')
   }
 
+  const leaveGame = async () => {
+    // Leaving an active game = forfeit
+    if (roomId && room && room.status === 'active' && !isSpectator && !room.isAI) {
+      try {
+        await fetch(`/api/games/room/${roomId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'leave' }),
+        })
+      } catch {}
+    }
+    resetToMenu()
+  }
+
   const resetToMenu = () => {
-    setPhase('menu'); setRoom(null); setRoomId(null); setMyWaiting(null); setIsSpectator(false); setChatEnabled(true)
+    setPhase('menu'); setRoom(null); setRoomId(null); setMyWaiting(null); setIsSpectator(false); setChatEnabled(true); setShowWinPopup(false)
     if (pollRef.current) clearInterval(pollRef.current)
     if (session?.user) fetch('/api/user/profile').then(r => r.json()).then(d => { if (d.credits !== undefined) setUserBalance({ credits: d.credits, jetonBalance: d.jetonBalance || 0 }) }).catch(() => {})
     fetchStats()
@@ -264,7 +358,10 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     if (!roomId) return null
     const r = await fetch(`/api/games/room/${roomId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) })
     const d = await r.json()
-    if (d.success) { setRoom(d.room); if (d.room.status === 'completed') { setPhase('result'); if (soundEnabled && !isSpectator) { if (d.room.winnerId === session?.user?.id) playSound('win'); else if (!d.room.winnerId) playSound('draw'); else playSound('lose') } } }
+    if (d.success) {
+      setRoom(d.room)
+      if (d.room.status === 'completed') handleGameEnd(d.room)
+    }
     return d
   }
 
@@ -272,35 +369,123 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     if (!roomId) return null
     const r = await fetch(`/api/games/room/${roomId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullState }) })
     const d = await r.json()
-    if (d.success) { setRoom(d.room); if (d.room.status === 'completed') { setPhase('result'); if (soundEnabled) { if (d.room.winnerId === session?.user?.id) playSound('win'); else if (!d.room.winnerId) playSound('draw'); else playSound('lose') } } }
+    if (d.success) {
+      setRoom(d.room)
+      if (d.room.status === 'completed') handleGameEnd(d.room)
+    }
     return d
   }
 
   const isMyTurn = room ? ((room.player1Id === session?.user?.id && room.currentTurn === 1) || (room.player2Id === session?.user?.id && room.currentTurn === 2)) : false
   const playerNum = room ? (room.player1Id === session?.user?.id ? 1 : 2) : 1
 
+  // Recent winners ticker
+  const renderTicker = () => {
+    if (recentWinners.length === 0) return null
+    const items = recentWinners.map(w => `🏆 ${w.winnerName} ${w.payout} ${w.currency} kazandı (${w.score})`)
+    const text = items.join('   •   ')
+    return (
+      <div className="w-full overflow-hidden bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border-y border-yellow-500/20 py-1.5 mb-3">
+        <div className="animate-marquee-fast whitespace-nowrap text-yellow-400 text-xs font-medium">
+          {text}   •   {text}
+        </div>
+        <style jsx>{`
+          @keyframes marquee-fast {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-marquee-fast {
+            animation: marquee-fast 15s linear infinite;
+          }
+        `}</style>
+      </div>
+    )
+  }
+
   const renderMenu = () => (
-    <div className="flex flex-col items-center gap-4 sm:gap-5 w-full max-w-md mx-auto px-2">
+    <div className="flex flex-col items-center gap-4 sm:gap-5 w-full max-w-lg mx-auto px-2">
       <div className="text-center">
         <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">{gameEmoji} {gameName}</h1>
         <p className="text-fuchsia-300/70 text-xs sm:text-sm mt-1">{gameDesc}</p>
       </div>
+
+      {renderTicker()}
+
       <div className="flex items-center gap-4 text-xs sm:text-sm">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full"><div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /><span className="text-green-300 font-medium">{activePlayers} Oyuncu</span></div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full"><div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" /><span className="text-yellow-300 font-medium">Oyunda {activePlayers} kişi</span></div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-full"><Gamepad2 className="w-3.5 h-3.5 text-purple-400" /><span className="text-purple-300 font-medium">{waitingRooms} Oda</span></div>
       </div>
       {session?.user && <div className="flex gap-3 text-xs sm:text-sm"><div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full"><Coins className="w-4 h-4 text-amber-400" /><span className="text-amber-300 font-medium">{userBalance.credits} CFC</span></div><div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full"><Zap className="w-4 h-4 text-blue-400" /><span className="text-blue-300 font-medium">{userBalance.jetonBalance} Jeton</span></div></div>}
 
+      {/* Game settings */}
       {supportsAI && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Modu</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setGameMode('ai')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === 'ai' ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Bot className="w-4 h-4" /> Yapay Zeka</button><button onClick={() => setGameMode('2player')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === '2player' ? 'border-pink-400 bg-pink-500/20 text-pink-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Users className="w-4 h-4" /> 2 Kişilik</button></div></div>}
 
       {supportsTimer && gameMode === '2player' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block flex items-center gap-1.5"><Timer className="w-3.5 h-3.5" /> Süre Limiti</label><div className="grid grid-cols-4 gap-2">{[{v:0,l:'Yok'},{v:10,l:'10s'},{v:15,l:'15s'},{v:20,l:'20s'}].map(o => <button key={o.v} onClick={() => setTurnTimer(o.v)} className={`py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${turnTimer === o.v ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{o.l}</button>)}</div></div>}
 
       {supportsBet && <><div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label><div className="grid grid-cols-3 gap-2">{(['FREE','CFC','JETON'] as const).map(t => <button key={t} onClick={() => setBetType(t)} className={`py-2 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${betType === t ? (t === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300' : t === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-blue-400 bg-blue-500/20 text-blue-300') : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{t === 'FREE' ? 'Ücretsiz' : t}</button>)}</div></div>{betType !== 'FREE' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Miktarı</label><div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(a => <button key={a} onClick={() => setBetAmount(a)} className={`py-1.5 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${betAmount === a ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70'}`}>{a}</button>)}</div></div>}</>}
 
+      {/* ACTION BUTTONS */}
       {!session?.user ? <p className="text-fuchsia-400/60 text-sm">Oynamak için giriş yapın</p> : <div className="w-full space-y-2">
-        <button onClick={() => { if (gameMode === 'ai') createGame(true); else setPhase('lobby') }} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameMode === 'ai' ? `${gameEmoji} Oyunu Başlat` : '👥 Lobi\'ye Gir'}</button>
-        <button onClick={() => { fetchActive(); setPhase('lobby'); setLobbyTab('watch') }} className="w-full py-2.5 bg-purple-900/40 border border-cyan-500/30 text-cyan-300 font-medium rounded-xl hover:bg-purple-800/40 transition-all text-sm flex items-center justify-center gap-2"><Eye className="w-4 h-4" /> Aktif Oyunları İzle</button>
+        {gameMode === 'ai' ? (
+          <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat (AI)</button>
+        ) : (
+          <button onClick={() => createGame(false)} className="w-full py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> Oda Aç ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button>
+        )}
       </div>}
+
+      {/* OPEN ROOMS LIST */}
+      {session?.user && gameMode === '2player' && (
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><Gamepad2 className="w-3.5 h-3.5" /> Açık Odalar</h3>
+            <button onClick={fetchLobby} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button>
+          </div>
+          {myWaiting ? (
+            <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 text-center">
+              <Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin mx-auto mb-3" />
+              <p className="text-white font-medium">Rakip bekleniyor...</p>
+              <button onClick={cancelWaiting} className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"><X className="w-4 h-4 inline mr-1" /> İptal Et</button>
+            </div>
+          ) : waitingGames.length === 0 ? (
+            <p className="text-fuchsia-400/50 text-sm text-center py-3 bg-purple-900/20 rounded-xl border border-fuchsia-500/10">Bekleyen oda yok — ilk sen aç!</p>
+          ) : (
+            <div className="space-y-2">
+              {waitingGames.map(g => (
+                <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-fuchsia-500/20 rounded-xl hover:border-fuchsia-400/40 transition">
+                  <div>
+                    <p className="text-white text-sm font-medium">{g.player1Name}</p>
+                    <p className="text-fuchsia-400/60 text-xs">
+                      {g.betCurrency === 'FREE' ? '🆓 Ücretsiz' : `💰 ${g.betAmount} ${g.betCurrency}`}
+                      {g.turnTimer > 0 && <span className="ml-1">⏱️ {g.turnTimer}s</span>}
+                    </p>
+                  </div>
+                  <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50 flex items-center gap-1.5">
+                    <LogIn className="w-3.5 h-3.5" /> Oyuna Gir
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ACTIVE GAMES TO WATCH */}
+      {activeGames.length > 0 && (
+        <div className="w-full">
+          <h3 className="text-cyan-300 font-medium text-sm flex items-center gap-1.5 mb-2"><Eye className="w-3.5 h-3.5" /> Aktif Oyunlar</h3>
+          <div className="space-y-2">
+            {activeGames.slice(0, 5).map((g: any) => (
+              <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-cyan-500/20 rounded-xl">
+                <div>
+                  <p className="text-white text-sm font-medium">{g.player1Name} vs {g.player2Name}</p>
+                  <p className="text-fuchsia-400/60 text-xs">{g.player1Score}-{g.player2Score}{g.betAmount > 0 && ` • ${g.betAmount} ${g.betCurrency}`}</p>
+                </div>
+                <button onClick={() => spectateGame(g.id)} className="px-3 py-1.5 bg-cyan-600/20 border border-cyan-500/40 text-cyan-300 rounded-lg text-xs font-medium hover:bg-cyan-600/30 transition">İzle</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between w-full">
         <Link href={`/${lang}/oyunlar`} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Oyunlara Dön</Link>
@@ -311,13 +496,18 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
 
   const renderLobby = () => (
     <div className="flex flex-col items-center gap-4 sm:gap-5 w-full max-w-lg mx-auto px-2">
-      <h2 className="text-xl sm:text-2xl font-bold text-white">{gameName} Lobisi</h2>
-      <div className="flex w-full bg-purple-900/30 rounded-xl p-1 border border-fuchsia-500/20">
-        <button onClick={() => setLobbyTab('play')} className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${lobbyTab === 'play' ? 'bg-purple-600/50 text-white' : 'text-fuchsia-400/60'}`}><Gamepad2 className="w-3.5 h-3.5" /> Oyna</button>
-        <button onClick={() => { setLobbyTab('watch'); fetchActive() }} className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${lobbyTab === 'watch' ? 'bg-cyan-600/50 text-white' : 'text-fuchsia-400/60'}`}><Eye className="w-3.5 h-3.5" /> İzle</button>
-      </div>
-      {lobbyTab === 'play' ? <>{myWaiting ? <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 text-center"><Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin mx-auto mb-3" /><p className="text-white font-medium">Rakip bekleniyor...</p><button onClick={cancelWaiting} className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"><X className="w-4 h-4 inline mr-1" /> İptal Et</button></div> : <><button onClick={() => createGame(false)} className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg text-sm">+ Yeni Oda ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button><div className="w-full"><div className="flex items-center justify-between mb-3"><h3 className="text-fuchsia-300 font-medium text-sm">Açık Odalar</h3><button onClick={fetchLobby} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button></div>{waitingGames.length === 0 ? <p className="text-fuchsia-400/50 text-sm text-center py-4">Bekleyen oda yok</p> : <div className="space-y-2">{waitingGames.map(g => <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-fuchsia-500/20 rounded-xl"><div><p className="text-white text-sm font-medium">{g.player1Name}</p><p className="text-fuchsia-400/60 text-xs">{g.betCurrency === 'FREE' ? 'Ücretsiz' : `${g.betAmount} ${g.betCurrency}`}{g.turnTimer > 0 && ` • ${g.turnTimer}s`}</p></div><button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50">Katıl</button></div>)}</div>}</div></>}</> : <div className="w-full"><div className="flex items-center justify-between mb-3"><h3 className="text-cyan-300 font-medium text-sm">Aktif Oyunlar</h3><button onClick={fetchActive} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button></div>{activeGames.length === 0 ? <p className="text-fuchsia-400/50 text-sm text-center py-6">Şu an aktif oyun yok</p> : <div className="space-y-2">{activeGames.map((g: any) => <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-cyan-500/20 rounded-xl"><div><p className="text-white text-sm font-medium">{g.player1Name} vs {g.player2Name}</p><p className="text-fuchsia-400/60 text-xs">{g.player1Score}-{g.player2Score}{g.betAmount > 0 && ` • ${g.betAmount} ${g.betCurrency}`}</p><p className="text-cyan-400/60 text-[10px] flex items-center gap-1 mt-0.5"><Eye className="w-3 h-3" /> {g.viewerCount} izleyici</p></div><button onClick={() => spectateGame(g.id)} className="px-4 py-2 bg-cyan-600/20 border border-cyan-500/40 text-cyan-300 rounded-lg text-sm font-medium hover:bg-cyan-600/30 transition">İzle</button></div>)}</div>}</div>}
-      <button onClick={resetToMenu} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Menüye Dön</button>
+      <h2 className="text-xl sm:text-2xl font-bold text-white">{gameName} — Rakip Bekleniyor</h2>
+      {myWaiting ? (
+        <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-6 text-center">
+          <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin mx-auto mb-4" />
+          <p className="text-white font-medium text-lg">Rakip bekleniyor...</p>
+          <p className="text-fuchsia-400/60 text-sm mt-1">Birisi odana katıldığında oyun başlayacak</p>
+          <button onClick={cancelWaiting} className="mt-5 px-5 py-2.5 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"><X className="w-4 h-4 inline mr-1" /> İptal Et</button>
+        </div>
+      ) : (
+        <p className="text-fuchsia-300/60">Yönlendiriliyor...</p>
+      )}
+      <button onClick={() => { cancelWaiting() }} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Menüye Dön</button>
     </div>
   )
 
@@ -352,7 +542,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           <div className={`flex-1 text-center py-1.5 rounded-xl border-2 transition-all ${room.currentTurn === 2 && room.status === 'active' ? 'border-pink-400 bg-pink-500/20 shadow-[0_0_12px_rgba(236,72,153,0.3)]' : 'border-fuchsia-500/20 bg-purple-900/20'}`}><p className="text-[10px] text-fuchsia-300/60 truncate px-1">{room.player2Name}</p><p className="text-xl font-bold text-pink-300">{room.player2Score}</p></div>
         </div>
         {children({ room, state, isMyTurn: isSpectator ? false : isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled })}
-        <button onClick={isSpectator ? async () => { if (roomId) { try { await fetch(`/api/games/room/${roomId}/viewers`, { method: 'DELETE' }) } catch {} }; resetToMenu() } : resetToMenu} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1"><ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}</button>
+        <button onClick={isSpectator ? async () => { if (roomId) { try { await fetch(`/api/games/room/${roomId}/viewers`, { method: 'DELETE' }) } catch {} }; resetToMenu() } : leaveGame} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1"><ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}</button>
         {!room.isAI && room.status === 'active' && roomId && <MiniChat roomId={roomId} isOwner={isOwner} chatEnabled={chatEnabled} onToggle={setChatEnabled} />}
       </div>
     )
@@ -370,6 +560,10 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           </motion.div>
         </AnimatePresence>
       </div>
+      {/* Win Popup Overlay */}
+      {showWinPopup && room && (
+        <WinPopup room={room} userId={session?.user?.id} onDone={() => setShowWinPopup(false)} />
+      )}
     </div>
   )
 }

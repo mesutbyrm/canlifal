@@ -267,18 +267,66 @@ export function tavlaInit() {
   }
 }
 
-export function tavlaRollDice(state: any) {
+export function tavlaRollDice(state: any, playerNum?: number) {
   const d1 = Math.floor(Math.random() * 6) + 1
   const d2 = Math.floor(Math.random() * 6) + 1
   const movesLeft = d1 === d2 ? [d1, d1, d1, d1] : [d1, d2]
-  return {
-    state: { ...state, dice: [d1, d2], movesLeft, phase: 'move' },
-    scored: false,
+  const newState = { ...state, dice: [d1, d2], movesLeft, phase: 'move' as const }
+  // Auto-skip if no valid moves exist
+  if (playerNum && !tavlaHasAnyMove(newState, playerNum)) {
+    newState.movesLeft = []
+    newState.phase = 'roll'
+    return { state: newState, scored: false } // No moves, turn passes
   }
+  return { state: newState, scored: true } // Keep turn for moves
+}
+
+// Check if a player has any valid move with current dice
+function tavlaHasAnyMove(state: any, playerNum: number): boolean {
+  const sign = playerNum === 1 ? 1 : -1
+  const dir = playerNum === 1 ? 1 : -1
+  const movesLeft = state.movesLeft || []
+  if (movesLeft.length === 0) return false
+
+  const uniqueDice = [...new Set(movesLeft)] as number[]
+  
+  // Check bar moves
+  if (state.bar[playerNum - 1] > 0) {
+    for (const die of uniqueDice) {
+      const to = playerNum === 1 ? die - 1 : 24 - die
+      if (to >= 0 && to < 24 && state.board[to] * sign >= -1) return true
+    }
+    return false // Must move from bar first
+  }
+
+  // Check board moves
+  for (let i = 0; i < 24; i++) {
+    if (state.board[i] * sign <= 0) continue
+    for (const die of uniqueDice) {
+      const to = i + die * dir
+      // Bearing off
+      if ((playerNum === 1 && to >= 24) || (playerNum === 2 && to < 0)) {
+        if (tavlaCanBearOff(state.board, state.bar, playerNum, sign)) return true
+        continue
+      }
+      if (to >= 0 && to < 24 && state.board[to] * sign >= -1) return true
+    }
+  }
+  return false
+}
+
+function tavlaCanBearOff(board: number[], bar: number[], playerNum: number, sign: number): boolean {
+  if (bar[playerNum - 1] > 0) return false
+  const homeStart = playerNum === 1 ? 18 : 0
+  const homeEnd = playerNum === 1 ? 23 : 5
+  for (let i = 0; i < 24; i++) {
+    if (i >= homeStart && i <= homeEnd) continue
+    if (board[i] * sign > 0) return false
+  }
+  return true
 }
 
 export function tavlaMove(state: any, from: number, playerNum: number) {
-  // Simplified move logic
   const board = [...state.board]
   const bar = [...state.bar]
   const off = [...state.off]
@@ -288,47 +336,69 @@ export function tavlaMove(state: any, from: number, playerNum: number) {
   
   if (movesLeft.length === 0) return { error: 'Hamle kalmadı' }
   
-  // Find a valid move with any remaining die
+  // Enforce bar-first rule
+  if (bar[playerNum - 1] > 0 && from !== -1) {
+    return { error: 'Önce bar\'daki taşını çıkarmalısın' }
+  }
+  
+  // Validate source
+  if (from !== -1 && board[from] * sign <= 0) {
+    return { error: 'Bu noktada taşın yok' }
+  }
+  
+  // Find a valid move with any remaining die (try largest first for bearing off)
   let moved = false
-  for (let mi = 0; mi < movesLeft.length; mi++) {
+  const sortedIndices = movesLeft.map((d, i) => i).sort((a, b) => movesLeft[b] - movesLeft[a])
+  
+  for (const mi of sortedIndices) {
     const die = movesLeft[mi]
     let to: number
     
     if (from === -1) {
-      // Coming from bar
       if (bar[playerNum - 1] <= 0) continue
       to = playerNum === 1 ? die - 1 : 24 - die
     } else {
-      // Normal move
-      if (board[from] * sign <= 0) continue
       to = from + die * dir
     }
     
     // Bearing off
     if ((playerNum === 1 && to >= 24) || (playerNum === 2 && to < 0)) {
-      // Check if all pieces in home board
-      const homeStart = playerNum === 1 ? 18 : 0
-      const homeEnd = playerNum === 1 ? 23 : 5
-      let allHome = bar[playerNum - 1] === 0
-      for (let i = 0; i < 24; i++) {
-        if (i >= homeStart && i <= homeEnd) continue
-        if (board[i] * sign > 0) { allHome = false; break }
+      if (!tavlaCanBearOff(board, bar, playerNum, sign)) continue
+      
+      // Exact bear off is always valid
+      const exactTo = from + die * dir
+      const isExact = (playerNum === 1 && exactTo === 24) || (playerNum === 2 && exactTo === -1)
+      
+      if (!isExact) {
+        // Higher die: only valid if no piece exists further from home edge
+        if (playerNum === 1) {
+          // Check if any piece on points < from (further from p1 home 18-23)
+          let hasFurther = false
+          for (let j = 18; j < from; j++) {
+            if (board[j] * sign > 0) { hasFurther = true; break }
+          }
+          if (hasFurther) continue
+        } else {
+          // P2 home is 0-5, further = higher index
+          let hasFurther = false
+          for (let j = from + 1; j <= 5; j++) {
+            if (board[j] * sign > 0) { hasFurther = true; break }
+          }
+          if (hasFurther) continue
+        }
       }
-      if (!allHome) continue
       
       if (from !== -1) board[from] -= sign
       off[playerNum - 1]++
-      movesLeft.splice(mi, 1)
+      movesLeft = [...movesLeft]; movesLeft.splice(mi, 1)
       moved = true
       break
     }
     
     if (to < 0 || to >= 24) continue
+    if (board[to] * sign < -1) continue // Blocked by 2+ opponent pieces
     
-    // Check destination
-    if (board[to] * sign < -1) continue // Blocked
-    
-    // Hit opponent
+    // Hit opponent single piece
     if (board[to] * sign === -1) {
       board[to] = 0
       bar[playerNum === 1 ? 1 : 0]++
@@ -340,41 +410,59 @@ export function tavlaMove(state: any, from: number, playerNum: number) {
       board[from] -= sign
     }
     board[to] += sign
-    movesLeft.splice(mi, 1)
+    movesLeft = [...movesLeft]; movesLeft.splice(mi, 1)
     moved = true
     break
   }
   
   if (!moved) {
-    // No valid move, skip remaining
-    movesLeft = []
+    return { error: 'Bu taş ile geçerli hamle yok. Başka bir taş dene.' }
   }
   
   const newState = { ...state, board, bar, off, movesLeft }
   
-  // Check if turn is over
-  if (movesLeft.length === 0) {
+  // If moves remain but no valid move exists for any piece, auto-skip
+  if (movesLeft.length > 0 && !tavlaHasAnyMove({ board, bar, off, movesLeft }, playerNum)) {
+    newState.movesLeft = []
+  }
+  
+  const turnDone = newState.movesLeft.length === 0
+  if (turnDone) {
     newState.phase = 'roll'
   }
   
-  // Check for winner (15 pieces borne off)
   let winner = null
   if (off[0] >= 15) winner = 1
   else if (off[1] >= 15) winner = 2
   
-  return { state: newState, winner, isDraw: false, scored: false }
+  return { state: newState, winner, isDraw: false, scored: !turnDone } // scored=true keeps turn
 }
 
 export function tavlaAIMove(state: any): { from: number } | null {
   const board = state.board
   const sign = -1 // AI is player 2
+  const movesLeft = state.movesLeft || []
+  if (movesLeft.length === 0) return null
   
-  // Try bar first
-  if (state.bar[1] > 0) return { from: -1 }
+  // Must move from bar first
+  if (state.bar[1] > 0) {
+    // Check if bar move is valid with any die
+    for (const die of movesLeft) {
+      const to = 24 - die
+      if (to >= 0 && to < 24 && board[to] * sign >= -1) return { from: -1 }
+    }
+    return null // Stuck on bar
+  }
   
-  // Try each piece
+  // Try each piece, preferring ones furthest from home (index 23 down to 0 for p2 whose home is 0-5)
   for (let i = 23; i >= 0; i--) {
-    if (board[i] * sign > 0) return { from: i }
+    if (board[i] * sign <= 0) continue
+    // Check if this piece has any valid move
+    for (const die of movesLeft) {
+      const to = i + die * (-1) // dir for p2 is -1
+      if ((to < 0) && tavlaCanBearOff(board, state.bar, 2, sign)) return { from: i }
+      if (to >= 0 && to < 24 && board[to] * sign >= -1) return { from: i }
+    }
   }
   return null
 }
@@ -541,7 +629,7 @@ export function processMove(gameType: string, state: any, action: any, playerNum
     case 'tombala':
       return tombalaDraw(state)
     case 'tavla':
-      if (action.type === 'roll') return tavlaRollDice(state)
+      if (action.type === 'roll') return tavlaRollDice(state, playerNum)
       return tavlaMove(state, action.from, playerNum)
     case 'pisti':
       return pistiPlay(state, playerNum, action.cardIndex)

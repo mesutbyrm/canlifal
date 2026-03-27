@@ -84,106 +84,79 @@ const MEMORY_SYMBOLS = ['☕', '🔮', '⭐', '🌙', '🎴', '🕯️', '💎',
 
 // ========== MAIN COMPONENT ==========
 // SOS Game Card with live player count
-function SosGameCard({ lang }: { lang: string }) {
-  const [sosActivePlayers, setSosActivePlayers] = useState(0)
+// Multiplayer games data
+const ALL_MP_GAMES = [
+  { slug: 'sos', emoji: '🔠', name: 'SOS Oyunu', desc: '2 kişilik veya yapay zekaya karşı', apiType: 'sos' },
+  { slug: 'xox', emoji: '❌⭕', name: 'XOX', desc: '3x3 klasik strateji oyunu', apiType: 'room' },
+  { slug: 'sayi-tahmin', emoji: '🔢', name: 'Sayı Tahmin', desc: '4 basamaklı gizli sayıyı bul', apiType: 'room' },
+  { slug: 'zar', emoji: '🎲', name: 'Zar Atma', desc: '3 el zar at, en çok kazanan galip', apiType: 'room' },
+  { slug: 'tombala', emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamla', apiType: 'room' },
+  { slug: 'tavla', emoji: '♟️', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı', apiType: 'room' },
+  { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', apiType: 'room' },
+]
+
+function MultiplayerGamesSection({ lang }: { lang: string }) {
+  const [gameStats, setGameStats] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    const fetchSosStats = async () => {
+    const fetchAllStats = async () => {
+      const stats: Record<string, number> = {}
       try {
-        const res = await fetch('/api/games/sos?type=stats')
-        if (res.ok) {
-          const d = await res.json()
-          setSosActivePlayers(d.activePlayers || 0)
-        }
+        const sosRes = await fetch('/api/games/sos?type=stats')
+        if (sosRes.ok) { const d = await sosRes.json(); stats['sos'] = d.activePlayers || 0 }
       } catch {}
+      for (const g of ALL_MP_GAMES.filter(x => x.apiType === 'room')) {
+        const gameType = g.slug === 'sayi-tahmin' ? 'sayi_tahmin' : g.slug
+        try {
+          const res = await fetch(`/api/games/room?type=stats&gameType=${gameType}`)
+          if (res.ok) { const d = await res.json(); stats[g.slug] = d.activePlayers || 0 }
+        } catch {}
+      }
+      setGameStats(stats)
     }
-    fetchSosStats()
-    const iv = setInterval(fetchSosStats, 15000)
+    fetchAllStats()
+    const iv = setInterval(fetchAllStats, 15000)
     return () => clearInterval(iv)
   }, [])
 
-  return (
-    <Link href={`/${lang}/oyunlar/sos`} className="block">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-4xl group-hover:scale-110 transition-transform">🔠</span>
-            <div>
-              <p className="text-white font-bold text-base">SOS Oyunu</p>
-              <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis yapabilirsin!</p>
-              {sosActivePlayers > 0 && (
-                <p className="text-green-400 text-xs mt-0.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse inline-block" />
-                  {sosActivePlayers} aktif oyuncu
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
-              Oyna
-            </span>
-            <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
-          </div>
-        </div>
-      </motion.div>
-    </Link>
-  )
-}
-
-function MultiplayerGameCard({ lang, slug, emoji, name, desc }: { lang: string; slug: string; emoji: string; name: string; desc: string }) {
-  const [activePlayers, setActivePlayers] = useState(0)
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const gameType = slug === 'sayi-tahmin' ? 'sayi_tahmin' : slug
-        const res = await fetch(`/api/games/room?type=stats&gameType=${gameType}`)
-        if (res.ok) {
-          const d = await res.json()
-          setActivePlayers(d.activePlayers || 0)
-        }
-      } catch {}
-    }
-    fetchStats()
-    const iv = setInterval(fetchStats, 15000)
-    return () => clearInterval(iv)
-  }, [slug])
+  // Sort: most active players first
+  const sorted = [...ALL_MP_GAMES].sort((a, b) => (gameStats[b.slug] || 0) - (gameStats[a.slug] || 0))
 
   return (
-    <Link href={`/${lang}/oyunlar/${slug}`} className="block">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-4xl group-hover:scale-110 transition-transform">{emoji}</span>
-            <div>
-              <p className="text-white font-bold text-base">{name}</p>
-              <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis!</p>
-              {activePlayers > 0 && (
-                <p className="text-green-400 text-xs mt-0.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse inline-block" />
-                  {activePlayers} aktif oyuncu
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
-              Oyna
-            </span>
-            <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
-          </div>
-        </div>
-      </motion.div>
-    </Link>
+    <div className="space-y-2">
+      {sorted.map((g) => {
+        const count = gameStats[g.slug] || 0
+        return (
+          <Link key={g.slug} href={`/${lang}/oyunlar/${g.slug}`} className="block">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl group-hover:scale-110 transition-transform">{g.emoji}</span>
+                  <div>
+                    <p className="text-white font-bold text-base">{g.name}</p>
+                    <p className="text-fuchsia-300/60 text-xs">{g.desc}</p>
+                    <p className="text-yellow-400 text-xs mt-0.5 flex items-center gap-1 font-medium">
+                      <span className={`w-1.5 h-1.5 rounded-full inline-block ${count > 0 ? 'bg-yellow-400 animate-pulse' : 'bg-fuchsia-500/40'}`} />
+                      Oyunda {count} kişi var
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
+                    Oyna
+                  </span>
+                  <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1264,17 +1237,7 @@ export default function GameCenterPage() {
               {/* Multiplayer Games Section */}
               <div className="space-y-3">
                 <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
-                <SosGameCard lang={lang} />
-                {[
-                  { slug: 'xox', emoji: '❌⭕', name: 'XOX', desc: '3x3 klasik strateji oyunu' },
-                  { slug: 'sayi-tahmin', emoji: '🔢', name: 'Sayı Tahmin', desc: '4 basamaklı gizli sayıyı bul (Bulls & Cows)' },
-                  { slug: 'zar', emoji: '🎲', name: 'Zar Atma', desc: '3 el zar at, en çok kazanan galip!' },
-                  { slug: 'tombala', emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamlayan kazanır' },
-                  { slug: 'tavla', emoji: '🎲', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı' },
-                  { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Klasik Türk kart oyunu! Eşleştir & topla' },
-                ].map((g) => (
-                  <MultiplayerGameCard key={g.slug} lang={lang} slug={g.slug} emoji={g.emoji} name={g.name} desc={g.desc} />
-                ))}
+                <MultiplayerGamesSection lang={lang} />
               </div>
 
               {/* Daily Spin Section */}

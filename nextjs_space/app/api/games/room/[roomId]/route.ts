@@ -6,7 +6,7 @@ import { processMove } from '@/lib/game-logic'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Get room state
+// GET: Get room state (also checks disconnect timeout)
 export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
     const room = await prisma.gameRoom.findUnique({
@@ -14,6 +14,25 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       include: { _count: { select: { viewers: true } } },
     })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+
+    // Auto-forfeit: if active PvP game with timer, check disconnect (10s after turn timer expires)
+    if (room.status === 'active' && !room.isAI && room.turnTimer > 0 && room.lastMoveAt) {
+      const elapsed = (Date.now() - new Date(room.lastMoveAt).getTime()) / 1000
+      const timeout = room.turnTimer + 10 // grace period of 10s after turn timer
+      if (elapsed > timeout) {
+        // Current turn player forfeits
+        const loserId = room.currentTurn === 1 ? room.player1Id : room.player2Id
+        const winnerId = room.currentTurn === 1 ? room.player2Id : room.player1Id
+        await settleBet(room, winnerId, loserId || '')
+        const updated = await prisma.gameRoom.update({
+          where: { id: params.roomId },
+          data: { status: 'completed', winnerId, lastMoveAt: new Date() },
+        })
+        const { _count: c2, ...d2 } = { ...updated, _count: room._count }
+        return NextResponse.json({ ...d2, viewerCount: c2.viewers, autoForfeit: true })
+      }
+    }
+
     const { _count, ...data } = room
     return NextResponse.json({ ...data, viewerCount: _count.viewers })
   } catch (error: any) {
@@ -72,6 +91,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     if (!isP1 && !isP2) return NextResponse.json({ error: 'Bu oyuna dahil değilsiniz' }, { status: 403 })
 
     const playerNum = isP1 ? 1 : 2
+
+    // Handle leave/forfeit action
+    if (body.action === 'leave') {
+      const leaverId = session.user.id
+      const winnerId = leaverId === room.player1Id ? room.player2Id : room.player1Id
+      await settleBet(room, winnerId, session.user.id)
+      const updated = await prisma.gameRoom.update({
+        where: { id: params.roomId },
+        data: { status: 'completed', winnerId, lastMoveAt: new Date() },
+      })
+      return NextResponse.json({ success: true, room: updated })
+    }
 
     // For AI games, accept full state update
     if (room.isAI && body.fullState) {
