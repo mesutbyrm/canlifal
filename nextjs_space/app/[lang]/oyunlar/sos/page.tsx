@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
   ArrowLeft, Users, Bot, Coins, Trophy, RotateCcw,
-  Zap, Crown, Clock, X, Check, Loader2, RefreshCw
+  Zap, Crown, Clock, X, Check, Loader2, RefreshCw, Volume2, VolumeX, Gamepad2
 } from 'lucide-react'
 
 // ========== TYPES ==========
@@ -32,7 +32,95 @@ interface SosGame {
   updatedAt: string
 }
 
+interface RecentWinner {
+  id: string
+  winnerName: string
+  payout: number
+  currency: string
+  score: string
+  gridSize: number
+  isAI: boolean
+  time: string
+}
+
 type GamePhase = 'menu' | 'lobby' | 'playing' | 'result'
+
+// ========== SOUND EFFECTS (Web Audio API) ==========
+function playSound(type: 'place' | 'sos' | 'win' | 'lose' | 'draw') {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    gain.gain.value = 0.15
+
+    switch (type) {
+      case 'place':
+        osc.frequency.value = 600
+        osc.type = 'sine'
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.1)
+        break
+      case 'sos':
+        osc.frequency.value = 880
+        osc.type = 'square'
+        gain.gain.value = 0.12
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.4)
+        // Second tone
+        const osc2 = ctx.createOscillator()
+        const gain2 = ctx.createGain()
+        osc2.connect(gain2)
+        gain2.connect(ctx.destination)
+        osc2.frequency.value = 1100
+        osc2.type = 'square'
+        gain2.gain.value = 0.12
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+        osc2.start(ctx.currentTime + 0.15)
+        osc2.stop(ctx.currentTime + 0.6)
+        break
+      case 'win':
+        osc.frequency.value = 523
+        osc.type = 'triangle'
+        gain.gain.value = 0.2
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.8)
+        const w2 = ctx.createOscillator()
+        const wg2 = ctx.createGain()
+        w2.connect(wg2); wg2.connect(ctx.destination)
+        w2.frequency.value = 659; w2.type = 'triangle'; wg2.gain.value = 0.2
+        wg2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9)
+        w2.start(ctx.currentTime + 0.2); w2.stop(ctx.currentTime + 0.9)
+        const w3 = ctx.createOscillator()
+        const wg3 = ctx.createGain()
+        w3.connect(wg3); wg3.connect(ctx.destination)
+        w3.frequency.value = 784; w3.type = 'triangle'; wg3.gain.value = 0.2
+        wg3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0)
+        w3.start(ctx.currentTime + 0.4); w3.stop(ctx.currentTime + 1.0)
+        break
+      case 'lose':
+        osc.frequency.value = 300
+        osc.type = 'sawtooth'
+        gain.gain.value = 0.1
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.5)
+        break
+      case 'draw':
+        osc.frequency.value = 440
+        osc.type = 'sine'
+        gain.gain.value = 0.12
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.4)
+        break
+    }
+  } catch {}
+}
 
 // ========== AI LOGIC ==========
 function findNewSOSLines(board: string[][], row: number, col: number, existingLines: number[][], gridSize: number): number[][] {
@@ -80,13 +168,37 @@ function aiMove(board: string[][], existingLines: number[][], gridSize: number):
     }
   }
 
-  // Try to block opponent scoring
-  // (simplified: pick a move that doesn't let opponent score easily)
-  // Otherwise random
   const idx = Math.floor(Math.random() * emptyCells.length)
   const [r, c] = emptyCells[idx]
   const letter = Math.random() > 0.5 ? 'S' : 'O'
   return { row: r, col: c, letter }
+}
+
+// ========== WINNER TICKER ==========
+function WinnerTicker({ winners }: { winners: RecentWinner[] }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted || winners.length === 0) return null
+
+  // Duplicate for continuous scroll (2 passes)
+  const items = [...winners, ...winners]
+
+  return (
+    <div className="w-full overflow-hidden bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-yellow-500/10 border border-yellow-500/20 rounded-xl py-2 mb-4">
+      <div className="flex animate-sos-ticker whitespace-nowrap">
+        {items.map((w, i) => (
+          <span key={`${w.id}-${i}`} className="inline-flex items-center gap-2 mx-6 text-sm">
+            <Trophy className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+            <span className="text-yellow-300 font-bold">{w.winnerName}</span>
+            <span className="text-fuchsia-300/70">
+              {w.payout} {w.currency} kazandı!
+            </span>
+            <span className="text-fuchsia-400/40 text-xs">({w.score})</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ========== MAIN COMPONENT ==========
@@ -98,6 +210,7 @@ export default function SOSGamePage() {
 
   // Phase
   const [phase, setPhase] = useState<GamePhase>('menu')
+  const [soundEnabled, setSoundEnabled] = useState(true)
 
   // Menu state
   const [gameMode, setGameMode] = useState<'ai' | '2player'>('ai')
@@ -105,6 +218,11 @@ export default function SOSGamePage() {
   const [betType, setBetType] = useState<'FREE' | 'CFC' | 'JETON'>('FREE')
   const [betAmount, setBetAmount] = useState(10)
   const [userBalance, setUserBalance] = useState({ credits: 0, jetonBalance: 0 })
+
+  // Stats
+  const [activePlayers, setActivePlayers] = useState(0)
+  const [waitingRooms, setWaitingRooms] = useState(0)
+  const [recentWinners, setRecentWinners] = useState<RecentWinner[]>([])
 
   // Lobby state
   const [waitingGames, setWaitingGames] = useState<SosGame[]>([])
@@ -121,9 +239,30 @@ export default function SOSGamePage() {
   const [aiThinking, setAiThinking] = useState(false)
   const [lastPlaced, setLastPlaced] = useState<[number,number] | null>(null)
   const [newScoredLines, setNewScoredLines] = useState<number[][]>([])
+  const [prevBoard, setPrevBoard] = useState<string[][]>([])
+  const [flashCells, setFlashCells] = useState<Set<string>>(new Set())
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
-  // Fetch user balance
+  // Fetch stats + balance
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/games/sos?type=stats')
+      if (res.ok) {
+        const d = await res.json()
+        setActivePlayers(d.activePlayers || 0)
+        setWaitingRooms(d.waitingRooms || 0)
+        setRecentWinners(d.recentWinners || [])
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetchStats()
+    const iv = setInterval(fetchStats, 15000)
+    return () => clearInterval(iv)
+  }, [fetchStats])
+
   useEffect(() => {
     if (session?.user) {
       fetch('/api/user/profile').then(r => r.json()).then(d => {
@@ -156,14 +295,49 @@ export default function SOSGamePage() {
           const res = await fetch(`/api/games/sos/${gameId}`)
           if (res.ok) {
             const g: SosGame = await res.json()
+            const newBoardParsed: string[][] = JSON.parse(g.board)
+            const newLinesParsed: number[][] = JSON.parse(g.lines)
+
+            // Detect opponent's new moves and flash them
+            if (board.length > 0) {
+              const flashes = new Set<string>()
+              for (let r = 0; r < newBoardParsed.length; r++) {
+                for (let c = 0; c < (newBoardParsed[r]?.length || 0); c++) {
+                  if (board[r]?.[c] === '' && newBoardParsed[r][c] !== '') {
+                    flashes.add(`${r}-${c}`)
+                  }
+                }
+              }
+              if (flashes.size > 0) {
+                setFlashCells(flashes)
+                if (soundEnabled) playSound('place')
+                setTimeout(() => setFlashCells(new Set()), 1200)
+              }
+            }
+
+            // Check for new SOS lines scored
+            if (newLinesParsed.length > lines.length) {
+              const newOnes = newLinesParsed.slice(lines.length)
+              setNewScoredLines(newOnes)
+              if (soundEnabled) playSound('sos')
+              setTimeout(() => setNewScoredLines([]), 2000)
+            }
+
             setGame(g)
-            setBoard(JSON.parse(g.board))
-            setLines(JSON.parse(g.lines))
+            setBoard(newBoardParsed)
+            setLines(newLinesParsed)
             const isP1 = g.player1Id === session?.user?.id
             setIsMyTurn((isP1 && g.currentTurn === 1) || (!isP1 && g.currentTurn === 2))
             if (g.status === 'completed') {
               setPhase('result')
               if (pollRef.current) clearInterval(pollRef.current)
+              // Play end sound
+              if (soundEnabled) {
+                const myId = session?.user?.id
+                if (g.winnerId === myId) playSound('win')
+                else if (!g.winnerId) playSound('draw')
+                else playSound('lose')
+              }
             }
           }
         } catch {}
@@ -171,7 +345,7 @@ export default function SOSGamePage() {
       pollRef.current = setInterval(poll, 2000)
       return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
-  }, [phase, gameId, game?.isAI, session?.user?.id])
+  }, [phase, gameId, game?.isAI, session?.user?.id, board, lines, soundEnabled])
 
   // ========== CREATE GAME ==========
   const createGame = async (isAI: boolean) => {
@@ -184,11 +358,9 @@ export default function SOSGamePage() {
       })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'Hata oluştu'); return }
-
       setGameId(data.gameId)
 
       if (isAI) {
-        // Fetch game and start playing
         const gRes = await fetch(`/api/games/sos/${data.gameId}`)
         const g: SosGame = await gRes.json()
         setGame(g)
@@ -199,7 +371,6 @@ export default function SOSGamePage() {
       } else {
         setMyWaitingGame(data.gameId)
         setPhase('lobby')
-        // Poll for player2 joining
         const checkJoin = setInterval(async () => {
           try {
             const r = await fetch(`/api/games/sos/${data.gameId}`)
@@ -215,7 +386,6 @@ export default function SOSGamePage() {
             }
           } catch {}
         }, 3000)
-        // Store for cleanup
         pollRef.current = checkJoin
       }
     } catch { alert('Bağlantı hatası') }
@@ -233,7 +403,7 @@ export default function SOSGamePage() {
       setGame(data.game)
       setBoard(JSON.parse(data.game.board))
       setLines(JSON.parse(data.game.lines))
-      setIsMyTurn(data.game.currentTurn === 2) // joiner is always player2
+      setIsMyTurn(data.game.currentTurn === 2)
       setPhase('playing')
     } catch { alert('Bağlantı hatası') }
     setLobbyLoading(false)
@@ -242,9 +412,7 @@ export default function SOSGamePage() {
   // ========== CANCEL WAITING ==========
   const cancelWaiting = async () => {
     if (!myWaitingGame) return
-    try {
-      await fetch(`/api/games/sos/${myWaitingGame}`, { method: 'DELETE' })
-    } catch {}
+    try { await fetch(`/api/games/sos/${myWaitingGame}`, { method: 'DELETE' }) } catch {}
     setMyWaitingGame(null)
     if (pollRef.current) clearInterval(pollRef.current)
     setPhase('menu')
@@ -255,35 +423,40 @@ export default function SOSGamePage() {
     if (!game || !gameId || !isMyTurn || aiThinking) return
     if (board[row][col] !== '') return
 
+    if (soundEnabled) playSound('place')
+
     const newBoard = board.map(r => [...r])
     newBoard[row][col] = selectedLetter
     setBoard(newBoard)
     setLastPlaced([row, col])
+    setFlashCells(new Set([`${row}-${col}`]))
+    setTimeout(() => setFlashCells(new Set()), 1200)
 
     const scored = findNewSOSLines(newBoard, row, col, lines, game.gridSize)
     const allLines = [...lines, ...scored]
     setLines(allLines)
-    if (scored.length > 0) setNewScoredLines(scored)
-    setTimeout(() => setNewScoredLines([]), 1500)
+    if (scored.length > 0) {
+      setNewScoredLines(scored)
+      if (soundEnabled) playSound('sos')
+      setTimeout(() => setNewScoredLines([]), 2000)
+    }
 
     const isP1 = game.player1Id === session?.user?.id
     let p1s = game.player1Score + (isP1 ? scored.length : 0)
     let p2s = game.player2Score + (!isP1 ? scored.length : 0)
-
     const isFull = newBoard.every(r => r.every(c => c !== ''))
 
     if (game.isAI) {
-      // Handle locally + send final state
       let currentBoard = newBoard
       let currentLines = allLines
       let currentP1 = p1s
       let currentP2 = p2s
-      let turn = scored.length > 0 ? 1 : 2 // player is always 1 in AI
+      let turn = scored.length > 0 ? 1 : 2
       let gameOver = isFull
 
-      // AI turns
       if (!gameOver && turn === 2) {
         setAiThinking(true)
+        setIsMyTurn(false)
         await new Promise(r => setTimeout(r, 600))
 
         let aiKeepPlaying = true
@@ -295,8 +468,11 @@ export default function SOSGamePage() {
           currentBoard[move.row][move.col] = move.letter
           setBoard(currentBoard.map(r => [...r]))
           setLastPlaced([move.row, move.col])
+          setFlashCells(new Set([`${move.row}-${move.col}`]))
+          if (soundEnabled) playSound('place')
 
           await new Promise(r => setTimeout(r, 400))
+          setFlashCells(new Set())
 
           const aiScored = findNewSOSLines(currentBoard, move.row, move.col, currentLines, game.gridSize)
           currentLines = [...currentLines, ...aiScored]
@@ -304,6 +480,7 @@ export default function SOSGamePage() {
           currentP2 += aiScored.length
           if (aiScored.length > 0) {
             setNewScoredLines(aiScored)
+            if (soundEnabled) playSound('sos')
             await new Promise(r => setTimeout(r, 800))
             setNewScoredLines([])
           }
@@ -320,10 +497,8 @@ export default function SOSGamePage() {
       if (gameOver) {
         if (currentP1 > currentP2) winnerId = game.player1Id
         else if (currentP2 > currentP1) winnerId = 'AI'
-        // null = draw
       }
 
-      // Send state to server
       const res = await fetch(`/api/games/sos/${gameId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -336,18 +511,25 @@ export default function SOSGamePage() {
             player2Score: currentP2,
             currentTurn: turn,
             gameOver,
-            winnerId: gameOver ? (currentP1 > currentP2 ? session?.user?.id : currentP2 > currentP1 ? null : null) : undefined,
+            winnerId: gameOver ? (currentP1 > currentP2 ? session?.user?.id : null) : undefined,
           }
         }),
       })
       const result = await res.json()
       if (result.success) {
         setGame(result.game)
-        if (result.game.status === 'completed') setPhase('result')
-        else setIsMyTurn(true)
+        if (result.game.status === 'completed') {
+          setPhase('result')
+          if (soundEnabled) {
+            if (result.game.winnerId === session?.user?.id) playSound('win')
+            else if (!result.game.winnerId) playSound('draw')
+            else playSound('lose')
+          }
+        } else {
+          setIsMyTurn(true)
+        }
       }
     } else {
-      // 2 player - send move to server
       const res = await fetch(`/api/games/sos/${gameId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -361,7 +543,14 @@ export default function SOSGamePage() {
         setLines(JSON.parse(gData.lines))
         const amP1 = gData.player1Id === session?.user?.id
         setIsMyTurn((amP1 && gData.currentTurn === 1) || (!amP1 && gData.currentTurn === 2))
-        if (gData.status === 'completed') setPhase('result')
+        if (gData.status === 'completed') {
+          setPhase('result')
+          if (soundEnabled) {
+            if (gData.winnerId === session?.user?.id) playSound('win')
+            else if (!gData.winnerId) playSound('draw')
+            else playSound('lose')
+          }
+        }
       }
     }
   }
@@ -377,49 +566,87 @@ export default function SOSGamePage() {
     setNewScoredLines([])
     setLastPlaced(null)
     setAiThinking(false)
+    setFlashCells(new Set())
     if (pollRef.current) clearInterval(pollRef.current)
-    // Refresh balance
     if (session?.user) {
       fetch('/api/user/profile').then(r => r.json()).then(d => {
         if (d.credits !== undefined) setUserBalance({ credits: d.credits, jetonBalance: d.jetonBalance || 0 })
       }).catch(() => {})
     }
+    fetchStats()
   }
 
-  // ========== CHECK LINE HIGHLIGHT ==========
-  const getCellLineColor = (row: number, col: number): string | null => {
-    for (const line of newScoredLines) {
-      const positions = [[line[0], line[1]], [line[2], line[3]], [line[4], line[5]]]
-      if (positions.some(([r, c]) => r === row && c === col)) {
-        return 'ring-2 ring-yellow-400 bg-yellow-500/30'
-      }
-    }
-    for (const line of lines) {
-      const positions = [[line[0], line[1]], [line[2], line[3]], [line[4], line[5]]]
-      if (positions.some(([r, c]) => r === row && c === col)) {
-        // Check which player scored this line
-        const lineIdx = lines.indexOf(line)
-        // For simplicity, just highlight
-        return 'bg-purple-500/15'
-      }
-    }
-    return null
+  // ========== SVG LINE OVERLAY ==========
+  const renderSOSLineOverlay = () => {
+    if (!game || board.length === 0) return null
+    const size = game.gridSize
+    // Calculate cell sizes based on grid ref
+    const gridEl = gridRef.current
+    if (!gridEl) return null
+    const gridWidth = gridEl.offsetWidth
+    const gridHeight = gridEl.offsetHeight
+    const cellW = gridWidth / size
+    const cellH = gridHeight / size
+
+    return (
+      <svg
+        className="absolute inset-0 pointer-events-none z-10"
+        width={gridWidth}
+        height={gridHeight}
+      >
+        {lines.map((line, idx) => {
+          const [r1, c1, , , r3, c3] = line
+          const x1 = c1 * cellW + cellW / 2
+          const y1 = r1 * cellH + cellH / 2
+          const x2 = c3 * cellW + cellW / 2
+          const y2 = r3 * cellH + cellH / 2
+          const isNew = newScoredLines.some(nl => nl.join(',') === line.join(','))
+
+          return (
+            <line
+              key={idx}
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke={isNew ? '#facc15' : '#a855f7'}
+              strokeWidth={isNew ? 3 : 2}
+              strokeLinecap="round"
+              opacity={isNew ? 1 : 0.6}
+              className={isNew ? 'animate-pulse' : ''}
+            />
+          )
+        })}
+      </svg>
+    )
   }
 
   // ========== RENDER: MENU ==========
   const renderMenu = () => (
-    <div className="flex flex-col items-center gap-6 w-full max-w-md mx-auto">
+    <div className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-md mx-auto px-2">
+      {/* Winner Ticker */}
+      <WinnerTicker winners={recentWinners} />
+
       {/* Title */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
           SOS Oyunu
         </h1>
-        <p className="text-fuchsia-300/70 text-sm mt-1">Strateji ve eğlence bir arada!</p>
+        <p className="text-fuchsia-300/70 text-xs sm:text-sm mt-1">Strateji ve eğlence bir arada!</p>
+      </div>
+
+      {/* Active Players Stats */}
+      <div className="flex items-center gap-4 text-xs sm:text-sm">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <span className="text-green-300 font-medium">{activePlayers} Oyuncu</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-full">
+          <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
+          <span className="text-purple-300 font-medium">{waitingRooms} Oda</span>
+        </div>
       </div>
 
       {/* Balance */}
       {session?.user && (
-        <div className="flex gap-3 text-sm">
+        <div className="flex gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full">
             <Coins className="w-4 h-4 text-amber-400" />
             <span className="text-amber-300 font-medium">{userBalance.credits} CFC</span>
@@ -435,25 +662,11 @@ export default function SOSGamePage() {
       <div className="w-full">
         <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Modu</label>
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setGameMode('ai')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all font-medium text-sm ${
-              gameMode === 'ai'
-                ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300'
-                : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-            }`}
-          >
-            <Bot className="w-5 h-5" /> Yapay Zeka
+          <button onClick={() => setGameMode('ai')} className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === 'ai' ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" /> Yapay Zeka
           </button>
-          <button
-            onClick={() => setGameMode('2player')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all font-medium text-sm ${
-              gameMode === '2player'
-                ? 'border-pink-400 bg-pink-500/20 text-pink-300'
-                : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-            }`}
-          >
-            <Users className="w-5 h-5" /> 2 Kişilik
+          <button onClick={() => setGameMode('2player')} className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === '2player' ? 'border-pink-400 bg-pink-500/20 text-pink-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" /> 2 Kişilik
           </button>
         </div>
       </div>
@@ -463,15 +676,7 @@ export default function SOSGamePage() {
         <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Alanı</label>
         <div className="grid grid-cols-3 gap-2">
           {[6, 8, 10].map(size => (
-            <button
-              key={size}
-              onClick={() => setGridSize(size)}
-              className={`py-2.5 rounded-xl border-2 transition-all font-bold text-sm ${
-                gridSize === size
-                  ? 'border-purple-400 bg-purple-500/20 text-purple-300'
-                  : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-              }`}
-            >
+            <button key={size} onClick={() => setGridSize(size)} className={`py-2 sm:py-2.5 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${gridSize === size ? 'border-purple-400 bg-purple-500/20 text-purple-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>
               {size}x{size}
             </button>
           ))}
@@ -483,17 +688,13 @@ export default function SOSGamePage() {
         <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label>
         <div className="grid grid-cols-3 gap-2">
           {(['FREE', 'CFC', 'JETON'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setBetType(type)}
-              className={`py-2.5 rounded-xl border-2 transition-all font-medium text-sm ${
-                betType === type
-                  ? type === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300'
-                    : type === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300'
-                    : 'border-blue-400 bg-blue-500/20 text-blue-300'
-                  : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-              }`}
-            >
+            <button key={type} onClick={() => setBetType(type)} className={`py-2 sm:py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${
+              betType === type
+                ? type === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300'
+                  : type === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300'
+                  : 'border-blue-400 bg-blue-500/20 text-blue-300'
+                : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
+            }`}>
               {type === 'FREE' ? 'Ücretsiz' : type}
             </button>
           ))}
@@ -508,22 +709,12 @@ export default function SOSGamePage() {
           </label>
           <div className="grid grid-cols-4 gap-2">
             {[10, 25, 50, 100].map(amt => (
-              <button
-                key={amt}
-                onClick={() => setBetAmount(amt)}
-                className={`py-2 rounded-xl border-2 transition-all font-bold text-sm ${
-                  betAmount === amt
-                    ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300'
-                    : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-                }`}
-              >
+              <button key={amt} onClick={() => setBetAmount(amt)} className={`py-1.5 sm:py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${betAmount === amt ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>
                 {amt}
               </button>
             ))}
           </div>
-          <p className="text-fuchsia-400/50 text-xs mt-1.5">
-            Kazanan %90'ını alır, %10 site komisyonu
-          </p>
+          <p className="text-fuchsia-400/50 text-xs mt-1.5">Kazanan %90'ını alır, %10 site komisyonu</p>
         </div>
       )}
 
@@ -531,61 +722,59 @@ export default function SOSGamePage() {
       {!session?.user ? (
         <p className="text-fuchsia-400/60 text-sm">Oynamak için giriş yapın</p>
       ) : (
-        <div className="w-full flex flex-col gap-2">
-          <button
-            onClick={() => {
-              if (gameMode === 'ai') createGame(true)
-              else if (gameMode === '2player') {
-                setPhase('lobby')
-              }
-            }}
-            className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-lg"
-          >
-            {gameMode === 'ai' ? '🤖 Oyunu Başlat' : '👥 Lobi’ye Gir'}
-          </button>
-        </div>
+        <button
+          onClick={() => { if (gameMode === 'ai') createGame(true); else setPhase('lobby') }}
+          className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base sm:text-lg"
+        >
+          {gameMode === 'ai' ? '🤖 Oyunu Başlat' : '👥 Lobi’ye Gir'}
+        </button>
       )}
 
-      {/* Back */}
-      <Link
-        href={`/${lang}/oyunlar`}
-        className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-sm transition"
-      >
-        <ArrowLeft className="w-4 h-4" /> Oyunlara Dön
-      </Link>
+      {/* Sound toggle + Back */}
+      <div className="flex items-center justify-between w-full">
+        <Link href={`/${lang}/oyunlar`} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
+          <ArrowLeft className="w-4 h-4" /> Oyunlara Dön
+        </Link>
+        <button onClick={() => setSoundEnabled(!soundEnabled)} className="flex items-center gap-1.5 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          {soundEnabled ? 'Ses Açık' : 'Ses Kapalı'}
+        </button>
+      </div>
     </div>
   )
 
   // ========== RENDER: LOBBY ==========
   const renderLobby = () => (
-    <div className="flex flex-col items-center gap-6 w-full max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-white">2 Kişilik Lobi</h2>
+    <div className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-lg mx-auto px-2">
+      <WinnerTicker winners={recentWinners} />
+
+      <h2 className="text-xl sm:text-2xl font-bold text-white">2 Kişilik Lobi</h2>
+
+      {/* Active stats */}
+      <div className="flex items-center gap-3 text-xs">
+        <span className="flex items-center gap-1 text-green-300">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> {activePlayers} Oyuncu Aktif
+        </span>
+        <span className="text-fuchsia-400/40">•</span>
+        <span className="text-purple-300">{waitingRooms} Oda Bekliyor</span>
+      </div>
 
       {myWaitingGame ? (
-        <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-6 text-center">
+        <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 sm:p-6 text-center">
           <Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin mx-auto mb-3" />
           <p className="text-white font-medium">Rakip bekleniyor...</p>
           <p className="text-fuchsia-300/60 text-sm mt-1">
             {gridSize}x{gridSize} • {betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`}
           </p>
-          <button
-            onClick={cancelWaiting}
-            className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"
-          >
+          <button onClick={cancelWaiting} className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition">
             <X className="w-4 h-4 inline mr-1" /> İptal Et
           </button>
         </div>
       ) : (
         <>
-          {/* Create new game */}
-          <button
-            onClick={() => createGame(false)}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg"
-          >
-            + Yeni Oda Oluştur ({gridSize}x{gridSize} • {betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})
+          <button onClick={() => createGame(false)} className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg text-sm sm:text-base">
+            + Yeni Oda ({gridSize}x{gridSize} • {betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})
           </button>
-
-          {/* Available games */}
           <div className="w-full">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-fuchsia-300 font-medium text-sm">Açık Odalar</h3>
@@ -601,15 +790,9 @@ export default function SOSGamePage() {
                   <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-fuchsia-500/20 rounded-xl">
                     <div>
                       <p className="text-white text-sm font-medium">{g.player1Name}</p>
-                      <p className="text-fuchsia-400/60 text-xs">
-                        {g.gridSize}x{g.gridSize} • {g.betCurrency === 'FREE' ? 'Ücretsiz' : `${g.betAmount} ${g.betCurrency}`}
-                      </p>
+                      <p className="text-fuchsia-400/60 text-xs">{g.gridSize}x{g.gridSize} • {g.betCurrency === 'FREE' ? 'Ücretsiz' : `${g.betAmount} ${g.betCurrency}`}</p>
                     </div>
-                    <button
-                      onClick={() => joinGame(g.id)}
-                      disabled={lobbyLoading}
-                      className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50"
-                    >
+                    <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50">
                       Katıl
                     </button>
                   </div>
@@ -620,10 +803,7 @@ export default function SOSGamePage() {
         </>
       )}
 
-      <button
-        onClick={resetToMenu}
-        className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-sm transition"
-      >
+      <button onClick={resetToMenu} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
         <ArrowLeft className="w-4 h-4" /> Menüye Dön
       </button>
     </div>
@@ -633,108 +813,134 @@ export default function SOSGamePage() {
   const renderGame = () => {
     if (!game) return null
     const size = game.gridSize
-    const cellSize = size <= 6 ? 'w-10 h-10 text-lg sm:w-12 sm:h-12 sm:text-xl' : size <= 8 ? 'w-8 h-8 text-sm sm:w-10 sm:h-10 sm:text-base' : 'w-7 h-7 text-xs sm:w-8 sm:h-8 sm:text-sm'
+    // Responsive cell sizes
+    const cellClass = size <= 6
+      ? 'w-[42px] h-[42px] text-lg sm:w-12 sm:h-12 sm:text-xl md:w-14 md:h-14'
+      : size <= 8
+        ? 'w-[34px] h-[34px] text-sm sm:w-10 sm:h-10 sm:text-base md:w-11 md:h-11'
+        : 'w-[28px] h-[28px] text-[11px] sm:w-8 sm:h-8 sm:text-sm md:w-9 md:h-9'
 
     return (
-      <div className="flex flex-col items-center gap-4 w-full">
+      <div className="flex flex-col items-center gap-3 sm:gap-4 w-full px-1">
+        {/* Players info bar */}
+        <div className="flex items-center justify-center gap-2 text-xs text-fuchsia-300/60">
+          <Users className="w-3.5 h-3.5" />
+          <span>{game.player1Name}</span>
+          <span className="text-fuchsia-400/30">vs</span>
+          <span>{game.player2Name}</span>
+          {game.isAI && <Bot className="w-3.5 h-3.5 text-cyan-400" />}
+        </div>
+
         {/* Scoreboard */}
-        <div className="flex items-center gap-4 w-full max-w-sm">
-          <div className={`flex-1 text-center py-2 rounded-xl border-2 transition-all ${
+        <div className="flex items-center gap-2 sm:gap-4 w-full max-w-sm">
+          <div className={`flex-1 text-center py-1.5 sm:py-2 rounded-xl border-2 transition-all ${
             game.currentTurn === 1 && game.status === 'active'
-              ? 'border-cyan-400 bg-cyan-500/20'
+              ? 'border-cyan-400 bg-cyan-500/20 shadow-[0_0_12px_rgba(34,211,238,0.3)]'
               : 'border-fuchsia-500/20 bg-purple-900/20'
           }`}>
-            <p className="text-xs text-fuchsia-300/60 truncate px-1">{game.player1Name}</p>
-            <p className="text-2xl font-bold text-cyan-300">{game.player1Score}</p>
+            <p className="text-[10px] sm:text-xs text-fuchsia-300/60 truncate px-1">{game.player1Name}</p>
+            <p className="text-xl sm:text-2xl font-bold text-cyan-300">{game.player1Score}</p>
           </div>
 
           <div className="flex flex-col items-center">
-            <span className="text-fuchsia-400/40 text-xs">VS</span>
+            <span className="text-fuchsia-400/40 text-[10px] sm:text-xs">VS</span>
             {game.betAmount > 0 && (
-              <span className="text-yellow-400 text-xs font-medium">
-                {game.betAmount} {game.betCurrency}
-              </span>
+              <span className="text-yellow-400 text-[10px] sm:text-xs font-medium">{game.betAmount} {game.betCurrency}</span>
             )}
           </div>
 
-          <div className={`flex-1 text-center py-2 rounded-xl border-2 transition-all ${
+          <div className={`flex-1 text-center py-1.5 sm:py-2 rounded-xl border-2 transition-all ${
             game.currentTurn === 2 && game.status === 'active'
-              ? 'border-pink-400 bg-pink-500/20'
+              ? 'border-pink-400 bg-pink-500/20 shadow-[0_0_12px_rgba(236,72,153,0.3)]'
               : 'border-fuchsia-500/20 bg-purple-900/20'
           }`}>
-            <p className="text-xs text-fuchsia-300/60 truncate px-1">{game.player2Name}</p>
-            <p className="text-2xl font-bold text-pink-300">{game.player2Score}</p>
+            <p className="text-[10px] sm:text-xs text-fuchsia-300/60 truncate px-1">{game.player2Name}</p>
+            <p className="text-xl sm:text-2xl font-bold text-pink-300">{game.player2Score}</p>
           </div>
         </div>
 
         {/* Turn indicator */}
-        <div className="text-sm text-center">
+        <div className="text-xs sm:text-sm text-center">
           {aiThinking ? (
-            <span className="text-yellow-400 animate-pulse">Yapay Zeka düşünüyor...</span>
+            <span className="text-yellow-400 animate-pulse flex items-center gap-1 justify-center"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Yapay Zeka düşünüyor...</span>
           ) : isMyTurn ? (
-            <span className="text-green-400">Sıra sizde! Harf seçip bir hücreye tıklayın</span>
+            <span className="text-green-400">✅ Sıra sizde! Harf seçip hücreye tıklayın</span>
           ) : (
-            <span className="text-fuchsia-400/60">Rakibin hamlesini bekleyin...</span>
+            <span className="text-fuchsia-400/60">⏳ Rakibin hamlesini bekleyin...</span>
           )}
         </div>
 
-        {/* Letter selector */}
-        <div className="flex gap-3">
+        {/* Letter selector + sound */}
+        <div className="flex items-center gap-3">
           {(['S', 'O'] as const).map(letter => (
             <button
               key={letter}
               onClick={() => setSelectedLetter(letter)}
-              className={`w-14 h-14 rounded-xl border-2 font-bold text-2xl transition-all ${
+              className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl border-2 font-bold text-xl sm:text-2xl transition-all ${
                 selectedLetter === letter
-                  ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300 scale-110'
+                  ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300 scale-110 shadow-[0_0_12px_rgba(250,204,21,0.3)]'
                   : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
               }`}
             >
               {letter}
             </button>
           ))}
+          <button onClick={() => setSoundEnabled(!soundEnabled)} className="ml-2 p-2 rounded-lg bg-purple-900/30 border border-fuchsia-500/20 text-fuchsia-400/60 hover:text-fuchsia-300 transition">
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Grid */}
-        <div
-          className="inline-grid gap-[2px] bg-cyan-500/20 p-[2px] rounded-xl border border-cyan-500/30"
-          style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
-        >
-          {board.map((row, ri) =>
-            row.map((cell, ci) => {
-              const highlight = getCellLineColor(ri, ci)
-              const isLast = lastPlaced && lastPlaced[0] === ri && lastPlaced[1] === ci
-              return (
-                <motion.button
-                  key={`${ri}-${ci}`}
-                  whileTap={isMyTurn && cell === '' ? { scale: 0.9 } : {}}
-                  onClick={() => makeMove(ri, ci)}
-                  disabled={!isMyTurn || cell !== '' || aiThinking}
-                  className={`${cellSize} flex items-center justify-center font-bold rounded-lg transition-all
-                    ${
-                      cell === ''
-                        ? isMyTurn && !aiThinking
-                          ? 'bg-[#0d0225] hover:bg-purple-800/40 cursor-pointer'
-                          : 'bg-[#0d0225] cursor-not-allowed'
-                        : 'bg-[#0d0225]'
-                    }
-                    ${highlight || ''}
-                    ${isLast ? 'ring-2 ring-cyan-400/60' : ''}
-                    ${cell === 'S' ? 'text-cyan-300' : cell === 'O' ? 'text-pink-300' : ''}
-                  `}
-                >
-                  {cell || ''}
-                </motion.button>
-              )
-            })
-          )}
+        {/* Grid with SVG overlay */}
+        <div className="relative" ref={gridRef}>
+          <div
+            className="inline-grid gap-[2px] bg-cyan-500/20 p-[2px] rounded-xl border border-cyan-500/30"
+            style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
+          >
+            {board.map((row, ri) =>
+              row.map((cell, ci) => {
+                const cellKey = `${ri}-${ci}`
+                const isFlash = flashCells.has(cellKey)
+                const isInNewLine = newScoredLines.some(line => {
+                  const positions = [[line[0],line[1]],[line[2],line[3]],[line[4],line[5]]]
+                  return positions.some(([r,c]) => r === ri && c === ci)
+                })
+                const isInAnyLine = lines.some(line => {
+                  const positions = [[line[0],line[1]],[line[2],line[3]],[line[4],line[5]]]
+                  return positions.some(([r,c]) => r === ri && c === ci)
+                })
+
+                return (
+                  <button
+                    key={cellKey}
+                    onClick={() => makeMove(ri, ci)}
+                    disabled={!isMyTurn || cell !== '' || aiThinking}
+                    className={`${cellClass} flex items-center justify-center font-bold rounded-lg transition-all duration-200
+                      ${
+                        cell === ''
+                          ? isMyTurn && !aiThinking
+                            ? 'bg-[#0d0225] hover:bg-purple-800/40 cursor-pointer active:scale-90'
+                            : 'bg-[#0d0225] cursor-not-allowed'
+                          : 'bg-[#0d0225]'
+                      }
+                      ${isFlash ? 'animate-sos-flash ring-2 ring-yellow-400 bg-yellow-500/30' : ''}
+                      ${isInNewLine ? 'bg-yellow-500/25 ring-2 ring-yellow-400' : isInAnyLine ? 'bg-purple-500/15' : ''}
+                      ${cell === 'S' ? 'text-cyan-300' : cell === 'O' ? 'text-pink-300' : ''}
+                    `}
+                  >
+                    {cell && (
+                      <span className={isFlash ? 'animate-sos-pop' : ''}>{cell}</span>
+                    )}
+                  </button>
+                )
+              })
+            )}
+          </div>
+          {/* SVG Strikethrough lines */}
+          {renderSOSLineOverlay()}
         </div>
 
         {/* Exit button */}
-        <button
-          onClick={resetToMenu}
-          className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-sm transition mt-2"
-        >
+        <button onClick={resetToMenu} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1">
           <ArrowLeft className="w-4 h-4" /> Ayrıl
         </button>
       </div>
@@ -747,63 +953,45 @@ export default function SOSGamePage() {
     const userId = session?.user?.id
     const isWinner = game.winnerId === userId
     const isDraw = game.status === 'completed' && !game.winnerId
-    const isLoser = game.status === 'completed' && game.winnerId && game.winnerId !== userId && game.winnerId !== 'AI'
-    const aiWon = game.winnerId === 'AI' || (game.isAI && game.player2Score > game.player1Score && game.status === 'completed' && !isDraw)
+    const aiWon = game.isAI && game.player2Score > game.player1Score && game.status === 'completed' && !isDraw
 
     const totalPot = game.betAmount * 2
     const commission = Math.floor(totalPot * 0.10)
     const winnerPayout = totalPot - commission
 
     return (
-      <div className="flex flex-col items-center gap-6 w-full max-w-md mx-auto text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="text-6xl"
-        >
+      <div className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-md mx-auto text-center px-2">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }} className="text-5xl sm:text-6xl">
           {isWinner ? '🏆' : isDraw ? '🤝' : '😔'}
         </motion.div>
 
         <div>
-          <h2 className={`text-3xl font-bold ${
-            isWinner ? 'text-yellow-400' : isDraw ? 'text-fuchsia-300' : 'text-red-400'
-          }`}>
+          <h2 className={`text-2xl sm:text-3xl font-bold ${isWinner ? 'text-yellow-400' : isDraw ? 'text-fuchsia-300' : 'text-red-400'}`}>
             {isWinner ? 'Tebrikler! Kazandınız!' : isDraw ? 'Berabere!' : (aiWon ? 'Yapay Zeka Kazandı!' : 'Kaybettiniz!')}
           </h2>
-          <p className="text-fuchsia-300/70 mt-2">
-            {game.player1Score} - {game.player2Score}
-          </p>
+          <p className="text-fuchsia-300/70 mt-2 text-sm sm:text-base">{game.player1Name}: {game.player1Score} - {game.player2Name}: {game.player2Score}</p>
         </div>
 
         {game.betAmount > 0 && (
-          <div className={`px-6 py-3 rounded-xl border-2 ${
+          <div className={`px-4 sm:px-6 py-3 rounded-xl border-2 ${
             isWinner ? 'border-yellow-400/50 bg-yellow-500/10' : isDraw ? 'border-fuchsia-400/50 bg-fuchsia-500/10' : 'border-red-400/50 bg-red-500/10'
           }`}>
             {isWinner ? (
-              <p className="text-yellow-300 font-bold text-lg">+{winnerPayout} {game.betCurrency} kazandınız!</p>
+              <p className="text-yellow-300 font-bold text-base sm:text-lg">+{winnerPayout} {game.betCurrency} kazandınız!</p>
             ) : isDraw ? (
-              <p className="text-fuchsia-300">Bahsiniz iade edildi: {game.betAmount} {game.betCurrency}</p>
+              <p className="text-fuchsia-300 text-sm">Bahsiniz iade edildi: {game.betAmount} {game.betCurrency}</p>
             ) : (
-              <p className="text-red-300">-{game.betAmount} {game.betCurrency}</p>
+              <p className="text-red-300 text-sm">-{game.betAmount} {game.betCurrency}</p>
             )}
-            {isWinner && (
-              <p className="text-fuchsia-400/50 text-xs mt-1">(%10 site komisyonu düşüldü)</p>
-            )}
+            {isWinner && <p className="text-fuchsia-400/50 text-xs mt-1">(%10 site komisyonu düşüldü)</p>}
           </div>
         )}
 
-        <div className="flex gap-3">
-          <button
-            onClick={resetToMenu}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-105 transition shadow-lg"
-          >
+        <div className="flex gap-3 flex-wrap justify-center">
+          <button onClick={resetToMenu} className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-105 transition shadow-lg text-sm sm:text-base">
             <RotateCcw className="w-4 h-4 inline mr-2" /> Yeni Oyun
           </button>
-          <Link
-            href={`/${lang}/oyunlar`}
-            className="px-6 py-3 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition"
-          >
+          <Link href={`/${lang}/oyunlar`} className="px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition text-sm sm:text-base">
             Oyunlara Dön
           </Link>
         </div>
@@ -812,23 +1000,47 @@ export default function SOSGamePage() {
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={phase}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {phase === 'menu' && renderMenu()}
-            {phase === 'lobby' && renderLobby()}
-            {phase === 'playing' && renderGame()}
-            {phase === 'result' && renderResult()}
-          </motion.div>
-        </AnimatePresence>
+    <>
+      {/* Custom CSS animations */}
+      <style jsx global>{`
+        @keyframes sos-flash {
+          0%, 100% { background-color: rgba(250, 204, 21, 0); }
+          25% { background-color: rgba(250, 204, 21, 0.35); }
+          50% { background-color: rgba(250, 204, 21, 0.1); }
+          75% { background-color: rgba(250, 204, 21, 0.25); }
+        }
+        @keyframes sos-pop {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.3); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes sos-ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-sos-flash { animation: sos-flash 1.2s ease-in-out; }
+        .animate-sos-pop { animation: sos-pop 0.4s ease-out; }
+        .animate-sos-ticker { animation: sos-ticker 30s linear infinite; }
+      `}</style>
+
+      <div className="min-h-screen pt-16 sm:pt-20 pb-8 sm:pb-10 px-2 sm:px-4">
+        <div className="max-w-2xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={phase}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {phase === 'menu' && renderMenu()}
+              {phase === 'lobby' && renderLobby()}
+              {phase === 'playing' && renderGame()}
+              {phase === 'result' && renderResult()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

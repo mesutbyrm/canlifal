@@ -73,11 +73,53 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET: List waiting games to join
+// GET: List waiting games, stats, and recent winners
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
+    const url = new URL(req.url)
+    const type = url.searchParams.get('type')
+
+    if (type === 'stats') {
+      const [activeCount, waitingCount, recentWinners] = await Promise.all([
+        prisma.sosGame.count({ where: { status: 'active' } }),
+        prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
+        prisma.sosGame.findMany({
+          where: { status: 'completed', winnerId: { not: null }, betAmount: { gt: 0 } },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+          select: {
+            id: true, winnerId: true, player1Id: true, player2Id: true,
+            player1Name: true, player2Name: true, player1Score: true, player2Score: true,
+            betAmount: true, betCurrency: true, gridSize: true, isAI: true, updatedAt: true,
+          },
+        }),
+      ])
+
+      const winners = recentWinners.map(g => {
+        const winnerName = g.winnerId === g.player1Id ? g.player1Name : g.player2Name
+        const totalPot = g.betAmount * 2
+        const commission = Math.floor(totalPot * 0.10)
+        const payout = totalPot - commission
+        return {
+          id: g.id,
+          winnerName,
+          payout,
+          currency: g.betCurrency,
+          score: g.winnerId === g.player1Id ? `${g.player1Score}-${g.player2Score}` : `${g.player2Score}-${g.player1Score}`,
+          gridSize: g.gridSize,
+          isAI: g.isAI,
+          time: g.updatedAt,
+        }
+      })
+
+      return NextResponse.json({
+        activePlayers: activeCount * 2,
+        waitingRooms: waitingCount,
+        recentWinners: winners,
+      })
+    }
 
     const games = await prisma.sosGame.findMany({
       where: {
