@@ -170,7 +170,11 @@ function TavlaBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
     }
   }
 
-  // Board rendering - realistic tavla look
+  // Board rendering - bigger with SVG triangles and visible outlines
+  const POINT_W = 100 / 13 // percentage width per point (13 cols: 6 + bar + 6)
+  const TRI_H_TOP = 140 // triangle height in px (top half)
+  const TRI_H_BOT = 140
+
   const renderPoint = (index: number, isTop: boolean) => {
     const count = board[index]
     const absc = Math.abs(count)
@@ -183,36 +187,45 @@ function TavlaBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
     const isPreviewDest = preview.includes(index)
     const canSelect = isMyTurn && phase === 'move' && isMyPiece && bar[playerNum - 1] === 0
 
-    // Triangle colors
-    const triColor = index % 2 === 0
-      ? (isTop ? 'border-t-amber-800' : 'border-b-amber-800')
-      : (isTop ? 'border-t-[#3a1a0a]' : 'border-b-[#3a1a0a]')
+    // Triangle fill & stroke colors
+    const triFill = index % 2 === 0 ? '#92400e' : '#3a1a0a'
+    const triStroke = index % 2 === 0 ? '#d97706' : '#78350f'
 
     return (
       <div
         key={index}
         onClick={() => handlePointClick(index)}
         className={`flex flex-col ${isTop ? 'items-center' : 'items-center flex-col-reverse'} w-full h-full relative
-          ${canSelect ? 'cursor-pointer' : ''}
-          ${isSelected ? 'bg-yellow-500/20 rounded' : ''}
-          ${isPreviewDest ? 'bg-green-500/20 rounded' : ''}
+          ${canSelect ? 'cursor-pointer hover:bg-yellow-500/10' : ''}
+          ${isSelected ? 'bg-yellow-500/20' : ''}
+          ${isPreviewDest ? 'bg-green-500/15' : ''}
         `}
       >
-        {/* Triangle */}
-        <div className={`w-0 h-0 border-l-[calc(100%/2-1px)] border-r-[calc(100%/2-1px)] border-l-transparent border-r-transparent
-          ${isTop ? `border-t-[60px] sm:border-t-[80px] ${triColor}` : `border-b-[60px] sm:border-b-[80px] ${triColor}`}
-          absolute ${isTop ? 'top-0' : 'bottom-0'} z-0 opacity-60`}
-        />
+        {/* SVG Triangle with visible outline */}
+        <svg
+          viewBox={`0 0 40 ${isTop ? TRI_H_TOP : TRI_H_BOT}`}
+          className={`absolute ${isTop ? 'top-0' : 'bottom-0'} w-full z-0`}
+          style={{ height: isTop ? TRI_H_TOP : TRI_H_BOT }}
+          preserveAspectRatio="none"
+        >
+          <polygon
+            points={isTop ? `0,0 40,0 20,${TRI_H_TOP}` : `0,${TRI_H_BOT} 40,${TRI_H_BOT} 20,0`}
+            fill={triFill}
+            stroke={triStroke}
+            strokeWidth="1.5"
+            opacity="0.85"
+          />
+        </svg>
         {/* Pieces */}
-        <div className={`flex flex-col ${isTop ? '' : 'flex-col-reverse'} items-center gap-0.5 py-1 relative z-10`}>
-          {Array.from({ length: Math.min(absc, 5) }).map((_, pi) => (
+        <div className={`flex flex-col ${isTop ? '' : 'flex-col-reverse'} items-center gap-[2px] py-1 relative z-10`}>
+          {Array.from({ length: Math.min(absc, 6) }).map((_, pi) => (
             <motion.div
               key={pi}
               layout
-              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${pieceColor} border-2 shadow-md text-[8px] flex items-center justify-center font-bold ${pieceTextColor}
-                ${isSelected && pi === 0 ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-transparent' : ''}`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${pieceColor} border-2 shadow-lg text-[9px] flex items-center justify-center font-bold ${pieceTextColor}
+                ${isSelected && pi === 0 ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-transparent scale-110' : ''}`}
             >
-              {pi === 0 && absc > 5 ? absc : ''}
+              {pi === 0 && absc > 6 ? absc : ''}
             </motion.div>
           ))}
         </div>
@@ -223,72 +236,94 @@ function TavlaBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
             animate={{ scale: 1 }}
             className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
           >
-            <div className="w-4 h-4 bg-green-400/60 rounded-full border-2 border-green-300 shadow-lg shadow-green-400/40" />
+            <div className="w-5 h-5 bg-green-400/70 rounded-full border-2 border-green-300 shadow-lg shadow-green-400/50 animate-pulse" />
           </motion.div>
         )}
+        {/* Point number label */}
+        <span className={`absolute ${isTop ? 'bottom-0' : 'top-0'} text-[8px] text-amber-600/40 font-mono z-10`}>{index + 1}</span>
       </div>
     )
   }
 
   // Top: points 12-23, Bottom: points 11-0
-  const topPoints = Array.from({ length: 12 }, (_, i) => 12 + i)
-  const bottomPoints = Array.from({ length: 12 }, (_, i) => 11 - i)
+  const topLeft = Array.from({ length: 6 }, (_, i) => 12 + i)
+  const topRight = Array.from({ length: 6 }, (_, i) => 18 + i)
+  const bottomLeft = Array.from({ length: 6 }, (_, i) => 11 - i)
+  const bottomRight = Array.from({ length: 6 }, (_, i) => 5 - i)
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full">
+    <div className="flex flex-col items-center gap-3 w-full max-w-xl mx-auto">
       {/* Info bar */}
-      <div className="flex items-center justify-between w-full text-xs">
+      <div className="flex items-center justify-between w-full text-sm px-1">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-amber-100 border-2 border-amber-300 inline-block shadow" />
-          <span className="text-amber-200 font-medium">{room.player1Name} ({off[0]}/15)</span>
+          <span className="w-6 h-6 rounded-full bg-amber-100 border-2 border-amber-300 inline-block shadow" />
+          <span className="text-amber-200 font-medium">{room.player1Name} <span className="text-amber-400">({off[0]}/15)</span></span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-gray-300 font-medium">{room.player2Name} ({off[1]}/15)</span>
-          <span className="w-5 h-5 rounded-full bg-gray-800 border-2 border-gray-600 inline-block shadow" />
+          <span className="text-gray-300 font-medium">{room.player2Name} <span className="text-gray-400">({off[1]}/15)</span></span>
+          <span className="w-6 h-6 rounded-full bg-gray-800 border-2 border-gray-600 inline-block shadow" />
         </div>
       </div>
 
       {/* Dice display */}
       {dice.length > 0 && (
         <div className="flex flex-col items-center gap-1">
-          <DiceRollAnimation dice={dice} rolling={diceRolling} size={40} />
+          <DiceRollAnimation dice={dice} rolling={diceRolling} size={44} />
           {movesLeft.length > 0 && (
             <span className="text-amber-300 text-xs font-medium">Kalan hamle: {movesLeft.join(', ')}</span>
           )}
         </div>
       )}
 
-      {/* Board - realistic wood look */}
-      <div className="w-full bg-gradient-to-b from-[#5a3015] via-[#4a2810] to-[#3a1e0c] border-2 border-amber-900/60 rounded-xl p-1.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)] overflow-hidden">
-        {/* Top half */}
-        <div className="grid grid-cols-12 gap-px h-24 sm:h-32 bg-[#2a1508]/40 rounded-t">
-          {topPoints.map(i => renderPoint(i, true))}
+      {/* Board - bigger with wood frame and clear triangles */}
+      <div className="w-full bg-gradient-to-b from-[#5a3015] via-[#4a2810] to-[#3a1e0c] border-[3px] border-amber-800/80 rounded-xl p-2 shadow-[inset_0_2px_12px_rgba(0,0,0,0.5),0_4px_20px_rgba(0,0,0,0.4)] overflow-hidden">
+        {/* Top half - with bar divider */}
+        <div className="flex bg-[#2a1508]/50 rounded-t border border-amber-900/30">
+          <div className="grid grid-cols-6 flex-1 gap-px" style={{ minHeight: 160 }}>
+            {topLeft.map(i => renderPoint(i, true))}
+          </div>
+          {/* Bar divider */}
+          <div className="w-8 sm:w-10 bg-[#1a0c03] border-x border-amber-900/40 flex items-center justify-center">
+            {bar[0] > 0 && (
+              <button
+                onClick={() => { if (playerNum === 1 && isMyTurn && phase === 'move') { setSelected(-1); setPreview(getDestinations(-1)) } }}
+                className={`flex flex-col items-center gap-0.5 ${selected === -1 && playerNum === 1 ? 'bg-yellow-500/30 rounded-lg p-1' : ''}`}
+              >
+                <span className="w-5 h-5 rounded-full bg-amber-100 border border-amber-300 inline-block" />
+                <span className="text-amber-200 text-[10px] font-bold">{bar[0]}</span>
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-6 flex-1 gap-px" style={{ minHeight: 160 }}>
+            {topRight.map(i => renderPoint(i, true))}
+          </div>
         </div>
-        {/* Bar */}
-        <div className="flex items-center justify-center gap-4 py-1.5 bg-[#2a1508]/60 border-y border-amber-900/40">
-          {bar[0] > 0 && (
-            <button
-              onClick={() => { if (playerNum === 1 && isMyTurn && phase === 'move') { setSelected(-1); setPreview(getDestinations(-1)) } }}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${selected === -1 && playerNum === 1 ? 'bg-yellow-500/30 border border-yellow-400' : 'bg-amber-900/40'}`}
-            >
-              <span className="w-4 h-4 rounded-full bg-amber-100 border border-amber-300 inline-block" />
-              <span className="text-amber-200">{bar[0]}</span>
-            </button>
-          )}
-          {bar[0] === 0 && bar[1] === 0 && <span className="text-amber-700/40 text-xs font-medium">─── BAR ───</span>}
-          {bar[1] > 0 && (
-            <button
-              onClick={() => { if (playerNum === 2 && isMyTurn && phase === 'move') { setSelected(-1); setPreview(getDestinations(-1)) } }}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${selected === -1 && playerNum === 2 ? 'bg-yellow-500/30 border border-yellow-400' : 'bg-gray-900/40'}`}
-            >
-              <span className="w-4 h-4 rounded-full bg-gray-800 border border-gray-600 inline-block" />
-              <span className="text-gray-300">{bar[1]}</span>
-            </button>
-          )}
+
+        {/* Center bar label */}
+        <div className="flex items-center justify-center py-1 bg-[#1a0c03]/60 border-y border-amber-900/30">
+          <span className="text-amber-700/50 text-[10px] font-bold tracking-widest">━━━ BAR ━━━</span>
         </div>
-        {/* Bottom half */}
-        <div className="grid grid-cols-12 gap-px h-24 sm:h-32 bg-[#2a1508]/40 rounded-b">
-          {bottomPoints.map(i => renderPoint(i, false))}
+
+        {/* Bottom half - with bar divider */}
+        <div className="flex bg-[#2a1508]/50 rounded-b border border-amber-900/30">
+          <div className="grid grid-cols-6 flex-1 gap-px" style={{ minHeight: 160 }}>
+            {bottomLeft.map(i => renderPoint(i, false))}
+          </div>
+          {/* Bar divider */}
+          <div className="w-8 sm:w-10 bg-[#1a0c03] border-x border-amber-900/40 flex items-center justify-center">
+            {bar[1] > 0 && (
+              <button
+                onClick={() => { if (playerNum === 2 && isMyTurn && phase === 'move') { setSelected(-1); setPreview(getDestinations(-1)) } }}
+                className={`flex flex-col items-center gap-0.5 ${selected === -1 && playerNum === 2 ? 'bg-yellow-500/30 rounded-lg p-1' : ''}`}
+              >
+                <span className="w-5 h-5 rounded-full bg-gray-800 border border-gray-600 inline-block" />
+                <span className="text-gray-300 text-[10px] font-bold">{bar[1]}</span>
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-6 flex-1 gap-px" style={{ minHeight: 160 }}>
+            {bottomRight.map(i => renderPoint(i, false))}
+          </div>
         </div>
       </div>
 

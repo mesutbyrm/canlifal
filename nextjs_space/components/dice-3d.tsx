@@ -1,7 +1,56 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+// Dice sound via Web Audio API
+export function playDiceSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    // Simulate dice rolling clatter - multiple short bursts
+    const noises = [0, 0.06, 0.12, 0.2, 0.3, 0.42]
+    noises.forEach((t, i) => {
+      const dur = 0.04 + Math.random() * 0.03
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let j = 0; j < data.length; j++) {
+        data[j] = (Math.random() * 2 - 1) * (1 - j / data.length) * (0.3 + Math.random() * 0.2)
+      }
+      const src = ctx.createBufferSource()
+      src.buffer = buf
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.15 - i * 0.02, ctx.currentTime + t)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
+      // Bandpass filter for more realistic sound
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.value = 800 + Math.random() * 1200
+      filter.Q.value = 1.5
+      src.connect(filter)
+      filter.connect(gain)
+      gain.connect(ctx.destination)
+      src.start(ctx.currentTime + t)
+    })
+    // Final thud/settle
+    const thudBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate)
+    const thudData = thudBuf.getChannelData(0)
+    for (let j = 0; j < thudData.length; j++) {
+      thudData[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / thudData.length, 3) * 0.4
+    }
+    const thudSrc = ctx.createBufferSource()
+    thudSrc.buffer = thudBuf
+    const thudGain = ctx.createGain()
+    thudGain.gain.setValueAtTime(0.2, ctx.currentTime + 0.5)
+    thudGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+    const lowpass = ctx.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = 600
+    thudSrc.connect(lowpass)
+    lowpass.connect(thudGain)
+    thudGain.connect(ctx.destination)
+    thudSrc.start(ctx.currentTime + 0.5)
+  } catch {}
+}
 
 const DOT_POSITIONS: Record<number, [number, number][]> = {
   1: [[50, 50]],
@@ -62,9 +111,16 @@ export function DiceRollAnimation({
   const [displayDice, setDisplayDice] = useState<number[]>(dice)
   const [isAnimating, setIsAnimating] = useState(false)
 
+  const soundPlayed = useRef(false)
+
   useEffect(() => {
     if (rolling) {
       setIsAnimating(true)
+      // Play dice sound
+      if (!soundPlayed.current) {
+        soundPlayed.current = true
+        playDiceSound()
+      }
       // Rapid random faces during animation
       let count = 0
       const iv = setInterval(() => {
@@ -79,6 +135,7 @@ export function DiceRollAnimation({
       return () => clearInterval(iv)
     } else {
       setDisplayDice(dice)
+      soundPlayed.current = false
     }
   }, [dice, rolling])
 

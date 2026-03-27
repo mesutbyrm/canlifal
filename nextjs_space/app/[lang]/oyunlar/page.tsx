@@ -95,6 +95,103 @@ const ALL_MP_GAMES = [
   { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', apiType: 'room' },
 ]
 
+interface ActiveRoom {
+  id: string
+  gameType: string
+  player1Name: string
+  player2Name: string
+  status: string
+  betAmount: number
+  betCurrency: string
+  isAI: boolean
+  viewerCount?: number
+}
+
+function ActiveGamesSection({ lang }: { lang: string }) {
+  const [rooms, setRooms] = useState<ActiveRoom[]>([])
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch('/api/games/room?type=active_rooms')
+        if (res.ok) {
+          const data = await res.json()
+          setRooms(data.rooms || [])
+        }
+      } catch {}
+    }
+    fetchRooms()
+    const iv = setInterval(fetchRooms, 8000)
+    return () => clearInterval(iv)
+  }, [])
+
+  const gameInfo = (gt: string) => ALL_MP_GAMES.find(g => {
+    const slug = g.slug === 'sayi-tahmin' ? 'sayi_tahmin' : g.slug
+    return slug === gt
+  }) || ALL_MP_GAMES[0]
+
+  const gameSlug = (gt: string) => {
+    if (gt === 'sayi_tahmin') return 'sayi-tahmin'
+    return gt
+  }
+
+  if (rooms.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-white font-bold text-sm flex items-center gap-2">
+        <Flame className="w-4 h-4 text-orange-400" />
+        <span>Şu An Oynananlar</span>
+        <span className="text-[10px] text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded-full font-medium">{rooms.length} aktif</span>
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {rooms.slice(0, 6).map((r) => {
+          const info = gameInfo(r.gameType)
+          const isWaiting = r.status === 'waiting'
+          return (
+            <Link key={r.id} href={`/${lang}/oyunlar/${gameSlug(r.gameType)}`}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                  isWaiting
+                    ? 'bg-gradient-to-r from-green-900/20 to-cyan-900/20 border-green-500/30 hover:border-green-400/60'
+                    : 'bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-fuchsia-500/30 hover:border-fuchsia-400/60'
+                }`}
+              >
+                <span className="text-2xl">{info.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-xs font-bold truncate">{info.name}</p>
+                  <p className="text-fuchsia-300/60 text-[10px] truncate">
+                    {r.player1Name} {isWaiting ? '— Katılımcı bekleniyor...' : `vs ${r.player2Name}`}
+                  </p>
+                  {r.betAmount > 0 && (
+                    <span className="text-yellow-400/70 text-[10px]">{r.betAmount} {r.betCurrency}</span>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {isWaiting ? (
+                    <span className="px-3 py-1 bg-gradient-to-r from-green-600 to-cyan-600 text-white text-[10px] rounded-full font-bold whitespace-nowrap">
+                      Katıl
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] rounded-full font-bold whitespace-nowrap flex items-center gap-1">
+                      👁 İzle
+                    </span>
+                  )}
+                  {(r.viewerCount || 0) > 0 && (
+                    <span className="text-fuchsia-400/50 text-[10px]">👁 {r.viewerCount}</span>
+                  )}
+                </div>
+              </motion.div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function MultiplayerGamesSection({ lang }: { lang: string }) {
   const [gameStats, setGameStats] = useState<Record<string, number>>({})
 
@@ -1198,6 +1295,9 @@ export default function GameCenterPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Active Games - show current rooms/games first */}
+              <ActiveGamesSection lang={lang} />
 
               {/* Multiplayer Games Section - at top */}
               <div className="space-y-3">

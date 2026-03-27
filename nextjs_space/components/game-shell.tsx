@@ -218,7 +218,7 @@ function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; 
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 left-4 z-50">
       {!open ? (
         <button onClick={() => setOpen(true)} className="relative p-3 bg-purple-700 rounded-full shadow-lg hover:bg-purple-600 transition">
           <MessageCircle className="w-5 h-5 text-white" />

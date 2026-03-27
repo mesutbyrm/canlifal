@@ -95,6 +95,32 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // All active/waiting rooms across all game types (for oyunlar homepage)
+    if (type === 'active_rooms') {
+      const rooms = await prisma.gameRoom.findMany({
+        where: {
+          status: { in: ['active', 'waiting'] },
+          isAI: false,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+        include: { _count: { select: { viewers: true } } },
+      })
+      return NextResponse.json({
+        rooms: rooms.map(g => ({
+          id: g.id,
+          gameType: g.gameType,
+          player1Name: g.player1Name,
+          player2Name: g.player2Name,
+          status: g.status,
+          betAmount: g.betAmount,
+          betCurrency: g.betCurrency,
+          isAI: g.isAI,
+          viewerCount: g._count.viewers,
+        }))
+      })
+    }
+
     if (type === 'active' && gameType) {
       const active = await prisma.gameRoom.findMany({
         where: { gameType, status: 'active', isAI: false },
