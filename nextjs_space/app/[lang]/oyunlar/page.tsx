@@ -1157,6 +1157,31 @@ export default function GameCenterPage() {
                 ))}
               </div>
 
+              {/* SOS Game Special Card */}
+              <Link href={`/${lang}/oyunlar/sos`} className="block">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-4xl group-hover:scale-110 transition-transform">🔠</span>
+                      <div>
+                        <p className="text-white font-bold text-base">SOS Oyunu</p>
+                        <p className="text-fuchsia-300/60 text-xs">2 kişilik veya yapay zekaya karşı • CFC/Jeton bahis yapabilirsin!</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
+                        Oyna
+                      </span>
+                      <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+
               {/* Daily Spin Section */}
               {session?.user && (
                 <div className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-2xl p-4">

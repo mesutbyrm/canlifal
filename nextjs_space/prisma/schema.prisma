@@ -1499,6 +1499,34 @@ model GamePlay {
   @@map("game_plays")
 }
 
+// SOS Game - multiplayer with betting
+model SosGame {
+  id            String   @id @default(cuid())
+  gridSize      Int      @default(6)           // 6, 8, 10
+  player1Id     String
+  player2Id     String?                         // null = waiting or AI
+  isAI          Boolean  @default(false)
+  betAmount     Int      @default(0)            // 0 = free
+  betCurrency   String   @default("FREE")       // FREE, CFC, JETON
+  board         String   @default("[]")         // JSON: grid state
+  lines         String   @default("[]")         // JSON: scored SOS lines
+  currentTurn   Int      @default(1)            // 1 or 2
+  player1Score  Int      @default(0)
+  player2Score  Int      @default(0)
+  status        String   @default("waiting")    // waiting, active, completed, cancelled
+  winnerId      String?
+  player1Name   String   @default("Oyuncu 1")
+  player2Name   String   @default("Oyuncu 2")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([player1Id])
+  @@index([player2Id])
+  @@index([createdAt])
+  @@map("sos_games")
+}
+
 // Daily login rewards & streak tracking
 model DailyReward {
   id            String   @id @default(cuid())
