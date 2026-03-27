@@ -1,11 +1,10 @@
 'use client'
 
 import GameShell from '@/components/game-shell'
+import { DiceRollAnimation, DiceButton } from '@/components/dice-3d'
 import { motion } from 'framer-motion'
 import { zarRoll } from '@/lib/game-logic'
-import { useEffect, useRef } from 'react'
-
-const DICE_FACES = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
+import { useEffect, useRef, useState } from 'react'
 
 export default function ZarPage() {
   return (
@@ -25,6 +24,8 @@ export default function ZarPage() {
 
 function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState }: any) {
   const aiRef = useRef<any>(null)
+  const [rolling, setRolling] = useState(false)
+  const [lastRoundIdx, setLastRoundIdx] = useState(-1)
 
   // AI auto-roll
   useEffect(() => {
@@ -54,6 +55,15 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
   const totalRounds = state?.totalRounds || 3
   const currentRound = state?.currentRound || 0
 
+  // Track new round for animation
+  useEffect(() => {
+    if (rounds.length > 0 && rounds.length - 1 !== lastRoundIdx) {
+      setRolling(true)
+      setLastRoundIdx(rounds.length - 1)
+      setTimeout(() => setRolling(false), 700)
+    }
+  }, [rounds.length])
+
   const canRoll = !isSpectator && room.status === 'active' && (
     (playerNum === 1 && phase === 'ready') ||
     (playerNum === 2 && phase === 'p1rolled')
@@ -61,6 +71,7 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
 
   const handleRoll = async () => {
     if (!canRoll) return
+    setRolling(true)
     await sendMove({})
   }
 
@@ -91,37 +102,43 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
         </div>
       </div>
 
-      {/* Current round dice */}
+      {/* Rounds */}
       {rounds.length > 0 && (
-        <div className="space-y-2 w-full">
+        <div className="space-y-3 w-full">
           {rounds.map((r: any, idx: number) => {
             const s1 = (r.player1 || []).reduce((a: number, b: number) => a + b, 0)
             const s2 = (r.player2 || []).reduce((a: number, b: number) => a + b, 0)
             const isLast = idx === rounds.length - 1
+            const isP1Rolled = r.player1 && r.player1.length > 0
+            const isP2Rolled = r.player2 && r.player2.length > 0
             return (
               <motion.div
                 key={idx}
                 initial={isLast ? { opacity: 0, y: 10 } : {}}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex items-center justify-between px-4 py-2 rounded-xl border ${
-                  isLast && phase === 'p1rolled'
+                className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                  isLast && !isP2Rolled
                     ? 'bg-amber-900/20 border-amber-500/30'
                     : s1 > s2 ? 'bg-cyan-900/10 border-cyan-500/20' : s2 > s1 ? 'bg-pink-900/10 border-pink-500/20' : 'bg-purple-900/10 border-purple-500/20'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  {(r.player1 || []).map((d: number, di: number) => (
-                    <span key={di} className="text-2xl">{DICE_FACES[d]}</span>
-                  ))}
-                  <span className="text-cyan-300 font-bold text-sm">({s1})</span>
+                <div className="flex items-center gap-3">
+                  {isP1Rolled ? (
+                    <>
+                      <DiceRollAnimation dice={r.player1} rolling={isLast && rolling && !isP2Rolled} size={36} />
+                      <span className="text-cyan-300 font-bold text-sm">({s1})</span>
+                    </>
+                  ) : (
+                    <span className="text-fuchsia-400/40 text-sm">🎲🎲</span>
+                  )}
                 </div>
                 <span className="text-fuchsia-400/40 text-xs">El {idx + 1}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-pink-300 font-bold text-sm">({s2})</span>
-                  {(r.player2 || []).length > 0 ? (
-                    (r.player2 || []).map((d: number, di: number) => (
-                      <span key={di} className="text-2xl">{DICE_FACES[d]}</span>
-                    ))
+                <div className="flex items-center gap-3">
+                  {isP2Rolled ? (
+                    <>
+                      <span className="text-pink-300 font-bold text-sm">({s2})</span>
+                      <DiceRollAnimation dice={r.player2} rolling={isLast && rolling && isP2Rolled} size={36} />
+                    </>
                   ) : (
                     <span className="text-fuchsia-400/40 text-sm">🎲🎲</span>
                   )}
@@ -134,14 +151,7 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
 
       {/* Roll button */}
       {canRoll && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleRoll}
-          className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-full text-lg shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition"
-        >
-          🎲 Zar At!
-        </motion.button>
+        <DiceButton onRoll={handleRoll} disabled={rolling} label="🎲 Zar At!" />
       )}
 
       {!canRoll && room.status === 'active' && !isSpectator && (

@@ -94,6 +94,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
 
     // Handle leave/forfeit action
     if (body.action === 'leave') {
+      if (room.isAI) {
+        // AI game: just cancel it, no penalty
+        const updated = await prisma.gameRoom.update({
+          where: { id: params.roomId },
+          data: { status: 'cancelled', lastMoveAt: new Date() },
+        })
+        return NextResponse.json({ success: true, room: updated })
+      }
       const leaverId = session.user.id
       const winnerId = leaverId === room.player1Id ? room.player2Id : room.player1Id
       await settleBet(room, winnerId, session.user.id)

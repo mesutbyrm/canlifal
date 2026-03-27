@@ -1199,6 +1199,12 @@ export default function GameCenterPage() {
                 )}
               </AnimatePresence>
 
+              {/* Multiplayer Games Section - at top */}
+              <div className="space-y-3">
+                <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
+                <MultiplayerGamesSection lang={lang} />
+              </div>
+
               {/* Game Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {games.map((game, i) => (
@@ -1212,7 +1218,6 @@ export default function GameCenterPage() {
                       if (!session?.user) { router.push(`/giris`); return }
                       setActiveGame(game.slug)
                       setResultMessage(null)
-                      // Reset game state when opening
                       if (game.slug === 'tarot-sec') resetTarot()
                       if (game.slug === 'memory') initMemory()
                       if (game.slug === 'quiz') initQuiz()
@@ -1232,12 +1237,6 @@ export default function GameCenterPage() {
                     </div>
                   </motion.div>
                 ))}
-              </div>
-
-              {/* Multiplayer Games Section */}
-              <div className="space-y-3">
-                <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
-                <MultiplayerGamesSection lang={lang} />
               </div>
 
               {/* Daily Spin Section */}

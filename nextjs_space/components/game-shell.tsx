@@ -129,6 +129,54 @@ function WinPopup({ room, userId, onDone }: { room: GameRoom; userId: string | u
   )
 }
 
+// Recent winner banner (replaces ticker)
+function WinnerBanner({ winners, gameEmoji }: { winners: any[]; gameEmoji: string }) {
+  const [current, setCurrent] = useState<any | null>(null)
+  const shownRef = useRef(new Set<string>())
+
+  useEffect(() => {
+    // Load shown winners from sessionStorage
+    try {
+      const stored = sessionStorage.getItem('shown_winners')
+      if (stored) shownRef.current = new Set(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (!winners || winners.length === 0) return
+    // Find first winner not yet shown
+    const unseen = winners.find(w => !shownRef.current.has(w.id))
+    if (unseen && !current) {
+      shownRef.current.add(unseen.id)
+      try { sessionStorage.setItem('shown_winners', JSON.stringify([...shownRef.current])) } catch {}
+      setCurrent(unseen)
+      setTimeout(() => setCurrent(null), 3000)
+    }
+  }, [winners, current])
+
+  return (
+    <AnimatePresence>
+      {current && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: -20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: -20 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          className="w-full rounded-2xl overflow-hidden mb-3"
+        >
+          <div className="relative bg-gradient-to-r from-yellow-600/30 via-amber-500/20 to-yellow-600/30 border border-yellow-500/40 rounded-2xl px-4 py-3 text-center">
+            <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1 }} className="absolute inset-0 bg-yellow-400/5 rounded-2xl" />
+            <p className="text-yellow-400 font-bold text-sm relative z-10">
+              🏆 {current.winnerName} {gameEmoji} oyununda {current.payout > 0 ? `${current.payout} ${current.currency}` : ''} kazandı!
+            </p>
+            <p className="text-yellow-300/60 text-xs relative z-10 mt-0.5">Skor: {current.score}</p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // Mini chat component
 function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; isOwner: boolean; chatEnabled: boolean; onToggle: (v: boolean) => void }) {
   const [open, setOpen] = useState(false)
@@ -222,9 +270,12 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [chatEnabled, setChatEnabled] = useState(true)
   const [showWinPopup, setShowWinPopup] = useState(false)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Recent winners ticker
   const [recentWinners, setRecentWinners] = useState<any[]>([])
+
+  // Force FREE for AI mode
+  useEffect(() => {
+    if (gameMode === 'ai') { setBetType('FREE'); setBetAmount(0) }
+  }, [gameMode])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -273,7 +324,6 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const handleGameEnd = (g: GameRoom) => {
     setPhase('result')
     if (pollRef.current) clearInterval(pollRef.current)
-    // Show win popup only once per game (use sessionStorage)
     const popupKey = `win_popup_${g.id}`
     if (typeof window !== 'undefined' && !sessionStorage.getItem(popupKey)) {
       sessionStorage.setItem(popupKey, '1')
@@ -288,10 +338,13 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
 
   const createGame = async (isAI: boolean) => {
     if (!session?.user) return
+    // AI games are always free
+    const finalBetType = isAI ? 'FREE' : betType
+    const finalBetAmount = isAI ? 0 : (finalBetType === 'FREE' ? 0 : betAmount)
     try {
       const r = await fetch('/api/games/room', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameType, isAI, betAmount: betType === 'FREE' ? 0 : betAmount, betCurrency: betType, turnTimer: isAI ? 0 : turnTimer }),
+        body: JSON.stringify({ gameType, isAI, betAmount: finalBetAmount, betCurrency: finalBetType, turnTimer: isAI ? 0 : turnTimer }),
       })
       const d = await r.json()
       if (!r.ok) { alert(d.error || 'Hata'); return }
@@ -334,7 +387,6 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   }
 
   const leaveGame = async () => {
-    // Leaving an active game = forfeit
     if (roomId && room && room.status === 'active' && !isSpectator && !room.isAI) {
       try {
         await fetch(`/api/games/room/${roomId}`, {
@@ -379,28 +431,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const isMyTurn = room ? ((room.player1Id === session?.user?.id && room.currentTurn === 1) || (room.player2Id === session?.user?.id && room.currentTurn === 2)) : false
   const playerNum = room ? (room.player1Id === session?.user?.id ? 1 : 2) : 1
 
-  // Recent winners ticker
-  const renderTicker = () => {
-    if (recentWinners.length === 0) return null
-    const items = recentWinners.map(w => `🏆 ${w.winnerName} ${w.payout} ${w.currency} kazandı (${w.score})`)
-    const text = items.join('   •   ')
-    return (
-      <div className="w-full overflow-hidden bg-gradient-to-r from-yellow-900/20 to-amber-900/20 border-y border-yellow-500/20 py-1.5 mb-3">
-        <div className="animate-marquee-fast whitespace-nowrap text-yellow-400 text-xs font-medium">
-          {text}   •   {text}
-        </div>
-        <style jsx>{`
-          @keyframes marquee-fast {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-marquee-fast {
-            animation: marquee-fast 15s linear infinite;
-          }
-        `}</style>
-      </div>
-    )
-  }
+  const GAME_NAMES: Record<string, string> = { xox: 'XOX', sayi_tahmin: 'Sayı Tahmin', zar: 'Zar', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti' }
 
   const renderMenu = () => (
     <div className="flex flex-col items-center gap-4 sm:gap-5 w-full max-w-lg mx-auto px-2">
@@ -409,7 +440,8 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         <p className="text-fuchsia-300/70 text-xs sm:text-sm mt-1">{gameDesc}</p>
       </div>
 
-      {renderTicker()}
+      {/* Winner banner instead of ticker */}
+      <WinnerBanner winners={recentWinners} gameEmoji={gameEmoji} />
 
       <div className="flex items-center gap-4 text-xs sm:text-sm">
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full"><div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" /><span className="text-yellow-300 font-medium">Oyunda {activePlayers} kişi</span></div>
@@ -417,28 +449,30 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       </div>
       {session?.user && <div className="flex gap-3 text-xs sm:text-sm"><div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full"><Coins className="w-4 h-4 text-amber-400" /><span className="text-amber-300 font-medium">{userBalance.credits} CFC</span></div><div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full"><Zap className="w-4 h-4 text-blue-400" /><span className="text-blue-300 font-medium">{userBalance.jetonBalance} Jeton</span></div></div>}
 
-      {/* Game settings */}
+      {/* Game Mode */}
       {supportsAI && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Modu</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setGameMode('ai')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === 'ai' ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Bot className="w-4 h-4" /> Yapay Zeka</button><button onClick={() => setGameMode('2player')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === '2player' ? 'border-pink-400 bg-pink-500/20 text-pink-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Users className="w-4 h-4" /> 2 Kişilik</button></div></div>}
 
+      {/* Timer - only for 2player */}
       {supportsTimer && gameMode === '2player' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block flex items-center gap-1.5"><Timer className="w-3.5 h-3.5" /> Süre Limiti</label><div className="grid grid-cols-4 gap-2">{[{v:0,l:'Yok'},{v:10,l:'10s'},{v:15,l:'15s'},{v:20,l:'20s'}].map(o => <button key={o.v} onClick={() => setTurnTimer(o.v)} className={`py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${turnTimer === o.v ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{o.l}</button>)}</div></div>}
 
-      {supportsBet && <><div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label><div className="grid grid-cols-3 gap-2">{(['FREE','CFC','JETON'] as const).map(t => <button key={t} onClick={() => setBetType(t)} className={`py-2 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${betType === t ? (t === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300' : t === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-blue-400 bg-blue-500/20 text-blue-300') : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{t === 'FREE' ? 'Ücretsiz' : t}</button>)}</div></div>{betType !== 'FREE' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Miktarı</label><div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(a => <button key={a} onClick={() => setBetAmount(a)} className={`py-1.5 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${betAmount === a ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70'}`}>{a}</button>)}</div></div>}</>}
+      {/* Bet - only for 2player mode */}
+      {supportsBet && gameMode === '2player' && <><div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label><div className="grid grid-cols-3 gap-2">{(['FREE','CFC','JETON'] as const).map(t => <button key={t} onClick={() => setBetType(t)} className={`py-2 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${betType === t ? (t === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300' : t === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-blue-400 bg-blue-500/20 text-blue-300') : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{t === 'FREE' ? 'Ücretsiz' : t}</button>)}</div></div>{betType !== 'FREE' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Miktarı</label><div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(a => <button key={a} onClick={() => setBetAmount(a)} className={`py-1.5 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${betAmount === a ? 'border-yellow-400 bg-yellow-500/20 text-yellow-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70'}`}>{a}</button>)}</div></div>}</>}
 
       {/* ACTION BUTTONS */}
       {!session?.user ? <p className="text-fuchsia-400/60 text-sm">Oynamak için giriş yapın</p> : <div className="w-full space-y-2">
         {gameMode === 'ai' ? (
-          <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat (AI)</button>
+          <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat (Ücretsiz)</button>
         ) : (
           <button onClick={() => createGame(false)} className="w-full py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> Oda Aç ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button>
         )}
       </div>}
 
-      {/* OPEN ROOMS LIST */}
-      {session?.user && gameMode === '2player' && (
+      {/* OPEN ROOMS / TABLES - shown for both modes */}
+      {session?.user && (
         <div className="w-full">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><Gamepad2 className="w-3.5 h-3.5" /> Açık Odalar</h3>
-            <button onClick={fetchLobby} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button>
+            <h3 className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><Gamepad2 className="w-3.5 h-3.5" /> Masalar / Açık Odalar</h3>
+            <button onClick={() => { fetchLobby(); fetchActive() }} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button>
           </div>
           {myWaiting ? (
             <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 text-center">
@@ -446,44 +480,41 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
               <p className="text-white font-medium">Rakip bekleniyor...</p>
               <button onClick={cancelWaiting} className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"><X className="w-4 h-4 inline mr-1" /> İptal Et</button>
             </div>
-          ) : waitingGames.length === 0 ? (
-            <p className="text-fuchsia-400/50 text-sm text-center py-3 bg-purple-900/20 rounded-xl border border-fuchsia-500/10">Bekleyen oda yok — ilk sen aç!</p>
           ) : (
-            <div className="space-y-2">
-              {waitingGames.map(g => (
-                <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-fuchsia-500/20 rounded-xl hover:border-fuchsia-400/40 transition">
-                  <div>
-                    <p className="text-white text-sm font-medium">{g.player1Name}</p>
-                    <p className="text-fuchsia-400/60 text-xs">
-                      {g.betCurrency === 'FREE' ? '🆓 Ücretsiz' : `💰 ${g.betAmount} ${g.betCurrency}`}
-                      {g.turnTimer > 0 && <span className="ml-1">⏱️ {g.turnTimer}s</span>}
-                    </p>
-                  </div>
-                  <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50 flex items-center gap-1.5">
-                    <LogIn className="w-3.5 h-3.5" /> Oyuna Gir
-                  </button>
+            <>
+              {waitingGames.length === 0 && activeGames.length === 0 ? (
+                <p className="text-fuchsia-400/50 text-sm text-center py-3 bg-purple-900/20 rounded-xl border border-fuchsia-500/10">Henüz açık masa yok — ilk sen aç!</p>
+              ) : (
+                <div className="space-y-2">
+                  {/* Waiting rooms */}
+                  {waitingGames.map(g => (
+                    <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-green-500/20 rounded-xl hover:border-green-400/40 transition">
+                      <div>
+                        <p className="text-white text-sm font-medium">{g.player1Name}</p>
+                        <p className="text-fuchsia-400/60 text-xs">
+                          {g.betCurrency === 'FREE' ? '🆓 Ücretsiz' : `💰 ${g.betAmount} ${g.betCurrency}`}
+                          {g.turnTimer > 0 && <span className="ml-1">⏱️ {g.turnTimer}s</span>}
+                        </p>
+                      </div>
+                      <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50 flex items-center gap-1.5">
+                        <LogIn className="w-3.5 h-3.5" /> Oyna
+                      </button>
+                    </div>
+                  ))}
+                  {/* Active games */}
+                  {activeGames.slice(0, 5).map((g: any) => (
+                    <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-cyan-500/20 rounded-xl">
+                      <div>
+                        <p className="text-white text-sm font-medium">{g.player1Name} vs {g.player2Name}</p>
+                        <p className="text-fuchsia-400/60 text-xs">{g.player1Score}-{g.player2Score}{g.betAmount > 0 && ` • ${g.betAmount} ${g.betCurrency}`}</p>
+                      </div>
+                      <button onClick={() => spectateGame(g.id)} className="px-3 py-1.5 bg-cyan-600/20 border border-cyan-500/40 text-cyan-300 rounded-lg text-xs font-medium hover:bg-cyan-600/30 transition flex items-center gap-1"><Eye className="w-3 h-3" /> İzle</button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
-        </div>
-      )}
-
-      {/* ACTIVE GAMES TO WATCH */}
-      {activeGames.length > 0 && (
-        <div className="w-full">
-          <h3 className="text-cyan-300 font-medium text-sm flex items-center gap-1.5 mb-2"><Eye className="w-3.5 h-3.5" /> Aktif Oyunlar</h3>
-          <div className="space-y-2">
-            {activeGames.slice(0, 5).map((g: any) => (
-              <div key={g.id} className="flex items-center justify-between p-3 bg-purple-900/30 border border-cyan-500/20 rounded-xl">
-                <div>
-                  <p className="text-white text-sm font-medium">{g.player1Name} vs {g.player2Name}</p>
-                  <p className="text-fuchsia-400/60 text-xs">{g.player1Score}-{g.player2Score}{g.betAmount > 0 && ` • ${g.betAmount} ${g.betCurrency}`}</p>
-                </div>
-                <button onClick={() => spectateGame(g.id)} className="px-3 py-1.5 bg-cyan-600/20 border border-cyan-500/40 text-cyan-300 rounded-lg text-xs font-medium hover:bg-cyan-600/30 transition">İzle</button>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -560,7 +591,6 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           </motion.div>
         </AnimatePresence>
       </div>
-      {/* Win Popup Overlay */}
       {showWinPopup && room && (
         <WinPopup room={room} userId={session?.user?.id} onDone={() => setShowWinPopup(false)} />
       )}
