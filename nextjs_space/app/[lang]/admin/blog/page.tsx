@@ -90,6 +90,11 @@ export default function AdminBlogPage() {
   const [newCatNameTr, setNewCatNameTr] = useState('')
   const [newCatNameEn, setNewCatNameEn] = useState('')
   const [filterCategory, setFilterCategory] = useState('all')
+  const [filterPublish, setFilterPublish] = useState<'all' | 'published' | 'draft'>('all')
+  const [bulkPublishing, setBulkPublishing] = useState(false)
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
+  const [inlineContent, setInlineContent] = useState('')
+  const [inlineSaving, setInlineSaving] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: number; errors: string[]; newCategories: string[] } | null>(null)
   const [form, setForm] = useState<FormState>({ ...emptyForm })
@@ -408,7 +413,56 @@ export default function AdminBlogPage() {
     setBulkMoving(false)
   }
 
-  const filteredPosts = filterCategory === 'all' ? posts : posts.filter(p => p.category === filterCategory)
+  // Bulk publish/unpublish
+  const handleBulkPublish = async (publish: boolean) => {
+    if (selectedIds.length === 0) return
+    setBulkPublishing(true)
+    try {
+      const res = await fetch('/api/admin/blog/bulk-publish', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postIds: selectedIds, isPublished: publish }),
+      })
+      if (res.ok) {
+        setSelectedIds([])
+        await fetchData()
+      }
+    } catch (e) { console.error(e) }
+    setBulkPublishing(false)
+  }
+
+  // Inline content save
+  const handleInlineSave = async (postId: string) => {
+    setInlineSaving(true)
+    try {
+      const res = await fetch(`/api/admin/blog/${postId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentTr: inlineContent }),
+      })
+      if (res.ok) {
+        await fetchData()
+        setExpandedPostId(null)
+      }
+    } catch (e) { console.error(e) }
+    setInlineSaving(false)
+  }
+
+  const toggleExpandPost = (post: BlogPost) => {
+    if (expandedPostId === post.id) {
+      setExpandedPostId(null)
+    } else {
+      setExpandedPostId(post.id)
+      setInlineContent(post.contentTr || '')
+    }
+  }
+
+  const filteredPosts = posts.filter(p => {
+    if (filterCategory !== 'all' && p.category !== filterCategory) return false
+    if (filterPublish === 'published' && !p.isPublished) return false
+    if (filterPublish === 'draft' && p.isPublished) return false
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/30 to-gray-950 p-4 md:p-6">
@@ -833,27 +887,59 @@ export default function AdminBlogPage() {
           </div>
         )}
 
-        {/* Filter by Category */}
+        {/* Filters */}
         {!showForm && posts.length > 0 && (
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="text-xs text-gray-500">Filtre:</span>
-            <button onClick={() => setFilterCategory('all')} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Tümü ({posts.length})</button>
-            {categories.map(cat => {
-              const count = posts.filter(p => p.category === cat.slug).length
-              if (count === 0) return null
-              return (
-                <button key={cat.slug} onClick={() => setFilterCategory(cat.slug)} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === cat.slug ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-                  {cat.nameTr} ({count})
-                </button>
-              )
-            })}
+          <div className="space-y-3 mb-4">
+            {/* Publish Status Filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">Durum:</span>
+              <button onClick={() => setFilterPublish('all')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                Tümü ({posts.length})
+              </button>
+              <button onClick={() => setFilterPublish('published')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'published' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> Yayında ({posts.filter(p => p.isPublished).length})</span>
+              </button>
+              <button onClick={() => setFilterPublish('draft')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'draft' ? 'bg-yellow-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                <span className="flex items-center gap-1"><EyeOff className="w-3 h-3" /> Taslak ({posts.filter(p => !p.isPublished).length})</span>
+              </button>
+            </div>
+            {/* Category Filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">Kategori:</span>
+              <button onClick={() => setFilterCategory('all')} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>Tümü</button>
+              {categories.map(cat => {
+                const count = posts.filter(p => p.category === cat.slug).length
+                if (count === 0) return null
+                return (
+                  <button key={cat.slug} onClick={() => setFilterCategory(cat.slug)} className={`px-3 py-1 rounded-full text-xs transition ${filterCategory === cat.slug ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                    {cat.nameTr} ({count})
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
         {/* Bulk Action Bar */}
         {selectedIds.length > 0 && (
           <div className="mb-4 p-3 rounded-xl bg-purple-900/40 border border-purple-500/30 flex flex-wrap items-center gap-3">
-            <span className="text-sm text-purple-200">{selectedIds.length} yazı seçildi</span>
+            <span className="text-sm text-purple-200 font-medium">{selectedIds.length} yazı seçildi</span>
+            <div className="h-5 w-px bg-white/20" />
+            <button
+              onClick={() => handleBulkPublish(true)}
+              disabled={bulkPublishing}
+              className="px-4 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5" /> {bulkPublishing ? 'İşleniyor...' : 'Tümünü Yayınla'}
+            </button>
+            <button
+              onClick={() => handleBulkPublish(false)}
+              disabled={bulkPublishing}
+              className="px-4 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <EyeOff className="w-3.5 h-3.5" /> {bulkPublishing ? 'İşleniyor...' : 'Tümünü Kaldır'}
+            </button>
+            <div className="h-5 w-px bg-white/20" />
             <select
               value={bulkCategoryTarget}
               onChange={e => setBulkCategoryTarget(e.target.value)}
@@ -899,55 +985,90 @@ export default function AdminBlogPage() {
               <span className="text-xs text-gray-400">Tümünü Seç</span>
             </div>
             {filteredPosts.map(post => (
-              <div key={post.id} className={`p-4 rounded-xl border flex items-center gap-3 ${selectedIds.includes(post.id) ? 'bg-purple-900/20 border-purple-500/40' : 'bg-white/5 border-white/10'}`}>
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(post.id)}
-                  onChange={() => toggleSelectPost(post.id)}
-                  className="w-4 h-4 rounded accent-purple-500 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${post.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>
-                      {post.isPublished ? 'Yayında' : 'Taslak'}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300">{getCategoryLabel(post.category)}</span>
-                    {post.isFeatured && <Star className="w-3.5 h-3.5 text-yellow-400" />}
-                    {post.isTrending && <TrendingUp className="w-3.5 h-3.5 text-orange-400" />}
-                    {post.isEditorPick && <Award className="w-3.5 h-3.5 text-blue-400" />}
-                    {post.isAiGenerated && <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
-                    {post.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
-                    {post.readTime > 0 && (
-                      <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
-                        <Clock className="w-3 h-3" /> {post.readTime} dk
+              <div key={post.id} className={`rounded-xl border transition-all ${selectedIds.includes(post.id) ? 'bg-purple-900/20 border-purple-500/40' : 'bg-white/5 border-white/10'}`}>
+                <div className="p-4 flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(post.id)}
+                    onChange={() => toggleSelectPost(post.id)}
+                    className="w-4 h-4 rounded accent-purple-500 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${post.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'}`}>
+                        {post.isPublished ? 'Yayında' : 'Taslak'}
                       </span>
-                    )}
-                    {post.views > 0 && (
-                      <span className="text-[10px] text-gray-500">{post.views} görüntülenme</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300">{getCategoryLabel(post.category)}</span>
+                      {post.isFeatured && <Star className="w-3.5 h-3.5 text-yellow-400" />}
+                      {post.isTrending && <TrendingUp className="w-3.5 h-3.5 text-orange-400" />}
+                      {post.isEditorPick && <Award className="w-3.5 h-3.5 text-blue-400" />}
+                      {post.isAiGenerated && <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+                      {post.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
+                      {post.readTime > 0 && (
+                        <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
+                          <Clock className="w-3 h-3" /> {post.readTime} dk
+                        </span>
+                      )}
+                      {post.views > 0 && (
+                        <span className="text-[10px] text-gray-500">{post.views} görüntülenme</span>
+                      )}
+                    </div>
+                    <h3 className="text-white font-medium truncate">{post.titleTr}</h3>
+                    <p className="text-xs text-gray-500 truncate">{post.descTr}</p>
+                    {post.keywords && post.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {post.keywords.slice(0, 4).map((kw, i) => (
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">{kw}</span>
+                        ))}
+                        {post.keywords.length > 4 && <span className="text-[10px] text-gray-600">+{post.keywords.length - 4}</span>}
+                      </div>
                     )}
                   </div>
-                  <h3 className="text-white font-medium truncate">{post.titleTr}</h3>
-                  <p className="text-xs text-gray-500 truncate">{post.descTr}</p>
-                  {post.keywords && post.keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {post.keywords.slice(0, 4).map((kw, i) => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">{kw}</span>
-                      ))}
-                      {post.keywords.length > 4 && <span className="text-[10px] text-gray-600">+{post.keywords.length - 4}</span>}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => toggleExpandPost(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title="İçeriği Oku/Düzenle">
+                      <BookOpen className={`w-4 h-4 ${expandedPostId === post.id ? 'text-purple-400' : 'text-gray-400'}`} />
+                    </button>
+                    <button onClick={() => togglePublish(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title={post.isPublished ? 'Yayından Kaldır' : 'Yayınla'}>
+                      {post.isPublished ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-green-400" />}
+                    </button>
+                    <button onClick={() => openEdit(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Tam Düzenle">
+                      <Edit className="w-4 h-4 text-blue-400" />
+                    </button>
+                    <button onClick={() => handleDelete(post.id)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sil">
+                      <Trash2 className="w-4 h-4 text-red-400" />
+                    </button>
+                  </div>
+                </div>
+                {/* Inline Content Editor */}
+                {expandedPostId === post.id && (
+                  <div className="px-4 pb-4 border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400">İçerik (TR) — HTML düzenleyebilirsiniz</span>
+                      <span className="text-xs text-gray-500">{inlineContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime</span>
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => togglePublish(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" title={post.isPublished ? 'Yayından Kaldır' : 'Yayınla'}>
-                    {post.isPublished ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-green-400" />}
-                  </button>
-                  <button onClick={() => openEdit(post)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
-                    <Edit className="w-4 h-4 text-blue-400" />
-                  </button>
-                  <button onClick={() => handleDelete(post.id)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
-                </div>
+                    <textarea
+                      value={inlineContent}
+                      onChange={e => setInlineContent(e.target.value)}
+                      rows={12}
+                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm font-mono resize-y mb-3"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleInlineSave(post.id)}
+                        disabled={inlineSaving}
+                        className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <Save className="w-3.5 h-3.5" /> {inlineSaving ? 'Kaydediliyor...' : 'İçeriği Kaydet'}
+                      </button>
+                      <button
+                        onClick={() => setExpandedPostId(null)}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition"
+                      >
+                        Kapat
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

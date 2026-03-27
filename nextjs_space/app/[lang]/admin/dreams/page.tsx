@@ -4,7 +4,7 @@ import AdminBackButton from '@/components/admin-back-button'
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload, FolderPlus } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Search, BarChart3, Upload, FolderPlus, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { DREAM_CATEGORIES } from '@/lib/dream-categories'
@@ -62,6 +62,11 @@ export default function AdminDreamsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bulkCategoryTarget, setBulkCategoryTarget] = useState('')
   const [bulkMoving, setBulkMoving] = useState(false)
+  const [bulkPublishing, setBulkPublishing] = useState(false)
+  const [filterPublish, setFilterPublish] = useState<'all' | 'published' | 'draft'>('all')
+  const [expandedDreamId, setExpandedDreamId] = useState<string | null>(null)
+  const [inlineContent, setInlineContent] = useState('')
+  const [inlineSaving, setInlineSaving] = useState(false)
   const [formCategory, setFormCategory] = useState('genel')
 
   // Form fields
@@ -242,6 +247,56 @@ export default function AdminDreamsPage() {
     setBulkMoving(false)
   }
   const getCatLabel = (val: string) => DREAM_CATEGORIES.find(c => c.value === val)?.label || val
+
+  // Bulk publish/unpublish
+  const handleBulkPublish = async (publish: boolean) => {
+    if (selectedIds.length === 0) return
+    setBulkPublishing(true)
+    try {
+      const res = await fetch('/api/admin/dreams/bulk-publish', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dreamIds: selectedIds, isPublished: publish }),
+      })
+      if (res.ok) {
+        setSelectedIds([])
+        fetchDreams(currentPage, searchQuery)
+      }
+    } catch (e) { console.error(e) }
+    setBulkPublishing(false)
+  }
+
+  // Inline content save
+  const handleInlineSave = async (dreamId: string) => {
+    setInlineSaving(true)
+    try {
+      const res = await fetch('/api/admin/dreams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: dreamId, content: inlineContent }),
+      })
+      if (res.ok) {
+        fetchDreams(currentPage, searchQuery)
+        setExpandedDreamId(null)
+      }
+    } catch (e) { console.error(e) }
+    setInlineSaving(false)
+  }
+
+  const toggleExpandDream = (dream: Dream) => {
+    if (expandedDreamId === dream.id) {
+      setExpandedDreamId(null)
+    } else {
+      setExpandedDreamId(dream.id)
+      setInlineContent(dream.content || '')
+    }
+  }
+
+  const filteredDreams = dreams.filter(d => {
+    if (filterPublish === 'published' && !d.isPublished) return false
+    if (filterPublish === 'draft' && d.isPublished) return false
+    return true
+  })
 
   const isEditorOpen = isNew || editing !== null
 
@@ -430,10 +485,42 @@ export default function AdminDreamsPage() {
           </div>
         )}
 
+        {/* Publish Status Filter */}
+        {dreams.length > 0 && !isEditorOpen && (
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-xs text-gray-500">Durum:</span>
+            <button onClick={() => setFilterPublish('all')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'all' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              Tümü ({dreams.length})
+            </button>
+            <button onClick={() => setFilterPublish('published')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'published' ? 'bg-green-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> Yayında ({dreams.filter(d => d.isPublished).length})</span>
+            </button>
+            <button onClick={() => setFilterPublish('draft')} className={`px-3 py-1 rounded-full text-xs transition ${filterPublish === 'draft' ? 'bg-yellow-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              <span className="flex items-center gap-1"><EyeOff className="w-3 h-3" /> Taslak ({dreams.filter(d => !d.isPublished).length})</span>
+            </button>
+          </div>
+        )}
+
         {/* Bulk Action Bar */}
         {selectedIds.length > 0 && (
           <div className="mb-4 p-3 rounded-xl bg-indigo-900/40 border border-indigo-500/30 flex flex-wrap items-center gap-3">
-            <span className="text-sm text-indigo-200">{selectedIds.length} rüya seçildi</span>
+            <span className="text-sm text-indigo-200 font-medium">{selectedIds.length} rüya seçildi</span>
+            <div className="h-5 w-px bg-white/20" />
+            <button
+              onClick={() => handleBulkPublish(true)}
+              disabled={bulkPublishing}
+              className="px-4 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5" /> {bulkPublishing ? 'İşleniyor...' : 'Tümünü Yayınla'}
+            </button>
+            <button
+              onClick={() => handleBulkPublish(false)}
+              disabled={bulkPublishing}
+              className="px-4 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <EyeOff className="w-3.5 h-3.5" /> {bulkPublishing ? 'İşleniyor...' : 'Tümünü Kaldır'}
+            </button>
+            <div className="h-5 w-px bg-white/20" />
             <select
               value={bulkCategoryTarget}
               onChange={e => setBulkCategoryTarget(e.target.value)}
@@ -471,63 +558,105 @@ export default function AdminDreamsPage() {
             <div className="flex items-center gap-2 px-3 py-2">
               <input
                 type="checkbox"
-                checked={selectedIds.length === dreams.length && dreams.length > 0}
-                onChange={toggleSelectAllDreams}
+                checked={selectedIds.length === filteredDreams.length && filteredDreams.length > 0}
+                onChange={() => {
+                  if (selectedIds.length === filteredDreams.length) setSelectedIds([])
+                  else setSelectedIds(filteredDreams.map(d => d.id))
+                }}
                 className="w-4 h-4 rounded accent-indigo-500"
               />
-              <span className="text-xs text-gray-400">Tümünü Seç</span>
+              <span className="text-xs text-gray-400">Tümünü Seç ({filteredDreams.length})</span>
             </div>
-            {dreams.map((dream) => (
+            {filteredDreams.map((dream) => (
               <div
                 key={dream.id}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedIds.includes(dream.id) ? 'bg-indigo-900/20 border-indigo-500/40' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'}`}
+                className={`rounded-xl border transition-all ${selectedIds.includes(dream.id) ? 'bg-indigo-900/20 border-indigo-500/40' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'}`}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(dream.id)}
-                  onChange={() => toggleSelectDream(dream.id)}
-                  className="w-4 h-4 rounded accent-indigo-500 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-white text-sm font-medium truncate">{dream.title}</h3>
-                    <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 text-[10px] flex-shrink-0">{getCatLabel(dream.category || 'genel')}</span>
-                    {dream.isAiGenerated && (
-                      <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] flex-shrink-0">AI</span>
-                    )}
-                    {!dream.isPublished && (
-                      <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-[10px] flex-shrink-0">Taslak</span>
-                    )}
+                <div className="flex items-center gap-3 p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(dream.id)}
+                    onChange={() => toggleSelectDream(dream.id)}
+                    className="w-4 h-4 rounded accent-indigo-500 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white text-sm font-medium truncate">{dream.title}</h3>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] flex-shrink-0 ${dream.isPublished ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                        {dream.isPublished ? 'Yayında' : 'Taslak'}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 text-[10px] flex-shrink-0">{getCatLabel(dream.category || 'genel')}</span>
+                      {dream.isAiGenerated && (
+                        <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] flex-shrink-0">AI</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-1">
+                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {dream.views}</span>
+                      <span>/{dream.slug}</span>
+                      <span>{new Date(dream.createdAt).toLocaleDateString('tr-TR')}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-1">
-                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {dream.views}</span>
-                    <span>/{dream.slug}</span>
-                    <span>{new Date(dream.createdAt).toLocaleDateString('tr-TR')}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleExpandDream(dream)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+                      title="İçeriği Oku/Düzenle"
+                    >
+                      <BookOpen className={`w-4 h-4 ${expandedDreamId === dream.id ? 'text-indigo-400' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleTogglePublish(dream)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+                      title={dream.isPublished ? 'Gizle' : 'Yayınla'}
+                    >
+                      {dream.isPublished ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-green-400" />}
+                    </button>
+                    <button
+                      onClick={() => openEditor(dream)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+                      title="Tam Düzenle"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(dream.id)}
+                      className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Sil"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleTogglePublish(dream)}
-                    className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
-                    title={dream.isPublished ? 'Gizle' : 'Yayınla'}
-                  >
-                    {dream.isPublished ? <Eye className="w-4 h-4 text-green-400" /> : <EyeOff className="w-4 h-4 text-yellow-400" />}
-                  </button>
-                  <button
-                    onClick={() => openEditor(dream)}
-                    className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
-                    title="Düzenle"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(dream.id)}
-                    className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                    title="Sil"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Inline Content Editor */}
+                {expandedDreamId === dream.id && (
+                  <div className="px-3 pb-3 border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400">İçerik (HTML) — düzenleyebilirsiniz</span>
+                      <span className="text-xs text-gray-500">{inlineContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime</span>
+                    </div>
+                    <textarea
+                      value={inlineContent}
+                      onChange={e => setInlineContent(e.target.value)}
+                      rows={12}
+                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm font-mono resize-y mb-3"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleInlineSave(dream.id)}
+                        disabled={inlineSaving}
+                        className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <Save className="w-3.5 h-3.5" /> {inlineSaving ? 'Kaydediliyor...' : 'İçeriği Kaydet'}
+                      </button>
+                      <button
+                        onClick={() => setExpandedDreamId(null)}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition"
+                      >
+                        Kapat
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
