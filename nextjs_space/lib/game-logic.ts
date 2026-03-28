@@ -1408,6 +1408,7 @@ export function getInitialState(gameType: string) {
     case 'pisti': return pistiInit()
     case 'okey': return okeyInit()
     case 'okey101': return okey101Init()
+    case 'yuzbirokey': return okey101Init()
     default: return {}
   }
 }

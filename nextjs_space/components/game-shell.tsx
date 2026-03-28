@@ -431,7 +431,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const isMyTurn = room ? ((room.player1Id === session?.user?.id && room.currentTurn === 1) || (room.player2Id === session?.user?.id && room.currentTurn === 2)) : false
   const playerNum = room ? (room.player1Id === session?.user?.id ? 1 : 2) : 1
 
-  const GAME_NAMES: Record<string, string> = { xox: 'XOX', sayi_tahmin: 'Sayı Tahmin', zar: 'Zar', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti', okey: 'Okey', okey101: '101 Okey' }
+  const GAME_NAMES: Record<string, string> = { xox: 'XOX', sayi_tahmin: 'Sayı Tahmin', zar: 'Zar', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti', okey: 'Okey', okey101: '101 Okey', yuzbirokey: 'Yüz Bir Okey' }
 
   const renderMenu = () => (
     <div className="flex flex-col items-center gap-4 sm:gap-5 w-full max-w-lg mx-auto px-2">

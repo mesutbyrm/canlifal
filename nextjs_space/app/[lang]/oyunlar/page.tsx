@@ -95,6 +95,7 @@ const ALL_MP_GAMES = [
   { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', apiType: 'room' },
   { slug: 'okey', emoji: '🀄', name: 'Okey', desc: 'Klasik 4 kişilik Türk Okey oyunu', apiType: 'room' },
   { slug: 'okey101', emoji: '💯', name: '101 Okey', desc: 'Çok rauntlu 101 Okey! 101\'e ilk ulaşan kaybeder', apiType: 'room' },
+  { slug: 'yuzbirokey', emoji: '🎯', name: 'Yüz Bir Okey', desc: 'Modern arayüzlü 101 Okey deneyimi', apiType: 'room' },
 ]
 
 interface ActiveRoom {

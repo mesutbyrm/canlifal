@@ -113,7 +113,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     }
 
     // For AI games or okey/okey101 (which manage state client-side), accept full state update
-    const clientStateGames = ['okey', 'okey101']
+    const clientStateGames = ['okey', 'okey101', 'yuzbirokey']
     if ((room.isAI || clientStateGames.includes(room.gameType)) && body.fullState) {
       const { state, player1Score, player2Score, currentTurn, status: newStatus, winnerId } = body.fullState
       const updateData: any = {
