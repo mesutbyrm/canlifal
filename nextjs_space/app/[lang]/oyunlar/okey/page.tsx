@@ -286,14 +286,17 @@ export default function OkeyPage() {
   return (
     <GameShell gameType="okey" gameName="Okey" gameEmoji="🀄" gameDesc="Klasik Türk Okey oyunu! 4 kişilik, 106 taş, strateji ve şans." supportsAI={true}>
       {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
-        <OkeyBoard room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} />
+        <OkeyBoard room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
       )}
     </GameShell>
   )
 }
 
 /* ══════════════ OKEY BOARD ══════════════ */
-function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled }: any) {
+function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, playerNum }: any) {
+  // In AI mode, human is always seat 0. In 2-player mode: player1=seat0, player2=seat1
+  const mySeat: number = room?.isAI ? 0 : (playerNum === 2 ? 1 : 0)
+
   const [selectedTile, setSelectedTile] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [difficulty, setDifficulty] = useState<string>('medium')
@@ -316,8 +319,14 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
   const gameOver: boolean = state?.gameOver ?? false
   const stateDiff: string = state?.difficulty || 'medium'
 
+  // Helper: map seat to server turn (seat0=turn1, seat1=turn2, etc)
+  const seatToTurn = (seat: number) => seat === 0 ? 1 : 2
+  const isMyCurrentTurn = currentSeat === mySeat
+  // Opponent seats (relative to mySeat)
+  const opponentSeats = [0, 1, 2, 3].filter(s => s !== mySeat)
+
   // Sync local hand with server hand while preserving user's custom order
-  const serverHand = hands[0] || []
+  const serverHand = hands[mySeat] || []
   useEffect(() => {
     const serverIds = serverHand.map(t => t.id).sort().join(',')
     if (serverIds === prevHandIdsRef.current && localHand.length > 0) return // no change
@@ -359,7 +368,7 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
   useEffect(() => {
     if (state && !diffSet && room?.status === 'active' && !state.difficulty) {
       const ns = { ...state, difficulty }
-      sendAIState({ state: ns, currentTurn: ns.currentSeat === 0 ? 1 : 2, status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+      sendAIState({ state: ns, currentTurn: seatToTurn(ns.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
       setDiffSet(true)
     }
   }, [state, room])
@@ -368,7 +377,7 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
     if ((winner !== null || gameOver) && !statsUpdatedRef.current && !isSpectator) {
       statsUpdatedRef.current = true
       const s = getOkeyStats(); s.gamesPlayed++
-      if (winner === 0) { s.wins++; s.streak++; if (s.streak > s.bestStreak) s.bestStreak = s.streak } else { s.losses++; s.streak = 0 }
+      if (winner === mySeat) { s.wins++; s.streak++; if (s.streak > s.bestStreak) s.bestStreak = s.streak } else { s.losses++; s.streak = 0 }
       saveOkeyStats(s)
     }
   }, [winner, gameOver])
@@ -378,19 +387,19 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
   useEffect(() => {
     if (currentSeat !== lastSeatRef.current) {
       setSelectedTile(null); lastSeatRef.current = currentSeat
-      if (currentSeat === 0 && !isSpectator && room.status === 'active' && !winner) showMsg('Sıra sende!')
+      if (isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner) showMsg('Sıra sende!')
     }
   }, [currentSeat])
 
   // AI logic
   useEffect(() => {
     if (!room.isAI || room.status !== 'active' || winner || gameOver) return
-    if (currentSeat === 0) return
+    if (currentSeat === mySeat) return // my turn, don't run AI
     if (aiRef.current) clearTimeout(aiRef.current)
     aiRef.current = setTimeout(async () => {
       let cs = JSON.parse(JSON.stringify(state))
       let seat = cs.currentSeat; let moves = 0
-      while (seat !== 0 && moves < 12 && !cs.gameOver && !cs.winner) {
+      while (seat !== mySeat && moves < 12 && !cs.gameOver && !cs.winner) {
         const move = okeyAIMove(cs)
         if (!move) break
         if (move.action === 'draw') { const r = okeyDraw(cs, seat, move.source); if (r.error) break; cs = r.state }
@@ -398,42 +407,46 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
         seat = cs.currentSeat; moves++
         await new Promise(r => setTimeout(r, 300))
       }
-      for (let s = 1; s <= 3; s++) {
+      for (const s of opponentSeats) {
         if (cs.hands[s] && cs.hands[s].length === winTileCount && okeyCheckWin(cs.hands[s], cs.jokerColor, cs.jokerNumber)) {
           cs.winner = s; cs.gameOver = true; break
         }
       }
-      await sendAIState({ state: cs, player1Score: cs.winner === 0 ? 1 : 0, player2Score: cs.winner && cs.winner > 0 ? 1 : 0, currentTurn: cs.currentSeat === 0 ? 1 : 2, status: cs.gameOver ? 'completed' : 'active', winnerId: cs.winner === 0 ? room.player1Id : cs.winner ? room.player2Id : null })
+      const myWin = cs.winner === mySeat
+      await sendAIState({ state: cs, player1Score: myWin ? 1 : 0, player2Score: cs.winner != null && !myWin ? 1 : 0, currentTurn: seatToTurn(cs.currentSeat), status: cs.gameOver ? 'completed' : 'active', winnerId: myWin ? room.player1Id : cs.winner != null ? room.player2Id : null })
     }, 800)
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
   }, [room, state, currentSeat])
 
   const handleDraw = async (source: 'pile' | 'discard') => {
-    if (currentSeat !== 0 || phase !== 'draw' || isSpectator || room.status !== 'active') return
-    const result = okeyDraw(state, 0, source)
+    if (!isMyCurrentTurn || phase !== 'draw' || isSpectator || room.status !== 'active') return
+    const result = okeyDraw(state, mySeat, source)
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
     // Don't reset localHand - the useEffect sync will handle adding new tile while preserving order
-    await sendAIState({ state: result.state, currentTurn: 1, status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+    await sendAIState({ state: result.state, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
   }
 
   const handleDiscard = async (tileId: number) => {
-    if (currentSeat !== 0 || phase !== 'discard' || isSpectator || room.status !== 'active') return
-    const result = okeyDiscard(state, 0, tileId)
+    if (!isMyCurrentTurn || phase !== 'discard' || isSpectator || room.status !== 'active') return
+    const result = okeyDiscard(state, mySeat, tileId)
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
-    const newHand = result.state.hands[0]
+    const newHand = result.state.hands[mySeat]
     let isWin = false
     if (newHand.length === winTileCount && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
-      result.state.winner = 0; result.state.gameOver = true; isWin = true
+      result.state.winner = mySeat; result.state.gameOver = true; isWin = true
       if (soundEnabled) playWinSound()
     }
-    await sendAIState({ state: result.state, currentTurn: result.state.currentSeat === 0 ? 1 : 2, status: isWin || result.state.gameOver ? 'completed' : 'active', player1Score: isWin ? 1 : room.player1Score, player2Score: room.player2Score, winnerId: isWin ? room.player1Id : null })
+    const myP = playerNum === 1 ? 'player1Score' : 'player2Score'
+    const opP = playerNum === 1 ? 'player2Score' : 'player1Score'
+    const myId = playerNum === 1 ? room.player1Id : room.player2Id
+    await sendAIState({ state: result.state, currentTurn: seatToTurn(result.state.currentSeat), status: isWin || result.state.gameOver ? 'completed' : 'active', [myP]: isWin ? (room[myP] || 0) + 1 : room[myP], [opP]: room[opP], winnerId: isWin ? myId : null })
     setSelectedTile(null)
   }
 
   const handleTileClick = (tileId: number) => {
-    if (currentSeat !== 0 || isSpectator || room.status !== 'active') return
+    if (!isMyCurrentTurn || isSpectator || room.status !== 'active') return
     if (phase === 'discard') {
       if (selectedTile === tileId) handleDiscard(tileId)
       else setSelectedTile(tileId)
@@ -445,8 +458,8 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
   const getTopDiscard = (seat: number): OkeyTile | null => {
     const d = discards[seat]; return d && d.length > 0 ? d[d.length - 1] : null
   }
-  const prevSeatDiscard = getTopDiscard(3)
-  const showDiffSelector = room?.status === 'active' && !diffSet && currentSeat === 0 && pile.length > 90
+  const prevSeatDiscard = getTopDiscard((mySeat + 3) % 4) // seat before me
+  const showDiffSelector = room?.isAI && room?.status === 'active' && !diffSet && isMyCurrentTurn && pile.length > 90
 
   // Render fullscreen game overlay via portal to cover navbar completely
   const gameUI = (
@@ -464,13 +477,13 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
           <div className="ml-2 text-[10px] text-fuchsia-400/50">Kalan: {pile.length}</div>
         </div>
         <div className="px-3 py-1 rounded-full text-xs font-bold" style={{
-          background: currentSeat === 0 ? 'rgba(34,211,238,0.15)' : 'rgba(168,85,247,0.1)',
-          color: currentSeat === 0 ? '#22d3ee' : '#c084fc',
-          border: `1px solid ${currentSeat === 0 ? 'rgba(34,211,238,0.3)' : 'rgba(168,85,247,0.2)'}`,
+          background: isMyCurrentTurn ? 'rgba(34,211,238,0.15)' : 'rgba(168,85,247,0.1)',
+          color: isMyCurrentTurn ? '#22d3ee' : '#c084fc',
+          border: `1px solid ${isMyCurrentTurn ? 'rgba(34,211,238,0.3)' : 'rgba(168,85,247,0.2)'}`,
         }}>
-          {winner !== null ? <span style={{ color: '#facc15' }}>🏆 {SEAT_NAMES[winner]} kazandı!</span>
+          {winner !== null ? <span style={{ color: '#facc15' }}>🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
             : gameOver ? <span style={{ color: '#fbbf24' }}>Oyun bitti - Berabere</span>
-            : <span>{SEAT_NAMES[currentSeat]}{currentSeat === 0 ? ` - ${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : ' düşünüyor...'}</span>}
+            : <span>{isMyCurrentTurn ? `Sen - ${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
         </div>
         <StatsBar />
       </div>
@@ -484,7 +497,7 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
             {(['easy', 'medium', 'hard'] as const).map(d => (
               <button key={d} onClick={() => { setDifficulty(d); setDiffSet(true);
                 const ns = { ...state, difficulty: d }
-                sendAIState({ state: ns, currentTurn: 1, status: 'active', player1Score: 0, player2Score: 0, winnerId: null })
+                sendAIState({ state: ns, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: 0, player2Score: 0, winnerId: null })
               }} className="px-3 py-1 rounded-lg border transition-all text-xs font-bold" style={{
                 borderColor: difficulty === d ? '#22d3ee' : 'rgba(139,92,246,0.3)',
                 background: difficulty === d ? 'rgba(34,211,238,0.15)' : 'rgba(139,92,246,0.1)',
@@ -500,21 +513,21 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
         <div className="relative w-full max-w-3xl flex-1 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {/* Opponents */}
           <div className="flex items-start justify-around px-4 py-2">
-            <OpponentAvatar seat={3} tileCount={hands[3]?.length || 0} isCurrent={currentSeat === 3} topDiscard={getTopDiscard(3)} isJokerFn={isJokerTile} />
-            <OpponentAvatar seat={2} tileCount={hands[2]?.length || 0} isCurrent={currentSeat === 2} topDiscard={getTopDiscard(2)} isJokerFn={isJokerTile} />
-            <OpponentAvatar seat={1} tileCount={hands[1]?.length || 0} isCurrent={currentSeat === 1} topDiscard={getTopDiscard(1)} isJokerFn={isJokerTile} />
+            {opponentSeats.map(s => (
+              <OpponentAvatar key={s} seat={s} tileCount={hands[s]?.length || 0} isCurrent={currentSeat === s} topDiscard={getTopDiscard(s)} isJokerFn={isJokerTile} />
+            ))}
           </div>
 
           {/* Center draw area */}
           <div className="flex items-center justify-center gap-6 py-3">
             {/* Pile */}
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => handleDraw('pile')} disabled={currentSeat !== 0 || phase !== 'draw' || isSpectator}
+              onClick={() => handleDraw('pile')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
               className="flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all" style={{
-                borderColor: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.5)' : 'rgba(139,92,246,0.2)',
-                background: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.08)' : 'rgba(139,92,246,0.05)',
-                opacity: currentSeat === 0 && phase === 'draw' && !isSpectator ? 1 : 0.4,
-                cursor: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
+                borderColor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.5)' : 'rgba(139,92,246,0.2)',
+                background: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.08)' : 'rgba(139,92,246,0.05)',
+                opacity: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 1 : 0.4,
+                cursor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
               }}>
               <div className="relative">
                 <div className="w-10 h-14 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6b21a8, #3b0764)', border: '2px solid rgba(139,92,246,0.5)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
@@ -530,12 +543,12 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
             {/* Discard */}
             {prevSeatDiscard ? (
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => handleDraw('discard')} disabled={currentSeat !== 0 || phase !== 'draw' || isSpectator}
+                onClick={() => handleDraw('discard')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
                 className="flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all" style={{
-                  borderColor: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.5)' : 'rgba(139,92,246,0.2)',
-                  background: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.08)' : 'rgba(139,92,246,0.05)',
-                  opacity: currentSeat === 0 && phase === 'draw' && !isSpectator ? 1 : 0.4,
-                  cursor: currentSeat === 0 && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
+                  borderColor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.5)' : 'rgba(139,92,246,0.2)',
+                  background: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.08)' : 'rgba(139,92,246,0.05)',
+                  opacity: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 1 : 0.4,
+                  cursor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
                 }}>
                 <Tile3D tile={prevSeatDiscard} isJoker={isJokerTile(prevSeatDiscard)} />
                 <span className="text-[9px] font-medium" style={{ color: 'rgba(74,222,128,0.7)' }}>Yerden Al</span>
@@ -548,17 +561,17 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
           </div>
 
           {/* My discards */}
-          {getTopDiscard(0) && (
+          {getTopDiscard(mySeat) && (
             <div className="flex items-center justify-center gap-1 py-1">
               <span className="text-[8px] text-amber-500/40">Attıkların:</span>
               <div className="flex gap-0.5 overflow-x-auto" style={{ maxWidth: 220 }}>
-                {discards[0].slice(-5).map((t: OkeyTile) => <Tile3D key={t.id} tile={t} small isJoker={isJokerTile(t)} />)}
+                {discards[mySeat].slice(-5).map((t: OkeyTile) => <Tile3D key={t.id} tile={t} small isJoker={isJokerTile(t)} />)}
               </div>
             </div>
           )}
 
           {/* Hints */}
-          {currentSeat === 0 && !isSpectator && room.status === 'active' && !winner && !gameOver && (
+          {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
             <div className="text-center text-[10px] py-1" style={{ color: 'rgba(196,181,253,0.4)' }}>
               {phase === 'draw' ? 'Yığından veya yerden taş çek' : selectedTile !== null ? 'Tekrar tıkla → at | Başka taşa tıkla → değiştir' : 'Atmak istediğin taşa tıkla'}
             </div>
@@ -578,8 +591,8 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
       {/* Bottom rack */}
       <div className="px-2 pb-2 pt-1" style={{ borderTop: '1px solid rgba(139,92,246,0.2)', background: 'rgba(0,0,0,0.25)' }}>
         <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-[10px] font-bold" style={{ color: SEAT_HEX[0], opacity: currentSeat === 0 ? 1 : 0.5 }}>
-            {currentSeat === 0 && <span className="animate-pulse">● </span>}{SEAT_NAMES[0]} ({myHand.length} taş)
+          <span className="text-[10px] font-bold" style={{ color: SEAT_HEX[mySeat], opacity: isMyCurrentTurn ? 1 : 0.5 }}>
+            {isMyCurrentTurn && <span className="animate-pulse">● </span>}{SEAT_NAMES[mySeat]} ({myHand.length} taş)
           </span>
           {diffSet && <span className="text-[9px]" style={{ color: DIFF_LABELS[stateDiff]?.color, opacity: 0.6 }}>{DIFF_LABELS[stateDiff]?.emoji} {DIFF_LABELS[stateDiff]?.label}</span>}
         </div>

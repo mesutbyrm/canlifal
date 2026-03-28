@@ -64,7 +64,7 @@ export default function Okey101Page() {
       supportsAI={true}
     >
       {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
-        <Okey101Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} />
+        <Okey101Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
       )}
     </GameShell>
   )
@@ -103,7 +103,9 @@ function FaceDownTile({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   )
 }
 
-function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled }: any) {
+function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, playerNum }: any) {
+  const mySeat: number = room?.isAI ? 0 : (playerNum === 2 ? 1 : 0)
+
   const [selectedTile, setSelectedTile] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [showRoundEnd, setShowRoundEnd] = useState(false)
@@ -129,7 +131,11 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   const eliminated: boolean[] = state?.eliminated || [false, false, false, false]
   const stateDiff: string = state?.difficulty || 'medium'
 
-  const myHand = hands[0] || []
+  const seatToTurn = (seat: number) => seat === 0 ? 1 : 2
+  const isMyCurrentTurn = currentSeat === mySeat
+  const opponentSeats = [0, 1, 2, 3].filter(s => s !== mySeat)
+
+  const myHand = hands[mySeat] || []
   const winCount = 21 // 101 Okey uses 21 tiles (22 for dealer at start, discard to 21)
   const canWin = myHand.length === winCount && okeyCheckWin(myHand, jokerColor, jokerNumber)
 
@@ -141,7 +147,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   useEffect(() => {
     if (state && !diffSet && room?.status === 'active' && !state.difficulty) {
       const ns = { ...state, difficulty }
-      sendAIState({ state: ns, currentTurn: ns.currentSeat === 0 ? 1 : 2, status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+      sendAIState({ state: ns, currentTurn: seatToTurn(ns.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
       setDiffSet(true)
     }
   }, [state, room])
@@ -151,7 +157,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   useEffect(() => {
     if (currentSeat !== lastSeatRef.current) {
       setSelectedTile(null); lastSeatRef.current = currentSeat
-      if (currentSeat === 0 && !isSpectator && room.status === 'active' && !winner) showMsg('Sıra sende!')
+      if (isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner) showMsg('Sıra sende!')
     }
   }, [currentSeat])
 
@@ -185,13 +191,14 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
       if (!statsUpdatedRef.current && !isSpectator) {
         statsUpdatedRef.current = true
         const stats = get101Stats(); stats.gamesPlayed++
-        if (gameWinner === 0) stats.wins++; else stats.losses++
+        if (gameWinner === mySeat) stats.wins++; else stats.losses++
         save101Stats(stats)
       }
+      const myWin = gameWinner === mySeat
       await sendAIState({
-        state: finalState, player1Score: gameWinner === 0 ? 1 : 0, player2Score: gameWinner !== 0 ? 1 : 0,
+        state: finalState, player1Score: myWin && playerNum === 1 ? 1 : (!myWin && playerNum !== 1 ? 1 : 0), player2Score: myWin && playerNum === 2 ? 1 : (!myWin && playerNum !== 2 ? 1 : 0),
         currentTurn: 1, status: 'completed',
-        winnerId: gameWinner === 0 ? room.player1Id : room.player2Id,
+        winnerId: myWin ? (playerNum === 1 ? room.player1Id : room.player2Id) : (playerNum === 1 ? room.player2Id : room.player1Id),
       })
     } else {
       // Start new round after delay
@@ -210,7 +217,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     setShowRoundEnd(false)
     const newState = okey101NewRound(state)
     await sendAIState({
-      state: newState, currentTurn: newState.currentSeat === 0 ? 1 : 2, status: 'active',
+      state: newState, currentTurn: seatToTurn(newState.currentSeat), status: 'active',
       player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null,
     })
   }
@@ -220,12 +227,12 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     if (!room.isAI || room.status !== 'active' || gameOver) return
     if (state?.showingRoundResult) return
     if (winner !== null && winner !== undefined) return
-    if (currentSeat === 0) return
+    if (currentSeat === mySeat) return
     if (aiRef.current) clearTimeout(aiRef.current)
     aiRef.current = setTimeout(async () => {
       let cs = JSON.parse(JSON.stringify(state))
       let seat = cs.currentSeat; let moves = 0
-      while (seat !== 0 && moves < 12 && !cs.gameOver && cs.winner === null && cs.winner === undefined) {
+      while (seat !== mySeat && moves < 12 && !cs.gameOver && cs.winner === null && cs.winner === undefined) {
         if (cs.eliminated?.[seat]) { cs.currentSeat = (seat + 1) % 4; seat = cs.currentSeat; continue }
         const move = okeyAIMove(cs)
         if (!move) break
@@ -240,7 +247,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
         await new Promise(r => setTimeout(r, 300))
       }
       // Check AI wins (21 tiles for 101 okey)
-      for (let s = 1; s <= 3; s++) {
+      for (const s of opponentSeats) {
         if (cs.eliminated?.[s]) continue
         if (cs.hands[s] && cs.hands[s].length === 21 && okeyCheckWin(cs.hands[s], cs.jokerColor, cs.jokerNumber)) {
           await processRoundEnd(cs, s)
@@ -249,32 +256,32 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
       }
       await sendAIState({
         state: cs, player1Score: room.player1Score, player2Score: room.player2Score,
-        currentTurn: cs.currentSeat === 0 ? 1 : 2, status: 'active', winnerId: null,
+        currentTurn: seatToTurn(cs.currentSeat), status: 'active', winnerId: null,
       })
     }, 800)
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
   }, [room, state, currentSeat])
 
   const handleDraw = async (source: 'pile' | 'discard') => {
-    if (currentSeat !== 0 || phase !== 'draw' || isSpectator || room.status !== 'active') return
-    const result = okeyDraw(state, 0, source)
+    if (!isMyCurrentTurn || phase !== 'draw' || isSpectator || room.status !== 'active') return
+    const result = okeyDraw(state, mySeat, source)
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
-    await sendAIState({ state: result.state, currentTurn: 1, status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+    await sendAIState({ state: result.state, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
   }
 
   const handleDiscard = async (tileId: number) => {
-    if (currentSeat !== 0 || phase !== 'discard' || isSpectator || room.status !== 'active') return
-    const result = okeyDiscard(state, 0, tileId)
+    if (!isMyCurrentTurn || phase !== 'discard' || isSpectator || room.status !== 'active') return
+    const result = okeyDiscard(state, mySeat, tileId)
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
-    const newHand = result.state.hands[0]
+    const newHand = result.state.hands[mySeat]
     if (newHand.length === 21 && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
       if (soundEnabled) playWinSound()
-      await processRoundEnd(result.state, 0)
+      await processRoundEnd(result.state, mySeat)
     } else {
       await sendAIState({
-        state: result.state, currentTurn: result.state.currentSeat === 0 ? 1 : 2,
+        state: result.state, currentTurn: seatToTurn(result.state.currentSeat),
         status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null,
       })
     }
@@ -282,7 +289,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   }
 
   const handleTileClick = (tileId: number) => {
-    if (currentSeat !== 0 || isSpectator || room.status !== 'active') return
+    if (!isMyCurrentTurn || isSpectator || room.status !== 'active') return
     if (phase === 'discard') {
       if (selectedTile === tileId) handleDiscard(tileId)
       else setSelectedTile(tileId)
@@ -292,9 +299,9 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   const getTopDiscard = (seat: number): OkeyTile | null => {
     const d = discards[seat]; return d && d.length > 0 ? d[d.length - 1] : null
   }
-  const prevSeatDiscard = getTopDiscard(3)
+  const prevSeatDiscard = getTopDiscard((mySeat + 3) % 4)
 
-  const showDiffSelector = room?.status === 'active' && !diffSet && round === 1 && currentSeat === 0 && pile.length > 90
+  const showDiffSelector = room?.isAI && room?.status === 'active' && !diffSet && round === 1 && isMyCurrentTurn && pile.length > 90
 
   return (
     <div className="flex flex-col items-center gap-2 w-full max-w-xl mx-auto">
@@ -419,9 +426,9 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
               <div className="flex flex-col items-center gap-3 flex-1">
                 <div className="flex items-center gap-4">
                   <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDraw('pile')} disabled={currentSeat !== 0 || phase !== 'draw' || isSpectator}
+                    onClick={() => handleDraw('pile')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
                     className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
-                      currentSeat === 0 && phase === 'draw' && !isSpectator ? 'border-cyan-400/60 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
+                      isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'border-cyan-400/60 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
                     <div className="relative">
                       <div className="w-10 h-14 rounded-lg bg-gradient-to-b from-purple-700 to-purple-950 border-2 border-purple-500/50 shadow-lg flex items-center justify-center">
                         <span className="text-purple-300/60 text-xs font-bold">{pile.length}</span>
@@ -435,9 +442,9 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
 
                   {prevSeatDiscard ? (
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      onClick={() => handleDraw('discard')} disabled={currentSeat !== 0 || phase !== 'draw' || isSpectator}
+                      onClick={() => handleDraw('discard')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
                       className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
-                        currentSeat === 0 && phase === 'draw' && !isSpectator ? 'border-green-400/60 bg-green-500/10 cursor-pointer hover:bg-green-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
+                        isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'border-green-400/60 bg-green-500/10 cursor-pointer hover:bg-green-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
                       <TileView tile={prevSeatDiscard} size="lg" isJoker={isJokerTile(prevSeatDiscard)} />
                       <span className="text-[9px] text-green-300/70 font-medium">Yerden Al</span>
                     </motion.button>
@@ -446,9 +453,9 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
                   )}
                 </div>
 
-                <div className={`text-xs font-bold px-3 py-1 rounded-full ${currentSeat === 0 ? 'bg-cyan-500/20 text-cyan-300 animate-pulse' : 'bg-fuchsia-500/10 text-fuchsia-400/60'}`}>
-                  {winner !== null && !state?.showingRoundResult ? <span className="text-yellow-400">🏆 {SEAT_NAMES[winner]} kazandı!</span>
-                    : <span>{SEAT_NAMES[currentSeat]}{currentSeat === 0 ? ' - ' + (phase === 'draw' ? 'Taş Çek' : 'Taş At') : ' düşünüyor...'}</span>}
+                <div className={`text-xs font-bold px-3 py-1 rounded-full ${isMyCurrentTurn ? 'bg-cyan-500/20 text-cyan-300 animate-pulse' : 'bg-fuchsia-500/10 text-fuchsia-400/60'}`}>
+                  {winner !== null && !state?.showingRoundResult ? <span className="text-yellow-400">🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
+                    : <span>{isMyCurrentTurn ? `Sen - ${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
                 </div>
               </div>
 
@@ -462,11 +469,11 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
             </div>
 
             {/* Player discards */}
-            {getTopDiscard(0) && (
+            {getTopDiscard(mySeat) && (
               <div className="flex items-center justify-center gap-1 mt-2">
                 <span className="text-amber-500/40 text-[8px]">Senin attıkların:</span>
                 <div className="flex gap-0.5 overflow-x-auto max-w-[200px]">
-                  {discards[0].slice(-5).map((t: OkeyTile) => <TileView key={t.id} tile={t} size="sm" isJoker={isJokerTile(t)} />)}
+                  {discards[mySeat].slice(-5).map((t: OkeyTile) => <TileView key={t.id} tile={t} size="sm" isJoker={isJokerTile(t)} />)}
                 </div>
               </div>
             )}
@@ -474,7 +481,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
             {/* Player hand */}
             <div className="mt-3">
               <div className="flex items-center justify-center gap-1 mb-1">
-                <span className={`text-[10px] font-bold ${SEAT_COLORS[0]} ${currentSeat === 0 ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[0]} ({myHand.length} taş)</span>
+                <span className={`text-[10px] font-bold ${SEAT_COLORS[mySeat]} ${isMyCurrentTurn ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[mySeat]} ({myHand.length} taş)</span>
                 {canWin && phase === 'discard' && (
                   <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}
                     className="text-[10px] text-green-400 font-bold bg-green-500/20 px-2 py-0.5 rounded-full">✨ Kazanabilirsin!</motion.span>
@@ -499,7 +506,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
             )}
           </AnimatePresence>
 
-          {currentSeat === 0 && !isSpectator && room.status === 'active' && !winner && !gameOver && (
+          {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
             <div className="text-center text-[10px] text-fuchsia-400/50">
               {phase === 'draw' ? <span>Yığından veya yerden taş çek</span>
                 : <span>{selectedTile !== null ? 'Tekrar tıkla → at | Başka taşa tıkla → değiştir' : 'Atmak istediğin taşa tıkla'}</span>}
