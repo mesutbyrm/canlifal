@@ -246,8 +246,8 @@ function LandscapePrompt() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ background: 'rgba(10,1,24,0.95)', backdropFilter: 'blur(10px)' }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ background: 'rgba(10,1,24,0.98)', backdropFilter: 'blur(10px)', zIndex: 99999 }}
     >
       <div className="flex flex-col items-center gap-6 text-center px-8">
         <motion.div
@@ -517,8 +517,9 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
     <>
       <LandscapePrompt />
       {/* Fullscreen game overlay */}
-      <div className="fixed inset-0 z-[60] flex flex-col" style={{
+      <div className="fixed inset-0 flex flex-col" style={{
         background: 'linear-gradient(135deg, #0d1117, #1a0e2e, #0d1117)',
+        zIndex: 9999,
       }}>
         {/* Top bar: Indicator + Game info + Opponents */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-purple-800/30" style={{ background: 'rgba(0,0,0,0.3)' }}>
@@ -704,8 +705,8 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
         <AnimatePresence>
           {message && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] text-xs px-4 py-2 rounded-full"
-              style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d' }}>
+              className="fixed bottom-32 left-1/2 -translate-x-1/2 text-xs px-4 py-2 rounded-full"
+              style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d', zIndex: 99998 }}>
               {message}
             </motion.div>
           )}
