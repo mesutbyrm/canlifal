@@ -1110,7 +1110,7 @@ export default function SOSGamePage() {
 
       {/* Sound toggle + Back */}
       <div className="flex items-center justify-between w-full">
-        <Link href={`/${lang}/oyunlar`} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
+        <Link href="/oyunlar" className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
           <ArrowLeft className="w-4 h-4" /> Oyunlara Dön
         </Link>
         <button onClick={() => setSoundEnabled(!soundEnabled)} className="flex items-center gap-1.5 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">
@@ -1495,7 +1495,7 @@ export default function SOSGamePage() {
           <button onClick={resetToMenu} className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-105 transition shadow-lg text-sm sm:text-base">
             <RotateCcw className="w-4 h-4 inline mr-2" /> {isSpectator ? 'Lobiye Dön' : 'Yeni Oyun'}
           </button>
-          <Link href={`/${lang}/oyunlar`} className="px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition text-sm sm:text-base">
+          <Link href="/oyunlar" className="px-5 sm:px-6 py-2.5 sm:py-3 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition text-sm sm:text-base">
             Oyunlara Dön
           </Link>
         </div>

@@ -519,7 +519,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       )}
 
       <div className="flex items-center justify-between w-full">
-        <Link href={`/${lang}/oyunlar`} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Oyunlara Dön</Link>
+        <Link href="/oyunlar" className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Oyunlara Dön</Link>
         <button onClick={() => setSoundEnabled(!soundEnabled)} className="flex items-center gap-1.5 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition">{soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}{soundEnabled ? ' Ses Açık' : ' Ses Kapalı'}</button>
       </div>
     </div>
@@ -554,7 +554,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         <h2 className={`text-2xl sm:text-3xl font-bold ${isSpectator ? 'text-cyan-300' : isWinner ? 'text-yellow-400' : isDraw ? 'text-fuchsia-300' : 'text-red-400'}`}>{isSpectator ? (room.winnerId ? `${room.winnerId === room.player1Id ? room.player1Name : room.player2Name} Kazandı!` : 'Berabere!') : isWinner ? 'Tebrikler! Kazandınız!' : isDraw ? 'Berabere!' : 'Kaybettiniz!'}</h2>
         <p className="text-fuchsia-300/70 text-sm">{room.player1Name}: {room.player1Score} - {room.player2Name}: {room.player2Score}</p>
         {room.betAmount > 0 && !isSpectator && <div className={`px-4 py-3 rounded-xl border-2 ${isWinner ? 'border-yellow-400/50 bg-yellow-500/10' : isDraw ? 'border-fuchsia-400/50 bg-fuchsia-500/10' : 'border-red-400/50 bg-red-500/10'}`}>{isWinner ? <p className="text-yellow-300 font-bold">+{payout} {room.betCurrency} kazandınız!</p> : isDraw ? <p className="text-fuchsia-300 text-sm">Bahsiniz iade edildi</p> : <p className="text-red-300 text-sm">-{room.betAmount} {room.betCurrency}</p>}</div>}
-        <div className="flex gap-3"><button onClick={resetToMenu} className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-105 transition shadow-lg text-sm"><RotateCcw className="w-4 h-4 inline mr-2" /> Yeni Oyun</button><Link href={`/${lang}/oyunlar`} className="px-5 py-2.5 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition text-sm">Oyunlara Dön</Link></div>
+        <div className="flex gap-3"><button onClick={resetToMenu} className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:scale-105 transition shadow-lg text-sm"><RotateCcw className="w-4 h-4 inline mr-2" /> Yeni Oyun</button><Link href="/oyunlar" className="px-5 py-2.5 bg-purple-900/40 border border-fuchsia-500/30 text-fuchsia-300 font-medium rounded-xl hover:bg-purple-800/40 transition text-sm">Oyunlara Dön</Link></div>
       </div>
     )
   }

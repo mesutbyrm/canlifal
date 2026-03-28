@@ -152,7 +152,7 @@ function ActiveGamesSection({ lang }: { lang: string }) {
           const info = gameInfo(r.gameType)
           const isWaiting = r.status === 'waiting'
           return (
-            <Link key={r.id} href={`/${lang}/oyunlar/${gameSlug(r.gameType)}`}>
+            <Link key={r.id} href={`/oyunlar/${gameSlug(r.gameType)}`}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -227,7 +227,7 @@ function MultiplayerGamesSection({ lang }: { lang: string }) {
       {sorted.map((g) => {
         const count = gameStats[g.slug] || 0
         return (
-          <Link key={g.slug} href={`/${lang}/oyunlar/${g.slug}`} className="block">
+          <Link key={g.slug} href={`/oyunlar/${g.slug}`} className="block">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
