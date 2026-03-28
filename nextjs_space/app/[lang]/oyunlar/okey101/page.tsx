@@ -2,23 +2,38 @@
 
 import GameShell from '@/components/game-shell'
 import { motion, AnimatePresence } from 'framer-motion'
-import { okeyDraw, okeyDiscard, okeyCheckWin, okeyAIMove, okey101CalcPenalty, okey101NewRound, OkeyTile } from '@/lib/game-logic'
+import {
+  okeyDraw, okeyDiscard, okeyCheckWin, okeyAIMove,
+  okey101CalcPenalty, okey101NewRound, OkeyTile,
+  okey101LayMeld, okey101AddToMeld, okey101AILayMelds, okey101AIAddToMelds,
+  Meld,
+} from '@/lib/game-logic'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 
-const COLORS: Record<number, { bg: string; text: string; border: string; name: string; glow: string }> = {
-  0: { bg: 'from-red-50 to-red-100', text: 'text-red-600', border: 'border-red-400', name: 'Kırmızı', glow: 'shadow-red-400/40' },
-  1: { bg: 'from-blue-50 to-blue-100', text: 'text-blue-600', border: 'border-blue-400', name: 'Mavi', glow: 'shadow-blue-400/40' },
-  2: { bg: 'from-green-50 to-green-100', text: 'text-green-600', border: 'border-green-400', name: 'Yeşil', glow: 'shadow-green-400/40' },
-  3: { bg: 'from-gray-100 to-gray-200', text: 'text-gray-800', border: 'border-gray-500', name: 'Siyah', glow: 'shadow-gray-500/40' },
-  4: { bg: 'from-yellow-100 to-amber-100', text: 'text-amber-700', border: 'border-amber-400', name: 'Joker', glow: 'shadow-amber-400/60' },
+// Portal for fullscreen rendering
+function Portal({ children }: { children: React.ReactNode }): JSX.Element | null {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return null
+  const portal: any = createPortal(children as any, document.body)
+  return portal
+}
+
+const TILE_COLORS: Record<number, { bg: string; fg: string; border: string; name: string }> = {
+  0: { bg: '#fee2e2', fg: '#dc2626', border: '#f87171', name: 'Kırmızı' },
+  1: { bg: '#dbeafe', fg: '#2563eb', border: '#60a5fa', name: 'Mavi' },
+  2: { bg: '#dcfce7', fg: '#16a34a', border: '#4ade80', name: 'Yeşil' },
+  3: { bg: '#f3f4f6', fg: '#1f2937', border: '#9ca3af', name: 'Siyah' },
+  4: { bg: '#fef3c7', fg: '#b45309', border: '#fbbf24', name: 'Joker' },
 }
 
 const SEAT_NAMES = ['Sen', 'Doğu 🤖', 'Kuzey 🤖', 'Batı 🤖']
-const SEAT_COLORS = ['text-cyan-400', 'text-pink-400', 'text-amber-400', 'text-green-400']
+const SEAT_COLORS = ['#22d3ee', '#f472b6', '#fbbf24', '#4ade80']
 const DIFF_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
-  easy: { label: 'Kolay', color: 'text-green-400', emoji: '🟢' },
-  medium: { label: 'Orta', color: 'text-amber-400', emoji: '🟡' },
-  hard: { label: 'Zor', color: 'text-red-400', emoji: '🔴' },
+  easy: { label: 'Kolay', color: '#4ade80', emoji: '🟢' },
+  medium: { label: 'Orta', color: '#fbbf24', emoji: '🟡' },
+  hard: { label: 'Zor', color: '#f87171', emoji: '🔴' },
 }
 
 function playTileSound() {
@@ -36,8 +51,8 @@ function playTileSound() {
 
 function playWinSound() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    ;[523, 659, 784, 1047].forEach((freq, i) => {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    [523, 659, 784, 1047].forEach((freq, i) => {
       const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq
       const gain = ctx.createGain()
       gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15)
@@ -54,63 +69,115 @@ function get101Stats() {
 }
 function save101Stats(s: any) { try { localStorage.setItem('okey101_stats', JSON.stringify(s)) } catch {} }
 
-export default function Okey101Page() {
+/* ══════════════ LANDSCAPE PROMPT ══════════════ */
+function LandscapePrompt() {
+  const [show, setShow] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === 'undefined') return
+      setShow(window.innerHeight > window.innerWidth && window.innerWidth < 768)
+    }
+    check()
+    window.addEventListener('resize', check)
+    window.addEventListener('orientationchange', check)
+    return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check) }
+  }, [])
+  if (!show || !mounted) return null
   return (
-    <GameShell
-      gameType="okey101"
-      gameName="101 Okey"
-      gameEmoji="💯"
-      gameDesc="Çok rauntlu 101 Okey! İlk 101 puana ulaşan elenir."
-      supportsAI={true}
-    >
-      {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
-        <Okey101Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
-      )}
-    </GameShell>
+    <Portal>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(10,1,24,0.98)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="flex flex-col items-center gap-6 text-center px-8">
+          <motion.div animate={{ rotate: [0, 90, 90, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl">📱</motion.div>
+          <h2 className="text-2xl font-bold text-white">Ekranı Çevir</h2>
+          <p className="text-fuchsia-300/80 text-sm max-w-[260px]">101 Okey yatay modda en iyi şekilde oynanır. Lütfen cihazınızı yatay konuma çevirin.</p>
+          <motion.div animate={{ x: [-10, 10, -10] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-4xl">↔️</motion.div>
+        </div>
+      </div>
+    </Portal>
   )
 }
 
-function TileView({ tile, selected, onClick, size = 'md', isJoker, glow }: {
-  tile: OkeyTile; selected?: boolean; onClick?: () => void; size?: 'sm' | 'md' | 'lg'; isJoker?: boolean; glow?: boolean
+/* ══════════════ TILE COMPONENT ══════════════ */
+function Tile({ tile, selected, onClick, size = 'md', isJoker, glow, dimmed }: {
+  tile: OkeyTile; selected?: boolean; onClick?: () => void; size?: 'sm' | 'md' | 'lg' | 'xs'; isJoker?: boolean; glow?: boolean; dimmed?: boolean
 }) {
-  const c = tile.isFalseJoker ? COLORS[4] : COLORS[tile.color] || COLORS[0]
-  const sizeClasses = size === 'sm' ? 'w-6 h-9' : size === 'lg' ? 'w-10 h-14' : 'w-8 h-12'
-  const fontSize = size === 'sm' ? 'text-[10px]' : size === 'lg' ? 'text-base' : 'text-sm'
+  const c = tile.isFalseJoker ? TILE_COLORS[4] : TILE_COLORS[tile.color] || TILE_COLORS[0]
+  const dims = size === 'xs' ? { w: 20, h: 28, fs: 8 } : size === 'sm' ? { w: 26, h: 36, fs: 10 } : size === 'lg' ? { w: 40, h: 56, fs: 16 } : { w: 32, h: 46, fs: 13 }
   return (
     <motion.div layout onClick={onClick}
-      whileHover={onClick ? { y: -4, scale: 1.05 } : {}} whileTap={onClick ? { scale: 0.95 } : {}}
-      className={`${sizeClasses} rounded-lg bg-gradient-to-b ${c.bg} border-2 ${c.border}
-        flex items-center justify-center font-bold ${c.text}
-        shadow-md cursor-pointer select-none transition-all relative
-        ${selected ? 'ring-2 ring-yellow-400 -translate-y-3 scale-110 z-20' : ''}
-        ${isJoker ? `shadow-lg ${c.glow} ring-1 ring-yellow-300/60` : ''}
-        ${glow ? 'animate-pulse shadow-lg shadow-green-400/50 ring-2 ring-green-400' : ''}`}
+      whileHover={onClick ? { y: -3, scale: 1.05 } : {}}
+      whileTap={onClick ? { scale: 0.95 } : {}}
+      style={{
+        width: dims.w, height: dims.h, borderRadius: 6,
+        background: c.bg, border: `2px solid ${c.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: onClick ? 'pointer' : 'default', position: 'relative',
+        userSelect: 'none', flexShrink: 0,
+        boxShadow: selected ? `0 0 0 2px #facc15, 0 -8px 0 0 rgba(0,0,0,0)` : glow ? '0 0 12px rgba(74,222,128,0.5)' : '0 2px 4px rgba(0,0,0,0.2)',
+        transform: selected ? 'translateY(-8px)' : undefined,
+        opacity: dimmed ? 0.4 : 1,
+        zIndex: selected ? 20 : 1,
+      }}
     >
-      {tile.isFalseJoker ? <span className={`${fontSize} text-amber-600`}>★</span> : <span className={fontSize}>{tile.number}</span>}
+      {tile.isFalseJoker
+        ? <span style={{ fontSize: dims.fs, color: c.fg, fontWeight: 700 }}>★</span>
+        : <span style={{ fontSize: dims.fs, color: c.fg, fontWeight: 700 }}>{tile.number}</span>}
       {isJoker && !tile.isFalseJoker && (
-        <span className="absolute -top-1 -right-1 text-[7px] bg-yellow-400 text-yellow-900 rounded-full w-3 h-3 flex items-center justify-center font-black">J</span>
+        <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 7, background: '#facc15', color: '#78350f', borderRadius: '50%', width: 12, height: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>J</span>
       )}
     </motion.div>
   )
 }
 
-function FaceDownTile({ size = 'sm' }: { size?: 'sm' | 'md' }) {
-  const s = size === 'sm' ? 'w-5 h-8' : 'w-6 h-9'
+function FaceDownTile({ size = 'sm' }: { size?: 'sm' | 'xs' }) {
+  const d = size === 'xs' ? { w: 16, h: 24 } : { w: 22, h: 32 }
   return (
-    <div className={`${s} rounded-md bg-gradient-to-b from-purple-800 to-purple-950 border border-purple-600/60 shadow-md`}>
-      <div className="w-full h-full flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-purple-500/40" /></div>
+    <div style={{ width: d.w, height: d.h, borderRadius: 4, background: 'linear-gradient(180deg, #6b21a8, #3b0764)', border: '1px solid rgba(147,51,234,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(168,85,247,0.3)' }} />
     </div>
+  )
+}
+
+/* ══════════════ MELD DISPLAY ══════════════ */
+function MeldGroup({ meld, isJokerFn, onTileClick, highlightMeld }: {
+  meld: Meld; isJokerFn: (t: OkeyTile) => boolean; onTileClick?: (tileId: number) => void; highlightMeld?: boolean
+}) {
+  return (
+    <div style={{
+      display: 'flex', gap: 2, padding: '3px 5px', borderRadius: 6,
+      background: highlightMeld ? 'rgba(250,204,21,0.15)' : 'rgba(88,28,135,0.3)',
+      border: highlightMeld ? '1px solid rgba(250,204,21,0.4)' : '1px solid rgba(147,51,234,0.25)',
+    }}>
+      {meld.tiles.map((t) => (
+        <Tile key={t.id} tile={t} size="xs" isJoker={isJokerFn(t)} onClick={onTileClick ? () => onTileClick(t.id) : undefined} />
+      ))}
+    </div>
+  )
+}
+
+export default function Okey101Page() {
+  return (
+    <GameShell gameType="okey101" gameName="101 Okey" gameEmoji="💯"
+      gameDesc="Çok rauntlu 101 Okey! İlk 101 puana ulaşan elenir." supportsAI={true}>
+      {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
+        <Okey101Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator}
+          sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
+      )}
+    </GameShell>
   )
 }
 
 function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, playerNum }: any) {
   const mySeat: number = room?.isAI ? 0 : (playerNum === 2 ? 1 : 0)
 
-  const [selectedTile, setSelectedTile] = useState<number | null>(null)
+  const [selectedTiles, setSelectedTiles] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState<string | null>(null)
   const [showRoundEnd, setShowRoundEnd] = useState(false)
   const [difficulty, setDifficulty] = useState<string>('medium')
   const [diffSet, setDiffSet] = useState(false)
+  const [addToMeldIdx, setAddToMeldIdx] = useState<number | null>(null) // which meld we're adding tiles to
   const aiRef = useRef<any>(null)
   const lastSeatRef = useRef<number>(-1)
   const roundProcessedRef = useRef<number>(0)
@@ -130,14 +197,14 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   const round: number = state?.round || 1
   const eliminated: boolean[] = state?.eliminated || [false, false, false, false]
   const stateDiff: string = state?.difficulty || 'medium'
+  const melds: Meld[] = state?.melds || []
+  const hasOpened: boolean[] = state?.hasOpened || [false, false, false, false]
 
   const seatToTurn = (seat: number) => seat === 0 ? 1 : 2
   const isMyCurrentTurn = currentSeat === mySeat
   const opponentSeats = [0, 1, 2, 3].filter(s => s !== mySeat)
-
   const myHand = hands[mySeat] || []
-  const winCount = 21 // 101 Okey uses 21 tiles (22 for dealer at start, discard to 21)
-  const canWin = myHand.length === winCount && okeyCheckWin(myHand, jokerColor, jokerNumber)
+  const myOpened = hasOpened[mySeat]
 
   const isJokerTile = useCallback((t: OkeyTile) => {
     return !!t.isFalseJoker || (t.color === jokerColor && t.number === jokerNumber)
@@ -156,38 +223,35 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
 
   useEffect(() => {
     if (currentSeat !== lastSeatRef.current) {
-      setSelectedTile(null); lastSeatRef.current = currentSeat
+      setSelectedTiles(new Set()); setAddToMeldIdx(null)
+      lastSeatRef.current = currentSeat
       if (isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner) showMsg('Sıra sende!')
     }
   }, [currentSeat])
 
-  // Process round end: calculate penalties and check for game over
+  // Process round end
   const processRoundEnd = async (cs: any, roundWinner: number) => {
     const newScores = [...(cs.scores || [0, 0, 0, 0])]
     const roundPenalties = [0, 0, 0, 0]
     const jc = cs.jokerColor; const jn = cs.jokerNumber
-
     for (let s = 0; s < 4; s++) {
-      if (s === roundWinner) continue // winner gets 0
+      if (s === roundWinner) continue
       if (cs.eliminated?.[s]) continue
+      // In 101, penalty is sum of tiles remaining in hand
+      // tiles on table melds don't count as penalty
       roundPenalties[s] = okey101CalcPenalty(cs.hands[s] || [], jc, jn)
-      newScores[s] += roundPenalties[s]
     }
-
     const newEliminated = [...(cs.eliminated || [false, false, false, false])]
     for (let s = 0; s < 4; s++) {
-      if (newScores[s] >= 101) newEliminated[s] = true
+      if (newScores[s] + roundPenalties[s] >= 101) newEliminated[s] = true
+      newScores[s] += roundPenalties[s]
     }
-
     const activePlayers = newEliminated.filter((e: boolean) => !e).length
     const roundHistory = [...(cs.roundHistory || []), { round: cs.round, winner: roundWinner, penalties: roundPenalties }]
-
     if (activePlayers <= 1) {
-      // Game over — find the last player standing
       const gameWinner = newEliminated.findIndex((e: boolean) => !e)
       const finalState = { ...cs, scores: newScores, eliminated: newEliminated, roundHistory, gameOver: true,
         winner: gameWinner >= 0 ? gameWinner : roundWinner, roundWinner }
-      // Update stats
       if (!statsUpdatedRef.current && !isSpectator) {
         statsUpdatedRef.current = true
         const stats = get101Stats(); stats.gamesPlayed++
@@ -196,12 +260,12 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
       }
       const myWin = gameWinner === mySeat
       await sendAIState({
-        state: finalState, player1Score: myWin && playerNum === 1 ? 1 : (!myWin && playerNum !== 1 ? 1 : 0), player2Score: myWin && playerNum === 2 ? 1 : (!myWin && playerNum !== 2 ? 1 : 0),
+        state: finalState, player1Score: myWin && playerNum === 1 ? 1 : (!myWin && playerNum !== 1 ? 1 : 0),
+        player2Score: myWin && playerNum === 2 ? 1 : (!myWin && playerNum !== 2 ? 1 : 0),
         currentTurn: 1, status: 'completed',
         winnerId: myWin ? (playerNum === 1 ? room.player1Id : room.player2Id) : (playerNum === 1 ? room.player2Id : room.player1Id),
       })
     } else {
-      // Start new round after delay
       const interimState = { ...cs, scores: newScores, eliminated: newEliminated, roundHistory,
         gameOver: false, winner: null, roundWinner, showingRoundResult: true }
       setShowRoundEnd(true)
@@ -212,7 +276,6 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     }
   }
 
-  // Start next round
   const startNextRound = async () => {
     setShowRoundEnd(false)
     const newState = okey101NewRound(state)
@@ -222,7 +285,17 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     })
   }
 
-  // AI logic
+  // Check if player hand is empty → round win
+  const checkHandEmpty = async (cs: any, seat: number) => {
+    if (cs.hands[seat] && cs.hands[seat].length === 0) {
+      if (soundEnabled && seat === mySeat) playWinSound()
+      await processRoundEnd(cs, seat)
+      return true
+    }
+    return false
+  }
+
+  // AI logic with melds
   useEffect(() => {
     if (!room.isAI || room.status !== 'active' || gameOver) return
     if (state?.showingRoundResult) return
@@ -232,27 +305,44 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     aiRef.current = setTimeout(async () => {
       let cs = JSON.parse(JSON.stringify(state))
       let seat = cs.currentSeat; let moves = 0
-      while (seat !== mySeat && moves < 12 && !cs.gameOver && cs.winner === null && cs.winner === undefined) {
+      while (seat !== mySeat && moves < 20 && !cs.gameOver && cs.winner === null) {
         if (cs.eliminated?.[seat]) { cs.currentSeat = (seat + 1) % 4; seat = cs.currentSeat; continue }
-        const move = okeyAIMove(cs)
-        if (!move) break
-        if (move.action === 'draw') {
+        const p = cs.phase
+        if (p === 'draw') {
+          const move = okeyAIMove(cs)
+          if (!move || move.action !== 'draw') break
           const result = okeyDraw(cs, seat, move.source)
-          if (result.error) break; cs = result.state
-        } else if (move.action === 'discard') {
+          if (result.error) break
+          cs = result.state; moves++
+          await new Promise(r => setTimeout(r, 200))
+        } else {
+          // discard phase: AI tries to lay melds and add to existing melds first
+          let meldResult = okey101AILayMelds(cs, seat)
+          if (meldResult) {
+            cs = meldResult
+            // Check if hand empty after melding
+            if (cs.hands[seat].length === 0) {
+              await processRoundEnd(cs, seat)
+              return
+            }
+          }
+          let addResult = okey101AIAddToMelds(cs, seat)
+          if (addResult) {
+            cs = addResult
+            if (cs.hands[seat].length === 0) {
+              await processRoundEnd(cs, seat)
+              return
+            }
+          }
+          // Now discard
+          const move = okeyAIMove(cs)
+          if (!move || move.action !== 'discard') break
           const result = okeyDiscard(cs, seat, move.tileId)
-          if (result.error) break; cs = result.state
+          if (result.error) break
+          cs = result.state; moves++
+          await new Promise(r => setTimeout(r, 200))
         }
-        seat = cs.currentSeat; moves++
-        await new Promise(r => setTimeout(r, 300))
-      }
-      // Check AI wins (21 tiles for 101 okey)
-      for (const s of opponentSeats) {
-        if (cs.eliminated?.[s]) continue
-        if (cs.hands[s] && cs.hands[s].length === 21 && okeyCheckWin(cs.hands[s], cs.jokerColor, cs.jokerNumber)) {
-          await processRoundEnd(cs, s)
-          return
-        }
+        seat = cs.currentSeat
       }
       await sendAIState({
         state: cs, player1Score: room.player1Score, player2Score: room.player2Score,
@@ -262,6 +352,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
   }, [room, state, currentSeat])
 
+  // Draw handler
   const handleDraw = async (source: 'pile' | 'discard') => {
     if (!isMyCurrentTurn || phase !== 'draw' || isSpectator || room.status !== 'active') return
     const result = okeyDraw(state, mySeat, source)
@@ -270,13 +361,14 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     await sendAIState({ state: result.state, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
   }
 
+  // Discard handler
   const handleDiscard = async (tileId: number) => {
     if (!isMyCurrentTurn || phase !== 'discard' || isSpectator || room.status !== 'active') return
     const result = okeyDiscard(state, mySeat, tileId)
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
-    const newHand = result.state.hands[mySeat]
-    if (newHand.length === 21 && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
+    // After discard, check if hand is empty (already opened and melded everything)
+    if (result.state.hands[mySeat].length === 0) {
       if (soundEnabled) playWinSound()
       await processRoundEnd(result.state, mySeat)
     } else {
@@ -285,16 +377,72 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
         status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null,
       })
     }
-    setSelectedTile(null)
+    setSelectedTiles(new Set())
   }
 
+  // Tile click: toggle selection for multi-select
   const handleTileClick = (tileId: number) => {
-    if (!isMyCurrentTurn || isSpectator || room.status !== 'active') return
-    if (phase === 'discard') {
-      if (selectedTile === tileId) handleDiscard(tileId)
-      else setSelectedTile(tileId)
-    }
+    if (!isMyCurrentTurn || isSpectator || room.status !== 'active' || phase !== 'discard') return
+    setSelectedTiles(prev => {
+      const next = new Set(prev)
+      if (next.has(tileId)) next.delete(tileId); else next.add(tileId)
+      return next
+    })
+    setAddToMeldIdx(null)
   }
+
+  // Quick discard: double-tap a tile to discard it
+  const handleTileDoubleClick = (tileId: number) => {
+    if (!isMyCurrentTurn || phase !== 'discard' || isSpectator) return
+    handleDiscard(tileId)
+  }
+
+  // Lay meld (run or set)
+  const handleLayMeld = async (type: 'run' | 'set') => {
+    if (!isMyCurrentTurn || phase !== 'discard' || selectedTiles.size < 3) {
+      showMsg('En az 3 taş seç!'); return
+    }
+    const selArr = Array.from(selectedTiles)
+    if (selArr.length < 3) { showMsg('En az 3 taş seç!'); return }
+    const result = okey101LayMeld(state, mySeat, [selArr])
+    if (result.error) { showMsg(result.error); return }
+    if (soundEnabled) playTileSound()
+    // Check win (hand empty)
+    if (result.state.hands[mySeat].length === 0) {
+      if (soundEnabled) playWinSound()
+      await processRoundEnd(result.state, mySeat)
+    } else {
+      await sendAIState({
+        state: result.state, currentTurn: seatToTurn(mySeat), status: 'active',
+        player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null,
+      })
+    }
+    setSelectedTiles(new Set())
+  }
+
+  // Add to existing meld
+  const handleAddToMeld = async (meldIdx: number) => {
+    if (!isMyCurrentTurn || phase !== 'discard' || selectedTiles.size === 0) {
+      showMsg('Önce eklemek istediğin taşları seç!'); return
+    }
+    if (!myOpened) { showMsg('Önce açılman gerekiyor!'); return }
+    const selArr = Array.from(selectedTiles)
+    const result = okey101AddToMeld(state, mySeat, selArr, meldIdx)
+    if (result.error) { showMsg(result.error); return }
+    if (soundEnabled) playTileSound()
+    if (result.state.hands[mySeat].length === 0) {
+      if (soundEnabled) playWinSound()
+      await processRoundEnd(result.state, mySeat)
+    } else {
+      await sendAIState({
+        state: result.state, currentTurn: seatToTurn(mySeat), status: 'active',
+        player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null,
+      })
+    }
+    setSelectedTiles(new Set()); setAddToMeldIdx(null)
+  }
+
+  const clearSelection = () => { setSelectedTiles(new Set()); setAddToMeldIdx(null) }
 
   const getTopDiscard = (seat: number): OkeyTile | null => {
     const d = discards[seat]; return d && d.length > 0 ? d[d.length - 1] : null
@@ -303,217 +451,307 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
 
   const showDiffSelector = room?.isAI && room?.status === 'active' && !diffSet && round === 1 && isMyCurrentTurn && pile.length > 90
 
-  return (
-    <div className="flex flex-col items-center gap-2 w-full max-w-xl mx-auto">
-      {/* Scoreboard */}
-      <div className="w-full bg-gradient-to-r from-purple-900/40 via-fuchsia-900/30 to-purple-900/40 border border-purple-600/30 rounded-xl px-3 py-2">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-fuchsia-300/70 font-bold">💯 101 Okey — Raunt {round}</span>
-          {stateDiff && <span className={`text-[10px] ${DIFF_LABELS[stateDiff]?.color || 'text-amber-400'}`}>{DIFF_LABELS[stateDiff]?.emoji} {DIFF_LABELS[stateDiff]?.label}</span>}
+  const canLayMeld = isMyCurrentTurn && phase === 'discard' && selectedTiles.size >= 3 && !isSpectator
+  const canAddToMeld = isMyCurrentTurn && phase === 'discard' && selectedTiles.size > 0 && myOpened && melds.length > 0 && !isSpectator
+
+  /* ══════════════ GAME UI (Portal fullscreen) ══════════════ */
+  const gameUI = (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99998,
+      background: 'linear-gradient(135deg, #0a0118 0%, #1a0533 50%, #0d0220 100%)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <LandscapePrompt />
+
+      {/* TOP BAR: Scoreboard + Round info */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px', background: 'rgba(88,28,135,0.2)', borderBottom: '1px solid rgba(147,51,234,0.2)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: '#d946ef', fontWeight: 700 }}>💯 Raunt {round}</span>
+          {stateDiff && <span style={{ fontSize: 10, color: DIFF_LABELS[stateDiff]?.color }}>{DIFF_LABELS[stateDiff]?.emoji} {DIFF_LABELS[stateDiff]?.label}</span>}
         </div>
-        <div className="grid grid-cols-4 gap-1">
+        <div style={{ display: 'flex', gap: 8 }}>
           {SEAT_NAMES.map((name, i) => (
-            <div key={i} className={`text-center px-1 py-0.5 rounded-lg border ${
-              eliminated[i] ? 'border-red-800/40 bg-red-950/30 opacity-50' :
-              i === 0 ? 'border-cyan-600/40 bg-cyan-900/20' : 'border-purple-700/30 bg-purple-900/20'
-            }`}>
-              <div className={`text-[9px] font-bold ${SEAT_COLORS[i]} ${eliminated[i] ? 'line-through' : ''}`}>{name.split(' ')[0]}</div>
-              <div className={`text-sm font-black ${
-                scores[i] >= 80 ? 'text-red-400' : scores[i] >= 50 ? 'text-amber-400' : 'text-green-400'
-              }`}>{scores[i]}</div>
-              {eliminated[i] && <div className="text-[8px] text-red-400">ELENDİ</div>}
+            <div key={i} style={{
+              textAlign: 'center', padding: '2px 8px', borderRadius: 6, fontSize: 10,
+              background: eliminated[i] ? 'rgba(127,29,29,0.3)' : i === mySeat ? 'rgba(34,211,238,0.1)' : 'rgba(88,28,135,0.2)',
+              border: `1px solid ${eliminated[i] ? 'rgba(239,68,68,0.3)' : i === mySeat ? 'rgba(34,211,238,0.3)' : 'rgba(147,51,234,0.2)'}`,
+              opacity: eliminated[i] ? 0.5 : 1,
+            }}>
+              <div style={{ color: SEAT_COLORS[i], fontWeight: 700, textDecoration: eliminated[i] ? 'line-through' : 'none' }}>{name.split(' ')[0]}</div>
+              <div style={{ color: scores[i] >= 80 ? '#f87171' : scores[i] >= 50 ? '#fbbf24' : '#4ade80', fontWeight: 800, fontSize: 13 }}>{scores[i]}</div>
+              {hasOpened[i] && !eliminated[i] && <div style={{ fontSize: 7, color: '#4ade80' }}>AÇIK</div>}
             </div>
           ))}
         </div>
+        <div style={{ fontSize: 10, color: 'rgba(217,70,239,0.5)' }}>Kalan: {pile.length}</div>
       </div>
 
-      {/* Difficulty selector */}
+      {/* Difficulty selector overlay */}
       {showDiffSelector && (
-        <div className="flex items-center gap-2 text-xs bg-purple-900/40 border border-purple-600/40 rounded-xl px-3 py-2">
-          <span className="text-fuchsia-300/80">Zorluk:</span>
-          {(['easy', 'medium', 'hard'] as const).map(d => (
-            <button key={d} onClick={() => { setDifficulty(d); setDiffSet(true);
-              const ns = { ...state, difficulty: d }
-              sendAIState({ state: ns, currentTurn: 1, status: 'active', player1Score: 0, player2Score: 0, winnerId: null })
-            }}
-              className={`px-3 py-1 rounded-lg border transition-all text-xs font-bold ${
-                difficulty === d ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-purple-700/50 bg-purple-900/30 text-fuchsia-400/70 hover:bg-purple-800/40'
-              }`}>
-              {DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}
-            </button>
-          ))}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 100, background: 'rgba(10,1,24,0.95)', padding: 24, borderRadius: 16, border: '1px solid rgba(147,51,234,0.4)' }}>
+          <div style={{ color: '#d946ef', fontSize: 14, marginBottom: 12, textAlign: 'center' }}>Zorluk Seç</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['easy', 'medium', 'hard'] as const).map(d => (
+              <button key={d} onClick={() => { setDifficulty(d); setDiffSet(true);
+                const ns = { ...state, difficulty: d }
+                sendAIState({ state: ns, currentTurn: 1, status: 'active', player1Score: 0, player2Score: 0, winnerId: null })
+              }} style={{
+                padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                background: difficulty === d ? 'rgba(34,211,238,0.2)' : 'rgba(88,28,135,0.3)',
+                border: `1px solid ${difficulty === d ? 'rgba(34,211,238,0.5)' : 'rgba(147,51,234,0.3)'}`,
+                color: difficulty === d ? '#67e8f9' : '#d946ef',
+              }}>{DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}</button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Round end overlay */}
       {(state?.showingRoundResult || showRoundEnd) && !gameOver && (
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full bg-gradient-to-b from-amber-900/40 to-purple-900/40 border border-amber-600/40 rounded-xl p-4 text-center">
-          <h3 className="text-lg font-bold text-yellow-400 mb-2">🏆 Raunt {round} Bitti!</h3>
-          <p className="text-sm text-fuchsia-300 mb-3">{SEAT_NAMES[state?.roundWinner ?? 0]} kazandı!</p>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 100, background: 'rgba(10,1,24,0.95)', padding: 24, borderRadius: 16, border: '1px solid rgba(251,191,36,0.3)', textAlign: 'center', minWidth: 300 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#facc15', marginBottom: 8 }}>🏆 Raunt {round} Bitti!</h3>
+          <p style={{ fontSize: 13, color: '#d946ef', marginBottom: 12 }}>{SEAT_NAMES[state?.roundWinner ?? 0]} kazandı!</p>
           {state?.roundHistory?.length > 0 && (
-            <div className="grid grid-cols-4 gap-1 mb-3">
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 12 }}>
               {SEAT_NAMES.map((name, i) => {
                 const lastRound = state.roundHistory[state.roundHistory.length - 1]
                 return (
-                  <div key={i} className="text-center">
-                    <div className={`text-[9px] ${SEAT_COLORS[i]}`}>{name.split(' ')[0]}</div>
-                    <div className="text-red-400 text-xs">+{lastRound?.penalties?.[i] || 0}</div>
+                  <div key={i} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 9, color: SEAT_COLORS[i] }}>{name.split(' ')[0]}</div>
+                    <div style={{ fontSize: 12, color: '#f87171' }}>+{lastRound?.penalties?.[i] || 0}</div>
                   </div>
                 )
               })}
             </div>
           )}
-          <button onClick={startNextRound}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-            Sonraki Raunt →
-          </button>
-        </motion.div>
+          <button onClick={startNextRound} style={{ padding: '8px 20px', background: 'linear-gradient(90deg,#0891b2,#7c3aed)', color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Sonraki Raunt →</button>
+        </div>
       )}
 
-      {/* Game Over */}
+      {/* Game over overlay */}
       {gameOver && (
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full bg-gradient-to-b from-yellow-900/40 to-purple-900/40 border border-yellow-600/40 rounded-xl p-4 text-center">
-          <h3 className="text-xl font-bold text-yellow-400 mb-2">🎉 Oyun Bitti!</h3>
-          <p className="text-sm text-fuchsia-300 mb-1">{SEAT_NAMES[winner ?? 0]} oyunu kazandı!</p>
-          <div className="grid grid-cols-4 gap-1 mt-2">
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 100, background: 'rgba(10,1,24,0.95)', padding: 24, borderRadius: 16, border: '1px solid rgba(251,191,36,0.3)', textAlign: 'center', minWidth: 320 }}>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#facc15', marginBottom: 8 }}>🎉 Oyun Bitti!</h3>
+          <p style={{ fontSize: 14, color: '#d946ef', marginBottom: 12 }}>{SEAT_NAMES[winner ?? 0]} oyunu kazandı!</p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
             {SEAT_NAMES.map((name, i) => (
-              <div key={i} className={`text-center p-2 rounded-lg ${
-                i === winner ? 'bg-yellow-500/20 border border-yellow-500/40' : 'bg-purple-900/20 border border-purple-700/30'
-              }`}>
-                <div className={`text-[10px] font-bold ${SEAT_COLORS[i]}`}>{name.split(' ')[0]}</div>
-                <div className="text-lg font-black text-white">{scores[i]}</div>
-                {i === winner && <div className="text-[9px] text-yellow-400">🏆</div>}
-                {eliminated[i] && i !== winner && <div className="text-[8px] text-red-400">ELENDİ</div>}
+              <div key={i} style={{ textAlign: 'center', padding: '6px 10px', borderRadius: 8, background: i === winner ? 'rgba(250,204,21,0.15)' : 'rgba(88,28,135,0.2)', border: `1px solid ${i === winner ? 'rgba(250,204,21,0.3)' : 'rgba(147,51,234,0.2)'}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: SEAT_COLORS[i] }}>{name.split(' ')[0]}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>{scores[i]}</div>
+                {i === winner && <div style={{ fontSize: 9, color: '#facc15' }}>🏆</div>}
+                {eliminated[i] && i !== winner && <div style={{ fontSize: 8, color: '#f87171' }}>ELENDİ</div>}
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* Game info */}
+      {/* MAIN GAME AREA */}
       {!state?.showingRoundResult && !gameOver && (
-        <>
-          <div className="flex items-center justify-between w-full text-xs px-1">
-            <div className="flex items-center gap-2">
-              {indicator && <div className="flex items-center gap-1"><span className="text-amber-400/70 text-[10px]">Gösterge:</span><TileView tile={indicator} size="sm" /></div>}
-              <span className="text-fuchsia-400/60">Okey: <span className="text-yellow-300 font-bold">{indicator?.isFalseJoker ? '★' : `${COLORS[jokerColor]?.name} ${jokerNumber}`}</span></span>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+
+          {/* Table area: opponents + center + melds */}
+          <div style={{ flex: 1, display: 'flex', position: 'relative', minHeight: 0 }}>
+
+            {/* Left opponent (seat 3) */}
+            <div style={{ width: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: 4 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: SEAT_COLORS[3], opacity: eliminated[3] ? 0.3 : currentSeat === 3 ? 1 : 0.6 }}>{SEAT_NAMES[3].split(' ')[0]}</span>
+              {!eliminated[3] && (
+                <>
+                  <span style={{ fontSize: 8, color: 'rgba(217,70,239,0.4)' }}>({hands[3]?.length || 0})</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {Array.from({ length: Math.min(hands[3]?.length || 0, 8) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
+                  </div>
+                  {getTopDiscard(3) && <div style={{ marginTop: 4 }}><Tile tile={getTopDiscard(3)!} size="xs" isJoker={isJokerTile(getTopDiscard(3)!)} /></div>}
+                </>
+              )}
             </div>
-            <span className="text-fuchsia-400/50">Kalan: {pile.length} taş</span>
-          </div>
 
-          {/* Table */}
-          <div className="relative w-full bg-gradient-to-br from-[#1a0e06] via-[#2a1810] to-[#1a0e06] border-[3px] border-amber-900/70 rounded-2xl shadow-[inset_0_2px_15px_rgba(0,0,0,0.6),0_4px_20px_rgba(0,0,0,0.5)] p-3 sm:p-4" style={{ minHeight: 360 }}>
+            {/* Center area */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
-            {/* North (seat 2) */}
-            <div className="flex flex-col items-center gap-1 mb-2">
-              <span className={`text-[10px] font-bold ${SEAT_COLORS[2]} ${eliminated[2] ? 'opacity-30 line-through' : currentSeat === 2 ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[2]} ({hands[2]?.length || 0})</span>
-              {!eliminated[2] && <div className="flex gap-0.5">{Array.from({ length: Math.min(hands[2]?.length || 0, 15) }).map((_, i) => <FaceDownTile key={i} size="sm" />)}</div>}
-              {getTopDiscard(2) && !eliminated[2] && <div className="flex items-center gap-1 mt-0.5"><span className="text-amber-500/40 text-[8px]">attı:</span><TileView tile={getTopDiscard(2)!} size="sm" isJoker={isJokerTile(getTopDiscard(2)!)} /></div>}
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              {/* West (seat 3) */}
-              <div className="flex flex-col items-center gap-1 min-w-[40px]">
-                <span className={`text-[10px] font-bold ${SEAT_COLORS[3]} ${eliminated[3] ? 'opacity-30 line-through' : currentSeat === 3 ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[3]}</span>
-                {!eliminated[3] && <><span className="text-fuchsia-400/40 text-[9px]">({hands[3]?.length || 0})</span>
-                <div className="flex flex-col gap-0.5">{Array.from({ length: Math.min(hands[3]?.length || 0, 8) }).map((_, i) => <FaceDownTile key={i} size="sm" />)}</div>
-                {getTopDiscard(3) && <div className="mt-1"><TileView tile={getTopDiscard(3)!} size="sm" isJoker={isJokerTile(getTopDiscard(3)!)} /></div>}</>}
+              {/* Top opponent (seat 2) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '4px 0' }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: SEAT_COLORS[2], opacity: eliminated[2] ? 0.3 : currentSeat === 2 ? 1 : 0.6 }}>{SEAT_NAMES[2]}</span>
+                {!eliminated[2] && (
+                  <div style={{ display: 'flex', gap: 1 }}>
+                    {Array.from({ length: Math.min(hands[2]?.length || 0, 12) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
+                  </div>
+                )}
+                {!eliminated[2] && getTopDiscard(2) && <Tile tile={getTopDiscard(2)!} size="xs" isJoker={isJokerTile(getTopDiscard(2)!)} />}
               </div>
 
-              {/* Center */}
-              <div className="flex flex-col items-center gap-3 flex-1">
-                <div className="flex items-center gap-4">
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDraw('pile')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
-                      isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'border-cyan-400/60 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
-                    <div className="relative">
-                      <div className="w-10 h-14 rounded-lg bg-gradient-to-b from-purple-700 to-purple-950 border-2 border-purple-500/50 shadow-lg flex items-center justify-center">
-                        <span className="text-purple-300/60 text-xs font-bold">{pile.length}</span>
-                      </div>
-                      <div className="absolute -top-0.5 -left-0.5 w-10 h-14 rounded-lg bg-purple-800/30 border border-purple-600/20 -z-10" />
-                    </div>
-                    <span className="text-[9px] text-cyan-300/70 font-medium">Yığın</span>
-                  </motion.button>
+              {/* Center table: pile + indicator + discard + melds */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 0 }}>
 
-                  {indicator && <div className="flex flex-col items-center gap-1"><TileView tile={indicator} size="lg" isJoker={isJokerTile(indicator)} /><span className="text-[8px] text-amber-400/50">Gösterge</span></div>}
+                {/* Draw area */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div onClick={() => handleDraw('pile')} style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 6, borderRadius: 8,
+                    border: `2px solid ${isMyCurrentTurn && phase === 'draw' ? 'rgba(34,211,238,0.5)' : 'rgba(120,53,15,0.3)'}`,
+                    background: isMyCurrentTurn && phase === 'draw' ? 'rgba(34,211,238,0.08)' : 'rgba(120,53,15,0.1)',
+                    cursor: isMyCurrentTurn && phase === 'draw' ? 'pointer' : 'not-allowed', opacity: isMyCurrentTurn && phase === 'draw' ? 1 : 0.5,
+                  }}>
+                    <div style={{ width: 36, height: 50, borderRadius: 6, background: 'linear-gradient(180deg,#6b21a8,#3b0764)', border: '2px solid rgba(147,51,234,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: 'rgba(168,85,247,0.5)', fontSize: 11, fontWeight: 700 }}>{pile.length}</span>
+                    </div>
+                    <span style={{ fontSize: 8, color: 'rgba(34,211,238,0.6)' }}>Yığın</span>
+                  </div>
+
+                  {indicator && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <Tile tile={indicator} size="sm" isJoker={isJokerTile(indicator)} />
+                      <span style={{ fontSize: 7, color: 'rgba(251,191,36,0.5)' }}>Gösterge</span>
+                    </div>
+                  )}
 
                   {prevSeatDiscard ? (
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      onClick={() => handleDraw('discard')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
-                        isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'border-green-400/60 bg-green-500/10 cursor-pointer hover:bg-green-500/20' : 'border-amber-900/30 bg-amber-950/20 opacity-50 cursor-not-allowed'}`}>
-                      <TileView tile={prevSeatDiscard} size="lg" isJoker={isJokerTile(prevSeatDiscard)} />
-                      <span className="text-[9px] text-green-300/70 font-medium">Yerden Al</span>
-                    </motion.button>
+                    <div onClick={() => handleDraw('discard')} style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 6, borderRadius: 8,
+                      border: `2px solid ${isMyCurrentTurn && phase === 'draw' ? 'rgba(74,222,128,0.5)' : 'rgba(120,53,15,0.3)'}`,
+                      background: isMyCurrentTurn && phase === 'draw' ? 'rgba(74,222,128,0.08)' : 'rgba(120,53,15,0.1)',
+                      cursor: isMyCurrentTurn && phase === 'draw' ? 'pointer' : 'not-allowed', opacity: isMyCurrentTurn && phase === 'draw' ? 1 : 0.5,
+                    }}>
+                      <Tile tile={prevSeatDiscard} size="sm" isJoker={isJokerTile(prevSeatDiscard)} />
+                      <span style={{ fontSize: 8, color: 'rgba(74,222,128,0.6)' }}>Yerden Al</span>
+                    </div>
                   ) : (
-                    <div className="w-14 h-20 rounded-xl border-2 border-dashed border-amber-900/20 flex items-center justify-center"><span className="text-amber-700/30 text-[8px]">Atık</span></div>
+                    <div style={{ width: 50, height: 60, borderRadius: 8, border: '2px dashed rgba(120,53,15,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 7, color: 'rgba(120,53,15,0.3)' }}>Atık</span>
+                    </div>
                   )}
                 </div>
 
-                <div className={`text-xs font-bold px-3 py-1 rounded-full ${isMyCurrentTurn ? 'bg-cyan-500/20 text-cyan-300 animate-pulse' : 'bg-fuchsia-500/10 text-fuchsia-400/60'}`}>
-                  {winner !== null && !state?.showingRoundResult ? <span className="text-yellow-400">🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
-                    : <span>{isMyCurrentTurn ? `Sen - ${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
-                </div>
-              </div>
+                {/* Melds area on table */}
+                {melds.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: '90%', padding: 4 }}>
+                    {melds.map((m: Meld, idx: number) => (
+                      <div key={idx} onClick={canAddToMeld ? () => handleAddToMeld(idx) : undefined}
+                        style={{ cursor: canAddToMeld ? 'pointer' : 'default' }}>
+                        <MeldGroup meld={m} isJokerFn={isJokerTile}
+                          highlightMeld={addToMeldIdx === idx || (canAddToMeld && selectedTiles.size > 0)} />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {/* East (seat 1) */}
-              <div className="flex flex-col items-center gap-1 min-w-[40px]">
-                <span className={`text-[10px] font-bold ${SEAT_COLORS[1]} ${eliminated[1] ? 'opacity-30 line-through' : currentSeat === 1 ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[1]}</span>
-                {!eliminated[1] && <><span className="text-fuchsia-400/40 text-[9px]">({hands[1]?.length || 0})</span>
-                <div className="flex flex-col gap-0.5">{Array.from({ length: Math.min(hands[1]?.length || 0, 8) }).map((_, i) => <FaceDownTile key={i} size="sm" />)}</div>
-                {getTopDiscard(1) && <div className="mt-1"><TileView tile={getTopDiscard(1)!} size="sm" isJoker={isJokerTile(getTopDiscard(1)!)} /></div>}</>}
+                {/* Status */}
+                <div style={{
+                  fontSize: 11, fontWeight: 700, padding: '3px 12px', borderRadius: 12,
+                  background: isMyCurrentTurn ? 'rgba(34,211,238,0.15)' : 'rgba(217,70,239,0.08)',
+                  color: isMyCurrentTurn ? '#67e8f9' : 'rgba(217,70,239,0.5)',
+                }}>
+                  {winner !== null ? <span style={{ color: '#facc15' }}>🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
+                    : <span>{isMyCurrentTurn ? `Sen - ${phase === 'draw' ? 'Taş Çek' : myOpened ? 'Taş At veya Meld Aç' : 'Taş At veya Açıl'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
+                </div>
               </div>
             </div>
 
-            {/* Player discards */}
-            {getTopDiscard(mySeat) && (
-              <div className="flex items-center justify-center gap-1 mt-2">
-                <span className="text-amber-500/40 text-[8px]">Senin attıkların:</span>
-                <div className="flex gap-0.5 overflow-x-auto max-w-[200px]">
-                  {discards[mySeat].slice(-5).map((t: OkeyTile) => <TileView key={t.id} tile={t} size="sm" isJoker={isJokerTile(t)} />)}
-                </div>
-              </div>
-            )}
-
-            {/* Player hand */}
-            <div className="mt-3">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <span className={`text-[10px] font-bold ${SEAT_COLORS[mySeat]} ${isMyCurrentTurn ? 'animate-pulse' : 'opacity-60'}`}>{SEAT_NAMES[mySeat]} ({myHand.length} taş)</span>
-                {canWin && phase === 'discard' && (
-                  <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}
-                    className="text-[10px] text-green-400 font-bold bg-green-500/20 px-2 py-0.5 rounded-full">✨ Kazanabilirsin!</motion.span>
+            {/* Right side: opponent (seat 1) + action buttons */}
+            <div style={{ width: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px' }}>
+              {/* East opponent */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: SEAT_COLORS[1], opacity: eliminated[1] ? 0.3 : currentSeat === 1 ? 1 : 0.6 }}>{SEAT_NAMES[1].split(' ')[0]}</span>
+                {!eliminated[1] && (
+                  <>
+                    <span style={{ fontSize: 8, color: 'rgba(217,70,239,0.4)' }}>({hands[1]?.length || 0})</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {Array.from({ length: Math.min(hands[1]?.length || 0, 8) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
+                    </div>
+                    {getTopDiscard(1) && <Tile tile={getTopDiscard(1)!} size="xs" isJoker={isJokerTile(getTopDiscard(1)!)} />}
+                  </>
                 )}
               </div>
-              <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5 min-h-[56px]">
-                <AnimatePresence>
-                  {myHand.map((tile: OkeyTile) => (
-                    <TileView key={tile.id} tile={tile} size="md" selected={selectedTile === tile.id}
-                      onClick={() => handleTileClick(tile.id)} isJoker={isJokerTile(tile)}
-                      glow={canWin && phase === 'discard' && selectedTile === tile.id} />
-                  ))}
-                </AnimatePresence>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                <button onClick={() => handleLayMeld('run')} disabled={!canLayMeld}
+                  style={{
+                    width: '100%', padding: '6px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: canLayMeld ? 'pointer' : 'not-allowed',
+                    background: canLayMeld ? 'rgba(34,211,238,0.2)' : 'rgba(88,28,135,0.2)',
+                    border: `1px solid ${canLayMeld ? 'rgba(34,211,238,0.4)' : 'rgba(147,51,234,0.2)'}`,
+                    color: canLayMeld ? '#67e8f9' : 'rgba(147,51,234,0.4)', opacity: canLayMeld ? 1 : 0.5,
+                  }}>🃏 Seri Aç</button>
+                <button onClick={() => handleLayMeld('set')} disabled={!canLayMeld}
+                  style={{
+                    width: '100%', padding: '6px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: canLayMeld ? 'pointer' : 'not-allowed',
+                    background: canLayMeld ? 'rgba(168,85,247,0.2)' : 'rgba(88,28,135,0.2)',
+                    border: `1px solid ${canLayMeld ? 'rgba(168,85,247,0.4)' : 'rgba(147,51,234,0.2)'}`,
+                    color: canLayMeld ? '#c084fc' : 'rgba(147,51,234,0.4)', opacity: canLayMeld ? 1 : 0.5,
+                  }}>🎴 Çift Aç</button>
+                <button onClick={clearSelection} disabled={selectedTiles.size === 0}
+                  style={{
+                    width: '100%', padding: '6px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: selectedTiles.size > 0 ? 'pointer' : 'not-allowed',
+                    background: selectedTiles.size > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(88,28,135,0.2)',
+                    border: `1px solid ${selectedTiles.size > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(147,51,234,0.2)'}`,
+                    color: selectedTiles.size > 0 ? '#fca5a5' : 'rgba(147,51,234,0.4)', opacity: selectedTiles.size > 0 ? 1 : 0.5,
+                  }}>↩ Geri Topla</button>
+                {canAddToMeld && (
+                  <div style={{ fontSize: 8, color: '#fbbf24', textAlign: 'center', padding: 2 }}>↑ Masadaki gruba tıkla</div>
+                )}
               </div>
             </div>
           </div>
 
-          <AnimatePresence>
-            {message && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="text-xs px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full">{message}</motion.div>
+          {/* PLAYER HAND at bottom */}
+          <div style={{
+            flexShrink: 0, padding: '6px 8px 8px', borderTop: '1px solid rgba(147,51,234,0.2)',
+            background: 'rgba(88,28,135,0.12)',
+          }}>
+            {/* Hand label */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: SEAT_COLORS[mySeat] }}>
+                {SEAT_NAMES[mySeat]} ({myHand.length} taş)
+              </span>
+              {myOpened && <span style={{ fontSize: 8, color: '#4ade80', background: 'rgba(74,222,128,0.15)', padding: '1px 6px', borderRadius: 8 }}>✅ AÇIK</span>}
+              {!myOpened && <span style={{ fontSize: 8, color: '#fbbf24', background: 'rgba(251,191,36,0.1)', padding: '1px 6px', borderRadius: 8 }}>🔒 Kapalı (min 101 puan)</span>}
+              {selectedTiles.size > 0 && <span style={{ fontSize: 9, color: '#facc15' }}>({selectedTiles.size} seçili)</span>}
+            </div>
+            {/* Tiles */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 3, minHeight: 50 }}>
+              <AnimatePresence>
+                {myHand.map((tile: OkeyTile) => (
+                  <Tile key={tile.id} tile={tile} size="md" selected={selectedTiles.has(tile.id)}
+                    onClick={() => handleTileClick(tile.id)} isJoker={isJokerTile(tile)} />
+                ))}
+              </AnimatePresence>
+            </div>
+            {/* Hint text */}
+            {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
+              <div style={{ textAlign: 'center', fontSize: 9, color: 'rgba(217,70,239,0.4)', marginTop: 4 }}>
+                {phase === 'draw' ? 'Yığından veya yerden taş çek'
+                  : selectedTiles.size > 0 ? 'Seri/Çift Aç veya masadaki gruba ekle | Çift tıkla → at'
+                  : 'Taşlara tıkla → seç | Çift tıkla → at'}
+              </div>
             )}
-          </AnimatePresence>
+          </div>
 
-          {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
-            <div className="text-center text-[10px] text-fuchsia-400/50">
-              {phase === 'draw' ? <span>Yığından veya yerden taş çek</span>
-                : <span>{selectedTile !== null ? 'Tekrar tıkla → at | Başka taşa tıkla → değiştir' : 'Atmak istediğin taşa tıkla'}</span>}
+          {/* Discards strip */}
+          {discards[mySeat]?.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '2px 8px 4px', flexShrink: 0 }}>
+              <span style={{ fontSize: 7, color: 'rgba(251,191,36,0.4)' }}>Attıkların:</span>
+              <div style={{ display: 'flex', gap: 2, overflow: 'hidden', maxWidth: 200 }}>
+                {discards[mySeat].slice(-6).map((t: OkeyTile) => <Tile key={t.id} tile={t} size="xs" isJoker={isJokerTile(t)} />)}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
+
+      {/* Message toast */}
+      <AnimatePresence>
+        {message && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            style={{
+              position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+              background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.3)',
+              color: '#fcd34d', padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+              backdropFilter: 'blur(8px)',
+            }}>{message}</motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
+
+  return <Portal>{gameUI}</Portal>
 }

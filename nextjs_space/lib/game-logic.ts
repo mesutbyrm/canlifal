@@ -942,6 +942,367 @@ export function okeyAIMove(state: any): { action: 'draw'; source: 'pile' | 'disc
   return null
 }
 
+// ========== 101 OKEY MELD SYSTEM ==========
+export interface Meld { tiles: OkeyTile[]; owner: number; type: 'run' | 'set' }
+
+// Check if tiles form a valid run (same color, consecutive numbers, 3+)
+export function okey101ValidateRun(tiles: OkeyTile[], jc: number, jn: number): boolean {
+  if (tiles.length < 3) return false
+  // Separate jokers and real tiles
+  const jokers: OkeyTile[] = []
+  const real: OkeyTile[] = []
+  for (const t of tiles) {
+    if (okeyIsJoker(t, jc, jn)) jokers.push(t)
+    else real.push(t)
+  }
+  if (real.length === 0) return jokers.length >= 3 // all jokers is valid if 3+
+  // All real tiles must be same color
+  const color = real[0].color
+  if (!real.every(t => t.color === color)) return false
+  // Sort by number
+  real.sort((a, b) => a.number - b.number)
+  // Check consecutive with jokers filling gaps
+  let jokersLeft = jokers.length
+  for (let i = 1; i < real.length; i++) {
+    const gap = real[i].number - real[i - 1].number - 1
+    if (gap < 0) return false // duplicate number
+    if (gap === 0) return false // same number
+    jokersLeft -= gap
+    if (jokersLeft < 0) return false
+  }
+  return true
+}
+
+// Check if tiles form a valid set (same number, different colors, 3-4)
+export function okey101ValidateSet(tiles: OkeyTile[], jc: number, jn: number): boolean {
+  if (tiles.length < 3 || tiles.length > 4) return false
+  const jokers: OkeyTile[] = []
+  const real: OkeyTile[] = []
+  for (const t of tiles) {
+    if (okeyIsJoker(t, jc, jn)) jokers.push(t)
+    else real.push(t)
+  }
+  if (real.length === 0) return jokers.length >= 3
+  // All real tiles must have same number
+  const num = real[0].number
+  if (!real.every(t => t.number === num)) return false
+  // All real tiles must have different colors
+  const colors = new Set(real.map(t => t.color))
+  if (colors.size !== real.length) return false
+  return true
+}
+
+// Calculate point value of a meld
+export function okey101CalcMeldPoints(tiles: OkeyTile[], jc: number, jn: number): number {
+  if (tiles.length === 0) return 0
+  const real: OkeyTile[] = []
+  const jokerPositions: number[] = []
+  for (let i = 0; i < tiles.length; i++) {
+    if (okeyIsJoker(tiles[i], jc, jn)) jokerPositions.push(i)
+    else real.push(tiles[i])
+  }
+  // For runs: each tile (or joker substitute) = its face value
+  // For sets: each tile = its face value
+  // Jokers take the value of the position they fill
+  if (real.length === 0) {
+    // All jokers - minimum value run: 1+2+3 = 6
+    return tiles.length * 7 // approximate
+  }
+  // Detect if it's a run or set
+  const allSameNumber = real.every(t => t.number === real[0].number)
+  if (allSameNumber && real.length >= 2) {
+    // Set: each tile = face value
+    return tiles.length * real[0].number
+  }
+  // Run: sort and fill gaps
+  real.sort((a, b) => a.number - b.number)
+  let total = 0
+  let jIdx = 0
+  // Calculate starting number considering jokers before first real tile
+  let startNum = real[0].number
+  // Fill jokers before first real
+  for (let j = 0; j < jokerPositions.length && jokerPositions[j] < (tiles.indexOf(real[0])); j++) {
+    startNum--
+    jIdx++
+  }
+  // Sum all positions
+  let currentNum = real[0].number
+  let realIdx = 0
+  for (let i = 0; i < tiles.length; i++) {
+    if (realIdx < real.length && tiles[i].id === real[realIdx].id) {
+      total += real[realIdx].number
+      currentNum = real[realIdx].number + 1
+      realIdx++
+    } else {
+      total += currentNum
+      currentNum++
+    }
+  }
+  // Simpler approach: just sum the positions
+  if (total === 0) {
+    const sorted = [...real].sort((a, b) => a.number - b.number)
+    let num = sorted[0].number
+    total = 0
+    let ri = 0
+    for (let i = 0; i < tiles.length; i++) {
+      if (ri < sorted.length && num === sorted[ri].number) {
+        total += num
+        ri++
+      } else {
+        total += num // joker fills this position
+      }
+      num++
+    }
+  }
+  return total
+}
+
+// Simpler point calc for melds
+function calcMeldPoints(tiles: OkeyTile[], jc: number, jn: number): number {
+  const real = tiles.filter(t => !okeyIsJoker(t, jc, jn))
+  if (real.length === 0) return tiles.length * 5
+  // Set: same number tiles
+  const isSet = real.length >= 2 && real.every(t => t.number === real[0].number)
+  if (isSet) return tiles.length * real[0].number
+  // Run: consecutive same-color tiles
+  const sorted = [...real].sort((a, b) => a.number - b.number)
+  let num = sorted[0].number
+  let total = 0
+  let ri = 0
+  for (let i = 0; i < tiles.length; i++) {
+    if (ri < sorted.length && num === sorted[ri].number) {
+      total += num; ri++
+    } else {
+      total += num
+    }
+    num++
+  }
+  return total
+}
+
+// Lay melds from hand onto table
+export function okey101LayMeld(state: any, seat: number, tileGroups: number[][]): { state?: any; error?: string; points?: number } {
+  if (state.currentSeat !== seat || state.phase !== 'discard') return { error: 'Sıra değil' }
+  const s = JSON.parse(JSON.stringify(state))
+  const hand: OkeyTile[] = s.hands[seat]
+  const jc = s.jokerColor; const jn = s.jokerNumber
+  const newMelds: Meld[] = []
+  let totalPoints = 0
+  const usedIds = new Set<number>()
+
+  for (const group of tileGroups) {
+    const tiles: OkeyTile[] = []
+    for (const id of group) {
+      const t = hand.find((h: OkeyTile) => h.id === id && !usedIds.has(h.id))
+      if (!t) return { error: 'Taş bulunamadı' }
+      tiles.push(t)
+      usedIds.add(id)
+    }
+    // Validate as run or set
+    const isRun = okey101ValidateRun(tiles, jc, jn)
+    const isSet = okey101ValidateSet(tiles, jc, jn)
+    if (!isRun && !isSet) return { error: 'Geçersiz seri/çift kombinasyonu' }
+    const pts = calcMeldPoints(tiles, jc, jn)
+    totalPoints += pts
+    newMelds.push({ tiles, owner: seat, type: isRun ? 'run' : 'set' })
+  }
+
+  // Check opening rule
+  const hasOpened = s.hasOpened?.[seat] ?? false
+  if (!hasOpened) {
+    // First opening must be >= 101 points (only from own tiles)
+    if (totalPoints < 101) return { error: `Açılış için en az 101 puan gerekli (şu an: ${totalPoints})` }
+  }
+
+  // Remove tiles from hand
+  s.hands[seat] = hand.filter((t: OkeyTile) => !usedIds.has(t.id))
+  // Add melds to table
+  if (!s.melds) s.melds = []
+  s.melds.push(...newMelds)
+  // Mark as opened
+  if (!s.hasOpened) s.hasOpened = [false, false, false, false]
+  s.hasOpened[seat] = true
+
+  return { state: s, points: totalPoints }
+}
+
+// Add tile(s) from hand to an existing meld on the table
+export function okey101AddToMeld(state: any, seat: number, tileIds: number[], meldIndex: number): { state?: any; error?: string } {
+  if (state.currentSeat !== seat || state.phase !== 'discard') return { error: 'Sıra değil' }
+  if (!state.hasOpened?.[seat]) return { error: 'Önce açılış yapmalısın' }
+  const s = JSON.parse(JSON.stringify(state))
+  if (!s.melds || meldIndex >= s.melds.length) return { error: 'Geçersiz seri' }
+  const hand: OkeyTile[] = s.hands[seat]
+  const jc = s.jokerColor; const jn = s.jokerNumber
+  const meld: Meld = s.melds[meldIndex]
+
+  const tilesToAdd: OkeyTile[] = []
+  for (const id of tileIds) {
+    const t = hand.find((h: OkeyTile) => h.id === id)
+    if (!t) return { error: 'Taş bulunamadı' }
+    tilesToAdd.push(t)
+  }
+
+  const combined = [...meld.tiles, ...tilesToAdd]
+  // Validate combined meld
+  const isRun = okey101ValidateRun(combined, jc, jn)
+  const isSet = okey101ValidateSet(combined, jc, jn)
+  if (!isRun && !isSet) return { error: 'Bu taş(lar) bu seriye eklenemez' }
+
+  // Sort combined tiles properly for runs
+  if (isRun) {
+    const jokers = combined.filter(t => okeyIsJoker(t, jc, jn))
+    const real = combined.filter(t => !okeyIsJoker(t, jc, jn)).sort((a, b) => a.number - b.number)
+    // Interleave jokers into gaps
+    const sorted: OkeyTile[] = []
+    let ri = 0
+    if (real.length > 0) {
+      let num = real[0].number
+      let ji = 0
+      // Check if jokers go before first real
+      while (ji < jokers.length && ri === 0 && num > 1 && sorted.length + real.length + (jokers.length - ji) > combined.length) {
+        // Don't add jokers before unless needed
+        break
+      }
+      for (let i = 0; i < combined.length; i++) {
+        if (ri < real.length && real[ri].number === num) {
+          sorted.push(real[ri]); ri++
+        } else if (ji < jokers.length) {
+          sorted.push(jokers[ji]); ji++
+        }
+        num++
+      }
+    }
+    s.melds[meldIndex] = { ...meld, tiles: sorted.length === combined.length ? sorted : combined, type: 'run' }
+  } else {
+    s.melds[meldIndex] = { ...meld, tiles: combined, type: 'set' }
+  }
+
+  // Remove tiles from hand
+  const addedIds = new Set(tileIds)
+  s.hands[seat] = hand.filter((t: OkeyTile) => !addedIds.has(t.id))
+
+  return { state: s }
+}
+
+// AI meld logic for 101 Okey
+export function okey101AILayMelds(state: any, seat: number): { tileGroups: number[][]; } | null {
+  const hand: OkeyTile[] = state.hands[seat]
+  if (!hand || hand.length < 3) return null
+  const jc = state.jokerColor; const jn = state.jokerNumber
+  const hasOpened = state.hasOpened?.[seat] ?? false
+
+  // Find all possible runs and sets
+  const possibleMelds: { ids: number[]; points: number; type: 'run' | 'set' }[] = []
+  const jokerTiles = hand.filter(t => okeyIsJoker(t, jc, jn))
+  const realTiles = hand.filter(t => !okeyIsJoker(t, jc, jn))
+
+  // Find sets (same number, different colors)
+  const byNumber = new Map<number, OkeyTile[]>()
+  for (const t of realTiles) {
+    const arr = byNumber.get(t.number) || []
+    arr.push(t)
+    byNumber.set(t.number, arr)
+  }
+  for (const [num, tiles] of byNumber) {
+    // Get unique colors
+    const colorMap = new Map<number, OkeyTile>()
+    for (const t of tiles) if (!colorMap.has(t.color)) colorMap.set(t.color, t)
+    const unique = Array.from(colorMap.values())
+    if (unique.length >= 3) {
+      // Take 3 or 4
+      const take = unique.slice(0, Math.min(4, unique.length))
+      possibleMelds.push({ ids: take.map(t => t.id), points: take.length * num, type: 'set' })
+    }
+    if (unique.length === 2 && jokerTiles.length > 0) {
+      possibleMelds.push({ ids: [...unique.map(t => t.id), jokerTiles[0].id], points: 3 * num, type: 'set' })
+    }
+  }
+
+  // Find runs (same color, consecutive)
+  const byColor = new Map<number, OkeyTile[]>()
+  for (const t of realTiles) {
+    const arr = byColor.get(t.color) || []
+    arr.push(t)
+    byColor.set(t.color, arr)
+  }
+  for (const [color, tiles] of byColor) {
+    const sorted = [...tiles].sort((a, b) => a.number - b.number)
+    // Find consecutive sequences of 3+
+    for (let i = 0; i < sorted.length; i++) {
+      let run = [sorted[i]]
+      for (let j = i + 1; j < sorted.length; j++) {
+        if (sorted[j].number === run[run.length - 1].number + 1) {
+          run.push(sorted[j])
+        } else if (sorted[j].number === run[run.length - 1].number) {
+          continue // skip duplicate
+        } else break
+      }
+      if (run.length >= 3) {
+        const pts = run.reduce((s, t) => s + t.number, 0)
+        possibleMelds.push({ ids: run.map(t => t.id), points: pts, type: 'run' })
+      }
+    }
+  }
+
+  if (possibleMelds.length === 0) return null
+
+  // If not opened: find combination that totals >= 101
+  if (!hasOpened) {
+    // Sort by points descending and try greedy
+    possibleMelds.sort((a, b) => b.points - a.points)
+    const selected: typeof possibleMelds = []
+    const usedIds = new Set<number>()
+    let totalPts = 0
+    for (const m of possibleMelds) {
+      if (m.ids.some(id => usedIds.has(id))) continue
+      selected.push(m)
+      m.ids.forEach(id => usedIds.add(id))
+      totalPts += m.points
+    }
+    if (totalPts >= 101) return { tileGroups: selected.map(m => m.ids) }
+    return null // Can't open yet
+  }
+
+  // Already opened: lay any valid melds
+  const usedIds = new Set<number>()
+  const groups: number[][] = []
+  for (const m of possibleMelds) {
+    if (m.ids.some(id => usedIds.has(id))) continue
+    groups.push(m.ids)
+    m.ids.forEach(id => usedIds.add(id))
+  }
+  return groups.length > 0 ? { tileGroups: groups } : null
+}
+
+// AI: try to add tiles to existing melds
+export function okey101AIAddToMelds(state: any, seat: number): { tileId: number; meldIndex: number }[] {
+  if (!state.hasOpened?.[seat] || !state.melds?.length) return []
+  const hand: OkeyTile[] = state.hands[seat]
+  const jc = state.jokerColor; const jn = state.jokerNumber
+  const adds: { tileId: number; meldIndex: number }[] = []
+  const usedIds = new Set<number>()
+
+  for (let mi = 0; mi < state.melds.length; mi++) {
+    const meld: Meld = state.melds[mi]
+    for (const t of hand) {
+      if (usedIds.has(t.id)) continue
+      if (okeyIsJoker(t, jc, jn)) continue // Don't waste jokers on adding
+      const combined = [...meld.tiles, t]
+      const isRun = okey101ValidateRun(combined, jc, jn)
+      const isSet = okey101ValidateSet(combined, jc, jn)
+      if (isRun || isSet) {
+        adds.push({ tileId: t.id, meldIndex: mi })
+        usedIds.add(t.id)
+        // Update meld in place for subsequent checks
+        meld.tiles.push(t)
+        break // one tile per meld per turn for simplicity
+      }
+    }
+  }
+  return adds
+}
+
 // Okey101 scoring: calculate penalty for tiles in hand
 export function okey101CalcPenalty(hand: OkeyTile[], jc: number, jn: number): number {
   let penalty = 0
@@ -1005,6 +1366,8 @@ export function okey101Init(difficulty?: string): any {
     round: 1,
     roundHistory: [] as any[],
     eliminated: [false, false, false, false],
+    melds: [] as Meld[],
+    hasOpened: [false, false, false, false],
   }
 }
 
