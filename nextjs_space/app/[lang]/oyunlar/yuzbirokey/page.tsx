@@ -29,7 +29,8 @@ function playWinSound() { try { const c=new(window.AudioContext||(window as any)
 function getStats() { try{return JSON.parse(localStorage.getItem('ybo_stats')||'{"wins":0,"losses":0,"gamesPlayed":0}')}catch{return{wins:0,losses:0,gamesPlayed:0}} }
 function saveStats(s:any) { try{localStorage.setItem('ybo_stats',JSON.stringify(s))}catch{} }
 
-function sortTiles(tiles: OkeyTile[], mode: string) {
+/* Sort modes: color, number, runs (seri), pairs (çift) */
+function sortTiles(tiles: OkeyTile[], mode: string, jc?: number, jn?: number) {
   const arr = [...tiles]
   if (mode === 'number') return arr.sort((a, b) => (a.isFalseJoker ? 999 : a.number ?? 999) - (b.isFalseJoker ? 999 : b.number ?? 999))
   if (mode === 'color') {
@@ -39,39 +40,86 @@ function sortTiles(tiles: OkeyTile[], mode: string) {
       return (a.number || 999) - (b.number || 999)
     })
   }
+  if (mode === 'runs') {
+    // Group by color, then sort by number within each group - ideal for finding runs
+    const groups: Record<number, OkeyTile[]> = { 0: [], 1: [], 2: [], 3: [] }
+    const jokers: OkeyTile[] = []
+    for (const t of arr) {
+      if (t.isFalseJoker || (jc !== undefined && jn !== undefined && t.color === jc && t.number === jn)) jokers.push(t)
+      else (groups[t.color] || (groups[t.color] = [])).push(t)
+    }
+    const result: OkeyTile[] = []
+    for (const color of [0, 1, 2, 3]) {
+      groups[color].sort((a, b) => a.number - b.number)
+      result.push(...groups[color])
+    }
+    result.push(...jokers)
+    return result
+  }
+  if (mode === 'pairs') {
+    // Group by number, then sort by color within each group - ideal for finding sets
+    const groups: Record<number, OkeyTile[]> = {}
+    const jokers: OkeyTile[] = []
+    for (const t of arr) {
+      if (t.isFalseJoker || (jc !== undefined && jn !== undefined && t.color === jc && t.number === jn)) jokers.push(t)
+      else { if (!groups[t.number]) groups[t.number] = []; groups[t.number].push(t) }
+    }
+    const result: OkeyTile[] = []
+    const nums = Object.keys(groups).map(Number).sort((a, b) => a - b)
+    for (const n of nums) {
+      groups[n].sort((a, b) => a.color - b.color)
+      result.push(...groups[n])
+    }
+    result.push(...jokers)
+    return result
+  }
   return arr
 }
 
+/* Calculate meld value sum */
+function calcMeldTotal(melds: Meld[], ownerSeat: number, jc: number, jn: number): number {
+  let total = 0
+  for (const m of melds) {
+    if (m.owner !== ownerSeat) continue
+    for (const t of m.tiles) {
+      if (t.isFalseJoker || (t.color === jc && t.number === jn)) continue // jokers don't add value for display
+      total += t.number || 0
+    }
+  }
+  return total
+}
+
 /* ===== TILE ===== */
-function Tile({ tile, selected, onClick, small, isJoker, onDoubleClick }: {
-  tile: OkeyTile; selected?: boolean; onClick?: () => void; small?: boolean; isJoker?: boolean; onDoubleClick?: () => void
+function Tile({ tile, selected, onClick, small, isJoker, onDoubleClick, isDragging }: {
+  tile: OkeyTile; selected?: boolean; onClick?: () => void; small?: boolean; isJoker?: boolean; onDoubleClick?: () => void; isDragging?: boolean
 }) {
   const fg = tile.isFalseJoker ? '#d97706' : (TC[tile.color] || TC[0])
   const w = small ? 28 : 44
   const h = small ? 36 : 58
   const fs = small ? 11 : 18
   return (
-    <motion.div
-      layout
+    <div
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      whileHover={onClick ? { y: -3 } : {}}
-      whileTap={onClick ? { scale: 0.95 } : {}}
       className="select-none flex-shrink-0 relative"
       style={{
         width: w, height: h,
         borderRadius: small ? 4 : 6,
         background: 'linear-gradient(180deg, #fffff8 0%, #f5f0e0 100%)',
-        border: selected ? '2.5px solid #facc15' : '1.5px solid #c8b88a',
+        border: selected ? '2.5px solid #facc15' : isDragging ? '2.5px solid #60a5fa' : '1.5px solid #c8b88a',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         cursor: onClick ? 'pointer' : 'default',
         boxShadow: selected
           ? '0 0 12px rgba(250,204,21,0.7), 0 4px 8px rgba(0,0,0,0.3)'
-          : isJoker
-            ? '0 0 8px rgba(250,204,21,0.4), 0 2px 4px rgba(0,0,0,0.2)'
-            : '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.5)',
-        transform: selected ? 'translateY(-8px)' : undefined,
-        zIndex: selected ? 20 : 1,
+          : isDragging
+            ? '0 0 16px rgba(96,165,250,0.6), 0 8px 20px rgba(0,0,0,0.4)'
+            : isJoker
+              ? '0 0 8px rgba(250,204,21,0.4), 0 2px 4px rgba(0,0,0,0.2)'
+              : '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.5)',
+        transform: selected ? 'translateY(-8px)' : isDragging ? 'scale(1.15) translateY(-12px)' : undefined,
+        zIndex: selected ? 20 : isDragging ? 50 : 1,
+        opacity: isDragging ? 0.85 : 1,
+        transition: isDragging ? 'none' : 'all 0.15s',
       }}
     >
       {tile.isFalseJoker ? (
@@ -85,7 +133,7 @@ function Tile({ tile, selected, onClick, small, isJoker, onDoubleClick }: {
       {isJoker && !tile.isFalseJoker && (
         <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, background: '#facc15', color: '#78350f', borderRadius: '50%', width: 12, height: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, border: '1px solid #f59e0b' }}>J</span>
       )}
-    </motion.div>
+    </div>
   )
 }
 
@@ -110,6 +158,61 @@ function MeldGroup({ meld, isJk, onClick, highlight, idx }: {
   )
 }
 
+/* ===== DRAGGABLE RACK ROW ===== */
+function DraggableRow({ tiles, sel, toggleTile, hDblTap, isJk, onReorder }: {
+  tiles: OkeyTile[]; sel: Set<number>; toggleTile: (id: number) => void; hDblTap: (id: number) => void; isJk: (t: OkeyTile) => boolean; onReorder: (fromId: number, toId: number) => void
+}) {
+  const [dragId, setDragId] = useState<number | null>(null)
+  const [overId, setOverId] = useState<number | null>(null)
+
+  const handleDragStart = (e: React.DragEvent, tileId: number) => {
+    setDragId(tileId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(tileId))
+  }
+  const handleDragOver = (e: React.DragEvent, tileId: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (tileId !== dragId) setOverId(tileId)
+  }
+  const handleDrop = (e: React.DragEvent, toTileId: number) => {
+    e.preventDefault()
+    const fromId = Number(e.dataTransfer.getData('text/plain'))
+    if (fromId && fromId !== toTileId) onReorder(fromId, toTileId)
+    setDragId(null)
+    setOverId(null)
+  }
+  const handleDragEnd = () => { setDragId(null); setOverId(null) }
+
+  return (
+    <div className="flex flex-wrap gap-[3px] justify-center">
+      {tiles.map(tile => (
+        <div
+          key={tile.id}
+          draggable
+          onDragStart={(e) => handleDragStart(e, tile.id)}
+          onDragOver={(e) => handleDragOver(e, tile.id)}
+          onDrop={(e) => handleDrop(e, tile.id)}
+          onDragEnd={handleDragEnd}
+          style={{ position: 'relative' }}
+        >
+          {overId === tile.id && dragId !== tile.id && (
+            <div style={{ position: 'absolute', left: -2, top: 0, bottom: 0, width: 3, background: '#60a5fa', borderRadius: 2, zIndex: 30 }} />
+          )}
+          <Tile
+            tile={tile}
+            selected={sel.has(tile.id)}
+            onClick={() => toggleTile(tile.id)}
+            onDoubleClick={() => hDblTap(tile.id)}
+            isJoker={isJk(tile)}
+            isDragging={dragId === tile.id}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function YuzBirOkeyPage() {
   return (
     <GameShell gameType="yuzbirokey" gameName="Yüz Bir Okey" gameEmoji="🎯" gameDesc="Modern arayüzlü 101 Okey deneyimi. İlk 101 puana ulaşan elenir." supportsAI={true}>
@@ -130,6 +233,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const [diffSet, setDiffSet] = useState(false)
   const [sortMode, setSortMode] = useState<string>('color')
   const [openMelds, setOpenMelds] = useState<number[][]>([])
+  const [manualOrder, setManualOrder] = useState<number[] | null>(null) // for drag reorder
   const aiR = useRef<any>(null)
   const lastSR = useRef<number>(-1)
   const statsR = useRef(false)
@@ -155,14 +259,49 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const myH = hands[mySeat] || []
   const myOp = hasOp[mySeat]
   const isJk = useCallback((t: OkeyTile) => !!t.isFalseJoker || (t.color === jc && t.number === jn), [jc, jn])
-  const sortedHand = useMemo(() => sortTiles(myH, sortMode), [myH, sortMode])
+
+  // Compute displayed hand: manual order or sorted
+  const displayedHand = useMemo(() => {
+    if (manualOrder) {
+      // Map manualOrder ids to tiles, filtering out any that no longer exist
+      const tileMap = new Map(myH.map(t => [t.id, t]))
+      const ordered = manualOrder.map(id => tileMap.get(id)).filter(Boolean) as OkeyTile[]
+      // Add any new tiles not in manualOrder (e.g., just drawn)
+      const orderedIds = new Set(manualOrder)
+      for (const t of myH) { if (!orderedIds.has(t.id)) ordered.push(t) }
+      return ordered
+    }
+    return sortTiles(myH, sortMode, jc, jn)
+  }, [myH, sortMode, manualOrder, jc, jn])
+
   const canLay = isMT && ph === 'discard' && sel.size >= 3 && !isSpectator
   const canAdd = isMT && ph === 'discard' && sel.size > 0 && myOp && melds.length > 0 && !isSpectator
 
   // Split hand into two rows for istaka
-  const halfLen = Math.ceil(sortedHand.length / 2)
-  const topRow = sortedHand.slice(0, halfLen)
-  const bottomRow = sortedHand.slice(halfLen)
+  const halfLen = Math.ceil(displayedHand.length / 2)
+  const topRow = displayedHand.slice(0, halfLen)
+  const bottomRow = displayedHand.slice(halfLen)
+
+  // Meld total for my seat
+  const myMeldTotal = useMemo(() => calcMeldTotal(melds, mySeat, jc, jn), [melds, mySeat, jc, jn])
+
+  // Handle tile reorder via drag
+  const handleReorder = useCallback((fromId: number, toId: number) => {
+    const current = manualOrder || displayedHand.map(t => t.id)
+    const fromIdx = current.indexOf(fromId)
+    const toIdx = current.indexOf(toId)
+    if (fromIdx === -1 || toIdx === -1) return
+    const newOrder = [...current]
+    newOrder.splice(fromIdx, 1)
+    newOrder.splice(toIdx, 0, fromId)
+    setManualOrder(newOrder)
+  }, [manualOrder, displayedHand])
+
+  // When sort mode changes, clear manual order
+  const changeSortMode = (mode: string) => {
+    setSortMode(mode)
+    setManualOrder(null)
+  }
 
   useEffect(() => { if (state && !diffSet && room?.status === 'active' && !state.difficulty) { sendAIState({ state: { ...state, difficulty: diff }, currentTurn: s2t(state.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null }); setDiffSet(true) } }, [state, room])
   const showM = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
@@ -178,21 +317,73 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
     if(ap<=1){const gw=ne.findIndex((e:boolean)=>!e);const fs={...c,scores:ns,eliminated:ne,roundHistory:rh,gameOver:true,winner:gw>=0?gw:rw,roundWinner:rw};if(!statsR.current&&!isSpectator){statsR.current=true;const st=getStats();st.gamesPlayed++;if(gw===mySeat)st.wins++;else st.losses++;saveStats(st)};const mw=gw===mySeat;await sendAIState({state:fs,player1Score:mw&&playerNum===1?1:(!mw&&playerNum!==1?1:0),player2Score:mw&&playerNum===2?1:(!mw&&playerNum!==2?1:0),currentTurn:1,status:'completed',winnerId:mw?(playerNum===1?room.player1Id:room.player2Id):(playerNum===1?room.player2Id:room.player1Id)})}
     else{setShowRE(true);await sendAIState({state:{...c,scores:ns,eliminated:ne,roundHistory:rh,gameOver:false,winner:null,roundWinner:rw,showingRoundResult:true},currentTurn:1,status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null})}
   }
-  const startNR = async () => { setShowRE(false); const n=okey101NewRound(state); await sendAIState({state:n,currentTurn:s2t(n.currentSeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null}) }
+  const startNR = async () => { setShowRE(false); setManualOrder(null); const n=okey101NewRound(state); await sendAIState({state:n,currentTurn:s2t(n.currentSeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null}) }
 
-  // AI
+  // AI - with robust error recovery to prevent getting stuck
   useEffect(() => {
     if(!room.isAI||room.status!=='active'||gOver||state?.showingRoundResult||win!==null||cs===mySeat)return
     if(aiR.current)clearTimeout(aiR.current)
     aiR.current=setTimeout(async()=>{
-      let c=JSON.parse(JSON.stringify(state));let seat=c.currentSeat;let mv=0
-      while(seat!==mySeat&&mv<20&&!c.gameOver&&c.winner===null){
-        if(c.eliminated?.[seat]){c.currentSeat=(seat+1)%4;seat=c.currentSeat;continue}
-        if(c.phase==='draw'){const m=okeyAIMove(c);if(!m||m.action!=='draw')break;const r=okeyDraw(c,seat,m.source);if(r.error)break;c=r.state;mv++;await new Promise(r=>setTimeout(r,200))}
-        else{let mr=okey101AILayMelds(c,seat);if(mr){c=mr;if(c.hands[seat].length===0){await procRE(c,seat);return}};let ar=okey101AIAddToMelds(c,seat);if(ar){c=ar;if(c.hands[seat].length===0){await procRE(c,seat);return}};const m=okeyAIMove(c);if(!m||m.action!=='discard')break;const r=okeyDiscard(c,seat,m.tileId);if(r.error)break;c=r.state;mv++;await new Promise(r=>setTimeout(r,200))}
-        seat=c.currentSeat
+      try {
+        let c=JSON.parse(JSON.stringify(state));let seat=c.currentSeat;let mv=0;let stuck=0
+        while(seat!==mySeat&&mv<30&&!c.gameOver&&c.winner===null&&stuck<3){
+          if(c.eliminated?.[seat]){c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;continue}
+          if(c.phase==='draw'){
+            const m=okeyAIMove(c)
+            if(!m||m.action!=='draw'){
+              // Fallback: draw from pile
+              const r=okeyDraw(c,seat,'pile')
+              if(r.error){c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+              c=r.state;mv++
+            } else {
+              const r=okeyDraw(c,seat,m.source)
+              if(r.error){
+                // Try pile as fallback
+                const r2=okeyDraw(c,seat,'pile')
+                if(r2.error){c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+                c=r2.state;mv++
+              } else {c=r.state;mv++}
+            }
+            await new Promise(r=>setTimeout(r,200))
+          } else {
+            // Discard phase
+            let mr=okey101AILayMelds(c,seat);if(mr){c=mr;if(c.hands[seat].length===0){await procRE(c,seat);return}}
+            let ar=okey101AIAddToMelds(c,seat);if(ar){c=ar;if(c.hands[seat].length===0){await procRE(c,seat);return}}
+            const m=okeyAIMove(c)
+            if(m&&m.action==='discard'){
+              const r=okeyDiscard(c,seat,m.tileId)
+              if(r.error){
+                // Fallback: discard first non-joker tile
+                const hand=c.hands[seat]||[]
+                const fallbackTile=hand.find((t:OkeyTile)=>!t.isFalseJoker&&!(t.color===c.jokerColor&&t.number===c.jokerNumber))||hand[0]
+                if(fallbackTile){
+                  const r2=okeyDiscard(c,seat,fallbackTile.id)
+                  if(r2.error){c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+                  c=r2.state;mv++
+                } else {c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+              } else {c=r.state;mv++}
+            } else {
+              // Fallback: force discard first available tile
+              const hand=c.hands[seat]||[]
+              const fallbackTile=hand.find((t:OkeyTile)=>!t.isFalseJoker&&!(t.color===c.jokerColor&&t.number===c.jokerNumber))||hand[0]
+              if(fallbackTile){
+                const r=okeyDiscard(c,seat,fallbackTile.id)
+                if(r.error){c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+                c=r.state;mv++
+              } else {c.currentSeat=(seat+1)%4;c.phase='draw';seat=c.currentSeat;stuck++;continue}
+            }
+            await new Promise(r=>setTimeout(r,200))
+          }
+          seat=c.currentSeat
+        }
+        await sendAIState({state:c,player1Score:room.player1Score,player2Score:room.player2Score,currentTurn:s2t(c.currentSeat),status:'active',winnerId:null})
+      } catch(err) {
+        console.error('AI error:', err)
+        // Emergency: advance turn to player
+        const c=JSON.parse(JSON.stringify(state))
+        c.currentSeat=mySeat;c.phase='draw'
+        await sendAIState({state:c,player1Score:room.player1Score,player2Score:room.player2Score,currentTurn:s2t(mySeat),status:'active',winnerId:null})
       }
-      await sendAIState({state:c,player1Score:room.player1Score,player2Score:room.player2Score,currentTurn:s2t(c.currentSeat),status:'active',winnerId:null})
     },800)
     return()=>{if(aiR.current)clearTimeout(aiR.current)}
   },[room,state,cs])
@@ -221,6 +412,11 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-white">🎯 Yüz Bir Okey</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70 font-semibold">El {round}</span>
+          {myMeldTotal > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/30 font-bold">
+              Perlerim: {myMeldTotal} puan
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${
@@ -294,7 +490,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
           {/* TABLE CENTER - Melds + Info */}
           <div className="flex-1 min-h-0 px-3 pb-1 overflow-auto">
             <div className="rounded-2xl border border-emerald-700/40 bg-emerald-900/20 p-3 h-full">
-              {/* Melds on table */}
               {melds.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {melds.map((m, i) => (
@@ -310,7 +505,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                 </div>
               )}
 
-              {/* Draft melds */}
               {openMelds.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-white/10">
                   <div className="flex items-center gap-2 mb-1">
@@ -336,17 +530,14 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
         {/* ===== BOTTOM: ISTAKA (double rack) with side features ===== */}
         <div className="flex-shrink-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent">
-          {/* İSTAKA AREA */}
           <div className="flex items-stretch gap-2 px-2 pb-2 pt-1">
 
             {/* === LEFT SIDE: Gösterge + Çekme === */}
             <div className="flex-shrink-0 flex flex-col gap-1.5 w-[90px] md:w-[110px]">
-              {/* Gösterge */}
               <div className="rounded-xl bg-black/40 border border-amber-500/30 p-2 text-center">
                 <div className="text-[8px] text-amber-300/60 font-bold mb-1">GÖSTERGE</div>
                 {ind ? <div className="flex justify-center"><Tile tile={ind} isJoker={isJk(ind)} /></div> : <div className="text-white/30 text-xs">-</div>}
               </div>
-              {/* Çek butonları */}
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => hDraw('pile')}
@@ -363,7 +554,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                   📤 Yerden
                 </button>
               </div>
-              {/* Iskarta önizleme */}
               {prevD && (
                 <div className="rounded-lg bg-black/30 border border-white/10 p-1.5 flex flex-col items-center">
                   <div className="text-[7px] text-white/40 mb-0.5">İSKARTA</div>
@@ -374,54 +564,36 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
             {/* === CENTER: DOUBLE RACK (İSTAKA) === */}
             <div className="flex-1 min-w-0">
-              {/* Rack frame */}
               <div className="rounded-2xl border-2 border-amber-700/50 bg-gradient-to-b from-amber-900/30 via-amber-950/40 to-amber-950/50 p-1.5 shadow-inner" style={{ boxShadow: 'inset 0 2px 12px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3)' }}>
-                {/* Info bar */}
+                {/* Info bar with sort modes */}
                 <div className="flex items-center justify-between px-2 mb-1">
                   <span className="text-[9px] text-amber-200/60 font-bold">ELİM ({myH.length} taş) {sel.size > 0 && `• ${sel.size} seçili`}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => setSortMode('color')} className={`px-2 py-0.5 rounded text-[8px] font-bold transition ${sortMode === 'color' ? 'bg-amber-500/40 text-amber-200' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Renk</button>
-                    <button onClick={() => setSortMode('number')} className={`px-2 py-0.5 rounded text-[8px] font-bold transition ${sortMode === 'number' ? 'bg-amber-500/40 text-amber-200' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Sayı</button>
+                    {[
+                      { key: 'color', label: 'Renk' },
+                      { key: 'number', label: 'Sayı' },
+                      { key: 'runs', label: 'Seri' },
+                      { key: 'pairs', label: 'Çift' },
+                    ].map(m => (
+                      <button key={m.key} onClick={() => changeSortMode(m.key)} className={`px-2 py-0.5 rounded text-[8px] font-bold transition ${sortMode === m.key && !manualOrder ? 'bg-amber-500/40 text-amber-200' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>{m.label}</button>
+                    ))}
                   </div>
                 </div>
 
                 {/* Upper rack row */}
                 <div className="rounded-xl bg-gradient-to-b from-amber-800/30 to-amber-900/20 border border-amber-700/30 px-2 py-1.5 mb-1 min-h-[62px]" style={{ boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)' }}>
-                  <div className="flex flex-wrap gap-[3px] justify-center">
-                    {topRow.map(tile => (
-                      <Tile
-                        key={tile.id}
-                        tile={tile}
-                        selected={sel.has(tile.id)}
-                        onClick={() => toggleTile(tile.id)}
-                        onDoubleClick={() => hDblTap(tile.id)}
-                        isJoker={isJk(tile)}
-                      />
-                    ))}
-                  </div>
+                  <DraggableRow tiles={topRow} sel={sel} toggleTile={toggleTile} hDblTap={hDblTap} isJk={isJk} onReorder={handleReorder} />
                 </div>
 
                 {/* Lower rack row */}
                 <div className="rounded-xl bg-gradient-to-b from-amber-800/30 to-amber-900/20 border border-amber-700/30 px-2 py-1.5 min-h-[62px]" style={{ boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)' }}>
-                  <div className="flex flex-wrap gap-[3px] justify-center">
-                    {bottomRow.map(tile => (
-                      <Tile
-                        key={tile.id}
-                        tile={tile}
-                        selected={sel.has(tile.id)}
-                        onClick={() => toggleTile(tile.id)}
-                        onDoubleClick={() => hDblTap(tile.id)}
-                        isJoker={isJk(tile)}
-                      />
-                    ))}
-                  </div>
+                  <DraggableRow tiles={bottomRow} sel={sel} toggleTile={toggleTile} hDblTap={hDblTap} isJk={isJk} onReorder={handleReorder} />
                 </div>
               </div>
             </div>
 
             {/* === RIGHT SIDE: Aksiyonlar === */}
             <div className="flex-shrink-0 flex flex-col gap-1.5 w-[90px] md:w-[110px]">
-              {/* Durum */}
               <div className="rounded-xl bg-black/40 border border-white/10 p-2 text-center">
                 <div className="text-[8px] text-white/40 font-bold mb-0.5">DURUM</div>
                 <div className={`text-[10px] font-bold ${myOp ? 'text-emerald-300' : 'text-orange-300'}`}>
@@ -430,8 +602,12 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                 <div className="text-[9px] text-white/40 mt-0.5">
                   Skor: <span className={`font-bold ${scores[mySeat] >= 80 ? 'text-red-400' : 'text-white'}`}>{scores[mySeat]}</span>
                 </div>
+                {myMeldTotal > 0 && (
+                  <div className="text-[9px] text-fuchsia-300 mt-0.5 font-bold">
+                    Per: {myMeldTotal}p
+                  </div>
+                )}
               </div>
-              {/* Action buttons */}
               <button
                 onClick={addDraft}
                 disabled={sel.size < 3 || ph !== 'discard' || !isMT}
@@ -460,7 +636,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
       {/* ===== OVERLAYS ===== */}
 
-      {/* Difficulty selection */}
       {showDS && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-emerald-400/30 bg-[#0d2818] p-8 text-center shadow-2xl">
@@ -477,7 +652,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
         </div>
       )}
 
-      {/* Round end */}
       {(state?.showingRoundResult || showRE) && !gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-yellow-400/40 bg-[#0d2818] p-8 text-center shadow-2xl min-w-[320px]">
@@ -498,7 +672,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
         </div>
       )}
 
-      {/* Game over */}
       {gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-yellow-400/40 bg-[#0d2818] p-8 text-center shadow-2xl min-w-[360px]">
@@ -520,7 +693,6 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
         </div>
       )}
 
-      {/* Toast */}
       <AnimatePresence>{msg && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
           className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[99999] rounded-2xl bg-yellow-500/20 border border-yellow-400/40 text-yellow-200 px-5 py-2.5 text-xs font-semibold shadow-lg backdrop-blur">
