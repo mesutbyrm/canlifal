@@ -6,33 +6,31 @@ import { okeyDraw, okeyDiscard, okeyCheckWin, okeyAIMove, OkeyTile } from '@/lib
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 
-// Wrapper to make createPortal compatible with strict React types
 function Portal({ children }: { children: React.ReactNode }): JSX.Element | null {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
   if (!mounted) return null
-  // eslint-disable-next-line
   const portal: any = createPortal(children as any, document.body)
   return portal
 }
 
-/* ══════════════ CONSTANTS ══════════════ */
-const COLORS: Record<number, { bg: string; fg: string; border: string; name: string; accent: string }> = {
-  0: { bg: '#fee2e2', fg: '#dc2626', border: '#f87171', name: 'Kırmızı', accent: '#fca5a5' },
-  1: { bg: '#dbeafe', fg: '#2563eb', border: '#60a5fa', name: 'Mavi', accent: '#93c5fd' },
-  2: { bg: '#dcfce7', fg: '#16a34a', border: '#4ade80', name: 'Yeşil', accent: '#86efac' },
-  3: { bg: '#f3f4f6', fg: '#1f2937', border: '#9ca3af', name: 'Siyah', accent: '#d1d5db' },
-  4: { bg: '#fef3c7', fg: '#b45309', border: '#fbbf24', name: 'Joker', accent: '#fcd34d' },
+/* ═══ COLORS ═══ */
+const TC: Record<number, { fg: string; name: string }> = {
+  0: { fg: '#dc2626', name: 'Kırmızı' },
+  1: { fg: '#2563eb', name: 'Mavi' },
+  2: { fg: '#16a34a', name: 'Yeşil' },
+  3: { fg: '#1f2937', name: 'Siyah' },
+  4: { fg: '#b45309', name: 'Joker' },
 }
 const SEAT_NAMES = ['Sen', 'Doğu 🤖', 'Kuzey 🤖', 'Batı 🤖']
 const SEAT_HEX = ['#22d3ee', '#f472b6', '#fbbf24', '#4ade80']
-const DIFF_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
-  easy: { label: 'Kolay', color: '#4ade80', emoji: '🟢' },
-  medium: { label: 'Orta', color: '#fbbf24', emoji: '🟡' },
-  hard: { label: 'Zor', color: '#ef4444', emoji: '🔴' },
+const DIFF_LABELS: Record<string, { label: string; emoji: string }> = {
+  easy: { label: 'Kolay', emoji: '🟢' },
+  medium: { label: 'Orta', emoji: '🟡' },
+  hard: { label: 'Zor', emoji: '🔴' },
 }
 
-/* ══════════════ SOUNDS ══════════════ */
+/* ═══ SOUNDS ═══ */
 function playTileSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -57,18 +55,17 @@ function playWinSound() {
   } catch {}
 }
 
-/* ══════════════ STATS ══════════════ */
+/* ═══ STATS ═══ */
 function getOkeyStats() {
   try { return JSON.parse(localStorage.getItem('okey_stats') || '{"wins":0,"losses":0,"streak":0,"bestStreak":0,"gamesPlayed":0}') }
   catch { return { wins: 0, losses: 0, streak: 0, bestStreak: 0, gamesPlayed: 0 } }
 }
 function saveOkeyStats(s: any) { try { localStorage.setItem('okey_stats', JSON.stringify(s)) } catch {} }
 
-/* ══════════════ GROUP DETECTION ══════════════ */
+/* ═══ GROUP DETECTION ═══ */
 function detectGroups(hand: OkeyTile[], jc: number, jn: number) {
   const isJ = (t: OkeyTile) => !!t.isFalseJoker || (t.color === jc && t.number === jn)
-  const runs: number[][] = []
-  const sets: number[][] = []
+  const runs: number[][] = []; const sets: number[][] = []
   const byColor: Record<number, OkeyTile[]> = {}
   hand.forEach(t => { if (!isJ(t)) { (byColor[t.color] ??= []).push(t) } })
   for (const c in byColor) {
@@ -90,115 +87,86 @@ function detectGroups(hand: OkeyTile[], jc: number, jn: number) {
   return { runs, sets }
 }
 
-/* ══════════════ 3D TILE ══════════════ */
-function Tile3D({ tile, selected, onClick, isJoker, glow, small, groupColor }: {
-  tile: OkeyTile; selected?: boolean; onClick?: () => void; isJoker?: boolean; glow?: boolean; small?: boolean; groupColor?: string
+/* ═══ TILE ═══ */
+function Tile({ tile, selected, onClick, size = 'md', isJoker, glow, groupColor }: {
+  tile: OkeyTile; selected?: boolean; onClick?: () => void; size?: 'xs' | 'sm' | 'md' | 'lg'; isJoker?: boolean; glow?: boolean; groupColor?: string
 }) {
-  const c = tile.isFalseJoker ? COLORS[4] : COLORS[tile.color] || COLORS[0]
-  const w = small ? 28 : 40; const h = small ? 40 : 56; const fs = small ? 11 : 16
+  const c = tile.isFalseJoker ? TC[4] : TC[tile.color] || TC[0]
+  const dims = size === 'xs' ? { w: 18, h: 26, fs: 9, r: 3 } : size === 'sm' ? { w: 26, h: 36, fs: 12, r: 4 } : size === 'lg' ? { w: 44, h: 60, fs: 20, r: 6 } : { w: 38, h: 54, fs: 17, r: 5 }
   return (
-    <motion.div layout onClick={onClick} whileHover={onClick ? { y: -6, scale: 1.08 } : {}} whileTap={onClick ? { scale: 0.93 } : {}}
-      className="relative cursor-pointer select-none flex-shrink-0" style={{ width: w, height: h }}>
-      <div className="absolute inset-0 rounded-lg" style={{ background: 'rgba(0,0,0,0.35)', transform: 'translate(2px, 3px)', borderRadius: 8 }} />
-      <div className="absolute inset-0 rounded-lg overflow-hidden" style={{
-        background: `linear-gradient(145deg, ${c.bg}, ${c.accent})`,
-        border: `2px solid ${selected ? '#facc15' : groupColor || c.border}`, borderRadius: 8,
-        boxShadow: selected ? '0 0 12px rgba(250,204,21,0.6), inset 0 1px 2px rgba(255,255,255,0.6)'
-          : glow ? '0 0 14px rgba(74,222,128,0.5), inset 0 1px 2px rgba(255,255,255,0.6)'
-          : 'inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.2)',
-        transform: selected ? 'translateY(-8px)' : 'none', transition: 'transform 0.15s, border-color 0.15s, box-shadow 0.15s',
+    <motion.div layout onClick={onClick}
+      whileHover={onClick ? { y: -5, scale: 1.06 } : {}}
+      whileTap={onClick ? { scale: 0.94 } : {}}
+      style={{
+        width: dims.w, height: dims.h, borderRadius: dims.r,
+        background: '#fff', border: `2px solid ${selected ? '#facc15' : groupColor || '#ccc'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: onClick ? 'pointer' : 'default', position: 'relative',
+        userSelect: 'none', flexShrink: 0,
+        boxShadow: selected ? '0 0 8px rgba(250,204,21,0.6), 0 2px 4px rgba(0,0,0,0.3)' : glow ? '0 0 10px rgba(74,222,128,0.5)' : '0 1px 3px rgba(0,0,0,0.25)',
+        transform: selected ? 'translateY(-8px)' : undefined,
+        zIndex: selected ? 20 : 1,
       }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to bottom, rgba(255,255,255,0.5), transparent)', borderRadius: '8px 8px 0 0' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: fs, color: c.fg, textShadow: '0 1px 1px rgba(255,255,255,0.5)' }}>
-          {tile.isFalseJoker ? '★' : tile.number}
-        </div>
-        {!tile.isFalseJoker && <><div style={{ position: 'absolute', top: 2, left: 3, fontSize: small ? 6 : 8, color: c.fg, fontWeight: 700, opacity: 0.5 }}>{tile.number}</div><div style={{ position: 'absolute', bottom: 2, right: 3, fontSize: small ? 6 : 8, color: c.fg, fontWeight: 700, opacity: 0.5, transform: 'rotate(180deg)' }}>{tile.number}</div></>}
-      </div>
-      {isJoker && !tile.isFalseJoker && <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, background: '#facc15', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color: '#78350f', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', zIndex: 10 }}>J</div>}
-      {groupColor && !selected && <div className="absolute -inset-1 rounded-xl border-2 pointer-events-none" style={{ borderColor: groupColor, opacity: 0.5 }} />}
+      <span style={{ fontSize: dims.fs, color: c.fg, fontWeight: 800, lineHeight: 1 }}>{tile.isFalseJoker ? '★' : tile.number}</span>
+      {isJoker && !tile.isFalseJoker && (
+        <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, background: '#facc15', color: '#78350f', borderRadius: '50%', width: 11, height: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>J</span>
+      )}
     </motion.div>
   )
 }
 
-/* ══════════════ OPPONENT AVATAR ══════════════ */
-function OpponentAvatar({ seat, tileCount, isCurrent, topDiscard, isJokerFn }: {
-  seat: number; tileCount: number; isCurrent: boolean; topDiscard: OkeyTile | null; isJokerFn: (t: OkeyTile) => boolean
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg font-bold border-2 transition-all ${isCurrent ? 'animate-pulse scale-110' : 'opacity-80'}`} style={{
-        background: `linear-gradient(135deg, ${SEAT_HEX[seat]}33, ${SEAT_HEX[seat]}11)`,
-        borderColor: isCurrent ? SEAT_HEX[seat] : 'rgba(255,255,255,0.15)',
-        boxShadow: isCurrent ? `0 0 16px ${SEAT_HEX[seat]}66` : 'none',
-      }}>
-        🤖
-        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: SEAT_HEX[seat], color: '#0a0118' }}>{tileCount}</div>
-      </div>
-      <span className="text-[10px] font-semibold" style={{ color: SEAT_HEX[seat] }}>{SEAT_NAMES[seat]}</span>
-      {topDiscard && <div className="flex items-center gap-0.5"><span className="text-[7px] text-amber-400/50">attı</span><Tile3D tile={topDiscard} small isJoker={isJokerFn(topDiscard)} /></div>}
-    </div>
-  )
+function FaceDownTile({ size = 'sm' }: { size?: 'xs' | 'sm' }) {
+  const d = size === 'xs' ? { w: 14, h: 20 } : { w: 20, h: 28 }
+  return <div style={{ width: d.w, height: d.h, borderRadius: 3, background: 'linear-gradient(180deg,#1e3a5f,#0f2440)', border: '1px solid #2a4a6a' }} />
 }
 
-/* ══════════════ LANDSCAPE PROMPT (Portal) ══════════════ */
+/* ═══ LANDSCAPE PROMPT ═══ */
 function LandscapePrompt() {
   const [show, setShow] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => {
-    const check = () => {
-      if (typeof window === 'undefined') return
-      setShow(window.innerHeight > window.innerWidth && window.innerWidth < 768)
-    }
-    check()
-    window.addEventListener('resize', check)
-    window.addEventListener('orientationchange', check)
+    const check = () => { if (typeof window !== 'undefined') setShow(window.innerHeight > window.innerWidth && window.innerWidth < 768) }
+    check(); window.addEventListener('resize', check); window.addEventListener('orientationchange', check)
     return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check) }
   }, [])
   if (!show || !mounted) return null
   return (
     <Portal>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(10,1,24,0.98)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="flex flex-col items-center gap-6 text-center px-8">
-          <motion.div animate={{ rotate: [0, 90, 90, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl">📱</motion.div>
-          <h2 className="text-2xl font-bold text-white">Ekranı Çevir</h2>
-          <p className="text-fuchsia-300/80 text-sm max-w-[260px]">Okey oyunu yatay modda en iyi şekilde oynanır. Lütfen cihazınızı yatay konuma çevirin.</p>
-          <motion.div animate={{ x: [-10, 10, -10] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-4xl">↔️</motion.div>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(10,30,40,0.98)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', padding: 32 }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>📱</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'white', marginBottom: 8 }}>Ekranı Çevir</h2>
+          <p style={{ fontSize: 13, color: '#94a3b8', maxWidth: 260 }}>Okey oyunu yatay modda en iyi şekilde oynanır.</p>
         </div>
       </div>
     </Portal>
   )
 }
 
-/* ══════════════ TILE RACK ══════════════ */
+/* ═══ TILE RACK with Reorder ═══ */
 function TileRack({ tiles, selectedTile, onTileClick, isJokerFn, canWin, phase, groupedIds, onReorder }: {
   tiles: OkeyTile[]; selectedTile: number | null; onTileClick: (id: number) => void;
   isJokerFn: (t: OkeyTile) => boolean; canWin: boolean; phase: string;
   groupedIds: Map<number, string>; onReorder: (newOrder: OkeyTile[]) => void;
 }) {
   return (
-    <div className="w-full">
-      <div className="relative mx-auto" style={{ maxWidth: '100%' }}>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #8B6914, #6B4F0F, #5C430D)', borderRadius: '0 0 12px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1)' }} />
-        <div style={{ position: 'absolute', bottom: 14, left: 4, right: 4, height: 6, background: 'linear-gradient(to bottom, #A07D1C, #8B6914)', borderRadius: 2, boxShadow: '0 -1px 3px rgba(0,0,0,0.3)' }} />
-        <Reorder.Group axis="x" values={tiles} onReorder={onReorder}
-          className="flex flex-wrap justify-center gap-1 px-2 pb-6 pt-1 min-h-[70px]" style={{ position: 'relative', zIndex: 2 }}>
-          <AnimatePresence>
-            {tiles.map((tile) => (
-              <Reorder.Item key={tile.id} value={tile} className="flex-shrink-0" style={{ zIndex: selectedTile === tile.id ? 30 : 1 }}>
-                <Tile3D tile={tile} selected={selectedTile === tile.id} onClick={() => onTileClick(tile.id)}
-                  isJoker={isJokerFn(tile)} glow={canWin && phase === 'discard' && selectedTile === tile.id}
-                  groupColor={groupedIds.get(tile.id)} />
-              </Reorder.Item>
-            ))}
-          </AnimatePresence>
-        </Reorder.Group>
-      </div>
-    </div>
+    <Reorder.Group axis="x" values={tiles} onReorder={onReorder}
+      style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 3, minHeight: 60, position: 'relative', zIndex: 2 }}>
+      <AnimatePresence>
+        {tiles.map((tile) => (
+          <Reorder.Item key={tile.id} value={tile} style={{ flexShrink: 0, zIndex: selectedTile === tile.id ? 30 : 1 }}>
+            <Tile tile={tile} selected={selectedTile === tile.id} onClick={() => onTileClick(tile.id)}
+              isJoker={isJokerFn(tile)} glow={canWin && phase === 'discard' && selectedTile === tile.id}
+              groupColor={groupedIds.get(tile.id)} />
+          </Reorder.Item>
+        ))}
+      </AnimatePresence>
+    </Reorder.Group>
   )
 }
 
-/* ══════════════ MINI CHAT (inside fullscreen overlay) ══════════════ */
+/* ═══ IN-GAME CHAT ═══ */
 function InGameChat({ roomId }: { roomId: string }) {
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<any[]>([])
@@ -229,8 +197,7 @@ function InGameChat({ roomId }: { roomId: string }) {
   useEffect(() => { if (open) { setUnread(0); setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) } }, [open, msgs.length])
 
   const send = async () => {
-    if (!input.trim() || sending) return
-    setSending(true)
+    if (!input.trim() || sending) return; setSending(true)
     try { await fetch(`/api/games/room/${roomId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: input.trim() }) }); setInput('') } catch {}
     setSending(false)
   }
@@ -238,28 +205,26 @@ function InGameChat({ roomId }: { roomId: string }) {
   return (
     <div style={{ position: 'absolute', bottom: 8, left: 8, zIndex: 50 }}>
       {!open ? (
-        <button onClick={() => setOpen(true)} className="relative p-2.5 rounded-full shadow-lg transition" style={{ background: '#6b21a8' }}>
-          <svg width="18" height="18" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          {unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[8px] flex items-center justify-center font-bold">{unread}</span>}
+        <button onClick={() => setOpen(true)} style={{ position: 'relative', padding: 10, borderRadius: '50%', background: '#1e3a5f', border: '1px solid #2a5a7a', cursor: 'pointer' }}>
+          <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, background: '#dc2626', borderRadius: '50%', color: 'white', fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{unread}</span>}
         </button>
       ) : (
-        <div style={{ width: 280, height: 300, background: '#1a0a2e', border: '1px solid rgba(217,70,239,0.3)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-          <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(217,70,239,0.2)' }}>
-            <span className="text-fuchsia-300 text-xs font-medium">💬 Sohbet</span>
-            <button onClick={() => setOpen(false)} className="text-fuchsia-400/60 hover:text-fuchsia-300 text-sm">✕</button>
+        <div style={{ width: 260, height: 280, background: '#0a1a28', border: '1px solid #2a5a7a', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #1e3a5f' }}>
+            <span style={{ fontSize: 11, color: '#7dd3fc', fontWeight: 600 }}>💬 Sohbet</span>
+            <button onClick={() => setOpen(false)} style={{ color: '#64748b', cursor: 'pointer', background: 'none', border: 'none', fontSize: 14 }}>✕</button>
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5" style={{ fontSize: 11 }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px 10px', fontSize: 11 }}>
             {msgs.map((m: any, i: number) => (
-              <div key={i}><span className="font-semibold text-fuchsia-300">{m.userName}:</span> <span className="text-fuchsia-100/80">{m.message}</span></div>
+              <div key={i} style={{ marginBottom: 4 }}><span style={{ fontWeight: 600, color: '#7dd3fc' }}>{m.userName}:</span> <span style={{ color: '#94a3b8' }}>{m.message}</span></div>
             ))}
             <div ref={endRef} />
           </div>
-          <div className="flex gap-1 px-2 py-2" style={{ borderTop: '1px solid rgba(217,70,239,0.15)' }}>
+          <div style={{ display: 'flex', gap: 4, padding: '6px 8px', borderTop: '1px solid #1e3a5f' }}>
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-              placeholder="Mesaj..." className="flex-1 px-2 py-1 rounded-lg text-xs text-white placeholder-fuchsia-400/40 outline-none"
-              style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.2)' }} />
-            <button onClick={send} disabled={sending} className="px-2 py-1 rounded-lg text-xs font-medium text-white transition"
-              style={{ background: '#7c3aed' }}>Gönder</button>
+              placeholder="Mesaj..." style={{ flex: 1, padding: '4px 8px', borderRadius: 6, fontSize: 11, color: 'white', background: '#0f2440', border: '1px solid #2a4a6a', outline: 'none' }} />
+            <button onClick={send} disabled={sending} style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, color: 'white', background: '#0ea5e9', border: 'none', cursor: 'pointer' }}>Gönder</button>
           </div>
         </div>
       )}
@@ -267,21 +232,7 @@ function InGameChat({ roomId }: { roomId: string }) {
   )
 }
 
-/* ══════════════ STATS BAR ══════════════ */
-function StatsBar() {
-  const [stats, setStats] = useState<any>(null)
-  useEffect(() => { setStats(getOkeyStats()) }, [])
-  if (!stats || stats.gamesPlayed === 0) return null
-  return (
-    <div className="flex items-center gap-2 text-[9px] px-2 py-1 rounded-full" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
-      <span style={{ color: '#4ade80' }}>✅{stats.wins}</span>
-      <span style={{ color: '#f87171' }}>❌{stats.losses}</span>
-      <span style={{ color: '#fbbf24' }}>🔥{stats.streak}</span>
-    </div>
-  )
-}
-
-/* ══════════════ MAIN PAGE ══════════════ */
+/* ═══ MAIN PAGE ═══ */
 export default function OkeyPage() {
   return (
     <GameShell gameType="okey" gameName="Okey" gameEmoji="🀄" gameDesc="Klasik Türk Okey oyunu! 4 kişilik, 106 taş, strateji ve şans." supportsAI={true}>
@@ -292,11 +243,9 @@ export default function OkeyPage() {
   )
 }
 
-/* ══════════════ OKEY BOARD ══════════════ */
+/* ═══ OKEY BOARD ═══ */
 function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, playerNum }: any) {
-  // In AI mode, human is always seat 0. In 2-player mode: player1=seat0, player2=seat1
   const mySeat: number = room?.isAI ? 0 : (playerNum === 2 ? 1 : 0)
-
   const [selectedTile, setSelectedTile] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [difficulty, setDifficulty] = useState<string>('medium')
@@ -319,39 +268,27 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
   const gameOver: boolean = state?.gameOver ?? false
   const stateDiff: string = state?.difficulty || 'medium'
 
-  // Helper: map seat to server turn (seat0=turn1, seat1=turn2, etc)
   const seatToTurn = (seat: number) => seat === 0 ? 1 : 2
   const isMyCurrentTurn = currentSeat === mySeat
-  // Opponent seats (relative to mySeat)
   const opponentSeats = [0, 1, 2, 3].filter(s => s !== mySeat)
 
-  // Sync local hand with server hand while preserving user's custom order
+  // Sync local hand preserving user order
   const serverHand = hands[mySeat] || []
   useEffect(() => {
     const serverIds = serverHand.map(t => t.id).sort().join(',')
-    if (serverIds === prevHandIdsRef.current && localHand.length > 0) return // no change
+    if (serverIds === prevHandIdsRef.current && localHand.length > 0) return
     prevHandIdsRef.current = serverIds
-
-    if (localHand.length === 0) {
-      // First load or reset
-      setLocalHand([...serverHand])
-      return
-    }
-
-    // Find new tiles (added) and removed tiles
+    if (localHand.length === 0) { setLocalHand([...serverHand]); return }
     const localIds = new Set(localHand.map(t => t.id))
     const serverIdSet = new Set(serverHand.map(t => t.id))
     const added = serverHand.filter(t => !localIds.has(t.id))
     const kept = localHand.filter(t => serverIdSet.has(t.id))
-
-    // Preserve order: kept tiles in their current position + new tiles appended at end
     setLocalHand([...kept, ...added])
   }, [serverHand])
 
   const myHand = localHand.length > 0 ? localHand : serverHand
-  const winTileCount = 14 // standard okey
+  const winTileCount = 14
   const canWin = myHand.length === winTileCount && okeyCheckWin(myHand, jokerColor, jokerNumber)
-
   const isJokerTile = useCallback((t: OkeyTile) => !!t.isFalseJoker || (t.color === jokerColor && t.number === jokerNumber), [jokerColor, jokerNumber])
 
   const groupedIds = useMemo(() => {
@@ -367,8 +304,7 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
 
   useEffect(() => {
     if (state && !diffSet && room?.status === 'active' && !state.difficulty) {
-      const ns = { ...state, difficulty }
-      sendAIState({ state: ns, currentTurn: seatToTurn(ns.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+      sendAIState({ state: { ...state, difficulty }, currentTurn: seatToTurn(state.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
       setDiffSet(true)
     }
   }, [state, room])
@@ -393,8 +329,7 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
 
   // AI logic
   useEffect(() => {
-    if (!room.isAI || room.status !== 'active' || winner || gameOver) return
-    if (currentSeat === mySeat) return // my turn, don't run AI
+    if (!room.isAI || room.status !== 'active' || winner || gameOver || currentSeat === mySeat) return
     if (aiRef.current) clearTimeout(aiRef.current)
     aiRef.current = setTimeout(async () => {
       let cs = JSON.parse(JSON.stringify(state))
@@ -420,192 +355,209 @@ function OkeyBoard({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabl
 
   const handleDraw = async (source: 'pile' | 'discard') => {
     if (!isMyCurrentTurn || phase !== 'draw' || isSpectator || room.status !== 'active') return
-    const result = okeyDraw(state, mySeat, source)
-    if (result.error) { showMsg(result.error); return }
+    const r = okeyDraw(state, mySeat, source); if (r.error) { showMsg(r.error); return }
     if (soundEnabled) playTileSound()
-    // Don't reset localHand - the useEffect sync will handle adding new tile while preserving order
-    await sendAIState({ state: result.state, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
+    await sendAIState({ state: r.state, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null })
   }
 
   const handleDiscard = async (tileId: number) => {
     if (!isMyCurrentTurn || phase !== 'discard' || isSpectator || room.status !== 'active') return
-    const result = okeyDiscard(state, mySeat, tileId)
-    if (result.error) { showMsg(result.error); return }
+    const r = okeyDiscard(state, mySeat, tileId); if (r.error) { showMsg(r.error); return }
     if (soundEnabled) playTileSound()
-    const newHand = result.state.hands[mySeat]
-    let isWin = false
+    const newHand = r.state.hands[mySeat]; let isWin = false
     if (newHand.length === winTileCount && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
-      result.state.winner = mySeat; result.state.gameOver = true; isWin = true
-      if (soundEnabled) playWinSound()
+      r.state.winner = mySeat; r.state.gameOver = true; isWin = true; if (soundEnabled) playWinSound()
     }
     const myP = playerNum === 1 ? 'player1Score' : 'player2Score'
     const opP = playerNum === 1 ? 'player2Score' : 'player1Score'
     const myId = playerNum === 1 ? room.player1Id : room.player2Id
-    await sendAIState({ state: result.state, currentTurn: seatToTurn(result.state.currentSeat), status: isWin || result.state.gameOver ? 'completed' : 'active', [myP]: isWin ? (room[myP] || 0) + 1 : room[myP], [opP]: room[opP], winnerId: isWin ? myId : null })
+    await sendAIState({ state: r.state, currentTurn: seatToTurn(r.state.currentSeat), status: isWin || r.state.gameOver ? 'completed' : 'active', [myP]: isWin ? (room[myP] || 0) + 1 : room[myP], [opP]: room[opP], winnerId: isWin ? myId : null })
     setSelectedTile(null)
   }
 
   const handleTileClick = (tileId: number) => {
     if (!isMyCurrentTurn || isSpectator || room.status !== 'active') return
-    if (phase === 'discard') {
-      if (selectedTile === tileId) handleDiscard(tileId)
-      else setSelectedTile(tileId)
-    }
+    if (phase === 'discard') { if (selectedTile === tileId) handleDiscard(tileId); else setSelectedTile(tileId) }
   }
 
   const handleReorder = (newOrder: OkeyTile[]) => { setLocalHand(newOrder) }
 
-  const getTopDiscard = (seat: number): OkeyTile | null => {
-    const d = discards[seat]; return d && d.length > 0 ? d[d.length - 1] : null
-  }
-  const prevSeatDiscard = getTopDiscard((mySeat + 3) % 4) // seat before me
+  const getTopDiscard = (seat: number): OkeyTile | null => { const d = discards[seat]; return d?.length > 0 ? d[d.length - 1] : null }
+  const prevSeatDiscard = getTopDiscard((mySeat + 3) % 4)
   const showDiffSelector = room?.isAI && room?.status === 'active' && !diffSet && isMyCurrentTurn && pile.length > 90
 
-  // Render fullscreen game overlay via portal to cover navbar completely
+  const TABLE_BG = '#1a6b7a'
+  const FRAME = '#0a2a32'
+  const WOOD = 'linear-gradient(180deg, #c8944a 0%, #a67530 40%, #8b5e1a 100%)'
+
   const gameUI = (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99990, background: 'linear-gradient(135deg, #0d1117, #1a0e2e, #0d1117)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99990, background: '#0a1a20', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <LandscapePrompt />
 
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(139,92,246,0.2)', background: 'rgba(0,0,0,0.3)' }}>
-        <div className="flex items-center gap-2">
-          {indicator && <Tile3D tile={indicator} small isJoker={isJokerTile(indicator)} />}
-          <div className="flex flex-col">
-            <span className="text-[9px] text-amber-400/70">Okey</span>
-            <span className="text-[10px] text-yellow-300 font-bold">{indicator?.isFalseJoker ? '★' : `${COLORS[jokerColor]?.name} ${jokerNumber}`}</span>
-          </div>
-          <div className="ml-2 text-[10px] text-fuchsia-400/50">Kalan: {pile.length}</div>
-        </div>
-        <div className="px-3 py-1 rounded-full text-xs font-bold" style={{
-          background: isMyCurrentTurn ? 'rgba(34,211,238,0.15)' : 'rgba(168,85,247,0.1)',
-          color: isMyCurrentTurn ? '#22d3ee' : '#c084fc',
-          border: `1px solid ${isMyCurrentTurn ? 'rgba(34,211,238,0.3)' : 'rgba(168,85,247,0.2)'}`,
-        }}>
-          {winner !== null ? <span style={{ color: '#facc15' }}>🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
-            : gameOver ? <span style={{ color: '#fbbf24' }}>Oyun bitti - Berabere</span>
-            : <span>{isMyCurrentTurn ? `Sen - ${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
-        </div>
-        <StatsBar />
-      </div>
-
-      {/* Difficulty selector */}
-      <AnimatePresence>
-        {showDiffSelector && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="flex items-center justify-center gap-2 py-2 text-xs" style={{ background: 'rgba(0,0,0,0.2)' }}>
-            <span className="text-fuchsia-300/80">Zorluk:</span>
+      {/* Difficulty selector overlay */}
+      {showDiffSelector && (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 200, background: 'rgba(10,26,32,0.95)', padding: 24, borderRadius: 12, border: '1px solid #2a6a7a' }}>
+          <div style={{ color: '#7dd3fc', fontSize: 14, marginBottom: 12, textAlign: 'center', fontWeight: 700 }}>Zorluk Seç</div>
+          <div style={{ display: 'flex', gap: 8 }}>
             {(['easy', 'medium', 'hard'] as const).map(d => (
-              <button key={d} onClick={() => { setDifficulty(d); setDiffSet(true);
-                const ns = { ...state, difficulty: d }
-                sendAIState({ state: ns, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: 0, player2Score: 0, winnerId: null })
-              }} className="px-3 py-1 rounded-lg border transition-all text-xs font-bold" style={{
-                borderColor: difficulty === d ? '#22d3ee' : 'rgba(139,92,246,0.3)',
-                background: difficulty === d ? 'rgba(34,211,238,0.15)' : 'rgba(139,92,246,0.1)',
-                color: difficulty === d ? '#22d3ee' : 'rgba(196,181,253,0.5)',
-              }}>{DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}</button>
+              <button key={d} onClick={() => { setDifficulty(d); setDiffSet(true); sendAIState({ state: { ...state, difficulty: d }, currentTurn: seatToTurn(mySeat), status: 'active', player1Score: 0, player2Score: 0, winnerId: null }) }}
+                style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: difficulty === d ? '#0ea5e9' : '#1e3a4a', border: `1px solid ${difficulty === d ? '#38bdf8' : '#2a5a6a'}`, color: 'white' }}>
+                {DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}
+              </button>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Main game area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-3 py-2 overflow-hidden relative">
-        <div className="relative w-full max-w-3xl flex-1 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-          {/* Opponents */}
-          <div className="flex items-start justify-around px-4 py-2">
-            {opponentSeats.map(s => (
-              <OpponentAvatar key={s} seat={s} tileCount={hands[s]?.length || 0} isCurrent={currentSeat === s} topDiscard={getTopDiscard(s)} isJokerFn={isJokerTile} />
-            ))}
-          </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-          {/* Center draw area */}
-          <div className="flex items-center justify-center gap-6 py-3">
-            {/* Pile */}
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => handleDraw('pile')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
-              className="flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all" style={{
-                borderColor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.5)' : 'rgba(139,92,246,0.2)',
-                background: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(34,211,238,0.08)' : 'rgba(139,92,246,0.05)',
-                opacity: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 1 : 0.4,
-                cursor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
-              }}>
-              <div className="relative">
-                <div className="w-10 h-14 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6b21a8, #3b0764)', border: '2px solid rgba(139,92,246,0.5)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
-                  <span className="text-purple-300/60 text-xs font-bold">{pile.length}</span>
-                </div>
-                <div className="absolute -top-0.5 -left-0.5 w-10 h-14 rounded-lg -z-10" style={{ background: 'rgba(107,33,168,0.3)', border: '1px solid rgba(139,92,246,0.15)' }} />
+        {/* Table */}
+        <div style={{ flex: 1, display: 'flex', position: 'relative', margin: 4, borderRadius: 8, background: FRAME, border: '3px solid #0d2830', overflow: 'hidden' }}>
+
+          {/* Inner felt */}
+          <div style={{ flex: 1, display: 'flex', margin: 4, borderRadius: 6, background: TABLE_BG, position: 'relative', overflow: 'hidden' }}>
+
+            {/* Grid lines */}
+            <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+
+            {/* OKEY watermark */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: 70, fontWeight: 900, color: 'rgba(255,255,255,0.04)', letterSpacing: 8, pointerEvents: 'none' }}>OKEY</div>
+
+            {/* Left opponent (seat 3) */}
+            <div style={{ width: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '4px 2px' }}>
+              <span style={{ fontSize: 8, color: SEAT_HEX[opponentSeats[2]], fontWeight: 700, opacity: currentSeat === opponentSeats[2] ? 1 : 0.5 }}>{SEAT_NAMES[opponentSeats[2]].split(' ')[0]}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {Array.from({ length: Math.min(hands[opponentSeats[2]]?.length || 0, 10) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
               </div>
-              <span className="text-[9px] font-medium" style={{ color: 'rgba(34,211,238,0.7)' }}>Yığın</span>
-            </motion.button>
+              <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)' }}>({hands[opponentSeats[2]]?.length || 0})</span>
+              {getTopDiscard(opponentSeats[2]) && <div style={{ marginTop: 2 }}><Tile tile={getTopDiscard(opponentSeats[2])!} size="xs" isJoker={isJokerTile(getTopDiscard(opponentSeats[2])!)} /></div>}
+            </div>
 
-            {indicator && <div className="flex flex-col items-center gap-1"><Tile3D tile={indicator} isJoker={isJokerTile(indicator)} /><span className="text-[8px] text-amber-400/50">Gösterge</span></div>}
+            {/* Center column */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-            {/* Discard */}
-            {prevSeatDiscard ? (
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => handleDraw('discard')} disabled={!isMyCurrentTurn || phase !== 'draw' || isSpectator}
-                className="flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all" style={{
-                  borderColor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.5)' : 'rgba(139,92,246,0.2)',
-                  background: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'rgba(74,222,128,0.08)' : 'rgba(139,92,246,0.05)',
-                  opacity: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 1 : 0.4,
-                  cursor: isMyCurrentTurn && phase === 'draw' && !isSpectator ? 'pointer' : 'not-allowed',
+              {/* Top opponent (seat 2) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '6px 0', minHeight: 36 }}>
+                <span style={{ fontSize: 8, color: SEAT_HEX[opponentSeats[1]], fontWeight: 700, opacity: currentSeat === opponentSeats[1] ? 1 : 0.5 }}>{SEAT_NAMES[opponentSeats[1]].split(' ')[0]}</span>
+                <div style={{ display: 'flex', gap: 1 }}>
+                  {Array.from({ length: Math.min(hands[opponentSeats[1]]?.length || 0, 14) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
+                </div>
+                <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)' }}>({hands[opponentSeats[1]]?.length || 0})</span>
+                {getTopDiscard(opponentSeats[1]) && <Tile tile={getTopDiscard(opponentSeats[1])!} size="xs" isJoker={isJokerTile(getTopDiscard(opponentSeats[1])!)} />}
+              </div>
+
+              {/* Center: pile + indicator + discard */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                {/* Pile */}
+                <div onClick={() => handleDraw('pile')} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 6, borderRadius: 6,
+                  border: `2px solid ${isMyCurrentTurn && phase === 'draw' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}`,
+                  cursor: isMyCurrentTurn && phase === 'draw' ? 'pointer' : 'not-allowed',
+                  opacity: isMyCurrentTurn && phase === 'draw' ? 1 : 0.4,
                 }}>
-                <Tile3D tile={prevSeatDiscard} isJoker={isJokerTile(prevSeatDiscard)} />
-                <span className="text-[9px] font-medium" style={{ color: 'rgba(74,222,128,0.7)' }}>Yerden Al</span>
-              </motion.button>
-            ) : (
-              <div className="w-14 h-20 rounded-xl flex items-center justify-center" style={{ border: '2px dashed rgba(139,92,246,0.15)' }}>
-                <span className="text-[8px]" style={{ color: 'rgba(139,92,246,0.25)' }}>Atık</span>
+                  <div style={{ width: 36, height: 50, borderRadius: 5, background: 'linear-gradient(180deg,#1e3a5f,#0f2440)', border: '2px solid #2a4a6a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: '#64748b', fontSize: 11, fontWeight: 700 }}>{pile.length}</span>
+                  </div>
+                  <span style={{ fontSize: 8, color: '#7dd3fc' }}>Yığın</span>
+                </div>
+
+                {/* Indicator */}
+                {indicator && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <Tile tile={indicator} size="lg" isJoker={isJokerTile(indicator)} />
+                    <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)' }}>Gösterge</span>
+                    <span style={{ fontSize: 8, color: '#fbbf24', fontWeight: 600 }}>Okey: {indicator.isFalseJoker ? '★' : `${TC[jokerColor]?.name} ${jokerNumber}`}</span>
+                  </div>
+                )}
+
+                {/* Discard */}
+                {prevSeatDiscard ? (
+                  <div onClick={() => handleDraw('discard')} style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 6, borderRadius: 6,
+                    border: `2px solid ${isMyCurrentTurn && phase === 'draw' ? '#4ade80' : 'rgba(255,255,255,0.1)'}`,
+                    cursor: isMyCurrentTurn && phase === 'draw' ? 'pointer' : 'not-allowed',
+                    opacity: isMyCurrentTurn && phase === 'draw' ? 1 : 0.4,
+                  }}>
+                    <Tile tile={prevSeatDiscard} size="sm" isJoker={isJokerTile(prevSeatDiscard)} />
+                    <span style={{ fontSize: 8, color: '#86efac' }}>Yerden Al</span>
+                  </div>
+                ) : (
+                  <div style={{ width: 40, height: 54, borderRadius: 5, border: '2px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)' }}>Atık</span>
+                  </div>
+                )}
+              </div>
+
+              {/* My discards */}
+              {getTopDiscard(mySeat) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '2px 0' }}>
+                  <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)' }}>Attıkların:</span>
+                  <div style={{ display: 'flex', gap: 1, maxWidth: 200, overflow: 'hidden' }}>
+                    {discards[mySeat].slice(-5).map((t: OkeyTile) => <Tile key={t.id} tile={t} size="xs" isJoker={isJokerTile(t)} />)}
+                  </div>
+                </div>
+              )}
+
+              {/* Status */}
+              <div style={{ textAlign: 'center', padding: '4px 0', fontSize: 11, fontWeight: 600 }}>
+                {winner !== null ? <span style={{ color: '#fbbf24' }}>🏆 {winner === mySeat ? 'Kazandın!' : `${SEAT_NAMES[winner]} kazandı!`}</span>
+                  : gameOver ? <span style={{ color: '#fbbf24' }}>Oyun bitti</span>
+                  : <span style={{ color: isMyCurrentTurn ? '#7dd3fc' : '#64748b' }}>{isMyCurrentTurn ? `${phase === 'draw' ? 'Taş Çek' : 'Taş At'}` : `${SEAT_NAMES[currentSeat]} düşünüyor...`}</span>}
+              </div>
+
+              {canWin && phase === 'discard' && (
+                <motion.div animate={{ scale: [1, 1.04, 1] }} transition={{ repeat: Infinity, duration: 1 }}
+                  style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#4ade80', padding: '2px 12px', background: 'rgba(74,222,128,0.1)', borderRadius: 12, marginBottom: 2, alignSelf: 'center' }}>✨ Kazanabilirsin!</motion.div>
+              )}
+            </div>
+
+            {/* Right opponent (seat 1) */}
+            <div style={{ width: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '4px 2px' }}>
+              <span style={{ fontSize: 8, color: SEAT_HEX[opponentSeats[0]], fontWeight: 700, opacity: currentSeat === opponentSeats[0] ? 1 : 0.5 }}>{SEAT_NAMES[opponentSeats[0]].split(' ')[0]}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {Array.from({ length: Math.min(hands[opponentSeats[0]]?.length || 0, 10) }).map((_, i) => <FaceDownTile key={i} size="xs" />)}
+              </div>
+              <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)' }}>({hands[opponentSeats[0]]?.length || 0})</span>
+              {getTopDiscard(opponentSeats[0]) && <div style={{ marginTop: 2 }}><Tile tile={getTopDiscard(opponentSeats[0])!} size="xs" isJoker={isJokerTile(getTopDiscard(opponentSeats[0])!)} /></div>}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ BOTTOM: Player hand on wooden shelf ═══ */}
+        <div style={{ flexShrink: 0, position: 'relative' }}>
+          <div style={{ background: WOOD, padding: '8px 12px 10px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.15)' }} />
+
+            {/* Hand info */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+                {isMyCurrentTurn && <span style={{ animation: 'pulse 1.5s infinite' }}>● </span>}{SEAT_NAMES[mySeat]} ({myHand.length} taş)
+              </span>
+              {diffSet && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>{DIFF_LABELS[stateDiff]?.emoji} {DIFF_LABELS[stateDiff]?.label}</span>}
+            </div>
+
+            <TileRack tiles={myHand} selectedTile={selectedTile} onTileClick={handleTileClick}
+              isJokerFn={isJokerTile} canWin={canWin} phase={phase} groupedIds={groupedIds} onReorder={handleReorder} />
+
+            {/* Hints */}
+            {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
+              <div style={{ textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
+                {phase === 'draw' ? 'Yığından veya yerden taş çek' : selectedTile !== null ? 'Tekrar tıkla → at | Başka taşa tıkla → değiştir' : 'Atmak istediğin taşa tıkla'}
               </div>
             )}
           </div>
-
-          {/* My discards */}
-          {getTopDiscard(mySeat) && (
-            <div className="flex items-center justify-center gap-1 py-1">
-              <span className="text-[8px] text-amber-500/40">Attıkların:</span>
-              <div className="flex gap-0.5 overflow-x-auto" style={{ maxWidth: 220 }}>
-                {discards[mySeat].slice(-5).map((t: OkeyTile) => <Tile3D key={t.id} tile={t} small isJoker={isJokerTile(t)} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Hints */}
-          {isMyCurrentTurn && !isSpectator && room.status === 'active' && !winner && !gameOver && (
-            <div className="text-center text-[10px] py-1" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              {phase === 'draw' ? 'Yığından veya yerden taş çek' : selectedTile !== null ? 'Tekrar tıkla → at | Başka taşa tıkla → değiştir' : 'Atmak istediğin taşa tıkla'}
-            </div>
-          )}
-
-          {canWin && phase === 'discard' && (
-            <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1 }}
-              className="text-center text-xs font-bold py-1 rounded-full mx-auto px-4"
-              style={{ color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)' }}>✨ Kazanabilirsin!</motion.div>
-          )}
         </div>
-
-        {/* In-game chat */}
-        {!room.isAI && room.status === 'active' && room.id && <InGameChat roomId={room.id} />}
       </div>
 
-      {/* Bottom rack */}
-      <div className="px-2 pb-2 pt-1" style={{ borderTop: '1px solid rgba(139,92,246,0.2)', background: 'rgba(0,0,0,0.25)' }}>
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-[10px] font-bold" style={{ color: SEAT_HEX[mySeat], opacity: isMyCurrentTurn ? 1 : 0.5 }}>
-            {isMyCurrentTurn && <span className="animate-pulse">● </span>}{SEAT_NAMES[mySeat]} ({myHand.length} taş)
-          </span>
-          {diffSet && <span className="text-[9px]" style={{ color: DIFF_LABELS[stateDiff]?.color, opacity: 0.6 }}>{DIFF_LABELS[stateDiff]?.emoji} {DIFF_LABELS[stateDiff]?.label}</span>}
-        </div>
-        <TileRack tiles={myHand} selectedTile={selectedTile} onTileClick={handleTileClick}
-          isJokerFn={isJokerTile} canWin={canWin} phase={phase} groupedIds={groupedIds} onReorder={handleReorder} />
-      </div>
+      {/* Chat */}
+      {!room.isAI && room.status === 'active' && room.id && <InGameChat roomId={room.id} />}
 
       {/* Toast */}
       <AnimatePresence>
         {message && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="fixed left-1/2 -translate-x-1/2 text-xs px-4 py-2 rounded-full"
-            style={{ bottom: 140, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d', zIndex: 99995 }}>
+            style={{ position: 'fixed', bottom: 120, left: '50%', transform: 'translateX(-50%)', zIndex: 99995, background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', color: '#fcd34d', padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
             {message}
           </motion.div>
         )}
