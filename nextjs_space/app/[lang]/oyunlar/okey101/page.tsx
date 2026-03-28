@@ -130,7 +130,8 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
   const stateDiff: string = state?.difficulty || 'medium'
 
   const myHand = hands[0] || []
-  const canWin = myHand.length === 14 && okeyCheckWin(myHand, jokerColor, jokerNumber)
+  const winCount = 21 // 101 Okey uses 21 tiles (22 for dealer at start, discard to 21)
+  const canWin = myHand.length === winCount && okeyCheckWin(myHand, jokerColor, jokerNumber)
 
   const isJokerTile = useCallback((t: OkeyTile) => {
     return !!t.isFalseJoker || (t.color === jokerColor && t.number === jokerNumber)
@@ -238,10 +239,10 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
         seat = cs.currentSeat; moves++
         await new Promise(r => setTimeout(r, 300))
       }
-      // Check AI wins
+      // Check AI wins (21 tiles for 101 okey)
       for (let s = 1; s <= 3; s++) {
         if (cs.eliminated?.[s]) continue
-        if (cs.hands[s] && cs.hands[s].length === 14 && okeyCheckWin(cs.hands[s], cs.jokerColor, cs.jokerNumber)) {
+        if (cs.hands[s] && cs.hands[s].length === 21 && okeyCheckWin(cs.hands[s], cs.jokerColor, cs.jokerNumber)) {
           await processRoundEnd(cs, s)
           return
         }
@@ -268,7 +269,7 @@ function Okey101Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEn
     if (result.error) { showMsg(result.error); return }
     if (soundEnabled) playTileSound()
     const newHand = result.state.hands[0]
-    if (newHand.length === 14 && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
+    if (newHand.length === 21 && okeyCheckWin(newHand, jokerColor, jokerNumber)) {
       if (soundEnabled) playWinSound()
       await processRoundEnd(result.state, 0)
     } else {

@@ -748,7 +748,8 @@ export function okeyDiscard(state: any, seat: number, tileId: number) {
 }
 
 export function okeyCheckWin(hand: OkeyTile[], jc: number, jn: number): boolean {
-  if (hand.length !== 14) return false
+  // Standard okey: 14 tiles, 101 okey: 21 tiles
+  if (hand.length !== 14 && hand.length !== 21) return false
 
   // Count jokers and build grid
   const grid: number[][] = Array.from({ length: 4 }, () => Array(13).fill(0))
@@ -758,8 +759,8 @@ export function okeyCheckWin(hand: OkeyTile[], jc: number, jn: number): boolean 
     else grid[t.color][t.number - 1]++
   }
 
-  // Check 7 pairs
-  if (okeyCheck7Pairs(grid, jokers)) return true
+  // Check pairs (7 pairs for 14 tiles, 10 pairs + 1 tile for 21 tiles)
+  if (hand.length === 14 && okeyCheck7Pairs(grid, jokers)) return true
 
   // Check groups (runs + sets) via backtracking
   return okeySolveGroups(grid, jokers)
@@ -952,27 +953,66 @@ export function okey101CalcPenalty(hand: OkeyTile[], jc: number, jn: number): nu
   return penalty
 }
 
-// Init for 101 Okey variant (multi-round, cumulative scoring)
+// Init for 101 Okey variant (multi-round, cumulative scoring, 21 tiles per player)
 export function okey101Init(difficulty?: string): any {
-  const base = okeyInit()
+  // Create 106 tiles same as normal okey
+  const tiles: OkeyTile[] = []
+  let id = 0
+  for (let copy = 0; copy < 2; copy++) {
+    for (let color = 0; color < 4; color++) {
+      for (let num = 1; num <= 13; num++) {
+        tiles.push({ color, number: num, id: id++ })
+      }
+    }
+  }
+  tiles.push({ color: 4, number: 0, id: id++, isFalseJoker: true })
+  tiles.push({ color: 4, number: 0, id: id++, isFalseJoker: true })
+
+  // Shuffle
+  for (let i = tiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tiles[i], tiles[j]] = [tiles[j], tiles[i]]
+  }
+
+  const indicator = tiles.pop()!
+  const jokerColor = indicator.isFalseJoker ? 0 : indicator.color
+  const jokerNumber = indicator.isFalseJoker ? 1 : (indicator.number % 13) + 1
+
+  // Deal: 21 tiles to each player (seat 0 gets 22, must discard first)
+  const hands: OkeyTile[][] = [[], [], [], []]
+  hands[0] = tiles.splice(0, 22)
+  hands[1] = tiles.splice(0, 21)
+  hands[2] = tiles.splice(0, 21)
+  hands[3] = tiles.splice(0, 21)
+
+  for (const h of hands) okeySortHand(h)
+
   return {
-    ...base,
+    pile: tiles,
+    hands,
+    discards: [[], [], [], []] as OkeyTile[][],
+    indicator,
+    jokerColor,
+    jokerNumber,
+    currentSeat: 0,
+    phase: 'discard' as 'draw' | 'discard',
+    winner: null as number | null,
+    lastDrew: null as string | null,
+    gameOver: false,
     variant: '101',
     difficulty: difficulty || 'medium',
     scores: [0, 0, 0, 0],
     round: 1,
-    roundHistory: [],
+    roundHistory: [] as any[],
     eliminated: [false, false, false, false],
   }
 }
 
 // Start new round in 101 Okey
 export function okey101NewRound(prevState: any): any {
-  const base = okeyInit()
+  const fresh = okey101Init(prevState.difficulty)
   return {
-    ...base,
-    variant: '101',
-    difficulty: prevState.difficulty || 'medium',
+    ...fresh,
     scores: [...prevState.scores],
     round: prevState.round + 1,
     roundHistory: [...(prevState.roundHistory || [])],
