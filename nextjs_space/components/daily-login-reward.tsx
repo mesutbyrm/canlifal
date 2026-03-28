@@ -16,6 +16,11 @@ const STREAK_REWARDS = [
 ]
 
 export default function DailyLoginReward() {
+  // Popup disabled by admin request — all first-visit popups turned off
+  return null
+}
+
+function DailyLoginReward_DISABLED() {
   const { data: session } = useSession() || {}
   const [show, setShow] = useState(false)
   const [claimed, setClaimed] = useState(false)

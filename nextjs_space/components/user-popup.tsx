@@ -97,6 +97,11 @@ function filterVisiblePopups(popups: PopupData[]): PopupData[] {
 }
 
 export default function UserPopup() {
+  // Popup disabled by admin request — all first-visit popups turned off
+  return null
+}
+
+function UserPopup_DISABLED() {
   const [popups, setPopups] = useState<PopupData[]>([])
   const [visiblePopups, setVisiblePopups] = useState<PopupData[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
