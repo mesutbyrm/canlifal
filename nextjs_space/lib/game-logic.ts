@@ -1,6 +1,6 @@
 // ========== GAME LOGIC FOR ALL MULTIPLAYER GAMES ==========
 
-export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey'
+export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101'
 
 // ========== XOX (Tic-Tac-Toe) ==========
 export function xoxInit() {
@@ -868,20 +868,23 @@ export function okeyHandScore(hand: OkeyTile[], jc: number, jn: number): number 
   return score
 }
 
-// AI Bot for Okey
+// AI Bot for Okey - supports difficulty levels
 export function okeyAIMove(state: any): { action: 'draw'; source: 'pile' | 'discard' } | { action: 'discard'; tileId: number } | null {
   const seat = state.currentSeat
   const hand = state.hands[seat] as OkeyTile[]
   const jc = state.jokerColor
   const jn = state.jokerNumber
+  const diff: string = state.difficulty || 'medium'
 
   if (state.phase === 'draw') {
-    // Check if previous player's top discard is useful
     const prevSeat = (seat + 3) % 4
     const discardPile = state.discards[prevSeat] || []
     if (discardPile.length > 0) {
       const topDiscard = discardPile[discardPile.length - 1]
-      if (okeyTileUsefulness(topDiscard, hand, jc, jn) > 6) {
+      const usefulness = okeyTileUsefulness(topDiscard, hand, jc, jn)
+      // Easy: rarely picks from discard; Medium: threshold 6; Hard: threshold 3
+      const threshold = diff === 'easy' ? 12 : diff === 'hard' ? 3 : 6
+      if (usefulness > threshold) {
         return { action: 'draw', source: 'discard' }
       }
     }
@@ -889,22 +892,92 @@ export function okeyAIMove(state: any): { action: 'draw'; source: 'pile' | 'disc
   }
 
   if (state.phase === 'discard') {
-    // Find least useful tile to discard
+    if (diff === 'easy') {
+      // Easy: discard somewhat randomly - pick from bottom 60% of usefulness
+      const scored = hand.map((t: OkeyTile, i: number) => ({
+        idx: i, score: okeyIsJoker(t, jc, jn) ? 9999 : okeyTileUsefulness(t, hand, jc, jn)
+      })).sort((a: any, b: any) => a.score - b.score)
+      const pool = scored.filter((s: any) => s.score < 9999).slice(0, Math.max(3, Math.ceil(scored.length * 0.6)))
+      if (pool.length > 0) {
+        const pick = pool[Math.floor(Math.random() * pool.length)]
+        return { action: 'discard', tileId: hand[pick.idx].id }
+      }
+    }
+
+    if (diff === 'hard') {
+      // Hard: also avoids discarding tiles opponents might want
+      let worstIdx = -1
+      let worstScore = Infinity
+      for (let i = 0; i < hand.length; i++) {
+        const t = hand[i]
+        if (okeyIsJoker(t, jc, jn)) continue
+        let score = okeyTileUsefulness(t, hand, jc, jn)
+        // Penalize discarding tiles others might need (check their discards for adjacent)
+        for (let s = 0; s < 4; s++) {
+          if (s === seat) continue
+          const dPile = state.discards[s] || []
+          for (const d of dPile.slice(-3)) {
+            if (d.color === t.color && Math.abs(d.number - t.number) <= 1) score += 2
+            if (d.number === t.number) score += 1
+          }
+        }
+        if (score < worstScore) { worstScore = score; worstIdx = i }
+      }
+      if (worstIdx !== -1) return { action: 'discard', tileId: hand[worstIdx].id }
+    }
+
+    // Medium (default): find least useful
     let worstIdx = -1
     let worstScore = Infinity
     for (let i = 0; i < hand.length; i++) {
       const t = hand[i]
-      if (okeyIsJoker(t, jc, jn)) continue // never discard jokers
+      if (okeyIsJoker(t, jc, jn)) continue
       const score = okeyTileUsefulness(t, hand, jc, jn)
-      if (score < worstScore) {
-        worstScore = score
-        worstIdx = i
-      }
+      if (score < worstScore) { worstScore = score; worstIdx = i }
     }
     if (worstIdx === -1) worstIdx = 0
     return { action: 'discard', tileId: hand[worstIdx].id }
   }
   return null
+}
+
+// Okey101 scoring: calculate penalty for tiles in hand
+export function okey101CalcPenalty(hand: OkeyTile[], jc: number, jn: number): number {
+  let penalty = 0
+  for (const t of hand) {
+    if (t.isFalseJoker) { penalty += 20; continue }
+    if (okeyIsJoker(t, jc, jn)) { penalty += 25; continue } // caught with joker = heavy penalty
+    penalty += t.number // tile face value
+  }
+  return penalty
+}
+
+// Init for 101 Okey variant (multi-round, cumulative scoring)
+export function okey101Init(difficulty?: string): any {
+  const base = okeyInit()
+  return {
+    ...base,
+    variant: '101',
+    difficulty: difficulty || 'medium',
+    scores: [0, 0, 0, 0],
+    round: 1,
+    roundHistory: [],
+    eliminated: [false, false, false, false],
+  }
+}
+
+// Start new round in 101 Okey
+export function okey101NewRound(prevState: any): any {
+  const base = okeyInit()
+  return {
+    ...base,
+    variant: '101',
+    difficulty: prevState.difficulty || 'medium',
+    scores: [...prevState.scores],
+    round: prevState.round + 1,
+    roundHistory: [...(prevState.roundHistory || [])],
+    eliminated: [...(prevState.eliminated || [false, false, false, false])],
+  }
 }
 
 function okeyTileUsefulness(tile: OkeyTile, hand: OkeyTile[], jc: number, jn: number): number {
@@ -931,6 +1004,7 @@ export function getInitialState(gameType: string) {
     case 'tavla': return tavlaInit()
     case 'pisti': return pistiInit()
     case 'okey': return okeyInit()
+    case 'okey101': return okey101Init()
     default: return {}
   }
 }
