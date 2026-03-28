@@ -383,7 +383,11 @@ export default function GiftsPage() {
                         <Check className="w-3 h-3 text-white" />
                       </motion.div>
                     )}
-                    <span className="text-2xl sm:text-3xl mb-1">{gift.icon}</span>
+                    {gift.icon?.startsWith('/') ? (
+                      <img src={gift.icon} alt={gift.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain mb-1" />
+                    ) : (
+                      <span className="text-2xl sm:text-3xl mb-1">{gift.icon}</span>
+                    )}
                     <span className="text-white text-[10px] sm:text-xs font-medium text-center leading-tight">
                       {gift.name}
                     </span>
@@ -572,7 +576,7 @@ export default function GiftsPage() {
               {Array.from({ length: 20 }).map((_, i) => {
                 const seed = (i * 37 + 13) % 100
                 const seed2 = (i * 53 + 7) % 100
-                const emojis = ['🎉', '🎊', '✨', '💎', '🌟', '🔥', '💫', '🪙', bigGiftPopup.giftIcon]
+                const emojis = ['🎉', '🎊', '✨', '💎', '🌟', '🔥', '💫', '🪙', bigGiftPopup.giftIcon?.startsWith('/') ? '🎁' : bigGiftPopup.giftIcon]
                 return (
                   <motion.div
                     key={i}
@@ -615,9 +619,11 @@ export default function GiftsPage() {
               <motion.div
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-7xl mb-3"
+                className="text-7xl mb-3 flex items-center justify-center"
               >
-                {bigGiftPopup.giftIcon}
+                {bigGiftPopup.giftIcon?.startsWith('/') ? (
+                  <img src={bigGiftPopup.giftIcon} alt={bigGiftPopup.giftType} className="w-20 h-20 object-contain" />
+                ) : bigGiftPopup.giftIcon}
               </motion.div>
 
               {/* Title */}
@@ -663,7 +669,11 @@ export default function GiftsPage() {
                   isFacebook ? 'bg-yellow-50 border border-yellow-200' : 'bg-yellow-500/10 border border-yellow-500/30'
                 }`}
               >
-                <p className="text-3xl mb-1">{bigGiftPopup.giftIcon}</p>
+                {bigGiftPopup.giftIcon?.startsWith('/') ? (
+                  <img src={bigGiftPopup.giftIcon} alt={bigGiftPopup.giftType} className="w-10 h-10 object-contain mx-auto mb-1" />
+                ) : (
+                  <p className="text-3xl mb-1">{bigGiftPopup.giftIcon}</p>
+                )}
                 <p className={`font-bold text-lg ${isFacebook ? 'text-gray-800' : 'text-yellow-300'}`}>
                   {bigGiftPopup.giftType === 'Jeton'
                     ? `${bigGiftPopup.amount.toLocaleString()} Jeton`

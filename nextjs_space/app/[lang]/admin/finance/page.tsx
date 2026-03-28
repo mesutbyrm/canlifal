@@ -755,7 +755,11 @@ function GiftHistorySection({ gifts, formatNumber, formatDate, ClickableUser }: 
                 className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/8 transition-all">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-xl flex-shrink-0">{gift.giftIcon}</span>
+                    {gift.giftIcon?.startsWith('/') ? (
+                      <img src={gift.giftIcon} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
+                    ) : (
+                      <span className="text-xl flex-shrink-0">{gift.giftIcon}</span>
+                    )}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1 flex-wrap">
                         <ClickableUser user={gift.sender} showImage />

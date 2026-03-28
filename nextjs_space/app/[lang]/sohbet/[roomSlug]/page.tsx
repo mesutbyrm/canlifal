@@ -85,7 +85,7 @@ const ROLE_BADGE_STYLES: Record<string, { bg: string; border: string; text: stri
 }
 
 const GIFT_IMAGES: Record<string, string> = {
-  // Gift types now use emoji icons - no image files needed
+  // Empty - icons now come from DB as image paths
 }
 
 export default function ChatRoomPage() {
@@ -2516,6 +2516,8 @@ export default function ChatRoomPage() {
               >
                 {anim.giftImage ? (
                   <img loading="lazy" src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
+                ) : anim.giftIcon?.startsWith('/') ? (
+                  <img loading="lazy" src={anim.giftIcon} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
                 ) : (
                   <span className="text-6xl">{anim.giftIcon}</span>
                 )}
@@ -2651,8 +2653,8 @@ export default function ChatRoomPage() {
                     onClick={() => setSelectedGiftType(gt.id)}
                     className={`flex flex-col items-center p-2 rounded-lg transition-all ${selectedGiftType === gt.id ? 'bg-gold-500/20 border border-gold-500/50 scale-105' : 'bg-purple-900/30 border border-purple-500/20 hover:border-purple-400/40'}`}
                   >
-                    {GIFT_IMAGES[gt.id] ? (
-                      <img loading="lazy" src={GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
+                    {(gt.icon && gt.icon.startsWith('/')) || GIFT_IMAGES[gt.id] ? (
+                      <img loading="lazy" src={gt.icon?.startsWith('/') ? gt.icon : GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
                     ) : (
                       <span className="text-2xl">{gt.icon}</span>
                     )}

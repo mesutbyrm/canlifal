@@ -84,7 +84,11 @@ export default function ChatRoomReceivedGifts({ language, isFacebook, isCosmic, 
                     isFacebook ? 'bg-gray-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/20'
                   }`}>
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{g.giftIcon}</span>
+                      {g.giftIcon?.startsWith('/') ? (
+                        <img src={g.giftIcon} alt={g.giftName} className="w-6 h-6 object-contain" />
+                      ) : (
+                        <span className="text-xl">{g.giftIcon}</span>
+                      )}
                       <div>
                         <p className={`text-xs font-medium ${textPrimary}`}>
                           {g.senderName} <span className={textSecondary}>→</span> {g.giftName}

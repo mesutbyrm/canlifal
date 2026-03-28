@@ -38,7 +38,7 @@ async function notifyFollowersOfLiveStream(userId: string, userName: string, str
     followerIds,
     '🔴 Canlı Yayın Başladı!',
     `${userName} canlı yayına başladı: ${streamTitle || 'Canlı Fal'}`,
-    `${baseUrl}/canli-oda/${streamId}`,
+    `${baseUrl}/sohbet/video?stream=${streamId}`,
     { streamId, type: 'stream_live' }
   )
 }

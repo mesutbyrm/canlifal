@@ -1518,8 +1518,10 @@ export default function BroadcastPage() {
             className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
           >
             <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="text-center">
-              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: 2, duration: 0.5 }} className="text-8xl mb-4">
-                {centerGift.icon}
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: 2, duration: 0.5 }} className="text-8xl mb-4 flex items-center justify-center">
+                {centerGift.icon?.startsWith('/') ? (
+                  <img src={centerGift.icon} alt={centerGift.giftName} className="w-24 h-24 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
+                ) : centerGift.icon}
               </motion.div>
               <div className="flex items-center justify-center gap-3 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full">
                 {centerGift.senderImage ? (

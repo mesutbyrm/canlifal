@@ -13,26 +13,34 @@ interface BigGiftNotification {
   createdAt: string
 }
 
-// Map gift names to emoji icons for banner display
+function isImagePath(icon: string): boolean {
+  return icon.startsWith('/') || icon.startsWith('http')
+}
+
+// Fallback emoji for non-image icons
 const GIFT_EMOJI_MAP: Record<string, string> = {
-  'Canlifal Jeton': '🪙',
-  'Canlifal 5 Jeton': '🪙',
-  'Canlifal 10 Jeton': '🪙',
-  'Gül': '🌹',
-  'Kalp': '❤️',
-  'Yıldız': '⭐',
-  'Taç': '👑',
-  'Elmas': '💎',
-  'Kristal': '🔮',
-  'Kahve': '☕',
   'Jeton': '🪙',
 }
 
 function getGiftEmoji(giftType: string, giftIcon: string): string {
   if (GIFT_EMOJI_MAP[giftType]) return GIFT_EMOJI_MAP[giftType]
-  // If icon is not an image path, use it directly (it's already an emoji)
-  if (!giftIcon.startsWith('/') && !giftIcon.startsWith('http')) return giftIcon
+  if (!isImagePath(giftIcon)) return giftIcon || '🎁'
   return '🎁'
+}
+
+function GiftIconDisplay({ giftIcon, giftType, size = 24 }: { giftIcon: string; giftType: string; size?: number }) {
+  if (isImagePath(giftIcon)) {
+    return (
+      <img 
+        src={giftIcon} 
+        alt={giftType} 
+        width={size} 
+        height={size} 
+        style={{ width: `${size}px`, height: `${size}px`, objectFit: 'contain', display: 'inline-block', verticalAlign: 'middle' }} 
+      />
+    )
+  }
+  return <span style={{ fontSize: `${size}px` }}>{getGiftEmoji(giftType, giftIcon)}</span>
 }
 
 export default function GiftNotificationBanner() {
@@ -200,7 +208,7 @@ export default function GiftNotificationBanner() {
           <span className="inline-flex items-center gap-1">
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite' }}>🎉</span>
             <span style={{ WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', animationDelay: '0.15s', display: 'inline-flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '24px' }}>{getGiftEmoji(currentNotif.giftType, currentNotif.giftIcon)}</span>
+              <GiftIconDisplay giftIcon={currentNotif.giftIcon} giftType={currentNotif.giftType} size={28} />
             </span>
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.3s' }}>🎊</span>
           </span>
@@ -225,7 +233,7 @@ export default function GiftNotificationBanner() {
           <span className="inline-flex items-center gap-1">
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.2s' }}>✨</span>
             <span style={{ WebkitAnimation: 'pulseGift 1s ease-in-out infinite', animation: 'pulseGift 1s ease-in-out infinite', display: 'inline-flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '24px' }}>{getGiftEmoji(currentNotif.giftType, currentNotif.giftIcon)}</span>
+              <GiftIconDisplay giftIcon={currentNotif.giftIcon} giftType={currentNotif.giftType} size={28} />
             </span>
             <span style={{ fontSize: '20px', WebkitAnimation: 'bounceGift 0.7s ease-in-out infinite', animation: 'bounceGift 0.7s ease-in-out infinite', animationDelay: '0.4s' }}>🌟</span>
           </span>
