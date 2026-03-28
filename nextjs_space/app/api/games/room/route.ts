@@ -6,7 +6,7 @@ import { getInitialState } from '@/lib/game-logic'
 
 export const dynamic = 'force-dynamic'
 
-const VALID_TYPES = ['xox', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar']
+const VALID_TYPES = ['xox', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey']
 
 // POST: Create a new game room
 export async function POST(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const userName = (session.user as any)?.name || 'Oyuncu 1'
     const aiNames: Record<string, string> = {
       xox: 'Yapay Zeka', tombala: 'Yapay Zeka', tavla: 'Yapay Zeka',
-      pisti: 'Yapay Zeka', sayi_tahmin: 'Yapay Zeka', zar: 'Yapay Zeka'
+      pisti: 'Yapay Zeka', sayi_tahmin: 'Yapay Zeka', zar: 'Yapay Zeka', okey: 'Yapay Zeka'
     }
 
     const room = await prisma.gameRoom.create({

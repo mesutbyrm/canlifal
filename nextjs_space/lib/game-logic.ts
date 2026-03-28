@@ -1,6 +1,6 @@
 // ========== GAME LOGIC FOR ALL MULTIPLAYER GAMES ==========
 
-export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar'
+export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey'
 
 // ========== XOX (Tic-Tac-Toe) ==========
 export function xoxInit() {
@@ -638,6 +638,290 @@ export function processMove(gameType: string, state: any, action: any, playerNum
   }
 }
 
+// ========== OKEY (Classic Turkish Tile Game - 4 Players) ==========
+export interface OkeyTile { color: number; number: number; id: number; isFalseJoker?: boolean }
+
+export function okeyInit() {
+  // Create 106 tiles: 4 colors × 13 numbers × 2 copies + 2 false jokers
+  const tiles: OkeyTile[] = []
+  let id = 0
+  for (let copy = 0; copy < 2; copy++) {
+    for (let color = 0; color < 4; color++) {
+      for (let num = 1; num <= 13; num++) {
+        tiles.push({ color, number: num, id: id++ })
+      }
+    }
+  }
+  // 2 false jokers (shown as ★)
+  tiles.push({ color: 4, number: 0, id: id++, isFalseJoker: true })
+  tiles.push({ color: 4, number: 0, id: id++, isFalseJoker: true })
+
+  // Shuffle
+  for (let i = tiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tiles[i], tiles[j]] = [tiles[j], tiles[i]]
+  }
+
+  // Pick indicator tile (gösterge)
+  const indicator = tiles.pop()!
+  // Joker = same color, next number (13 wraps to 1)
+  const jokerColor = indicator.isFalseJoker ? 0 : indicator.color
+  const jokerNumber = indicator.isFalseJoker ? 1 : (indicator.number % 13) + 1
+
+  // Deal: seat 0 (dealer/human) gets 15, others get 14
+  const hands: OkeyTile[][] = [[], [], [], []]
+  hands[0] = tiles.splice(0, 15)
+  hands[1] = tiles.splice(0, 14)
+  hands[2] = tiles.splice(0, 14)
+  hands[3] = tiles.splice(0, 14)
+
+  // Sort each hand
+  for (const h of hands) okeySortHand(h)
+
+  return {
+    pile: tiles, // remaining draw pile
+    hands,
+    discards: [[], [], [], []] as OkeyTile[][],
+    indicator,
+    jokerColor,
+    jokerNumber,
+    currentSeat: 0, // dealer starts
+    phase: 'discard' as 'draw' | 'discard', // dealer has 15 tiles, must discard first
+    winner: null as number | null,
+    lastDrew: null as string | null, // 'pile' | 'discard' | null
+    gameOver: false,
+  }
+}
+
+function okeySortHand(hand: OkeyTile[]) {
+  hand.sort((a, b) => {
+    if (a.isFalseJoker && !b.isFalseJoker) return 1
+    if (!a.isFalseJoker && b.isFalseJoker) return -1
+    if (a.color !== b.color) return a.color - b.color
+    return a.number - b.number
+  })
+}
+
+function okeyIsJoker(tile: OkeyTile, jc: number, jn: number): boolean {
+  return !!tile.isFalseJoker || (tile.color === jc && tile.number === jn)
+}
+
+export function okeyDraw(state: any, seat: number, source: 'pile' | 'discard') {
+  if (state.phase !== 'draw' || state.currentSeat !== seat) return { error: 'Sıra değil', state }
+  const s = JSON.parse(JSON.stringify(state))
+  if (source === 'pile') {
+    if (s.pile.length === 0) return { error: 'Yığın bitti', state }
+    const tile = s.pile.pop()
+    s.hands[seat].push(tile)
+  } else {
+    // Draw from previous player's discard pile (top card)
+    const prevSeat = (seat + 3) % 4
+    if (s.discards[prevSeat].length === 0) return { error: 'Atık yığını boş', state }
+    const tile = s.discards[prevSeat].pop()
+    s.hands[seat].push(tile)
+  }
+  s.phase = 'discard'
+  s.lastDrew = source
+  return { state: s }
+}
+
+export function okeyDiscard(state: any, seat: number, tileId: number) {
+  if (state.phase !== 'discard' || state.currentSeat !== seat) return { error: 'Sıra değil', state }
+  const s = JSON.parse(JSON.stringify(state))
+  const hand = s.hands[seat]
+  const idx = hand.findIndex((t: OkeyTile) => t.id === tileId)
+  if (idx === -1) return { error: 'Taş bulunamadı', state }
+  const [discarded] = hand.splice(idx, 1)
+  s.discards[seat].push(discarded)
+
+  // Check if next player has tiles (game continues)
+  const nextSeat = (seat + 1) % 4
+  s.currentSeat = nextSeat
+  s.phase = 'draw'
+  s.lastDrew = null
+
+  // If pile is empty, game is a draw
+  if (s.pile.length === 0) {
+    s.gameOver = true
+  }
+  return { state: s }
+}
+
+export function okeyCheckWin(hand: OkeyTile[], jc: number, jn: number): boolean {
+  if (hand.length !== 14) return false
+
+  // Count jokers and build grid
+  const grid: number[][] = Array.from({ length: 4 }, () => Array(13).fill(0))
+  let jokers = 0
+  for (const t of hand) {
+    if (okeyIsJoker(t, jc, jn)) jokers++
+    else grid[t.color][t.number - 1]++
+  }
+
+  // Check 7 pairs
+  if (okeyCheck7Pairs(grid, jokers)) return true
+
+  // Check groups (runs + sets) via backtracking
+  return okeySolveGroups(grid, jokers)
+}
+
+function okeyCheck7Pairs(grid: number[][], jokers: number): boolean {
+  let pairs = 0, singles = 0
+  for (let c = 0; c < 4; c++) {
+    for (let n = 0; n < 13; n++) {
+      pairs += Math.floor(grid[c][n] / 2)
+      singles += grid[c][n] % 2
+    }
+  }
+  // Each unpaired tile needs a joker to form a pair
+  return pairs + Math.floor((singles + jokers) / 2) >= 7 && singles <= jokers
+}
+
+function okeySolveGroups(grid: number[][], jokers: number): boolean {
+  // Find first non-zero cell
+  for (let c = 0; c < 4; c++) {
+    for (let n = 0; n < 13; n++) {
+      if (grid[c][n] <= 0) continue
+
+      // Try RUNS: same color, consecutive numbers starting at n
+      for (let len = 3; len <= 13 - n; len++) {
+        let needed = 0
+        let valid = true
+        for (let i = 0; i < len; i++) {
+          if (grid[c][n + i] <= 0) needed++
+        }
+        if (needed > jokers) continue
+
+        // Remove run
+        const removed: number[] = []
+        for (let i = 0; i < len; i++) {
+          if (grid[c][n + i] > 0) { grid[c][n + i]--; removed.push(i) }
+        }
+        if (okeySolveGroups(grid, jokers - needed)) {
+          for (const i of removed) grid[c][n + i]++
+          return true
+        }
+        for (const i of removed) grid[c][n + i]++
+      }
+
+      // Try SETS: same number, different colors (size 3 or 4)
+      const avail: number[] = []
+      for (let c2 = 0; c2 < 4; c2++) {
+        if (grid[c2][n] > 0) avail.push(c2)
+      }
+
+      for (let sz = 3; sz <= 4; sz++) {
+        if (avail.length > sz) {
+          // Pick combos of sz from avail that include c
+          const combos = okeyCombos(avail, sz).filter(cb => cb.includes(c))
+          for (const combo of combos) {
+            for (const cc of combo) grid[cc][n]--
+            if (okeySolveGroups(grid, jokers)) {
+              for (const cc of combo) grid[cc][n]++
+              return true
+            }
+            for (const cc of combo) grid[cc][n]++
+          }
+        } else if (avail.length === sz) {
+          for (const cc of avail) grid[cc][n]--
+          if (okeySolveGroups(grid, jokers)) {
+            for (const cc of avail) grid[cc][n]++
+            return true
+          }
+          for (const cc of avail) grid[cc][n]++
+        } else if (avail.length < sz && avail.length + jokers >= sz) {
+          const need = sz - avail.length
+          for (const cc of avail) grid[cc][n]--
+          if (okeySolveGroups(grid, jokers - need)) {
+            for (const cc of avail) grid[cc][n]++
+            return true
+          }
+          for (const cc of avail) grid[cc][n]++
+        }
+      }
+
+      return false // This tile must be in SOME group, none worked
+    }
+  }
+  return true // All tiles placed
+}
+
+function okeyCombos(arr: number[], k: number): number[][] {
+  if (k === 0) return [[]]
+  if (arr.length < k) return []
+  const [first, ...rest] = arr
+  const withFirst = okeyCombos(rest, k - 1).map(c => [first, ...c])
+  const withoutFirst = okeyCombos(rest, k)
+  return [...withFirst, ...withoutFirst]
+}
+
+// Score: sum of ungrouped tiles (lower is better, 0 = winner)
+export function okeyHandScore(hand: OkeyTile[], jc: number, jn: number): number {
+  if (okeyCheckWin(hand, jc, jn)) return 0
+  // Score = sum of tile values that don't fit in groups
+  // Simple heuristic: count tiles not in any partial group
+  let score = 0
+  for (const t of hand) {
+    if (okeyIsJoker(t, jc, jn)) continue // jokers are always useful
+    score += t.number // higher numbers = more penalty
+  }
+  return score
+}
+
+// AI Bot for Okey
+export function okeyAIMove(state: any): { action: 'draw'; source: 'pile' | 'discard' } | { action: 'discard'; tileId: number } | null {
+  const seat = state.currentSeat
+  const hand = state.hands[seat] as OkeyTile[]
+  const jc = state.jokerColor
+  const jn = state.jokerNumber
+
+  if (state.phase === 'draw') {
+    // Check if previous player's top discard is useful
+    const prevSeat = (seat + 3) % 4
+    const discardPile = state.discards[prevSeat] || []
+    if (discardPile.length > 0) {
+      const topDiscard = discardPile[discardPile.length - 1]
+      if (okeyTileUsefulness(topDiscard, hand, jc, jn) > 6) {
+        return { action: 'draw', source: 'discard' }
+      }
+    }
+    return { action: 'draw', source: 'pile' }
+  }
+
+  if (state.phase === 'discard') {
+    // Find least useful tile to discard
+    let worstIdx = -1
+    let worstScore = Infinity
+    for (let i = 0; i < hand.length; i++) {
+      const t = hand[i]
+      if (okeyIsJoker(t, jc, jn)) continue // never discard jokers
+      const score = okeyTileUsefulness(t, hand, jc, jn)
+      if (score < worstScore) {
+        worstScore = score
+        worstIdx = i
+      }
+    }
+    if (worstIdx === -1) worstIdx = 0
+    return { action: 'discard', tileId: hand[worstIdx].id }
+  }
+  return null
+}
+
+function okeyTileUsefulness(tile: OkeyTile, hand: OkeyTile[], jc: number, jn: number): number {
+  if (okeyIsJoker(tile, jc, jn)) return 100 // jokers are invaluable
+  let score = 0
+  for (const t of hand) {
+    if (t.id === tile.id) continue
+    if (okeyIsJoker(t, jc, jn)) continue
+    // Same color, adjacent number = run potential
+    if (t.color === tile.color && Math.abs(t.number - tile.number) <= 2) score += 3
+    if (t.color === tile.color && Math.abs(t.number - tile.number) === 1) score += 4
+    // Same number, different color = set potential
+    if (t.number === tile.number && t.color !== tile.color) score += 5
+  }
+  return score
+}
+
 export function getInitialState(gameType: string) {
   switch (gameType) {
     case 'xox': return xoxInit()
@@ -646,6 +930,7 @@ export function getInitialState(gameType: string) {
     case 'tombala': return tombalaInit()
     case 'tavla': return tavlaInit()
     case 'pisti': return pistiInit()
+    case 'okey': return okeyInit()
     default: return {}
   }
 }

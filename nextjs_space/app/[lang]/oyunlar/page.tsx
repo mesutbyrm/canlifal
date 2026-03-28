@@ -93,6 +93,7 @@ const ALL_MP_GAMES = [
   { slug: 'tombala', emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamla', apiType: 'room' },
   { slug: 'tavla', emoji: '♟️', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı', apiType: 'room' },
   { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', apiType: 'room' },
+  { slug: 'okey', emoji: '🀄', name: 'Okey', desc: 'Klasik 4 kişilik Türk Okey oyunu', apiType: 'room' },
 ]
 
 interface ActiveRoom {
