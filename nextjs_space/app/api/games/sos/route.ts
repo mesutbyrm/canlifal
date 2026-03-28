@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
         }),
       ])
 
-      const winners = recentWinners.map(g => {
+      const winners = recentWinners.map((g: any) => {
         const winnerName = g.winnerId === g.player1Id ? g.player1Name : g.player2Name
         const totalPot = g.betAmount * 2
         const commission = Math.floor(totalPot * 0.10)
@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
         take: 30,
         include: { _count: { select: { viewers: true } } },
       })
-      return NextResponse.json(activeGames.map(g => ({
+      return NextResponse.json(activeGames.map((g: any) => ({
         id: g.id,
         gridSize: g.gridSize,
         player1Name: g.player1Name,

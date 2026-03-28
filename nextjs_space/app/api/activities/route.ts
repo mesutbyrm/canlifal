@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     // Check specific users first
     if (config.specificUserIds && config.specificUserIds.trim()) {
-      const allowedIds = config.specificUserIds.split(',').map(id => id.trim()).filter(Boolean)
+      const allowedIds = config.specificUserIds.split(',').map((id: string) => id.trim()).filter(Boolean)
       if (allowedIds.length > 0) {
         if (!userId || !allowedIds.includes(userId)) {
           return NextResponse.json({ activities: [], visible: false })

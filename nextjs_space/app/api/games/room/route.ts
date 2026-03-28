@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         activePlayers: activeCount * 2,
         waitingRooms: waitingCount,
-        recentWinners: recentWinners.map(g => {
+        recentWinners: recentWinners.map((g: any) => {
           const winnerName = g.winnerId === g.player1Id ? g.player1Name : g.player2Name
           const payout = Math.floor(g.betAmount * 2 * 0.9)
           return { id: g.id, winnerName, payout, currency: g.betCurrency, score: `${g.player1Score}-${g.player2Score}`, time: g.updatedAt }
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
         include: { _count: { select: { viewers: true } } },
       })
       return NextResponse.json({
-        rooms: rooms.map(g => ({
+        rooms: rooms.map((g: any) => ({
           id: g.id,
           gameType: g.gameType,
           player1Name: g.player1Name,
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
         take: 30,
         include: { _count: { select: { viewers: true } } },
       })
-      return NextResponse.json(active.map(g => ({
+      return NextResponse.json(active.map((g: any) => ({
         id: g.id, player1Name: g.player1Name, player2Name: g.player2Name,
         player1Score: g.player1Score, player2Score: g.player2Score,
         betAmount: g.betAmount, betCurrency: g.betCurrency, turnTimer: g.turnTimer,

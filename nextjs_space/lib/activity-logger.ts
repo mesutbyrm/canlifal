@@ -52,7 +52,7 @@ export async function cleanOldActivities() {
       })
       if (oldEntries.length > 0) {
         await prisma.liveActivity.deleteMany({
-          where: { id: { in: oldEntries.map(e => e.id) } },
+          where: { id: { in: oldEntries.map((e: any) => e.id) } },
         })
       }
     }
