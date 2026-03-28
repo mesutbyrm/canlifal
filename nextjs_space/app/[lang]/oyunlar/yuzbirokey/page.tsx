@@ -28,9 +28,9 @@ const CLR_MAP: Record<number, { bg: string; border: string; text: string }> = {
   3: { bg: 'bg-zinc-700/60', border: 'border-zinc-400', text: 'text-white' },
   4: { bg: 'bg-amber-500/20', border: 'border-amber-300', text: 'text-amber-100' },
 }
-const CLR_NAMES: Record<number, string> = { 0: 'K\u0131rm\u0131z\u0131', 1: 'Mavi', 2: 'Ye\u015fil', 3: 'Siyah' }
-const SEAT_NAMES = ['Sen', 'Do\u011fu \ud83e\udd16', 'Kuzey \ud83e\udd16', 'Bat\u0131 \ud83e\udd16']
-const DIFF_LABELS: Record<string, { label: string; emoji: string }> = { easy: { label: 'Kolay', emoji: '\ud83d\udfe2' }, medium: { label: 'Orta', emoji: '\ud83d\udfe1' }, hard: { label: 'Zor', emoji: '\ud83d\udd34' } }
+const CLR_NAMES: Record<number, string> = { 0: 'Kırmızı', 1: 'Mavi', 2: 'Yeşil', 3: 'Siyah' }
+const SEAT_NAMES = ['Sen', 'Doğu 🤖', 'Kuzey 🤖', 'Batı 🤖']
+const DIFF_LABELS: Record<string, { label: string; emoji: string }> = { easy: { label: 'Kolay', emoji: '🟢' }, medium: { label: 'Orta', emoji: '🟡' }, hard: { label: 'Zor', emoji: '🔴' } }
 
 function playTileSound() { try { const c=new(window.AudioContext||(window as any).webkitAudioContext)();const b=c.createBuffer(1,Math.floor(c.sampleRate*0.06),c.sampleRate);const d=b.getChannelData(0);for(let j=0;j<d.length;j++)d[j]=(Math.random()*2-1)*Math.pow(1-j/d.length,2)*0.3;const s=c.createBufferSource();s.buffer=b;const g=c.createGain();g.gain.setValueAtTime(0.15,c.currentTime);const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=1000;s.connect(f);f.connect(g);g.connect(c.destination);s.start()}catch{} }
 function playWinSound() { try { const c=new(window.AudioContext||(window as any).webkitAudioContext)();[523,659,784,1047].forEach((fr,i)=>{const o=c.createOscillator();o.type='sine';o.frequency.value=fr;const g=c.createGain();g.gain.setValueAtTime(0.15,c.currentTime+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.15+0.4);o.connect(g);g.connect(c.destination);o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.5)})}catch{} }
@@ -101,7 +101,7 @@ function sortTiles(tiles: OkeyTile[], mode: string) {
 
 export default function YuzBirOkeyPage() {
   return (
-    <GameShell gameType="yuzbirokey" gameName="Y\u00fcz Bir Okey" gameEmoji="\ud83c\udfaf" gameDesc="Modern aray\u00fczl\u00fc 101 Okey deneyimi. \u0130lk 101 puana ula\u015fan elenir." supportsAI={true}>
+    <GameShell gameType="yuzbirokey" gameName="Yüz Bir Okey" gameEmoji="🎯" gameDesc="Modern arayüzlü 101 Okey deneyimi. İlk 101 puana ulaşan elenir." supportsAI={true}>
       {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
         <Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
       )}
@@ -152,7 +152,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
   useEffect(() => { if (state && !diffSet && room?.status === 'active' && !state.difficulty) { sendAIState({ state: { ...state, difficulty: diff }, currentTurn: s2t(state.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null }); setDiffSet(true) } }, [state, room])
   const showM = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
-  useEffect(() => { if (cs !== lastSR.current) { setSel(new Set()); lastSR.current = cs; if (isMT && !isSpectator && room.status === 'active' && !win) showM('S\u0131ra sende!') } }, [cs])
+  useEffect(() => { if (cs !== lastSR.current) { setSel(new Set()); lastSR.current = cs; if (isMT && !isSpectator && room.status === 'active' && !win) showM('Sıra sende!') } }, [cs])
 
   const procRE = async (c: any, rw: number) => {
     const ns = [...(c.scores || [0,0,0,0])]; const rp = [0,0,0,0]
@@ -188,12 +188,12 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const toggleTile=(tid:number)=>{if(!isMT||isSpectator||room.status!=='active'||ph!=='discard')return;setSel(p=>{const n=new Set(p);if(n.has(tid))n.delete(tid);else n.add(tid);return n})}
   const hDblTap=(tid:number)=>{if(!isMT||ph!=='discard'||isSpectator)return;hDiscard(tid)}
 
-  const hLay=async()=>{if(!isMT||ph!=='discard'){showM('S\u0131ra sende de\u011fil!');return};if(openMelds.length===0 && sel.size>=3){const r=okey101LayMeld(state,mySeat,[Array.from(sel)]);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set());return}
+  const hLay=async()=>{if(!isMT||ph!=='discard'){showM('Sıra sende değil!');return};if(openMelds.length===0 && sel.size>=3){const r=okey101LayMeld(state,mySeat,[Array.from(sel)]);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set());return}
     if(openMelds.length>0){const r=okey101LayMeld(state,mySeat,openMelds);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();setOpenMelds([]);if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set());return}
-    showM('En az 3 ta\u015f se\u00e7 veya taslak olu\u015ftur!')}
-  const hAdd=async(mi:number)=>{if(!isMT||ph!=='discard'||sel.size===0||!myOp){showM(myOp?'Ta\u015f se\u00e7!':'\u00d6nce a\u00e7\u0131l!');return};const r=okey101AddToMeld(state,mySeat,Array.from(sel),mi);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
+    showM('En az 3 taş seç veya taslak oluştur!')}
+  const hAdd=async(mi:number)=>{if(!isMT||ph!=='discard'||sel.size===0||!myOp){showM(myOp?'Taş seç!':'Önce açıl!');return};const r=okey101AddToMeld(state,mySeat,Array.from(sel),mi);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
 
-  const addDraft=()=>{if(sel.size<3){showM('En az 3 ta\u015f se\u00e7');return};setOpenMelds(p=>[...p,Array.from(sel)]);setSel(new Set())}
+  const addDraft=()=>{if(sel.size<3){showM('En az 3 taş seç');return};setOpenMelds(p=>[...p,Array.from(sel)]);setSel(new Set())}
 
   const topD=(s:number):OkeyTile|null=>{const d=discards[s];return d?.length>0?d[d.length-1]:null}
   const prevD=topD((mySeat+3)%4)
@@ -211,37 +211,37 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold"><Crown className="h-5 w-5 md:h-6 md:w-6 text-yellow-400" /> Y\u00fcz Bir Okey</h1>
-                  <p className="mt-1 text-xs text-white/60">Modern aray\u00fczl\u00fc 101 Okey \u00b7 GameShell entegreli</p>
+                  <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold"><Crown className="h-5 w-5 md:h-6 md:w-6 text-yellow-400" /> Yüz Bir Okey</h1>
+                  <p className="mt-1 text-xs text-white/60">Modern arayüzlü 101 Okey · GameShell entegreli</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold">{room?.status === 'active' ? 'Oyunda' : 'Bekliyor'}</span>
                   <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold">El {round}/3</span>
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${isMT ? 'bg-emerald-500/30 border border-emerald-400/50 text-emerald-200' : 'bg-zinc-700/50 border border-zinc-500/30 text-zinc-300'}`}>
-                    {isMT ? '\u2714 Senin s\u0131ran' : `${SEAT_NAMES[cs]} d\u00fc\u015f\u00fcn\u00fcyor...`}
+                    {isMT ? '✔ Senin sıran' : `${SEAT_NAMES[cs]} düşünüyor...`}
                   </span>
                 </div>
               </div>
             </motion.div>
 
-            {/* MASA B\u0130LG\u0130LER\u0130 */}
+            {/* MASA BİLGİLERİ */}
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.05}} className="rounded-3xl border border-white/10 bg-emerald-500/10 shadow-2xl backdrop-blur p-4">
               <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">G\u00f6sterge</div>
+                  <div className="text-[10px] text-white/50 mb-0.5">Gösterge</div>
                   <div className="font-bold text-sm">{ind ? <Tile tile={ind} small glow={isJk(ind)} /> : '-'}</div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">\u0130skarta \u00dcst\u00fc</div>
+                  <div className="text-[10px] text-white/50 mb-0.5">İskarta Üstü</div>
                   <div className="font-bold text-sm">{prevD ? <Tile tile={prevD} small glow={isJk(prevD)} /> : '-'}</div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">Y\u0131\u011f\u0131n</div>
+                  <div className="text-[10px] text-white/50 mb-0.5">Yığın</div>
                   <div className="font-bold text-lg">{pile.length}</div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                   <div className="text-[10px] text-white/50 mb-0.5">Faz</div>
-                  <div className="font-bold text-sm">{ph === 'draw' ? 'Ta\u015f \u00c7ek' : 'Ta\u015f At / A\u00e7'}</div>
+                  <div className="font-bold text-sm">{ph === 'draw' ? 'Taş Çek' : 'Taş At / Aç'}</div>
                 </div>
               </div>
             </motion.div>
@@ -261,9 +261,9 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                       </div>
                       <div className="mt-1.5 space-y-0.5 text-[10px] text-white/60">
                         <div>Skor: <span className={`font-bold ${scores[seat] >= 80 ? 'text-red-400' : 'text-white'}`}>{scores[seat]}</span></div>
-                        <div>A\u00e7t\u0131 m\u0131: {hasOp[seat] ? '\u2705 Evet' : '\u274c Hay\u0131r'}</div>
-                        {elim[seat] && <div className="text-red-400 font-bold">ELEND\u0130</div>}
-                        {active && <div className="text-emerald-300 font-bold">S\u0131rada</div>}
+                        <div>Açtı mı: {hasOp[seat] ? '✅ Evet' : '❌ Hayır'}</div>
+                        {elim[seat] && <div className="text-red-400 font-bold">ELENDİ</div>}
+                        {active && <div className="text-emerald-300 font-bold">Sırada</div>}
                       </div>
                     </div>
                   )
@@ -271,7 +271,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
               </div>
             </motion.div>
 
-            {/* MASADAK\u0130 PERLER */}
+            {/* MASADAKİ PERLER */}
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.15}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
               <h2 className="flex items-center gap-2 text-base font-bold mb-3"><Layers className="h-4 w-4" /> Masadaki Perler</h2>
               <div className="grid gap-2 md:grid-cols-2">
@@ -280,30 +280,30 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                     onClick={canAdd ? () => hAdd(i) : undefined} highlight={canAdd && sel.size > 0} />
                 )) : (
                   <div className="rounded-2xl border border-dashed border-white/10 p-5 text-xs text-white/50 col-span-2">
-                    Hen\u00fcz masaya a\u00e7\u0131lm\u0131\u015f per yok.
+                    Henüz masaya açılmış per yok.
                   </div>
                 )}
               </div>
             </motion.div>
 
-            {/* EL\u0130M */}
+            {/* ELİM */}
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.2}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <h2 className="text-base font-bold">Elim ({myH.length} ta\u015f)</h2>
+                <h2 className="text-base font-bold">Elim ({myH.length} taş)</h2>
                 <div className="flex gap-2">
-                  <button onClick={()=>setSortMode('color')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='color'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Renge G\u00f6re</button>
-                  <button onClick={()=>setSortMode('number')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='number'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Say\u0131ya G\u00f6re</button>
+                  <button onClick={()=>setSortMode('color')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='color'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Renge Göre</button>
+                  <button onClick={()=>setSortMode('number')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='number'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Sayıya Göre</button>
                 </div>
               </div>
 
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${isMT?'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40':'bg-indigo-500/20 text-indigo-200 border border-indigo-400/30'}`}>
-                  S\u0131ra: {isMT ? 'Evet' : 'Hay\u0131r'}
+                  Sıra: {isMT ? 'Evet' : 'Hayır'}
                 </span>
                 <span className="rounded-full bg-indigo-500/20 text-indigo-100 border border-indigo-400/30 px-2.5 py-1 text-[10px] font-bold">
-                  A\u00e7t\u0131m: {myOp ? 'Evet' : 'Hay\u0131r'}
+                  Açtım: {myOp ? 'Evet' : 'Hayır'}
                 </span>
-                {sel.size > 0 && <span className="rounded-full bg-yellow-500/20 text-yellow-200 border border-yellow-400/40 px-2.5 py-1 text-[10px] font-bold">{sel.size} se\u00e7ili</span>}
+                {sel.size > 0 && <span className="rounded-full bg-yellow-500/20 text-yellow-200 border border-yellow-400/40 px-2.5 py-1 text-[10px] font-bold">{sel.size} seçili</span>}
               </div>
 
               {/* TILE HAND */}
@@ -318,21 +318,21 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
               {/* ACTION BUTTONS */}
               <div className="mt-3 grid gap-2 grid-cols-2 md:grid-cols-5">
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 col-span-2 md:col-span-1">
-                  <div className="mb-1.5 text-[10px] text-white/60">Ta\u015f \u00e7ekme</div>
+                  <div className="mb-1.5 text-[10px] text-white/60">Taş çekme</div>
                   <div className="flex gap-1.5">
                     <button onClick={()=>hDraw('pile')} disabled={!isMT||ph!=='draw'} className="flex-1 rounded-xl bg-white/10 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Ortadan</button>
                     <button onClick={()=>hDraw('discard')} disabled={!isMT||ph!=='draw'||!prevD} className="flex-1 rounded-xl bg-white/10 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Yerden</button>
                   </div>
                 </div>
-                <button onClick={addDraft} disabled={sel.size<3||ph!=='discard'||!isMT} className="rounded-2xl bg-white/10 text-white font-semibold text-xs py-2.5 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Per Tasla\u011f\u0131 Ekle</button>
-                <button onClick={hLay} disabled={!isMT||ph!=='discard'||(sel.size<3&&openMelds.length===0)} className="rounded-2xl bg-fuchsia-600 text-white font-bold text-xs py-2.5 hover:bg-fuchsia-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-fuchsia-500/20">A\u00e7\u0131l\u0131\u015f G\u00f6nder</button>
-                <button onClick={()=>{if(sel.size!==1){showM('1 ta\u015f se\u00e7');return};hDiscard(Array.from(sel)[0])}} disabled={!isMT||ph!=='discard'||sel.size!==1} className="rounded-2xl bg-rose-600 text-white font-bold text-xs py-2.5 hover:bg-rose-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-rose-500/20">Se\u00e7ili Ta\u015f\u0131 At</button>
+                <button onClick={addDraft} disabled={sel.size<3||ph!=='discard'||!isMT} className="rounded-2xl bg-white/10 text-white font-semibold text-xs py-2.5 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Per Taslağı Ekle</button>
+                <button onClick={hLay} disabled={!isMT||ph!=='discard'||(sel.size<3&&openMelds.length===0)} className="rounded-2xl bg-fuchsia-600 text-white font-bold text-xs py-2.5 hover:bg-fuchsia-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-fuchsia-500/20">Açılış Gönder</button>
+                <button onClick={()=>{if(sel.size!==1){showM('1 taş seç');return};hDiscard(Array.from(sel)[0])}} disabled={!isMT||ph!=='discard'||sel.size!==1} className="rounded-2xl bg-rose-600 text-white font-bold text-xs py-2.5 hover:bg-rose-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-rose-500/20">Seçili Taşı At</button>
               </div>
 
               {/* DRAFT MELDS */}
               <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="font-semibold text-sm">A\u00e7\u0131l\u0131\u015f Tasla\u011f\u0131</div>
+                  <div className="font-semibold text-sm">Açılış Taslağı</div>
                   <button onClick={()=>setOpenMelds([])} className="rounded-xl bg-white/10 px-3 py-1 text-[10px] font-semibold text-white hover:bg-white/20 transition-all">Temizle</button>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
@@ -346,7 +346,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                     )
                   }) : (
                     <div className="rounded-2xl border border-dashed border-white/10 p-4 text-xs text-white/50 col-span-2">
-                      En az 3 ta\u015f se\u00e7ip taslak olu\u015ftur.
+                      En az 3 taş seçip taslak oluştur.
                     </div>
                   )}
                 </div>
@@ -359,19 +359,19 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
             {/* QUICK NOTES */}
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} className="rounded-3xl border border-white/10 bg-indigo-500/10 shadow-2xl backdrop-blur p-4">
-              <h2 className="flex items-center gap-2 text-base font-bold mb-2"><Sparkles className="h-4 w-4" /> H\u0131zl\u0131 Notlar</h2>
+              <h2 className="flex items-center gap-2 text-base font-bold mb-2"><Sparkles className="h-4 w-4" /> Hızlı Notlar</h2>
               <div className="space-y-1.5 text-xs text-white/70">
-                <div>\u2022 A\u00e7\u0131l\u0131\u015f i\u00e7in en az 101 puanl\u0131k per g\u00f6nder.</div>
-                <div>\u2022 Ta\u015f atmak i\u00e7in tek ta\u015f se\u00e7ili olmal\u0131.</div>
-                <div>\u2022 \u00c7ift t\u0131klama ile h\u0131zl\u0131 ta\u015f atabilirsin.</div>
-                <div>\u2022 Masadaki perlere t\u0131klayarak ta\u015f ekleyebilirsin.</div>
-                <div>\u2022 \u0130lk 101 puana ula\u015fan oyuncu elenir.</div>
+                <div>• Açılış için en az 101 puanlık per gönder.</div>
+                <div>• Taş atmak için tek taş seçili olmalı.</div>
+                <div>• Çift tıklama ile hızlı taş atabilirsin.</div>
+                <div>• Masadaki perlere tıklayarak taş ekleyebilirsin.</div>
+                <div>• İlk 101 puana ulaşan oyuncu elenir.</div>
               </div>
             </motion.div>
 
             {/* SKORLAR */}
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.05}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <h2 className="text-base font-bold mb-3">\ud83c\udfc6 Skorlar</h2>
+              <h2 className="text-base font-bold mb-3">🏆 Skorlar</h2>
               <div className="grid gap-2 grid-cols-2">
                 {SEAT_NAMES.map((name, i) => (
                   <div key={i} className={`rounded-2xl border p-3 text-center ${
@@ -379,7 +379,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                   }`}>
                     <div className="text-xs text-white/60 font-semibold">{name.split(' ')[0]}</div>
                     <div className={`text-2xl font-extrabold mt-1 ${elim[i] ? 'text-red-400' : scores[i] >= 80 ? 'text-yellow-300' : 'text-white'}`}>{scores[i]}</div>
-                    {elim[i] && <div className="text-[9px] text-red-400 font-bold mt-0.5">ELEND\u0130</div>}
+                    {elim[i] && <div className="text-[9px] text-red-400 font-bold mt-0.5">ELENDİ</div>}
                   </div>
                 ))}
               </div>
@@ -397,13 +397,13 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                     <div key={seat} className={`rounded-2xl border p-3 ${seat===cs ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-black/20'}`}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold text-sm">{SEAT_NAMES[seat]}</span>
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold">{hLen} ta\u015f</span>
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold">{hLen} taş</span>
                       </div>
                       <div className="flex gap-1 flex-wrap">
                         {Array.from({length: Math.min(hLen, 14)}).map((_, i) => <FDTile key={i} small />)}
                         {hLen > 14 && <span className="text-[10px] text-white/40 self-center ml-1">+{hLen-14}</span>}
                       </div>
-                      {lastD && <div className="mt-2 flex items-center gap-1.5"><span className="text-[10px] text-white/50">Son att\u0131\u011f\u0131:</span><Tile tile={lastD} small glow={isJk(lastD)} /></div>}
+                      {lastD && <div className="mt-2 flex items-center gap-1.5"><span className="text-[10px] text-white/50">Son attığı:</span><Tile tile={lastD} small glow={isJk(lastD)} /></div>}
                     </div>
                   )
                 })}
@@ -419,7 +419,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       {showDS && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl">
-            <h3 className="text-lg font-bold mb-4 text-white">Zorluk Se\u00e7</h3>
+            <h3 className="text-lg font-bold mb-4 text-white">Zorluk Seç</h3>
             <div className="flex gap-3">
               {(['easy','medium','hard'] as const).map(d => (
                 <button key={d} onClick={()=>{setDiff(d);setDiffSet(true);sendAIState({state:{...state,difficulty:d},currentTurn:1,status:'active',player1Score:0,player2Score:0,winnerId:null})}}
@@ -436,8 +436,8 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       {(state?.showingRoundResult||showRE)&&!gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="rounded-3xl border border-yellow-400/40 bg-slate-900 p-6 text-center shadow-2xl min-w-[300px]">
-            <h3 className="text-xl font-bold text-yellow-300 mb-3">\ud83c\udfc6 Raunt {round} Bitti!</h3>
-            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[state?.roundWinner??0]} kazand\u0131!</p>
+            <h3 className="text-xl font-bold text-yellow-300 mb-3">🏆 Raunt {round} Bitti!</h3>
+            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[state?.roundWinner??0]} kazandı!</p>
             {state?.roundHistory?.length>0 && (
               <div className="flex gap-4 justify-center mb-4">
                 {SEAT_NAMES.map((n,i)=>{const lr=state.roundHistory[state.roundHistory.length-1];return(
@@ -445,7 +445,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                 )})}
               </div>
             )}
-            <button onClick={startNR} className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-lg">Sonraki Raunt \u2192</button>
+            <button onClick={startNR} className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-lg">Sonraki Raunt →</button>
           </motion.div>
         </div>
       )}
@@ -454,8 +454,8 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       {gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="rounded-3xl border border-yellow-400/40 bg-slate-900 p-6 text-center shadow-2xl min-w-[340px]">
-            <h3 className="text-2xl font-bold text-yellow-300 mb-3">\ud83c\udf89 Oyun Bitti!</h3>
-            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[win??0]} kazand\u0131!</p>
+            <h3 className="text-2xl font-bold text-yellow-300 mb-3">🎉 Oyun Bitti!</h3>
+            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[win??0]} kazandı!</p>
             <div className="flex gap-3 justify-center">
               {SEAT_NAMES.map((n,i)=>(
                 <div key={i} className={`text-center px-3 py-2 rounded-xl ${
@@ -463,8 +463,8 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                 }`}>
                   <div className="text-[10px] font-bold text-white/60">{n.split(' ')[0]}</div>
                   <div className="text-xl font-extrabold text-white">{scores[i]}</div>
-                  {i===win && <div className="text-[9px] text-yellow-400">\ud83c\udfc6</div>}
-                  {elim[i]&&i!==win && <div className="text-[8px] text-red-400 font-bold">ELEND\u0130</div>}
+                  {i===win && <div className="text-[9px] text-yellow-400">🏆</div>}
+                  {elim[i]&&i!==win && <div className="text-[8px] text-red-400 font-bold">ELENDİ</div>}
                 </div>
               ))}
             </div>
