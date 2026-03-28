@@ -10,7 +10,6 @@ import {
 } from '@/lib/game-logic'
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Crown, Users, MessageCircle, Play, Sparkles, Layers } from 'lucide-react'
 
 function Portal({ children }: { children: React.ReactNode }): JSX.Element | null {
   const [mounted, setMounted] = useState(false)
@@ -20,15 +19,8 @@ function Portal({ children }: { children: React.ReactNode }): JSX.Element | null
   return portal
 }
 
-const TC: Record<number, string> = { 0: '#dc2626', 1: '#2563eb', 2: '#16a34a', 3: '#1f2937', 4: '#b45309' }
-const CLR_MAP: Record<number, { bg: string; border: string; text: string }> = {
-  0: { bg: 'bg-red-500/20', border: 'border-red-400', text: 'text-red-100' },
-  1: { bg: 'bg-blue-500/20', border: 'border-blue-400', text: 'text-blue-100' },
-  2: { bg: 'bg-emerald-500/20', border: 'border-emerald-400', text: 'text-emerald-100' },
-  3: { bg: 'bg-zinc-700/60', border: 'border-zinc-400', text: 'text-white' },
-  4: { bg: 'bg-amber-500/20', border: 'border-amber-300', text: 'text-amber-100' },
-}
-const CLR_NAMES: Record<number, string> = { 0: 'Kırmızı', 1: 'Mavi', 2: 'Yeşil', 3: 'Siyah' }
+const TC: Record<number, string> = { 0: '#ef4444', 1: '#3b82f6', 2: '#22c55e', 3: '#1e293b' }
+const CLR_NAMES: Record<number, string> = { 0: 'K', 1: 'M', 2: 'Y', 3: 'S' }
 const SEAT_NAMES = ['Sen', 'Doğu 🤖', 'Kuzey 🤖', 'Batı 🤖']
 const DIFF_LABELS: Record<string, { label: string; emoji: string }> = { easy: { label: 'Kolay', emoji: '🟢' }, medium: { label: 'Orta', emoji: '🟡' }, hard: { label: 'Zor', emoji: '🔴' } }
 
@@ -37,66 +29,85 @@ function playWinSound() { try { const c=new(window.AudioContext||(window as any)
 function getStats() { try{return JSON.parse(localStorage.getItem('ybo_stats')||'{"wins":0,"losses":0,"gamesPlayed":0}')}catch{return{wins:0,losses:0,gamesPlayed:0}} }
 function saveStats(s:any) { try{localStorage.setItem('ybo_stats',JSON.stringify(s))}catch{} }
 
-/* ===== TILE COMPONENT (shared code style) ===== */
-function Tile({ tile, selected, onClick, small = false, glow = false }: {
-  tile: OkeyTile; selected?: boolean; onClick?: () => void; small?: boolean; glow?: boolean
-}) {
-  const clr = tile.isFalseJoker ? CLR_MAP[4] : (CLR_MAP[tile.color] || CLR_MAP[0])
-  return (
-    <button
-      onClick={onClick}
-      className={[
-        'select-none rounded-2xl border shadow-lg transition-all duration-200 font-bold flex flex-col items-center justify-center',
-        small ? 'h-11 w-9 text-[10px]' : 'h-16 w-12 text-sm md:h-[72px] md:w-14',
-        clr.bg, clr.border, clr.text,
-        selected ? 'scale-105 ring-2 ring-yellow-300/80 -translate-y-2 shadow-yellow-400/30' : 'hover:-translate-y-1',
-        glow ? 'ring-1 ring-emerald-400/60 shadow-emerald-400/20' : '',
-      ].join(' ')}
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
-    >
-      {tile.isFalseJoker ? (
-        <><span className="text-[8px] uppercase">Sahte</span><span className="text-[8px]">Okey</span></>
-      ) : (
-        <><span className={`uppercase ${small ? 'text-[7px]' : 'text-[9px]'}`}>{CLR_NAMES[tile.color] || ''}</span><span className={small ? 'text-base font-extrabold' : 'text-lg md:text-xl font-extrabold'}>{tile.number}</span></>
-      )}
-    </button>
-  )
-}
-
-/* ===== FACE DOWN TILE ===== */
-function FDTile({ small = false }: { small?: boolean }) {
-  return <div className={`rounded-xl bg-gradient-to-b from-indigo-800 to-indigo-950 border border-indigo-600/50 shadow-md ${small ? 'h-9 w-7' : 'h-12 w-9'}`} />
-}
-
-/* ===== MELD PREVIEW ===== */
-function MeldPreview({ meld, title, isJk, onClick, highlight }: {
-  meld: Meld; title: string; isJk: (t: OkeyTile) => boolean; onClick?: () => void; highlight?: boolean
-}) {
-  return (
-    <div onClick={onClick} className={`rounded-2xl border p-2.5 transition-all ${
-      highlight ? 'border-yellow-400/50 bg-yellow-500/10 cursor-pointer hover:bg-yellow-500/15' : 'border-white/10 bg-white/5'
-    }`}>
-      <div className="mb-1.5 text-[10px] text-white/60 font-semibold">{title}</div>
-      <div className="flex flex-wrap gap-1">
-        {meld.tiles.map(t => <Tile key={t.id} tile={t} small glow={isJk(t)} />)}
-      </div>
-    </div>
-  )
-}
-
-/* ===== SORT ===== */
 function sortTiles(tiles: OkeyTile[], mode: string) {
   const arr = [...tiles]
   if (mode === 'number') return arr.sort((a, b) => (a.isFalseJoker ? 999 : a.number ?? 999) - (b.isFalseJoker ? 999 : b.number ?? 999))
   if (mode === 'color') {
-    const order: Record<number, number> = { 0: 1, 1: 2, 2: 3, 3: 4 }
     return arr.sort((a, b) => {
-      const ac = order[a.color] || 99; const bc = order[b.color] || 99
+      const ac = a.isFalseJoker ? 99 : a.color; const bc = b.isFalseJoker ? 99 : b.color
       if (ac !== bc) return ac - bc
       return (a.number || 999) - (b.number || 999)
     })
   }
   return arr
+}
+
+/* ===== TILE ===== */
+function Tile({ tile, selected, onClick, small, isJoker, onDoubleClick }: {
+  tile: OkeyTile; selected?: boolean; onClick?: () => void; small?: boolean; isJoker?: boolean; onDoubleClick?: () => void
+}) {
+  const fg = tile.isFalseJoker ? '#d97706' : (TC[tile.color] || TC[0])
+  const w = small ? 28 : 44
+  const h = small ? 36 : 58
+  const fs = small ? 11 : 18
+  return (
+    <motion.div
+      layout
+      onClick={onClick}
+      onDoubleClick={onDoubleClick}
+      whileHover={onClick ? { y: -3 } : {}}
+      whileTap={onClick ? { scale: 0.95 } : {}}
+      className="select-none flex-shrink-0 relative"
+      style={{
+        width: w, height: h,
+        borderRadius: small ? 4 : 6,
+        background: 'linear-gradient(180deg, #fffff8 0%, #f5f0e0 100%)',
+        border: selected ? '2.5px solid #facc15' : '1.5px solid #c8b88a',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: selected
+          ? '0 0 12px rgba(250,204,21,0.7), 0 4px 8px rgba(0,0,0,0.3)'
+          : isJoker
+            ? '0 0 8px rgba(250,204,21,0.4), 0 2px 4px rgba(0,0,0,0.2)'
+            : '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.5)',
+        transform: selected ? 'translateY(-8px)' : undefined,
+        zIndex: selected ? 20 : 1,
+      }}
+    >
+      {tile.isFalseJoker ? (
+        <span style={{ fontSize: fs, color: fg, fontWeight: 800 }}>★</span>
+      ) : (
+        <>
+          <span style={{ fontSize: small ? 6 : 8, color: fg, fontWeight: 700, lineHeight: 1, opacity: 0.7 }}>{CLR_NAMES[tile.color]}</span>
+          <span style={{ fontSize: fs, color: fg, fontWeight: 800, lineHeight: 1.1 }}>{tile.number}</span>
+        </>
+      )}
+      {isJoker && !tile.isFalseJoker && (
+        <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, background: '#facc15', color: '#78350f', borderRadius: '50%', width: 12, height: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, border: '1px solid #f59e0b' }}>J</span>
+      )}
+    </motion.div>
+  )
+}
+
+/* ===== FACE DOWN TILE ===== */
+function FDTile({ small }: { small?: boolean }) {
+  const w = small ? 22 : 32
+  const h = small ? 30 : 42
+  return <div style={{ width: w, height: h, borderRadius: small ? 3 : 5, background: 'linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%)', border: '1.5px solid #3b82f6', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+}
+
+/* ===== MELD GROUP ===== */
+function MeldGroup({ meld, isJk, onClick, highlight, idx }: {
+  meld: Meld; isJk: (t: OkeyTile) => boolean; onClick?: () => void; highlight?: boolean; idx: number
+}) {
+  return (
+    <div onClick={onClick} className={`inline-flex items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all ${
+      highlight ? 'bg-yellow-500/20 border border-yellow-400/50 cursor-pointer hover:bg-yellow-500/30' : 'bg-black/20 border border-white/10'
+    }`}>
+      <span className="text-[9px] text-white/40 mr-1 font-bold">#{idx+1}</span>
+      {meld.tiles.map(t => <Tile key={t.id} tile={t} small isJoker={isJk(t)} />)}
+    </div>
+  )
 }
 
 export default function YuzBirOkeyPage() {
@@ -145,10 +156,13 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const myOp = hasOp[mySeat]
   const isJk = useCallback((t: OkeyTile) => !!t.isFalseJoker || (t.color === jc && t.number === jn), [jc, jn])
   const sortedHand = useMemo(() => sortTiles(myH, sortMode), [myH, sortMode])
-  const selectedIds = useMemo(() => Array.from(sel), [sel])
-  const currentPlayerId = cs
   const canLay = isMT && ph === 'discard' && sel.size >= 3 && !isSpectator
   const canAdd = isMT && ph === 'discard' && sel.size > 0 && myOp && melds.length > 0 && !isSpectator
+
+  // Split hand into two rows for istaka
+  const halfLen = Math.ceil(sortedHand.length / 2)
+  const topRow = sortedHand.slice(0, halfLen)
+  const bottomRow = sortedHand.slice(halfLen)
 
   useEffect(() => { if (state && !diffSet && room?.status === 'active' && !state.difficulty) { sendAIState({ state: { ...state, difficulty: diff }, currentTurn: s2t(state.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null }); setDiffSet(true) } }, [state, room])
   const showM = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
@@ -200,252 +214,286 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const showDS=room?.isAI&&room?.status==='active'&&!diffSet&&round===1&&isMT&&pile.length>90
 
   const ui = (
-    <div className="fixed inset-0 z-[99998] bg-[radial-gradient(circle_at_top,#1e293b,#0f172a_45%,#020617)] text-white overflow-auto" style={{fontFamily:'system-ui,-apple-system,sans-serif'}}>
-      <div className="p-3 md:p-4 mx-auto max-w-7xl">
-        <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="fixed inset-0 z-[99998] overflow-hidden" style={{ background: 'radial-gradient(ellipse at center, #1a472a 0%, #0d2818 50%, #061210 100%)', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
 
-          {/* === LEFT COLUMN === */}
-          <div className="space-y-3">
+      {/* ===== TOP BAR ===== */}
+      <div className="flex items-center justify-between px-3 py-2 bg-black/30 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold text-white">🎯 Yüz Bir Okey</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70 font-semibold">El {round}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${
+            isMT ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-white/10 text-white/60 border border-white/10'
+          }`}>
+            {isMT ? '✔ Senin sıran' : `${SEAT_NAMES[cs]} oynuyor...`}
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50 font-semibold">
+            {ph === 'draw' ? '📥 Çek' : '📤 At/Aç'}
+          </span>
+        </div>
+      </div>
 
-            {/* HEADER CARD */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold"><Crown className="h-5 w-5 md:h-6 md:w-6 text-yellow-400" /> Yüz Bir Okey</h1>
-                  <p className="mt-1 text-xs text-white/60">Modern arayüzlü 101 Okey · GameShell entegreli</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold">{room?.status === 'active' ? 'Oyunda' : 'Bekliyor'}</span>
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold">El {round}/3</span>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${isMT ? 'bg-emerald-500/30 border border-emerald-400/50 text-emerald-200' : 'bg-zinc-700/50 border border-zinc-500/30 text-zinc-300'}`}>
-                    {isMT ? '✔ Senin sıran' : `${SEAT_NAMES[cs]} düşünüyor...`}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+      {/* ===== MAIN AREA ===== */}
+      <div className="flex flex-col h-[calc(100%-40px)]">
 
-            {/* MASA BİLGİLERİ */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.05}} className="rounded-3xl border border-white/10 bg-emerald-500/10 shadow-2xl backdrop-blur p-4">
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">Gösterge</div>
-                  <div className="font-bold text-sm">{ind ? <Tile tile={ind} small glow={isJk(ind)} /> : '-'}</div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">İskarta Üstü</div>
-                  <div className="font-bold text-sm">{prevD ? <Tile tile={prevD} small glow={isJk(prevD)} /> : '-'}</div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">Yığın</div>
-                  <div className="font-bold text-lg">{pile.length}</div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] text-white/50 mb-0.5">Faz</div>
-                  <div className="font-bold text-sm">{ph === 'draw' ? 'Taş Çek' : 'Taş At / Aç'}</div>
-                </div>
-              </div>
-            </motion.div>
+        {/* ===== OPPONENTS + TABLE (top section) ===== */}
+        <div className="flex-1 flex flex-col min-h-0">
 
-            {/* OYUNCULAR */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.1}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <h2 className="flex items-center gap-2 text-base font-bold mb-3"><Users className="h-4 w-4" /> Oyuncular</h2>
-              <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-                {[0,1,2,3].map(seat => {
-                  const active = seat === cs
-                  const isMe = seat === mySeat
-                  return (
-                    <div key={seat} className={`rounded-2xl border p-3 ${active ? 'border-emerald-300 bg-emerald-500/15' : 'border-white/10 bg-black/20'} ${elim[seat] ? 'opacity-40' : ''}`}>
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="font-semibold text-sm truncate">{SEAT_NAMES[seat]}</div>
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold">{hands[seat]?.length || 0}</span>
-                      </div>
-                      <div className="mt-1.5 space-y-0.5 text-[10px] text-white/60">
-                        <div>Skor: <span className={`font-bold ${scores[seat] >= 80 ? 'text-red-400' : 'text-white'}`}>{scores[seat]}</span></div>
-                        <div>Açtı mı: {hasOp[seat] ? '✅ Evet' : '❌ Hayır'}</div>
-                        {elim[seat] && <div className="text-red-400 font-bold">ELENDİ</div>}
-                        {active && <div className="text-emerald-300 font-bold">Sırada</div>}
-                      </div>
+          {/* OPPONENT STRIP */}
+          <div className="flex items-stretch gap-2 px-3 py-2">
+            {opponentSeats.map(seat => {
+              if (elim[seat]) return (
+                <div key={seat} className="flex-1 rounded-xl bg-red-900/20 border border-red-500/20 px-3 py-1.5 opacity-50">
+                  <div className="text-[10px] font-bold text-red-400">{SEAT_NAMES[seat]} - ELENDİ</div>
+                </div>
+              )
+              const active = seat === cs
+              const hLen = hands[seat]?.length || 0
+              const lastD = topD(seat)
+              return (
+                <div key={seat} className={`flex-1 rounded-xl px-3 py-1.5 transition-all ${
+                  active ? 'bg-emerald-500/15 border border-emerald-400/40' : 'bg-black/20 border border-white/10'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-white">{SEAT_NAMES[seat]}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 font-bold">{hLen}</span>
+                      {hasOp[seat] && <span className="text-[8px] text-emerald-400">✓Açık</span>}
                     </div>
-                  )
-                })}
-              </div>
-            </motion.div>
-
-            {/* MASADAKİ PERLER */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.15}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <h2 className="flex items-center gap-2 text-base font-bold mb-3"><Layers className="h-4 w-4" /> Masadaki Perler</h2>
-              <div className="grid gap-2 md:grid-cols-2">
-                {melds.length > 0 ? melds.map((m, i) => (
-                  <MeldPreview key={i} meld={m} title={`Per #${i+1} (${SEAT_NAMES[m.owner]})`} isJk={isJk}
-                    onClick={canAdd ? () => hAdd(i) : undefined} highlight={canAdd && sel.size > 0} />
-                )) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 p-5 text-xs text-white/50 col-span-2">
-                    Henüz masaya açılmış per yok.
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* ELİM */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.2}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <h2 className="text-base font-bold">Elim ({myH.length} taş)</h2>
-                <div className="flex gap-2">
-                  <button onClick={()=>setSortMode('color')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='color'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Renge Göre</button>
-                  <button onClick={()=>setSortMode('number')} className={`rounded-2xl px-3 py-1.5 text-xs font-semibold transition-all ${sortMode==='number'?'bg-indigo-600 text-white':'bg-white/10 text-white hover:bg-white/20'}`}>Sayıya Göre</button>
-                </div>
-              </div>
-
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${isMT?'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40':'bg-indigo-500/20 text-indigo-200 border border-indigo-400/30'}`}>
-                  Sıra: {isMT ? 'Evet' : 'Hayır'}
-                </span>
-                <span className="rounded-full bg-indigo-500/20 text-indigo-100 border border-indigo-400/30 px-2.5 py-1 text-[10px] font-bold">
-                  Açtım: {myOp ? 'Evet' : 'Hayır'}
-                </span>
-                {sel.size > 0 && <span className="rounded-full bg-yellow-500/20 text-yellow-200 border border-yellow-400/40 px-2.5 py-1 text-[10px] font-bold">{sel.size} seçili</span>}
-              </div>
-
-              {/* TILE HAND */}
-              <div className="flex flex-wrap gap-1.5 rounded-2xl border border-white/10 bg-black/20 p-3 min-h-[80px]">
-                {sortedHand.map(tile => (
-                  <div key={tile.id} onDoubleClick={() => hDblTap(tile.id)}>
-                    <Tile tile={tile} selected={sel.has(tile.id)} onClick={() => toggleTile(tile.id)} glow={isJk(tile)} />
-                  </div>
-                ))}
-              </div>
-
-              {/* ACTION BUTTONS */}
-              <div className="mt-3 grid gap-2 grid-cols-2 md:grid-cols-5">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 col-span-2 md:col-span-1">
-                  <div className="mb-1.5 text-[10px] text-white/60">Taş çekme</div>
-                  <div className="flex gap-1.5">
-                    <button onClick={()=>hDraw('pile')} disabled={!isMT||ph!=='draw'} className="flex-1 rounded-xl bg-white/10 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Ortadan</button>
-                    <button onClick={()=>hDraw('discard')} disabled={!isMT||ph!=='draw'||!prevD} className="flex-1 rounded-xl bg-white/10 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Yerden</button>
-                  </div>
-                </div>
-                <button onClick={addDraft} disabled={sel.size<3||ph!=='discard'||!isMT} className="rounded-2xl bg-white/10 text-white font-semibold text-xs py-2.5 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all">Per Taslağı Ekle</button>
-                <button onClick={hLay} disabled={!isMT||ph!=='discard'||(sel.size<3&&openMelds.length===0)} className="rounded-2xl bg-fuchsia-600 text-white font-bold text-xs py-2.5 hover:bg-fuchsia-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-fuchsia-500/20">Açılış Gönder</button>
-                <button onClick={()=>{if(sel.size!==1){showM('1 taş seç');return};hDiscard(Array.from(sel)[0])}} disabled={!isMT||ph!=='discard'||sel.size!==1} className="rounded-2xl bg-rose-600 text-white font-bold text-xs py-2.5 hover:bg-rose-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-rose-500/20">Seçili Taşı At</button>
-              </div>
-
-              {/* DRAFT MELDS */}
-              <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-semibold text-sm">Açılış Taslağı</div>
-                  <button onClick={()=>setOpenMelds([])} className="rounded-xl bg-white/10 px-3 py-1 text-[10px] font-semibold text-white hover:bg-white/20 transition-all">Temizle</button>
-                </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {openMelds.length > 0 ? openMelds.map((meld, idx) => {
-                    const tiles = meld.map(id => myH.find(h => h.id === id)).filter(Boolean) as OkeyTile[]
-                    return (
-                      <div key={idx} className="rounded-2xl border border-white/10 bg-white/5 p-2">
-                        <div className="mb-1 text-[10px] text-white/60">Taslak #{idx+1}</div>
-                        <div className="flex flex-wrap gap-1">{tiles.map(t => <Tile key={t.id} tile={t} small glow={isJk(t)} />)}</div>
-                      </div>
-                    )
-                  }) : (
-                    <div className="rounded-2xl border border-dashed border-white/10 p-4 text-xs text-white/50 col-span-2">
-                      En az 3 taş seçip taslak oluştur.
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-extrabold ${scores[seat] >= 80 ? 'text-red-400' : 'text-white/80'}`}>{scores[seat]}</span>
+                      {lastD && <Tile tile={lastD} small isJoker={isJk(lastD)} />}
                     </div>
-                  )}
+                  </div>
+                  <div className="flex gap-0.5 mt-1">
+                    {Array.from({ length: Math.min(hLen, 14) }).map((_, i) => <FDTile key={i} small />)}
+                    {hLen > 14 && <span className="text-[8px] text-white/30 self-center ml-0.5">+{hLen - 14}</span>}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              )
+            })}
           </div>
 
-          {/* === RIGHT COLUMN === */}
-          <div className="space-y-3">
-
-            {/* QUICK NOTES */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} className="rounded-3xl border border-white/10 bg-indigo-500/10 shadow-2xl backdrop-blur p-4">
-              <h2 className="flex items-center gap-2 text-base font-bold mb-2"><Sparkles className="h-4 w-4" /> Hızlı Notlar</h2>
-              <div className="space-y-1.5 text-xs text-white/70">
-                <div>• Açılış için en az 101 puanlık per gönder.</div>
-                <div>• Taş atmak için tek taş seçili olmalı.</div>
-                <div>• Çift tıklama ile hızlı taş atabilirsin.</div>
-                <div>• Masadaki perlere tıklayarak taş ekleyebilirsin.</div>
-                <div>• İlk 101 puana ulaşan oyuncu elenir.</div>
+          {/* SCORE BADGES */}
+          <div className="flex items-center justify-center gap-3 px-3 py-1">
+            {SEAT_NAMES.map((name, i) => (
+              <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                elim[i] ? 'bg-red-900/30 border border-red-500/30 text-red-400 line-through' :
+                i === mySeat ? 'bg-yellow-500/20 border border-yellow-400/30 text-yellow-200' :
+                'bg-white/5 border border-white/10 text-white/60'
+              }`}>
+                <span>{name.split(' ')[0]}</span>
+                <span className={`text-sm font-extrabold ${scores[i] >= 80 ? 'text-red-400' : ''}`}>{scores[i]}</span>
+                {i === mySeat && <span>🏠</span>}
+                {elim[i] && <span>💀</span>}
               </div>
-            </motion.div>
+            ))}
+          </div>
 
-            {/* SKORLAR */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.05}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <h2 className="text-base font-bold mb-3">🏆 Skorlar</h2>
-              <div className="grid gap-2 grid-cols-2">
-                {SEAT_NAMES.map((name, i) => (
-                  <div key={i} className={`rounded-2xl border p-3 text-center ${
-                    elim[i] ? 'border-red-500/40 bg-red-500/10' : scores[i] >= 80 ? 'border-yellow-400/40 bg-yellow-500/10' : 'border-white/10 bg-black/20'
-                  }`}>
-                    <div className="text-xs text-white/60 font-semibold">{name.split(' ')[0]}</div>
-                    <div className={`text-2xl font-extrabold mt-1 ${elim[i] ? 'text-red-400' : scores[i] >= 80 ? 'text-yellow-300' : 'text-white'}`}>{scores[i]}</div>
-                    {elim[i] && <div className="text-[9px] text-red-400 font-bold mt-0.5">ELENDİ</div>}
+          {/* TABLE CENTER - Melds + Info */}
+          <div className="flex-1 min-h-0 px-3 pb-1 overflow-auto">
+            <div className="rounded-2xl border border-emerald-700/40 bg-emerald-900/20 p-3 h-full">
+              {/* Melds on table */}
+              {melds.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {melds.map((m, i) => (
+                    <MeldGroup key={i} meld={m} isJk={isJk} idx={i}
+                      onClick={canAdd ? () => hAdd(i) : undefined}
+                      highlight={canAdd && sel.size > 0}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-white/20 text-sm">
+                  Masada henüz açılmış per yok
+                </div>
+              )}
+
+              {/* Draft melds */}
+              {openMelds.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] text-yellow-300/70 font-bold">📋 Taslak Perler</span>
+                    <button onClick={() => setOpenMelds([])} className="text-[9px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">Temizle</button>
                   </div>
-                ))}
-              </div>
-            </motion.div>
+                  <div className="flex flex-wrap gap-2">
+                    {openMelds.map((meldIds, idx) => {
+                      const tiles = meldIds.map(id => myH.find(h => h.id === id)).filter(Boolean) as OkeyTile[]
+                      return (
+                        <div key={idx} className="inline-flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-yellow-500/10 border border-yellow-400/30">
+                          <span className="text-[9px] text-yellow-300/50 mr-1">T{idx + 1}</span>
+                          {tiles.map(t => <Tile key={t.id} tile={t} small isJoker={isJk(t)} />)}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-            {/* RAKIP ELLER */}
-            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.1}} className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur p-4">
-              <h2 className="text-base font-bold mb-3">Rakip Eller</h2>
-              <div className="space-y-3">
-                {opponentSeats.map(seat => {
-                  if (elim[seat]) return null
-                  const hLen = hands[seat]?.length || 0
-                  const lastD = topD(seat)
-                  return (
-                    <div key={seat} className={`rounded-2xl border p-3 ${seat===cs ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/10 bg-black/20'}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-sm">{SEAT_NAMES[seat]}</span>
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold">{hLen} taş</span>
-                      </div>
-                      <div className="flex gap-1 flex-wrap">
-                        {Array.from({length: Math.min(hLen, 14)}).map((_, i) => <FDTile key={i} small />)}
-                        {hLen > 14 && <span className="text-[10px] text-white/40 self-center ml-1">+{hLen-14}</span>}
-                      </div>
-                      {lastD && <div className="mt-2 flex items-center gap-1.5"><span className="text-[10px] text-white/50">Son attığı:</span><Tile tile={lastD} small glow={isJk(lastD)} /></div>}
-                    </div>
-                  )
-                })}
+        {/* ===== BOTTOM: ISTAKA (double rack) with side features ===== */}
+        <div className="flex-shrink-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent">
+          {/* İSTAKA AREA */}
+          <div className="flex items-stretch gap-2 px-2 pb-2 pt-1">
+
+            {/* === LEFT SIDE: Gösterge + Çekme === */}
+            <div className="flex-shrink-0 flex flex-col gap-1.5 w-[90px] md:w-[110px]">
+              {/* Gösterge */}
+              <div className="rounded-xl bg-black/40 border border-amber-500/30 p-2 text-center">
+                <div className="text-[8px] text-amber-300/60 font-bold mb-1">GÖSTERGE</div>
+                {ind ? <div className="flex justify-center"><Tile tile={ind} isJoker={isJk(ind)} /></div> : <div className="text-white/30 text-xs">-</div>}
               </div>
-            </motion.div>
+              {/* Çek butonları */}
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => hDraw('pile')}
+                  disabled={!isMT || ph !== 'draw'}
+                  className="w-full py-2 rounded-lg text-[10px] font-bold transition-all bg-blue-600/80 hover:bg-blue-500 text-white disabled:opacity-30 disabled:cursor-not-allowed border border-blue-400/30"
+                >
+                  📥 Ortadan ({pile.length})
+                </button>
+                <button
+                  onClick={() => hDraw('discard')}
+                  disabled={!isMT || ph !== 'draw' || !prevD}
+                  className="w-full py-2 rounded-lg text-[10px] font-bold transition-all bg-teal-600/80 hover:bg-teal-500 text-white disabled:opacity-30 disabled:cursor-not-allowed border border-teal-400/30"
+                >
+                  📤 Yerden
+                </button>
+              </div>
+              {/* Iskarta önizleme */}
+              {prevD && (
+                <div className="rounded-lg bg-black/30 border border-white/10 p-1.5 flex flex-col items-center">
+                  <div className="text-[7px] text-white/40 mb-0.5">İSKARTA</div>
+                  <Tile tile={prevD} small isJoker={isJk(prevD)} />
+                </div>
+              )}
+            </div>
+
+            {/* === CENTER: DOUBLE RACK (İSTAKA) === */}
+            <div className="flex-1 min-w-0">
+              {/* Rack frame */}
+              <div className="rounded-2xl border-2 border-amber-700/50 bg-gradient-to-b from-amber-900/30 via-amber-950/40 to-amber-950/50 p-1.5 shadow-inner" style={{ boxShadow: 'inset 0 2px 12px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3)' }}>
+                {/* Info bar */}
+                <div className="flex items-center justify-between px-2 mb-1">
+                  <span className="text-[9px] text-amber-200/60 font-bold">ELİM ({myH.length} taş) {sel.size > 0 && `• ${sel.size} seçili`}</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => setSortMode('color')} className={`px-2 py-0.5 rounded text-[8px] font-bold transition ${sortMode === 'color' ? 'bg-amber-500/40 text-amber-200' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Renk</button>
+                    <button onClick={() => setSortMode('number')} className={`px-2 py-0.5 rounded text-[8px] font-bold transition ${sortMode === 'number' ? 'bg-amber-500/40 text-amber-200' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Sayı</button>
+                  </div>
+                </div>
+
+                {/* Upper rack row */}
+                <div className="rounded-xl bg-gradient-to-b from-amber-800/30 to-amber-900/20 border border-amber-700/30 px-2 py-1.5 mb-1 min-h-[62px]" style={{ boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <div className="flex flex-wrap gap-[3px] justify-center">
+                    {topRow.map(tile => (
+                      <Tile
+                        key={tile.id}
+                        tile={tile}
+                        selected={sel.has(tile.id)}
+                        onClick={() => toggleTile(tile.id)}
+                        onDoubleClick={() => hDblTap(tile.id)}
+                        isJoker={isJk(tile)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Lower rack row */}
+                <div className="rounded-xl bg-gradient-to-b from-amber-800/30 to-amber-900/20 border border-amber-700/30 px-2 py-1.5 min-h-[62px]" style={{ boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <div className="flex flex-wrap gap-[3px] justify-center">
+                    {bottomRow.map(tile => (
+                      <Tile
+                        key={tile.id}
+                        tile={tile}
+                        selected={sel.has(tile.id)}
+                        onClick={() => toggleTile(tile.id)}
+                        onDoubleClick={() => hDblTap(tile.id)}
+                        isJoker={isJk(tile)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* === RIGHT SIDE: Aksiyonlar === */}
+            <div className="flex-shrink-0 flex flex-col gap-1.5 w-[90px] md:w-[110px]">
+              {/* Durum */}
+              <div className="rounded-xl bg-black/40 border border-white/10 p-2 text-center">
+                <div className="text-[8px] text-white/40 font-bold mb-0.5">DURUM</div>
+                <div className={`text-[10px] font-bold ${myOp ? 'text-emerald-300' : 'text-orange-300'}`}>
+                  {myOp ? '✅ Açık' : '🔒 Kapalı'}
+                </div>
+                <div className="text-[9px] text-white/40 mt-0.5">
+                  Skor: <span className={`font-bold ${scores[mySeat] >= 80 ? 'text-red-400' : 'text-white'}`}>{scores[mySeat]}</span>
+                </div>
+              </div>
+              {/* Action buttons */}
+              <button
+                onClick={addDraft}
+                disabled={sel.size < 3 || ph !== 'discard' || !isMT}
+                className="w-full py-2 rounded-lg text-[10px] font-bold transition-all bg-violet-600/80 hover:bg-violet-500 text-white disabled:opacity-30 disabled:cursor-not-allowed border border-violet-400/30"
+              >
+                📋 Taslak Ekle
+              </button>
+              <button
+                onClick={hLay}
+                disabled={!isMT || ph !== 'discard' || (sel.size < 3 && openMelds.length === 0)}
+                className="w-full py-2 rounded-lg text-[10px] font-bold transition-all bg-fuchsia-600/90 hover:bg-fuchsia-500 text-white disabled:opacity-30 disabled:cursor-not-allowed border border-fuchsia-400/30 shadow-lg shadow-fuchsia-500/20"
+              >
+                🃏 Aç / Gönder
+              </button>
+              <button
+                onClick={() => { if (sel.size !== 1) { showM('1 taş seç'); return }; hDiscard(Array.from(sel)[0]) }}
+                disabled={!isMT || ph !== 'discard' || sel.size !== 1}
+                className="w-full py-2 rounded-lg text-[10px] font-bold transition-all bg-rose-600/90 hover:bg-rose-500 text-white disabled:opacity-30 disabled:cursor-not-allowed border border-rose-400/30 shadow-lg shadow-rose-500/20"
+              >
+                🗑️ Taş At
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* === OVERLAYS === */}
+      {/* ===== OVERLAYS ===== */}
 
-      {/* Diff selection */}
+      {/* Difficulty selection */}
       {showDS && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl">
-            <h3 className="text-lg font-bold mb-4 text-white">Zorluk Seç</h3>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-emerald-400/30 bg-[#0d2818] p-8 text-center shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-5">Zorluk Seç</h3>
             <div className="flex gap-3">
-              {(['easy','medium','hard'] as const).map(d => (
-                <button key={d} onClick={()=>{setDiff(d);setDiffSet(true);sendAIState({state:{...state,difficulty:d},currentTurn:1,status:'active',player1Score:0,player2Score:0,winnerId:null})}}
-                  className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all ${diff===d?'bg-indigo-600 text-white ring-2 ring-indigo-400':'bg-white/10 text-white hover:bg-white/20'}`}>
+              {(['easy', 'medium', 'hard'] as const).map(d => (
+                <button key={d} onClick={() => { setDiff(d); setDiffSet(true); sendAIState({ state: { ...state, difficulty: d }, currentTurn: 1, status: 'active', player1Score: 0, player2Score: 0, winnerId: null }) }}
+                  className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all ${diff === d ? 'bg-emerald-600 text-white ring-2 ring-emerald-400' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                   {DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}
                 </button>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* Round end */}
-      {(state?.showingRoundResult||showRE)&&!gOver && (
+      {(state?.showingRoundResult || showRE) && !gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="rounded-3xl border border-yellow-400/40 bg-slate-900 p-6 text-center shadow-2xl min-w-[300px]">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-yellow-400/40 bg-[#0d2818] p-8 text-center shadow-2xl min-w-[320px]">
             <h3 className="text-xl font-bold text-yellow-300 mb-3">🏆 Raunt {round} Bitti!</h3>
-            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[state?.roundWinner??0]} kazandı!</p>
-            {state?.roundHistory?.length>0 && (
-              <div className="flex gap-4 justify-center mb-4">
-                {SEAT_NAMES.map((n,i)=>{const lr=state.roundHistory[state.roundHistory.length-1];return(
-                  <div key={i} className="text-center"><div className="text-[10px] text-white/50">{n.split(' ')[0]}</div><div className="text-base font-bold text-red-400">+{lr?.penalties?.[i]||0}</div></div>
-                )})}
+            <p className="text-sm text-white/70 mb-5">{SEAT_NAMES[state?.roundWinner ?? 0]} kazandı!</p>
+            {state?.roundHistory?.length > 0 && (
+              <div className="flex gap-4 justify-center mb-5">
+                {SEAT_NAMES.map((n, i) => { const lr = state.roundHistory[state.roundHistory.length - 1]; return (
+                  <div key={i} className="text-center">
+                    <div className="text-[10px] text-white/50">{n.split(' ')[0]}</div>
+                    <div className="text-lg font-bold text-red-400">+{lr?.penalties?.[i] || 0}</div>
+                  </div>
+                ) })}
               </div>
             )}
-            <button onClick={startNR} className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-lg">Sonraki Raunt →</button>
+            <button onClick={startNR} className="rounded-2xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white hover:bg-emerald-500 transition-all shadow-lg">Sonraki Raunt →</button>
           </motion.div>
         </div>
       )}
@@ -453,18 +501,18 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       {/* Game over */}
       {gOver && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="rounded-3xl border border-yellow-400/40 bg-slate-900 p-6 text-center shadow-2xl min-w-[340px]">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-3xl border border-yellow-400/40 bg-[#0d2818] p-8 text-center shadow-2xl min-w-[360px]">
             <h3 className="text-2xl font-bold text-yellow-300 mb-3">🎉 Oyun Bitti!</h3>
-            <p className="text-sm text-white/70 mb-4">{SEAT_NAMES[win??0]} kazandı!</p>
+            <p className="text-sm text-white/70 mb-5">{SEAT_NAMES[win ?? 0]} kazandı!</p>
             <div className="flex gap-3 justify-center">
-              {SEAT_NAMES.map((n,i)=>(
-                <div key={i} className={`text-center px-3 py-2 rounded-xl ${
-                  i===win ? 'bg-yellow-400/15 border-2 border-yellow-400' : 'bg-white/5 border-2 border-white/10'
+              {SEAT_NAMES.map((n, i) => (
+                <div key={i} className={`text-center px-4 py-3 rounded-xl ${
+                  i === win ? 'bg-yellow-400/15 border-2 border-yellow-400' : 'bg-white/5 border-2 border-white/10'
                 }`}>
                   <div className="text-[10px] font-bold text-white/60">{n.split(' ')[0]}</div>
-                  <div className="text-xl font-extrabold text-white">{scores[i]}</div>
-                  {i===win && <div className="text-[9px] text-yellow-400">🏆</div>}
-                  {elim[i]&&i!==win && <div className="text-[8px] text-red-400 font-bold">ELENDİ</div>}
+                  <div className="text-2xl font-extrabold text-white">{scores[i]}</div>
+                  {i === win && <div className="text-[10px] text-yellow-400">🏆</div>}
+                  {elim[i] && i !== win && <div className="text-[8px] text-red-400 font-bold">ELENDİ</div>}
                 </div>
               ))}
             </div>
@@ -473,9 +521,9 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       )}
 
       {/* Toast */}
-      <AnimatePresence>{msg&&(
-        <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0,y:20}}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] rounded-2xl bg-yellow-500/20 border border-yellow-400/40 text-yellow-200 px-5 py-2.5 text-xs font-semibold shadow-lg backdrop-blur">
+      <AnimatePresence>{msg && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[99999] rounded-2xl bg-yellow-500/20 border border-yellow-400/40 text-yellow-200 px-5 py-2.5 text-xs font-semibold shadow-lg backdrop-blur">
           {msg}
         </motion.div>
       )}</AnimatePresence>
