@@ -30,8 +30,11 @@ export interface GameRoom {
   turnTimer: number
   chatEnabled: boolean
   lastMoveAt: string | null
+  disconnectedPlayerId?: string | null
   viewerCount?: number
   aiDifficulty?: string
+  reconnected?: boolean
+  aiTakeover?: boolean
 }
 
 interface GameShellProps {
@@ -365,6 +368,34 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     if (gameMode === 'ai') { setBetType('FREE'); setBetAmount(0) }
   }, [gameMode])
 
+  // Check for active game to reconnect to on mount
+  useEffect(() => {
+    if (!session?.user?.id || phase !== 'menu') return
+    const checkReconnect = async () => {
+      try {
+        const r = await fetch(`/api/games/room?type=reconnect&gameType=${gameType}`)
+        if (r.ok) {
+          const data = await r.json()
+          if (data.roomId) {
+            // Found an active game to reconnect to
+            const gr = await fetch(`/api/games/room/${data.roomId}`)
+            if (gr.ok) {
+              const g: GameRoom = await gr.json()
+              if (g.status === 'active') {
+                setRoomId(data.roomId)
+                setRoom(g)
+                setChatEnabled(g.chatEnabled)
+                setIsSpectator(false)
+                setPhase('playing')
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+    checkReconnect()
+  }, [session?.user?.id, gameType])
+
   // Poll chat messages for popup display (for all games including AI)
   useEffect(() => {
     if ((phase === 'playing' || phase === 'spectating') && roomId) {
@@ -425,9 +456,14 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   // Also fetch lobby on mount for guests
   useEffect(() => { fetchLobby(); fetchActive() }, [fetchLobby, fetchActive])
 
-  // Poll game state
+  // Poll game state (for PvP games, AI-takeover games, and spectators)
   useEffect(() => {
-    if ((phase === 'playing' || phase === 'spectating') && roomId && room && !room.isAI) {
+    const shouldPoll = (phase === 'playing' || phase === 'spectating') && roomId && room && (
+      !room.isAI || // Always poll PvP games
+      room.disconnectedPlayerId || // Poll AI-takeover games (for reconnection/auto-close)
+      isSpectator // Always poll as spectator
+    )
+    if (shouldPoll) {
       const poll = async () => {
         try {
           const r = await fetch(`/api/games/room/${roomId}`)
@@ -436,13 +472,16 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
             setRoom(g); setChatEnabled(g.chatEnabled)
             if (g.status === 'completed') {
               handleGameEnd(g)
+            } else if (g.status === 'cancelled') {
+              // Room was auto-closed (both players left)
+              resetToMenu()
             }
           }
         } catch {}
       }
       pollRef.current = setInterval(poll, 2000); return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
-  }, [phase, roomId, room?.isAI, session?.user?.id, soundEnabled, isSpectator])
+  }, [phase, roomId, room?.isAI, room?.disconnectedPlayerId, session?.user?.id, soundEnabled, isSpectator])
 
   const handleGameEnd = (g: GameRoom) => {
     setPhase('result')

@@ -114,6 +114,27 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // Reconnect check: find active game room where the user is a player
+    if (type === 'reconnect' && gameType && userId) {
+      // Check for active games where this user is a player (either as disconnected or still active)
+      const activeRoom = await prisma.gameRoom.findFirst({
+        where: {
+          gameType,
+          status: 'active',
+          OR: [
+            { player1Id: userId },
+            { player2Id: userId },
+          ],
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true },
+      })
+      if (activeRoom) {
+        return NextResponse.json({ roomId: activeRoom.id })
+      }
+      return NextResponse.json({ roomId: null })
+    }
+
     // All active/waiting rooms across all game types (for oyunlar homepage)
     if (type === 'active_rooms') {
       const rooms = await prisma.gameRoom.findMany({

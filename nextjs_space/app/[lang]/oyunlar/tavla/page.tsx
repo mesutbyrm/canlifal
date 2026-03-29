@@ -49,36 +49,38 @@ function TavlaBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
   // Clear selection when turn changes
   useEffect(() => { setSelected(null); setPreview([]) }, [room.currentTurn, phase])
 
-  // AI logic
+  // AI logic (supports AI as either player for disconnect takeover)
+  const aiPlayerNum = room.disconnectedPlayerId === room.player1Id ? 1 : 2
+  const humanPlayerNum = aiPlayerNum === 1 ? 2 : 1
   useEffect(() => {
-    if (!room.isAI || room.status !== 'active' || room.currentTurn !== 2) return
+    if (!room.isAI || room.status !== 'active' || room.currentTurn !== aiPlayerNum) return
     if (aiRef.current) clearTimeout(aiRef.current)
 
     aiRef.current = setTimeout(async () => {
       let currentState = { ...state }
       if (currentState.phase === 'roll') {
-        const rollResult = tavlaRollDice(currentState, 2)
+        const rollResult = tavlaRollDice(currentState, aiPlayerNum)
         currentState = rollResult.state
       }
       let moves = 0
       while (currentState.movesLeft && currentState.movesLeft.length > 0 && moves < 10) {
         const aiMove = tavlaAIMove(currentState)
         if (!aiMove) break
-        const moveResult = tavlaMove(currentState, aiMove.from, 2)
+        const moveResult = tavlaMove(currentState, aiMove.from, aiPlayerNum)
         if (moveResult.error) break
         currentState = moveResult.state
         if (moveResult.winner) {
-          await sendAIState({ state: currentState, player1Score: room.player1Score, player2Score: room.player2Score, currentTurn: 1, status: 'completed', winnerId: moveResult.winner === 1 ? room.player1Id : room.player2Id })
+          await sendAIState({ state: currentState, player1Score: room.player1Score, player2Score: room.player2Score, currentTurn: humanPlayerNum, status: 'completed', winnerId: moveResult.winner === 1 ? room.player1Id : room.player2Id })
           return
         }
         moves++
       }
       currentState.phase = 'roll'
-      await sendAIState({ state: currentState, player1Score: room.player1Score, player2Score: room.player2Score, currentTurn: 1, status: 'active', winnerId: null })
+      await sendAIState({ state: currentState, player1Score: room.player1Score, player2Score: room.player2Score, currentTurn: humanPlayerNum, status: 'active', winnerId: null })
     }, 1200)
 
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
-  }, [room, state])
+  }, [room, state, aiPlayerNum, humanPlayerNum])
 
   const handleRoll = async () => {
     if (!isMyTurn || isSpectator || phase !== 'roll' || room.status !== 'active') return

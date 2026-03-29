@@ -40,14 +40,16 @@ function XoxBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
   const size: number = state?.size || 3
   const winLength: number = state?.winLength || (size <= 4 ? size : 5)
 
-  // AI auto-play
+  // AI auto-play (supports AI as either player for disconnect takeover)
+  const aiPlayerNum = room.disconnectedPlayerId === room.player1Id ? 1 : 2
+  const humanPlayerNum = aiPlayerNum === 1 ? 2 : 1
   useEffect(() => {
-    if (!room.isAI || room.status !== 'active' || room.currentTurn !== 2) return
+    if (!room.isAI || room.status !== 'active' || room.currentTurn !== aiPlayerNum) return
     if (aiTimerRef.current) clearTimeout(aiTimerRef.current)
     aiTimerRef.current = setTimeout(async () => {
       const aiIndex = xoxAI(state)
       if (aiIndex !== null) {
-        const result = xoxMove(state, aiIndex, 2)
+        const result = xoxMove(state, aiIndex, aiPlayerNum)
         if (!result.error) {
           const winner = result.winner
           const isDraw = result.isDraw
@@ -55,7 +57,7 @@ function XoxBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
             state: result.state,
             player1Score: room.player1Score,
             player2Score: room.player2Score,
-            currentTurn: 1,
+            currentTurn: humanPlayerNum,
             status: winner ? 'completed' : isDraw ? 'completed' : 'active',
             winnerId: winner === 1 ? room.player1Id : winner === 2 ? room.player2Id : isDraw ? null : null,
           })
@@ -63,7 +65,7 @@ function XoxBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
       }
     }, size > 10 ? 1200 : 800)
     return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current) }
-  }, [room, state, size])
+  }, [room, state, size, aiPlayerNum, humanPlayerNum])
 
   const board: string[] = state?.board || Array(size * size).fill('')
   const mySymbol = playerNum === 1 ? 'X' : 'O'

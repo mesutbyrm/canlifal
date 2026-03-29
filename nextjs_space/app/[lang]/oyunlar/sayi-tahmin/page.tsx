@@ -26,22 +26,26 @@ function SayiTahminBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMo
   const [error, setError] = useState('')
   const aiRef = useRef<any>(null)
 
-  // AI: set number and make guesses
+  // AI: set number and make guesses (supports AI as either player for disconnect takeover)
+  const aiPlayerNum = room.disconnectedPlayerId === room.player1Id ? 1 : 2
+  const humanPlayerNum = aiPlayerNum === 1 ? 2 : 1
   useEffect(() => {
     if (!room.isAI || room.status !== 'active') return
     if (aiRef.current) clearTimeout(aiRef.current)
 
     // AI needs to set number
-    if (state.phase === 'picking' && !state.player2Number) {
+    const aiNumberField = aiPlayerNum === 1 ? 'player1Number' : 'player2Number'
+    const humanNumberField = humanPlayerNum === 1 ? 'player1Number' : 'player2Number'
+    if (state.phase === 'picking' && !state[aiNumberField]) {
       aiRef.current = setTimeout(async () => {
         const aiNum = sayiTahminAI()
-        const result = sayiTahminSetNumber(state, 2, aiNum)
+        const result = sayiTahminSetNumber(state, aiPlayerNum, aiNum)
         if (!result.error) {
           await sendAIState({
             state: result.state,
             player1Score: room.player1Score,
             player2Score: room.player2Score,
-            currentTurn: state.player1Number ? 1 : room.currentTurn,
+            currentTurn: state[humanNumberField] ? humanPlayerNum : room.currentTurn,
             status: 'active',
             winnerId: null,
           })
@@ -50,16 +54,16 @@ function SayiTahminBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMo
     }
 
     // AI needs to guess
-    if (state.phase === 'guessing' && room.currentTurn === 2) {
+    if (state.phase === 'guessing' && room.currentTurn === aiPlayerNum) {
       aiRef.current = setTimeout(async () => {
         const guess = sayiTahminAIGuess(state)
-        const result = sayiTahminGuess(state, 2, guess)
+        const result = sayiTahminGuess(state, aiPlayerNum, guess)
         if (!result.error) {
           await sendAIState({
             state: result.state,
             player1Score: room.player1Score,
             player2Score: room.player2Score,
-            currentTurn: result.winner ? room.currentTurn : 1,
+            currentTurn: result.winner ? room.currentTurn : humanPlayerNum,
             status: result.winner ? 'completed' : 'active',
             winnerId: result.winner === 1 ? room.player1Id : result.winner === 2 ? room.player2Id : null,
           })

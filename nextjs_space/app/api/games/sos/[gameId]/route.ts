@@ -5,33 +5,107 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Get game state (with timer timeout auto-check)
+// GET: Get game state (with timer timeout, disconnect detection, reconnection)
 export async function GET(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
+
     let game = await prisma.sosGame.findUnique({
       where: { id: params.gameId },
       include: { _count: { select: { viewers: true } } },
     })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
 
-    // Auto-check timer timeout for active 2-player games
-    if (game.status === 'active' && !game.isAI && game.turnTimer > 0 && game.lastMoveAt) {
-      const elapsed = (Date.now() - new Date(game.lastMoveAt).getTime()) / 1000
-      if (elapsed > game.turnTimer + 2) { // +2s grace
-        // Current turn player loses their turn, switch to other player
-        const board: string[][] = JSON.parse(game.board)
-        const isBoardFull = board.every(r => r.every(c => c !== ''))
-        
-        if (!isBoardFull) {
-          // Just switch turns
-          const nextTurn = game.currentTurn === 1 ? 2 : 1
-          game = await prisma.sosGame.update({
-            where: { id: params.gameId },
-            data: { currentTurn: nextTurn, lastMoveAt: new Date() },
-            include: { _count: { select: { viewers: true } } },
-          })
+    // Update lastSeen for the polling player
+    if (userId && game.status === 'active') {
+      const now = new Date()
+      if (userId === game.player1Id) {
+        await prisma.sosGame.update({ where: { id: params.gameId }, data: { player1LastSeen: now } })
+        game = { ...game, player1LastSeen: now } as any
+      } else if (userId === game.player2Id) {
+        await prisma.sosGame.update({ where: { id: params.gameId }, data: { player2LastSeen: now } })
+        game = { ...game, player2LastSeen: now } as any
+      }
+    }
+
+    // Disconnect detection for active PvP games
+    if (game.status === 'active' && !game.isAI) {
+      const now = Date.now()
+      const p1LastSeen = game.player1LastSeen ? new Date(game.player1LastSeen).getTime() : now
+      const p2LastSeen = game.player2LastSeen ? new Date(game.player2LastSeen).getTime() : now
+      const DISCONNECT_THRESHOLD = 12
+
+      if ((now - p1LastSeen) / 1000 > DISCONNECT_THRESHOLD && game.player1Id) {
+        const updated = await prisma.sosGame.update({
+          where: { id: params.gameId },
+          data: { isAI: true, disconnectedPlayerId: game.player1Id, lastMoveAt: new Date() },
+        })
+        game = { ...updated, _count: game._count } as any
+      } else if ((now - p2LastSeen) / 1000 > DISCONNECT_THRESHOLD && game.player2Id) {
+        const updated = await prisma.sosGame.update({
+          where: { id: params.gameId },
+          data: { isAI: true, disconnectedPlayerId: game.player2Id, lastMoveAt: new Date() },
+        })
+        game = { ...updated, _count: game._count } as any
+      }
+
+      // Timer timeout (still PvP)
+      if (!game.isAI && game.turnTimer > 0 && game.lastMoveAt) {
+        const elapsed = (now - new Date(game.lastMoveAt).getTime()) / 1000
+        if (elapsed > game.turnTimer + 2) {
+          const board: string[][] = JSON.parse(game.board)
+          const isBoardFull = board.every(r => r.every(c => c !== ''))
+          if (!isBoardFull) {
+            const nextTurn = game.currentTurn === 1 ? 2 : 1
+            game = await prisma.sosGame.update({
+              where: { id: params.gameId },
+              data: { currentTurn: nextTurn, lastMoveAt: new Date() },
+              include: { _count: { select: { viewers: true } } },
+            })
+          }
         }
       }
+    }
+
+    // Auto-close AI-takeover games when no real players active
+    if (game.status === 'active' && game.isAI && game.disconnectedPlayerId) {
+      const now = Date.now()
+      const p1Last = game.player1LastSeen ? new Date(game.player1LastSeen).getTime() : 0
+      const p2Last = game.player2LastSeen ? new Date(game.player2LastSeen).getTime() : 0
+      const latestSeen = Math.max(p1Last, p2Last)
+      if (latestSeen > 0 && (now - latestSeen) / 1000 > 8) {
+        if (game.betAmount > 0) {
+          const field = game.betCurrency === 'CFC' ? 'credits' : 'jetonBalance'
+          const txns = [prisma.user.update({ where: { id: game.player1Id }, data: { [field]: { increment: game.betAmount } } })]
+          if (game.player2Id && game.player2Id !== 'AI') {
+            txns.push(prisma.user.update({ where: { id: game.player2Id }, data: { [field]: { increment: game.betAmount } } }))
+          }
+          await prisma.$transaction(txns)
+        }
+        const updated = await prisma.sosGame.update({
+          where: { id: params.gameId },
+          data: { status: 'cancelled', lastMoveAt: new Date() },
+        })
+        const { _count: cAuto, ...dAuto } = { ...updated, _count: game._count }
+        return NextResponse.json({ ...dAuto, viewerCount: cAuto.viewers, autoClosed: true })
+      }
+    }
+
+    // Reconnection: if polling user is the disconnected player, auto-rejoin
+    if (userId && game.status === 'active' && game.isAI && game.disconnectedPlayerId === userId) {
+      const isP1 = game.player1Id === userId
+      const updated = await prisma.sosGame.update({
+        where: { id: params.gameId },
+        data: {
+          isAI: false,
+          disconnectedPlayerId: null,
+          lastMoveAt: new Date(),
+          ...(isP1 ? { player1LastSeen: new Date() } : { player2LastSeen: new Date() }),
+        },
+      })
+      const { _count: cRecon, ...dRecon } = { ...updated, _count: game._count }
+      return NextResponse.json({ ...dRecon, viewerCount: cRecon.viewers, reconnected: true })
     }
 
     const { _count, ...gameData } = game
@@ -52,11 +126,19 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 
     const game = await prisma.sosGame.findUnique({ where: { id: params.gameId } })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
-    if (game.status !== 'waiting') return NextResponse.json({ error: 'Bu oyuna katılınamaz' }, { status: 400 })
-    if (game.player1Id === session.user.id) return NextResponse.json({ error: 'Kendi oyununuza katılamazsınız' }, { status: 400 })
 
-    // Check & deduct balance for bet
-    if (game.betAmount > 0) {
+    // Allow joining waiting rooms OR replacing AI in active games
+    const isAIReplace = game.status === 'active' && game.isAI
+    if (game.status !== 'waiting' && !isAIReplace) {
+      return NextResponse.json({ error: 'Bu oyuna katılınamaz' }, { status: 400 })
+    }
+    if (game.player1Id === session.user.id && !game.disconnectedPlayerId) {
+      return NextResponse.json({ error: 'Kendi oyununuza katılamazsınız' }, { status: 400 })
+    }
+
+    // Check & deduct balance for bet (skip for reconnecting or AI replace - bet already deducted)
+    const isReconnectingPlayer = game.disconnectedPlayerId === session.user.id
+    if (game.betAmount > 0 && !isAIReplace) {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: { credits: true, jetonBalance: true }
@@ -80,14 +162,31 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 
     const userName = (session.user as any)?.name || 'Oyuncu 2'
 
+    const updateData: any = { player2Id: session.user.id, player2Name: userName, lastMoveAt: new Date() }
+    if (isAIReplace) {
+      // Check if reconnecting or new player
+      const isReconnecting = game.disconnectedPlayerId === session.user.id
+      if (isReconnecting) {
+        updateData.isAI = false
+        updateData.disconnectedPlayerId = null
+        const isP1 = game.player1Id === session.user.id
+        if (isP1) updateData.player1LastSeen = new Date()
+        else updateData.player2LastSeen = new Date()
+        // Don't overwrite player names for reconnection
+        delete updateData.player2Id
+        delete updateData.player2Name
+      } else {
+        updateData.isAI = false
+        updateData.disconnectedPlayerId = null
+        updateData.player2LastSeen = new Date()
+      }
+    } else {
+      updateData.status = 'active'
+    }
+
     const updated = await prisma.sosGame.update({
       where: { id: params.gameId },
-      data: {
-        player2Id: session.user.id,
-        player2Name: userName,
-        status: 'active',
-        lastMoveAt: new Date(),
-      },
+      data: updateData,
     })
 
     return NextResponse.json({ success: true, game: updated })
@@ -105,7 +204,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
-    const { row, col, letter, aiMoves } = await req.json()
+    const body = await req.json()
+    const { row, col, letter, aiMoves, action } = body
 
     const game = await prisma.sosGame.findUnique({ where: { id: params.gameId } })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
@@ -114,6 +214,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
     const isPlayer1 = game.player1Id === session.user.id
     const isPlayer2 = game.player2Id === session.user.id
     if (!isPlayer1 && !isPlayer2) return NextResponse.json({ error: 'Bu oyuna dahil değilsiniz' }, { status: 403 })
+
+    // Handle leave action: AI takes over
+    if (action === 'leave') {
+      if (game.isAI && !game.disconnectedPlayerId) {
+        const updated = await prisma.sosGame.update({
+          where: { id: params.gameId },
+          data: { status: 'cancelled', lastMoveAt: new Date() },
+        })
+        return NextResponse.json({ success: true, game: updated })
+      }
+      const updated = await prisma.sosGame.update({
+        where: { id: params.gameId },
+        data: {
+          isAI: true,
+          disconnectedPlayerId: session.user.id,
+          lastMoveAt: new Date(),
+          ...(isPlayer1 ? { player1LastSeen: null } : { player2LastSeen: null }),
+        },
+      })
+      return NextResponse.json({ success: true, game: updated, aiTakeover: true })
+    }
 
     // For AI games, accept bulk moves (player + AI)
     if (game.isAI && aiMoves) {

@@ -1520,6 +1520,9 @@ model SosGame {
   turnTimer     Int      @default(0)            // 0=no timer, 10/15/20 seconds
   chatEnabled   Boolean  @default(true)
   lastMoveAt    DateTime?                       // for timer enforcement
+  disconnectedPlayerId String?                  // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen DateTime?                     // Last poll time for player 1
+  player2LastSeen DateTime?                     // Last poll time for player 2
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1581,6 +1584,9 @@ model GameRoom {
   turnTimer     Int      @default(0)
   chatEnabled   Boolean  @default(true)
   lastMoveAt    DateTime?
+  disconnectedPlayerId String?                    // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen DateTime?                       // Last poll time for player 1
+  player2LastSeen DateTime?                       // Last poll time for player 2
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

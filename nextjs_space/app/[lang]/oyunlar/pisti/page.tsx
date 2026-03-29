@@ -47,24 +47,27 @@ function PistiBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
   const p1Pistis = state?.player1Pistis || 0
   const p2Pistis = state?.player2Pistis || 0
 
-  // AI auto-play
+  // AI auto-play (supports AI as either player for disconnect takeover)
+  const aiPlayerNum = room.disconnectedPlayerId === room.player1Id ? 1 : 2
+  const humanPlayerNum = aiPlayerNum === 1 ? 2 : 1
   useEffect(() => {
-    if (!room.isAI || room.status !== 'active' || room.currentTurn !== 2) return
+    if (!room.isAI || room.status !== 'active' || room.currentTurn !== aiPlayerNum) return
     if (aiRef.current) clearTimeout(aiRef.current)
     aiRef.current = setTimeout(async () => {
-      const aiIndex = pistiAI(state)
-      const result = pistiPlay(state, 2, aiIndex)
+      const aiHand = aiPlayerNum === 1 ? state.player1Hand : state.player2Hand
+      const aiIndex = pistiAI({ ...state, player2Hand: aiHand })
+      const result = pistiPlay(state, aiPlayerNum, aiIndex)
       if (!result.error) {
         await sendAIState({
           state: result.state,
           player1Score: result.p1Score ?? room.player1Score,
           player2Score: result.p2Score ?? room.player2Score,
-          currentTurn: result.winner || result.isDraw ? room.currentTurn : 1,
+          currentTurn: result.winner || result.isDraw ? room.currentTurn : humanPlayerNum,
           status: result.winner || result.isDraw ? 'completed' : 'active',
           winnerId: result.winner === 1 ? room.player1Id : result.winner === 2 ? room.player2Id : null,
         })
         // Show action feedback
-        const played = state.player2Hand[aiIndex]
+        const played = aiHand[aiIndex]
         const topCard = pile.length > 0 ? pile[pile.length - 1] : null
         if (topCard && (getCardRank(played) === getCardRank(topCard) || getCardRank(played) === 'J')) {
           if (pile.length === 1) setLastAction('PİŞTİ! 🎉')
@@ -75,7 +78,7 @@ function PistiBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, s
       }
     }, 1000)
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
-  }, [room, state])
+  }, [room, state, aiPlayerNum, humanPlayerNum])
 
   const handlePlay = async (cardIndex: number) => {
     if (!isMyTurn || isSpectator || room.status !== 'active') return

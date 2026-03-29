@@ -27,13 +27,18 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
   const [rolling, setRolling] = useState(false)
   const [lastRoundIdx, setLastRoundIdx] = useState(-1)
 
-  // AI auto-roll
+  // AI auto-roll (supports AI as either player for disconnect takeover)
+  const aiPlayerNum = room.disconnectedPlayerId === room.player1Id ? 1 : 2
+  const humanPlayerNum = aiPlayerNum === 1 ? 2 : 1
   useEffect(() => {
-    if (!room.isAI || room.status !== 'active' || room.currentTurn !== 2) return
-    if (state.phase !== 'p1rolled') return
+    if (!room.isAI || room.status !== 'active' || room.currentTurn !== aiPlayerNum) return
+    // Zar: AI rolls after the human has rolled (phase depends on who rolled first)
+    const expectedPhase = aiPlayerNum === 2 ? 'p1rolled' : 'ready'
+    if (aiPlayerNum === 2 && state.phase !== 'p1rolled') return
+    if (aiPlayerNum === 1 && state.phase !== 'ready') return
     if (aiRef.current) clearTimeout(aiRef.current)
     aiRef.current = setTimeout(async () => {
-      const result = zarRoll(state, 2)
+      const result = zarRoll(state, aiPlayerNum)
       if (!result.error) {
         const p1w = result.p1Score || 0
         const p2w = result.p2Score || 0
@@ -41,14 +46,14 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
           state: result.state,
           player1Score: p1w,
           player2Score: p2w,
-          currentTurn: 1,
+          currentTurn: humanPlayerNum,
           status: result.winner || result.isDraw ? 'completed' : 'active',
           winnerId: result.winner === 1 ? room.player1Id : result.winner === 2 ? room.player2Id : null,
         })
       }
     }, 1000)
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
-  }, [room, state])
+  }, [room, state, aiPlayerNum, humanPlayerNum])
 
   const rounds = state?.rounds || []
   const phase = state?.phase || 'ready'

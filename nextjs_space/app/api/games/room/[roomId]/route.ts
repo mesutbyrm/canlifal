@@ -9,17 +9,31 @@ export const dynamic = 'force-dynamic'
 // GET: Get room state (also checks disconnect timeout & auto-close stale waiting rooms)
 export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const room = await prisma.gameRoom.findUnique({
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
+
+    let room = await prisma.gameRoom.findUnique({
       where: { id: params.roomId },
       include: { _count: { select: { viewers: true } } },
     })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
 
+    // Update lastSeen for the polling player
+    if (userId && room.status === 'active') {
+      const now = new Date()
+      if (userId === room.player1Id) {
+        await prisma.gameRoom.update({ where: { id: params.roomId }, data: { player1LastSeen: now } })
+        room = { ...room, player1LastSeen: now } as any
+      } else if (userId === room.player2Id) {
+        await prisma.gameRoom.update({ where: { id: params.roomId }, data: { player2LastSeen: now } })
+        room = { ...room, player2LastSeen: now } as any
+      }
+    }
+
     // Auto-close: if waiting room with no player2 for more than 5 minutes, cancel it
     if (room.status === 'waiting' && !room.player2Id) {
       const waitingTime = (Date.now() - new Date(room.createdAt).getTime()) / 1000
       if (waitingTime > 300) { // 5 minutes
-        // Refund bet if any
         if (room.betAmount > 0) {
           await prisma.user.update({
             where: { id: room.player1Id },
@@ -35,22 +49,92 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       }
     }
 
-    // Auto-forfeit: if active PvP game with timer, check disconnect (10s after turn timer expires)
-    if (room.status === 'active' && !room.isAI && room.turnTimer > 0 && room.lastMoveAt) {
-      const elapsed = (Date.now() - new Date(room.lastMoveAt).getTime()) / 1000
-      const timeout = room.turnTimer + 10 // grace period of 10s after turn timer
-      if (elapsed > timeout) {
-        // Current turn player forfeits
-        const loserId = room.currentTurn === 1 ? room.player1Id : room.player2Id
-        const winnerId = room.currentTurn === 1 ? room.player2Id : room.player1Id
-        await settleBet(room, winnerId, loserId || '')
+    // === Disconnect detection for active PvP games ===
+    if (room.status === 'active' && !room.isAI) {
+      const now = Date.now()
+      const p1LastSeen = room.player1LastSeen ? new Date(room.player1LastSeen).getTime() : now
+      const p2LastSeen = room.player2LastSeen ? new Date(room.player2LastSeen).getTime() : now
+      const p1Elapsed = (now - p1LastSeen) / 1000
+      const p2Elapsed = (now - p2LastSeen) / 1000
+      const DISCONNECT_THRESHOLD = 12 // seconds without polling = disconnected
+
+      // Check if a player has disconnected (not polled for 12+ seconds)
+      if (p1Elapsed > DISCONNECT_THRESHOLD && room.player1Id) {
+        // Player 1 disconnected → AI takes over player 1's slot
         const updated = await prisma.gameRoom.update({
           where: { id: params.roomId },
-          data: { status: 'completed', winnerId, lastMoveAt: new Date() },
+          data: { isAI: true, disconnectedPlayerId: room.player1Id, lastMoveAt: new Date() },
         })
-        const { _count: c2, ...d2 } = { ...updated, _count: room._count }
-        return NextResponse.json({ ...d2, viewerCount: c2.viewers, autoForfeit: true })
+        room = { ...updated, _count: room._count } as any
+      } else if (p2Elapsed > DISCONNECT_THRESHOLD && room.player2Id) {
+        // Player 2 disconnected → AI takes over player 2's slot
+        const updated = await prisma.gameRoom.update({
+          where: { id: params.roomId },
+          data: { isAI: true, disconnectedPlayerId: room.player2Id, lastMoveAt: new Date() },
+        })
+        room = { ...updated, _count: room._count } as any
       }
+
+      // Auto-forfeit: if PvP game with timer, check turn timer expiry (10s grace)
+      if (!room.isAI && room.turnTimer > 0 && room.lastMoveAt) {
+        const elapsed = (now - new Date(room.lastMoveAt).getTime()) / 1000
+        const timeout = room.turnTimer + 10
+        if (elapsed > timeout) {
+          const loserId = room.currentTurn === 1 ? room.player1Id : room.player2Id
+          const winnerId = room.currentTurn === 1 ? room.player2Id : room.player1Id
+          await settleBet(room, winnerId, loserId || '')
+          const updated = await prisma.gameRoom.update({
+            where: { id: params.roomId },
+            data: { status: 'completed', winnerId, lastMoveAt: new Date() },
+          })
+          const { _count: c2, ...d2 } = { ...updated, _count: room._count }
+          return NextResponse.json({ ...d2, viewerCount: c2.viewers, autoForfeit: true })
+        }
+      }
+    }
+
+    // === Auto-close AI-takeover games when no real players are active ===
+    if (room.status === 'active' && room.isAI && room.disconnectedPlayerId) {
+      const now = Date.now()
+      const p1LastSeen = room.player1LastSeen ? new Date(room.player1LastSeen).getTime() : 0
+      const p2LastSeen = room.player2LastSeen ? new Date(room.player2LastSeen).getTime() : 0
+      const latestSeen = Math.max(p1LastSeen, p2LastSeen)
+      const bothElapsed = latestSeen > 0 ? (now - latestSeen) / 1000 : 999
+
+      if (bothElapsed > 8) {
+        // No real player has polled for 8+ seconds → auto-close the room
+        // Refund both players' bets (no winner)
+        if (room.betAmount > 0) {
+          const field = room.betCurrency === 'CFC' ? 'credits' : 'jetonBalance'
+          const txns = [prisma.user.update({ where: { id: room.player1Id }, data: { [field]: { increment: room.betAmount } } })]
+          if (room.player2Id && room.player2Id !== 'AI') {
+            txns.push(prisma.user.update({ where: { id: room.player2Id }, data: { [field]: { increment: room.betAmount } } }))
+          }
+          await prisma.$transaction(txns)
+        }
+        const updated = await prisma.gameRoom.update({
+          where: { id: params.roomId },
+          data: { status: 'cancelled', lastMoveAt: new Date() },
+        })
+        const { _count: cAuto, ...dAuto } = { ...updated, _count: room._count }
+        return NextResponse.json({ ...dAuto, viewerCount: cAuto.viewers, autoClosed: true })
+      }
+    }
+
+    // === Reconnection: if the polling user is the disconnected player, auto-rejoin ===
+    if (userId && room.status === 'active' && room.isAI && room.disconnectedPlayerId === userId) {
+      const isP1 = room.player1Id === userId
+      const updated = await prisma.gameRoom.update({
+        where: { id: params.roomId },
+        data: {
+          isAI: false,
+          disconnectedPlayerId: null,
+          lastMoveAt: new Date(),
+          ...(isP1 ? { player1LastSeen: new Date() } : { player2LastSeen: new Date() }),
+        },
+      })
+      const { _count: cRecon, ...dRecon } = { ...updated, _count: room._count }
+      return NextResponse.json({ ...dRecon, viewerCount: cRecon.viewers, reconnected: true })
     }
 
     const { _count, ...data } = room
@@ -69,15 +153,19 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
-    if (room.player1Id === session.user.id) return NextResponse.json({ error: 'Kendi odanıza katılamazsınız' }, { status: 400 })
 
     // Allow joining waiting rooms OR replacing AI in active games
     const isAIReplace = room.status === 'active' && room.isAI
     if (room.status !== 'waiting' && !isAIReplace) {
       return NextResponse.json({ error: 'Bu odaya katılınamaz' }, { status: 400 })
     }
+    // Block self-join unless reconnecting
+    if (room.player1Id === session.user.id && room.disconnectedPlayerId !== session.user.id) {
+      return NextResponse.json({ error: 'Kendi odanıza katılamazsınız' }, { status: 400 })
+    }
 
-    if (room.betAmount > 0) {
+    // Skip bet deduction for AI replace (original player already paid)
+    if (room.betAmount > 0 && !isAIReplace) {
       const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
       if (room.betCurrency === 'CFC' && user.credits < room.betAmount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
@@ -89,10 +177,27 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     }
 
     const userName = (session.user as any)?.name || 'Oyuncu 2'
-    const updateData: any = { player2Id: session.user.id, player2Name: userName, lastMoveAt: new Date() }
+    const updateData: any = { lastMoveAt: new Date() }
     if (isAIReplace) {
-      updateData.isAI = false // Replace AI with real player
+      const isReconnecting = room.disconnectedPlayerId === session.user.id
+      if (isReconnecting) {
+        // Reconnecting original player
+        updateData.isAI = false
+        updateData.disconnectedPlayerId = null
+        const isP1 = room.player1Id === session.user.id
+        if (isP1) updateData.player1LastSeen = new Date()
+        else updateData.player2LastSeen = new Date()
+      } else {
+        // New player replacing AI
+        updateData.player2Id = session.user.id
+        updateData.player2Name = userName
+        updateData.isAI = false
+        updateData.disconnectedPlayerId = null
+        updateData.player2LastSeen = new Date()
+      }
     } else {
+      updateData.player2Id = session.user.id
+      updateData.player2Name = userName
       updateData.status = 'active' // Normal join: waiting -> active
     }
     const updated = await prisma.gameRoom.update({
@@ -123,24 +228,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
 
     const playerNum = isP1 ? 1 : 2
 
-    // Handle leave/forfeit action
+    // Handle leave action
     if (body.action === 'leave') {
-      if (room.isAI) {
-        // AI game: just cancel it, no penalty
+      // If already an AI game (started as AI or both disconnected) → just cancel
+      if (room.isAI && !room.disconnectedPlayerId) {
         const updated = await prisma.gameRoom.update({
           where: { id: params.roomId },
           data: { status: 'cancelled', lastMoveAt: new Date() },
         })
         return NextResponse.json({ success: true, room: updated })
       }
+
+      // PvP game: AI takes over the leaving player's spot instead of forfeit
       const leaverId = session.user.id
-      const winnerId = leaverId === room.player1Id ? room.player2Id : room.player1Id
-      await settleBet(room, winnerId, session.user.id)
       const updated = await prisma.gameRoom.update({
         where: { id: params.roomId },
-        data: { status: 'completed', winnerId, lastMoveAt: new Date() },
+        data: {
+          isAI: true,
+          disconnectedPlayerId: leaverId,
+          lastMoveAt: new Date(),
+          // Clear the leaving player's lastSeen so auto-close can detect emptiness
+          ...(isP1 ? { player1LastSeen: null } : { player2LastSeen: null }),
+        },
       })
-      return NextResponse.json({ success: true, room: updated })
+      return NextResponse.json({ success: true, room: updated, aiTakeover: true })
     }
 
     // For AI games or okey/okey101 (which manage state client-side), accept full state update
