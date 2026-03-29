@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -476,6 +476,7 @@ export default function SOSGamePage() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const lang = (params?.lang as string) || 'tr'
 
   // Phase
@@ -562,6 +563,82 @@ export default function SOSGamePage() {
       }).catch(() => {})
     }
   }, [session?.user])
+
+  // Handle ?join=gameId and ?room=gameId from lobby
+  const joinHandledRef = useRef(false)
+  useEffect(() => {
+    const joinId = searchParams?.get('join')
+    const waitRoomId = searchParams?.get('room')
+    if ((!joinId && !waitRoomId) || !session?.user?.id || joinHandledRef.current) return
+    joinHandledRef.current = true
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('join')
+      url.searchParams.delete('room')
+      window.history.replaceState({}, '', url.toString())
+    }
+
+    if (joinId) {
+      const doJoin = async () => {
+        try {
+          const res = await fetch(`/api/games/sos/${joinId}`, { method: 'POST' })
+          const data = await res.json()
+          if (res.ok && data.success) {
+            setGameId(joinId)
+            setGame(data.game)
+            setBoard(JSON.parse(data.game.board))
+            setLines(JSON.parse(data.game.lines))
+            setChatEnabled(data.game.chatEnabled)
+            setIsMyTurn(data.game.currentTurn === 2)
+            setIsSpectator(false)
+            setPhase('playing')
+          } else {
+            const gr = await fetch(`/api/games/sos/${joinId}`)
+            if (gr.ok) {
+              const g = await gr.json()
+              if (g.status === 'active' && (g.player1Id === session.user.id || g.player2Id === session.user.id)) {
+                setGameId(joinId)
+                setGame(g)
+                setBoard(JSON.parse(g.board))
+                setLines(JSON.parse(g.lines))
+                setChatEnabled(g.chatEnabled)
+                setIsSpectator(false)
+                setPhase('playing')
+              } else {
+                alert(data.error || 'Bu odaya katılınamaz')
+              }
+            } else {
+              alert(data.error || 'Oda bulunamadı')
+            }
+          }
+        } catch {
+          alert('Bağlantı hatası')
+        }
+      }
+      doJoin()
+    } else if (waitRoomId) {
+      setGameId(waitRoomId)
+      setMyWaitingGame(waitRoomId)
+      setPhase('lobby')
+      const check = setInterval(async () => {
+        try {
+          const rr = await fetch(`/api/games/sos/${waitRoomId}`)
+          const g = await rr.json()
+          if (g.status === 'active' && g.player2Id) {
+            clearInterval(check)
+            setGame(g)
+            setBoard(JSON.parse(g.board))
+            setLines(JSON.parse(g.lines))
+            setChatEnabled(g.chatEnabled)
+            setPhase('playing')
+            setMyWaitingGame(null)
+          }
+        } catch {}
+      }, 3000)
+      pollRef.current = check
+    }
+  }, [searchParams, session?.user?.id])
 
   // ========== LOBBY ==========
   const fetchLobby = useCallback(async () => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -333,6 +333,7 @@ function GameChatBar({ roomId, isAI, onGiftSend }: { roomId: string; isAI: boole
 export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, supportsAI, supportsBet = true, supportsTimer = true, gridSizeOptions, children }: GameShellProps) {
   const { data: session } = useSession() || {}
   const params = useParams()
+  const searchParams = useSearchParams()
   const lang = (params?.lang as string) || 'tr'
 
   const [phase, setPhase] = useState<'menu' | 'lobby' | 'playing' | 'spectating' | 'result'>('menu')
@@ -395,6 +396,79 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     }
     checkReconnect()
   }, [session?.user?.id, gameType])
+
+  // Handle ?join=roomId (join existing room) and ?room=roomId (created room, wait for opponent) from lobby
+  const joinHandledRef = useRef(false)
+  useEffect(() => {
+    const joinId = searchParams?.get('join')
+    const waitRoomId = searchParams?.get('room')
+    if ((!joinId && !waitRoomId) || !session?.user?.id || joinHandledRef.current) return
+    joinHandledRef.current = true
+
+    // Clean up URL params immediately
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('join')
+      url.searchParams.delete('room')
+      window.history.replaceState({}, '', url.toString())
+    }
+
+    if (joinId) {
+      // Join an existing waiting room
+      const doJoin = async () => {
+        try {
+          const r = await fetch(`/api/games/room/${joinId}`, { method: 'POST' })
+          const d = await r.json()
+          if (r.ok && d.success) {
+            setRoomId(joinId)
+            setRoom(d.room)
+            setChatEnabled(d.room.chatEnabled)
+            setIsSpectator(false)
+            setPhase('playing')
+          } else {
+            // If POST fails, maybe user is already a player
+            const gr = await fetch(`/api/games/room/${joinId}`)
+            if (gr.ok) {
+              const g: GameRoom = await gr.json()
+              if (g.status === 'active' && (g.player1Id === session.user.id || g.player2Id === session.user.id)) {
+                setRoomId(joinId)
+                setRoom(g)
+                setChatEnabled(g.chatEnabled)
+                setIsSpectator(false)
+                setPhase('playing')
+              } else {
+                alert(d.error || 'Bu odaya katılınamaz')
+              }
+            } else {
+              alert(d.error || 'Oda bulunamadı')
+            }
+          }
+        } catch {
+          alert('Bağlantı hatası')
+        }
+      }
+      doJoin()
+    } else if (waitRoomId) {
+      // Created a room, wait for opponent to join
+      setRoomId(waitRoomId)
+      setMyWaiting(waitRoomId)
+      setPhase('lobby')
+      const check = setInterval(async () => {
+        try {
+          const rr = await fetch(`/api/games/room/${waitRoomId}`)
+          const g = await rr.json()
+          if (g.status === 'active' && g.player2Id) {
+            clearInterval(check)
+            setRoom(g)
+            setChatEnabled(g.chatEnabled)
+            setPhase('playing')
+            setMyWaiting(null)
+          }
+        } catch {}
+      }, 3000)
+      pollRef.current = check
+    }
+  }, [searchParams, session?.user?.id])
 
   // Poll chat messages for popup display (for all games including AI)
   useEffect(() => {
