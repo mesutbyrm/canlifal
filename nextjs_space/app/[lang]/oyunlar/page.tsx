@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/language-context'
 import { useRouter, useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   Gamepad2, Trophy, Gift, Star, Zap, Target, ArrowLeft,
   Coins, Crown, ChevronRight, Check, Lock, X, Sparkles,
@@ -14,6 +15,13 @@ import {
   TrendingUp, Activity, Radio, DoorOpen, UserPlus,
   PieChart, Lightbulb, Medal, Timer, ChevronDown, Bot
 } from 'lucide-react'
+
+// Dynamic imports for mini-game components
+const Game2048 = dynamic(() => import('@/components/mini-games/game-2048'), { ssr: false })
+const GameMinesweeper = dynamic(() => import('@/components/mini-games/game-minesweeper'), { ssr: false })
+const GameSudoku = dynamic(() => import('@/components/mini-games/game-sudoku'), { ssr: false })
+const GameMemoryMatch = dynamic(() => import('@/components/mini-games/game-memory-match'), { ssr: false })
+const GameHangman = dynamic(() => import('@/components/mini-games/game-hangman'), { ssr: false })
 
 // ========== TYPES ==========
 interface LobbyStats {
@@ -1410,6 +1418,16 @@ export default function GameLobbyPage() {
             )}
           </div>
         )
+      case 'game-2048':
+        return <Game2048 onComplete={(score) => recordPlay('game-2048', score).then(d => { if (d) setResultMessage(`🏆 2048 Skor: ${score} • +${d.reward} CFC`) })} />
+      case 'mayin-tarlasi':
+        return <GameMinesweeper onComplete={(score) => recordPlay('mayin-tarlasi', score).then(d => { if (d) setResultMessage(`💣 Mayın Tarlası temizlendi! +${d.reward} CFC`) })} />
+      case 'sudoku':
+        return <GameSudoku onComplete={(score) => recordPlay('sudoku', score).then(d => { if (d) setResultMessage(`🧩 Sudoku tamamlandı! +${d.reward} CFC`) })} />
+      case 'hafiza-eslestirme':
+        return <GameMemoryMatch onComplete={(score) => recordPlay('hafiza-eslestirme', score).then(d => { if (d) setResultMessage(`🧠 Hafıza Eşleştirme tamamlandı! +${d.reward} CFC`) })} />
+      case 'adam-asmaca':
+        return <GameHangman onComplete={(score) => recordPlay('adam-asmaca', score).then(d => { if (d) setResultMessage(`📝 Kelime bulundu! +${d.reward} CFC`) })} />
       default:
         return <p className="text-fuchsia-300 text-sm">Oyun yükleniyor...</p>
     }

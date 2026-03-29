@@ -564,6 +564,11 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { slug: 'sans-kutusu', title: 'Şans Kutusu', description: 'Gizemli kutuyu aç, sürpriz ödül kazan!', icon: '🎁', sortOrder: 5, minReward: 3, maxReward: 80, entryFee: 0 },
     { slug: 'sayi-tahmin', title: 'Sayı Tahmin', description: '1-100 arasında sayı tahmin et!', icon: '🔢', sortOrder: 6, minReward: 10, maxReward: 50, entryFee: 0 },
     { slug: 'lamba-cini', title: 'Lamba Cini', description: 'Sihirli lambayı ov, cin\'i çağır ve hazine sandığından ödülünü al!', icon: '🪔', sortOrder: 7, minReward: 0, maxReward: 5, entryFee: 0, config: JSON.stringify({ dailyLimit: 3, rewards: [{ type: 'cfc', amount: 0, label: 'Boş Sandık', emoji: '💨', weight: 20 }, { type: 'cfc', amount: 1, label: '1 CFC', emoji: '🪙', weight: 25 }, { type: 'cfc', amount: 2, label: '2 CFC', emoji: '💰', weight: 20 }, { type: 'cfc', amount: 3, label: '3 CFC', emoji: '💎', weight: 15 }, { type: 'free_fortune', amount: 0, label: 'Ücretsiz Fal', emoji: '🔮', weight: 10 }, { type: 'empty', amount: 0, label: 'Boş Kart', emoji: '🃏', weight: 10 }] }) },
+    { slug: 'game-2048', title: '2048', description: 'Karoları kaydır, birleştir ve 2048\'e ulaş!', icon: '🧮', sortOrder: 8, minReward: 10, maxReward: 80, entryFee: 0 },
+    { slug: 'mayin-tarlasi', title: 'Mayın Tarlası', description: 'Mayınları bulmadan tüm kareleri aç!', icon: '💣', sortOrder: 9, minReward: 15, maxReward: 100, entryFee: 0 },
+    { slug: 'sudoku', title: 'Sudoku', description: '9x9 bulmacayı doğru sayılarla doldur!', icon: '🧩', sortOrder: 10, minReward: 20, maxReward: 100, entryFee: 0 },
+    { slug: 'hafiza-eslestirme', title: 'Hafıza Eşleştirme', description: 'Kartları çevir ve eşlerini bul! Farklı temalar ve boyutlar.', icon: '🧠', sortOrder: 11, minReward: 10, maxReward: 70, entryFee: 0 },
+    { slug: 'adam-asmaca', title: 'Adam Asmaca', description: 'Harf harf tahmin et, kelimeyi bul!', icon: '📝', sortOrder: 12, minReward: 10, maxReward: 60, entryFee: 0 },
   ]
   for (const game of defaultGames) {
     await prisma.miniGame.upsert({
