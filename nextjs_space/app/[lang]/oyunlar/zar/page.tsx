@@ -33,7 +33,6 @@ function ZarBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sen
   useEffect(() => {
     if (!room.isAI || room.status !== 'active' || room.currentTurn !== aiPlayerNum) return
     // Zar: AI rolls after the human has rolled (phase depends on who rolled first)
-    const expectedPhase = aiPlayerNum === 2 ? 'p1rolled' : 'ready'
     if (aiPlayerNum === 2 && state.phase !== 'p1rolled') return
     if (aiPlayerNum === 1 && state.phase !== 'ready') return
     if (aiRef.current) clearTimeout(aiRef.current)

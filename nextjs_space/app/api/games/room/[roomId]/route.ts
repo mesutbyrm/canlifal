@@ -12,11 +12,12 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
 
-    let room = await prisma.gameRoom.findUnique({
+    const roomResult = await prisma.gameRoom.findUnique({
       where: { id: params.roomId },
       include: { _count: { select: { viewers: true } } },
     })
-    if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+    if (!roomResult) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+    let room: any = roomResult
 
     // Update lastSeen for the polling player
     if (userId && room.status === 'active') {

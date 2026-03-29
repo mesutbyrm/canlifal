@@ -11,11 +11,12 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
 
-    let game = await prisma.sosGame.findUnique({
+    const gameResult = await prisma.sosGame.findUnique({
       where: { id: params.gameId },
       include: { _count: { select: { viewers: true } } },
     })
-    if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
+    if (!gameResult) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
+    let game: any = gameResult
 
     // Update lastSeen for the polling player
     if (userId && game.status === 'active') {

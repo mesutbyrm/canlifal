@@ -72,7 +72,7 @@ function SayiTahminBoard({ room, state, isMyTurn, isSpectator, playerNum, sendMo
     }
 
     return () => { if (aiRef.current) clearTimeout(aiRef.current) }
-  }, [room, state])
+  }, [room, state, aiPlayerNum, humanPlayerNum])
 
   const handleSubmit = async () => {
     setError('')

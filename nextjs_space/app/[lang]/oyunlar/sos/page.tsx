@@ -32,6 +32,7 @@ interface SosGame {
   turnTimer: number
   chatEnabled: boolean
   lastMoveAt: string | null
+  disconnectedPlayerId?: string | null
   viewerCount?: number
   createdAt: string
   updatedAt: string
@@ -586,9 +587,14 @@ export default function SOSGamePage() {
     } catch {}
   }, [])
 
-  // ========== POLL GAME STATE (2 player or spectator) ==========
+  // ========== POLL GAME STATE (2 player, AI-takeover, or spectator) ==========
   useEffect(() => {
-    if ((phase === 'playing' || phase === 'spectating') && gameId && game && !game.isAI) {
+    const shouldPoll = (phase === 'playing' || phase === 'spectating') && gameId && game && (
+      !game.isAI || // PvP games
+      game.disconnectedPlayerId || // AI-takeover games (for reconnection/auto-close)
+      isSpectator // Always poll as spectator
+    )
+    if (shouldPoll) {
       const poll = async () => {
         try {
           const res = await fetch(`/api/games/sos/${gameId}`)
@@ -633,11 +639,7 @@ export default function SOSGamePage() {
             }
 
             if (g.status === 'completed') {
-              if (isSpectator) {
-                setPhase('result')
-              } else {
-                setPhase('result')
-              }
+              setPhase('result')
               if (pollRef.current) clearInterval(pollRef.current)
               if (soundEnabled && !isSpectator) {
                 const myId = session?.user?.id
@@ -645,6 +647,9 @@ export default function SOSGamePage() {
                 else if (!g.winnerId) playSound('draw')
                 else playSound('lose')
               }
+            } else if (g.status === 'cancelled') {
+              // Room was auto-closed (both players left)
+              resetToMenu()
             }
           }
         } catch {}
@@ -652,7 +657,7 @@ export default function SOSGamePage() {
       pollRef.current = setInterval(poll, 2000)
       return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
-  }, [phase, gameId, game?.isAI, session?.user?.id, board, lines, soundEnabled, isSpectator])
+  }, [phase, gameId, game?.isAI, game?.disconnectedPlayerId, session?.user?.id, board, lines, soundEnabled, isSpectator])
 
   // ========== CREATE GAME ==========
   const createGame = async (isAI: boolean) => {
@@ -795,14 +800,17 @@ export default function SOSGamePage() {
     const isFull = newBoard.every(r => r.every(c => c !== ''))
 
     if (game.isAI) {
+      // Determine AI player number (supports AI as either player for disconnect takeover)
+      const aiPNum = game.disconnectedPlayerId === game.player1Id ? 1 : 2
+      const humanPNum = aiPNum === 1 ? 2 : 1
       let currentBoard = newBoard
       let currentLines = allLines
       let currentP1 = p1s
       let currentP2 = p2s
-      let turn = scored.length > 0 ? 1 : 2
+      let turn = scored.length > 0 ? humanPNum : aiPNum
       let gameOver = isFull
 
-      if (!gameOver && turn === 2) {
+      if (!gameOver && turn === aiPNum) {
         setAiThinking(true)
         setIsMyTurn(false)
         await new Promise(r => setTimeout(r, 600))
@@ -825,7 +833,8 @@ export default function SOSGamePage() {
           const aiScored = findNewSOSLines(currentBoard, move.row, move.col, currentLines, game.gridSize)
           currentLines = [...currentLines, ...aiScored]
           setLines([...currentLines])
-          currentP2 += aiScored.length
+          if (aiPNum === 1) currentP1 += aiScored.length
+          else currentP2 += aiScored.length
           if (aiScored.length > 0) {
             setNewScoredLines(aiScored)
             if (soundEnabled) playSound('sos')
@@ -838,13 +847,13 @@ export default function SOSGamePage() {
         }
 
         setAiThinking(false)
-        turn = 1
+        turn = humanPNum
       }
 
       let winnerId: string | null = null
       if (gameOver) {
         if (currentP1 > currentP2) winnerId = game.player1Id
-        else if (currentP2 > currentP1) winnerId = 'AI'
+        else if (currentP2 > currentP1) winnerId = game.player2Id || 'AI'
       }
 
       const res = await fetch(`/api/games/sos/${gameId}`, {
