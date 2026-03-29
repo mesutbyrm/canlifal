@@ -11,7 +11,8 @@ import {
   Coins, Crown, ChevronRight, Check, Lock, X, Sparkles,
   RotateCcw, Copy, Share2, Users, Calendar, Flame, Award,
   Eye, Play, Shuffle, Search, Monitor, Clock, Swords,
-  TrendingUp, Activity, Radio, DoorOpen, UserPlus
+  TrendingUp, Activity, Radio, DoorOpen, UserPlus,
+  PieChart, Lightbulb, Medal, Timer, ChevronDown
 } from 'lucide-react'
 
 // ========== TYPES ==========
@@ -89,6 +90,56 @@ interface SpectatorGame {
   turnTimer: number
   startedAt: string
   lastMoveAt: string | null
+}
+
+interface Tournament {
+  id: string
+  name: string
+  description: string
+  type: 'daily' | 'weekly' | 'special'
+  status: 'active' | 'upcoming' | 'completed'
+  prizePool: number
+  currency: string
+  gameType?: string
+  startTime: string
+  endTime: string
+  games: Array<{
+    gameType: string
+    completedGames: number
+    totalParticipants: number
+    topWinner: string | null
+    topWinnerWins: number
+  }>
+  totalParticipants: number
+  totalGames: number
+}
+
+interface RoomDistribution {
+  gameType: string
+  count: number
+  percentage: number
+}
+
+interface RecommendedRoom {
+  id: string
+  gameType: string
+  player1Name: string
+  betAmount: number
+  betCurrency: string
+  viewerCount: number
+  createdAt: string
+}
+
+interface PopularGame {
+  id: string
+  gameType: string
+  player1Name: string
+  player2Name: string
+  player1Score: number
+  player2Score: number
+  viewerCount: number
+  betAmount: number
+  betCurrency: string
 }
 
 interface GameProfile {
@@ -671,6 +722,11 @@ export default function GameLobbyPage() {
   const [recentWinners, setRecentWinners] = useState<RecentWinner[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [spectatorGames, setSpectatorGames] = useState<SpectatorGame[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [roomDistribution, setRoomDistribution] = useState<RoomDistribution[]>([])
+  const [roomDistTotal, setRoomDistTotal] = useState(0)
+  const [recommendedRooms, setRecommendedRooms] = useState<RecommendedRoom[]>([])
+  const [popularGames, setPopularGames] = useState<PopularGame[]>([])
   const [loading, setLoading] = useState(true)
   const [matchLoading, setMatchLoading] = useState(false)
 
@@ -678,7 +734,7 @@ export default function GameLobbyPage() {
   const [selectedGame, setSelectedGame] = useState('xox')
   const [tableFilter, setTableFilter] = useState('all')
   const [showMatchModal, setShowMatchModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard' | 'spectator'>('lobby')
+  const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard' | 'spectator' | 'tournaments'>('lobby')
   const liveSectionRef = useRef<HTMLDivElement>(null)
 
   // Leaderboard filters
@@ -785,6 +841,37 @@ export default function GameLobbyPage() {
     }
   }, [])
 
+  // ===== FETCH TOURNAMENTS =====
+  const fetchTournaments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/games/lobby?section=tournaments')
+      if (res.ok) {
+        const data = await res.json()
+        setTournaments(data.tournaments || [])
+      }
+    } catch (e) { console.error('Tournaments fetch error:', e) }
+  }, [])
+
+  // ===== FETCH ROOM DISTRIBUTION & RECOMMENDED =====
+  const fetchLobbyExtras = useCallback(async () => {
+    try {
+      const [distRes, recRes] = await Promise.all([
+        fetch('/api/games/lobby?section=room_distribution'),
+        fetch('/api/games/lobby?section=recommended'),
+      ])
+      if (distRes.ok) {
+        const data = await distRes.json()
+        setRoomDistribution(data.distribution || [])
+        setRoomDistTotal(data.total || 0)
+      }
+      if (recRes.ok) {
+        const data = await recRes.json()
+        setRecommendedRooms(data.waitingRooms || [])
+        setPopularGames(data.popularGames || [])
+      }
+    } catch (e) { console.error('Lobby extras fetch error:', e) }
+  }, [])
+
   // ===== FETCH PROFILE & MINI GAMES =====
   const fetchProfileData = useCallback(async () => {
     try {
@@ -809,12 +896,15 @@ export default function GameLobbyPage() {
     fetchProfileData()
     fetchLeaderboard()
     fetchSpectatorGames()
+    fetchTournaments()
+    fetchLobbyExtras()
     const iv = setInterval(() => {
       fetchLobbyData()
       if (activeTab === 'spectator') fetchSpectatorGames()
+      if (activeTab === 'tournaments') fetchTournaments()
     }, 10000)
     return () => clearInterval(iv)
-  }, [fetchLobbyData, fetchProfileData, fetchLeaderboard, fetchSpectatorGames, activeTab])
+  }, [fetchLobbyData, fetchProfileData, fetchLeaderboard, fetchSpectatorGames, fetchTournaments, fetchLobbyExtras, activeTab])
 
   // Refetch leaderboard when filters change
   useEffect(() => { fetchLeaderboard() }, [lbPeriod, lbGameType, fetchLeaderboard])
@@ -1357,6 +1447,7 @@ export default function GameLobbyPage() {
           {[
             { key: 'lobby' as const, label: '🎮 Lobi', icon: Gamepad2 },
             { key: 'spectator' as const, label: '👁 Canlı İzle', icon: Eye },
+            { key: 'tournaments' as const, label: '🏟️ Turnuvalar', icon: Medal },
             { key: 'mini' as const, label: '🎰 Mini Oyunlar', icon: Star },
             { key: 'quests' as const, label: '🎯 Görevler', icon: Target },
             { key: 'leaderboard' as const, label: '🏆 Sıralama', icon: Trophy },
@@ -1407,6 +1498,123 @@ export default function GameLobbyPage() {
                   setFilter={setTableFilter}
                 />
               </div>
+
+              {/* Önerilen Masalar (Recommended Tables) */}
+              {(recommendedRooms.length > 0 || popularGames.length > 0) && (
+                <div className="space-y-3">
+                  <h2 className="text-white font-bold text-sm flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400" />
+                    Önerilen Masalar
+                  </h2>
+                  {recommendedRooms.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-green-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <UserPlus className="w-3 h-3" /> Seni Bekliyor
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {recommendedRooms.slice(0, 6).map((room) => {
+                          const info = gameInfo(room.gameType)
+                          return (
+                            <motion.div
+                              key={room.id}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/20 hover:border-green-400/50 transition-all cursor-pointer"
+                              onClick={() => handleJoinTable(room.id, room.gameType)}
+                            >
+                              <span className="text-xl">{info.emoji}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-xs font-bold truncate">{info.name}</p>
+                                <p className="text-green-300/60 text-[10px] truncate">{room.player1Name}</p>
+                              </div>
+                              {room.betAmount > 0 && (
+                                <span className="text-yellow-400/80 text-[10px]">{room.betAmount} {room.betCurrency}</span>
+                              )}
+                              <span className="px-2 py-1 bg-green-600/70 text-white text-[9px] rounded-full font-bold">Katıl</span>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {popularGames.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> Popüler Oyunlar
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {popularGames.slice(0, 4).map((pg) => {
+                          const info = gameInfo(pg.gameType)
+                          return (
+                            <Link key={pg.id} href={`/${lang}/oyunlar/${info.slug}?watch=${pg.id}`}>
+                              <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-cyan-900/15 to-blue-900/15 border border-cyan-500/15 hover:border-cyan-400/40 transition-all">
+                                <span className="text-xl">{info.emoji}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-xs font-bold truncate">{pg.player1Name} vs {pg.player2Name}</p>
+                                  <p className="text-cyan-300/50 text-[10px]">{info.name} • {pg.player1Score}-{pg.player2Score}</p>
+                                </div>
+                                {pg.viewerCount > 0 && (
+                                  <span className="text-cyan-400/60 text-[10px] flex items-center gap-0.5">👁 {pg.viewerCount}</span>
+                                )}
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Oda Dağılımı (Room Distribution) */}
+              {roomDistTotal > 0 && (
+                <div className="space-y-3">
+                  <h2 className="text-white font-bold text-sm flex items-center gap-2">
+                    <PieChart className="w-4 h-4 text-fuchsia-400" />
+                    Oda Dağılımı
+                    <span className="text-fuchsia-300/50 text-[10px] font-normal">({roomDistTotal} aktif oda)</span>
+                  </h2>
+                  <div className="bg-gradient-to-br from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-xl p-4">
+                    {/* Visual bar chart */}
+                    <div className="space-y-2">
+                      {roomDistribution
+                        .filter(d => d.count > 0)
+                        .sort((a, b) => b.count - a.count)
+                        .map((d) => {
+                          const info = gameInfo(d.gameType)
+                          const colors: Record<string, string> = {
+                            xox: 'bg-rose-500', sos: 'bg-blue-500', tombala: 'bg-purple-500',
+                            tavla: 'bg-amber-500', pisti: 'bg-green-500', sayi_tahmin: 'bg-indigo-500',
+                            zar: 'bg-orange-500', okey: 'bg-teal-500', okey101: 'bg-fuchsia-500',
+                            yuzbirokey: 'bg-violet-500',
+                          }
+                          return (
+                            <div key={d.gameType} className="flex items-center gap-2">
+                              <span className="text-sm w-5 text-center">{info.emoji}</span>
+                              <span className="text-white text-[10px] font-medium w-16 truncate">{info.name}</span>
+                              <div className="flex-1 bg-purple-900/30 rounded-full h-4 overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${d.percentage}%` }}
+                                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                                  className={`h-4 rounded-full ${colors[d.gameType] || 'bg-fuchsia-500'} flex items-center justify-end pr-1.5`}
+                                  style={{ minWidth: d.percentage > 0 ? '20px' : '0' }}
+                                >
+                                  <span className="text-[9px] text-white font-bold">{d.percentage}%</span>
+                                </motion.div>
+                              </div>
+                              <span className="text-fuchsia-300/60 text-[10px] w-6 text-right">{d.count}</span>
+                            </div>
+                          )
+                        })
+                      }
+                      {roomDistribution.filter(d => d.count > 0).length === 0 && (
+                        <p className="text-fuchsia-300/40 text-xs text-center py-2">Şu an aktif oda yok</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Bottom: Recent Winners + Activity Feed */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1505,6 +1713,163 @@ export default function GameLobbyPage() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ===== TOURNAMENTS TAB ===== */}
+          {activeTab === 'tournaments' && (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  <Medal className="w-5 h-5 text-amber-400" />
+                  Turnuvalar
+                </h2>
+              </div>
+
+              {tournaments.length === 0 ? (
+                <div className="text-center py-12">
+                  <Medal className="w-12 h-12 mx-auto mb-3 text-fuchsia-500/30" />
+                  <p className="text-fuchsia-300/60 text-sm font-medium">Şu an aktif turnuva yok</p>
+                  <p className="text-fuchsia-300/40 text-xs mt-1">Yeni turnuvalar yakında başlayacak</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tournaments.map((tournament, ti) => {
+                    const isActive = tournament.status === 'active'
+                    const isUpcoming = tournament.status === 'upcoming'
+                    const endTime = new Date(tournament.endTime)
+                    const startTime = new Date(tournament.startTime)
+                    const now = new Date()
+                    const hoursLeft = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / (1000 * 60 * 60)))
+                    const minsLeft = Math.max(0, Math.floor(((endTime.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60)))
+                    const hoursUntil = Math.max(0, Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60)))
+
+                    const typeColors: Record<string, string> = {
+                      daily: 'from-amber-900/40 to-yellow-900/40 border-amber-500/40',
+                      weekly: 'from-cyan-900/40 to-blue-900/40 border-cyan-500/40',
+                      special: 'from-fuchsia-900/40 to-purple-900/40 border-fuchsia-500/40',
+                    }
+                    const typeLabels: Record<string, string> = {
+                      daily: '📅 Günlük', weekly: '📆 Haftalık', special: '⚡ Özel',
+                    }
+
+                    return (
+                      <motion.div
+                        key={tournament.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: ti * 0.1 }}
+                        className={`relative bg-gradient-to-r ${typeColors[tournament.type] || typeColors.daily} border rounded-2xl overflow-hidden`}
+                      >
+                        {/* Status badge */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          {isActive && (
+                            <span className="flex items-center gap-1 px-2.5 py-1 bg-green-600/90 text-white text-[10px] font-bold rounded-full">
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              AKTİF
+                            </span>
+                          )}
+                          {isUpcoming && (
+                            <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-600/90 text-white text-[10px] font-bold rounded-full">
+                              <Timer className="w-3 h-3" />
+                              YAKINDA
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-5">
+                          {/* Tournament header */}
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center text-2xl border border-amber-500/30">
+                              {tournament.type === 'daily' ? '🏆' : tournament.type === 'weekly' ? '⚔️' : '🌟'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-white font-bold text-base">{tournament.name}</h3>
+                                <span className="text-[10px] px-2 py-0.5 bg-purple-900/40 text-fuchsia-300/70 rounded-full">{typeLabels[tournament.type]}</span>
+                              </div>
+                              <p className="text-fuchsia-300/60 text-xs mt-0.5">{tournament.description}</p>
+                            </div>
+                          </div>
+
+                          {/* Stats row */}
+                          <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="text-center p-2.5 bg-black/20 rounded-xl">
+                              <p className="text-amber-400 font-bold text-lg">{tournament.prizePool}</p>
+                              <p className="text-fuchsia-300/50 text-[10px]">🏅 Ödül {tournament.currency}</p>
+                            </div>
+                            <div className="text-center p-2.5 bg-black/20 rounded-xl">
+                              <p className="text-cyan-400 font-bold text-lg">{tournament.totalParticipants}</p>
+                              <p className="text-fuchsia-300/50 text-[10px]">👥 Katılımcı</p>
+                            </div>
+                            <div className="text-center p-2.5 bg-black/20 rounded-xl">
+                              <p className="text-fuchsia-400 font-bold text-lg">{tournament.totalGames}</p>
+                              <p className="text-fuchsia-300/50 text-[10px]">🎮 Oynanan</p>
+                            </div>
+                          </div>
+
+                          {/* Timer */}
+                          {isActive && (
+                            <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-black/20 rounded-xl">
+                              <Clock className="w-4 h-4 text-amber-400" />
+                              <span className="text-amber-300 text-sm font-bold">
+                                {hoursLeft > 0 ? `${hoursLeft} saat ${minsLeft} dk kaldı` : `${minsLeft} dk kaldı`}
+                              </span>
+                            </div>
+                          )}
+                          {isUpcoming && (
+                            <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-black/20 rounded-xl">
+                              <Timer className="w-4 h-4 text-cyan-400" />
+                              <span className="text-cyan-300 text-sm font-medium">
+                                {hoursUntil > 0 ? `${hoursUntil} saat sonra başlıyor` : 'Çok yakında başlıyor!'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Game breakdown (for active tournaments) */}
+                          {isActive && tournament.games.length > 0 && (
+                            <div className="space-y-2 mb-4">
+                              <p className="text-fuchsia-300/70 text-[10px] font-bold uppercase tracking-wider">Oyun Bazlı Sıralama</p>
+                              {tournament.games.map((g) => {
+                                const gInfo = gameInfo(g.gameType)
+                                return (
+                                  <div key={g.gameType} className="flex items-center gap-2 p-2 bg-black/15 rounded-lg">
+                                    <span className="text-lg">{gInfo.emoji}</span>
+                                    <span className="text-white text-xs font-medium flex-1">{gInfo.name}</span>
+                                    <span className="text-fuchsia-300/50 text-[10px]">{g.completedGames} oyun</span>
+                                    {g.topWinner && (
+                                      <span className="text-amber-400 text-[10px] font-bold flex items-center gap-0.5">
+                                        👑 {g.topWinner} ({g.topWinnerWins})
+                                      </span>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+
+                          {/* Action button */}
+                          <button
+                            onClick={() => {
+                              if (!session?.user) { router.push(`/${lang}/giris`); return }
+                              if (isActive) setActiveTab('lobby')
+                            }}
+                            className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
+                              isActive
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:scale-[1.01] shadow-lg shadow-amber-500/20'
+                                : 'bg-purple-900/40 text-fuchsia-300/60 border border-fuchsia-500/20'
+                            }`}
+                            disabled={isUpcoming}
+                          >
+                            {isActive ? '🎮 Turnuvaya Katıl — Oyna!' : '⏳ Henüz Başlamadı'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
