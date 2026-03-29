@@ -574,6 +574,11 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { slug: 'kazi-kazan', title: 'Kazı Kazan', description: 'Kartı kazı, sürprizi gör!', icon: '🪙', sortOrder: 15, minReward: 5, maxReward: 80, entryFee: 0 },
     { slug: 'kelime-bulmaca', title: 'Kelime Bulmaca', description: 'Harfleri birleştir, kelimeyi bul!', icon: '🔤', sortOrder: 16, minReward: 10, maxReward: 70, entryFee: 0 },
     { slug: 'anagram', title: 'Anagram', description: 'Karışık harflerden anlamlı kelime yap!', icon: '🔠', sortOrder: 17, minReward: 10, maxReward: 60, entryFee: 0 },
+    { slug: 'mastermind', title: 'Mastermind', description: '4 renkli gizli kodu çöz!', icon: '🧠', sortOrder: 18, minReward: 10, maxReward: 80, entryFee: 0 },
+    { slug: 'quiz', title: 'Bilgi Yarışması', description: 'Genel kültür sorularını yanıtla!', icon: '🧪', sortOrder: 19, minReward: 10, maxReward: 100, entryFee: 0 },
+    { slug: 'renk-siralama', title: 'Renk Sıralama', description: 'Tüplerdeki renkleri sırala!', icon: '🎨', sortOrder: 20, minReward: 10, maxReward: 70, entryFee: 0 },
+    { slug: 'logo-tahmin', title: 'Logo Tahmin', description: 'İpuçlarından markayı bul!', icon: '🏷️', sortOrder: 21, minReward: 10, maxReward: 80, entryFee: 0 },
+    { slug: 'kelime-avi', title: 'Kelime Avı', description: 'Gizli kelimeleri bul!', icon: '🔍', sortOrder: 22, minReward: 15, maxReward: 70, entryFee: 0 },
   ]
   for (const game of defaultGames) {
     await prisma.miniGame.upsert({

@@ -27,6 +27,11 @@ const GameCarkifelek = dynamic(() => import('@/components/mini-games/game-carkif
 const GameScratch = dynamic(() => import('@/components/mini-games/game-scratch'), { ssr: false })
 const GameWordPuzzle = dynamic(() => import('@/components/mini-games/game-word-puzzle'), { ssr: false })
 const GameAnagram = dynamic(() => import('@/components/mini-games/game-anagram'), { ssr: false })
+const GameMastermind = dynamic(() => import('@/components/mini-games/game-mastermind'), { ssr: false })
+const GameQuiz = dynamic(() => import('@/components/mini-games/game-quiz'), { ssr: false })
+const GameColorSort = dynamic(() => import('@/components/mini-games/game-color-sort'), { ssr: false })
+const GameLogoQuiz = dynamic(() => import('@/components/mini-games/game-logo-quiz'), { ssr: false })
+const GameWordHunt = dynamic(() => import('@/components/mini-games/game-word-hunt'), { ssr: false })
 
 // ========== TYPES ==========
 interface LobbyStats {
@@ -1448,6 +1453,16 @@ export default function GameLobbyPage() {
         return <GameWordPuzzle onComplete={(score) => recordPlay('kelime-bulmaca', score).then(d => { if (d) setResultMessage(`🔤 Bulmaca çözüldü! +${d.reward} CFC`) })} />
       case 'anagram':
         return <GameAnagram onComplete={(score) => recordPlay('anagram', score).then(d => { if (d) setResultMessage(`🔠 Anagram çözüldü! +${d.reward} CFC`) })} />
+      case 'mastermind':
+        return <GameMastermind onComplete={(score) => recordPlay('mastermind', score).then(d => { if (d) setResultMessage(`🧠 Kodu kırdın! +${d.reward} CFC`) })} />
+      case 'quiz':
+        return <GameQuiz onComplete={(score) => recordPlay('quiz', score).then(d => { if (d) setResultMessage(`🧪 Quiz tamamlandı! +${d.reward} CFC`) })} />
+      case 'renk-siralama':
+        return <GameColorSort onComplete={(score) => recordPlay('renk-siralama', score).then(d => { if (d) setResultMessage(`🎨 Renkler sıralandı! +${d.reward} CFC`) })} />
+      case 'logo-tahmin':
+        return <GameLogoQuiz onComplete={(score) => recordPlay('logo-tahmin', score).then(d => { if (d) setResultMessage(`🏷️ Logo Quiz bitti! +${d.reward} CFC`) })} />
+      case 'kelime-avi':
+        return <GameWordHunt onComplete={(score) => recordPlay('kelime-avi', score).then(d => { if (d) setResultMessage(`🔍 Kelimeler bulundu! +${d.reward} CFC`) })} />
       default:
         return <p className="text-fuchsia-300 text-sm">Oyun yükleniyor...</p>
     }
