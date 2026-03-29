@@ -6,6 +6,8 @@ import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Save, X, BookOpen, Sparkles
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import AdminBackButton from '@/components/admin-back-button'
+import dynamic from 'next/dynamic'
+const RichTextEditor = dynamic(() => import('@/components/rich-text-editor'), { ssr: false })
 
 interface BlogPost {
   id: string
@@ -840,19 +842,26 @@ export default function AdminBlogPage() {
               </div>
             </div>
 
-            {/* Content TR */}
+            {/* Content TR - WordPress tarzı zengin editör */}
             <div className="mb-4">
-              <label className="text-sm text-gray-400 mb-1 block">İçerik TR (HTML destekli)</label>
-              <textarea value={form.contentTr} onChange={e => setForm(f => ({ ...f, contentTr: e.target.value }))} rows={10} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono resize-y" />
-              <p className="text-xs text-gray-500 mt-1">
-                {form.contentTr.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime
-              </p>
+              <label className="text-sm text-gray-400 mb-1 block">İçerik TR (WordPress tarzı editör — resim ekleyebilirsiniz)</label>
+              <RichTextEditor
+                value={form.contentTr}
+                onChange={(val: string) => setForm(f => ({ ...f, contentTr: val }))}
+                placeholder="Blog yazısı içeriğini buraya yazın... Resim eklemek için sürükle-bırak veya araç çubuğundaki resim butonunu kullanın."
+                minHeight="350px"
+              />
             </div>
 
-            {/* Content EN */}
+            {/* Content EN - WordPress tarzı zengin editör */}
             <div className="mb-4">
-              <label className="text-sm text-gray-400 mb-1 block">İçerik EN (HTML destekli)</label>
-              <textarea value={form.contentEn} onChange={e => setForm(f => ({ ...f, contentEn: e.target.value }))} rows={8} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono resize-y" />
+              <label className="text-sm text-gray-400 mb-1 block">İçerik EN (WordPress tarzı editör — resim ekleyebilirsiniz)</label>
+              <RichTextEditor
+                value={form.contentEn}
+                onChange={(val: string) => setForm(f => ({ ...f, contentEn: val }))}
+                placeholder="Write your blog content here... Drag & drop or use the image button to add images."
+                minHeight="250px"
+              />
             </div>
 
             {/* Keywords */}
@@ -1127,18 +1136,17 @@ export default function AdminBlogPage() {
                     </button>
                   </div>
                 </div>
-                {/* Inline Content Editor */}
+                {/* Inline Content Editor - WordPress tarzı */}
                 {expandedPostId === post.id && (
                   <div className="px-4 pb-4 border-t border-white/5 pt-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-400">İçerik (TR) — HTML düzenleyebilirsiniz</span>
-                      <span className="text-xs text-gray-500">{inlineContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime</span>
+                      <span className="text-xs text-gray-400">İçerik (TR) — WordPress tarzı editör, resim ekleyebilirsiniz</span>
                     </div>
-                    <textarea
+                    <RichTextEditor
                       value={inlineContent}
-                      onChange={e => setInlineContent(e.target.value)}
-                      rows={12}
-                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm font-mono resize-y mb-3"
+                      onChange={(val: string) => setInlineContent(val)}
+                      placeholder="İçerik yazın..."
+                      minHeight="300px"
                     />
                     <div className="flex items-center gap-2">
                       <button

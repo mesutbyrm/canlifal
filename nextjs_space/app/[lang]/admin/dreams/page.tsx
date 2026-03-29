@@ -7,6 +7,8 @@ import { Plus, Edit, Trash2, Eye, EyeOff, Save, X, Moon, Sparkles, Loader2, Sear
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
 import { DREAM_CATEGORIES } from '@/lib/dream-categories'
+import dynamic from 'next/dynamic'
+const RichTextEditor = dynamic(() => import('@/components/rich-text-editor'), { ssr: false })
 
 interface Dream {
   id: string
@@ -767,19 +769,15 @@ export default function AdminDreamsPage() {
                 />
               </div>
 
-              {/* Content */}
+              {/* Content - WordPress tarzı zengin editör */}
               <div>
-                <label className="text-sm text-gray-400 mb-1 block">İçerik (HTML) *</label>
-                <textarea
+                <label className="text-sm text-gray-400 mb-1 block">İçerik (WordPress tarzı editör — resim ekleyebilirsiniz) *</label>
+                <RichTextEditor
                   value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  rows={12}
-                  placeholder="<h2>Rüyada ... Görmek</h2><p>...</p>"
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono focus:outline-none focus:border-indigo-500/50 resize-y"
+                  onChange={(val: string) => setFormContent(val)}
+                  placeholder="Rüya tabiri içeriğini buraya yazın... Resim eklemek için sürükle-bırak veya araç çubuğundaki resim butonunu kullanın."
+                  minHeight="350px"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime
-                </p>
               </div>
 
               {/* Meta Description + Keywords */}
@@ -1029,18 +1027,17 @@ export default function AdminDreamsPage() {
                   </div>
                 </div>
 
-                {/* Inline Content Editor */}
+                {/* Inline Content Editor - WordPress tarzı */}
                 {expandedDreamId === dream.id && (
                   <div className="px-4 pb-4 border-t border-white/5 pt-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-400">İçerik (HTML) — düzenleyebilirsiniz</span>
-                      <span className="text-xs text-gray-500">{inlineContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} kelime</span>
+                      <span className="text-xs text-gray-400">İçerik — WordPress tarzı editör, resim ekleyebilirsiniz</span>
                     </div>
-                    <textarea
+                    <RichTextEditor
                       value={inlineContent}
-                      onChange={e => setInlineContent(e.target.value)}
-                      rows={12}
-                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm font-mono resize-y mb-3"
+                      onChange={(val: string) => setInlineContent(val)}
+                      placeholder="Rüya tabiri içeriği..."
+                      minHeight="300px"
                     />
                     <div className="flex items-center gap-2">
                       <button
