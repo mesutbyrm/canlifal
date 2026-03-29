@@ -210,17 +210,19 @@ function LiveStatsBar({ stats }: { stats: LobbyStats }) {
   ]
 
   return (
-    <div className="bg-gradient-to-r from-purple-950/80 via-fuchsia-950/60 to-purple-950/80 border-y border-fuchsia-500/20 py-2.5 px-4 overflow-x-auto">
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 min-w-fit">
+    <div className="bg-gradient-to-r from-purple-950/80 via-fuchsia-950/60 to-purple-950/80 border-y border-fuchsia-500/20 py-2 px-4 overflow-x-auto">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 min-w-fit">
         <div className="flex items-center gap-1.5">
           <Radio className="w-3.5 h-3.5 text-red-500 animate-pulse" />
           <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">CANLI</span>
         </div>
         {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <span className={item.color}>{item.icon}</span>
-            <span className="text-white font-bold text-sm tabular-nums">{item.value}</span>
-            <span className="text-fuchsia-300/50 text-[10px] hidden sm:inline">{item.label}</span>
+          <div key={item.label} className="flex flex-col items-center gap-0.5">
+            <span className={`${item.color} text-[8px] font-medium leading-none`}>{item.label}</span>
+            <div className="flex items-center gap-1">
+              <span className={item.color}>{item.icon}</span>
+              <span className="text-white font-bold text-sm tabular-nums">{item.value}</span>
+            </div>
           </div>
         ))}
       </div>
