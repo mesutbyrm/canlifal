@@ -262,22 +262,26 @@ function HeroQuickStart({
           <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Tek tıkla oyuna katıl, masa bul veya izle</p>
         </div>
 
-        {/* Game selector */}
-        <div className="flex flex-wrap justify-center gap-1.5 mb-4">
+        {/* Game selector grid */}
+        <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 mb-4">
           {gameTypes.map((gt) => {
             const info = gameInfo(gt)
+            const shortName: Record<string, string> = {
+              xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
+              sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+'
+            }
             return (
               <button
                 key={gt}
                 onClick={() => setSelectedGame(gt)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
                   selectedGame === gt
-                    ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30'
+                    ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
                     : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
                 }`}
               >
-                <span>{info.emoji}</span>
-                <span className="hidden sm:inline">{info.name}</span>
+                <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
+                <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
               </button>
             )
           })}
