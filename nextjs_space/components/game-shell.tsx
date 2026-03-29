@@ -41,6 +41,7 @@ interface GameShellProps {
   supportsAI: boolean
   supportsBet?: boolean
   supportsTimer?: boolean
+  gridSizeOptions?: number[]
   children: (props: {
     room: GameRoom
     state: any
@@ -246,7 +247,7 @@ function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; 
   )
 }
 
-export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, supportsAI, supportsBet = true, supportsTimer = true, children }: GameShellProps) {
+export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, supportsAI, supportsBet = true, supportsTimer = true, gridSizeOptions, children }: GameShellProps) {
   const { data: session } = useSession() || {}
   const params = useParams()
   const lang = (params?.lang as string) || 'tr'
@@ -257,6 +258,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [betType, setBetType] = useState<'FREE' | 'CFC' | 'JETON'>('FREE')
   const [betAmount, setBetAmount] = useState(10)
   const [turnTimer, setTurnTimer] = useState(0)
+  const [gridSize, setGridSize] = useState(gridSizeOptions?.[0] || 0)
   const [userBalance, setUserBalance] = useState({ credits: 0, jetonBalance: 0 })
   const [activePlayers, setActivePlayers] = useState(0)
   const [waitingRooms, setWaitingRooms] = useState(0)
@@ -344,7 +346,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     try {
       const r = await fetch('/api/games/room', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameType, isAI, betAmount: finalBetAmount, betCurrency: finalBetType, turnTimer: isAI ? 0 : turnTimer }),
+        body: JSON.stringify({ gameType, isAI, betAmount: finalBetAmount, betCurrency: finalBetType, turnTimer: isAI ? 0 : turnTimer, ...(gridSize > 0 ? { gridSize } : {}) }),
       })
       const d = await r.json()
       if (!r.ok) { alert(d.error || 'Hata'); return }
@@ -451,6 +453,9 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
 
       {/* Game Mode */}
       {supportsAI && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Modu</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setGameMode('ai')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === 'ai' ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Bot className="w-4 h-4" /> Yapay Zeka</button><button onClick={() => setGameMode('2player')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === '2player' ? 'border-pink-400 bg-pink-500/20 text-pink-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Users className="w-4 h-4" /> 2 Kişilik</button></div></div>}
+
+      {/* Grid Size - only if gridSizeOptions provided */}
+      {gridSizeOptions && gridSizeOptions.length > 1 && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Alanı</label><div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(gridSizeOptions.length, 4)}, 1fr)` }}>{gridSizeOptions.map(s => <button key={s} onClick={() => setGridSize(s)} className={`py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${gridSize === s ? 'border-fuchsia-400 bg-fuchsia-500/20 text-fuchsia-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{s}x{s}</button>)}</div>{gridSize >= 6 && <p className="text-xs text-gray-500 mt-1">5&apos;li sıra yapan kazanır</p>}</div>}
 
       {/* Timer - only for 2player */}
       {supportsTimer && gameMode === '2player' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block flex items-center gap-1.5"><Timer className="w-3.5 h-3.5" /> Süre Limiti</label><div className="grid grid-cols-4 gap-2">{[{v:0,l:'Yok'},{v:10,l:'10s'},{v:15,l:'15s'},{v:20,l:'20s'}].map(o => <button key={o.v} onClick={() => setTurnTimer(o.v)} className={`py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${turnTimer === o.v ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{o.l}</button>)}</div></div>}

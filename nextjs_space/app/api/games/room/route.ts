@@ -14,12 +14,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
-    const { gameType, isAI, betAmount, betCurrency, turnTimer } = await req.json()
+    const { gameType, isAI, betAmount, betCurrency, turnTimer, gridSize: reqGridSize } = await req.json()
     if (!VALID_TYPES.includes(gameType)) return NextResponse.json({ error: 'Geçersiz oyun tipi' }, { status: 400 })
 
     const currency = ['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE'
     const amount = currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0))
     const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0
+    // Grid size for XOX (default 3, range 3-30)
+    const gridSize = gameType === 'xox' && reqGridSize ? Math.max(3, Math.min(30, Math.floor(reqGridSize))) : undefined
 
     if (amount > 0) {
       const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true } })
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const initialState = getInitialState(gameType)
+    const initialState = getInitialState(gameType, gridSize ? { gridSize } : undefined)
     const userName = (session.user as any)?.name || 'Oyuncu 1'
     const aiNames: Record<string, string> = {
       xox: 'Yapay Zeka', tombala: 'Yapay Zeka', tavla: 'Yapay Zeka',

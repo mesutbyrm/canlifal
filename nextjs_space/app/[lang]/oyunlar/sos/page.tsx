@@ -484,10 +484,24 @@ export default function SOSGamePage() {
   // Menu state
   const [gameMode, setGameMode] = useState<'ai' | '2player'>('ai')
   const [gridSize, setGridSize] = useState(6)
+  const [availableGridSizes, setAvailableGridSizes] = useState<number[]>([6, 8, 10])
   const [betType, setBetType] = useState<'FREE' | 'CFC' | 'JETON'>('FREE')
   const [betAmount, setBetAmount] = useState(10)
   const [turnTimer, setTurnTimer] = useState(0)
   const [userBalance, setUserBalance] = useState({ credits: 0, jetonBalance: 0 })
+
+  // Fetch available grid sizes from admin settings
+  useEffect(() => {
+    fetch('/api/games/grid-settings')
+      .then(r => r.json())
+      .then(d => {
+        if (d.sosGridSizes?.length) {
+          setAvailableGridSizes(d.sosGridSizes)
+          if (!d.sosGridSizes.includes(gridSize)) setGridSize(d.sosGridSizes[0])
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Stats
   const [activePlayers, setActivePlayers] = useState(0)
@@ -1012,8 +1026,8 @@ export default function SOSGamePage() {
       {/* Grid Size */}
       <div className="w-full">
         <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Alanı</label>
-        <div className="grid grid-cols-3 gap-2">
-          {[6, 8, 10].map(size => (
+        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(availableGridSizes.length, 4)}, 1fr)` }}>
+          {availableGridSizes.map(size => (
             <button key={size} onClick={() => setGridSize(size)} className={`py-2 sm:py-2.5 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${gridSize === size ? 'border-purple-400 bg-purple-500/20 text-purple-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>
               {size}x{size}
             </button>

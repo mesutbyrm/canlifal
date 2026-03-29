@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { gridSize, isAI, betAmount, betCurrency, turnTimer } = await req.json()
-    const size = [6, 8, 10].includes(gridSize) ? gridSize : 6
+    // Accept any grid size from 6 to 30 (admin-configurable)
+    const size = (typeof gridSize === 'number' && gridSize >= 6 && gridSize <= 30) ? Math.floor(gridSize) : 6
     const currency = ['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE'
     const amount = currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0))
     const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0

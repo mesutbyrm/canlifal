@@ -2,25 +2,41 @@
 
 export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101'
 
-// ========== XOX (Tic-Tac-Toe) ==========
-export function xoxInit() {
-  return { board: Array(9).fill('') }
+// ========== XOX (Tic-Tac-Toe / Gomoku) ==========
+// Supports NxN boards. For N<=4: win = N in a row. For N>=5: win = 5 in a row.
+export function xoxInit(size: number = 3) {
+  const s = Math.max(3, Math.min(30, size))
+  return { board: Array(s * s).fill(''), size: s, winLength: s <= 4 ? s : 5 }
 }
 
 export function xoxMove(state: any, index: number, playerNum: number) {
   const board = [...state.board]
+  const size = state.size || 3
+  const winLength = state.winLength || (size <= 4 ? size : 5)
+  if (index < 0 || index >= board.length) return { error: 'Geçersiz hamle' }
   if (board[index] !== '') return { error: 'Hücre dolu' }
   board[index] = playerNum === 1 ? 'X' : 'O'
-  const winner = xoxCheckWinner(board)
+  const winner = xoxCheckWinner(board, size, winLength)
   const isFull = board.every((c: string) => c !== '')
-  return { state: { board }, winner, isDraw: !winner && isFull, scored: false }
+  return { state: { board, size, winLength }, winner, isDraw: !winner && isFull, scored: false }
 }
 
-function xoxCheckWinner(board: string[]): number | null {
-  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-  for (const [a,b,c] of lines) {
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return board[a] === 'X' ? 1 : 2
+function xoxCheckWinner(board: string[], size: number, winLength: number): number | null {
+  const directions = [[0,1],[1,0],[1,1],[1,-1]] // horizontal, vertical, diag-down, diag-up
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const cell = board[r * size + c]
+      if (!cell) continue
+      for (const [dr, dc] of directions) {
+        const endR = r + dr * (winLength - 1)
+        const endC = c + dc * (winLength - 1)
+        if (endR < 0 || endR >= size || endC < 0 || endC >= size) continue
+        let match = true
+        for (let k = 1; k < winLength; k++) {
+          if (board[(r + dr * k) * size + (c + dc * k)] !== cell) { match = false; break }
+        }
+        if (match) return cell === 'X' ? 1 : 2
+      }
     }
   }
   return null
@@ -28,23 +44,50 @@ function xoxCheckWinner(board: string[]): number | null {
 
 export function xoxAI(state: any): number | null {
   const board = state.board
+  const size = state.size || 3
+  const winLength = state.winLength || (size <= 4 ? size : 5)
   const empty = board.map((c: string, i: number) => c === '' ? i : -1).filter((i: number) => i >= 0)
   if (empty.length === 0) return null
-  
+
+  // For small boards, use full minimax-like approach
   // Try to win
   for (const i of empty) {
     const test = [...board]; test[i] = 'O'
-    if (xoxCheckWinner(test) === 2) return i
+    if (xoxCheckWinner(test, size, winLength) === 2) return i
   }
   // Block player
   for (const i of empty) {
     const test = [...board]; test[i] = 'X'
-    if (xoxCheckWinner(test) === 1) return i
+    if (xoxCheckWinner(test, size, winLength) === 1) return i
   }
-  // Center
-  if (board[4] === '') return 4
-  // Corners
-  const corners = [0,2,6,8].filter(i => board[i] === '')
+  // For larger boards, prioritize center area and adjacency
+  if (size > 4) {
+    // Score cells by proximity to existing pieces and center
+    const center = Math.floor(size / 2)
+    const scored = empty.map((i: number) => {
+      const r = Math.floor(i / size), c = i % size
+      let score = 0
+      // Prefer center
+      score -= (Math.abs(r - center) + Math.abs(c - center)) * 0.5
+      // Prefer adjacent to existing O pieces
+      for (const [dr, dc] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,-1],[1,-1],[-1,1]]) {
+        const nr = r + dr, nc = c + dc
+        if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+          if (board[nr * size + nc] === 'O') score += 3
+          if (board[nr * size + nc] === 'X') score += 1
+        }
+      }
+      return { i, score }
+    })
+    scored.sort((a: any, b: any) => b.score - a.score)
+    // Add some randomness among top choices
+    const top = scored.slice(0, Math.min(3, scored.length))
+    return top[Math.floor(Math.random() * top.length)].i
+  }
+  // Classic 3x3 strategy
+  const mid = Math.floor(size * size / 2)
+  if (board[mid] === '') return mid
+  const corners = [0, size - 1, size * (size - 1), size * size - 1].filter(i => board[i] === '')
   if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)]
   return empty[Math.floor(Math.random() * empty.length)]
 }
@@ -1398,9 +1441,9 @@ function okeyTileUsefulness(tile: OkeyTile, hand: OkeyTile[], jc: number, jn: nu
   return score
 }
 
-export function getInitialState(gameType: string) {
+export function getInitialState(gameType: string, options?: { gridSize?: number }) {
   switch (gameType) {
-    case 'xox': return xoxInit()
+    case 'xox': return xoxInit(options?.gridSize || 3)
     case 'sayi_tahmin': return sayiTahminInit()
     case 'zar': return zarInit()
     case 'tombala': return tombalaInit()

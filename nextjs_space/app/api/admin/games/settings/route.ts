@@ -24,6 +24,8 @@ export async function GET() {
       allowedCurrencies: ['FREE', 'CFC', 'JETON'],
       turnTimerOptions: [0, 10, 15, 20],
       gamesEnabled: true,
+      xoxGridSizes: [3, 6, 8, 10],
+      sosGridSizes: [6, 8, 10],
     }
 
     if (!setting) return NextResponse.json(defaults)

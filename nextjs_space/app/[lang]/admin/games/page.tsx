@@ -8,7 +8,7 @@ import {
   Gamepad2, Plus, Edit2, Trash2, Save, X, Loader2, Eye, EyeOff,
   ChevronUp, ChevronDown, Settings, Users, DoorOpen, Percent,
   RefreshCw, XCircle, Clock, Coins, FileJson, Upload, BookOpen,
-  Copy, Check, AlertCircle, Search, Code
+  Copy, Check, AlertCircle, Search, Code, Grid3X3
 } from 'lucide-react'
 
 interface MiniGame {
@@ -50,6 +50,8 @@ interface GameSettings {
   allowedCurrencies: string[]
   turnTimerOptions: number[]
   gamesEnabled: boolean
+  xoxGridSizes: number[]
+  sosGridSizes: number[]
 }
 
 type TabType = 'games' | 'rooms' | 'settings' | 'guide'
@@ -105,7 +107,7 @@ export default function AdminGamesPage() {
   const [settings, setSettings] = useState<GameSettings>({
     commissionRate: 10, minBetAmount: 0, maxBetAmount: 10000,
     allowedCurrencies: ['FREE', 'CFC', 'JETON'], turnTimerOptions: [0, 10, 15, 20],
-    gamesEnabled: true,
+    gamesEnabled: true, xoxGridSizes: [3, 6, 8, 10], sosGridSizes: [6, 8, 10],
   })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
@@ -602,6 +604,118 @@ export default function AdminGamesPage() {
                         placeholder="0, 10, 15, 20"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Grid Size Settings */}
+                <div className="rounded-2xl bg-white/5 border border-white/10 p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Grid3X3 className="w-5 h-5 text-fuchsia-400" />
+                    <h3 className="font-bold text-lg">Grid Boyutu Ayarları</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">XOX ve SOS oyunları için izin verilen tahta boyutlarını seçin (6x6 - 30x30 arası).</p>
+
+                  {/* XOX Grid Sizes */}
+                  <div>
+                    <label className="text-xs text-gray-400 mb-2 block">❌⭕ XOX Tahta Boyutları</label>
+                    <p className="text-xs text-gray-500 mb-2">3x3: Klasik XOX • 6x6+: 5&apos;li sıra yapan kazanır (Gomoku tarzı)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30].map(size => {
+                        const active = settings.xoxGridSizes.includes(size)
+                        return (
+                          <button
+                            key={`xox-${size}`}
+                            onClick={() => {
+                              if (active) {
+                                if (settings.xoxGridSizes.length <= 1) return
+                                setSettings({ ...settings, xoxGridSizes: settings.xoxGridSizes.filter(s => s !== size) })
+                              } else {
+                                setSettings({ ...settings, xoxGridSizes: [...settings.xoxGridSizes, size].sort((a, b) => a - b) })
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${
+                              active
+                                ? 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-300 shadow-lg shadow-fuchsia-500/10'
+                                : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-400'
+                            }`}
+                          >
+                            {size}x{size}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="number"
+                        min={6}
+                        max={30}
+                        placeholder="Özel boyut (6-30)"
+                        className="w-40 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-fuchsia-500/50"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const val = parseInt((e.target as HTMLInputElement).value)
+                            if (val >= 3 && val <= 30 && !settings.xoxGridSizes.includes(val)) {
+                              setSettings({ ...settings, xoxGridSizes: [...settings.xoxGridSizes, val].sort((a, b) => a - b) })
+                            }
+                            ;(e.target as HTMLInputElement).value = ''
+                          }
+                        }}
+                      />
+                      <span className="text-xs text-gray-600">Enter ile ekle</span>
+                    </div>
+                  </div>
+
+                  {/* SOS Grid Sizes */}
+                  <div>
+                    <label className="text-xs text-gray-400 mb-2 block">🔤 SOS Tahta Boyutları</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[6, 8, 10, 12, 14, 16, 18, 20, 25, 30].map(size => {
+                        const active = settings.sosGridSizes.includes(size)
+                        return (
+                          <button
+                            key={`sos-${size}`}
+                            onClick={() => {
+                              if (active) {
+                                if (settings.sosGridSizes.length <= 1) return
+                                setSettings({ ...settings, sosGridSizes: settings.sosGridSizes.filter(s => s !== size) })
+                              } else {
+                                setSettings({ ...settings, sosGridSizes: [...settings.sosGridSizes, size].sort((a, b) => a - b) })
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${
+                              active
+                                ? 'bg-purple-500/20 border-purple-400 text-purple-300 shadow-lg shadow-purple-500/10'
+                                : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-400'
+                            }`}
+                          >
+                            {size}x{size}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="number"
+                        min={6}
+                        max={30}
+                        placeholder="Özel boyut (6-30)"
+                        className="w-40 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-purple-500/50"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const val = parseInt((e.target as HTMLInputElement).value)
+                            if (val >= 6 && val <= 30 && !settings.sosGridSizes.includes(val)) {
+                              setSettings({ ...settings, sosGridSizes: [...settings.sosGridSizes, val].sort((a, b) => a - b) })
+                            }
+                            ;(e.target as HTMLInputElement).value = ''
+                          }
+                        }}
+                      />
+                      <span className="text-xs text-gray-600">Enter ile ekle</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                    <p className="text-xs text-amber-300">⚡ Seçili boyutlar oyun sayfalarında oyunculara seçenek olarak sunulacaktır. En az bir boyut seçili olmalıdır.</p>
                   </div>
                 </div>
 
