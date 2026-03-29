@@ -9,32 +9,56 @@ import Link from 'next/link'
 import {
   Gamepad2, Trophy, Gift, Star, Zap, Target, ArrowLeft,
   Coins, Crown, ChevronRight, Check, Lock, X, Sparkles,
-  RotateCcw, Copy, Share2, Users, Calendar, Flame, Award
+  RotateCcw, Copy, Share2, Users, Calendar, Flame, Award,
+  Eye, Play, Shuffle, Search, Monitor, Clock, Swords,
+  TrendingUp, Activity, Radio, DoorOpen, UserPlus
 } from 'lucide-react'
 
 // ========== TYPES ==========
-interface MiniGame {
-  id: string
-  slug: string
-  title: string
-  description: string | null
-  icon: string
-  isActive: boolean
-  entryFee: number
-  minReward: number
-  maxReward: number
-  config: string | null
+interface LobbyStats {
+  onlinePlayers: number
+  playingNow: number
+  watching: number
+  openTables: number
+  waitingTables: number
+  totalGamesPlayed: number
 }
 
-interface Quest {
-  type: string
-  title: string
-  target: number
-  reward: number
-  icon: string
-  progress: number
-  claimed: boolean
-  completed: boolean
+interface GameTypeStats {
+  gameType: string
+  activePlayers: number
+  activeTables: number
+  waitingTables: number
+  todayPlayed: number
+}
+
+interface LiveTable {
+  id: string
+  gameType: string
+  player1Name: string
+  player2Name: string
+  player1Id: string
+  player2Id: string | null
+  status: string
+  betAmount: number
+  betCurrency: string
+  viewerCount: number
+  currentTurn: number
+  player1Score: number
+  player2Score: number
+  turnTimer: number
+  createdAt: string
+}
+
+interface RecentWinner {
+  id: string
+  gameType: string
+  winnerName: string
+  loserName: string
+  payout: number
+  currency: string
+  score: string
+  time: string
 }
 
 interface LeaderboardEntry {
@@ -65,126 +89,207 @@ interface DailyRewardStatus {
   todayReward: number
 }
 
-// ========== QUIZ DATA ==========
-const QUIZ_QUESTIONS = [
-  { q: 'Hangi burç ateş elementidir?', options: ['Koç', 'Boğa', 'İkizler', 'Yengeç'], answer: 0 },
-  { q: 'Venüs hangi burcun yönetici gezegenidir?', options: ['Koç', 'Boğa', 'İkizler', 'Yay'], answer: 1 },
-  { q: 'Zodyak\'ta kaç burç vardır?', options: ['10', '11', '12', '13'], answer: 2 },
-  { q: 'Hangi burç su elementidir?', options: ['Aslan', 'Başak', 'Akrep', 'Oğlak'], answer: 2 },
-  { q: 'Merkür hangi burcun yönetici gezegenidir?', options: ['İkizler', 'Aslan', 'Terazi', 'Kova'], answer: 0 },
-  { q: 'Tarot destesinde kaç kart vardır?', options: ['52', '72', '78', '82'], answer: 2 },
-  { q: 'Kahve falında fincan nasıl çevrilir?', options: ['Sola', 'Sağa', 'Kendine doğru', 'Saat yönünde'], answer: 2 },
-  { q: 'Hangi gezegen şans getirir?', options: ['Mars', 'Jüpiter', 'Satürn', 'Uranüs'], answer: 1 },
-  { q: 'Ay hangi burcun yöneticisidir?', options: ['Yengeç', 'Balık', 'Akrep', 'Boğa'], answer: 0 },
-  { q: 'Hangi burç hava elementidir?', options: ['Koç', 'Terazi', 'Balık', 'Oğlak'], answer: 1 },
-]
-
-// ========== MEMORY CARDS ==========
-const MEMORY_SYMBOLS = ['☕', '🔮', '⭐', '🌙', '🎴', '🕯️', '💎', '🪬']
-
-// ========== MAIN COMPONENT ==========
-// SOS Game Card with live player count
-// Multiplayer games data
-const ALL_MP_GAMES = [
-  { slug: 'sos', emoji: '🔠', name: 'SOS Oyunu', desc: '2 kişilik veya yapay zekaya karşı', apiType: 'sos' },
-  { slug: 'xox', emoji: '❌⭕', name: 'XOX', desc: '3x3 klasik strateji oyunu', apiType: 'room' },
-  { slug: 'sayi-tahmin', emoji: '🔢', name: 'Sayı Tahmin', desc: '4 basamaklı gizli sayıyı bul', apiType: 'room' },
-  { slug: 'zar', emoji: '🎲', name: 'Zar Atma', desc: '3 el zar at, en çok kazanan galip', apiType: 'room' },
-  { slug: 'tombala', emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamla', apiType: 'room' },
-  { slug: 'tavla', emoji: '♟️', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı', apiType: 'room' },
-  { slug: 'pisti', emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', apiType: 'room' },
-  { slug: 'okey', emoji: '🀄', name: 'Okey', desc: 'Klasik 4 kişilik Türk Okey oyunu', apiType: 'room' },
-  { slug: 'okey101', emoji: '💯', name: '101 Okey', desc: 'Çok rauntlu 101 Okey! 101\'e ilk ulaşan kaybeder', apiType: 'room' },
-  { slug: 'yuzbirokey', emoji: '🎯', name: 'Yüz Bir Okey', desc: 'Modern arayüzlü 101 Okey deneyimi', apiType: 'room' },
-]
-
-interface ActiveRoom {
-  id: string
-  gameType: string
-  player1Name: string
-  player2Name: string
-  status: string
-  betAmount: number
-  betCurrency: string
-  isAI: boolean
-  viewerCount?: number
+interface Quest {
+  type: string
+  title: string
+  target: number
+  reward: number
+  icon: string
+  progress: number
+  claimed: boolean
+  completed: boolean
 }
 
-function ActiveGamesSection({ lang }: { lang: string }) {
-  const [rooms, setRooms] = useState<ActiveRoom[]>([])
+interface MiniGame {
+  id: string
+  slug: string
+  title: string
+  description: string | null
+  icon: string
+  isActive: boolean
+  entryFee: number
+  minReward: number
+  maxReward: number
+  config: string | null
+}
 
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const res = await fetch('/api/games/room?type=active_rooms')
-        if (res.ok) {
-          const data = await res.json()
-          setRooms(data.rooms || [])
-        }
-      } catch {}
-    }
-    fetchRooms()
-    const iv = setInterval(fetchRooms, 8000)
-    return () => clearInterval(iv)
-  }, [])
+// ========== GAME INFO MAP ==========
+const GAME_INFO: Record<string, { emoji: string; name: string; desc: string; slug: string; color: string }> = {
+  xox: { emoji: '❌⭕', name: 'XOX', desc: 'Klasik 3x3 strateji oyunu', slug: 'xox', color: 'from-rose-600/30 to-pink-600/30 border-rose-400/40' },
+  sos: { emoji: '🔠', name: 'SOS Oyunu', desc: '2 kişilik veya yapay zekaya karşı', slug: 'sos', color: 'from-blue-600/30 to-cyan-600/30 border-blue-400/40' },
+  tombala: { emoji: '🎱', name: 'Tombala', desc: 'Sayı çek, sırayı ilk tamamla', slug: 'tombala', color: 'from-purple-600/30 to-violet-600/30 border-purple-400/40' },
+  tavla: { emoji: '♟️', name: 'Tavla', desc: 'Klasik tavla! Zarları at, taşlarını taşı', slug: 'tavla', color: 'from-amber-600/30 to-yellow-600/30 border-amber-400/40' },
+  pisti: { emoji: '🃏', name: 'Pişti', desc: 'Türk kart oyunu! Eşleştir & topla', slug: 'pisti', color: 'from-green-600/30 to-emerald-600/30 border-green-400/40' },
+  sayi_tahmin: { emoji: '🔢', name: 'Sayı Tahmin', desc: '4 basamaklı gizli sayıyı bul', slug: 'sayi-tahmin', color: 'from-indigo-600/30 to-blue-600/30 border-indigo-400/40' },
+  zar: { emoji: '🎲', name: 'Zar Atma', desc: '3 el zar at, en çok kazanan galip', slug: 'zar', color: 'from-orange-600/30 to-red-600/30 border-orange-400/40' },
+  okey: { emoji: '🀄', name: 'Okey', desc: 'Klasik 4 kişilik Türk Okey', slug: 'okey', color: 'from-teal-600/30 to-cyan-600/30 border-teal-400/40' },
+  okey101: { emoji: '💯', name: '101 Okey', desc: 'Çok rauntlu 101 Okey', slug: 'okey101', color: 'from-fuchsia-600/30 to-pink-600/30 border-fuchsia-400/40' },
+  yuzbirokey: { emoji: '🎯', name: 'Yüz Bir Okey', desc: 'Modern arayüzlü 101 Okey', slug: 'yuzbirokey', color: 'from-violet-600/30 to-purple-600/30 border-violet-400/40' },
+}
 
-  const gameInfo = (gt: string) => ALL_MP_GAMES.find(g => {
-    const slug = g.slug === 'sayi-tahmin' ? 'sayi_tahmin' : g.slug
-    return slug === gt
-  }) || ALL_MP_GAMES[0]
+const gameSlug = (gt: string) => GAME_INFO[gt]?.slug || gt
+const gameInfo = (gt: string) => GAME_INFO[gt] || { emoji: '🎮', name: gt, desc: '', slug: gt, color: 'from-gray-600/30 to-gray-600/30 border-gray-400/40' }
 
-  const gameSlug = (gt: string) => {
-    if (gt === 'sayi_tahmin') return 'sayi-tahmin'
-    return gt
-  }
-
-  if (rooms.length === 0) return null
+// ========== LIVE STATS BAR ==========
+function LiveStatsBar({ stats }: { stats: LobbyStats }) {
+  const items = [
+    { label: 'Online', value: stats.onlinePlayers, icon: <Users className="w-3.5 h-3.5" />, color: 'text-green-400' },
+    { label: 'Oynuyor', value: stats.playingNow, icon: <Gamepad2 className="w-3.5 h-3.5" />, color: 'text-cyan-400' },
+    { label: 'İzliyor', value: stats.watching, icon: <Eye className="w-3.5 h-3.5" />, color: 'text-pink-400' },
+    { label: 'Açık Masa', value: stats.openTables, icon: <Monitor className="w-3.5 h-3.5" />, color: 'text-amber-400' },
+    { label: 'Bekleyen', value: stats.waitingTables, icon: <Clock className="w-3.5 h-3.5" />, color: 'text-yellow-400' },
+  ]
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-white font-bold text-sm flex items-center gap-2">
-        <Flame className="w-4 h-4 text-orange-400" />
-        <span>Şu An Oynananlar</span>
-        <span className="text-[10px] text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded-full font-medium">{rooms.length} aktif</span>
-      </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {rooms.slice(0, 6).map((r) => {
-          const info = gameInfo(r.gameType)
-          const isWaiting = r.status === 'waiting'
-          return (
-            <Link key={r.id} href={`/oyunlar/${gameSlug(r.gameType)}`}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                  isWaiting
-                    ? 'bg-gradient-to-r from-green-900/20 to-cyan-900/20 border-green-500/30 hover:border-green-400/60'
-                    : 'bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-fuchsia-500/30 hover:border-fuchsia-400/60'
+    <div className="bg-gradient-to-r from-purple-950/80 via-fuchsia-950/60 to-purple-950/80 border-y border-fuchsia-500/20 py-2.5 px-4 overflow-x-auto">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 min-w-fit">
+        <div className="flex items-center gap-1.5">
+          <Radio className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+          <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">CANLI</span>
+        </div>
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <span className={item.color}>{item.icon}</span>
+            <span className="text-white font-bold text-sm tabular-nums">{item.value}</span>
+            <span className="text-fuchsia-300/50 text-[10px] hidden sm:inline">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ========== HERO QUICK START ==========
+function HeroQuickStart({
+  onQuickMatch,
+  onWatchLive,
+  onFindTable,
+  loading,
+  selectedGame,
+  setSelectedGame,
+}: {
+  onQuickMatch: () => void
+  onWatchLive: () => void
+  onFindTable: () => void
+  loading: boolean
+  selectedGame: string
+  setSelectedGame: (g: string) => void
+}) {
+  const gameTypes = Object.keys(GAME_INFO)
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-br from-[#1a0a2e] via-[#2d1252] to-[#1a0a2e] p-5 sm:p-6">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/5 via-transparent to-amber-600/5" />
+      <div className="absolute top-0 right-0 w-40 h-40 bg-fuchsia-500/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10">
+        {/* Title */}
+        <div className="text-center mb-5">
+          <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-fuchsia-400 via-amber-300 to-fuchsia-400 bg-clip-text text-transparent">
+            🎮 Hemen Oyna
+          </h1>
+          <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Tek tıkla oyuna katıl, masa bul veya izle</p>
+        </div>
+
+        {/* Game selector */}
+        <div className="flex flex-wrap justify-center gap-1.5 mb-4">
+          {gameTypes.map((gt) => {
+            const info = gameInfo(gt)
+            return (
+              <button
+                key={gt}
+                onClick={() => setSelectedGame(gt)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  selectedGame === gt
+                    ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30'
+                    : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
                 }`}
               >
-                <span className="text-2xl">{info.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs font-bold truncate">{info.name}</p>
-                  <p className="text-fuchsia-300/60 text-[10px] truncate">
-                    {r.player1Name} {isWaiting ? '— Katılımcı bekleniyor...' : `vs ${r.player2Name}`}
-                  </p>
-                  {r.betAmount > 0 && (
-                    <span className="text-yellow-400/70 text-[10px]">{r.betAmount} {r.betCurrency}</span>
-                  )}
+                <span>{info.emoji}</span>
+                <span className="hidden sm:inline">{info.name}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <button
+            onClick={onQuickMatch}
+            disabled={loading}
+            className="flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 transition-all hover:scale-[1.02] shadow-lg shadow-fuchsia-500/20 disabled:opacity-50"
+          >
+            <Shuffle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white font-bold text-[10px] sm:text-xs">Rastgele Eşleş</span>
+          </button>
+          <button
+            onClick={onWatchLive}
+            className="flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 transition-all hover:scale-[1.02] shadow-lg shadow-cyan-500/20"
+          >
+            <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white font-bold text-[10px] sm:text-xs">Canlı İzle</span>
+          </button>
+          <button
+            onClick={onFindTable}
+            className="flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20"
+          >
+            <DoorOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white font-bold text-[10px] sm:text-xs">Masaya Otur</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ========== TOP GAMES GRID ==========
+function TopGamesGrid({ stats, lang }: { stats: GameTypeStats[]; lang: string }) {
+  if (stats.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-white font-bold text-sm flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-amber-400" />
+          En Çok Oynanan Oyunlar
+        </h2>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+        {stats.slice(0, 10).map((s, i) => {
+          const info = gameInfo(s.gameType)
+          const isHot = s.activePlayers > 0 || s.todayPlayed > 5
+          return (
+            <Link key={s.gameType} href={`/${lang}/oyunlar/${info.slug}`}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`relative bg-gradient-to-br ${info.color} rounded-xl p-3 border hover:scale-[1.03] transition-all cursor-pointer group`}
+              >
+                {isHot && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
+                )}
+                <div className="text-center">
+                  <span className="text-3xl block mb-1.5 group-hover:scale-110 transition-transform">{info.emoji}</span>
+                  <p className="text-white font-bold text-xs truncate">{info.name}</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.activePlayers > 0 ? 'bg-green-400 animate-pulse' : 'bg-fuchsia-500/30'}`} />
+                    <span className="text-[10px] text-fuchsia-300/70">{s.activePlayers} kişi</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-fuchsia-300/50">
+                    <span>🏆 {s.todayPlayed}</span>
+                    <span>🪑 {s.waitingTables}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  {isWaiting ? (
-                    <span className="px-3 py-1 bg-gradient-to-r from-green-600 to-cyan-600 text-white text-[10px] rounded-full font-bold whitespace-nowrap">
-                      Katıl
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] rounded-full font-bold whitespace-nowrap flex items-center gap-1">
-                      👁 İzle
-                    </span>
-                  )}
-                  {(r.viewerCount || 0) > 0 && (
-                    <span className="text-fuchsia-400/50 text-[10px]">👁 {r.viewerCount}</span>
-                  )}
+                <div className="mt-2 flex gap-1">
+                  <span className="flex-1 text-center px-1 py-1 bg-fuchsia-600/60 text-white text-[10px] rounded-md font-bold group-hover:bg-fuchsia-500/80 transition">
+                    Oyna
+                  </span>
+                  <span className="px-2 py-1 bg-cyan-600/40 text-cyan-200 text-[10px] rounded-md font-medium">
+                    İzle
+                  </span>
                 </div>
               </motion.div>
             </Link>
@@ -195,99 +300,384 @@ function ActiveGamesSection({ lang }: { lang: string }) {
   )
 }
 
-function MultiplayerGamesSection({ lang }: { lang: string }) {
-  const [gameStats, setGameStats] = useState<Record<string, number>>({})
-
-  useEffect(() => {
-    const fetchAllStats = async () => {
-      const stats: Record<string, number> = {}
-      try {
-        const sosRes = await fetch('/api/games/sos?type=stats')
-        if (sosRes.ok) { const d = await sosRes.json(); stats['sos'] = d.activePlayers || 0 }
-      } catch {}
-      for (const g of ALL_MP_GAMES.filter(x => x.apiType === 'room')) {
-        const gameType = g.slug === 'sayi-tahmin' ? 'sayi_tahmin' : g.slug
-        try {
-          const res = await fetch(`/api/games/room?type=stats&gameType=${gameType}`)
-          if (res.ok) { const d = await res.json(); stats[g.slug] = d.activePlayers || 0 }
-        } catch {}
-      }
-      setGameStats(stats)
-    }
-    fetchAllStats()
-    const iv = setInterval(fetchAllStats, 15000)
-    return () => clearInterval(iv)
-  }, [])
-
-  // Sort: most active players first
-  const sorted = [...ALL_MP_GAMES].sort((a, b) => (gameStats[b.slug] || 0) - (gameStats[a.slug] || 0))
+// ========== LIVE TABLES ==========
+function LiveTablesList({
+  tables,
+  lang,
+  userId,
+  onJoinTable,
+  filter,
+  setFilter,
+}: {
+  tables: LiveTable[]
+  lang: string
+  userId?: string
+  onJoinTable: (roomId: string, gameType: string) => void
+  filter: string
+  setFilter: (f: string) => void
+}) {
+  const filtered = filter === 'all' ? tables : tables.filter((t) => t.gameType === filter)
+  const waiting = filtered.filter((t) => t.status === 'waiting')
+  const active = filtered.filter((t) => t.status === 'active')
 
   return (
-    <div className="space-y-2">
-      {sorted.map((g) => {
-        const count = gameStats[g.slug] || 0
-        return (
-          <Link key={g.slug} href={`/oyunlar/${g.slug}`} className="block">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-cyan-900/30 via-purple-900/30 to-pink-900/30 border border-cyan-500/30 rounded-2xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer"
+    <div className="space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-white font-bold text-sm flex items-center gap-2">
+          <Flame className="w-4 h-4 text-orange-400" />
+          Canlı Masalar
+          <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
+            {tables.length} aktif
+          </span>
+        </h2>
+        {/* Filter */}
+        <div className="flex gap-1 overflow-x-auto">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition ${filter === 'all' ? 'bg-fuchsia-600 text-white' : 'bg-purple-900/40 text-fuchsia-300/60 hover:bg-purple-800/50'}`}
+          >
+            Tümü
+          </button>
+          {Object.keys(GAME_INFO).slice(0, 6).map((gt) => (
+            <button
+              key={gt}
+              onClick={() => setFilter(gt)}
+              className={`px-2 py-1 rounded-md text-[10px] font-medium transition whitespace-nowrap ${filter === gt ? 'bg-fuchsia-600 text-white' : 'bg-purple-900/40 text-fuchsia-300/60 hover:bg-purple-800/50'}`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl group-hover:scale-110 transition-transform">{g.emoji}</span>
-                  <div>
-                    <p className="text-white font-bold text-base">{g.name}</p>
-                    <p className="text-fuchsia-300/60 text-xs">{g.desc}</p>
-                    <p className="text-yellow-400 text-xs mt-0.5 flex items-center gap-1 font-medium">
-                      <span className={`w-1.5 h-1.5 rounded-full inline-block ${count > 0 ? 'bg-yellow-400 animate-pulse' : 'bg-fuchsia-500/40'}`} />
-                      Oyunda {count} kişi var
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 text-white text-xs rounded-full font-bold group-hover:scale-105 transition">
-                    Oyna
-                  </span>
-                  <span className="text-yellow-400/80 text-xs">🏆 Bahisli</span>
-                </div>
-              </div>
-            </motion.div>
-          </Link>
-        )
-      })}
+              {gameInfo(gt).emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-8 text-fuchsia-300/40 text-sm">
+          <Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />
+          <p>Henüz aktif masa yok</p>
+          <p className="text-xs mt-1">İlk masayı sen aç!</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Waiting tables first */}
+          {waiting.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-green-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Katılımcı Bekliyor ({waiting.length})
+              </p>
+              {waiting.map((t) => {
+                const info = gameInfo(t.gameType)
+                return (
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 hover:border-green-400/60 transition-all"
+                  >
+                    <span className="text-xl">{info.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-bold">{info.name}</p>
+                      <p className="text-green-300/60 text-[10px] truncate">
+                        {t.player1Name} — Katılımcı bekleniyor...
+                      </p>
+                    </div>
+                    {t.betAmount > 0 && (
+                      <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
+                    )}
+                    <button
+                      onClick={() => onJoinTable(t.id, t.gameType)}
+                      className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20"
+                    >
+                      🪑 Otur
+                    </button>
+                  </motion.div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Active games */}
+          {active.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-fuchsia-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <Swords className="w-3 h-3" /> Devam Eden Oyunlar ({active.length})
+              </p>
+              {active.slice(0, 8).map((t) => {
+                const info = gameInfo(t.gameType)
+                return (
+                  <Link key={t.id} href={`/${lang}/oyunlar/${info.slug}`}>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-purple-900/20 to-fuchsia-900/20 border border-fuchsia-500/20 hover:border-fuchsia-400/50 transition-all cursor-pointer"
+                    >
+                      <span className="text-xl">{info.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-bold">{info.name}</p>
+                        <p className="text-fuchsia-300/60 text-[10px] truncate">
+                          {t.player1Name} vs {t.player2Name}
+                          {t.player1Score > 0 || t.player2Score > 0 ? ` (${t.player1Score}-${t.player2Score})` : ''}
+                        </p>
+                      </div>
+                      {t.betAmount > 0 && (
+                        <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
+                      )}
+                      <div className="flex items-center gap-2">
+                        {t.viewerCount > 0 && (
+                          <span className="text-fuchsia-400/50 text-[10px] flex items-center gap-0.5">👁 {t.viewerCount}</span>
+                        )}
+                        <span className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-[10px] rounded-full font-bold">
+                          👁 İzle
+                        </span>
+                      </div>
+                    </motion.div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-export default function GameCenterPage() {
+// ========== AUTO MATCH MODAL ==========
+function AutoMatchModal({
+  isOpen,
+  onClose,
+  selectedGame,
+  setSelectedGame,
+  onMatch,
+  loading,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  selectedGame: string
+  setSelectedGame: (g: string) => void
+  onMatch: (action: 'quick' | 'create' | 'ai') => void
+  loading: boolean
+}) {
+  if (!isOpen) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-md"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-bold flex items-center gap-2">
+            <Shuffle className="w-5 h-5 text-fuchsia-400" />
+            Hızlı Eşleşme
+          </h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-fuchsia-900/50 rounded-full transition">
+            <X className="w-5 h-5 text-fuchsia-400" />
+          </button>
+        </div>
+
+        <p className="text-fuchsia-300/60 text-xs mb-4">Oyun seç, sana uygun masa bulalım!</p>
+
+        {/* Game selection */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 mb-4">
+          {Object.keys(GAME_INFO).map((gt) => {
+            const info = gameInfo(gt)
+            return (
+              <button
+                key={gt}
+                onClick={() => setSelectedGame(gt)}
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all ${
+                  selectedGame === gt
+                    ? 'bg-fuchsia-600 text-white scale-105'
+                    : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
+                }`}
+              >
+                <span className="text-lg">{info.emoji}</span>
+                <span className="text-[9px] font-medium truncate w-full text-center">{info.name}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Match actions */}
+        <div className="space-y-2">
+          <button
+            onClick={() => onMatch('quick')}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white font-bold rounded-xl hover:scale-[1.01] transition disabled:opacity-50"
+          >
+            <Shuffle className="w-4 h-4" /> Hızlı Eşleş
+          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onMatch('create')}
+              disabled={loading}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-cyan-600/80 to-blue-700/80 text-white font-medium rounded-xl text-xs hover:scale-[1.01] transition disabled:opacity-50"
+            >
+              <DoorOpen className="w-3.5 h-3.5" /> Yeni Masa Aç
+            </button>
+            <button
+              onClick={() => onMatch('ai')}
+              disabled={loading}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-amber-600/80 to-orange-700/80 text-white font-medium rounded-xl text-xs hover:scale-[1.01] transition disabled:opacity-50"
+            >
+              <Zap className="w-3.5 h-3.5" /> Yapay Zeka
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ========== RECENT WINNERS ==========
+function RecentWinnersSection({ winners }: { winners: RecentWinner[] }) {
+  if (winners.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <h2 className="text-white font-bold text-sm flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-yellow-400" />
+        Son Kazananlar
+      </h2>
+      <div className="space-y-1.5 max-h-60 overflow-y-auto">
+        {winners.map((w) => {
+          const info = gameInfo(w.gameType)
+          return (
+            <div
+              key={w.id}
+              className="flex items-center gap-2.5 p-2 rounded-lg bg-purple-900/20 border border-fuchsia-500/10"
+            >
+              <span className="text-lg">{info.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-medium truncate">
+                  <span className="text-amber-300">{w.winnerName}</span>
+                  <span className="text-fuchsia-300/40"> vs {w.loserName}</span>
+                </p>
+                <p className="text-fuchsia-300/40 text-[10px]">
+                  {info.name} • {w.score}
+                </p>
+              </div>
+              {w.payout > 0 && (
+                <span className="text-yellow-400 text-xs font-bold">+{w.payout} {w.currency}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ========== ACTIVITY FEED ==========
+function ActivityFeed({ tables, winners }: { tables: LiveTable[]; winners: RecentWinner[] }) {
+  const [feed, setFeed] = useState<Array<{ id: string; text: string; time: number; emoji: string }>>([])
+
+  useEffect(() => {
+    const items: Array<{ id: string; text: string; time: number; emoji: string }> = []
+    tables.slice(0, 5).forEach((t) => {
+      const info = gameInfo(t.gameType)
+      if (t.status === 'waiting') {
+        items.push({ id: `w-${t.id}`, text: `${t.player1Name} ${info.name} masası açtı`, time: new Date(t.createdAt).getTime(), emoji: '🆕' })
+      } else {
+        items.push({ id: `a-${t.id}`, text: `${t.player1Name} vs ${t.player2Name} (${info.name})`, time: new Date(t.createdAt).getTime(), emoji: '⚔️' })
+      }
+    })
+    winners.slice(0, 5).forEach((w) => {
+      items.push({ id: `win-${w.id}`, text: `${w.winnerName} ${gameInfo(w.gameType).name} kazandı!`, time: new Date(w.time).getTime(), emoji: '🏆' })
+    })
+    items.sort((a, b) => b.time - a.time)
+    setFeed(items.slice(0, 8))
+  }, [tables, winners])
+
+  if (feed.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <h2 className="text-white font-bold text-sm flex items-center gap-2">
+        <Activity className="w-4 h-4 text-green-400" />
+        Canlı Akış
+      </h2>
+      <div className="space-y-1 max-h-48 overflow-y-auto">
+        {feed.map((item, i) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-purple-900/10 text-xs"
+          >
+            <span>{item.emoji}</span>
+            <span className="text-fuchsia-200/70 truncate">{item.text}</span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ========== MINI GAMES DATA ==========
+const QUIZ_QUESTIONS = [
+  { q: 'Hangi burç ateş elementidir?', options: ['Koç', 'Boğa', 'İkizler', 'Yengeç'], answer: 0 },
+  { q: 'Venüs hangi burcun yönetici gezegenidir?', options: ['Koç', 'Boğa', 'İkizler', 'Yay'], answer: 1 },
+  { q: 'Zodyak\'ta kaç burç vardır?', options: ['10', '11', '12', '13'], answer: 2 },
+  { q: 'Hangi burç su elementidir?', options: ['Aslan', 'Başak', 'Akrep', 'Oğlak'], answer: 2 },
+  { q: 'Merkür hangi burcun yönetici gezegenidir?', options: ['İkizler', 'Aslan', 'Terazi', 'Kova'], answer: 0 },
+]
+const MEMORY_SYMBOLS = ['☕', '🔮', '⭐', '🌙', '🎴', '🕯️', '💎', '🪬']
+const GENIE_MESSAGES = [
+  'Merhaba efendim! Sana 3 sandık sunuyorum...',
+  'Yine buradayım! Şansını dene!',
+  'Akıllıca seç efendim!',
+]
+
+// ========== MAIN COMPONENT ==========
+export default function GameLobbyPage() {
   const { data: session } = useSession() || {}
   const { language } = useLanguage()
   const router = useRouter()
   const params = useParams()
   const lang = (params?.lang as string) || 'tr'
 
-  // Core state
-  const [games, setGames] = useState<MiniGame[]>([])
-  const [profile, setProfile] = useState<GameProfile | null>(null)
-  const [activeGame, setActiveGame] = useState<string | null>(null)
+  // Lobby state
+  const [lobbyStats, setLobbyStats] = useState<LobbyStats>({ onlinePlayers: 0, playingNow: 0, watching: 0, openTables: 0, waitingTables: 0, totalGamesPlayed: 0 })
+  const [topGames, setTopGames] = useState<GameTypeStats[]>([])
+  const [liveTables, setLiveTables] = useState<LiveTable[]>([])
+  const [recentWinners, setRecentWinners] = useState<RecentWinner[]>([])
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [matchLoading, setMatchLoading] = useState(false)
+
+  // UI state
+  const [selectedGame, setSelectedGame] = useState('xox')
+  const [tableFilter, setTableFilter] = useState('all')
+  const [showMatchModal, setShowMatchModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard'>('lobby')
+  const liveSectionRef = useRef<HTMLDivElement>(null)
+
+  // Profile & mini-game state
+  const [profile, setProfile] = useState<GameProfile | null>(null)
+  const [games, setGames] = useState<MiniGame[]>([])
+  const [quests, setQuests] = useState<Quest[]>([])
+  const [dailyReward, setDailyReward] = useState<DailyRewardStatus | null>(null)
+  const [activeGame, setActiveGame] = useState<string | null>(null)
   const [resultMessage, setResultMessage] = useState<string | null>(null)
   const [rewardAnimation, setRewardAnimation] = useState<number | null>(null)
 
-  // Gamification state
-  const [quests, setQuests] = useState<Quest[]>([])
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [dailyReward, setDailyReward] = useState<DailyRewardStatus | null>(null)
-  const [activeTab, setActiveTab] = useState<'games' | 'quests' | 'leaderboard'>('games')
-
-  // Game-specific state
+  // Mini-game states (preserved from original)
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinDegree, setSpinDegree] = useState(0)
   const [tarotCards, setTarotCards] = useState<number[]>([0, 1, 2, 3, 4])
   const [selectedTarot, setSelectedTarot] = useState<number | null>(null)
   const [tarotRevealed, setTarotRevealed] = useState(false)
-  const [memoryCards, setMemoryCards] = useState<{id: number, symbol: string, flipped: boolean, matched: boolean}[]>([])
+  const [memoryCards, setMemoryCards] = useState<{id: number; symbol: string; flipped: boolean; matched: boolean}[]>([])
   const [memoryFirst, setMemoryFirst] = useState<number | null>(null)
   const [memoryMoves, setMemoryMoves] = useState(0)
   const [memoryComplete, setMemoryComplete] = useState(false)
@@ -295,16 +685,9 @@ export default function GameCenterPage() {
   const [quizScore, setQuizScore] = useState(0)
   const [quizFinished, setQuizFinished] = useState(false)
   const [quizSelected, setQuizSelected] = useState<number | null>(null)
-  const [luckyBoxOpening, setLuckyBoxOpening] = useState(false)
-  const [luckyBoxOpened, setLuckyBoxOpened] = useState(false)
-  const [guessNumber, setGuessNumber] = useState('')
-  const [guessTarget, setGuessTarget] = useState<number | null>(null)
-  const [guessAttempts, setGuessAttempts] = useState(0)
-  const [guessHint, setGuessHint] = useState('')
-  const [guessWon, setGuessWon] = useState(false)
   const [copiedRef, setCopiedRef] = useState(false)
 
-  // ========== LAMBA CİNİ STATES ==========
+  // Lamba cini states
   const [lambaPhase, setLambaPhase] = useState<'idle' | 'rubbing' | 'smoke' | 'genie' | 'chests' | 'reveal'>('idle')
   const [lambaReward, setLambaReward] = useState<{ type: string; amount: number; label: string; emoji: string } | null>(null)
   const [lambaChestPicked, setLambaChestPicked] = useState<number | null>(null)
@@ -313,15 +696,49 @@ export default function GameCenterPage() {
   const [lambaDailyLimit, setLambaDailyLimit] = useState<number>(3)
   const [lambaLoading, setLambaLoading] = useState(false)
   const [lambaGenieMsg, setLambaGenieMsg] = useState('')
+  const [luckyBoxOpening, setLuckyBoxOpening] = useState(false)
+  const [luckyBoxOpened, setLuckyBoxOpened] = useState(false)
+  const [guessNumber, setGuessNumber] = useState('')
+  const [guessTarget, setGuessTarget] = useState<number | null>(null)
+  const [guessAttempts, setGuessAttempts] = useState(0)
+  const [guessHint, setGuessHint] = useState('')
+  const [guessWon, setGuessWon] = useState(false)
 
-  // ========== DATA FETCHING ==========
-  const fetchAll = useCallback(async () => {
+  // ===== FETCH LOBBY DATA =====
+  const fetchLobbyData = useCallback(async () => {
+    try {
+      const [statsRes, topRes, tablesRes, winnersRes] = await Promise.all([
+        fetch('/api/games/lobby?section=stats'),
+        fetch('/api/games/lobby?section=top_games'),
+        fetch('/api/games/lobby?section=live_tables'),
+        fetch('/api/games/lobby?section=recent_winners'),
+      ])
+
+      if (statsRes.ok) setLobbyStats(await statsRes.json())
+      if (topRes.ok) setTopGames(await topRes.json())
+      if (tablesRes.ok) {
+        const data = await tablesRes.json()
+        setLiveTables(data.tables || [])
+      }
+      if (winnersRes.ok) {
+        const data = await winnersRes.json()
+        setRecentWinners(data.winners || [])
+      }
+    } catch (e) {
+      console.error('Lobby data fetch error:', e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // ===== FETCH PROFILE & MINI GAMES =====
+  const fetchProfileData = useCallback(async () => {
     try {
       const [gamesRes, profileRes, questsRes, lbRes, drRes] = await Promise.all([
         fetch('/api/games'),
-        session?.user ? fetch('/api/games/profil') : null,
+        session?.user ? fetch('/api/games/profile') : null,
         session?.user ? fetch('/api/games/quests') : null,
-        fetch('/api/games/siralama'),
+        fetch('/api/games/leaderboard'),
         session?.user ? fetch('/api/games/daily-reward') : null,
       ])
 
@@ -331,15 +748,33 @@ export default function GameCenterPage() {
       if (lbRes.ok) setLeaderboard(await lbRes.json())
       if (drRes?.ok) setDailyReward(await drRes.json())
     } catch (e) {
-      console.error('Game center data fetch error:', e)
-    } finally {
-      setLoading(false)
+      console.error('Profile data fetch error:', e)
     }
   }, [session?.user])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => {
+    fetchLobbyData()
+    fetchProfileData()
+    const iv = setInterval(fetchLobbyData, 10000)
+    return () => clearInterval(iv)
+  }, [fetchLobbyData, fetchProfileData])
 
-  // ========== HELPER: Record play & update balance ==========
+  // ===== MEMORY INIT =====
+  const initMemory = useCallback(() => {
+    const pairs = MEMORY_SYMBOLS.slice(0, 6)
+    const cards = [...pairs, ...pairs]
+      .sort(() => Math.random() - 0.5)
+      .map((symbol, i) => ({ id: i, symbol, flipped: false, matched: false }))
+    setMemoryCards(cards)
+    setMemoryFirst(null)
+    setMemoryMoves(0)
+    setMemoryComplete(false)
+    setResultMessage(null)
+  }, [])
+
+  useEffect(() => { initMemory() }, [initMemory])
+
+  // ===== HELPER: Record play =====
   const recordPlay = async (gameSlug: string, score?: number) => {
     try {
       const res = await fetch('/api/games/play', {
@@ -358,44 +793,82 @@ export default function GameCenterPage() {
     } catch { return null }
   }
 
-  // ========== DAILY REWARD ==========
-  const claimDailyReward = async () => {
-    try {
-      const res = await fetch('/api/games/daily-reward', { method: 'POST' })
-      const data = await res.json()
-      if (data.success) {
-        setDailyReward({ claimed: true, currentStreak: data.streak, nextReward: 0, todayReward: data.reward })
-        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
-        setRewardAnimation(data.reward)
-        setTimeout(() => setRewardAnimation(null), 2500)
-        // Refresh quests
-        const qRes = await fetch('/api/games/quests')
-        if (qRes.ok) setQuests(await qRes.json())
-      }
-    } catch (e) { console.error('Claim daily reward error:', e) }
+  // ===== ACTIONS =====
+  const handleQuickMatch = async () => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    setShowMatchModal(true)
   }
 
-  // ========== QUEST CLAIM ==========
-  const claimQuest = async (questType: string) => {
-    try {
-      const res = await fetch('/api/games/quests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questType }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
-        setRewardAnimation(data.reward)
-        setTimeout(() => setRewardAnimation(null), 2500)
-        // Refresh quests
-        const qRes = await fetch('/api/games/quests')
-        if (qRes.ok) setQuests(await qRes.json())
-      }
-    } catch (e) { console.error('Claim quest error:', e) }
+  const handleWatchLive = () => {
+    liveSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // ========== GAME: FAL ÇARKI ==========
+  const handleFindTable = () => {
+    liveSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setTableFilter('all')
+  }
+
+  const handleJoinTable = (roomId: string, gameType: string) => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    const slug = gameSlug(gameType)
+    router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
+  }
+
+  const handleAutoMatch = async (action: 'quick' | 'create' | 'ai') => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    setMatchLoading(true)
+    try {
+      if (action === 'ai') {
+        // Create AI room
+        const res = await fetch('/api/games/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameType: selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame, isAI: true, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${data.roomId}`)
+        }
+      } else if (action === 'quick') {
+        // Try auto match
+        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
+        const res = await fetch(`/api/games/lobby?section=auto_match&gameType=${gt}`)
+        const data = await res.json()
+        if (data.action === 'join') {
+          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?join=${data.roomId}`)
+        } else {
+          // Create new room
+          const createRes = await fetch('/api/games/room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+          })
+          const createData = await createRes.json()
+          if (createData.success) {
+            router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${createData.roomId}`)
+          }
+        }
+      } else {
+        // Create new room
+        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
+        const createRes = await fetch('/api/games/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+        })
+        const createData = await createRes.json()
+        if (createData.success) {
+          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${createData.roomId}`)
+        }
+      }
+    } catch (e) {
+      console.error('Auto match error:', e)
+    } finally {
+      setMatchLoading(false)
+    }
+  }
+
+  // ===== MINI GAME HANDLERS (preserved) =====
   const playFalCarki = async () => {
     if (isSpinning || !session?.user) return
     setIsSpinning(true)
@@ -409,7 +882,6 @@ export default function GameCenterPage() {
     }, 3500)
   }
 
-  // ========== GAME: TAROT ==========
   const playTarot = async (index: number) => {
     if (tarotRevealed || !session?.user) return
     setSelectedTarot(index)
@@ -425,27 +897,11 @@ export default function GameCenterPage() {
     setTarotCards([0, 1, 2, 3, 4].sort(() => Math.random() - 0.5))
   }
 
-  // ========== GAME: MEMORY ==========
-  const initMemory = useCallback(() => {
-    const pairs = MEMORY_SYMBOLS.slice(0, 6)
-    const cards = [...pairs, ...pairs]
-      .sort(() => Math.random() - 0.5)
-      .map((symbol, i) => ({ id: i, symbol, flipped: false, matched: false }))
-    setMemoryCards(cards)
-    setMemoryFirst(null)
-    setMemoryMoves(0)
-    setMemoryComplete(false)
-    setResultMessage(null)
-  }, [])
-
-  useEffect(() => { initMemory() }, [initMemory])
-
   const flipMemoryCard = (index: number) => {
     if (memoryCards[index].flipped || memoryCards[index].matched || memoryComplete) return
     const newCards = [...memoryCards]
     newCards[index].flipped = true
     setMemoryCards(newCards)
-
     if (memoryFirst === null) {
       setMemoryFirst(index)
     } else {
@@ -455,12 +911,10 @@ export default function GameCenterPage() {
         newCards[index].matched = true
         setMemoryCards(newCards)
         setMemoryFirst(null)
-        // Check win
         if (newCards.every(c => c.matched)) {
           setMemoryComplete(true)
-          recordPlay('memory', memoryMoves + 1).then(result => {
-            if (result) setResultMessage(`☕ Tebrikler! ${result.reward} CFC kazandınız!`)
-          })
+          recordPlay('memory', memoryMoves + 1)
+          setResultMessage('🎉 Tüm kartları eşleştirdiniz!')
         }
       } else {
         setTimeout(() => {
@@ -474,36 +928,28 @@ export default function GameCenterPage() {
     }
   }
 
-  // ========== GAME: QUIZ ==========
-  const initQuiz = () => {
-    setQuizIndex(0)
-    setQuizScore(0)
-    setQuizFinished(false)
-    setQuizSelected(null)
-    setResultMessage(null)
-  }
-
-  const answerQuiz = async (optionIndex: number) => {
+  const answerQuiz = async (optIndex: number) => {
     if (quizSelected !== null) return
-    setQuizSelected(optionIndex)
-    const correct = optionIndex === QUIZ_QUESTIONS[quizIndex].answer
+    setQuizSelected(optIndex)
+    const correct = optIndex === QUIZ_QUESTIONS[quizIndex].answer
     if (correct) setQuizScore(prev => prev + 1)
-
     setTimeout(() => {
-      if (quizIndex + 1 < 5) {
-        setQuizIndex(prev => prev + 1)
-        setQuizSelected(null)
-      } else {
+      if (quizIndex >= 4) {
         setQuizFinished(true)
         const finalScore = quizScore + (correct ? 1 : 0)
-        recordPlay('quiz', finalScore).then(result => {
-          if (result) setResultMessage(`⭐ Quiz bitti! ${finalScore}/5 doğru - ${result.reward} CFC!`)
-        })
+        recordPlay('quiz', finalScore)
+        setResultMessage(`🎓 Quiz bitti! ${finalScore}/5 doğru`)
+      } else {
+        setQuizIndex(prev => prev + 1)
+        setQuizSelected(null)
       }
-    }, 1000)
+    }, 1200)
   }
 
-  // ========== GAME: ŞANS KUTUSU ==========
+  const initQuiz = () => { setQuizIndex(0); setQuizScore(0); setQuizFinished(false); setQuizSelected(null); setResultMessage(null) }
+  const resetLuckyBox = () => { setLuckyBoxOpening(false); setLuckyBoxOpened(false); setResultMessage(null) }
+  const initGuess = () => { setGuessTarget(Math.floor(Math.random() * 100) + 1); setGuessAttempts(0); setGuessHint(''); setGuessWon(false); setGuessNumber(''); setResultMessage(null) }
+
   const playLuckyBox = async () => {
     if (luckyBoxOpened || !session?.user) return
     setLuckyBoxOpening(true)
@@ -511,101 +957,54 @@ export default function GameCenterPage() {
       setLuckyBoxOpened(true)
       setLuckyBoxOpening(false)
       const result = await recordPlay('sans-kutusu')
-      if (result) setResultMessage(`🎁 Kutuda ${result.reward} CFC vardı!`)
+      if (result) setResultMessage(`🎁 ${result.reward} CFC kazandınız!`)
     }, 1500)
   }
 
-  const resetLuckyBox = () => {
-    setLuckyBoxOpened(false)
-    setLuckyBoxOpening(false)
-    setResultMessage(null)
-  }
-
-  // ========== GAME: SAYI TAHMİN ==========
-  const initGuess = () => {
-    setGuessTarget(Math.floor(Math.random() * 100) + 1)
-    setGuessAttempts(0)
-    setGuessHint('1-100 arasında bir sayı tahmin edin')
-    setGuessWon(false)
-    setGuessNumber('')
-    setResultMessage(null)
-  }
-
-  useEffect(() => { initGuess() }, [])
-
-  const submitGuess = async () => {
+  const guessSubmit = async () => {
     if (!guessTarget || guessWon) return
     const num = parseInt(guessNumber)
     if (isNaN(num) || num < 1 || num > 100) return
-
-    const newAttempts = guessAttempts + 1
-    setGuessAttempts(newAttempts)
-
+    setGuessAttempts(prev => prev + 1)
     if (num === guessTarget) {
       setGuessWon(true)
-      setGuessHint(`🎯 Tebrikler! ${newAttempts} denemede buldunuz!`)
-      const result = await recordPlay('sayi-tahmin', newAttempts)
-      if (result) setResultMessage(`🔢 ${result.reward} CFC kazandınız!`)
-    } else if (num < guessTarget) {
-      setGuessHint(`⬆️ Daha yüksek! (${newAttempts}. deneme)`)
+      const result = await recordPlay('sayi-tahmin', guessAttempts + 1)
+      if (result) setResultMessage(`🎯 ${guessAttempts + 1} denemede buldunuz! +${result.reward} CFC`)
     } else {
-      setGuessHint(`⬇️ Daha düşük! (${newAttempts}. deneme)`)
+      setGuessHint(num < guessTarget ? 'Daha büyük bir sayı dene ⬆️' : 'Daha küçük bir sayı dene ⬇️')
     }
     setGuessNumber('')
   }
 
-  // ========== REFERRAL COPY ==========
-  const copyReferral = () => {
-    const code = profile?.userReferralCode || ''
-    const link = `${window.location.origin}/kayit-ol?ref=${code}`
-    navigator.clipboard.writeText(link)
-    setCopiedRef(true)
-    setTimeout(() => setCopiedRef(false), 2000)
-  }
-
-  // ========== LAMBA CİNİ GAME ==========
-  const GENIE_MESSAGES = [
-    'Hoş geldin yolcu! Kaderini görmek ister misin? 🌟',
-    'Bir sandık seç ve kaderini öğren! ✨',
-    'Cesur ol! Bir hazine seni bekliyor... 💎',
-    'Ben Cin-i Lamba! Sana bir sürprizim var! 🧞',
-    'Üç sandıktan biri senin şansını değiştirecek! 🎁',
-  ]
-
-  const fetchLambaStatus = useCallback(async () => {
+  const initLambaCini = async () => {
     if (!session?.user) return
     try {
       const res = await fetch('/api/games/lamba-cini')
       if (res.ok) {
         const data = await res.json()
-        setLambaPlaysRemaining(data.playsRemaining)
-        setLambaPlaysUsed(data.playsUsed)
-        setLambaDailyLimit(data.dailyLimit)
+        setLambaPlaysRemaining(data.playsRemaining ?? 3)
+        setLambaPlaysUsed(data.playsUsed ?? 0)
+        setLambaDailyLimit(data.dailyLimit ?? 3)
       }
     } catch {}
-  }, [session?.user])
-
-  const initLambaCini = () => {
     setLambaPhase('idle')
     setLambaReward(null)
     setLambaChestPicked(null)
     setLambaGenieMsg('')
-    setResultMessage(null)
-    fetchLambaStatus()
   }
 
   const rubLamp = () => {
-    if (lambaPhase !== 'idle' || !session?.user || lambaPlaysRemaining <= 0) return
+    if (lambaPhase !== 'idle' || lambaPlaysRemaining <= 0 || !session?.user) return
     setLambaPhase('rubbing')
+    setLambaReward(null)
+    setLambaChestPicked(null)
     setLambaGenieMsg('')
     setTimeout(() => {
       setLambaPhase('smoke')
       setTimeout(() => {
         setLambaPhase('genie')
         setLambaGenieMsg(GENIE_MESSAGES[Math.floor(Math.random() * GENIE_MESSAGES.length)])
-        setTimeout(() => {
-          setLambaPhase('chests')
-        }, 2000)
+        setTimeout(() => setLambaPhase('chests'), 2000)
       }, 1500)
     }, 1200)
   }
@@ -628,540 +1027,213 @@ export default function GameCenterPage() {
         setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance, totalGames: prev.totalGames + 1, totalJetons: prev.totalJetons + (data.reward?.amount || 0) } : prev)
         setTimeout(() => {
           setLambaPhase('reveal')
-          if (data.reward.type === 'empty' || (data.reward.type === 'cfc' && data.reward.amount === 0)) {
-            setLambaGenieMsg('Bu sefer şansın yaver gitmedi... Tekrar dene! 😔')
-          } else if (data.reward.type === 'free_fortune') {
-            setLambaGenieMsg('✨ Tebrikler! Ücretsiz bir fal hakkı kazandın! 🔮')
-            setResultMessage('🔮 Ücretsiz Fal kazandınız! (+5 CFC)')
-          } else {
-            setLambaGenieMsg(`🎉 Tebrikler! ${data.reward.amount} CFC kazandın!`)
-            setResultMessage(`🎉 ${data.reward.label} kazandınız!`)
-          }
           if (data.reward.amount > 0) {
             setRewardAnimation(data.reward.amount)
             setTimeout(() => setRewardAnimation(null), 2500)
           }
         }, 800)
       } else {
-        setResultMessage(data.error || 'Bir hata oluştu')
         setLambaPhase('idle')
       }
     } catch {
-      setResultMessage('Bağlantı hatası')
       setLambaPhase('idle')
     } finally {
       setLambaLoading(false)
     }
   }
 
-  // ========== LEVEL PROGRESS ==========
-  const getLevelProgress = () => {
-    if (!profile) return 0
-    const thresholds = [0, 100, 500, 2000, 5000]
-    const current = profile.totalJetons
-    const lvl = profile.level - 1
-    const next = thresholds[lvl + 1] || thresholds[lvl] + 1000
-    const prev = thresholds[lvl] || 0
-    return Math.min(100, ((current - prev) / (next - prev)) * 100)
+  const claimDailyReward = async () => {
+    try {
+      const res = await fetch('/api/games/daily-reward', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setDailyReward({ claimed: true, currentStreak: data.streak, nextReward: 0, todayReward: data.reward })
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
+        setRewardAnimation(data.reward)
+        setTimeout(() => setRewardAnimation(null), 2500)
+      }
+    } catch {}
   }
 
-  // ========== RENDER GAME CONTENT ==========
-  const renderGameContent = (slug: string) => {
+  const claimQuest = async (questType: string) => {
+    try {
+      const res = await fetch('/api/games/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questType }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setProfile(prev => prev ? { ...prev, cfcBalance: data.newBalance } : prev)
+        setRewardAnimation(data.reward)
+        setTimeout(() => setRewardAnimation(null), 2500)
+        const qRes = await fetch('/api/games/quests')
+        if (qRes.ok) setQuests(await qRes.json())
+      }
+    } catch {}
+  }
+
+  const copyReferral = () => {
+    if (profile?.userReferralCode && typeof window !== 'undefined') {
+      navigator.clipboard.writeText(`${window.location.origin}/kayit-ol?ref=${profile.userReferralCode}`)
+      setCopiedRef(true)
+      setTimeout(() => setCopiedRef(false), 2000)
+    }
+  }
+
+  // ===== RENDER MINI GAME CONTENT =====
+  const renderMiniGame = (slug: string) => {
+    // Simplified mini game renders - keeps existing game logic
     switch (slug) {
       case 'fal-carki':
         return (
           <div className="flex flex-col items-center gap-4">
-            {/* Wheel */}
-            <div className="relative w-64 h-64 sm:w-72 sm:h-72">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-3xl">▼</div>
-              <div
-                className="w-full h-full rounded-full border-4 border-yellow-400 shadow-lg shadow-yellow-500/30"
-                style={{
-                  background: 'conic-gradient(from 0deg, #9333ea, #f59e0b, #ec4899, #6366f1, #10b981, #ef4444, #8b5cf6, #f59e0b)',
-                  transform: `rotate(${spinDegree}deg)`,
-                  transition: isSpinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
-                }}
-              >
-                {[0, 1, 2, 3, 4, 5, 0, 3].map((val, i) => (
-                  <div
-                    key={i}
-                    className="absolute text-white font-bold text-sm sm:text-base"
-                    style={{
-                      top: '50%', left: '50%',
-                      transform: `rotate(${i * 45 + 22.5}deg) translateY(-${90}px)`,
-                      transformOrigin: '0 0',
-                    }}
-                  >
-                    {val}💰
-                  </div>
-                ))}
-              </div>
+            <div className="relative w-48 h-48">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10 text-2xl">▼</div>
+              <div className="w-full h-full rounded-full border-4 border-yellow-400 shadow-lg shadow-yellow-500/30"
+                style={{ background: 'conic-gradient(from 0deg, #9333ea, #f59e0b, #ec4899, #6366f1, #10b981, #ef4444, #8b5cf6, #f59e0b)', transform: `rotate(${spinDegree}deg)`, transition: isSpinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none' }} />
             </div>
-            <button
-              onClick={playFalCarki}
-              disabled={isSpinning || !session?.user}
-              className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold rounded-full hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/30"
-            >
+            <button onClick={playFalCarki} disabled={isSpinning || !session?.user} className="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold rounded-full hover:scale-105 transition disabled:opacity-50 text-sm">
               {isSpinning ? '🎡 Dönüyor...' : '🎡 Çarkı Çevir'}
             </button>
           </div>
         )
-
       case 'tarot-sec':
         return (
-          <div className="flex flex-col items-center gap-4">
-            <p className="text-fuchsia-300 text-sm">Bir kart seçin ve ödülünüzü görün!</p>
-            <div className="flex gap-3 flex-wrap justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex gap-2 flex-wrap justify-center">
               {tarotCards.map((_, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={!tarotRevealed ? { scale: 1.1, y: -10 } : {}}
-                  className={`w-16 h-24 sm:w-20 sm:h-28 rounded-xl cursor-pointer border-2 flex items-center justify-center text-2xl transition-all duration-500 ${
-                    selectedTarot === i
-                      ? 'bg-gradient-to-b from-yellow-400 to-amber-600 border-yellow-300 rotate-0'
-                      : tarotRevealed
-                        ? 'bg-gray-700 border-gray-600 opacity-50'
-                        : 'bg-gradient-to-b from-purple-800 to-indigo-900 border-fuchsia-500/50 hover:border-fuchsia-400'
-                  }`}
+                <motion.div key={i} whileHover={!tarotRevealed ? { scale: 1.1, y: -5 } : {}}
+                  className={`w-14 h-20 rounded-xl cursor-pointer border-2 flex items-center justify-center text-xl transition-all ${selectedTarot === i ? 'bg-gradient-to-b from-yellow-400 to-amber-600 border-yellow-300' : tarotRevealed ? 'bg-gray-700 border-gray-600 opacity-50' : 'bg-gradient-to-b from-purple-800 to-indigo-900 border-fuchsia-500/50 hover:border-fuchsia-400'}`}
                   onClick={() => playTarot(i)}
-                >
-                  {selectedTarot === i ? '🌟' : tarotRevealed ? '🃏' : '🔮'}
-                </motion.div>
+                >{selectedTarot === i ? '🌟' : tarotRevealed ? '🃏' : '🔮'}</motion.div>
               ))}
             </div>
-            {tarotRevealed && (
-              <button onClick={resetTarot} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full hover:bg-fuchsia-600 transition">
-                <RotateCcw className="w-4 h-4" /> Tekrar Oyna
-              </button>
-            )}
+            {tarotRevealed && <button onClick={resetTarot} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full text-xs"><RotateCcw className="w-3 h-3" /> Tekrar</button>}
           </div>
         )
-
       case 'memory':
         return (
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-4 text-sm text-fuchsia-300">
-              <span>Hamle: {memoryMoves}</span>
-              <span>Eşleşen: {memoryCards.filter(c => c.matched).length / 2}/{MEMORY_SYMBOLS.slice(0, 6).length}</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            <div className="text-xs text-fuchsia-300">Hamle: {memoryMoves} | Eşleşen: {memoryCards.filter(c => c.matched).length / 2}/6</div>
+            <div className="grid grid-cols-4 gap-2">
               {memoryCards.map((card, i) => (
-                <motion.div
-                  key={card.id}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-xl sm:text-2xl cursor-pointer border-2 transition-all duration-300 ${
-                    card.matched
-                      ? 'bg-green-800/50 border-green-500/50'
-                      : card.flipped
-                        ? 'bg-fuchsia-800/50 border-fuchsia-400'
-                        : 'bg-purple-900/50 border-fuchsia-500/30 hover:border-fuchsia-400'
-                  }`}
+                <div key={card.id} className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg cursor-pointer border-2 transition-all ${card.matched ? 'bg-green-800/50 border-green-500/50' : card.flipped ? 'bg-fuchsia-800/50 border-fuchsia-400' : 'bg-purple-900/50 border-fuchsia-500/30'}`}
                   onClick={() => flipMemoryCard(i)}
-                >
-                  {(card.flipped || card.matched) ? card.symbol : '❓'}
-                </motion.div>
+                >{(card.flipped || card.matched) ? card.symbol : '❓'}</div>
               ))}
             </div>
-            {memoryComplete && (
-              <button onClick={initMemory} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full hover:bg-fuchsia-600 transition">
-                <RotateCcw className="w-4 h-4" /> Tekrar Oyna
-              </button>
-            )}
+            {memoryComplete && <button onClick={initMemory} className="px-4 py-2 bg-fuchsia-700 text-white rounded-full text-xs"><RotateCcw className="w-3 h-3 inline mr-1" />Tekrar</button>}
           </div>
         )
-
       case 'quiz':
         return (
-          <div className="flex flex-col items-center gap-4 w-full">
+          <div className="flex flex-col items-center gap-3 w-full">
             {!quizFinished ? (
               <>
-                <div className="flex items-center gap-2 text-sm text-fuchsia-300">
-                  <span>Soru {quizIndex + 1}/5</span>
-                  <span>•</span>
-                  <span>Doğru: {quizScore}</span>
-                </div>
-                <p className="text-white font-medium text-center text-sm sm:text-base">{QUIZ_QUESTIONS[quizIndex].q}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+                <div className="text-xs text-fuchsia-300">Soru {quizIndex + 1}/5 • Doğru: {quizScore}</div>
+                <p className="text-white text-sm text-center">{QUIZ_QUESTIONS[quizIndex].q}</p>
+                <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
                   {QUIZ_QUESTIONS[quizIndex].options.map((opt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => answerQuiz(i)}
-                      disabled={quizSelected !== null}
-                      className={`px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
-                        quizSelected === null
-                          ? 'bg-purple-900/50 border-fuchsia-500/30 text-white hover:border-fuchsia-400 hover:bg-purple-800/50'
-                          : i === QUIZ_QUESTIONS[quizIndex].answer
-                            ? 'bg-green-700/50 border-green-400 text-green-200'
-                            : quizSelected === i
-                              ? 'bg-red-700/50 border-red-400 text-red-200'
-                              : 'bg-purple-900/30 border-fuchsia-500/20 text-fuchsia-400/50'
-                      }`}
-                    >
-                      {opt}
-                    </button>
+                    <button key={i} onClick={() => answerQuiz(i)} disabled={quizSelected !== null}
+                      className={`px-3 py-2 rounded-lg text-xs border transition ${quizSelected === null ? 'bg-purple-900/50 border-fuchsia-500/30 text-white' : i === QUIZ_QUESTIONS[quizIndex].answer ? 'bg-green-700/50 border-green-400 text-green-200' : quizSelected === i ? 'bg-red-700/50 border-red-400 text-red-200' : 'bg-purple-900/30 border-fuchsia-500/20 text-fuchsia-400/50'}`}
+                    >{opt}</button>
                   ))}
                 </div>
               </>
             ) : (
               <div className="text-center">
-                <p className="text-2xl mb-2">⭐</p>
-                <p className="text-white font-bold text-lg">Quiz Tamamlandı!</p>
-                <p className="text-fuchsia-300">{quizScore}/5 Doğru</p>
-                <button onClick={initQuiz} className="mt-3 flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full hover:bg-fuchsia-600 transition mx-auto">
-                  <RotateCcw className="w-4 h-4" /> Tekrar Oyna
-                </button>
+                <p className="text-amber-300 font-bold">🎓 {quizScore}/5 Doğru!</p>
+                <button onClick={initQuiz} className="mt-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full text-xs">Tekrar</button>
               </div>
             )}
           </div>
         )
-
       case 'sans-kutusu':
         return (
           <div className="flex flex-col items-center gap-4">
-            <motion.div
-              animate={luckyBoxOpening ? { scale: [1, 1.2, 0.9, 1.1, 1], rotate: [0, -10, 10, -5, 0] } : luckyBoxOpened ? { scale: 1.1 } : {}}
-              transition={{ duration: 1.5 }}
-              className={`w-32 h-32 sm:w-40 sm:h-40 rounded-2xl flex items-center justify-center text-6xl sm:text-7xl cursor-pointer border-4 ${
-                luckyBoxOpened
-                  ? 'bg-gradient-to-b from-yellow-500/20 to-amber-600/20 border-yellow-400'
-                  : 'bg-gradient-to-b from-purple-900 to-indigo-900 border-fuchsia-500/50 hover:border-fuchsia-400'
-              }`}
-              onClick={playLuckyBox}
-            >
-              {luckyBoxOpened ? '🌟' : luckyBoxOpening ? '✨' : '🎁'}
+            <motion.div animate={luckyBoxOpening ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1] } : {}} className="text-6xl cursor-pointer" onClick={playLuckyBox}>
+              {luckyBoxOpened ? '🎉' : '🎁'}
             </motion.div>
-            {!luckyBoxOpened && !luckyBoxOpening && (
-              <button
-                onClick={playLuckyBox}
-                disabled={!session?.user}
-                className="px-6 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold rounded-full hover:scale-105 transition disabled:opacity-50"
-              >
-                Kutuyu Aç!
-              </button>
-            )}
-            {luckyBoxOpened && (
-              <button onClick={resetLuckyBox} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full hover:bg-fuchsia-600 transition">
-                <RotateCcw className="w-4 h-4" /> Tekrar Oyna
-              </button>
-            )}
+            {!luckyBoxOpened && <button onClick={playLuckyBox} disabled={luckyBoxOpening || !session?.user} className="px-6 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold rounded-full text-sm disabled:opacity-50">{luckyBoxOpening ? 'Açılıyor...' : '🎁 Kutuyu Aç'}</button>}
+            {luckyBoxOpened && <button onClick={resetLuckyBox} className="px-4 py-2 bg-fuchsia-700 text-white rounded-full text-xs"><RotateCcw className="w-3 h-3 inline mr-1" />Tekrar</button>}
           </div>
         )
-
-      case 'sayi-tahmin':
+      case 'sayi-tahmin-mini':
         return (
-          <div className="flex flex-col items-center gap-4 w-full max-w-xs">
-            <p className="text-fuchsia-300 text-sm text-center">{guessHint}</p>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-fuchsia-300 text-xs">1-100 arası sayıyı tahmin et!</p>
             {!guessWon && (
-              <div className="flex gap-2 w-full">
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={guessNumber}
-                  onChange={e => setGuessNumber(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && submitGuess()}
-                  placeholder="1-100"
-                  className="flex-1 px-4 py-2 bg-purple-900/50 border border-fuchsia-500/30 rounded-xl text-white text-center focus:outline-none focus:border-fuchsia-400"
-                />
-                <button
-                  onClick={submitGuess}
-                  disabled={!session?.user}
-                  className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold rounded-xl hover:scale-105 transition disabled:opacity-50"
-                >
-                  Tahmin!
-                </button>
+              <div className="flex gap-2">
+                <input type="number" value={guessNumber} onChange={(e) => setGuessNumber(e.target.value)} min="1" max="100" className="w-20 px-3 py-2 bg-purple-900/50 border border-fuchsia-500/30 rounded-lg text-white text-center text-sm" placeholder="?" />
+                <button onClick={guessSubmit} className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm font-medium">Tahmin</button>
               </div>
             )}
-            {guessWon && (
-              <button onClick={initGuess} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-700 text-white rounded-full hover:bg-fuchsia-600 transition">
-                <RotateCcw className="w-4 h-4" /> Tekrar Oyna
-              </button>
-            )}
-            <p className="text-xs text-fuchsia-400/60">Deneme: {guessAttempts}</p>
+            {guessHint && <p className="text-amber-300 text-xs">{guessHint}</p>}
+            {guessWon && <button onClick={initGuess} className="px-4 py-2 bg-fuchsia-700 text-white rounded-full text-xs">Tekrar</button>}
+            <p className="text-fuchsia-300/40 text-[10px]">Deneme: {guessAttempts}</p>
           </div>
         )
-
       case 'lamba-cini':
         return (
-          <div className="flex flex-col items-center gap-3 relative overflow-hidden">
-            {/* CSS Animations */}
-            <style jsx>{`
-              @keyframes lampGlow {
-                0%, 100% { filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 20px #f59e0b); }
-                50% { filter: drop-shadow(0 0 20px #fbbf24) drop-shadow(0 0 40px #f59e0b) drop-shadow(0 0 60px #d97706); }
-              }
-              @keyframes lampRub {
-                0%, 100% { transform: rotate(0deg) scale(1); }
-                10% { transform: rotate(-8deg) scale(1.05); }
-                20% { transform: rotate(8deg) scale(1.05); }
-                30% { transform: rotate(-6deg) scale(1.03); }
-                40% { transform: rotate(6deg) scale(1.03); }
-                50% { transform: rotate(-4deg) scale(1.02); }
-                60% { transform: rotate(4deg) scale(1.02); }
-                70% { transform: rotate(-2deg) scale(1.01); }
-                80% { transform: rotate(2deg) scale(1.01); }
-                90% { transform: rotate(0deg) scale(1); }
-              }
-              @keyframes smokeRise {
-                0% { opacity: 0; transform: translateY(20px) scale(0.3); }
-                30% { opacity: 0.8; }
-                70% { opacity: 0.6; transform: translateY(-60px) scale(1.5); }
-                100% { opacity: 0; transform: translateY(-120px) scale(2); }
-              }
-              @keyframes genieAppear {
-                0% { opacity: 0; transform: translateY(40px) scale(0.2); }
-                50% { opacity: 1; transform: translateY(-10px) scale(1.1); }
-                70% { transform: translateY(5px) scale(0.95); }
-                100% { opacity: 1; transform: translateY(0) scale(1); }
-              }
-              @keyframes chestBounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-8px); }
-              }
-              @keyframes chestOpen {
-                0% { transform: scale(1) rotate(0deg); }
-                30% { transform: scale(1.2) rotate(-5deg); }
-                60% { transform: scale(1.3) rotate(5deg); }
-                100% { transform: scale(1.15) rotate(0deg); }
-              }
-              @keyframes sparkle {
-                0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-                50% { opacity: 1; transform: scale(1) rotate(180deg); }
-              }
-              @keyframes bubbleIn {
-                0% { opacity: 0; transform: scale(0.5) translateY(10px); }
-                100% { opacity: 1; transform: scale(1) translateY(0); }
-              }
-              @keyframes floatParticle {
-                0% { opacity: 1; transform: translateY(0) translateX(0); }
-                100% { opacity: 0; transform: translateY(-80px) translateX(var(--tx, 20px)); }
-              }
-              .lamp-glow { animation: lampGlow 2s ease-in-out infinite; }
-              .lamp-rub { animation: lampRub 1.2s ease-in-out; }
-              .smoke-particle { animation: smokeRise 1.5s ease-out forwards; }
-              .genie-appear { animation: genieAppear 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-              .chest-bounce { animation: chestBounce 1.5s ease-in-out infinite; }
-              .chest-open { animation: chestOpen 0.6s ease-out forwards; }
-              .sparkle-anim { animation: sparkle 0.8s ease-in-out; }
-              .bubble-in { animation: bubbleIn 0.5s ease-out; }
-            `}</style>
-
-            {/* Daily plays indicator */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-fuchsia-300/70">Günlük Hak:</span>
-              <div className="flex gap-1">
-                {Array.from({ length: lambaDailyLimit }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] ${
-                      i < lambaPlaysUsed
-                        ? 'bg-amber-500/30 border-amber-400/50 text-amber-300'
-                        : 'bg-purple-900/50 border-fuchsia-500/30 text-fuchsia-400/50'
-                    }`}
-                  >
-                    {i < lambaPlaysUsed ? '✓' : '○'}
-                  </div>
-                ))}
-              </div>
-              <span className="text-amber-400/80 font-medium">{lambaPlaysRemaining} kaldı</span>
-            </div>
-
-            {/* PHASE: IDLE - Golden Lamp */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-xs text-fuchsia-300/70">Günlük: {lambaPlaysRemaining}/{lambaDailyLimit}</div>
             {(lambaPhase === 'idle' || lambaPhase === 'rubbing') && (
-              <div className="flex flex-col items-center gap-4">
-                <div
-                  className={`text-7xl sm:text-8xl cursor-pointer select-none transition-all ${
-                    lambaPhase === 'rubbing' ? 'lamp-rub' : 'lamp-glow hover:scale-110'
-                  } ${lambaPlaysRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  onClick={rubLamp}
-                  role="button"
-                  aria-label="Lambayı ov"
-                >
-                  🪔
-                </div>
-                <p className="text-fuchsia-300/80 text-sm text-center">
-                  {lambaPlaysRemaining > 0
-                    ? 'Lambayı ovarak cin\'i çağır!'
-                    : 'Bugünkü hakların doldu, yarın tekrar gel!'}
-                </p>
-                {lambaPlaysRemaining > 0 && (
-                  <button
-                    onClick={rubLamp}
-                    disabled={lambaPhase === 'rubbing' || !session?.user}
-                    className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full hover:scale-105 transition disabled:opacity-50 shadow-lg shadow-amber-500/30 text-sm"
-                  >
-                    {lambaPhase === 'rubbing' ? '✨ Ovuluyor...' : '🪔 Lambayı Ov'}
-                  </button>
-                )}
+              <div className="flex flex-col items-center gap-3">
+                <div className={`text-6xl cursor-pointer ${lambaPlaysRemaining <= 0 ? 'opacity-40' : 'hover:scale-110'} transition`} onClick={rubLamp}>🪔</div>
+                {lambaPlaysRemaining > 0 && <button onClick={rubLamp} disabled={lambaPhase === 'rubbing' || !session?.user} className="px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full text-sm disabled:opacity-50">{lambaPhase === 'rubbing' ? '✨ Ovuluyor...' : '🪔 Lambayı Ov'}</button>}
               </div>
             )}
-
-            {/* PHASE: SMOKE */}
-            {lambaPhase === 'smoke' && (
-              <div className="relative flex flex-col items-center gap-2 h-48">
-                <div className="text-6xl">🪔</div>
-                {/* Smoke particles */}
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute smoke-particle"
-                    style={{
-                      left: `${40 + Math.random() * 20}%`,
-                      bottom: '60px',
-                      animationDelay: `${i * 0.15}s`,
-                      fontSize: `${20 + Math.random() * 15}px`,
-                      opacity: 0,
-                    }}
-                  >
-                    {['💨', '💜', '✨', '🌀'][i % 4]}
-                  </div>
-                ))}
-                <p className="text-fuchsia-300 text-sm mt-auto animate-pulse">Cin ortaya çıkıyor...</p>
-              </div>
-            )}
-
-            {/* PHASE: GENIE APPEARS */}
+            {lambaPhase === 'smoke' && <div className="text-5xl animate-bounce">🪔💨</div>}
             {(lambaPhase === 'genie' || lambaPhase === 'chests') && (
               <div className="flex flex-col items-center gap-3">
-                {/* Genie Character */}
-                <div className="genie-appear relative">
-                  <div className="text-7xl sm:text-8xl">🧞</div>
-                  {/* Sparkle effects around genie */}
-                  {lambaPhase === 'genie' && [...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute text-lg sparkle-anim"
-                      style={{
-                        top: `${10 + Math.random() * 60}%`,
-                        left: `${-20 + Math.random() * 140}%`,
-                        animationDelay: `${i * 0.3}s`,
-                      }}
-                    >
-                      ✨
-                    </div>
-                  ))}
-                </div>
-
-                {/* Speech Bubble */}
-                {lambaGenieMsg && (
-                  <div className="bubble-in relative bg-gradient-to-br from-indigo-900/90 to-purple-900/90 border border-fuchsia-400/40 rounded-2xl px-4 py-3 max-w-xs text-center shadow-lg shadow-purple-500/20">
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-900/90 border-l border-t border-fuchsia-400/40 transform rotate-45" />
-                    <p className="text-fuchsia-100 text-sm font-medium relative z-10">{lambaGenieMsg}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PHASE: TREASURE CHESTS */}
-            {lambaPhase === 'chests' && (
-              <div className="flex flex-col items-center gap-3 mt-2">
-                <p className="text-amber-300 text-sm font-medium animate-pulse">Bir sandık seç!</p>
-                <div className="flex gap-4 sm:gap-6">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.15, y: -5 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`chest-bounce cursor-pointer flex flex-col items-center gap-1 ${
-                        lambaChestPicked !== null && lambaChestPicked !== i ? 'opacity-30' : ''
-                      }`}
-                      style={{ animationDelay: `${i * 0.3}s` }}
-                      onClick={() => pickChest(i)}
-                    >
-                      <div className={`text-5xl sm:text-6xl transition-all ${
-                        lambaChestPicked === i ? 'chest-open' : ''
-                      }`}>
-                        {lambaChestPicked === i ? '✨' : '🎁'}
-                      </div>
-                      <span className="text-fuchsia-300/60 text-xs">Sandık {i + 1}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* PHASE: REVEAL */}
-            {lambaPhase === 'reveal' && lambaReward && (
-              <div className="flex flex-col items-center gap-3">
-                {/* Genie with result */}
                 <div className="text-6xl">🧞</div>
-                {lambaGenieMsg && (
-                  <div className="bubble-in bg-gradient-to-br from-indigo-900/90 to-purple-900/90 border border-fuchsia-400/40 rounded-2xl px-4 py-3 max-w-xs text-center relative shadow-lg shadow-purple-500/20">
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-900/90 border-l border-t border-fuchsia-400/40 transform rotate-45" />
-                    <p className="text-fuchsia-100 text-sm font-medium relative z-10">{lambaGenieMsg}</p>
+                {lambaGenieMsg && <p className="text-fuchsia-200 text-xs text-center bg-purple-900/50 px-3 py-2 rounded-xl">{lambaGenieMsg}</p>}
+                {lambaPhase === 'chests' && (
+                  <div className="flex gap-3">
+                    {[0, 1, 2].map(i => (
+                      <button key={i} onClick={() => pickChest(i)} disabled={lambaChestPicked !== null}
+                        className={`text-4xl transition hover:scale-110 ${lambaChestPicked === i ? 'scale-125' : ''} ${lambaChestPicked !== null && lambaChestPicked !== i ? 'opacity-30' : ''}`}
+                      >🎁</button>
+                    ))}
                   </div>
                 )}
-
-                {/* Reward Display */}
-                <motion.div
-                  initial={{ scale: 0, rotate: -10 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                  className={`px-6 py-4 rounded-2xl border-2 text-center ${
-                    lambaReward.type === 'empty' || (lambaReward.type === 'cfc' && lambaReward.amount === 0)
-                      ? 'bg-gray-800/50 border-gray-500/40'
-                      : lambaReward.type === 'free_fortune'
-                        ? 'bg-gradient-to-br from-purple-800/60 to-indigo-800/60 border-purple-400/50'
-                        : 'bg-gradient-to-br from-amber-900/50 to-yellow-900/50 border-amber-400/50'
-                  }`}
-                >
-                  <div className="text-4xl mb-1">{lambaReward.emoji}</div>
-                  <p className={`font-bold text-lg ${
-                    lambaReward.type === 'empty' || (lambaReward.type === 'cfc' && lambaReward.amount === 0)
-                      ? 'text-gray-300'
-                      : 'text-amber-300'
-                  }`}>
-                    {lambaReward.label}
-                  </p>
-                  {lambaReward.type === 'cfc' && lambaReward.amount > 0 && (
-                    <p className="text-yellow-400 text-sm">+{lambaReward.amount} CFC</p>
-                  )}
-                  {lambaReward.type === 'free_fortune' && (
-                    <p className="text-purple-300 text-sm">+5 CFC (Fal Hakkı)</p>
-                  )}
-                </motion.div>
-
-                {/* Play Again */}
-                {lambaPlaysRemaining > 0 ? (
-                  <button
-                    onClick={initLambaCini}
-                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full hover:scale-105 transition shadow-lg shadow-amber-500/30 text-sm"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Tekrar Oyna ({lambaPlaysRemaining} hak)
-                  </button>
-                ) : (
-                  <p className="text-fuchsia-300/60 text-sm">Bugünkü hakların doldu! Yarın tekrar gel 🌙</p>
-                )}
+              </div>
+            )}
+            {lambaPhase === 'reveal' && lambaReward && (
+              <div className="text-center">
+                <div className="text-3xl mb-1">{lambaReward.emoji}</div>
+                <p className="text-amber-300 font-bold text-sm">{lambaReward.label}</p>
+                {lambaReward.amount > 0 && <p className="text-yellow-400 text-xs">+{lambaReward.amount} CFC</p>}
+                {lambaPlaysRemaining > 0 && <button onClick={initLambaCini} className="mt-2 px-4 py-2 bg-amber-600 text-white rounded-full text-xs">Tekrar ({lambaPlaysRemaining})</button>}
               </div>
             )}
           </div>
         )
-
       default:
-        return <p className="text-fuchsia-300">Oyun yükleniyor...</p>
+        return <p className="text-fuchsia-300 text-sm">Oyun yükleniyor...</p>
     }
   }
 
-  // ========== MAIN RENDER ==========
+  // ===== LOADING =====
   if (loading) {
     return (
-      <div className="min-h-screen  flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500 mx-auto" />
+          <p className="text-fuchsia-300/60 text-sm mt-3">Oyun lobisi yükleniyor...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen  text-white">
+    <div className="min-h-screen text-white">
       {/* Reward Animation */}
       <AnimatePresence>
         {rewardAnimation !== null && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.5 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-2xl shadow-2xl shadow-amber-500/50"
-          >
+          <motion.div initial={{ opacity: 0, y: 50, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-2xl shadow-2xl shadow-amber-500/50">
             <span className="text-xl font-bold">+{rewardAnimation} 💰</span>
           </motion.div>
         )}
@@ -1171,33 +1243,26 @@ export default function GameCenterPage() {
       <nav className="sticky top-0 z-40 bg-purple-950/90 backdrop-blur-md border-b border-fuchsia-500/30 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href={`/`} className="text-fuchsia-400 hover:text-fuchsia-300 transition">
+            <Link href="/" className="text-fuchsia-400 hover:text-fuchsia-300 transition">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-2">
               <Gamepad2 className="w-5 h-5 text-fuchsia-400" />
               <span className="font-bold text-sm sm:text-base bg-gradient-to-r from-fuchsia-400 to-amber-400 bg-clip-text text-transparent">
-                Fal Oyun Merkezi
+                Oyun Lobisi
               </span>
             </div>
           </div>
-          {/* Balance */}
           <div className="flex items-center gap-2">
             {profile && (
-              <>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
-                  <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
-                  <span className="text-fuchsia-400/60 text-xs">CFC</span>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 rounded-full border border-purple-500/30">
-                  <Crown className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-300 font-bold text-xs">Lv.{profile.level}</span>
-                </div>
-              </>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
+                <Coins className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
+                <span className="text-fuchsia-400/60 text-xs">CFC</span>
+              </div>
             )}
             {!session?.user && (
-              <Link href={`/giris`} className="px-4 py-1.5 bg-fuchsia-600 rounded-full text-sm font-medium hover:bg-fuchsia-500 transition">
+              <Link href={`/${lang}/giris`} className="px-4 py-1.5 bg-fuchsia-600 rounded-full text-sm font-medium hover:bg-fuchsia-500 transition">
                 Giriş Yap
               </Link>
             )}
@@ -1205,43 +1270,40 @@ export default function GameCenterPage() {
         </div>
       </nav>
 
+      {/* Live Stats Bar */}
+      <LiveStatsBar stats={lobbyStats} />
+
       {/* Daily Reward Banner */}
       {session?.user && dailyReward && !dailyReward.claimed && (
-        <div className="px-4 pt-4">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-5xl mx-auto bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-amber-400" />
+        <div className="px-4 pt-3">
+          <div className="max-w-5xl mx-auto bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border border-amber-500/40 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-amber-400" />
               <div>
-                <p className="text-amber-300 font-bold text-sm">Günlük Giriş Ödülü</p>
-                <p className="text-amber-200/60 text-xs">Seri: {dailyReward.currentStreak} gün • Ödül: {dailyReward.nextReward} CFC</p>
+                <p className="text-amber-300 font-bold text-xs">Günlük Ödül</p>
+                <p className="text-amber-200/60 text-[10px]">Seri: {dailyReward.currentStreak} gün • {dailyReward.nextReward} CFC</p>
               </div>
             </div>
-            <button
-              onClick={claimDailyReward}
-              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-full text-sm hover:scale-105 transition shadow-lg shadow-amber-500/30"
-            >
+            <button onClick={claimDailyReward} className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-full text-xs hover:scale-105 transition">
               Topla!
             </button>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="px-4 pt-4">
-        <div className="max-w-5xl mx-auto flex gap-2 overflow-x-auto pb-2">
+      <div className="px-4 pt-3">
+        <div className="max-w-5xl mx-auto flex gap-1.5 overflow-x-auto pb-2">
           {[
-            { key: 'games' as const, label: '🎮 Oyunlar', icon: Gamepad2 },
+            { key: 'lobby' as const, label: '🎮 Lobi', icon: Gamepad2 },
+            { key: 'mini' as const, label: '🎰 Mini Oyunlar', icon: Star },
             { key: 'quests' as const, label: '🎯 Görevler', icon: Target },
-            { key: 'leaderboard' as const, label: '🏆 Liderlik', icon: Trophy },
+            { key: 'leaderboard' as const, label: '🏆 Sıralama', icon: Trophy },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === tab.key
                   ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/30'
                   : 'bg-purple-900/30 text-fuchsia-300/70 hover:bg-purple-900/50'
@@ -1254,43 +1316,86 @@ export default function GameCenterPage() {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-3">
         <div className="max-w-5xl mx-auto">
-          {/* ===== GAMES TAB ===== */}
-          {activeTab === 'games' && (
+
+          {/* ===== LOBBY TAB ===== */}
+          {activeTab === 'lobby' && (
+            <div className="space-y-5">
+              {/* Hero Quick Start */}
+              <HeroQuickStart
+                onQuickMatch={handleQuickMatch}
+                onWatchLive={handleWatchLive}
+                onFindTable={handleFindTable}
+                loading={matchLoading}
+                selectedGame={selectedGame}
+                setSelectedGame={setSelectedGame}
+              />
+
+              {/* Top Games Grid */}
+              <TopGamesGrid stats={topGames} lang={lang} />
+
+              {/* Live Tables */}
+              <div ref={liveSectionRef}>
+                <LiveTablesList
+                  tables={liveTables}
+                  lang={lang}
+                  userId={session?.user?.id}
+                  onJoinTable={handleJoinTable}
+                  filter={tableFilter}
+                  setFilter={setTableFilter}
+                />
+              </div>
+
+              {/* Bottom: Recent Winners + Activity Feed */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <RecentWinnersSection winners={recentWinners} />
+                <ActivityFeed tables={liveTables} winners={recentWinners} />
+              </div>
+
+              {/* Referral */}
+              {session?.user && profile?.userReferralCode && (
+                <div className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Share2 className="w-4 h-4 text-fuchsia-400" />
+                    <p className="text-white font-bold text-xs">Davet Et & Kazan</p>
+                    <span className="text-fuchsia-300/60 text-[10px]">50 CFC</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 px-2 py-1.5 bg-purple-900/40 rounded-lg text-[10px] text-fuchsia-300 truncate border border-fuchsia-500/20">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/kayit-ol?ref=${profile.userReferralCode}` : ''}
+                    </div>
+                    <button onClick={copyReferral} className={`px-2.5 py-1.5 rounded-lg text-xs transition ${copiedRef ? 'bg-green-600 text-white' : 'bg-fuchsia-600 text-white'}`}>
+                      {copiedRef ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== MINI GAMES TAB ===== */}
+          {activeTab === 'mini' && (
             <div className="space-y-4">
-              {/* Active Game Modal */}
+              {/* Active game modal */}
               <AnimatePresence>
                 {activeGame && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-                    onClick={(e) => { if (e.target === e.currentTarget) setActiveGame(null) }}
-                  >
-                    <motion.div
-                      initial={{ scale: 0.8, y: 50 }}
-                      animate={{ scale: 1, y: 0 }}
-                      exit={{ scale: 0.8, y: 50 }}
-                      className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-3xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto"
-                    >
+                    onClick={(e) => { if (e.target === e.currentTarget) setActiveGame(null) }}>
+                    <motion.div initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 50 }}
+                      className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                           <span className="text-2xl">{games.find(g => g.slug === activeGame)?.icon}</span>
                           {games.find(g => g.slug === activeGame)?.title}
                         </h3>
-                        <button onClick={() => { setActiveGame(null); setResultMessage(null) }} className="p-2 hover:bg-fuchsia-900/50 rounded-full transition">
-                          <X className="w-5 h-5 text-fuchsia-400" />
-                        </button>
+                        <button onClick={() => { setActiveGame(null); setResultMessage(null) }} className="p-2 hover:bg-fuchsia-900/50 rounded-full"><X className="w-5 h-5 text-fuchsia-400" /></button>
                       </div>
-                      {renderGameContent(activeGame)}
+                      {renderMiniGame(activeGame)}
                       {resultMessage && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-4 p-3 bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/40 rounded-xl text-center text-green-300 font-medium text-sm"
-                        >
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                          className="mt-4 p-3 bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/40 rounded-xl text-center text-green-300 font-medium text-sm">
                           {resultMessage}
                         </motion.div>
                       )}
@@ -1299,116 +1404,46 @@ export default function GameCenterPage() {
                 )}
               </AnimatePresence>
 
-              {/* Active Games - show current rooms/games first */}
-              <ActiveGamesSection lang={lang} />
-
-              {/* Multiplayer Games Section - at top */}
-              <div className="space-y-3">
-                <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
-                <MultiplayerGamesSection lang={lang} />
-              </div>
-
-              {/* Game Cards Grid */}
+              {/* Mini game cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {games.map((game, i) => (
-                  <motion.div
-                    key={game.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
+                  <motion.div key={game.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                     className="bg-gradient-to-b from-[#1a0a2e] to-[#120822] border border-fuchsia-500/20 rounded-2xl p-4 hover:border-fuchsia-400/50 transition-all group cursor-pointer"
                     onClick={() => {
-                      if (!session?.user) { router.push(`/giris`); return }
-                      setActiveGame(game.slug)
-                      setResultMessage(null)
+                      if (!session?.user) { router.push(`/${lang}/giris`); return }
+                      setActiveGame(game.slug); setResultMessage(null)
                       if (game.slug === 'tarot-sec') resetTarot()
                       if (game.slug === 'memory') initMemory()
                       if (game.slug === 'quiz') initQuiz()
                       if (game.slug === 'sans-kutusu') resetLuckyBox()
                       if (game.slug === 'sayi-tahmin') initGuess()
                       if (game.slug === 'lamba-cini') initLambaCini()
-                    }}
-                  >
-                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">{game.icon}</div>
-                    <h3 className="text-white font-bold text-sm mb-1">{game.title}</h3>
-                    <p className="text-fuchsia-300/60 text-xs mb-3 line-clamp-2">{game.description}</p>
+                    }}>
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">{game.icon}</div>
+                    <h3 className="text-white font-bold text-xs mb-1">{game.title}</h3>
+                    <p className="text-fuchsia-300/60 text-[10px] mb-2 line-clamp-2">{game.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-yellow-400/80">{game.minReward}-{game.maxReward} 💰</span>
-                      <span className="px-3 py-1 bg-fuchsia-600/80 text-white text-xs rounded-full font-medium group-hover:bg-fuchsia-500 transition">
-                        Oyna
-                      </span>
+                      <span className="text-[10px] text-yellow-400/80">{game.minReward}-{game.maxReward} 💰</span>
+                      <span className="px-2.5 py-1 bg-fuchsia-600/80 text-white text-[10px] rounded-full font-medium">Oyna</span>
                     </div>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Daily Spin Section */}
-              {session?.user && (
-                <div className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-2xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">🎡</span>
-                      <div>
-                        <p className="text-white font-bold text-sm">Günlük Ücretsiz Çark</p>
-                        <p className="text-fuchsia-300/60 text-xs">Günde 1 kez ücretsiz çark çevirme hakkı</p>
+              {/* Multiplayer games link */}
+              <div className="space-y-2">
+                <h3 className="text-white font-bold text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Çok Oyunculu Oyunlar</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                  {Object.entries(GAME_INFO).map(([gt, info]) => (
+                    <Link key={gt} href={`/${lang}/oyunlar/${info.slug}`}>
+                      <div className={`bg-gradient-to-br ${info.color} rounded-xl p-3 text-center border hover:scale-[1.03] transition-all`}>
+                        <span className="text-2xl block mb-1">{info.emoji}</span>
+                        <p className="text-white font-bold text-[10px]">{info.name}</p>
                       </div>
-                    </div>
-                    <button
-                      onClick={() => { setActiveGame('fal-carki'); setResultMessage(null) }}
-                      className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white text-sm font-bold rounded-full hover:scale-105 transition"
-                    >
-                      Çevir
-                    </button>
-                  </div>
+                    </Link>
+                  ))}
                 </div>
-              )}
-
-              {/* Level Progress */}
-              {profile && (
-                <div className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-5 h-5 text-amber-400" />
-                      <span className="text-white font-bold text-sm">Seviye {profile.level} - {profile.levelTitle}</span>
-                    </div>
-                    <span className="text-fuchsia-300/60 text-xs">{profile.totalJetons} toplam CFC</span>
-                  </div>
-                  <div className="w-full bg-purple-900/50 rounded-full h-2.5">
-                    <div className="bg-gradient-to-r from-fuchsia-500 to-amber-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${getLevelProgress()}%` }} />
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-fuchsia-300/40">
-                    {['Yeni Üye', 'Çırak (100)', 'Deneyimli (500)', 'Usta (2000)', 'VIP'].map((label, i) => (
-                      <span key={i} className={profile.level > i ? 'text-amber-400' : ''}>{i === 0 ? '•' : ''}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Referral Section */}
-              {session?.user && profile?.userReferralCode && (
-                <div className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-2xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Share2 className="w-5 h-5 text-fuchsia-400" />
-                    <div>
-                      <p className="text-white font-bold text-sm">Davet Et & Kazan</p>
-                      <p className="text-fuchsia-300/60 text-xs">Davet eden → 50 CFC • Üye olan → 50 CFC</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 px-3 py-2 bg-purple-900/40 rounded-xl text-xs text-fuchsia-300 truncate border border-fuchsia-500/20">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/kayit-ol?ref=${profile.userReferralCode}` : ''}
-                    </div>
-                    <button
-                      onClick={copyReferral}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
-                        copiedRef ? 'bg-green-600 text-white' : 'bg-fuchsia-600 text-white hover:bg-fuchsia-500'
-                      }`}
-                    >
-                      {copiedRef ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -1417,70 +1452,32 @@ export default function GameCenterPage() {
             <div className="space-y-3">
               <h2 className="text-white font-bold flex items-center gap-2"><Target className="w-5 h-5 text-fuchsia-400" /> Günlük Görevler</h2>
               {quests.map((quest, i) => (
-                <motion.div
-                  key={quest.type}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-2xl p-4 flex items-center justify-between"
-                >
+                <motion.div key={quest.type} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                  className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{quest.icon}</span>
+                    <span className="text-xl">{quest.icon}</span>
                     <div>
-                      <p className="text-white font-medium text-sm">{quest.title}</p>
+                      <p className="text-white font-medium text-xs">{quest.title}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="w-24 bg-purple-900/50 rounded-full h-1.5">
-                          <div
-                            className={`h-1.5 rounded-full transition-all ${quest.completed ? 'bg-green-400' : 'bg-fuchsia-500'}`}
-                            style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }}
-                          />
+                        <div className="w-20 bg-purple-900/50 rounded-full h-1.5">
+                          <div className={`h-1.5 rounded-full ${quest.completed ? 'bg-green-400' : 'bg-fuchsia-500'}`} style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }} />
                         </div>
-                        <span className="text-xs text-fuchsia-300/60">{quest.progress}/{quest.target}</span>
+                        <span className="text-[10px] text-fuchsia-300/60">{quest.progress}/{quest.target}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-yellow-400 text-xs font-bold">+{quest.reward} 💰</span>
+                    <span className="text-yellow-400 text-[10px] font-bold">+{quest.reward}💰</span>
                     {quest.completed && !quest.claimed ? (
-                      <button
-                        onClick={() => claimQuest(quest.type)}
-                        className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded-full hover:scale-105 transition"
-                      >
-                        Topla
-                      </button>
+                      <button onClick={() => claimQuest(quest.type)} className="px-2.5 py-1 bg-green-600 text-white text-[10px] font-bold rounded-full">Topla</button>
                     ) : quest.claimed ? (
-                      <span className="px-3 py-1.5 bg-green-900/40 text-green-400 text-xs rounded-full"><Check className="w-3 h-3 inline" /> Alındı</span>
+                      <span className="text-green-400 text-[10px]">✓</span>
                     ) : (
-                      <Lock className="w-4 h-4 text-fuchsia-400/40" />
+                      <Lock className="w-3.5 h-3.5 text-fuchsia-400/40" />
                     )}
                   </div>
                 </motion.div>
               ))}
-
-              {/* Streak Info */}
-              {dailyReward && (
-                <div className="bg-gradient-to-r from-amber-900/20 to-yellow-900/20 border border-amber-500/30 rounded-2xl p-4 mt-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Flame className="w-5 h-5 text-amber-400" />
-                    <p className="text-amber-300 font-bold text-sm">Giriş Serisi</p>
-                  </div>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {[1, 2, 3, 4, 5, 6, 7].map(day => {
-                      const reward = day === 7 ? 100 : day >= 3 ? 20 : day >= 2 ? 10 : 5
-                      const achieved = dailyReward.currentStreak >= day
-                      return (
-                        <div key={day} className={`text-center p-2 rounded-xl border ${
-                          achieved ? 'bg-amber-900/30 border-amber-500/40' : 'bg-purple-900/20 border-fuchsia-500/10'
-                        }`}>
-                          <p className={`text-xs font-bold ${achieved ? 'text-amber-300' : 'text-fuchsia-300/40'}`}>Gün {day}</p>
-                          <p className={`text-xs ${achieved ? 'text-yellow-400' : 'text-fuchsia-300/30'}`}>{reward}💰</p>
-                          {achieved && <Check className="w-3 h-3 text-green-400 mx-auto mt-1" />}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -1492,33 +1489,25 @@ export default function GameCenterPage() {
                 <p className="text-fuchsia-300/60 text-sm text-center py-8">Henüz liderlik tablosu oluşmadı</p>
               ) : (
                 leaderboard.map((entry, i) => (
-                  <motion.div
-                    key={entry.userId}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border ${
+                  <motion.div key={entry.userId} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-3 p-3 rounded-xl border ${
                       i === 0 ? 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border-yellow-500/40' :
                       i === 1 ? 'bg-gradient-to-r from-gray-700/30 to-gray-600/30 border-gray-400/40' :
                       i === 2 ? 'bg-gradient-to-r from-amber-800/30 to-orange-900/30 border-amber-600/40' :
                       'bg-[#1a0a2e] border-fuchsia-500/10'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      i === 0 ? 'bg-yellow-500 text-black' :
-                      i === 1 ? 'bg-gray-400 text-black' :
-                      i === 2 ? 'bg-amber-600 text-white' :
-                      'bg-purple-900/50 text-fuchsia-300'
+                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                      i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-amber-600 text-white' : 'bg-purple-900/50 text-fuchsia-300'
                     }`}>
                       {i < 3 ? ['🥇', '🥈', '🥉'][i] : entry.rank}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-sm truncate">{entry.username || entry.name}</p>
-                      <p className="text-fuchsia-300/50 text-xs">Lv.{entry.level} • {entry.levelTitle}</p>
+                      <p className="text-white font-medium text-xs truncate">{entry.username || entry.name}</p>
+                      <p className="text-fuchsia-300/50 text-[10px]">Lv.{entry.level} • {entry.levelTitle}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-yellow-400 font-bold text-sm">{entry.totalJetons} 💰</p>
-                      <p className="text-fuchsia-300/40 text-xs">{entry.totalGames} oyun</p>
+                      <p className="text-yellow-400 font-bold text-xs">{entry.totalJetons} 💰</p>
+                      <p className="text-fuchsia-300/40 text-[10px]">{entry.totalGames} oyun</p>
                     </div>
                   </motion.div>
                 ))
@@ -1528,7 +1517,18 @@ export default function GameCenterPage() {
         </div>
       </div>
 
-      {/* Bottom Padding */}
+      {/* Auto Match Modal */}
+      <AnimatePresence>
+        <AutoMatchModal
+          isOpen={showMatchModal}
+          onClose={() => setShowMatchModal(false)}
+          selectedGame={selectedGame}
+          setSelectedGame={setSelectedGame}
+          onMatch={handleAutoMatch}
+          loading={matchLoading}
+        />
+      </AnimatePresence>
+
       <div className="h-20" />
     </div>
   )
