@@ -69,8 +69,13 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
-    if (room.status !== 'waiting') return NextResponse.json({ error: 'Bu odaya katılınamaz' }, { status: 400 })
     if (room.player1Id === session.user.id) return NextResponse.json({ error: 'Kendi odanıza katılamazsınız' }, { status: 400 })
+
+    // Allow joining waiting rooms OR replacing AI in active games
+    const isAIReplace = room.status === 'active' && room.isAI
+    if (room.status !== 'waiting' && !isAIReplace) {
+      return NextResponse.json({ error: 'Bu odaya katılınamaz' }, { status: 400 })
+    }
 
     if (room.betAmount > 0) {
       const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true } })
@@ -84,9 +89,15 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     }
 
     const userName = (session.user as any)?.name || 'Oyuncu 2'
+    const updateData: any = { player2Id: session.user.id, player2Name: userName, lastMoveAt: new Date() }
+    if (isAIReplace) {
+      updateData.isAI = false // Replace AI with real player
+    } else {
+      updateData.status = 'active' // Normal join: waiting -> active
+    }
     const updated = await prisma.gameRoom.update({
       where: { id: params.roomId },
-      data: { player2Id: session.user.id, player2Name: userName, status: 'active', lastMoveAt: new Date() },
+      data: updateData,
     })
     return NextResponse.json({ success: true, room: updated })
   } catch (error: any) {

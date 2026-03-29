@@ -231,19 +231,19 @@ function GiftAnimation({ gift, onDone }: { gift: { emoji: string; name: string; 
 // Popup message component (messages float up and disappear)
 function PopupMessages({ messages }: { messages: Array<{ id: string; userName: string; message: string; ts: number }> }) {
   return (
-    <div className="fixed bottom-20 left-4 z-[90] pointer-events-none flex flex-col-reverse gap-1 max-w-[280px]">
+    <div className="fixed bottom-16 left-2 right-2 z-[90] pointer-events-none flex flex-col gap-1.5 max-h-[200px] overflow-hidden">
       <AnimatePresence>
-        {messages.slice(-6).map((m) => (
+        {messages.slice(-8).map((m) => (
           <motion.div
             key={m.id}
             initial={{ opacity: 0, x: -30, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.7 }}
+            exit={{ opacity: 0, x: -30, scale: 0.7 }}
             transition={{ duration: 0.3 }}
-            className="bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 border border-fuchsia-500/20"
+            className="bg-black/80 backdrop-blur-xl rounded-xl px-3 py-2 border border-fuchsia-500/30 shadow-lg shadow-black/30 max-w-[85%]"
           >
-            <span className="text-cyan-400 text-[11px] font-bold">{m.userName}: </span>
-            <span className="text-white text-[11px]">{m.message}</span>
+            <span className="text-cyan-400 text-xs font-bold">{m.userName}: </span>
+            <span className="text-white text-xs">{m.message}</span>
           </motion.div>
         ))}
       </AnimatePresence>
@@ -393,7 +393,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     if (popupMessages.length === 0) return
     const timer = setInterval(() => {
       const now = Date.now()
-      setPopupMessages(prev => prev.filter(m => now - m.ts < 5000))
+      setPopupMessages(prev => prev.filter(m => now - m.ts < 8000))
     }, 1000)
     return () => clearInterval(timer)
   }, [popupMessages.length])
@@ -717,8 +717,8 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         <AnimatePresence>
           {activeGift && <GiftAnimation gift={activeGift} onDone={() => setActiveGift(null)} />}
         </AnimatePresence>
-        {/* Chat bar with gifts - shown for all games */}
-        {room.status === 'active' && roomId && <GameChatBar roomId={roomId} isAI={room.isAI} onGiftSend={handleGiftSend} />}
+        {/* Chat bar with gifts - shown for all games (active or spectating) */}
+        {(room.status === 'active' || isSpectator) && roomId && <GameChatBar roomId={roomId} isAI={room.isAI} onGiftSend={handleGiftSend} />}
       </div>
     )
   }

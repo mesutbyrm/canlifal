@@ -76,13 +76,13 @@ export async function GET(req: NextRequest) {
     if (section === 'live_tables') {
       const [rooms, sosRooms] = await Promise.all([
         prisma.gameRoom.findMany({
-          where: { status: { in: ['active', 'waiting'] }, isAI: false },
+          where: { status: { in: ['active', 'waiting'] } },
           orderBy: { updatedAt: 'desc' },
-          take: 20,
+          take: 30,
           include: { _count: { select: { viewers: true } } },
         }),
         prisma.sosGame.findMany({
-          where: { status: { in: ['active', 'waiting'] }, isAI: false },
+          where: { status: { in: ['active', 'waiting'] } },
           orderBy: { updatedAt: 'desc' },
           take: 10,
           include: { _count: { select: { viewers: true } } },
@@ -91,14 +91,14 @@ export async function GET(req: NextRequest) {
 
       const gameRoomTables = rooms.map((r: any) => ({
         id: r.id, gameType: r.gameType, player1Name: r.player1Name, player2Name: r.player2Name,
-        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status,
+        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status, isAI: r.isAI,
         betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
         currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
         turnTimer: r.turnTimer, createdAt: r.createdAt,
       }))
       const sosTables = sosRooms.map((r: any) => ({
         id: r.id, gameType: 'sos', player1Name: r.player1Name, player2Name: r.player2Name,
-        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status,
+        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status, isAI: r.isAI,
         betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
         currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
         turnTimer: r.turnTimer, createdAt: r.createdAt,

@@ -12,7 +12,7 @@ import {
   RotateCcw, Copy, Share2, Users, Calendar, Flame, Award,
   Eye, Play, Shuffle, Search, Monitor, Clock, Swords,
   TrendingUp, Activity, Radio, DoorOpen, UserPlus,
-  PieChart, Lightbulb, Medal, Timer, ChevronDown
+  PieChart, Lightbulb, Medal, Timer, ChevronDown, Bot
 } from 'lucide-react'
 
 // ========== TYPES ==========
@@ -49,6 +49,7 @@ interface LiveTable {
   player2Score: number
   turnTimer: number
   createdAt: string
+  isAI?: boolean
 }
 
 interface RecentWinner {
@@ -395,8 +396,9 @@ function LiveTablesList({
   setFilter: (f: string) => void
 }) {
   const filtered = filter === 'all' ? tables : tables.filter((t) => t.gameType === filter)
-  const waiting = filtered.filter((t) => t.status === 'waiting')
-  const active = filtered.filter((t) => t.status === 'active')
+  const waiting = filtered.filter((t) => t.status === 'waiting' && !t.isAI)
+  const active = filtered.filter((t) => t.status === 'active' && !t.isAI)
+  const aiGames = filtered.filter((t) => t.status === 'active' && t.isAI)
 
   return (
     <div className="space-y-3">
@@ -520,22 +522,29 @@ function LiveTablesList({
 }
 
 // ========== AUTO MATCH MODAL ==========
-function AutoMatchModal({
+function FindTableModal({
   isOpen,
   onClose,
-  selectedGame,
-  setSelectedGame,
-  onMatch,
-  loading,
+  tables,
+  lang,
+  userId,
+  onJoinTable,
+  onReplaceAI,
 }: {
   isOpen: boolean
   onClose: () => void
-  selectedGame: string
-  setSelectedGame: (g: string) => void
-  onMatch: (action: 'quick' | 'create' | 'ai') => void
-  loading: boolean
+  tables: LiveTable[]
+  lang: string
+  userId?: string
+  onJoinTable: (roomId: string, gameType: string) => void
+  onReplaceAI: (roomId: string, gameType: string) => void
 }) {
   if (!isOpen) return null
+
+  // Waiting rooms with a real player (not the current user)
+  const waitingRooms = tables.filter(t => t.status === 'waiting' && !t.isAI && t.player1Id !== userId)
+  // Active AI games (real player vs AI) where current user is not already playing
+  const aiGames = tables.filter(t => t.status === 'active' && t.isAI && t.player1Id !== userId)
 
   return (
     <motion.div
@@ -549,67 +558,100 @@ function AutoMatchModal({
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-md"
+        className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-bold flex items-center gap-2">
-            <Shuffle className="w-5 h-5 text-fuchsia-400" />
-            Hızlı Eşleşme
+            <DoorOpen className="w-5 h-5 text-amber-400" />
+            Masaya Otur
           </h3>
           <button onClick={onClose} className="p-1.5 hover:bg-fuchsia-900/50 rounded-full transition">
             <X className="w-5 h-5 text-fuchsia-400" />
           </button>
         </div>
 
-        <p className="text-fuchsia-300/60 text-xs mb-4">Oyun seç, sana uygun masa bulalım!</p>
-
-        {/* Game selection */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 mb-4">
-          {Object.keys(GAME_INFO).map((gt) => {
-            const info = gameInfo(gt)
-            return (
-              <button
-                key={gt}
-                onClick={() => setSelectedGame(gt)}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all ${
-                  selectedGame === gt
-                    ? 'bg-fuchsia-600 text-white scale-105'
-                    : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
-                }`}
-              >
-                <span className="text-lg">{info.emoji}</span>
-                <span className="text-[9px] font-medium truncate w-full text-center">{info.name}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Match actions */}
-        <div className="space-y-2">
-          <button
-            onClick={() => onMatch('quick')}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white font-bold rounded-xl hover:scale-[1.01] transition disabled:opacity-50"
-          >
-            <Shuffle className="w-4 h-4" /> Hızlı Eşleş
-          </button>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onMatch('create')}
-              disabled={loading}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-cyan-600/80 to-blue-700/80 text-white font-medium rounded-xl text-xs hover:scale-[1.01] transition disabled:opacity-50"
-            >
-              <DoorOpen className="w-3.5 h-3.5" /> Yeni Masa Aç
-            </button>
-            <button
-              onClick={() => onMatch('ai')}
-              disabled={loading}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-amber-600/80 to-orange-700/80 text-white font-medium rounded-xl text-xs hover:scale-[1.01] transition disabled:opacity-50"
-            >
-              <Zap className="w-3.5 h-3.5" /> Yapay Zeka
-            </button>
+        {/* Waiting rooms - real players */}
+        {waitingRooms.length > 0 && (
+          <div className="mb-4">
+            <p className="text-green-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2">
+              <Clock className="w-3 h-3" /> Rakip Bekleyen Masalar ({waitingRooms.length})
+            </p>
+            <div className="space-y-1.5">
+              {waitingRooms.map((t) => {
+                const info = gameInfo(t.gameType)
+                return (
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 hover:border-green-400/60 transition-all"
+                  >
+                    <span className="text-xl">{info.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-bold">{info.name}</p>
+                      <p className="text-green-300/60 text-[10px] truncate">
+                        {t.player1Name} — Rakip bekleniyor...
+                      </p>
+                    </div>
+                    {t.betAmount > 0 && (
+                      <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
+                    )}
+                    <button
+                      onClick={() => { onJoinTable(t.id, t.gameType); onClose() }}
+                      className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20"
+                    >
+                      🪑 Otur
+                    </button>
+                  </motion.div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* AI games - can replace AI */}
+        {aiGames.length > 0 && (
+          <div className="mb-4">
+            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2">
+              <Bot className="w-3 h-3" /> Yapay Zeka ile Oynuyor ({aiGames.length})
+            </p>
+            <div className="space-y-1.5">
+              {aiGames.map((t) => {
+                const info = gameInfo(t.gameType)
+                return (
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
+                  >
+                    <span className="text-xl">{info.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-bold">{info.name}</p>
+                      <p className="text-cyan-300/60 text-[10px] truncate">
+                        {t.player1Name} vs 🤖 Yapay Zeka
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { onReplaceAI(t.id, t.gameType); onClose() }}
+                      className="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-cyan-500/20"
+                    >
+                      🎮 AI Yerine Geç
+                    </button>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {waitingRooms.length === 0 && aiGames.length === 0 && (
+          <div className="text-center py-8 text-fuchsia-300/40 text-sm">
+            <Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p>Şu an boş masa yok</p>
+            <p className="text-xs mt-1">Rastgele Eşleş ile yeni bir masa oluşturabilirsin!</p>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )
@@ -742,7 +784,6 @@ export default function GameLobbyPage() {
   // UI state
   const [selectedGame, setSelectedGame] = useState('xox')
   const [tableFilter, setTableFilter] = useState('all')
-  const [showMatchModal, setShowMatchModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard' | 'spectator' | 'tournaments'>('lobby')
   const liveSectionRef = useRef<HTMLDivElement>(null)
 
@@ -955,61 +996,15 @@ export default function GameLobbyPage() {
   // ===== ACTIONS =====
   const handleQuickMatch = async () => {
     if (!session?.user) { router.push(`/${lang}/giris`); return }
-    setShowMatchModal(true)
-  }
-
-  const handleWatchLive = () => {
-    liveSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const handleFindTable = () => {
-    liveSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
-    setTableFilter('all')
-  }
-
-  const handleJoinTable = (roomId: string, gameType: string) => {
-    if (!session?.user) { router.push(`/${lang}/giris`); return }
-    const slug = gameSlug(gameType)
-    router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
-  }
-
-  const handleAutoMatch = async (action: 'quick' | 'create' | 'ai') => {
-    if (!session?.user) { router.push(`/${lang}/giris`); return }
     setMatchLoading(true)
     try {
-      if (action === 'ai') {
-        // Create AI room
-        const res = await fetch('/api/games/room', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gameType: selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame, isAI: true, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
-        })
-        const data = await res.json()
-        if (data.success) {
-          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${data.roomId}`)
-        }
-      } else if (action === 'quick') {
-        // Try auto match
-        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
-        const res = await fetch(`/api/games/lobby?section=auto_match&gameType=${gt}`)
-        const data = await res.json()
-        if (data.action === 'join') {
-          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?join=${data.roomId}`)
-        } else {
-          // Create new room
-          const createRes = await fetch('/api/games/room', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
-          })
-          const createData = await createRes.json()
-          if (createData.success) {
-            router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${createData.roomId}`)
-          }
-        }
+      const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
+      const res = await fetch(`/api/games/lobby?section=auto_match&gameType=${gt}`)
+      const data = await res.json()
+      if (data.action === 'join') {
+        router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?join=${data.roomId}`)
       } else {
-        // Create new room
-        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
+        // No waiting room found, create a new one and wait
         const createRes = await fetch('/api/games/room', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1021,7 +1016,42 @@ export default function GameLobbyPage() {
         }
       }
     } catch (e) {
-      console.error('Auto match error:', e)
+      console.error('Quick match error:', e)
+    } finally {
+      setMatchLoading(false)
+    }
+  }
+
+  const handleWatchLive = () => {
+    liveSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const [showFindTableModal, setShowFindTableModal] = useState(false)
+  const handleFindTable = () => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    setShowFindTableModal(true)
+  }
+
+  const handleJoinTable = (roomId: string, gameType: string) => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    const slug = gameSlug(gameType)
+    router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
+  }
+
+  const handleReplaceAI = async (roomId: string, gameType: string) => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    setMatchLoading(true)
+    try {
+      const res = await fetch(`/api/games/room/${roomId}/replace-ai`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        const slug = gameSlug(gameType)
+        router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
+      } else {
+        alert(data.error || 'AI değiştirilemedi')
+      }
+    } catch {
+      alert('Bağlantı hatası')
     } finally {
       setMatchLoading(false)
     }
@@ -2322,15 +2352,16 @@ export default function GameLobbyPage() {
         </div>
       </div>
 
-      {/* Auto Match Modal */}
+      {/* Find Table Modal (Masaya Otur) */}
       <AnimatePresence>
-        <AutoMatchModal
-          isOpen={showMatchModal}
-          onClose={() => setShowMatchModal(false)}
-          selectedGame={selectedGame}
-          setSelectedGame={setSelectedGame}
-          onMatch={handleAutoMatch}
-          loading={matchLoading}
+        <FindTableModal
+          isOpen={showFindTableModal}
+          onClose={() => setShowFindTableModal(false)}
+          tables={liveTables}
+          lang={lang}
+          userId={session?.user?.id}
+          onJoinTable={handleJoinTable}
+          onReplaceAI={handleReplaceAI}
         />
       </AnimatePresence>
 
