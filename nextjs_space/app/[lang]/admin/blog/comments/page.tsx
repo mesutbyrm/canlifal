@@ -53,7 +53,7 @@ export default function AdminCommentsPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link href={`/${lang}/admin/blog`} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
+            <Link href={`/admin/blog`} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition">
               <ArrowLeft className="w-5 h-5 text-gray-400" />
             </Link>
             <div>
@@ -63,7 +63,7 @@ export default function AdminCommentsPage() {
               <p className="text-sm text-gray-500">{total} yorum</p>
             </div>
           </div>
-          <Link href={`/${lang}/admin/blog/analytics`} className="text-xs text-purple-400 hover:text-purple-300">Analitik →</Link>
+          <Link href={`/admin/blog/analytics`} className="text-xs text-purple-400 hover:text-purple-300">Analitik →</Link>
         </div>
 
         {/* Filter */}
@@ -101,7 +101,7 @@ export default function AdminCommentsPage() {
                     </div>
                     <p className="text-sm text-gray-300 mb-2 whitespace-pre-wrap">{c.content}</p>
                     <p className="text-[10px] text-gray-500">
-                      Yazı: <Link href={`/${lang}/blog/${c.postSlug}`} className="text-purple-400 hover:text-purple-300">{c.postTitle}</Link>
+                      Yazı: <Link href={`/blog/${c.postSlug}`} className="text-purple-400 hover:text-purple-300">{c.postTitle}</Link>
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

@@ -369,7 +369,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="text-center py-3 cursor-pointer"
-              onClick={() => router.push(`/${language}${heroSettings.link}`)}
+              onClick={() => router.push(`${heroSettings.link}`)}
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
@@ -396,7 +396,7 @@ export default function HomePage() {
               {heroSettings.items.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/${language}${item.link}`}
+                  href={`${item.link}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-fuchsia-600/80 to-purple-600/80 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-semibold transition-all shadow-lg shadow-fuchsia-900/30 border border-fuchsia-400/30"
                 >
                   <span>{item.icon}</span>
@@ -521,7 +521,7 @@ export default function HomePage() {
                   viewport={{ once: true }}
                 >
                   <Link
-                    href={`/${language}${fortune.href}`}
+                    href={`${fortune.href}`}
                     className="flex flex-col items-center group"
                   >
                     <motion.div 
@@ -858,7 +858,7 @@ export default function HomePage() {
               {activeFortuneCards.slice(0, 8).map((fortune) => (
                 <Link
                   key={fortune.id}
-                  href={`/${language}${fortune.href}`}
+                  href={`${fortune.href}`}
                   className="flex flex-col items-center"
                 >
                   <div 
@@ -988,7 +988,7 @@ export default function HomePage() {
 
             <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
               {activeFortuneCards.slice(0, 4).map((card) => (
-                <Link key={card.id} href={`/${language}${card.href}`} className="flex-shrink-0 w-32">
+                <Link key={card.id} href={`${card.href}`} className="flex-shrink-0 w-32">
                   <div className={`relative aspect-square rounded-xl overflow-hidden ${isCosmic ? 'bg-blue-900/50 border-blue-500/30 hover:border-blue-400/50' : 'bg-purple-900/50 border-purple-500/30 hover:border-purple-400/50'} border transition-all`}>
                     <Image
                       src={card.image}
@@ -1027,7 +1027,7 @@ export default function HomePage() {
               {activeFortuneCards.map((fortune) => (
                 <Link
                   key={fortune.id}
-                  href={`/${language}${fortune.href}`}
+                  href={`${fortune.href}`}
                   className="flex flex-col items-center"
                 >
                   <div className={`w-16 h-16 rounded-full p-[2px] ${isCosmic ? 'bg-gradient-to-br from-blue-500 to-cyan-400 hover:from-blue-400 hover:to-cyan-300' : 'bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400'} transition-all`}>
@@ -1061,15 +1061,15 @@ export default function HomePage() {
       <div className="px-4 pb-24 pt-6">
         <div className="border-t border-purple-800/30 pt-4 text-center space-y-2">
           <div className="flex items-center justify-center gap-4 text-xs text-purple-400/60">
-            <Link href={`/${language}/sayfa/gizlilik-politikasi`} className="hover:text-purple-300 transition-colors">
+            <Link href={`/sayfa/gizlilik-politikasi`} className="hover:text-purple-300 transition-colors">
               Gizlilik Politikası
             </Link>
             <span>•</span>
-            <Link href={`/${language}/sayfa/kullanim-sartlari`} className="hover:text-purple-300 transition-colors">
+            <Link href={`/sayfa/kullanim-sartlari`} className="hover:text-purple-300 transition-colors">
               Kullanım Şartları
             </Link>
             <span>•</span>
-            <Link href={`/${language}/iletisim`} className="hover:text-purple-300 transition-colors">
+            <Link href={`/iletisim`} className="hover:text-purple-300 transition-colors">
               İletişim
             </Link>
           </div>

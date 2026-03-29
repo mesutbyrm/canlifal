@@ -129,7 +129,7 @@ export default function OnlineFalPage() {
                   viewport={{ once: true }}
                 >
                   <Link
-                    href={`/${lang}${fortune.href}`}
+                    href={`${fortune.href}`}
                     className="flex flex-col items-center group"
                   >
                     <motion.div
@@ -195,7 +195,7 @@ export default function OnlineFalPage() {
                   viewport={{ once: true }}
                 >
                   <Link
-                    href={`/${lang}${btn.href}`}
+                    href={`${btn.href}`}
                     className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-gradient-to-br ${btn.bgColor} border ${btn.borderColor} ${btn.textColor} hover:scale-105 transition-all duration-300 group`}
                   >
                     <span className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{btn.icon}</span>
@@ -252,7 +252,7 @@ export default function OnlineFalPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => router.push(`/${lang}`)}
+            onClick={() => router.push(`/`)}
             className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 text-fuchsia-300" />

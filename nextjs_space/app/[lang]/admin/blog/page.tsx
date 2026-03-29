@@ -511,10 +511,10 @@ export default function AdminBlogPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link href={`/${lang}/admin/blog/analytics`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
+            <Link href={`/admin/blog/analytics`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
               <BarChart3 className="w-4 h-4 text-purple-400" /> Analitik
             </Link>
-            <Link href={`/${lang}/admin/blog/comments`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
+            <Link href={`/admin/blog/comments`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10">
               <MessageCircle className="w-4 h-4 text-green-400" /> Yorumlar
             </Link>
             <button onClick={openNew} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium transition">
@@ -737,7 +737,7 @@ export default function AdminBlogPage() {
         {!showForm && (
           <div className="mb-6">
             <Link
-              href={`/${lang}/admin/blog/bulk-import`}
+              href={`/admin/blog/bulk-import`}
               className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border border-fuchsia-500/30 text-fuchsia-200 hover:from-fuchsia-900/60 hover:to-purple-900/60 transition-all text-sm font-medium"
             >
               <Upload className="w-5 h-5" />

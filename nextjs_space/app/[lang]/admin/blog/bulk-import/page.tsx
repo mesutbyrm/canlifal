@@ -328,7 +328,7 @@ export default function BulkImportBlogPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Link
-            href={`/${lang}/admin/blog`}
+            href={`/admin/blog`}
             className="p-2 rounded-lg bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -719,7 +719,7 @@ export default function BulkImportBlogPage() {
                 Yeni İçe Aktarma
               </button>
               <Link
-                href={`/${lang}/admin/blog`}
+                href={`/admin/blog`}
                 className="flex-1 py-3 rounded-xl bg-fuchsia-600/30 border border-fuchsia-400/60 text-fuchsia-200 font-medium hover:bg-fuchsia-600/50 transition-colors text-center"
               >
                 Blog Yazılarına Git

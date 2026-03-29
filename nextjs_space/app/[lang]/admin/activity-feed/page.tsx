@@ -129,7 +129,7 @@ export default function ActivityFeedAdminPage() {
     <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/tr/admin" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+        <Link href="/admin" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-400" />
         </Link>
         <div>

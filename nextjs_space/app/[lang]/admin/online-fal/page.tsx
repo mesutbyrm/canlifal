@@ -207,7 +207,7 @@ export default function AdminOnlineFalPage() {
             <p className="text-gray-500 text-xs">Sayfa bölümlerini ve butonları yönetin</p>
           </div>
           <a
-            href={`/${lang}/online-fal`}
+            href={`/online-fal`}
             target="_blank"
             className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg bg-fuchsia-600/20 border border-fuchsia-500/30 text-fuchsia-300 text-xs hover:bg-fuchsia-600/30 transition-colors"
           >

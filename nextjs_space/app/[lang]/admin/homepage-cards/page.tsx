@@ -195,7 +195,7 @@ export default function HomepageCardsAdmin() {
   // Admin check
   const isAdmin = ['admin','yonetici','moderator','finans'].includes((session?.user as any)?.role)
   useEffect(() => {
-    if (session && !isAdmin) router.push(`/${language}`)
+    if (session && !isAdmin) router.push(`/`)
   }, [session, isAdmin, router, language])
 
   // Save helper

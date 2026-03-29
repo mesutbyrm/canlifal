@@ -171,7 +171,7 @@ export default function DreamDetailPage() {
 
   const toggleFavorite = async () => {
     if (!session?.user) {
-      router.push(`/${lang}/giris`)
+      router.push(`/giris`)
       return
     }
     setFavLoading(true)
@@ -192,7 +192,7 @@ export default function DreamDetailPage() {
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session?.user) {
-      router.push(`/${lang}/giris`)
+      router.push(`/giris`)
       return
     }
     if (!commentText.trim() || commentSubmitting) return
@@ -271,7 +271,7 @@ export default function DreamDetailPage() {
           <h2 className="text-xl font-semibold text-white mb-2">Rüya Tabiri Bulunamadı</h2>
           <p className="text-gray-400 mb-4">Aradığınız rüya tabiri mevcut değil.</p>
           <button
-            onClick={() => router.push(`/${lang}/ruya`)}
+            onClick={() => router.push(`/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri
@@ -324,11 +324,11 @@ export default function DreamDetailPage() {
       <div className="max-w-3xl mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-6 overflow-hidden">
-          <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors flex-shrink-0">Ana Sayfa</button>
+          <button onClick={() => router.push(`/`)} className="hover:text-gray-300 transition-colors flex-shrink-0">Ana Sayfa</button>
           <ChevronRight className="w-3 h-3 flex-shrink-0" />
-          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors flex-shrink-0">R&#252;ya Tabirleri</button>
+          <button onClick={() => router.push(`/ruya`)} className="hover:text-gray-300 transition-colors flex-shrink-0">R&#252;ya Tabirleri</button>
           <ChevronRight className="w-3 h-3 flex-shrink-0" />
-          <button onClick={() => router.push(`/${lang}/ruya?category=${dream.category}`)} className="hover:text-gray-300 transition-colors flex-shrink-0 hidden sm:inline">
+          <button onClick={() => router.push(`/ruya?category=${dream.category}`)} className="hover:text-gray-300 transition-colors flex-shrink-0 hidden sm:inline">
             {getCategoryIcon(dream.category)} {getCategoryLabel(dream.category)}
           </button>
           <ChevronRight className="w-3 h-3 flex-shrink-0 hidden sm:block" />
@@ -431,7 +431,7 @@ export default function DreamDetailPage() {
               {dream.keywords.map((kw, i) => (
                 <button
                   key={i}
-                  onClick={() => router.push(`/${lang}/ruya?q=${encodeURIComponent(kw)}`)}
+                  onClick={() => router.push(`/ruya?q=${encodeURIComponent(kw)}`)}
                   className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 text-xs hover:bg-indigo-500/20 hover:border-indigo-500/30 hover:text-indigo-300 transition-all"
                 >
                   {kw}
@@ -665,7 +665,7 @@ export default function DreamDetailPage() {
               {similar.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => router.push(`/${lang}/ruya/${s.slug}`)}
+                  onClick={() => router.push(`/ruya/${s.slug}`)}
                   className="text-left p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-indigo-500/30 transition-all group"
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -706,7 +706,7 @@ export default function DreamDetailPage() {
               {recommendations.filter(r => r.id !== dream.id).slice(0, 6).map((rec) => (
                 <button
                   key={rec.id}
-                  onClick={() => router.push(`/${lang}/ruya/${rec.slug}`)}
+                  onClick={() => router.push(`/ruya/${rec.slug}`)}
                   className="text-left p-3 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 hover:border-indigo-500/30 transition-all group"
                 >
                   <h3 className="text-white text-sm font-medium group-hover:text-indigo-300 transition-colors truncate">
@@ -731,7 +731,7 @@ export default function DreamDetailPage() {
         {/* Back button */}
         <div className="mt-8 text-center">
           <button
-            onClick={() => router.push(`/${lang}/ruya`)}
+            onClick={() => router.push(`/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white hover:border-white/20 transition-all"
           >
             <ArrowLeft className="w-4 h-4" /> Tüm Rüya Tabirleri

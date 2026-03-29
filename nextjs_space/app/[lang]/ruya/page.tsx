@@ -124,7 +124,7 @@ export default function RuyaPage() {
       if (res.ok) {
         const data = await res.json()
         if (data.dream) {
-          router.push(`/${lang}/ruya/${data.dream.slug}`)
+          router.push(`/ruya/${data.dream.slug}`)
         }
       }
     } catch (e) {
@@ -159,7 +159,7 @@ export default function RuyaPage() {
   const handleInterpret = async () => {
     if (!dreamText.trim() || interpreting) return
     if (!session?.user) {
-      router.push(`/${lang}/giris`)
+      router.push(`/giris`)
       return
     }
     setInterpreting(true)
@@ -252,7 +252,7 @@ export default function RuyaPage() {
               </button>
             )}
             <button
-              onClick={() => router.push(`/${lang}/ruya-trendleri`)}
+              onClick={() => router.push(`/ruya-trendleri`)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
             >
               <BarChart3 className="w-4 h-4" /> Trendler
@@ -387,7 +387,7 @@ export default function RuyaPage() {
                   {dreams.map((dream) => (
                     <button
                       key={dream.id}
-                      onClick={() => router.push(`/${lang}/ruya/${dream.slug}`)}
+                      onClick={() => router.push(`/ruya/${dream.slug}`)}
                       className="w-full text-left p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-indigo-500/30 transition-all group"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -512,7 +512,7 @@ export default function RuyaPage() {
               <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                 <p className="text-red-400 text-sm">{interpretError}</p>
                 <button
-                  onClick={() => router.push(`/${lang}/jeton`)}
+                  onClick={() => router.push(`/jeton`)}
                   className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm transition-colors"
                 >
                   <Coins className="w-4 h-4" /> CFC Satın Al
@@ -545,7 +545,7 @@ export default function RuyaPage() {
                   <div className="mt-3 flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
                     <CheckCircle className="w-4 h-4" />
                     <span>Rüya yorumunuz otomatik olarak sosyal akışınızda paylaşıldı!</span>
-                    <button onClick={() => router.push(`/${lang}/sosyal`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">
+                    <button onClick={() => router.push(`/sosyal`)} className="ml-auto text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1">
                       <Share2 className="w-3 h-3" /> Görüntüle
                     </button>
                   </div>
@@ -555,7 +555,7 @@ export default function RuyaPage() {
 
             {!session?.user && (
               <div className="mt-4 text-center">
-                <p className="text-gray-500 text-sm">Rüyanızı yorumlatmak için <button onClick={() => router.push(`/${lang}/giris`)} className="text-indigo-400 hover:underline">giriş yapın</button></p>
+                <p className="text-gray-500 text-sm">Rüyanızı yorumlatmak için <button onClick={() => router.push(`/giris`)} className="text-indigo-400 hover:underline">giriş yapın</button></p>
               </div>
             )}
           </div>
@@ -583,7 +583,7 @@ export default function RuyaPage() {
                 {favorites.map((fav) => (
                   <button
                     key={fav.id}
-                    onClick={() => router.push(`/${lang}/ruya/${fav.dream.slug}`)}
+                    onClick={() => router.push(`/ruya/${fav.dream.slug}`)}
                     className="w-full text-left p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-pink-500/30 transition-all group"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -622,7 +622,7 @@ export default function RuyaPage() {
               {recommendations.slice(0, 6).map((rec) => (
                 <button
                   key={rec.id}
-                  onClick={() => router.push(`/${lang}/ruya/${rec.slug}`)}
+                  onClick={() => router.push(`/ruya/${rec.slug}`)}
                   className="text-left p-3 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 hover:border-indigo-500/30 transition-all group"
                 >
                   <h3 className="text-white text-sm font-medium group-hover:text-indigo-300 transition-colors truncate">

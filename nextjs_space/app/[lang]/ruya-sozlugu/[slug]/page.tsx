@@ -97,7 +97,7 @@ export default function DreamSymbolDetailPage() {
       />
 
       <div className="mt-6 text-center">
-        <Link href={`/${lang}/ruya-sozlugu`} className="text-purple-400 hover:text-purple-300 transition-colors">
+        <Link href={`/ruya-sozlugu`} className="text-purple-400 hover:text-purple-300 transition-colors">
           ← Tüm Sembollere Dön
         </Link>
       </div>

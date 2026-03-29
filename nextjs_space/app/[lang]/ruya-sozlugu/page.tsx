@@ -118,7 +118,7 @@ export default function DreamDictionaryPage() {
           {symbols.map((symbol) => (
             <Link
               key={symbol.id}
-              href={`/${lang}/ruya-sozlugu/${symbol.slug}`}
+              href={`/ruya-sozlugu/${symbol.slug}`}
               className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors group"
             >
               <div className="flex items-start justify-between">

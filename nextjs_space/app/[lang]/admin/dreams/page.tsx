@@ -495,7 +495,7 @@ export default function AdminDreamsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/${lang}/admin/dreams/bulk-import`}
+              href={`/admin/dreams/bulk-import`}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10"
             >
               <Upload className="w-4 h-4 text-emerald-400" /> Toplu İçe Aktar

@@ -138,7 +138,7 @@ export default function CategoryPage() {
       <div className="max-w-6xl mx-auto px-4 py-8 pb-28">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href={`/${lang}/blog`} className="hover:text-purple-400 transition">Blog</Link>
+          <Link href={`/blog`} className="hover:text-purple-400 transition">Blog</Link>
           <ChevronRight className="w-4 h-4" />
           <span className="text-gray-500">{catName}</span>
         </nav>
@@ -157,7 +157,7 @@ export default function CategoryPage() {
           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
             <Tag className="w-10 h-10 text-gray-600 mx-auto mb-3" />
             <p className="text-gray-400">Bu kategoride henüz yazı yok</p>
-            <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300 text-sm mt-2 inline-block">Tüm yazılara dön</Link>
+            <Link href={`/blog`} className="text-purple-400 hover:text-purple-300 text-sm mt-2 inline-block">Tüm yazılara dön</Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -168,7 +168,7 @@ export default function CategoryPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Link href={`/${lang}/blog/${post.slug}`}>
+                <Link href={`/blog/${post.slug}`}>
                   <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all duration-300 group h-full">
                     {post.coverImage && (
                       <div className="relative aspect-video bg-gray-800">
@@ -234,7 +234,7 @@ export default function CategoryPage() {
               {categories.filter(c => c.slug !== slug).map(c => (
                 <Link
                   key={c.slug}
-                  href={`/${lang}/blog/kategori/${c.slug}`}
+                  href={`/blog/kategori/${c.slug}`}
                   className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-purple-500/10 hover:border-purple-500/20 hover:text-purple-300 transition"
                 >
                   {c.nameTr}

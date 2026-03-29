@@ -88,7 +88,7 @@ export default function NavSearch() {
     setIsOpen(false)
     setQuery('')
     setResults([])
-    router.push(`/${language}${result.href}`)
+    router.push(`${result.href}`)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

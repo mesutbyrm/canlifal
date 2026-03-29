@@ -136,7 +136,7 @@ export default function FortunesPage() {
   }
 
   const openFortunePopup = (fortune: typeof FORTUNE_CARDS[0]) => {
-    setPopupHref(`/${language}${fortune.href}`)
+    setPopupHref(`${fortune.href}`)
     setPopupTitle(fortune.nameTr)
   }
 

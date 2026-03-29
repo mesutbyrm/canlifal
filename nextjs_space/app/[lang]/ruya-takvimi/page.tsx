@@ -120,7 +120,7 @@ export default function DreamCalendarPage() {
         <Moon size={48} className="mx-auto mb-4 text-purple-400" />
         <h2 className="text-2xl font-bold text-white mb-2">Rüya Takviminiz</h2>
         <p className="text-white/60 mb-4">Rüyalarınızı günlük kaydedin, desenlerinizi keşfedin</p>
-        <Link href={`/${lang}/giris`} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-colors inline-block">
+        <Link href={`/giris`} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl transition-colors inline-block">
           Giriş Yapın
         </Link>
       </div>

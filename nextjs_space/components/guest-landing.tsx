@@ -167,7 +167,7 @@ export default function GuestLanding() {
             />
             <div className="relative z-10 text-center">
               <p className="text-white/90 text-xs mb-2">🎁 Kayıt ol, <span className="font-bold">50 CFC</span> hediye kazan!</p>
-              <Link href="/tr/kayit-ol">
+              <Link href="/kayit-ol">
                 <motion.div
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -178,7 +178,7 @@ export default function GuestLanding() {
                 </motion.div>
               </Link>
               <div className="mt-2">
-                <Link href="/tr/giris" className="text-white/80 text-xs hover:text-white underline underline-offset-2">
+                <Link href="/giris" className="text-white/80 text-xs hover:text-white underline underline-offset-2">
                   Zaten hesabın var mı? Giriş Yap
                 </Link>
               </div>
@@ -238,7 +238,7 @@ export default function GuestLanding() {
           transition={{ delay: 1.2, duration: 0.6 }}
           className="mt-8 text-center"
         >
-          <Link href="/tr/kayit-ol">
+          <Link href="/kayit-ol">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -258,15 +258,15 @@ export default function GuestLanding() {
           className="mt-10 pt-6 border-t border-purple-800/30 text-center space-y-2"
         >
           <div className="flex items-center justify-center gap-4 text-xs text-purple-400/60">
-            <Link href="/tr/sayfa/gizlilik-politikasi" className="hover:text-purple-300 transition-colors">
+            <Link href="/sayfa/gizlilik-politikasi" className="hover:text-purple-300 transition-colors">
               Gizlilik Politikası
             </Link>
             <span>•</span>
-            <Link href="/tr/sayfa/kullanim-sartlari" className="hover:text-purple-300 transition-colors">
+            <Link href="/sayfa/kullanim-sartlari" className="hover:text-purple-300 transition-colors">
               Kullanım Şartları
             </Link>
             <span>•</span>
-            <Link href="/tr/iletisim" className="hover:text-purple-300 transition-colors">
+            <Link href="/iletisim" className="hover:text-purple-300 transition-colors">
               İletişim
             </Link>
           </div>

@@ -185,7 +185,7 @@ export default function BlogPage() {
                   className="flex-shrink-0"
                 >
                   <Link
-                    href={`/${lang}/blog/kategori/${cat.slug}`}
+                    href={`/blog/kategori/${cat.slug}`}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/10 transition-all group whitespace-nowrap"
                   >
                     <span className="text-sm font-medium text-gray-300 group-hover:text-purple-300 transition">{cat.nameTr}</span>
@@ -226,7 +226,7 @@ export default function BlogPage() {
                             </span>
                             <span className="text-xs text-gray-400">{formatDate(post.publishedAt || post.createdAt)}</span>
                           </div>
-                          <Link href={`/${lang}/blog/${post.slug}`}>
+                          <Link href={`/blog/${post.slug}`}>
                             <h2 className="text-2xl md:text-3xl font-bold text-white hover:text-purple-300 transition mb-2 line-clamp-2">
                               {post.titleTr}
                             </h2>
@@ -274,7 +274,7 @@ export default function BlogPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                     >
-                      <Link href={`/${lang}/blog/${post.slug}`} className="block group">
+                      <Link href={`/blog/${post.slug}`} className="block group">
                         <div className="rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-purple-500/30 transition-all">
                           {post.coverImage ? (
                             <div className="relative aspect-video bg-gray-800">
@@ -322,7 +322,7 @@ export default function BlogPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.05 }}
                     >
-                      <Link href={`/${lang}/blog/${post.slug}`} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 hover:bg-white/10 transition-all group">
+                      <Link href={`/blog/${post.slug}`} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 hover:bg-white/10 transition-all group">
                         {post.coverImage ? (
                           <div className="relative w-24 h-24 md:w-32 md:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
                             <Image src={post.coverImage} alt={post.titleTr} fill className="object-cover" />
@@ -375,7 +375,7 @@ export default function BlogPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03 }}
                       >
-                        <Link href={`/${lang}/blog/${post.slug}`} className="block group">
+                        <Link href={`/blog/${post.slug}`} className="block group">
                           <div className="rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-purple-500/30 transition-all h-full">
                             {post.coverImage ? (
                               <div className="relative aspect-video bg-gray-800">

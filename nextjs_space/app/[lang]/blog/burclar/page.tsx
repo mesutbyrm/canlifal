@@ -130,7 +130,7 @@ export default function BurclarPage() {
 
         {/* Back to Blog Link */}
         <div className="mb-8">
-          <Link href={`/${lang}/blog`} className="text-sm text-purple-400 hover:text-purple-300 transition">
+          <Link href={`/blog`} className="text-sm text-purple-400 hover:text-purple-300 transition">
             ← Blog&apos;a Dön
           </Link>
         </div>
@@ -189,7 +189,7 @@ export default function BurclarPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {signPosts.map((post) => (
-                  <Link key={post.id} href={`/${lang}/blog/${post.slug}`}>
+                  <Link key={post.id} href={`/blog/${post.slug}`}>
                     <motion.div
                       whileHover={{ y: -4 }}
                       className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition group"
@@ -244,7 +244,7 @@ export default function BurclarPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {zd.posts.slice(0, 3).map(post => (
-                      <Link key={post.id} href={`/${lang}/blog/${post.slug}`}>
+                      <Link key={post.id} href={`/blog/${post.slug}`}>
                         <div className="bg-white/5 rounded-xl border border-white/10 p-4 hover:border-purple-500/30 transition group">
                           <h3 className="text-white font-medium line-clamp-2 mb-2 group-hover:text-purple-300 transition text-sm">{post.titleTr}</h3>
                           <p className="text-gray-500 text-xs line-clamp-2 mb-2">{post.descTr}</p>

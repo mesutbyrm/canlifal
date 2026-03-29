@@ -287,7 +287,7 @@ export default function LiveTicker() {
         {/* Ticker button - hideable */}
         {settings.buttonVisible && (
           <Link
-            href={`/${language}${settings.buttonLink || '/canli-falcilar'}`}
+            href={`${settings.buttonLink || '/canli-falcilar'}`}
             className="flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4 h-full bg-gradient-to-r from-fuchsia-700/90 to-purple-700/90 text-white text-xs sm:text-sm font-bold hover:from-fuchsia-600 hover:to-purple-600 transition-all"
           >
             <span className="text-sm">{settings.buttonIcon}</span>

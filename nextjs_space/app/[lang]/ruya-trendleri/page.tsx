@@ -62,9 +62,9 @@ export default function RuyaTrendleriPage() {
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-gray-500 mb-6">
-          <button onClick={() => router.push(`/${lang}`)} className="hover:text-gray-300 transition-colors">Ana Sayfa</button>
+          <button onClick={() => router.push(`/`)} className="hover:text-gray-300 transition-colors">Ana Sayfa</button>
           <ChevronRight className="w-3 h-3" />
-          <button onClick={() => router.push(`/${lang}/ruya`)} className="hover:text-gray-300 transition-colors">Rüya Tabirleri</button>
+          <button onClick={() => router.push(`/ruya`)} className="hover:text-gray-300 transition-colors">Rüya Tabirleri</button>
           <ChevronRight className="w-3 h-3" />
           <span className="text-indigo-400">Trendler</span>
         </nav>
@@ -111,7 +111,7 @@ export default function RuyaTrendleriPage() {
                   {data.trendingDreams.map((dream, idx) => (
                     <button
                       key={dream.id}
-                      onClick={() => router.push(`/${lang}/ruya/${dream.slug}`)}
+                      onClick={() => router.push(`/ruya/${dream.slug}`)}
                       className="w-full text-left p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.06] hover:border-indigo-500/30 transition-all group"
                     >
                       <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function RuyaTrendleriPage() {
                     {data.trendingKeywords.map((kw, i) => (
                       <button
                         key={kw.keyword}
-                        onClick={() => router.push(`/${lang}/ruya?q=${encodeURIComponent(kw.keyword)}`)}
+                        onClick={() => router.push(`/ruya?q=${encodeURIComponent(kw.keyword)}`)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs hover:bg-indigo-500/20 hover:border-indigo-500/30 hover:text-indigo-300 transition-all"
                       >
                         {i < 3 && <Flame className="w-3 h-3 text-orange-400" />}
@@ -178,7 +178,7 @@ export default function RuyaTrendleriPage() {
                       return (
                         <button
                           key={cat.category}
-                          onClick={() => router.push(`/${lang}/ruya?category=${cat.category}`)}
+                          onClick={() => router.push(`/ruya?category=${cat.category}`)}
                           className="w-full text-left group"
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -283,7 +283,7 @@ export default function RuyaTrendleriPage() {
                   {data.mostDiscussed.map((dream) => (
                     <button
                       key={dream.id}
-                      onClick={() => router.push(`/${lang}/ruya/${dream.slug}`)}
+                      onClick={() => router.push(`/ruya/${dream.slug}`)}
                       className="text-left p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.06] hover:border-blue-500/30 transition-all group"
                     >
                       <div className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export default function RuyaTrendleriPage() {
         {/* Back */}
         <div className="mt-8 text-center">
           <button
-            onClick={() => router.push(`/${lang}/ruya`)}
+            onClick={() => router.push(`/ruya`)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:text-white hover:border-white/20 transition-all"
           >
             <ArrowLeft className="w-4 h-4" /> Rüya Tabirleri

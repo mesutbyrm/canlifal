@@ -161,7 +161,7 @@ export default function BlogPostPage() {
 
   // Like toggle
   const handleLike = async () => {
-    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    if (!session?.user) { router.push(`/giris`); return }
     if (likeLoading || !post) return
     setLikeLoading(true)
     try {
@@ -181,7 +181,7 @@ export default function BlogPostPage() {
 
   // Favorite toggle
   const handleFavorite = async () => {
-    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    if (!session?.user) { router.push(`/giris`); return }
     if (favLoading || !post) return
     setFavLoading(true)
     try {
@@ -198,7 +198,7 @@ export default function BlogPostPage() {
 
   // Submit comment
   const handleSubmitComment = async (parentId?: string) => {
-    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    if (!session?.user) { router.push(`/giris`); return }
     const text = parentId ? replyText : commentText
     if (!text.trim() || !post) return
     setCommentSubmitting(true)
@@ -295,7 +295,7 @@ export default function BlogPostPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/30 to-gray-950 flex items-center justify-center">
         <div className="text-center">
           <p className="text-white text-xl mb-4">Yazı bulunamadı</p>
-          <Link href={`/${lang}/blog`} className="text-purple-400 hover:text-purple-300">Blog&apos;a Dön</Link>
+          <Link href={`/blog`} className="text-purple-400 hover:text-purple-300">Blog&apos;a Dön</Link>
         </div>
       </div>
     )
@@ -348,9 +348,9 @@ export default function BlogPostPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-400 mb-6 overflow-hidden">
-          <Link href={`/${lang}/blog`} className="hover:text-purple-400 transition flex-shrink-0">Blog</Link>
+          <Link href={`/blog`} className="hover:text-purple-400 transition flex-shrink-0">Blog</Link>
           <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
-          <Link href={`/${lang}/blog/kategori/${post.category}`} className="hover:text-purple-400 transition flex-shrink-0">
+          <Link href={`/blog/kategori/${post.category}`} className="hover:text-purple-400 transition flex-shrink-0">
             {getCategoryName(post.category)}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
@@ -375,7 +375,7 @@ export default function BlogPostPage() {
         <header className="mb-8">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <Link
-              href={`/${lang}/blog/kategori/${post.category}`}
+              href={`/blog/kategori/${post.category}`}
               className="px-3 py-1 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 hover:bg-purple-500/30 transition"
             >
               {getCategoryName(post.category)}
@@ -490,13 +490,13 @@ export default function BlogPostPage() {
               <p className="text-gray-400 mb-5">Bu yazının tamamını okumak için giriş yapın veya üye olun.</p>
               <div className="flex items-center justify-center gap-3">
                 <Link
-                  href={`/${lang}/giris`}
+                  href={`/giris`}
                   className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition"
                 >
                   Giriş Yap
                 </Link>
                 <Link
-                  href={`/${lang}/kayit-ol`}
+                  href={`/kayit-ol`}
                   className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition"
                 >
                   Üye Ol
@@ -614,7 +614,7 @@ export default function BlogPostPage() {
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-400 mb-3">Yorum yapmak için giriş yapın</p>
-                <Link href={`/${lang}/giris`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
+                <Link href={`/giris`} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition">
                   Giriş Yap
                 </Link>
               </div>
@@ -745,7 +745,7 @@ export default function BlogPostPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <Link href={`/${lang}/blog/${rp.slug}`} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-white/10 transition-all group">
+                  <Link href={`/blog/${rp.slug}`} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-white/10 transition-all group">
                     {rp.coverImage ? (
                       <div className="relative w-24 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
                         <Image src={rp.coverImage} alt={rp.titleTr} fill className="object-cover" />
