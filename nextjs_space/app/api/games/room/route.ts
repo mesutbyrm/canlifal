@@ -75,6 +75,23 @@ export async function GET(req: NextRequest) {
     const type = url.searchParams.get('type')
     const gameType = url.searchParams.get('gameType')
 
+    // Auto-cleanup: cancel stale waiting rooms older than 5 minutes
+    try {
+      const staleRooms = await prisma.gameRoom.findMany({
+        where: { status: 'waiting', createdAt: { lt: new Date(Date.now() - 5 * 60 * 1000) } },
+        take: 10,
+      })
+      for (const sr of staleRooms) {
+        if (sr.betAmount > 0) {
+          await prisma.user.update({
+            where: { id: sr.player1Id },
+            data: sr.betCurrency === 'CFC' ? { credits: { increment: sr.betAmount } } : { jetonBalance: { increment: sr.betAmount } },
+          }).catch(() => {})
+        }
+        await prisma.gameRoom.update({ where: { id: sr.id }, data: { status: 'cancelled' } }).catch(() => {})
+      }
+    } catch {}
+
     if (type === 'stats' && gameType) {
       const [activeCount, waitingCount, recentWinners] = await Promise.all([
         prisma.gameRoom.count({ where: { gameType, status: 'active' } }),

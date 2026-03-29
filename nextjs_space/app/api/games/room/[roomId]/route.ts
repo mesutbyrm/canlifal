@@ -6,7 +6,7 @@ import { processMove } from '@/lib/game-logic'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Get room state (also checks disconnect timeout)
+// GET: Get room state (also checks disconnect timeout & auto-close stale waiting rooms)
 export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
     const room = await prisma.gameRoom.findUnique({
@@ -14,6 +14,26 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       include: { _count: { select: { viewers: true } } },
     })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+
+    // Auto-close: if waiting room with no player2 for more than 5 minutes, cancel it
+    if (room.status === 'waiting' && !room.player2Id) {
+      const waitingTime = (Date.now() - new Date(room.createdAt).getTime()) / 1000
+      if (waitingTime > 300) { // 5 minutes
+        // Refund bet if any
+        if (room.betAmount > 0) {
+          await prisma.user.update({
+            where: { id: room.player1Id },
+            data: room.betCurrency === 'CFC' ? { credits: { increment: room.betAmount } } : { jetonBalance: { increment: room.betAmount } },
+          })
+        }
+        const updated = await prisma.gameRoom.update({
+          where: { id: params.roomId },
+          data: { status: 'cancelled', lastMoveAt: new Date() },
+        })
+        const { _count: c3, ...d3 } = { ...updated, _count: room._count }
+        return NextResponse.json({ ...d3, viewerCount: c3.viewers, autoClosed: true })
+      }
+    }
 
     // Auto-forfeit: if active PvP game with timer, check disconnect (10s after turn timer expires)
     if (room.status === 'active' && !room.isAI && room.turnTimer > 0 && room.lastMoveAt) {

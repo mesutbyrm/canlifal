@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Users, Bot, Coins, Trophy, RotateCcw,
   Zap, X, Loader2, RefreshCw, Volume2, VolumeX, Gamepad2,
-  MessageCircle, Send, Eye, EyeOff, Timer, Plus, LogIn, Clock
+  MessageCircle, Send, Eye, EyeOff, Timer, Plus, LogIn, Clock, Gift
 } from 'lucide-react'
 
 export interface GameRoom {
@@ -31,6 +31,7 @@ export interface GameRoom {
   chatEnabled: boolean
   lastMoveAt: string | null
   viewerCount?: number
+  aiDifficulty?: string
 }
 
 interface GameShellProps {
@@ -51,6 +52,7 @@ interface GameShellProps {
     sendMove: (action: any) => Promise<any>
     sendAIState: (fullState: any) => Promise<any>
     soundEnabled: boolean
+    aiDifficulty: string
   }) => React.ReactNode
 }
 
@@ -178,35 +180,83 @@ function WinnerBanner({ winners, gameEmoji }: { winners: any[]; gameEmoji: strin
   )
 }
 
-// Mini chat component
-function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; isOwner: boolean; chatEnabled: boolean; onToggle: (v: boolean) => void }) {
-  const [open, setOpen] = useState(false)
-  const [msgs, setMsgs] = useState<any[]>([])
+// Gift items for games
+const GAME_GIFTS = [
+  { id: 'yumurta', emoji: '🥚', name: 'Yumurta', animation: 'throw' },
+  { id: 'terlik', emoji: '🩴', name: 'Terlik', animation: 'throw' },
+  { id: 'bomba', emoji: '💣', name: 'Bomba', animation: 'explode' },
+  { id: 'gul', emoji: '🌹', name: 'Gül', animation: 'float' },
+  { id: 'kahve', emoji: '☕', name: 'Kahve', animation: 'float' },
+  { id: 'cay', emoji: '🍵', name: 'Çay', animation: 'float' },
+  { id: 'tesbih', emoji: '📿', name: 'Tesbih', animation: 'float' },
+]
+
+// Floating gift animation component
+function GiftAnimation({ gift, onDone }: { gift: { emoji: string; name: string; sender: string; animation: string }; onDone: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDone, 2500)
+    return () => clearTimeout(timer)
+  }, [onDone])
+
+  const isThrow = gift.animation === 'throw'
+  const isExplode = gift.animation === 'explode'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.3, y: isThrow ? 100 : 50, x: isThrow ? -100 : 0 }}
+      animate={{
+        opacity: [0, 1, 1, 0],
+        scale: isExplode ? [0.3, 1.5, 2, 0] : [0.3, 1.2, 1, 0.5],
+        y: isThrow ? [100, -20, -40, -80] : [50, -20, -50, -100],
+        x: isThrow ? [-100, 0, 20, 40] : [0, 0, 0, 0],
+        rotate: isThrow ? [0, -20, 10, 360] : [0, 0, 0, 0],
+      }}
+      transition={{ duration: 2.2, ease: 'easeOut' }}
+      className="fixed z-[200] pointer-events-none flex flex-col items-center"
+      style={{ top: '40%', left: '50%', transform: 'translate(-50%, -50%)' }}
+    >
+      <span className="text-6xl drop-shadow-2xl">{gift.emoji}</span>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ duration: 2 }}
+        className="text-white text-xs font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm"
+      >
+        {gift.sender} → {gift.name}
+      </motion.p>
+    </motion.div>
+  )
+}
+
+// Popup message component (messages float up and disappear)
+function PopupMessages({ messages }: { messages: Array<{ id: string; userName: string; message: string; ts: number }> }) {
+  return (
+    <div className="fixed bottom-20 left-4 z-[90] pointer-events-none flex flex-col-reverse gap-1 max-w-[280px]">
+      <AnimatePresence>
+        {messages.slice(-6).map((m) => (
+          <motion.div
+            key={m.id}
+            initial={{ opacity: 0, x: -30, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.7 }}
+            transition={{ duration: 0.3 }}
+            className="bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 border border-fuchsia-500/20"
+          >
+            <span className="text-cyan-400 text-[11px] font-bold">{m.userName}: </span>
+            <span className="text-white text-[11px]">{m.message}</span>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Chat input bar + gift panel (always visible at bottom of game)
+function GameChatBar({ roomId, isAI, onGiftSend }: { roomId: string; isAI: boolean; onGiftSend: (gift: typeof GAME_GIFTS[0], sender: string) => void }) {
+  const { data: session } = useSession() || {}
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [unread, setUnread] = useState(0)
-  const lastRef = useRef<string | null>(null)
-  const endRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const p = lastRef.current ? `?after=${lastRef.current}` : ''
-        const r = await fetch(`/api/games/room/${roomId}/chat${p}`)
-        if (r.ok) {
-          const m = await r.json()
-          if (m.length > 0) {
-            if (lastRef.current) { setMsgs(prev => [...prev, ...m]); if (!open) setUnread(prev => prev + m.length) }
-            else setMsgs(m)
-            lastRef.current = m[m.length - 1].createdAt
-          }
-        }
-      } catch {}
-    }
-    poll(); const iv = setInterval(poll, 3000); return () => clearInterval(iv)
-  }, [roomId, open])
-
-  useEffect(() => { if (open) { setUnread(0); endRef.current?.scrollIntoView({ behavior: 'smooth' }) } }, [open, msgs.length])
+  const [showGifts, setShowGifts] = useState(false)
 
   const send = async () => {
     if (!input.trim() || sending) return
@@ -218,31 +268,61 @@ function MiniChat({ roomId, isOwner, chatEnabled, onToggle }: { roomId: string; 
     setSending(false)
   }
 
+  const sendGift = (gift: typeof GAME_GIFTS[0]) => {
+    const senderName = (session?.user as any)?.name || 'Misafir'
+    onGiftSend(gift, senderName)
+    // Also send as chat message
+    fetch(`/api/games/room/${roomId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `${gift.emoji} ${gift.name} gönderdi!` }) }).catch(() => {})
+    setShowGifts(false)
+  }
+
   return (
-    <div className="fixed bottom-4 left-4 z-50">
-      {!open ? (
-        <button onClick={() => setOpen(true)} className="relative p-3 bg-purple-700 rounded-full shadow-lg hover:bg-purple-600 transition">
-          <MessageCircle className="w-5 h-5 text-white" />
-          {unread > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
+    <div className="fixed bottom-0 left-0 right-0 z-[80]">
+      {/* Gift panel */}
+      <AnimatePresence>
+        {showGifts && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="mx-2 mb-1 bg-[#1a0a2e]/95 backdrop-blur-xl border border-fuchsia-500/30 rounded-2xl p-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-fuchsia-300 text-xs font-bold">🎁 Hediye Gönder</span>
+              <button onClick={() => setShowGifts(false)}><X className="w-4 h-4 text-fuchsia-400" /></button>
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {GAME_GIFTS.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => sendGift(g)}
+                  className="flex flex-col items-center gap-0.5 p-2 rounded-xl hover:bg-purple-500/20 transition group"
+                >
+                  <span className="text-2xl group-hover:scale-125 transition-transform">{g.emoji}</span>
+                  <span className="text-[8px] text-fuchsia-300/70">{g.name}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chat input */}
+      <div className="flex items-center gap-1.5 px-2 py-2 bg-[#0d0520]/90 backdrop-blur-xl border-t border-fuchsia-500/20">
+        <button onClick={() => setShowGifts(!showGifts)} className={`p-2 rounded-xl transition ${showGifts ? 'bg-fuchsia-600 text-white' : 'bg-purple-900/50 text-fuchsia-400 hover:bg-purple-800/50'}`}>
+          <Gift className="w-4 h-4" />
         </button>
-      ) : (
-        <div className="w-72 h-80 bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-fuchsia-500/20">
-            <span className="text-fuchsia-300 text-xs font-medium">Sohbet</span>
-            <button onClick={() => setOpen(false)}><X className="w-4 h-4 text-fuchsia-400" /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {msgs.map((m: any, i: number) => (
-              <div key={i} className="text-xs"><span className="text-cyan-400 font-medium">{m.userName}:</span> <span className="text-fuchsia-200">{m.message}</span></div>
-            ))}
-            <div ref={endRef} />
-          </div>
-          <div className="flex items-center gap-1 p-2 border-t border-fuchsia-500/20">
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Mesaj..." className="flex-1 px-2 py-1.5 bg-purple-900/50 border border-fuchsia-500/20 rounded-lg text-white text-xs focus:outline-none" />
-            <button onClick={send} disabled={sending} className="p-1.5 bg-purple-600 rounded-lg"><Send className="w-3.5 h-3.5 text-white" /></button>
-          </div>
-        </div>
-      )}
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()}
+          placeholder="Mesaj yaz..."
+          className="flex-1 px-3 py-2 bg-purple-900/50 border border-fuchsia-500/20 rounded-xl text-white text-xs focus:outline-none focus:border-fuchsia-400/50"
+        />
+        <button onClick={send} disabled={sending || !input.trim()} className="p-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl disabled:opacity-40 transition">
+          <Send className="w-4 h-4 text-white" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -259,6 +339,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [betAmount, setBetAmount] = useState(10)
   const [turnTimer, setTurnTimer] = useState(0)
   const [gridSize, setGridSize] = useState(gridSizeOptions?.[0] || 0)
+  const [aiDifficulty, setAiDifficulty] = useState<'easy' | 'hard'>('easy')
   const [userBalance, setUserBalance] = useState({ credits: 0, jetonBalance: 0 })
   const [activePlayers, setActivePlayers] = useState(0)
   const [waitingRooms, setWaitingRooms] = useState(0)
@@ -273,11 +354,49 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [showWinPopup, setShowWinPopup] = useState(false)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const [recentWinners, setRecentWinners] = useState<any[]>([])
+  // Chat popup messages
+  const [popupMessages, setPopupMessages] = useState<Array<{ id: string; userName: string; message: string; ts: number }>>([])
+  const lastChatRef = useRef<string | null>(null)
+  // Gift animations
+  const [activeGift, setActiveGift] = useState<{ emoji: string; name: string; sender: string; animation: string } | null>(null)
 
   // Force FREE for AI mode
   useEffect(() => {
     if (gameMode === 'ai') { setBetType('FREE'); setBetAmount(0) }
   }, [gameMode])
+
+  // Poll chat messages for popup display (for all games including AI)
+  useEffect(() => {
+    if ((phase === 'playing' || phase === 'spectating') && roomId) {
+      const pollChat = async () => {
+        try {
+          const p = lastChatRef.current ? `?after=${lastChatRef.current}` : ''
+          const r = await fetch(`/api/games/room/${roomId}/chat${p}`)
+          if (r.ok) {
+            const msgs = await r.json()
+            if (msgs.length > 0) {
+              lastChatRef.current = msgs[msgs.length - 1].createdAt
+              const newPopups = msgs.map((m: any) => ({ id: m.id, userName: m.userName, message: m.message, ts: Date.now() }))
+              setPopupMessages(prev => [...prev, ...newPopups].slice(-10))
+            }
+          }
+        } catch {}
+      }
+      pollChat()
+      const iv = setInterval(pollChat, 2000)
+      return () => clearInterval(iv)
+    }
+  }, [phase, roomId])
+
+  // Auto-remove old popup messages after 5 seconds
+  useEffect(() => {
+    if (popupMessages.length === 0) return
+    const timer = setInterval(() => {
+      const now = Date.now()
+      setPopupMessages(prev => prev.filter(m => now - m.ts < 5000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [popupMessages.length])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -303,6 +422,8 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   }, [gameType])
 
   useEffect(() => { if (phase === 'menu') { fetchLobby(); fetchActive(); const iv = setInterval(() => { fetchLobby(); fetchActive() }, 5000); return () => clearInterval(iv) } }, [phase, fetchLobby, fetchActive])
+  // Also fetch lobby on mount for guests
+  useEffect(() => { fetchLobby(); fetchActive() }, [fetchLobby, fetchActive])
 
   // Poll game state
   useEffect(() => {
@@ -375,9 +496,10 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   }
 
   const spectateGame = async (id: string) => {
-    if (!session?.user) return
     try {
-      await fetch(`/api/games/room/${id}/viewers`, { method: 'POST' })
+      if (session?.user) {
+        await fetch(`/api/games/room/${id}/viewers`, { method: 'POST' })
+      }
       const r = await fetch(`/api/games/room/${id}`); if (r.ok) { const g = await r.json(); setRoomId(id); setRoom(g); setChatEnabled(g.chatEnabled); setIsSpectator(true); setPhase('spectating') }
     } catch { alert('Bağlantı hatası') }
   }
@@ -403,9 +525,14 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
 
   const resetToMenu = () => {
     setPhase('menu'); setRoom(null); setRoomId(null); setMyWaiting(null); setIsSpectator(false); setChatEnabled(true); setShowWinPopup(false)
+    setPopupMessages([]); lastChatRef.current = null; setActiveGift(null)
     if (pollRef.current) clearInterval(pollRef.current)
     if (session?.user) fetch('/api/user/profile').then(r => r.json()).then(d => { if (d.credits !== undefined) setUserBalance({ credits: d.credits, jetonBalance: d.jetonBalance || 0 }) }).catch(() => {})
     fetchStats()
+  }
+
+  const handleGiftSend = (gift: typeof GAME_GIFTS[0], sender: string) => {
+    setActiveGift({ emoji: gift.emoji, name: gift.name, sender, animation: gift.animation })
   }
 
   const sendMove = async (action: any) => {
@@ -454,6 +581,9 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       {/* Game Mode */}
       {supportsAI && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Modu</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setGameMode('ai')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === 'ai' ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Bot className="w-4 h-4" /> Yapay Zeka</button><button onClick={() => setGameMode('2player')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${gameMode === '2player' ? 'border-pink-400 bg-pink-500/20 text-pink-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}><Users className="w-4 h-4" /> 2 Kişilik</button></div></div>}
 
+      {/* AI Difficulty - only for AI mode */}
+      {supportsAI && gameMode === 'ai' && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Zorluk Seviyesi</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setAiDifficulty('easy')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${aiDifficulty === 'easy' ? 'border-green-400 bg-green-500/20 text-green-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>😊 Kolay</button><button onClick={() => setAiDifficulty('hard')} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${aiDifficulty === 'hard' ? 'border-red-400 bg-red-500/20 text-red-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>🔥 Zor</button></div></div>}
+
       {/* Grid Size - only if gridSizeOptions provided */}
       {gridSizeOptions && gridSizeOptions.length > 1 && <div className="w-full"><label className="text-fuchsia-300 text-xs font-medium mb-2 block">Oyun Alanı</label><div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(gridSizeOptions.length, 4)}, 1fr)` }}>{gridSizeOptions.map(s => <button key={s} onClick={() => setGridSize(s)} className={`py-2 rounded-xl border-2 transition-all font-bold text-xs sm:text-sm ${gridSize === s ? 'border-fuchsia-400 bg-fuchsia-500/20 text-fuchsia-300' : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'}`}>{s}x{s}</button>)}</div>{gridSize >= 6 && <p className="text-xs text-gray-500 mt-1">5&apos;li sıra yapan kazanır</p>}</div>}
 
@@ -466,19 +596,18 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       {/* ACTION BUTTONS */}
       {!session?.user ? <p className="text-fuchsia-400/60 text-sm">Oynamak için giriş yapın</p> : <div className="w-full space-y-2">
         {gameMode === 'ai' ? (
-          <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat (Ücretsiz)</button>
+          <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat ({aiDifficulty === 'easy' ? '😊 Kolay' : '🔥 Zor'} - Ücretsiz)</button>
         ) : (
           <button onClick={() => createGame(false)} className="w-full py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> Oda Aç ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button>
         )}
       </div>}
 
-      {/* OPEN ROOMS / TABLES - shown for both modes */}
-      {session?.user && (
-        <div className="w-full">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><Gamepad2 className="w-3.5 h-3.5" /> Masalar / Açık Odalar</h3>
-            <button onClick={() => { fetchLobby(); fetchActive() }} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button>
-          </div>
+      {/* OPEN ROOMS / TABLES - shown for everyone */}
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-fuchsia-300 font-medium text-sm flex items-center gap-1.5"><Gamepad2 className="w-3.5 h-3.5" /> Masalar / Açık Odalar</h3>
+          <button onClick={() => { fetchLobby(); fetchActive() }} className="text-fuchsia-400/60 hover:text-fuchsia-300"><RefreshCw className="w-4 h-4" /></button>
+        </div>
           {myWaiting ? (
             <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 text-center">
               <Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin mx-auto mb-3" />
@@ -501,9 +630,13 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
                           {g.turnTimer > 0 && <span className="ml-1">⏱️ {g.turnTimer}s</span>}
                         </p>
                       </div>
-                      <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50 flex items-center gap-1.5">
-                        <LogIn className="w-3.5 h-3.5" /> Oyna
-                      </button>
+                      {session?.user ? (
+                        <button onClick={() => joinGame(g.id)} disabled={lobbyLoading} className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-300 rounded-lg text-sm font-medium hover:bg-green-600/30 transition disabled:opacity-50 flex items-center gap-1.5">
+                          <LogIn className="w-3.5 h-3.5" /> Oyna
+                        </button>
+                      ) : (
+                        <span className="text-fuchsia-400/50 text-xs">Giriş yapın</span>
+                      )}
                     </div>
                   ))}
                   {/* Active games */}
@@ -521,7 +654,6 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
             </>
           )}
         </div>
-      )}
 
       <div className="flex items-center justify-between w-full">
         <Link href="/oyunlar" className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition"><ArrowLeft className="w-4 h-4" /> Oyunlara Dön</Link>
@@ -577,9 +709,16 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           <div className="flex flex-col items-center"><span className="text-fuchsia-400/40 text-[10px]">VS</span>{room.betAmount > 0 && <span className="text-yellow-400 text-[10px] font-medium">{room.betAmount} {room.betCurrency}</span>}</div>
           <div className={`flex-1 text-center py-1.5 rounded-xl border-2 transition-all ${room.currentTurn === 2 && room.status === 'active' ? 'border-pink-400 bg-pink-500/20 shadow-[0_0_12px_rgba(236,72,153,0.3)]' : 'border-fuchsia-500/20 bg-purple-900/20'}`}><p className="text-[10px] text-fuchsia-300/60 truncate px-1">{room.player2Name}</p><p className="text-xl font-bold text-pink-300">{room.player2Score}</p></div>
         </div>
-        {children({ room, state, isMyTurn: isSpectator ? false : isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled })}
-        <button onClick={isSpectator ? async () => { if (roomId) { try { await fetch(`/api/games/room/${roomId}/viewers`, { method: 'DELETE' }) } catch {} }; resetToMenu() } : leaveGame} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1"><ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}</button>
-        {!room.isAI && room.status === 'active' && roomId && <MiniChat roomId={roomId} isOwner={isOwner} chatEnabled={chatEnabled} onToggle={setChatEnabled} />}
+        {children({ room, state, isMyTurn: isSpectator ? false : isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled, aiDifficulty })}
+        <button onClick={isSpectator ? async () => { if (roomId) { try { await fetch(`/api/games/room/${roomId}/viewers`, { method: 'DELETE' }) } catch {} }; resetToMenu() } : leaveGame} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1 mb-16"><ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}</button>
+        {/* Popup messages */}
+        <PopupMessages messages={popupMessages} />
+        {/* Gift animation */}
+        <AnimatePresence>
+          {activeGift && <GiftAnimation gift={activeGift} onDone={() => setActiveGift(null)} />}
+        </AnimatePresence>
+        {/* Chat bar with gifts - shown for all games */}
+        {room.status === 'active' && roomId && <GameChatBar roomId={roomId} isAI={room.isAI} onGiftSend={handleGiftSend} />}
       </div>
     )
   }

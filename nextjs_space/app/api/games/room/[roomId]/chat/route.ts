@@ -23,14 +23,14 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     const { message } = await req.json()
     if (!message || typeof message !== 'string' || message.trim().length === 0) return NextResponse.json({ error: 'Mesaj boş olamaz' }, { status: 400 })
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
-    if (!room.chatEnabled) return NextResponse.json({ error: 'Sohbet kapalı' }, { status: 403 })
-    const userName = (session.user as any)?.name || 'Anonim'
-    const msg = await prisma.gameRoomChat.create({ data: { roomId: params.roomId, userId: session.user.id, userName, message: message.trim().slice(0, 200) } })
+    // Allow guests to chat too
+    const userId = session?.user?.id || 'guest_' + Math.random().toString(36).slice(2, 8)
+    const userName = (session?.user as any)?.name || 'Misafir'
+    const msg = await prisma.gameRoomChat.create({ data: { roomId: params.roomId, userId, userName, message: message.trim().slice(0, 200) } })
     return NextResponse.json(msg)
   } catch (error: any) {
     return NextResponse.json({ error: 'Mesaj gönderilemedi' }, { status: 500 })

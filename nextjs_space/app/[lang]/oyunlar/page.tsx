@@ -341,15 +341,18 @@ function TopGamesGrid({ stats, lang }: { stats: GameTypeStats[]; lang: string })
                 transition={{ delay: i * 0.05 }}
                 className={`relative bg-gradient-to-br ${info.color} rounded-xl p-3 border hover:scale-[1.03] transition-all cursor-pointer group`}
               >
-                {isHot && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
+                {s.activePlayers > 0 && (
+                  <div className="absolute -top-2 -right-2 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 rounded-full shadow-lg shadow-green-500/50 animate-pulse z-10">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                    <span className="text-[9px] text-white font-bold">{s.activePlayers}</span>
+                  </div>
                 )}
                 <div className="text-center">
                   <span className="text-3xl block mb-1.5 group-hover:scale-110 transition-transform">{info.emoji}</span>
                   <p className="text-white font-bold text-xs truncate">{info.name}</p>
                   <div className="flex items-center justify-center gap-1 mt-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${s.activePlayers > 0 ? 'bg-green-400 animate-pulse' : 'bg-fuchsia-500/30'}`} />
-                    <span className="text-[10px] text-fuchsia-300/70">{s.activePlayers} kişi</span>
+                    <span className={`text-[10px] font-medium ${s.activePlayers > 0 ? 'text-green-300' : 'text-fuchsia-300/70'}`}>{s.activePlayers} kişi</span>
                   </div>
                   <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-fuchsia-300/50">
                     <span>🏆 {s.todayPlayed}</span>
