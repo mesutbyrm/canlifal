@@ -286,7 +286,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
 
     if (result.error) return NextResponse.json({ error: result.error }, { status: 400 })
 
-    const nextTurn = result.winner || result.isDraw ? room.currentTurn : (result.scored ? playerNum : (playerNum === 1 ? 2 : 1))
+    const nextTurn = result.winner || result.isDraw ? room.currentTurn : (result.scored || result.noTurnSwitch ? playerNum : (playerNum === 1 ? 2 : 1))
     let status = room.status
     let winnerId: string | null = null
 
@@ -300,8 +300,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     const updateData: any = {
       state: JSON.stringify(result.state),
       currentTurn: nextTurn,
-      player1Score: result.p1Score ?? room.player1Score,
-      player2Score: result.p2Score ?? room.player2Score,
+      player1Score: result.player1Score ?? result.p1Score ?? room.player1Score,
+      player2Score: result.player2Score ?? result.p2Score ?? room.player2Score,
       status,
       winnerId,
       lastMoveAt: new Date(),

@@ -1,6 +1,6 @@
 // ========== GAME LOGIC FOR ALL MULTIPLAYER GAMES ==========
 
-export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101'
+export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101' | 'connect4' | 'reversi' | 'dama' | 'mangala' | 'tas_kagit_makas'
 
 // ========== XOX (Tic-Tac-Toe / Gomoku) ==========
 // Supports NxN boards. For N<=4: win = N in a row. For N>=5: win = 5 in a row.
@@ -676,6 +676,16 @@ export function processMove(gameType: string, state: any, action: any, playerNum
       return tavlaMove(state, action.from, playerNum)
     case 'pisti':
       return pistiPlay(state, playerNum, action.cardIndex)
+    case 'connect4':
+      return connect4Move(state, action.col, playerNum)
+    case 'reversi':
+      return reversiMove(state, action.row, action.col, playerNum)
+    case 'dama':
+      return damaMove(state, action.from, action.to, playerNum)
+    case 'mangala':
+      return mangalaMove(state, action.pit, playerNum)
+    case 'tas_kagit_makas':
+      return tkmMove(state, action.choice, playerNum)
     default:
       return { error: 'Bilinmeyen oyun tipi' }
   }
@@ -1452,6 +1462,391 @@ export function getInitialState(gameType: string, options?: { gridSize?: number 
     case 'okey': return okeyInit()
     case 'okey101': return okey101Init()
     case 'yuzbirokey': return okey101Init()
+    case 'connect4': return connect4Init()
+    case 'reversi': return reversiInit()
+    case 'dama': return damaInit()
+    case 'mangala': return mangalaInit()
+    case 'tas_kagit_makas': return tkmInit()
     default: return {}
   }
+}
+
+// ========== CONNECT 4 ==========
+export function connect4Init() {
+  // 6 rows x 7 cols, empty = ''
+  return { board: Array(42).fill(''), rows: 6, cols: 7 }
+}
+
+export function connect4Move(state: any, col: number, playerNum: number) {
+  const board = [...state.board]
+  const rows = 6, cols = 7
+  if (col < 0 || col >= cols) return { error: 'Geçersiz sütun' }
+  // Find lowest empty row in column
+  let row = -1
+  for (let r = rows - 1; r >= 0; r--) {
+    if (board[r * cols + col] === '') { row = r; break }
+  }
+  if (row === -1) return { error: 'Sütun dolu' }
+  board[row * cols + col] = playerNum === 1 ? 'R' : 'Y'
+  const winner = connect4CheckWin(board, rows, cols)
+  const isFull = board.every((c: string) => c !== '')
+  return { state: { board, rows, cols }, winner, isDraw: !winner && isFull, scored: false }
+}
+
+function connect4CheckWin(board: string[], rows: number, cols: number): number | null {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]]
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = board[r * cols + c]
+      if (!cell) continue
+      for (const [dr, dc] of dirs) {
+        if (r + dr * 3 < 0 || r + dr * 3 >= rows || c + dc * 3 < 0 || c + dc * 3 >= cols) continue
+        let ok = true
+        for (let k = 1; k < 4; k++) {
+          if (board[(r + dr * k) * cols + (c + dc * k)] !== cell) { ok = false; break }
+        }
+        if (ok) return cell === 'R' ? 1 : 2
+      }
+    }
+  }
+  return null
+}
+
+export function connect4AI(state: any): number | null {
+  const board = state.board, cols = 7, rows = 6
+  // Check for winning move, then blocking move
+  for (const sym of ['Y', 'R']) {
+    for (let c = 0; c < cols; c++) {
+      let row = -1
+      for (let r = rows - 1; r >= 0; r--) { if (board[r * cols + c] === '') { row = r; break } }
+      if (row === -1) continue
+      const test = [...board]; test[row * cols + c] = sym
+      if (connect4CheckWin(test, rows, cols)) return c
+    }
+  }
+  // Prefer center columns
+  const pref = [3, 2, 4, 1, 5, 0, 6]
+  for (const c of pref) {
+    for (let r = rows - 1; r >= 0; r--) { if (board[r * cols + c] === '') return c }
+  }
+  return null
+}
+
+// ========== REVERSI (OTHELLO) ==========
+export function reversiInit() {
+  const board = Array(64).fill('')
+  board[27] = 'W'; board[28] = 'B'; board[35] = 'B'; board[36] = 'W'
+  return { board, size: 8 }
+}
+
+function reversiGetFlips(board: string[], row: number, col: number, color: string, size: number): number[] {
+  const opp = color === 'B' ? 'W' : 'B'
+  const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+  const allFlips: number[] = []
+  for (const [dr, dc] of dirs) {
+    const flips: number[] = []
+    let r = row + dr, c = col + dc
+    while (r >= 0 && r < size && c >= 0 && c < size && board[r * size + c] === opp) {
+      flips.push(r * size + c); r += dr; c += dc
+    }
+    if (flips.length > 0 && r >= 0 && r < size && c >= 0 && c < size && board[r * size + c] === color) {
+      allFlips.push(...flips)
+    }
+  }
+  return allFlips
+}
+
+function reversiValidMoves(board: string[], color: string, size: number): number[] {
+  const moves: number[] = []
+  for (let i = 0; i < size * size; i++) {
+    if (board[i] !== '') continue
+    const r = Math.floor(i / size), c = i % size
+    if (reversiGetFlips(board, r, c, color, size).length > 0) moves.push(i)
+  }
+  return moves
+}
+
+export function reversiMove(state: any, row: number, col: number, playerNum: number) {
+  const board = [...state.board], size = 8
+  const color = playerNum === 1 ? 'B' : 'W'
+  const idx = row * size + col
+  if (board[idx] !== '') return { error: 'Dolu hücre' }
+  const flips = reversiGetFlips(board, row, col, color, size)
+  if (flips.length === 0) return { error: 'Geçersiz hamle' }
+  board[idx] = color
+  for (const f of flips) board[f] = color
+  // Check if opponent can move; if not, check if current player can move; if neither, game over
+  const opp = color === 'B' ? 'W' : 'B'
+  const oppMoves = reversiValidMoves(board, opp, size)
+  const myMoves = reversiValidMoves(board, color, size)
+  let switchTurn = true, gameOver = false
+  if (oppMoves.length === 0 && myMoves.length === 0) gameOver = true
+  else if (oppMoves.length === 0) switchTurn = false // opponent passes, same player goes again
+  const bCount = board.filter((c: string) => c === 'B').length
+  const wCount = board.filter((c: string) => c === 'W').length
+  const isFull = board.every((c: string) => c !== '')
+  if (isFull) gameOver = true
+  let winner: number | null = null
+  if (gameOver) { winner = bCount > wCount ? 1 : wCount > bCount ? 2 : null }
+  return {
+    state: { board, size, skipTurn: !switchTurn },
+    winner,
+    isDraw: gameOver && !winner,
+    scored: false,
+    player1Score: bCount,
+    player2Score: wCount,
+    noTurnSwitch: !switchTurn
+  }
+}
+
+export function reversiAI(state: any, playerNum: number): { row: number; col: number } | null {
+  const color = playerNum === 1 ? 'B' : 'W'
+  const moves = reversiValidMoves(state.board, color, 8)
+  if (moves.length === 0) return null
+  // Prefer corners, then edges, then max flips
+  const corners = [0, 7, 56, 63]
+  for (const m of moves) { if (corners.includes(m)) return { row: Math.floor(m / 8), col: m % 8 } }
+  let best = moves[0], bestFlips = 0
+  for (const m of moves) {
+    const r = Math.floor(m / 8), c = m % 8
+    const f = reversiGetFlips(state.board, r, c, color, 8).length
+    if (f > bestFlips) { bestFlips = f; best = m }
+  }
+  return { row: Math.floor(best / 8), col: best % 8 }
+}
+
+// ========== DAMA (Turkish Draughts / Checkers) ==========
+export function damaInit() {
+  // 8x8 board. Player 1 (white 'w') bottom rows 5-7, Player 2 (black 'b') top rows 0-2
+  const board = Array(64).fill('')
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) board[r * 8 + c] = 'b'
+  for (let r = 5; r < 8; r++) for (let c = 0; c < 8; c++) board[r * 8 + c] = 'w'
+  return { board, size: 8 }
+}
+
+function damaGetMoves(board: string[], playerNum: number, size: number) {
+  const mine = playerNum === 1 ? ['w', 'W'] : ['b', 'B']
+  const opp = playerNum === 1 ? ['b', 'B'] : ['w', 'W']
+  const dir = playerNum === 1 ? -1 : 1 // p1 moves up, p2 moves down
+  const captures: { from: number; to: number; captured: number[] }[] = []
+  const simple: { from: number; to: number }[] = []
+  
+  for (let i = 0; i < size * size; i++) {
+    if (!mine.includes(board[i])) continue
+    const r = Math.floor(i / size), c = i % size
+    const isKing = board[i] === 'W' || board[i] === 'B'
+    const dirs = isKing ? [-1, 1] : [dir]
+    
+    // Check captures (jump over opponent)
+    for (const dr of dirs) {
+      for (const dc of [-1, 1]) {
+        const mr = r + dr, mc = c + dc, jr = r + 2 * dr, jc = c + 2 * dc
+        if (jr < 0 || jr >= size || jc < 0 || jc >= size) continue
+        if (opp.includes(board[mr * size + mc]) && board[jr * size + jc] === '') {
+          captures.push({ from: i, to: jr * size + jc, captured: [mr * size + mc] })
+        }
+      }
+    }
+    // Also check forward captures for kings in straight lines
+    if (isKing) {
+      for (const dc of [-1, 1]) {
+        for (const dr2 of [-1, 1]) {
+          const mr = r + dr2, mc = c + dc, jr = r + 2 * dr2, jc = c + 2 * dc
+          if (jr < 0 || jr >= size || jc < 0 || jc >= size) continue
+          if (opp.includes(board[mr * size + mc]) && board[jr * size + jc] === '' && !captures.find(cap => cap.from === i && cap.to === jr * size + jc)) {
+            captures.push({ from: i, to: jr * size + jc, captured: [mr * size + mc] })
+          }
+        }
+      }
+    }
+    // Simple moves
+    for (const dr of dirs) {
+      for (const dc of [-1, 1]) {
+        const nr = r + dr, nc = c + dc
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue
+        if (board[nr * size + nc] === '') simple.push({ from: i, to: nr * size + nc })
+      }
+    }
+  }
+  return captures.length > 0 ? { moves: captures, mustCapture: true } : { moves: simple, mustCapture: false }
+}
+
+export function damaMove(state: any, from: number, to: number, playerNum: number) {
+  const board = [...state.board], size = 8
+  const mine = playerNum === 1 ? ['w', 'W'] : ['b', 'B']
+  if (!mine.includes(board[from])) return { error: 'Kendi taşınızı seçin' }
+  
+  const { moves, mustCapture } = damaGetMoves(board, playerNum, size)
+  const move = moves.find((m: any) => m.from === from && m.to === to)
+  if (!move) return { error: mustCapture ? 'Yeme zorunlu!' : 'Geçersiz hamle' }
+  
+  const piece = board[from]
+  board[from] = ''
+  board[to] = piece
+  if ('captured' in move) for (const c of (move as any).captured) board[c] = ''
+  
+  // King promotion
+  const toRow = Math.floor(to / size)
+  if (piece === 'w' && toRow === 0) board[to] = 'W'
+  if (piece === 'b' && toRow === size - 1) board[to] = 'B'
+  
+  // Check winner
+  const p1Count = board.filter((c: string) => c === 'w' || c === 'W').length
+  const p2Count = board.filter((c: string) => c === 'b' || c === 'B').length
+  let winner: number | null = null
+  if (p2Count === 0) winner = 1
+  else if (p1Count === 0) winner = 2
+  else {
+    // Check if opponent has any moves
+    const oppNum = playerNum === 1 ? 2 : 1
+    const oppMoves = damaGetMoves(board, oppNum, size)
+    if (oppMoves.moves.length === 0) winner = playerNum
+  }
+  
+  return { state: { board, size }, winner, isDraw: false, scored: false }
+}
+
+export function damaAI(state: any, playerNum: number): { from: number; to: number } | null {
+  const { moves } = damaGetMoves(state.board, playerNum, 8)
+  if (moves.length === 0) return null
+  // Prefer captures, then random
+  const captures = moves.filter((m: any) => 'captured' in m)
+  if (captures.length > 0) return { from: captures[0].from, to: captures[0].to }
+  return { from: moves[Math.floor(Math.random() * moves.length)].from, to: moves[Math.floor(Math.random() * moves.length)].to }
+}
+
+// ========== MANGALA ==========
+export function mangalaInit() {
+  // 2x6 pits + 2 stores. pits[0-5] = player1 side, pits[6-11] = player2 side
+  // store[0] = player1 store, store[1] = player2 store
+  return { pits: [4,4,4,4,4,4,4,4,4,4,4,4], stores: [0, 0] }
+}
+
+export function mangalaMove(state: any, pit: number, playerNum: number) {
+  const pits = [...state.pits]
+  const stores = [...state.stores]
+  const myRange = playerNum === 1 ? [0,1,2,3,4,5] : [6,7,8,9,10,11]
+  const myStore = playerNum === 1 ? 0 : 1
+  
+  if (!myRange.includes(pit)) return { error: 'Kendi tarafınızdan seçin' }
+  if (pits[pit] === 0) return { error: 'Boş çukur' }
+  
+  let stones = pits[pit]
+  pits[pit] = 0
+  // Slots: 0-5=p1 pits, 6=p1 store, 7-12=p2 pits, 13=p2 store (14 total)
+  let slot = pit < 6 ? pit : pit + 1 // map pit index to slot
+  let extraTurn = false
+  let lastPitIdx = -1
+  
+  while (stones > 0) {
+    slot = (slot + 1) % 14
+    if (slot === 6 && playerNum !== 1) continue // skip opponent's store
+    if (slot === 13 && playerNum !== 2) continue // skip opponent's store
+    if (slot === 6) { stores[0]++; stones--; if (stones === 0) extraTurn = true; continue }
+    if (slot === 13) { stores[1]++; stones--; if (stones === 0) extraTurn = true; continue }
+    const pitIdx = slot < 6 ? slot : slot - 1
+    pits[pitIdx]++
+    stones--
+    lastPitIdx = pitIdx
+  }
+  
+  // Capture: if last stone lands in empty pit on own side
+  if (!extraTurn && lastPitIdx >= 0 && myRange.includes(lastPitIdx) && pits[lastPitIdx] === 1) {
+    const oppPit = 11 - lastPitIdx
+    if (pits[oppPit] > 0) {
+      stores[myStore] += pits[oppPit] + 1
+      pits[lastPitIdx] = 0
+      pits[oppPit] = 0
+    }
+  }
+  
+  // Check game over
+  const p1Empty = pits.slice(0, 6).every((p: number) => p === 0)
+  const p2Empty = pits.slice(6, 12).every((p: number) => p === 0)
+  let winner: number | null = null
+  let isDraw = false
+  
+  if (p1Empty || p2Empty) {
+    // Collect remaining stones
+    for (let i = 0; i < 6; i++) { stores[0] += pits[i]; pits[i] = 0 }
+    for (let i = 6; i < 12; i++) { stores[1] += pits[i]; pits[i] = 0 }
+    if (stores[0] > stores[1]) winner = 1
+    else if (stores[1] > stores[0]) winner = 2
+    else isDraw = true
+  }
+  
+  return {
+    state: { pits, stores },
+    winner, isDraw, scored: false,
+    player1Score: stores[0], player2Score: stores[1],
+    noTurnSwitch: extraTurn && !winner && !isDraw
+  }
+}
+
+export function mangalaAI(state: any, playerNum: number): number | null {
+  const myRange = playerNum === 1 ? [0,1,2,3,4,5] : [6,7,8,9,10,11]
+  const valid = myRange.filter((p: number) => state.pits[p] > 0)
+  if (valid.length === 0) return null
+  // Try to find a move that ends in store (extra turn)
+  for (const pit of valid) {
+    const stones = state.pits[pit]
+    const storePos = playerNum === 1 ? 6 : 13
+    // Approximate: pit + stones = storePos (mod 14)
+    if ((pit + stones) % 14 === storePos || (pit + stones + 1) % 14 === storePos) return pit
+  }
+  // Pick pit with most stones
+  return valid.reduce((best: number, p: number) => state.pits[p] > state.pits[best] ? p : best, valid[0])
+}
+
+// ========== TAŞ KAĞIT MAKAS ==========
+export function tkmInit() {
+  return { round: 1, maxRounds: 5, p1Choices: [] as string[], p2Choices: [] as string[], p1Score: 0, p2Score: 0 }
+}
+
+export function tkmMove(state: any, choice: string, playerNum: number) {
+  if (!['tas', 'kagit', 'makas'].includes(choice)) return { error: 'Geçersiz seçim' }
+  const p1Choices = [...(state.p1Choices || [])]
+  const p2Choices = [...(state.p2Choices || [])]
+  let p1Score = state.p1Score || 0
+  let p2Score = state.p2Score || 0
+  const round = state.round || 1
+  
+  if (playerNum === 1) p1Choices.push(choice)
+  else p2Choices.push(choice)
+  
+  // Both players chose for this round
+  if (p1Choices.length === round && p2Choices.length === round) {
+    const p1 = p1Choices[round - 1], p2 = p2Choices[round - 1]
+    const wins: Record<string, string> = { tas: 'makas', makas: 'kagit', kagit: 'tas' }
+    if (wins[p1] === p2) p1Score++
+    else if (wins[p2] === p1) p2Score++
+    
+    const nextRound = round + 1
+    const maxRounds = state.maxRounds || 5
+    const gameOver = nextRound > maxRounds
+    let winner: number | null = null
+    if (gameOver) { winner = p1Score > p2Score ? 1 : p2Score > p1Score ? 2 : null }
+    
+    return {
+      state: { round: gameOver ? round : nextRound, maxRounds, p1Choices, p2Choices, p1Score, p2Score, lastResult: { p1, p2 } },
+      winner,
+      isDraw: gameOver && !winner,
+      scored: false,
+      player1Score: p1Score,
+      player2Score: p2Score,
+      simultaneousReveal: true
+    }
+  }
+  
+  // Waiting for other player
+  return {
+    state: { ...state, p1Choices, p2Choices, round, p1Score, p2Score },
+    waiting: true,
+    scored: false
+  }
+}
+
+export function tkmAI(): string {
+  const choices = ['tas', 'kagit', 'makas']
+  return choices[Math.floor(Math.random() * 3)]
 }

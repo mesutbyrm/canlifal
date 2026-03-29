@@ -208,6 +208,11 @@ const GAME_INFO: Record<string, { emoji: string; name: string; desc: string; slu
   okey: { emoji: '🀄', name: 'Okey', desc: 'Klasik 4 kişilik Türk Okey', slug: 'okey', color: 'from-teal-600/30 to-cyan-600/30 border-teal-400/40' },
   okey101: { emoji: '💯', name: '101 Okey', desc: 'Çok rauntlu 101 Okey', slug: 'okey101', color: 'from-fuchsia-600/30 to-pink-600/30 border-fuchsia-400/40' },
   yuzbirokey: { emoji: '🎯', name: 'Yüz Bir Okey', desc: 'Modern arayüzlü 101 Okey', slug: 'yuzbirokey', color: 'from-violet-600/30 to-purple-600/30 border-violet-400/40' },
+  connect4: { emoji: '🔴🟡', name: 'Connect 4', desc: '4lü sıra yapan kazanır!', slug: 'connect4', color: 'from-red-600/30 to-yellow-600/30 border-red-400/40' },
+  reversi: { emoji: '⚫⚪', name: 'Reversi', desc: 'Taşları çevir, tahtayı fethet!', slug: 'reversi', color: 'from-emerald-600/30 to-teal-600/30 border-emerald-400/40' },
+  dama: { emoji: '🏁', name: 'Dama', desc: 'Klasik dama! Taşları ye, şah ol!', slug: 'dama', color: 'from-stone-600/30 to-amber-600/30 border-stone-400/40' },
+  mangala: { emoji: '🫘', name: 'Mangala', desc: 'Antik strateji oyunu! Taşları topla', slug: 'mangala', color: 'from-yellow-700/30 to-orange-600/30 border-yellow-400/40' },
+  tas_kagit_makas: { emoji: '✊✋✌️', name: 'Taş Kağıt Makas', desc: '5 el oyna, en çok kazanan galip!', slug: 'tas-kagit-makas', color: 'from-sky-600/30 to-blue-600/30 border-sky-400/40' },
 }
 
 const gameSlug = (gt: string) => GAME_INFO[gt]?.slug || gt
