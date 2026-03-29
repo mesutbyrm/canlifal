@@ -824,14 +824,6 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         </div>
         {children({ room, state, isMyTurn: isSpectator ? false : isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled, aiDifficulty })}
         <button onClick={isSpectator ? async () => { if (roomId) { try { await fetch(`/api/games/room/${roomId}/viewers`, { method: 'DELETE' }) } catch {} }; resetToMenu() } : leaveGame} className="flex items-center gap-2 text-fuchsia-400/60 hover:text-fuchsia-300 text-xs sm:text-sm transition mt-1 mb-16"><ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}</button>
-        {/* Popup messages */}
-        <PopupMessages messages={popupMessages} />
-        {/* Gift animation */}
-        <AnimatePresence>
-          {activeGift && <GiftAnimation gift={activeGift} onDone={() => setActiveGift(null)} />}
-        </AnimatePresence>
-        {/* Chat bar with gifts - shown for all games (active or spectating) */}
-        {(room.status === 'active' || isSpectator) && roomId && <GameChatBar roomId={roomId} isAI={room.isAI} onGiftSend={handleGiftSend} />}
       </div>
     )
   }
@@ -848,6 +840,16 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           </motion.div>
         </AnimatePresence>
       </div>
+      {/* Fixed overlays - rendered outside AnimatePresence/motion.div to avoid transform breaking position:fixed */}
+      {(phase === 'playing' || phase === 'spectating') && room && roomId && (
+        <>
+          <PopupMessages messages={popupMessages} />
+          <AnimatePresence>
+            {activeGift && <GiftAnimation gift={activeGift} onDone={() => setActiveGift(null)} />}
+          </AnimatePresence>
+          {(room.status === 'active' || isSpectator) && <GameChatBar roomId={roomId} isAI={room.isAI} onGiftSend={handleGiftSend} />}
+        </>
+      )}
       {showWinPopup && room && (
         <WinPopup room={room} userId={session?.user?.id} onDone={() => setShowWinPopup(false)} />
       )}

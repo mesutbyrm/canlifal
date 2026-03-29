@@ -1522,15 +1522,6 @@ export default function SOSGamePage() {
           <ArrowLeft className="w-4 h-4" /> {isSpectator ? 'İzlemeyi Bırak' : 'Ayrıl'}
         </button>
 
-        {/* Chat popup (for active multiplayer games) */}
-        {!game.isAI && game.status === 'active' && gameId && (
-          <ChatPopup
-            gameId={gameId}
-            isOwner={isOwner}
-            chatEnabled={chatEnabled}
-            onToggleChat={setChatEnabled}
-          />
-        )}
       </div>
     )
   }
@@ -1643,6 +1634,15 @@ export default function SOSGamePage() {
             </motion.div>
           </AnimatePresence>
         </div>
+        {/* Chat popup - rendered outside AnimatePresence to fix position:fixed inside transform */}
+        {(phase === 'playing' || phase === 'spectating') && game && !game.isAI && game.status === 'active' && gameId && (
+          <ChatPopup
+            gameId={gameId}
+            isOwner={game.player1Id === session?.user?.id}
+            chatEnabled={chatEnabled}
+            onToggleChat={setChatEnabled}
+          />
+        )}
       </div>
     </>
   )
