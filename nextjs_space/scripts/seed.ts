@@ -569,6 +569,11 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { slug: 'sudoku', title: 'Sudoku', description: '9x9 bulmacayı doğru sayılarla doldur!', icon: '🧩', sortOrder: 10, minReward: 20, maxReward: 100, entryFee: 0 },
     { slug: 'hafiza-eslestirme', title: 'Hafıza Eşleştirme', description: 'Kartları çevir ve eşlerini bul! Farklı temalar ve boyutlar.', icon: '🧠', sortOrder: 11, minReward: 10, maxReward: 70, entryFee: 0 },
     { slug: 'adam-asmaca', title: 'Adam Asmaca', description: 'Harf harf tahmin et, kelimeyi bul!', icon: '📝', sortOrder: 12, minReward: 10, maxReward: 60, entryFee: 0 },
+    { slug: 'slot', title: 'Slot Makinesi', description: 'Çevir ve kazan! Şansını dene!', icon: '🎰', sortOrder: 13, minReward: 5, maxReward: 100, entryFee: 0 },
+    { slug: 'carkifelek', title: 'Çarkıfelek', description: 'Çarkı çevir, ödülünü kap!', icon: '🎡', sortOrder: 14, minReward: 5, maxReward: 100, entryFee: 0 },
+    { slug: 'kazi-kazan', title: 'Kazı Kazan', description: 'Kartı kazı, sürprizi gör!', icon: '🪙', sortOrder: 15, minReward: 5, maxReward: 80, entryFee: 0 },
+    { slug: 'kelime-bulmaca', title: 'Kelime Bulmaca', description: 'Harfleri birleştir, kelimeyi bul!', icon: '🔤', sortOrder: 16, minReward: 10, maxReward: 70, entryFee: 0 },
+    { slug: 'anagram', title: 'Anagram', description: 'Karışık harflerden anlamlı kelime yap!', icon: '🔠', sortOrder: 17, minReward: 10, maxReward: 60, entryFee: 0 },
   ]
   for (const game of defaultGames) {
     await prisma.miniGame.upsert({

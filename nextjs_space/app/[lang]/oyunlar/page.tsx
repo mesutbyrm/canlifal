@@ -22,6 +22,11 @@ const GameMinesweeper = dynamic(() => import('@/components/mini-games/game-mines
 const GameSudoku = dynamic(() => import('@/components/mini-games/game-sudoku'), { ssr: false })
 const GameMemoryMatch = dynamic(() => import('@/components/mini-games/game-memory-match'), { ssr: false })
 const GameHangman = dynamic(() => import('@/components/mini-games/game-hangman'), { ssr: false })
+const GameSlot = dynamic(() => import('@/components/mini-games/game-slot'), { ssr: false })
+const GameCarkifelek = dynamic(() => import('@/components/mini-games/game-carkifelek'), { ssr: false })
+const GameScratch = dynamic(() => import('@/components/mini-games/game-scratch'), { ssr: false })
+const GameWordPuzzle = dynamic(() => import('@/components/mini-games/game-word-puzzle'), { ssr: false })
+const GameAnagram = dynamic(() => import('@/components/mini-games/game-anagram'), { ssr: false })
 
 // ========== TYPES ==========
 interface LobbyStats {
@@ -1428,6 +1433,16 @@ export default function GameLobbyPage() {
         return <GameMemoryMatch onComplete={(score) => recordPlay('hafiza-eslestirme', score).then(d => { if (d) setResultMessage(`🧠 Hafıza Eşleştirme tamamlandı! +${d.reward} CFC`) })} />
       case 'adam-asmaca':
         return <GameHangman onComplete={(score) => recordPlay('adam-asmaca', score).then(d => { if (d) setResultMessage(`📝 Kelime bulundu! +${d.reward} CFC`) })} />
+      case 'slot':
+        return <GameSlot onComplete={(score) => recordPlay('slot', score).then(d => { if (d) setResultMessage(`🎰 Jackpot! +${d.reward} CFC`) })} />
+      case 'carkifelek':
+        return <GameCarkifelek onComplete={(score) => recordPlay('carkifelek', score).then(d => { if (d) setResultMessage(`🎡 Çarkıfelek tamamlandı! +${d.reward} CFC`) })} />
+      case 'kazi-kazan':
+        return <GameScratch onComplete={(score) => recordPlay('kazi-kazan', score).then(d => { if (d) setResultMessage(`🪙 Kazı Kazan tamamlandı! +${d.reward} CFC`) })} />
+      case 'kelime-bulmaca':
+        return <GameWordPuzzle onComplete={(score) => recordPlay('kelime-bulmaca', score).then(d => { if (d) setResultMessage(`🔤 Bulmaca çözüldü! +${d.reward} CFC`) })} />
+      case 'anagram':
+        return <GameAnagram onComplete={(score) => recordPlay('anagram', score).then(d => { if (d) setResultMessage(`🔠 Anagram çözüldü! +${d.reward} CFC`) })} />
       default:
         return <p className="text-fuchsia-300 text-sm">Oyun yükleniyor...</p>
     }
