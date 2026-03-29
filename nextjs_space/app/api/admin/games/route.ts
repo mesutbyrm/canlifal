@@ -95,8 +95,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const body = await req.json()
+    const id = body?.id
     if (!id) {
       return NextResponse.json({ error: 'ID belirtilmedi' }, { status: 400 })
     }

@@ -52,6 +52,7 @@ export default function AdminDreamsPage() {
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [shouldSelectAllAfterLoad, setShouldSelectAllAfterLoad] = useState(false)
   const [bulkCategoryTarget, setBulkCategoryTarget] = useState('')
   const [bulkMoving, setBulkMoving] = useState(false)
   const [bulkPublishing, setBulkPublishing] = useState(false)
@@ -113,6 +114,14 @@ export default function AdminDreamsPage() {
   useEffect(() => {
     fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
   }, [currentPage, filterCategory, filterPublish, perPage, fetchDreams])
+
+  // Auto-select all after switching to 'all' mode
+  useEffect(() => {
+    if (shouldSelectAllAfterLoad && !loading && dreams.length > 0) {
+      setSelectedIds(dreams.map(d => d.id))
+      setShouldSelectAllAfterLoad(false)
+    }
+  }, [shouldSelectAllAfterLoad, loading, dreams])
 
   const handleSearch = () => {
     setCurrentPage(1)
@@ -311,8 +320,16 @@ export default function AdminDreamsPage() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
   const toggleSelectAll = () => {
-    if (selectedIds.length === dreams.length) setSelectedIds([])
-    else setSelectedIds(dreams.map(d => d.id))
+    if (selectedIds.length === dreams.length && dreams.length > 0) {
+      setSelectedIds([])
+    } else if (perPage !== 'all' && dreams.length < total) {
+      // Switch to show all items first, then select all after reload
+      setPerPage('all')
+      setCurrentPage(1)
+      setShouldSelectAllAfterLoad(true)
+    } else {
+      setSelectedIds(dreams.map(d => d.id))
+    }
   }
 
   const handleBulkCategoryMove = async () => {
@@ -864,7 +881,11 @@ export default function AdminDreamsPage() {
                 onChange={toggleSelectAll}
                 className="w-4 h-4 rounded accent-indigo-500"
               />
-              <span className="text-xs text-gray-400">Tümünü Seç ({dreams.length}{perPage !== 'all' && total > dreams.length ? ` / ${total}` : ''})</span>
+              <span className="text-xs text-gray-400">
+                {perPage !== 'all' && dreams.length < total
+                  ? `Tümünü Seç (${total} kayıt yüklenecek)`
+                  : `Tümünü Seç (${dreams.length})`}
+              </span>
             </div>
 
             {dreams.map((dream) => (
