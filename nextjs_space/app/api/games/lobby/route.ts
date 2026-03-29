@@ -13,47 +13,57 @@ export async function GET(req: NextRequest) {
 
     // ===== LOBBY STATS =====
     if (section === 'stats') {
-      const [activeRooms, waitingRooms, totalCompleted, onlineViewers] = await Promise.all([
+      const [activeRooms, waitingRooms, totalCompleted, onlineViewers,
+             sosActive, sosWaiting, sosCompleted, sosViewers] = await Promise.all([
         prisma.gameRoom.count({ where: { status: 'active' } }),
         prisma.gameRoom.count({ where: { status: 'waiting', isAI: false } }),
         prisma.gameRoom.count({ where: { status: 'completed' } }),
         prisma.gameRoomViewer.count(),
+        prisma.sosGame.count({ where: { status: 'active' } }),
+        prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
+        prisma.sosGame.count({ where: { status: 'completed' } }),
+        prisma.sosGameViewer.count(),
       ])
 
+      const totalActive = activeRooms + sosActive
+      const totalWaiting = waitingRooms + sosWaiting
+      const totalViewers = onlineViewers + sosViewers
+      // Players in active games (2 per room) + players waiting in rooms (1 per room)
+      const playingNow = totalActive * 2
+      const onlinePlayers = playingNow + totalWaiting
+
       return NextResponse.json({
-        onlinePlayers: activeRooms * 2 + waitingRooms,
-        playingNow: activeRooms * 2,
-        watching: onlineViewers,
-        openTables: activeRooms + waitingRooms,
-        waitingTables: waitingRooms,
-        totalGamesPlayed: totalCompleted,
+        onlinePlayers,
+        playingNow,
+        watching: totalViewers,
+        openTables: totalActive + totalWaiting,
+        waitingTables: totalWaiting,
+        totalGamesPlayed: totalCompleted + sosCompleted,
       })
     }
 
     // ===== TOP GAMES (most played) =====
     if (section === 'top_games') {
       const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey']
+      const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
       
       const stats = await Promise.all(
         gameTypes.map(async (gt) => {
+          if (gt === 'sos') {
+            // SOS uses its own model
+            const [active, waiting, todayPlayed] = await Promise.all([
+              prisma.sosGame.count({ where: { status: 'active' } }),
+              prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
+              prisma.sosGame.count({ where: { status: 'completed', updatedAt: { gte: todayStart } } }),
+            ])
+            return { gameType: gt, activePlayers: active * 2, activeTables: active, waitingTables: waiting, todayPlayed }
+          }
           const [active, waiting, todayPlayed] = await Promise.all([
             prisma.gameRoom.count({ where: { gameType: gt, status: 'active' } }),
             prisma.gameRoom.count({ where: { gameType: gt, status: 'waiting', isAI: false } }),
-            prisma.gameRoom.count({
-              where: {
-                gameType: gt,
-                status: 'completed',
-                updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-              },
-            }),
+            prisma.gameRoom.count({ where: { gameType: gt, status: 'completed', updatedAt: { gte: todayStart } } }),
           ])
-          return {
-            gameType: gt,
-            activePlayers: active * 2,
-            activeTables: active,
-            waitingTables: waiting,
-            todayPlayed,
-          }
+          return { gameType: gt, activePlayers: active * 2, activeTables: active, waitingTables: waiting, todayPlayed }
         })
       )
 
@@ -64,79 +74,73 @@ export async function GET(req: NextRequest) {
 
     // ===== LIVE TABLES =====
     if (section === 'live_tables') {
-      const rooms = await prisma.gameRoom.findMany({
-        where: {
-          status: { in: ['active', 'waiting'] },
-          isAI: false,
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 30,
-        include: { _count: { select: { viewers: true } } },
-      })
+      const [rooms, sosRooms] = await Promise.all([
+        prisma.gameRoom.findMany({
+          where: { status: { in: ['active', 'waiting'] }, isAI: false },
+          orderBy: { updatedAt: 'desc' },
+          take: 20,
+          include: { _count: { select: { viewers: true } } },
+        }),
+        prisma.sosGame.findMany({
+          where: { status: { in: ['active', 'waiting'] }, isAI: false },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+          include: { _count: { select: { viewers: true } } },
+        }),
+      ])
 
-      return NextResponse.json({
-        tables: rooms.map((r: any) => ({
-          id: r.id,
-          gameType: r.gameType,
-          player1Name: r.player1Name,
-          player2Name: r.player2Name,
-          player1Id: r.player1Id,
-          player2Id: r.player2Id,
-          status: r.status,
-          betAmount: r.betAmount,
-          betCurrency: r.betCurrency,
-          viewerCount: r._count.viewers,
-          currentTurn: r.currentTurn,
-          player1Score: r.player1Score,
-          player2Score: r.player2Score,
-          turnTimer: r.turnTimer,
-          createdAt: r.createdAt,
-        })),
-      })
+      const gameRoomTables = rooms.map((r: any) => ({
+        id: r.id, gameType: r.gameType, player1Name: r.player1Name, player2Name: r.player2Name,
+        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status,
+        betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
+        currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
+        turnTimer: r.turnTimer, createdAt: r.createdAt,
+      }))
+      const sosTables = sosRooms.map((r: any) => ({
+        id: r.id, gameType: 'sos', player1Name: r.player1Name, player2Name: r.player2Name,
+        player1Id: r.player1Id, player2Id: r.player2Id, status: r.status,
+        betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
+        currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
+        turnTimer: r.turnTimer, createdAt: r.createdAt,
+      }))
+
+      const allTables = [...gameRoomTables, ...sosTables].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ).slice(0, 30)
+
+      return NextResponse.json({ tables: allTables })
     }
 
     // ===== RECENT WINNERS =====
     if (section === 'recent_winners') {
-      const winners = await prisma.gameRoom.findMany({
-        where: {
-          status: 'completed',
-          winnerId: { not: null },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 15,
-        select: {
-          id: true,
-          gameType: true,
-          winnerId: true,
-          player1Id: true,
-          player2Id: true,
-          player1Name: true,
-          player2Name: true,
-          player1Score: true,
-          player2Score: true,
-          betAmount: true,
-          betCurrency: true,
-          updatedAt: true,
-        },
-      })
-
-      return NextResponse.json({
-        winners: winners.map((g: any) => {
-          const winnerName = g.winnerId === g.player1Id ? g.player1Name : g.player2Name
-          const loserName = g.winnerId === g.player1Id ? g.player2Name : g.player1Name
-          const payout = g.betAmount > 0 ? Math.floor(g.betAmount * 2 * 0.9) : 0
-          return {
-            id: g.id,
-            gameType: g.gameType,
-            winnerName,
-            loserName,
-            payout,
-            currency: g.betCurrency,
-            score: `${g.player1Score}-${g.player2Score}`,
-            time: g.updatedAt,
-          }
+      const [gameWinners, sosWinners] = await Promise.all([
+        prisma.gameRoom.findMany({
+          where: { status: 'completed', winnerId: { not: null } },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+          select: { id: true, gameType: true, winnerId: true, player1Id: true, player2Id: true, player1Name: true, player2Name: true, player1Score: true, player2Score: true, betAmount: true, betCurrency: true, updatedAt: true },
         }),
-      })
+        prisma.sosGame.findMany({
+          where: { status: 'completed', winnerId: { not: null } },
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+          select: { id: true, winnerId: true, player1Id: true, player2Id: true, player1Name: true, player2Name: true, player1Score: true, player2Score: true, betAmount: true, betCurrency: true, updatedAt: true },
+        }),
+      ])
+
+      const mapWinner = (g: any, gt?: string) => {
+        const winnerName = g.winnerId === g.player1Id ? g.player1Name : g.player2Name
+        const loserName = g.winnerId === g.player1Id ? g.player2Name : g.player1Name
+        const payout = g.betAmount > 0 ? Math.floor(g.betAmount * 2 * 0.9) : 0
+        return { id: g.id, gameType: gt || g.gameType, winnerName, loserName, payout, currency: g.betCurrency, score: `${g.player1Score}-${g.player2Score}`, time: g.updatedAt }
+      }
+
+      const allWinners = [
+        ...gameWinners.map((g: any) => mapWinner(g)),
+        ...sosWinners.map((g: any) => mapWinner(g, 'sos')),
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 15)
+
+      return NextResponse.json({ winners: allWinners })
     }
 
     // ===== ROOM DISTRIBUTION (pie chart data) =====
@@ -144,9 +148,11 @@ export async function GET(req: NextRequest) {
       const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey']
       const dist = await Promise.all(
         gameTypes.map(async (gt) => {
-          const count = await prisma.gameRoom.count({
-            where: { gameType: gt, status: { in: ['active', 'waiting'] } },
-          })
+          if (gt === 'sos') {
+            const count = await prisma.sosGame.count({ where: { status: { in: ['active', 'waiting'] } } })
+            return { gameType: gt, count }
+          }
+          const count = await prisma.gameRoom.count({ where: { gameType: gt, status: { in: ['active', 'waiting'] } } })
           return { gameType: gt, count }
         })
       )
