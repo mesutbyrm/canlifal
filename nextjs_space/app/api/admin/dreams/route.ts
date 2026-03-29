@@ -21,12 +21,24 @@ export async function GET(req: NextRequest) {
     const limit = 20
     const skip = (page - 1) * limit
 
+    const category = searchParams.get('category')?.trim() || ''
+    const publishFilter = searchParams.get('publish')?.trim() || ''
+
     const where: any = {}
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
+        { keywords: { hasSome: [search] } },
       ]
+    }
+    if (category && category !== 'all') {
+      where.category = category
+    }
+    if (publishFilter === 'published') {
+      where.isPublished = true
+    } else if (publishFilter === 'draft') {
+      where.isPublished = false
     }
 
     const [dreams, total] = await Promise.all([
@@ -39,7 +51,27 @@ export async function GET(req: NextRequest) {
       prisma.dreamInterpretation.count({ where }),
     ])
 
-    return NextResponse.json({ dreams, total, page, totalPages: Math.ceil(total / limit) })
+    // Get category counts and publish counts
+    const [publishedCount, draftCount, categoryCounts] = await Promise.all([
+      prisma.dreamInterpretation.count({ where: { isPublished: true } }),
+      prisma.dreamInterpretation.count({ where: { isPublished: false } }),
+      prisma.dreamInterpretation.groupBy({
+        by: ['category'],
+        _count: { id: true },
+      }),
+    ])
+
+    const categoryCountMap: Record<string, number> = {}
+    categoryCounts.forEach((c: any) => {
+      categoryCountMap[c.category || 'genel'] = c._count.id
+    })
+
+    return NextResponse.json({
+      dreams, total, page,
+      totalPages: Math.ceil(total / limit),
+      publishedCount, draftCount,
+      categoryCounts: categoryCountMap,
+    })
   } catch (error) {
     console.error('Admin dreams fetch error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
