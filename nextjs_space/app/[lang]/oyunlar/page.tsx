@@ -239,6 +239,7 @@ function HeroQuickStart({
   loading,
   selectedGame,
   setSelectedGame,
+  topGames,
 }: {
   onQuickMatch: () => void
   onWatchLive: () => void
@@ -246,8 +247,10 @@ function HeroQuickStart({
   loading: boolean
   selectedGame: string
   setSelectedGame: (g: string) => void
+  topGames: GameTypeStats[]
 }) {
   const gameTypes = Object.keys(GAME_INFO)
+  const perGameMap = Object.fromEntries(topGames.map(g => [g.gameType, g]))
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-br from-[#1a0a2e] via-[#2d1252] to-[#1a0a2e] p-5 sm:p-6">
@@ -273,16 +276,24 @@ function HeroQuickStart({
               xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
               sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+'
             }
+            const gameStats = perGameMap[gt]
+            const onlineCount = gameStats ? (gameStats.activePlayers + gameStats.waitingTables) : 0
             return (
               <button
                 key={gt}
                 onClick={() => setSelectedGame(gt)}
-                className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
+                className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
                   selectedGame === gt
                     ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
                     : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
                 }`}
               >
+                {onlineCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    {onlineCount}
+                  </span>
+                )}
                 <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
                 <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
               </button>
@@ -952,7 +963,7 @@ export default function GameLobbyPage() {
       fetchLobbyData()
       if (activeTab === 'spectator') fetchSpectatorGames()
       if (activeTab === 'tournaments') fetchTournaments()
-    }, 10000)
+    }, 5000)
     return () => clearInterval(iv)
   }, [fetchLobbyData, fetchProfileData, fetchLeaderboard, fetchSpectatorGames, fetchTournaments, fetchLobbyExtras, activeTab])
 
@@ -1521,6 +1532,7 @@ export default function GameLobbyPage() {
                 loading={matchLoading}
                 selectedGame={selectedGame}
                 setSelectedGame={setSelectedGame}
+                topGames={topGames}
               />
 
               {/* Top Games Grid */}
