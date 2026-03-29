@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     // ===== TOP GAMES (most played) =====
     if (section === 'top_games') {
-      const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas']
+      const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas', 'gomoku', 'amiral_batti', 'kelime_duellosu', 'quiz_1v1', 'kart_eslestirme_pvp']
       const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
       const staleThreshold = new Date(Date.now() - 10 * 60 * 1000)
       
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
 
     // ===== ROOM DISTRIBUTION (pie chart data) =====
     if (section === 'room_distribution') {
-      const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas']
+      const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas', 'gomoku', 'amiral_batti', 'kelime_duellosu', 'quiz_1v1', 'kart_eslestirme_pvp']
       const dist = await Promise.all(
         gameTypes.map(async (gt) => {
           if (gt === 'sos') {

@@ -276,7 +276,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     }
 
     // Some games don't enforce strict turn order (tombala, zar in certain phases)
-    const noTurnCheck = ['tombala', 'zar'].includes(room.gameType)
+    const noTurnCheck = ['tombala', 'zar', 'tas_kagit_makas', 'kelime_duellosu', 'quiz_1v1', 'amiral_batti'].includes(room.gameType)
     if (!noTurnCheck && room.currentTurn !== playerNum) {
       return NextResponse.json({ error: 'Sıra sizde değil' }, { status: 400 })
     }
@@ -285,6 +285,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     const result: any = processMove(room.gameType, state, body, playerNum)
 
     if (result.error) return NextResponse.json({ error: result.error }, { status: 400 })
+
+    // Simultaneous games: if waiting for other player, just save state
+    if (result.waiting) {
+      const updated = await prisma.gameRoom.update({
+        where: { id: params.roomId },
+        data: { state: JSON.stringify(result.state), lastMoveAt: new Date() }
+      })
+      return NextResponse.json({ success: true, room: updated })
+    }
 
     const nextTurn = result.winner || result.isDraw ? room.currentTurn : (result.scored || result.noTurnSwitch ? playerNum : (playerNum === 1 ? 2 : 1))
     let status = room.status

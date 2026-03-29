@@ -1,6 +1,6 @@
 // ========== GAME LOGIC FOR ALL MULTIPLAYER GAMES ==========
 
-export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101' | 'connect4' | 'reversi' | 'dama' | 'mangala' | 'tas_kagit_makas'
+export type GameType = 'xox' | 'tombala' | 'tavla' | 'pisti' | 'sayi_tahmin' | 'zar' | 'okey' | 'okey101' | 'connect4' | 'reversi' | 'dama' | 'mangala' | 'tas_kagit_makas' | 'gomoku' | 'amiral_batti' | 'kelime_duellosu' | 'quiz_1v1' | 'kart_eslestirme_pvp'
 
 // ========== XOX (Tic-Tac-Toe / Gomoku) ==========
 // Supports NxN boards. For N<=4: win = N in a row. For N>=5: win = 5 in a row.
@@ -686,6 +686,16 @@ export function processMove(gameType: string, state: any, action: any, playerNum
       return mangalaMove(state, action.pit, playerNum)
     case 'tas_kagit_makas':
       return tkmMove(state, action.choice, playerNum)
+    case 'gomoku':
+      return gomokuMove(state, action.index, playerNum)
+    case 'amiral_batti':
+      return amiralBattiMove(state, action, playerNum)
+    case 'kelime_duellosu':
+      return kelimeDuellosuMove(state, action, playerNum)
+    case 'quiz_1v1':
+      return quiz1v1Move(state, action, playerNum)
+    case 'kart_eslestirme_pvp':
+      return kartEslestirmePvpMove(state, action, playerNum)
     default:
       return { error: 'Bilinmeyen oyun tipi' }
   }
@@ -1467,6 +1477,11 @@ export function getInitialState(gameType: string, options?: { gridSize?: number 
     case 'dama': return damaInit()
     case 'mangala': return mangalaInit()
     case 'tas_kagit_makas': return tkmInit()
+    case 'gomoku': return gomokuInit()
+    case 'amiral_batti': return amiralBattiInit()
+    case 'kelime_duellosu': return kelimeDuellosuInit()
+    case 'quiz_1v1': return quiz1v1Init()
+    case 'kart_eslestirme_pvp': return kartEslestirmePvpInit()
     default: return {}
   }
 }
@@ -1849,4 +1864,485 @@ export function tkmMove(state: any, choice: string, playerNum: number) {
 export function tkmAI(): string {
   const choices = ['tas', 'kagit', 'makas']
   return choices[Math.floor(Math.random() * 3)]
+}
+
+// ========== GOMOKU (15x15, 5 in a row) ==========
+export function gomokuInit() {
+  return xoxInit(15)
+}
+
+export function gomokuMove(state: any, index: number, playerNum: number) {
+  return xoxMove(state, index, playerNum)
+}
+
+export function gomokuAI(state: any): number | null {
+  return xoxAI(state)
+}
+
+// ========== AMIRAL BATTI (Battleship) ==========
+const SHIPS = [
+  { name: 'Uçak Gemisi', size: 5 },
+  { name: 'Savaş Gemisi', size: 4 },
+  { name: 'Kruvazör', size: 3 },
+  { name: 'Denizaltı', size: 3 },
+  { name: 'Muhrip', size: 2 },
+]
+
+export function amiralBattiInit() {
+  // Each player has: board (10x10, '' = empty, 'S' = ship, 'H' = hit, 'M' = miss), ships placed flag
+  return {
+    boards: { 1: Array(100).fill(''), 2: Array(100).fill('') },
+    attacks: { 1: Array(100).fill(''), 2: Array(100).fill('') }, // What each player sees of opponent
+    ships: { 1: [] as any[], 2: [] as any[] },
+    phase: 'placement', // 'placement' | 'battle'
+    placedReady: { 1: false, 2: false },
+    size: 10,
+  }
+}
+
+function canPlaceShip(board: string[], row: number, col: number, size: number, horizontal: boolean, gridSize: number): boolean {
+  for (let i = 0; i < size; i++) {
+    const r = horizontal ? row : row + i
+    const c = horizontal ? col + i : col
+    if (r >= gridSize || c >= gridSize) return false
+    if (board[r * gridSize + c] !== '') return false
+  }
+  return true
+}
+
+function placeShipOnBoard(board: string[], row: number, col: number, size: number, horizontal: boolean, gridSize: number): string[] {
+  const b = [...board]
+  for (let i = 0; i < size; i++) {
+    const r = horizontal ? row : row + i
+    const c = horizontal ? col + i : col
+    b[r * gridSize + c] = 'S'
+  }
+  return b
+}
+
+export function amiralBattiPlaceShips(state: any, playerNum: number, placements: { row: number; col: number; horizontal: boolean }[]) {
+  if (state.placedReady[playerNum]) return { error: 'Gemiler zaten yerleştirildi' }
+  if (placements.length !== SHIPS.length) return { error: 'Tüm gemiler yerleştirilmeli' }
+  
+  let board = Array(100).fill('')
+  const ships: any[] = []
+  for (let i = 0; i < SHIPS.length; i++) {
+    const { row, col, horizontal } = placements[i]
+    if (!canPlaceShip(board, row, col, SHIPS[i].size, horizontal, 10)) {
+      return { error: `${SHIPS[i].name} yerleştirilemedi` }
+    }
+    board = placeShipOnBoard(board, row, col, SHIPS[i].size, horizontal, 10)
+    const cells: number[] = []
+    for (let k = 0; k < SHIPS[i].size; k++) {
+      const r = horizontal ? row : row + k
+      const c = horizontal ? col + k : col
+      cells.push(r * 10 + c)
+    }
+    ships.push({ ...SHIPS[i], cells, hits: 0 })
+  }
+  
+  const newState = { ...state }
+  newState.boards = { ...state.boards, [playerNum]: board }
+  newState.ships = { ...state.ships, [playerNum]: ships }
+  newState.placedReady = { ...state.placedReady, [playerNum]: true }
+  
+  if (newState.placedReady[1] && newState.placedReady[2]) {
+    newState.phase = 'battle'
+  }
+  
+  return { state: newState, scored: false, noTurnSwitch: !newState.placedReady[1] || !newState.placedReady[2] }
+}
+
+export function amiralBattiMove(state: any, action: any, playerNum: number) {
+  if (action.type === 'place') {
+    return amiralBattiPlaceShips(state, playerNum, action.placements)
+  }
+  
+  // Attack phase
+  if (state.phase !== 'battle') return { error: 'Gemi yerleştirme devam ediyor' }
+  
+  const target = action.target // cell index on opponent board
+  if (target < 0 || target >= 100) return { error: 'Geçersiz hedef' }
+  
+  const opponentNum = playerNum === 1 ? 2 : 1
+  const attacks = { ...state.attacks }
+  const myAttacks = [...attacks[playerNum]]
+  
+  if (myAttacks[target] !== '') return { error: 'Bu hücreye zaten ateş edildi' }
+  
+  const opponentBoard = [...state.boards[opponentNum]]
+  const opponentShips = state.ships[opponentNum].map((s: any) => ({ ...s }))
+  
+  let isHit = opponentBoard[target] === 'S'
+  myAttacks[target] = isHit ? 'H' : 'M'
+  
+  if (isHit) {
+    opponentBoard[target] = 'H'
+    // Check which ship was hit
+    for (const ship of opponentShips) {
+      if (ship.cells.includes(target)) {
+        ship.hits = (ship.hits || 0) + 1
+      }
+    }
+  }
+  
+  attacks[playerNum] = myAttacks
+  const newBoards = { ...state.boards, [opponentNum]: opponentBoard }
+  const newShips = { ...state.ships, [opponentNum]: opponentShips }
+  
+  // Check if all ships sunk
+  const allSunk = opponentShips.every((s: any) => s.hits >= s.size)
+  
+  return {
+    state: { ...state, boards: newBoards, attacks, ships: newShips },
+    winner: allSunk ? playerNum : undefined,
+    scored: false
+  }
+}
+
+export function amiralBattiAI(state: any, aiPlayerNum: number): any {
+  if (state.phase === 'placement' && !state.placedReady[aiPlayerNum]) {
+    // Random placement
+    let board = Array(100).fill('')
+    const placements: { row: number; col: number; horizontal: boolean }[] = []
+    for (const ship of SHIPS) {
+      let placed = false
+      for (let attempt = 0; attempt < 1000; attempt++) {
+        const horizontal = Math.random() > 0.5
+        const row = Math.floor(Math.random() * 10)
+        const col = Math.floor(Math.random() * 10)
+        if (canPlaceShip(board, row, col, ship.size, horizontal, 10)) {
+          board = placeShipOnBoard(board, row, col, ship.size, horizontal, 10)
+          placements.push({ row, col, horizontal })
+          placed = true
+          break
+        }
+      }
+      if (!placed) {
+        // Fallback: try all positions
+        for (let r = 0; r < 10 && !placed; r++) {
+          for (let c = 0; c < 10 && !placed; c++) {
+            for (const h of [true, false]) {
+              if (canPlaceShip(board, r, c, ship.size, h, 10)) {
+                board = placeShipOnBoard(board, r, c, ship.size, h, 10)
+                placements.push({ row: r, col: c, horizontal: h })
+                placed = true
+              }
+            }
+          }
+        }
+      }
+    }
+    return { type: 'place', placements }
+  }
+  
+  // Attack: hunt mode - try adjacent to hits first, else random
+  const myAttacks = state.attacks[aiPlayerNum] || Array(100).fill('')
+  
+  // Find hits that have unsunken neighbors
+  const hits = myAttacks.map((c: string, i: number) => c === 'H' ? i : -1).filter((i: number) => i >= 0)
+  for (const h of hits) {
+    const r = Math.floor(h / 10), c = h % 10
+    const adj = [
+      r > 0 ? (r - 1) * 10 + c : -1,
+      r < 9 ? (r + 1) * 10 + c : -1,
+      c > 0 ? r * 10 + (c - 1) : -1,
+      c < 9 ? r * 10 + (c + 1) : -1,
+    ].filter(i => i >= 0 && myAttacks[i] === '')
+    if (adj.length > 0) return { target: adj[Math.floor(Math.random() * adj.length)] }
+  }
+  
+  // Random: prefer checkerboard pattern
+  const empty = myAttacks.map((c: string, i: number) => c === '' ? i : -1).filter((i: number) => i >= 0)
+  const checkers = empty.filter((i: number) => (Math.floor(i / 10) + i % 10) % 2 === 0)
+  const pool = checkers.length > 0 ? checkers : empty
+  return { target: pool[Math.floor(Math.random() * pool.length)] }
+}
+
+// ========== KELIME DUELLOSU (Word Duel) ==========
+const KELIME_DUELLOSU_WORDS = [
+  'ELMA', 'ARABA', 'GÜNEŞ', 'DENIZ', 'KITAP', 'KALEM', 'BAHÇE', 'BULUT',
+  'ÇIÇEK', 'DÜNYA', 'ORMAN', 'NEHIR', 'YILDIZ', 'KÖPRÜ', 'PENCERE',
+  'MASA', 'SANDALYE', 'TELEFON', 'BILGISAYAR', 'MUZIK', 'RESIM',
+  'OKUL', 'PARK', 'SINEMA', 'HASTANE', 'MARKET', 'KÜTÜPHANE',
+  'FUTBOL', 'BASKETBOL', 'VOLEYBOL', 'YÜZME', 'KOŞU', 'BISIKLET',
+  'PASTA', 'ÇORBA', 'SALATA', 'PIZZA', 'DONDURMA', 'KAHVE', 'ÇAY',
+  'KEDI', 'KÖPEK', 'KUŞLAR', 'BALIK', 'TAVŞAN', 'AT', 'ASLAN',
+]
+
+export function kelimeDuellosuInit() {
+  const wordIdx = Math.floor(Math.random() * KELIME_DUELLOSU_WORDS.length)
+  const word = KELIME_DUELLOSU_WORDS[wordIdx]
+  const scrambled = word.split('').sort(() => Math.random() - 0.5).join('')
+  return {
+    round: 1,
+    maxRounds: 5,
+    p1Score: 0,
+    p2Score: 0,
+    currentWord: word,
+    scrambled,
+    p1Answer: null as string | null,
+    p2Answer: null as string | null,
+    history: [] as any[],
+    wordIndex: 0,
+  }
+}
+
+export function kelimeDuellosuMove(state: any, action: any, playerNum: number) {
+  const answer = (action.answer || '').toUpperCase().trim()
+  const newState = { ...state }
+  
+  if (playerNum === 1) {
+    if (state.p1Answer !== null) return { error: 'Zaten cevap verdin' }
+    newState.p1Answer = answer
+  } else {
+    if (state.p2Answer !== null) return { error: 'Zaten cevap verdin' }
+    newState.p2Answer = answer
+  }
+  
+  // If both answered
+  if (newState.p1Answer !== null && newState.p2Answer !== null) {
+    const p1Correct = newState.p1Answer === state.currentWord
+    const p2Correct = newState.p2Answer === state.currentWord
+    let p1Score = state.p1Score
+    let p2Score = state.p2Score
+    if (p1Correct) p1Score++
+    if (p2Correct) p2Score++
+    
+    const history = [...(state.history || []), {
+      word: state.currentWord,
+      scrambled: state.scrambled,
+      p1Answer: newState.p1Answer,
+      p2Answer: newState.p2Answer,
+      p1Correct,
+      p2Correct,
+    }]
+    
+    const nextRound = state.round + 1
+    const gameOver = nextRound > state.maxRounds
+    
+    let winner: number | null | undefined = undefined
+    if (gameOver) {
+      winner = p1Score > p2Score ? 1 : p2Score > p1Score ? 2 : null
+    }
+    
+    // Pick next word
+    const nextWordIdx = (state.wordIndex + 1) % KELIME_DUELLOSU_WORDS.length
+    const nextWord = KELIME_DUELLOSU_WORDS[(nextWordIdx + Math.floor(Math.random() * 10)) % KELIME_DUELLOSU_WORDS.length]
+    const nextScrambled = nextWord.split('').sort(() => Math.random() - 0.5).join('')
+    
+    return {
+      state: {
+        round: gameOver ? state.round : nextRound,
+        maxRounds: state.maxRounds,
+        p1Score, p2Score,
+        currentWord: nextWord,
+        scrambled: nextScrambled,
+        p1Answer: null, p2Answer: null,
+        history,
+        wordIndex: nextWordIdx,
+      },
+      winner,
+      isDraw: gameOver && winner === null,
+      scored: false,
+      player1Score: p1Score,
+      player2Score: p2Score,
+      simultaneousReveal: true,
+    }
+  }
+  
+  return { state: newState, waiting: true, scored: false }
+}
+
+export function kelimeDuellosuAI(state: any): string {
+  // AI sometimes gets it right, sometimes wrong
+  if (Math.random() < 0.6) return state.currentWord
+  // Scramble it differently
+  return state.currentWord.split('').sort(() => Math.random() - 0.5).join('')
+}
+
+// ========== QUIZ 1V1 ==========
+const QUIZ_1V1_QUESTIONS = [
+  { q: 'Türkiye\'nin başkenti neresidir?', options: ['İstanbul', 'Ankara', 'İzmir', 'Bursa'], answer: 1 },
+  { q: 'Dünyanın en büyük okyanusu hangisidir?', options: ['Atlantik', 'Hint', 'Pasifik', 'Arktik'], answer: 2 },
+  { q: 'Pi sayısının yaklaşık değeri nedir?', options: ['2.14', '3.14', '4.14', '1.14'], answer: 1 },
+  { q: 'Hangi gezegen Güneş\'e en yakındır?', options: ['Venüs', 'Mars', 'Merkür', 'Jüpiter'], answer: 2 },
+  { q: 'İnsan vücudunda kaç kemik vardır?', options: ['106', '206', '306', '156'], answer: 1 },
+  { q: 'Osmanlı İmparatorluğu hangi yılda kuruldu?', options: ['1071', '1299', '1453', '1389'], answer: 1 },
+  { q: 'Hangi element periyodik tabloda "O" sembolüyle gösterilir?', options: ['Altın', 'Osmiyum', 'Oksijen', 'Oganeson'], answer: 2 },
+  { q: 'Dünya\'nın en uzun nehri hangisidir?', options: ['Amazon', 'Nil', 'Mississippi', 'Yangtze'], answer: 1 },
+  { q: 'Işık hızı yaklaşık kaç km/s\'dir?', options: ['100.000', '200.000', '300.000', '400.000'], answer: 2 },
+  { q: 'Hangi ülke hem Avrupa hem Asya kıtasında yer alır?', options: ['Yunanistan', 'Türkiye', 'Mısır', 'İran'], answer: 1 },
+  { q: 'DNA\'nın açılımı nedir?', options: ['Deoksiribonükleik Asit', 'Dinamik Nükleer Asit', 'Dizel Nitro Asit', 'Dijital Nano Asit'], answer: 0 },
+  { q: 'Mona Lisa tablosunu kim yapmıştır?', options: ['Picasso', 'Van Gogh', 'Da Vinci', 'Michelangelo'], answer: 2 },
+  { q: 'Bir üçgenin iç açıları toplamı kaç derecedir?', options: ['90', '180', '270', '360'], answer: 1 },
+  { q: 'Türkiye\'nin en yüksek dağı hangisidir?', options: ['Uludağ', 'Erciyes', 'Ağrı Dağı', 'Süphan'], answer: 2 },
+  { q: 'Hangi vitamin güneş ışığından sentezlenir?', options: ['A', 'B12', 'C', 'D'], answer: 3 },
+]
+
+export function quiz1v1Init() {
+  // Shuffle and pick 5 questions
+  const shuffled = [...QUIZ_1V1_QUESTIONS].sort(() => Math.random() - 0.5)
+  const selected = shuffled.slice(0, 5)
+  return {
+    round: 1,
+    maxRounds: 5,
+    p1Score: 0,
+    p2Score: 0,
+    questions: selected,
+    p1Answer: null as number | null,
+    p2Answer: null as number | null,
+    history: [] as any[],
+  }
+}
+
+export function quiz1v1Move(state: any, action: any, playerNum: number) {
+  const answer = typeof action.answer === 'number' ? action.answer : parseInt(action.answer)
+  const newState = { ...state }
+  
+  if (playerNum === 1) {
+    if (state.p1Answer !== null) return { error: 'Zaten cevap verdin' }
+    newState.p1Answer = answer
+  } else {
+    if (state.p2Answer !== null) return { error: 'Zaten cevap verdin' }
+    newState.p2Answer = answer
+  }
+  
+  if (newState.p1Answer !== null && newState.p2Answer !== null) {
+    const currentQ = state.questions[state.round - 1]
+    const correctAnswer = currentQ.answer
+    const p1Correct = newState.p1Answer === correctAnswer
+    const p2Correct = newState.p2Answer === correctAnswer
+    let p1Score = state.p1Score + (p1Correct ? 1 : 0)
+    let p2Score = state.p2Score + (p2Correct ? 1 : 0)
+    
+    const history = [...(state.history || []), {
+      question: currentQ.q,
+      correct: correctAnswer,
+      p1Answer: newState.p1Answer,
+      p2Answer: newState.p2Answer,
+      p1Correct,
+      p2Correct,
+    }]
+    
+    const nextRound = state.round + 1
+    const gameOver = nextRound > state.maxRounds
+    
+    let winner: number | null | undefined = undefined
+    if (gameOver) {
+      winner = p1Score > p2Score ? 1 : p2Score > p1Score ? 2 : null
+    }
+    
+    return {
+      state: {
+        ...state,
+        round: gameOver ? state.round : nextRound,
+        p1Score, p2Score,
+        p1Answer: null, p2Answer: null,
+        history,
+      },
+      winner,
+      isDraw: gameOver && winner === null,
+      scored: false,
+      player1Score: p1Score,
+      player2Score: p2Score,
+      simultaneousReveal: true,
+    }
+  }
+  
+  return { state: newState, waiting: true, scored: false }
+}
+
+export function quiz1v1AI(state: any): number {
+  const currentQ = state.questions[state.round - 1]
+  // AI gets it right 50% of the time
+  if (Math.random() < 0.5) return currentQ.answer
+  return Math.floor(Math.random() * 4)
+}
+
+// ========== KART ESLESTIRME PVP (Memory Match PvP) ==========
+const MEMORY_EMOJIS = ['🍎', '🍊', '🍋', '🍇', '🍉', '🍓', '🫐', '🥝', '🍒', '🥭', '🍑', '🍍']
+
+export function kartEslestirmePvpInit() {
+  // 4x4 = 16 cards = 8 pairs
+  const pairs = MEMORY_EMOJIS.slice(0, 8)
+  const cards = [...pairs, ...pairs].sort(() => Math.random() - 0.5)
+  return {
+    cards,
+    revealed: Array(16).fill(false),
+    matched: Array(16).fill(false),
+    p1Score: 0,
+    p2Score: 0,
+    flipped: [] as number[], // Currently flipped (0-2 cards)
+    size: 16,
+  }
+}
+
+export function kartEslestirmePvpMove(state: any, action: any, playerNum: number) {
+  const index = action.index
+  if (index < 0 || index >= state.size) return { error: 'Geçersiz kart' }
+  if (state.matched[index]) return { error: 'Bu kart zaten eşleşti' }
+  if (state.flipped.includes(index)) return { error: 'Bu kart zaten açık' }
+  
+  const flipped = [...state.flipped, index]
+  
+  if (flipped.length < 2) {
+    // First card flipped - same player goes again
+    return {
+      state: { ...state, flipped },
+      scored: false,
+      noTurnSwitch: true,
+    }
+  }
+  
+  // Second card flipped - check match
+  const [first, second] = flipped
+  const isMatch = state.cards[first] === state.cards[second]
+  
+  const matched = [...state.matched]
+  let p1Score = state.p1Score
+  let p2Score = state.p2Score
+  
+  if (isMatch) {
+    matched[first] = true
+    matched[second] = true
+    if (playerNum === 1) p1Score++
+    else p2Score++
+  }
+  
+  const allMatched = matched.every(Boolean)
+  let winner: number | null | undefined = undefined
+  if (allMatched) {
+    winner = p1Score > p2Score ? 1 : p2Score > p1Score ? 2 : null
+  }
+  
+  return {
+    state: {
+      ...state,
+      matched,
+      flipped: [], // Reset flipped
+      p1Score, p2Score,
+      lastFlip: { first, second, isMatch, by: playerNum },
+    },
+    winner,
+    isDraw: allMatched && winner === null,
+    scored: false,
+    noTurnSwitch: isMatch && !allMatched, // If match, same player goes again
+    player1Score: p1Score,
+    player2Score: p2Score,
+  }
+}
+
+export function kartEslestirmePvpAI(state: any): number {
+  // Simple AI: try to find matches from known cards, else random
+  const available = state.cards.map((_: any, i: number) => i).filter((i: number) => !state.matched[i] && !state.flipped.includes(i))
+  
+  if (state.flipped.length === 1) {
+    // Try to match with flipped card
+    const flippedCard = state.cards[state.flipped[0]]
+    const match = available.find((i: number) => state.cards[i] === flippedCard && i !== state.flipped[0])
+    if (match !== undefined && Math.random() < 0.4) return match // AI finds match 40% of time
+  }
+  
+  return available[Math.floor(Math.random() * available.length)]
 }

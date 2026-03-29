@@ -218,6 +218,11 @@ const GAME_INFO: Record<string, { emoji: string; name: string; desc: string; slu
   dama: { emoji: '🏁', name: 'Dama', desc: 'Klasik dama! Taşları ye, şah ol!', slug: 'dama', color: 'from-stone-600/30 to-amber-600/30 border-stone-400/40' },
   mangala: { emoji: '🫘', name: 'Mangala', desc: 'Antik strateji oyunu! Taşları topla', slug: 'mangala', color: 'from-yellow-700/30 to-orange-600/30 border-yellow-400/40' },
   tas_kagit_makas: { emoji: '✊✋✌️', name: 'Taş Kağıt Makas', desc: '5 el oyna, en çok kazanan galip!', slug: 'tas-kagit-makas', color: 'from-sky-600/30 to-blue-600/30 border-sky-400/40' },
+  gomoku: { emoji: '⚫⚪', name: 'Gomoku', desc: '15x15 tahtada 5 taşı sırala!', slug: 'gomoku', color: 'from-stone-600/30 to-gray-600/30 border-stone-400/40' },
+  amiral_batti: { emoji: '🚢💥', name: 'Amiral Battı', desc: 'Gemileri yerleştir, rakibini bat!', slug: 'amiral-batti', color: 'from-cyan-600/30 to-blue-700/30 border-cyan-400/40' },
+  kelime_duellosu: { emoji: '📝⚔️', name: 'Kelime Düellosu', desc: 'Karışık harfleri çöz, rakibini yen!', slug: 'kelime-duellosu', color: 'from-lime-600/30 to-green-700/30 border-lime-400/40' },
+  quiz_1v1: { emoji: '🧠⚡', name: 'Quiz 1v1', desc: 'Bilgi yarışmasında rakibini yen!', slug: 'quiz-1v1', color: 'from-pink-600/30 to-rose-700/30 border-pink-400/40' },
+  kart_eslestirme_pvp: { emoji: '🃏🎭', name: 'Kart Eşleştirme PvP', desc: 'Kartları çevir, eşlerini bul!', slug: 'kart-eslestirme-pvp', color: 'from-violet-600/30 to-indigo-700/30 border-violet-400/40' },
 }
 
 const gameSlug = (gt: string) => GAME_INFO[gt]?.slug || gt
