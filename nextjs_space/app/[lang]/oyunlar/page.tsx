@@ -71,6 +71,24 @@ interface LeaderboardEntry {
   totalGames: number
   level: number
   levelTitle: string
+  periodWins: number
+  periodEarnings: number
+}
+
+interface SpectatorGame {
+  id: string
+  gameType: string
+  player1Name: string
+  player2Name: string
+  player1Score: number
+  player2Score: number
+  betAmount: number
+  betCurrency: string
+  viewerCount: number
+  currentTurn: number
+  turnTimer: number
+  startedAt: string
+  lastMoveAt: string | null
 }
 
 interface GameProfile {
@@ -652,6 +670,7 @@ export default function GameLobbyPage() {
   const [liveTables, setLiveTables] = useState<LiveTable[]>([])
   const [recentWinners, setRecentWinners] = useState<RecentWinner[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [spectatorGames, setSpectatorGames] = useState<SpectatorGame[]>([])
   const [loading, setLoading] = useState(true)
   const [matchLoading, setMatchLoading] = useState(false)
 
@@ -659,8 +678,14 @@ export default function GameLobbyPage() {
   const [selectedGame, setSelectedGame] = useState('xox')
   const [tableFilter, setTableFilter] = useState('all')
   const [showMatchModal, setShowMatchModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard'>('lobby')
+  const [activeTab, setActiveTab] = useState<'lobby' | 'mini' | 'quests' | 'leaderboard' | 'spectator'>('lobby')
   const liveSectionRef = useRef<HTMLDivElement>(null)
+
+  // Leaderboard filters
+  const [lbPeriod, setLbPeriod] = useState<'all' | 'weekly' | 'monthly'>('all')
+  const [lbGameType, setLbGameType] = useState('all')
+  const [lbSearch, setLbSearch] = useState('')
+  const [lbCurrentUserId, setLbCurrentUserId] = useState<string | null>(null)
 
   // Profile & mini-game state
   const [profile, setProfile] = useState<GameProfile | null>(null)
@@ -731,21 +756,48 @@ export default function GameLobbyPage() {
     }
   }, [])
 
+  // ===== FETCH LEADERBOARD (with filters) =====
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ period: lbPeriod, gameType: lbGameType })
+      if (lbSearch) params.set('search', lbSearch)
+      const res = await fetch(`/api/games/leaderboard?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setLeaderboard(data.entries || [])
+        setLbCurrentUserId(data.currentUserId || null)
+      }
+    } catch (e) {
+      console.error('Leaderboard fetch error:', e)
+    }
+  }, [lbPeriod, lbGameType, lbSearch])
+
+  // ===== FETCH SPECTATOR GAMES =====
+  const fetchSpectatorGames = useCallback(async () => {
+    try {
+      const res = await fetch('/api/games/lobby?section=spectator')
+      if (res.ok) {
+        const data = await res.json()
+        setSpectatorGames(data.games || [])
+      }
+    } catch (e) {
+      console.error('Spectator fetch error:', e)
+    }
+  }, [])
+
   // ===== FETCH PROFILE & MINI GAMES =====
   const fetchProfileData = useCallback(async () => {
     try {
-      const [gamesRes, profileRes, questsRes, lbRes, drRes] = await Promise.all([
+      const [gamesRes, profileRes, questsRes, drRes] = await Promise.all([
         fetch('/api/games'),
         session?.user ? fetch('/api/games/profile') : null,
         session?.user ? fetch('/api/games/quests') : null,
-        fetch('/api/games/leaderboard'),
         session?.user ? fetch('/api/games/daily-reward') : null,
       ])
 
       if (gamesRes.ok) setGames(await gamesRes.json())
       if (profileRes?.ok) setProfile(await profileRes.json())
       if (questsRes?.ok) setQuests(await questsRes.json())
-      if (lbRes.ok) setLeaderboard(await lbRes.json())
       if (drRes?.ok) setDailyReward(await drRes.json())
     } catch (e) {
       console.error('Profile data fetch error:', e)
@@ -755,9 +807,17 @@ export default function GameLobbyPage() {
   useEffect(() => {
     fetchLobbyData()
     fetchProfileData()
-    const iv = setInterval(fetchLobbyData, 10000)
+    fetchLeaderboard()
+    fetchSpectatorGames()
+    const iv = setInterval(() => {
+      fetchLobbyData()
+      if (activeTab === 'spectator') fetchSpectatorGames()
+    }, 10000)
     return () => clearInterval(iv)
-  }, [fetchLobbyData, fetchProfileData])
+  }, [fetchLobbyData, fetchProfileData, fetchLeaderboard, fetchSpectatorGames, activeTab])
+
+  // Refetch leaderboard when filters change
+  useEffect(() => { fetchLeaderboard() }, [lbPeriod, lbGameType, fetchLeaderboard])
 
   // ===== MEMORY INIT =====
   const initMemory = useCallback(() => {
@@ -1296,6 +1356,7 @@ export default function GameLobbyPage() {
         <div className="max-w-5xl mx-auto flex gap-1.5 overflow-x-auto pb-2">
           {[
             { key: 'lobby' as const, label: '🎮 Lobi', icon: Gamepad2 },
+            { key: 'spectator' as const, label: '👁 Canlı İzle', icon: Eye },
             { key: 'mini' as const, label: '🎰 Mini Oyunlar', icon: Star },
             { key: 'quests' as const, label: '🎯 Görevler', icon: Target },
             { key: 'leaderboard' as const, label: '🏆 Sıralama', icon: Trophy },
@@ -1447,70 +1508,440 @@ export default function GameLobbyPage() {
             </div>
           )}
 
+          {/* ===== SPECTATOR TAB ===== */}
+          {activeTab === 'spectator' && (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-cyan-400" />
+                  Canlı Oyunları İzle
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <Radio className="w-3 h-3 text-red-500 animate-pulse" />
+                  <span className="text-red-400 text-[10px] font-bold">{spectatorGames.length} CANLI</span>
+                </div>
+              </div>
+
+              {spectatorGames.length === 0 ? (
+                <div className="text-center py-12">
+                  <Eye className="w-12 h-12 mx-auto mb-3 text-fuchsia-500/30" />
+                  <p className="text-fuchsia-300/60 text-sm font-medium">Şu an izlenecek canlı oyun yok</p>
+                  <p className="text-fuchsia-300/40 text-xs mt-1">Oyunlar başladığında burada görünecek</p>
+                  <button onClick={() => setActiveTab('lobby')} className="mt-4 px-4 py-2 bg-fuchsia-600/80 text-white text-xs rounded-full font-medium hover:bg-fuchsia-500 transition">
+                    Lobiye Dön
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {spectatorGames.map((game, i) => {
+                    const info = gameInfo(game.gameType)
+                    const elapsed = game.startedAt ? Math.floor((Date.now() - new Date(game.startedAt).getTime()) / 60000) : 0
+                    return (
+                      <motion.div
+                        key={game.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                      >
+                        <Link href={`/${lang}/oyunlar/${info.slug}?watch=${game.id}`}>
+                          <div className="relative bg-gradient-to-br from-[#1a0a2e] via-[#1f0d35] to-[#1a0a2e] border border-cyan-500/30 rounded-xl p-4 hover:border-cyan-400/60 transition-all group cursor-pointer overflow-hidden">
+                            {/* Live badge */}
+                            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-red-600/90 rounded-full">
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              <span className="text-white text-[9px] font-bold">CANLI</span>
+                            </div>
+
+                            {/* Viewer count */}
+                            <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/40 rounded-full">
+                              <Eye className="w-3 h-3 text-cyan-400" />
+                              <span className="text-cyan-300 text-[10px] font-bold">{game.viewerCount}</span>
+                            </div>
+
+                            {/* Game icon & info */}
+                            <div className="text-center mt-6 mb-3">
+                              <span className="text-4xl block mb-2 group-hover:scale-110 transition-transform">{info.emoji}</span>
+                              <p className="text-white font-bold text-sm">{info.name}</p>
+                            </div>
+
+                            {/* Players vs */}
+                            <div className="flex items-center justify-center gap-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-700 flex items-center justify-center text-white text-xs font-bold">
+                                  {game.player1Name?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-white text-xs font-medium truncate max-w-[70px]">{game.player1Name}</p>
+                                  <p className="text-amber-400 text-sm font-bold">{game.player1Score}</p>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <Swords className="w-4 h-4 text-fuchsia-400 mb-0.5" />
+                                <span className="text-fuchsia-300/40 text-[9px]">VS</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-left">
+                                  <p className="text-white text-xs font-medium truncate max-w-[70px]">{game.player2Name}</p>
+                                  <p className="text-amber-400 text-sm font-bold">{game.player2Score}</p>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white text-xs font-bold">
+                                  {game.player2Name?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Footer info */}
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-fuchsia-300/50 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> {elapsed} dk
+                              </span>
+                              {game.betAmount > 0 && (
+                                <span className="text-yellow-400/80 font-medium">{game.betAmount} {game.betCurrency}</span>
+                              )}
+                              <span className="text-cyan-400 font-bold group-hover:text-cyan-300 flex items-center gap-0.5">
+                                <Eye className="w-3 h-3" /> İzle
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ===== QUESTS TAB ===== */}
           {activeTab === 'quests' && (
-            <div className="space-y-3">
-              <h2 className="text-white font-bold flex items-center gap-2"><Target className="w-5 h-5 text-fuchsia-400" /> Günlük Görevler</h2>
-              {quests.map((quest, i) => (
-                <motion.div key={quest.type} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                  className="bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border border-fuchsia-500/20 rounded-xl p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{quest.icon}</span>
-                    <div>
-                      <p className="text-white font-medium text-xs">{quest.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-20 bg-purple-900/50 rounded-full h-1.5">
-                          <div className={`h-1.5 rounded-full ${quest.completed ? 'bg-green-400' : 'bg-fuchsia-500'}`} style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }} />
+            <div className="space-y-4">
+              {/* Header with streak */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  <Target className="w-5 h-5 text-fuchsia-400" />
+                  Günlük Görevler
+                </h2>
+                {dailyReward && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-900/30 border border-amber-500/30 rounded-full">
+                    <Flame className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-amber-300 text-[10px] font-bold">{dailyReward.currentStreak} Gün Seri</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Quest progress summary */}
+              {quests.length > 0 && (
+                <div className="bg-gradient-to-r from-fuchsia-900/30 to-purple-900/30 border border-fuchsia-500/20 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-fuchsia-300/70 text-xs">Günlük İlerleme</span>
+                    <span className="text-fuchsia-300 text-xs font-bold">
+                      {quests.filter(q => q.completed).length}/{quests.length} Tamamlandı
+                    </span>
+                  </div>
+                  <div className="w-full bg-purple-900/50 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-amber-500 transition-all duration-500"
+                      style={{ width: `${(quests.filter(q => q.completed).length / Math.max(1, quests.length)) * 100}%` }}
+                    />
+                  </div>
+                  {quests.every(q => q.completed) && (
+                    <p className="text-center text-amber-300 text-[10px] font-bold mt-2">🎉 Tüm görevler tamamlandı! Harika!</p>
+                  )}
+                </div>
+              )}
+
+              {/* Quest cards */}
+              {quests.map((quest, i) => {
+                const pct = Math.min(100, (quest.progress / quest.target) * 100)
+                return (
+                  <motion.div
+                    key={quest.type}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`relative bg-gradient-to-r from-[#1a0a2e] to-[#1f0d35] border rounded-xl p-4 ${
+                      quest.claimed ? 'border-green-500/30 opacity-70' :
+                      quest.completed ? 'border-amber-500/40 shadow-lg shadow-amber-500/10' :
+                      'border-fuchsia-500/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Progress ring */}
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(168,85,247,0.15)" strokeWidth="2.5" />
+                          <circle
+                            cx="18" cy="18" r="15.9" fill="none"
+                            stroke={quest.claimed ? '#22c55e' : quest.completed ? '#f59e0b' : '#a855f7'}
+                            strokeWidth="2.5"
+                            strokeDasharray={`${pct}, 100`}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-lg">
+                          {quest.claimed ? '✅' : quest.icon}
+                        </span>
+                      </div>
+
+                      {/* Quest info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm">{quest.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 bg-purple-900/50 rounded-full h-2 max-w-[140px]">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                quest.claimed ? 'bg-green-500' : quest.completed ? 'bg-gradient-to-r from-amber-500 to-yellow-400' : 'bg-fuchsia-500'
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-fuchsia-300/60 text-[10px] font-medium">{quest.progress}/{quest.target}</span>
                         </div>
-                        <span className="text-[10px] text-fuchsia-300/60">{quest.progress}/{quest.target}</span>
+                      </div>
+
+                      {/* Reward & action */}
+                      <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 rounded-full">
+                          <Coins className="w-3 h-3 text-yellow-400" />
+                          <span className="text-yellow-400 text-[10px] font-bold">+{quest.reward}</span>
+                        </div>
+                        {quest.completed && !quest.claimed ? (
+                          <button
+                            onClick={() => claimQuest(quest.type)}
+                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[10px] font-bold rounded-full hover:scale-105 transition shadow-lg shadow-amber-500/20 animate-pulse"
+                          >
+                            🎁 Topla!
+                          </button>
+                        ) : quest.claimed ? (
+                          <span className="text-green-400 text-[10px] font-medium flex items-center gap-0.5">
+                            <Check className="w-3 h-3" /> Alındı
+                          </span>
+                        ) : (
+                          <Lock className="w-4 h-4 text-fuchsia-400/30" />
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-yellow-400 text-[10px] font-bold">+{quest.reward}💰</span>
-                    {quest.completed && !quest.claimed ? (
-                      <button onClick={() => claimQuest(quest.type)} className="px-2.5 py-1 bg-green-600 text-white text-[10px] font-bold rounded-full">Topla</button>
-                    ) : quest.claimed ? (
-                      <span className="text-green-400 text-[10px]">✓</span>
-                    ) : (
-                      <Lock className="w-3.5 h-3.5 text-fuchsia-400/40" />
-                    )}
-                  </div>
+                  </motion.div>
+                )
+              })}
+
+              {/* Bonus: Daily reward reminder */}
+              {session?.user && dailyReward && !dailyReward.claimed && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border border-amber-500/40 rounded-xl p-4 text-center"
+                >
+                  <Calendar className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+                  <p className="text-amber-300 font-bold text-sm">Günlük Ödülünü Almadın!</p>
+                  <p className="text-amber-200/60 text-xs mt-1">Seri: {dailyReward.currentStreak} gün • Bugün: {dailyReward.nextReward} CFC</p>
+                  <button onClick={claimDailyReward} className="mt-3 px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-full text-xs hover:scale-105 transition">
+                    🎁 Günlük Ödülü Topla
+                  </button>
                 </motion.div>
-              ))}
+              )}
             </div>
           )}
 
           {/* ===== LEADERBOARD TAB ===== */}
           {activeTab === 'leaderboard' && (
-            <div className="space-y-3">
-              <h2 className="text-white font-bold flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> Liderlik Tablosu</h2>
-              {leaderboard.length === 0 ? (
-                <p className="text-fuchsia-300/60 text-sm text-center py-8">Henüz liderlik tablosu oluşmadı</p>
-              ) : (
-                leaderboard.map((entry, i) => (
-                  <motion.div key={entry.userId} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border ${
-                      i === 0 ? 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border-yellow-500/40' :
-                      i === 1 ? 'bg-gradient-to-r from-gray-700/30 to-gray-600/30 border-gray-400/40' :
-                      i === 2 ? 'bg-gradient-to-r from-amber-800/30 to-orange-900/30 border-amber-600/40' :
-                      'bg-[#1a0a2e] border-fuchsia-500/10'
-                    }`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                      i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-amber-600 text-white' : 'bg-purple-900/50 text-fuchsia-300'
-                    }`}>
-                      {i < 3 ? ['🥇', '🥈', '🥉'][i] : entry.rank}
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  Liderlik Tablosu
+                </h2>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Period filter */}
+                <div className="flex gap-1">
+                  {([
+                    { key: 'all' as const, label: 'Tüm Zamanlar' },
+                    { key: 'weekly' as const, label: 'Haftalık' },
+                    { key: 'monthly' as const, label: 'Aylık' },
+                  ]).map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => setLbPeriod(p.key)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition ${
+                        lbPeriod === p.key
+                          ? 'bg-fuchsia-600 text-white'
+                          : 'bg-purple-900/40 text-fuchsia-300/60 hover:bg-purple-800/50'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Game type filter */}
+                <div className="flex gap-1 overflow-x-auto">
+                  <button
+                    onClick={() => setLbGameType('all')}
+                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition whitespace-nowrap ${
+                      lbGameType === 'all' ? 'bg-amber-600 text-white' : 'bg-purple-900/40 text-fuchsia-300/60 hover:bg-purple-800/50'
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  {Object.entries(GAME_INFO).slice(0, 6).map(([gt, info]) => (
+                    <button
+                      key={gt}
+                      onClick={() => setLbGameType(gt)}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition whitespace-nowrap ${
+                        lbGameType === gt ? 'bg-amber-600 text-white' : 'bg-purple-900/40 text-fuchsia-300/60 hover:bg-purple-800/50'
+                      }`}
+                    >
+                      {info.emoji}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Search */}
+                <div className="relative flex-1 min-w-[150px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fuchsia-400/50" />
+                  <input
+                    type="text"
+                    value={lbSearch}
+                    onChange={(e) => setLbSearch(e.target.value)}
+                    placeholder="Oyuncu ara..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-purple-900/40 border border-fuchsia-500/20 rounded-lg text-xs text-white placeholder-fuchsia-300/40 focus:outline-none focus:border-fuchsia-400/50"
+                    onKeyDown={(e) => { if (e.key === 'Enter') fetchLeaderboard() }}
+                  />
+                </div>
+              </div>
+
+              {/* Top 3 Podium */}
+              {leaderboard.length >= 3 && (
+                <div className="flex items-end justify-center gap-3 py-4">
+                  {/* 2nd place */}
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                    className="flex flex-col items-center">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-lg font-bold border-2 border-gray-300 overflow-hidden">
+                        {leaderboard[1]?.image ? (
+                          <img src={leaderboard[1].image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          leaderboard[1]?.name?.charAt(0)?.toUpperCase() || '?'
+                        )}
+                      </div>
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-lg">🥈</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-xs truncate">{entry.username || entry.name}</p>
-                      <p className="text-fuchsia-300/50 text-[10px]">Lv.{entry.level} • {entry.levelTitle}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-yellow-400 font-bold text-xs">{entry.totalJetons} 💰</p>
-                      <p className="text-fuchsia-300/40 text-[10px]">{entry.totalGames} oyun</p>
-                    </div>
+                    <p className="text-white text-[10px] font-bold mt-2 truncate max-w-[70px]">{leaderboard[1]?.username || leaderboard[1]?.name}</p>
+                    <p className="text-yellow-400 text-[10px] font-bold">{leaderboard[1]?.totalJetons} 💰</p>
+                    <div className="w-16 h-16 bg-gradient-to-b from-gray-400/30 to-gray-600/30 rounded-t-lg border-x border-t border-gray-400/40 mt-1" />
                   </motion.div>
-                ))
+
+                  {/* 1st place */}
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
+                    className="flex flex-col items-center -mt-4">
+                    <div className="relative">
+                      <div className="w-18 h-18 w-[72px] h-[72px] rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-white text-xl font-bold border-3 border-yellow-300 overflow-hidden shadow-lg shadow-yellow-500/30">
+                        {leaderboard[0]?.image ? (
+                          <img src={leaderboard[0].image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          leaderboard[0]?.name?.charAt(0)?.toUpperCase() || '?'
+                        )}
+                      </div>
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-xl">👑</span>
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-lg">🥇</span>
+                    </div>
+                    <p className="text-amber-300 text-xs font-bold mt-2 truncate max-w-[80px]">{leaderboard[0]?.username || leaderboard[0]?.name}</p>
+                    <p className="text-yellow-400 text-xs font-bold">{leaderboard[0]?.totalJetons} 💰</p>
+                    <div className="w-20 h-24 bg-gradient-to-b from-yellow-500/30 to-amber-600/30 rounded-t-lg border-x border-t border-yellow-500/40 mt-1" />
+                  </motion.div>
+
+                  {/* 3rd place */}
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                    className="flex flex-col items-center">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-orange-700 flex items-center justify-center text-white text-lg font-bold border-2 border-amber-500 overflow-hidden">
+                        {leaderboard[2]?.image ? (
+                          <img src={leaderboard[2].image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          leaderboard[2]?.name?.charAt(0)?.toUpperCase() || '?'
+                        )}
+                      </div>
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-lg">🥉</span>
+                    </div>
+                    <p className="text-white text-[10px] font-bold mt-2 truncate max-w-[70px]">{leaderboard[2]?.username || leaderboard[2]?.name}</p>
+                    <p className="text-yellow-400 text-[10px] font-bold">{leaderboard[2]?.totalJetons} 💰</p>
+                    <div className="w-16 h-12 bg-gradient-to-b from-amber-600/30 to-orange-700/30 rounded-t-lg border-x border-t border-amber-600/40 mt-1" />
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Full list */}
+              {leaderboard.length === 0 ? (
+                <div className="text-center py-8">
+                  <Trophy className="w-10 h-10 mx-auto mb-3 text-fuchsia-500/30" />
+                  <p className="text-fuchsia-300/60 text-sm">Henüz liderlik tablosu oluşmadı</p>
+                  {lbSearch && <p className="text-fuchsia-300/40 text-xs mt-1">Arama sonucu bulunamadı</p>}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {leaderboard.map((entry, i) => {
+                    const isMe = lbCurrentUserId === entry.userId
+                    return (
+                      <motion.div
+                        key={entry.userId}
+                        initial={{ opacity: 0, x: -15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                          isMe ? 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border-fuchsia-400/50 ring-1 ring-fuchsia-400/30' :
+                          i === 0 ? 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border-yellow-500/40' :
+                          i === 1 ? 'bg-gradient-to-r from-gray-700/20 to-gray-600/20 border-gray-400/30' :
+                          i === 2 ? 'bg-gradient-to-r from-amber-800/20 to-orange-900/20 border-amber-600/30' :
+                          'bg-[#1a0a2e]/50 border-fuchsia-500/10 hover:border-fuchsia-500/20'
+                        }`}
+                      >
+                        {/* Rank badge */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                          i === 0 ? 'bg-yellow-500 text-black' :
+                          i === 1 ? 'bg-gray-400 text-black' :
+                          i === 2 ? 'bg-amber-600 text-white' :
+                          'bg-purple-900/50 text-fuchsia-300'
+                        }`}>
+                          {i < 3 ? ['🥇', '🥈', '🥉'][i] : entry.rank}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden border border-fuchsia-500/30">
+                          {entry.image ? (
+                            <img src={entry.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            entry.name?.charAt(0)?.toUpperCase() || '?'
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className={`font-bold text-xs truncate ${isMe ? 'text-fuchsia-300' : 'text-white'}`}>
+                              {entry.username || entry.name}
+                            </p>
+                            {isMe && <span className="text-[9px] bg-fuchsia-600/60 px-1.5 py-0.5 rounded-full text-white">Sen</span>}
+                          </div>
+                          <p className="text-fuchsia-300/50 text-[10px]">
+                            Lv.{entry.level} • {entry.levelTitle}
+                            {lbPeriod !== 'all' && entry.periodWins > 0 ? ` • ${entry.periodWins} galibiyet` : ''}
+                          </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-yellow-400 font-bold text-xs">{entry.totalJetons.toLocaleString()} 💰</p>
+                          <p className="text-fuchsia-300/40 text-[10px]">{entry.totalGames} oyun</p>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
               )}
             </div>
           )}

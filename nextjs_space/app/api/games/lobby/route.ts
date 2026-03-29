@@ -139,6 +139,37 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // ===== SPECTATOR: Most watched active games =====
+    if (section === 'spectator') {
+      const rooms = await prisma.gameRoom.findMany({
+        where: { status: 'active', isAI: false },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+        include: { _count: { select: { viewers: true } } },
+      })
+
+      // Sort by viewer count desc
+      const sorted = rooms
+        .map((r: any) => ({
+          id: r.id,
+          gameType: r.gameType,
+          player1Name: r.player1Name,
+          player2Name: r.player2Name,
+          player1Score: r.player1Score,
+          player2Score: r.player2Score,
+          betAmount: r.betAmount,
+          betCurrency: r.betCurrency,
+          viewerCount: r._count.viewers,
+          currentTurn: r.currentTurn,
+          turnTimer: r.turnTimer,
+          startedAt: r.createdAt,
+          lastMoveAt: r.lastMoveAt,
+        }))
+        .sort((a: any, b: any) => b.viewerCount - a.viewerCount)
+
+      return NextResponse.json({ games: sorted })
+    }
+
     // ===== AUTO MATCH =====
     if (section === 'auto_match') {
       const gameType = url.searchParams.get('gameType')
