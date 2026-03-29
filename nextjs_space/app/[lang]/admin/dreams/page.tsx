@@ -39,6 +39,7 @@ export default function AdminDreamsPage() {
   const [generating, setGenerating] = useState(false)
   const [aiTitle, setAiTitle] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [perPage, setPerPage] = useState<string>('20')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -84,10 +85,10 @@ export default function AdminDreamsPage() {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null)
 
-  const fetchDreams = useCallback(async (page = 1, search = '', category = 'all', publish = 'all') => {
+  const fetchDreams = useCallback(async (page = 1, search = '', category = 'all', publish = 'all', limit = '20') => {
     setLoading(true)
     try {
-      const qs = new URLSearchParams({ page: String(page) })
+      const qs = new URLSearchParams({ page: String(page), limit })
       if (search) qs.set('search', search)
       if (category !== 'all') qs.set('category', category)
       if (publish !== 'all') qs.set('publish', publish)
@@ -110,12 +111,18 @@ export default function AdminDreamsPage() {
   }, [])
 
   useEffect(() => {
-    fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
-  }, [currentPage, filterCategory, filterPublish, fetchDreams])
+    fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
+  }, [currentPage, filterCategory, filterPublish, perPage, fetchDreams])
 
   const handleSearch = () => {
     setCurrentPage(1)
-    fetchDreams(1, searchQuery, filterCategory, filterPublish)
+    fetchDreams(1, searchQuery, filterCategory, filterPublish, perPage)
+  }
+
+  const handlePerPageChange = (val: string) => {
+    setPerPage(val)
+    setCurrentPage(1)
+    setSelectedIds([])
   }
 
   const handleCategoryFilter = (cat: string) => {
@@ -201,7 +208,7 @@ export default function AdminDreamsPage() {
       setSuccess(editing ? 'Güncellendi!' : 'Oluşturuldu!')
       setTimeout(() => {
         closeForm()
-        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
       }, 800)
     } catch {
       setError('Sunucu hatası')
@@ -214,7 +221,7 @@ export default function AdminDreamsPage() {
     if (!confirm('Bu rüya tabirini silmek istediğinize emin misiniz?')) return
     try {
       const res = await fetch(`/api/admin/dreams?id=${id}`, { method: 'DELETE' })
-      if (res.ok) fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+      if (res.ok) fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
     } catch (e) {
       console.error('Delete error', e)
     }
@@ -227,7 +234,7 @@ export default function AdminDreamsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: dream.id, isPublished: !dream.isPublished }),
       })
-      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
     } catch (e) {
       console.error('Toggle publish error', e)
     }
@@ -251,7 +258,7 @@ export default function AdminDreamsPage() {
       }
       setAiTitle('')
       setSuccess('AI rüya tabiri oluşturuldu!')
-      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
       setTimeout(() => setSuccess(''), 3000)
     } catch {
       setError('AI ile rüya oluşturulamadı')
@@ -295,7 +302,7 @@ export default function AdminDreamsPage() {
     }
     setBulkMessage(`✅ ${successCount} rüya tabiri üretildi${failCount > 0 ? `, ${failCount} hata` : ''}`)
     setBulkTopics('')
-    fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+    fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
     setBulkGenerating(false)
   }
 
@@ -320,7 +327,7 @@ export default function AdminDreamsPage() {
       if (res.ok) {
         setSelectedIds([])
         setBulkCategoryTarget('')
-        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
       }
     } catch (e) { console.error(e) }
     setBulkMoving(false)
@@ -337,7 +344,7 @@ export default function AdminDreamsPage() {
       })
       if (res.ok) {
         setSelectedIds([])
-        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
       }
     } catch (e) { console.error(e) }
     setBulkPublishing(false)
@@ -362,7 +369,7 @@ export default function AdminDreamsPage() {
         body: JSON.stringify({ id: dreamId, content: inlineContent }),
       })
       if (res.ok) {
-        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
         setExpandedDreamId(null)
       }
     } catch (e) { console.error(e) }
@@ -407,7 +414,7 @@ export default function AdminDreamsPage() {
         } catch (err: any) { results.errors.push(`Satır ${i + 1}: ${err.message}`) }
       }
       setImportResult(results)
-      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish)
+      fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
     } catch (err: any) { setImportResult({ success: 0, errors: [err.message] }) }
     setImporting(false)
     e.target.value = ''
@@ -600,7 +607,7 @@ export default function AdminDreamsPage() {
           </div>
         )}
 
-        {/* Search Bar */}
+        {/* Search Bar + Per Page */}
         {!showForm && (
           <div className="flex gap-2 mb-4">
             <div className="flex-1 flex gap-2">
@@ -616,6 +623,16 @@ export default function AdminDreamsPage() {
                 <Search className="w-4 h-4" />
               </button>
             </div>
+            <select
+              value={perPage}
+              onChange={(e) => handlePerPageChange(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+            >
+              <option value="20">20 / sayfa</option>
+              <option value="50">50 / sayfa</option>
+              <option value="100">100 / sayfa</option>
+              <option value="all">Tümü</option>
+            </select>
           </div>
         )}
 
@@ -847,7 +864,7 @@ export default function AdminDreamsPage() {
                 onChange={toggleSelectAll}
                 className="w-4 h-4 rounded accent-indigo-500"
               />
-              <span className="text-xs text-gray-400">Tümünü Seç ({dreams.length})</span>
+              <span className="text-xs text-gray-400">Tümünü Seç ({dreams.length}{perPage !== 'all' && total > dreams.length ? ` / ${total}` : ''})</span>
             </div>
 
             {dreams.map((dream) => (
@@ -947,7 +964,7 @@ export default function AdminDreamsPage() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 1 && perPage !== 'all' && (
           <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={() => setCurrentPage(1)}

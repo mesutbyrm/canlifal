@@ -18,8 +18,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search')?.trim() || ''
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = 20
-    const skip = (page - 1) * limit
+    const limitParam = searchParams.get('limit') || '20'
+    const showAll = limitParam === 'all'
+    const limit = showAll ? 0 : Math.max(1, parseInt(limitParam) || 20)
+    const skip = showAll ? 0 : (page - 1) * limit
 
     const category = searchParams.get('category')?.trim() || ''
     const publishFilter = searchParams.get('publish')?.trim() || ''
@@ -45,8 +47,7 @@ export async function GET(req: NextRequest) {
       prisma.dreamInterpretation.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        ...(showAll ? {} : { skip, take: limit }),
       }),
       prisma.dreamInterpretation.count({ where }),
     ])
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       dreams, total, page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: showAll ? 1 : Math.ceil(total / limit),
       publishedCount, draftCount,
       categoryCounts: categoryCountMap,
     })
