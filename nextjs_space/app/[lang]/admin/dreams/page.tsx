@@ -367,6 +367,34 @@ export default function AdminDreamsPage() {
     setBulkPublishing(false)
   }
 
+  // Bulk delete
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    setBulkDeleting(true)
+    try {
+      const res = await fetch('/api/admin/dreams/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dreamIds: selectedIds }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSuccess(`✅ ${data.deletedCount} rüya tabiri silindi`)
+        setTimeout(() => setSuccess(''), 3000)
+        setSelectedIds([])
+        setShowDeleteConfirm(false)
+        fetchDreams(currentPage, searchQuery, filterCategory, filterPublish, perPage)
+      } else {
+        setError('Silme işlemi başarısız')
+        setTimeout(() => setError(''), 4000)
+      }
+    } catch (e) { console.error(e); setError('Hata oluştu'); setTimeout(() => setError(''), 4000) }
+    setBulkDeleting(false)
+  }
+
   // Inline content editor
   const toggleExpandDream = (dream: Dream) => {
     if (expandedDreamId === dream.id) {
@@ -856,9 +884,61 @@ export default function AdminDreamsPage() {
             >
               {bulkMoving ? 'Taşınıyor...' : 'Kategoriye Taşı'}
             </button>
+            <div className="h-5 w-px bg-white/20" />
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Seçilenleri Sil
+            </button>
             <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition">
               İptal
             </button>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-[#1a0a2e] border border-red-500/30 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-red-500/20"><Trash2 className="w-6 h-6 text-red-400" /></div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Toplu Silme Onayı</h3>
+                  <p className="text-sm text-gray-400">{selectedIds.length} rüya tabiri silinecek</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto mb-4 space-y-1 max-h-60">
+                {dreams.filter(d => selectedIds.includes(d.id)).map(d => (
+                  <div key={d.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-sm">
+                    <span className={`w-2 h-2 rounded-full ${d.isPublished ? 'bg-green-400' : 'bg-gray-500'}`} />
+                    <span className="text-white truncate flex-1">{d.title}</span>
+                    <span className="text-xs text-gray-500">{d.category}</span>
+                  </div>
+                ))}
+                {selectedIds.length > dreams.length && (
+                  <p className="text-xs text-gray-500 px-3 py-1">... ve {selectedIds.length - dreams.filter(d => selectedIds.includes(d.id)).length} daha</p>
+                )}
+              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
+                <p className="text-sm text-red-300">⚠️ Bu işlem geri alınamaz! Seçilen tüm rüya tabirleri kalıcı olarak silinecektir.</p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  {bulkDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Siliniyor...</> : <><Trash2 className="w-4 h-4" /> {selectedIds.length} Rüyayı Sil</>}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

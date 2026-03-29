@@ -102,6 +102,10 @@ export default function AdminBlogPage() {
   const [showForm, setShowForm] = useState(false)
   const [aiMessage, setAiMessage] = useState('')
 
+  // Messages
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+
   // Bulk selection for category change
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bulkCategoryTarget, setBulkCategoryTarget] = useState('')
@@ -429,6 +433,34 @@ export default function AdminBlogPage() {
       }
     } catch (e) { console.error(e) }
     setBulkPublishing(false)
+  }
+
+  // Bulk delete
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    setBulkDeleting(true)
+    try {
+      const res = await fetch('/api/admin/blog/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postIds: selectedIds }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSuccess(`✅ ${data.deletedCount} blog yazısı silindi`)
+        setTimeout(() => setSuccess(''), 3000)
+        setSelectedIds([])
+        setShowDeleteConfirm(false)
+        await fetchData()
+      } else {
+        setError('Silme işlemi başarısız')
+        setTimeout(() => setError(''), 4000)
+      }
+    } catch (e) { console.error(e); setError('Hata oluştu'); setTimeout(() => setError(''), 4000) }
+    setBulkDeleting(false)
   }
 
   // Inline content save
@@ -887,6 +919,10 @@ export default function AdminBlogPage() {
           </div>
         )}
 
+        {/* Messages */}
+        {success && <div className="mb-4 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-xl text-green-300 text-sm">{success}</div>}
+        {error && <div className="mb-4 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</div>}
+
         {/* Filters */}
         {!showForm && posts.length > 0 && (
           <div className="space-y-3 mb-4">
@@ -957,9 +993,61 @@ export default function AdminBlogPage() {
             >
               {bulkMoving ? 'Taşınıyor...' : 'Kategoriye Taşı'}
             </button>
+            <div className="h-5 w-px bg-white/20" />
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Seçilenleri Sil
+            </button>
             <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition">
               İptal
             </button>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-[#1a0a2e] border border-red-500/30 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-red-500/20"><Trash2 className="w-6 h-6 text-red-400" /></div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Toplu Silme Onayı</h3>
+                  <p className="text-sm text-gray-400">{selectedIds.length} blog yazısı silinecek</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto mb-4 space-y-1 max-h-60">
+                {filteredPosts.filter(p => selectedIds.includes(p.id)).map(p => (
+                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-sm">
+                    <span className={`w-2 h-2 rounded-full ${p.isPublished ? 'bg-green-400' : 'bg-gray-500'}`} />
+                    <span className="text-white truncate flex-1">{p.titleTr}</span>
+                    <span className="text-xs text-gray-500">{p.category}</span>
+                  </div>
+                ))}
+                {selectedIds.length > filteredPosts.filter(p => selectedIds.includes(p.id)).length && (
+                  <p className="text-xs text-gray-500 px-3 py-1">... ve {selectedIds.length - filteredPosts.filter(p => selectedIds.includes(p.id)).length} daha</p>
+                )}
+              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
+                <p className="text-sm text-red-300">⚠️ Bu işlem geri alınamaz! Seçilen tüm blog yazıları kalıcı olarak silinecektir.</p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  {bulkDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Siliniyor...</> : <><Trash2 className="w-4 h-4" /> {selectedIds.length} Yazıyı Sil</>}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
