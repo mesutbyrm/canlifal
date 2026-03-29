@@ -211,14 +211,12 @@ export async function POST(req: NextRequest) {
       tarotCard = TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)]
     }
 
-    // Auto-share to social feed
+    // Auto-share to social feed (full content, not truncated)
     try {
-      const shortContent = content.length > 200 ? content.substring(0, 200) + '...' : content
-      const socialContent = `${item.icon} ${item.nameTr}\n\n${shortContent}`
       await prisma.socialPost.create({
         data: {
           userId: session.user.id,
-          content: socialContent,
+          content: content,
           postType: 'fortune',
           fortuneType: slug,
           isPublic: true,
