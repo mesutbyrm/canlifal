@@ -746,8 +746,8 @@ export default function SOSGamePage() {
         body: JSON.stringify({
           gridSize,
           isAI,
-          betAmount: betType === 'FREE' ? 0 : betAmount,
-          betCurrency: betType,
+          betAmount: isAI ? 0 : (betType === 'FREE' ? 0 : betAmount),
+          betCurrency: isAI ? 'FREE' : betType,
           turnTimer: isAI ? 0 : turnTimer,
         }),
       })
@@ -1148,26 +1148,28 @@ export default function SOSGamePage() {
         </div>
       )}
 
-      {/* Bet Type */}
-      <div className="w-full">
-        <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['FREE', 'CFC', 'JETON'] as const).map(type => (
-            <button key={type} onClick={() => setBetType(type)} className={`py-2 sm:py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${
-              betType === type
-                ? type === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300'
-                  : type === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300'
-                  : 'border-blue-400 bg-blue-500/20 text-blue-300'
-                : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
-            }`}>
-              {type === 'FREE' ? 'Ücretsiz' : type}
-            </button>
-          ))}
+      {/* Bet Type - only for 2 player mode */}
+      {gameMode === '2player' && (
+        <div className="w-full">
+          <label className="text-fuchsia-300 text-xs font-medium mb-2 block">Bahis Tipi</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['FREE', 'CFC', 'JETON'] as const).map(type => (
+              <button key={type} onClick={() => setBetType(type)} className={`py-2 sm:py-2.5 rounded-xl border-2 transition-all font-medium text-xs sm:text-sm ${
+                betType === type
+                  ? type === 'FREE' ? 'border-green-400 bg-green-500/20 text-green-300'
+                    : type === 'CFC' ? 'border-amber-400 bg-amber-500/20 text-amber-300'
+                    : 'border-blue-400 bg-blue-500/20 text-blue-300'
+                  : 'border-fuchsia-500/30 bg-purple-900/30 text-fuchsia-300/70 hover:border-fuchsia-400/50'
+              }`}>
+                {type === 'FREE' ? 'Ücretsiz' : type}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Bet Amount */}
-      {betType !== 'FREE' && (
+      {/* Bet Amount - only for 2 player mode */}
+      {gameMode === '2player' && betType !== 'FREE' && (
         <div className="w-full">
           <label className="text-fuchsia-300 text-xs font-medium mb-2 block">
             Bahis Miktarı ({betType === 'CFC' ? 'CFC' : 'Jeton'})
