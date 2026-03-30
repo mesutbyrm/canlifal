@@ -279,9 +279,29 @@ function HeroQuickStart({
   topGames: GameTypeStats[]
 }) {
   const [gamesOpen, setGamesOpen] = useState(false)
-  const gameTypes = Object.keys(GAME_INFO)
+
+  // Filter to only games with active players or waiting tables, sort by activePlayers desc, max 5
+  const activeGames = topGames
+    .filter(g => g.activePlayers > 0 || g.waitingTables > 0)
+    .sort((a, b) => (b.activePlayers + b.waitingTables) - (a.activePlayers + a.waitingTables))
+    .slice(0, 5)
+
+  // Auto-select the most popular active game if current selection isn't in active list
+  const activeGameTypes = activeGames.map(g => g.gameType)
+  const isSelectedActive = activeGameTypes.includes(selectedGame)
+
+  // All games for the dropdown (when user wants to pick from all)
+  const allGameTypes = Object.keys(GAME_INFO)
   const perGameMap = Object.fromEntries(topGames.map(g => [g.gameType, g]))
   const selectedInfo = gameInfo(selectedGame)
+
+  const shortName: Record<string, string> = {
+    xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
+    sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+',
+    connect4: 'C4', reversi: 'Reversi', dama: 'Dama', mangala: 'Mangala',
+    tas_kagit_makas: 'TKM', gomoku: 'Gomoku', amiral_batti: 'A.Battı',
+    kelime_duellosu: 'K.Düello', quiz_1v1: 'Quiz', kart_eslestirme_pvp: 'K.Eşleş',
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-br from-[#1a0a2e] via-[#2d1252] to-[#1a0a2e] p-5 sm:p-6">
@@ -299,22 +319,56 @@ function HeroQuickStart({
           <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Tek tıkla oyuna katıl, masa bul veya izle</p>
         </div>
 
-        {/* Game selector - collapsible dropdown */}
+        {/* Active games - shown directly (max 5, sorted by player count) */}
         <div className="mb-4">
+          {activeGames.length > 0 ? (
+            <div className="grid grid-cols-5 gap-1.5">
+              {activeGames.map((g) => {
+                const gt = g.gameType
+                const info = gameInfo(gt)
+                const onlineCount = g.activePlayers + g.waitingTables
+                return (
+                  <button
+                    key={gt}
+                    onClick={() => setSelectedGame(gt)}
+                    className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
+                      selectedGame === gt
+                        ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
+                        : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
+                    }`}
+                  >
+                    <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      {onlineCount}
+                    </span>
+                    <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
+                    <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-3 px-4 rounded-xl bg-purple-900/30 border border-fuchsia-500/10">
+              <p className="text-fuchsia-300/50 text-xs">Şu anda aktif oyun yok</p>
+              <p className="text-fuchsia-300/30 text-[10px] mt-0.5">Aşağıdan oyun seçerek ilk masayı aç!</p>
+            </div>
+          )}
+
+          {/* Dropdown for all games */}
           <button
             onClick={() => setGamesOpen(!gamesOpen)}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-900/60 to-fuchsia-900/60 border border-fuchsia-500/30 hover:border-fuchsia-400/50 transition-all"
+            className="w-full flex items-center justify-between gap-3 px-4 py-2.5 mt-2 rounded-xl bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 border border-fuchsia-500/20 hover:border-fuchsia-400/40 transition-all"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{selectedInfo.emoji}</span>
-              <div className="text-left">
-                <p className="text-white font-bold text-sm">{selectedInfo.name}</p>
-                <p className="text-fuchsia-300/50 text-[10px]">{selectedInfo.desc}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{selectedInfo.emoji}</span>
+              <span className="text-fuchsia-300/70 text-xs font-medium">{isSelectedActive ? selectedInfo.name : `Seçili: ${selectedInfo.name}`}</span>
             </div>
-            <motion.div animate={{ rotate: gamesOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown className="w-5 h-5 text-fuchsia-400" />
-            </motion.div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-fuchsia-400/50 text-[10px]">Tüm oyunlar</span>
+              <motion.div animate={{ rotate: gamesOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-4 h-4 text-fuchsia-400/60" />
+              </motion.div>
+            </div>
           </button>
 
           <AnimatePresence>
@@ -326,16 +380,9 @@ function HeroQuickStart({
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 pt-3">
-                  {gameTypes.map((gt) => {
+                <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 pt-2">
+                  {allGameTypes.map((gt) => {
                     const info = gameInfo(gt)
-                    const shortName: Record<string, string> = {
-                      xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
-                      sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+',
-                      connect4: 'C4', reversi: 'Reversi', dama: 'Dama', mangala: 'Mangala',
-                      tas_kagit_makas: 'TKM', gomoku: 'Gomoku', amiral_batti: 'A.Battı',
-                      kelime_duellosu: 'K.Düello', quiz_1v1: 'Quiz', kart_eslestirme_pvp: 'K.Eşleş',
-                    }
                     const gameStats = perGameMap[gt]
                     const onlineCount = gameStats ? (gameStats.activePlayers + gameStats.waitingTables) : 0
                     return (
