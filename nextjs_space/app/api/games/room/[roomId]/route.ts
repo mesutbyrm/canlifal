@@ -94,17 +94,31 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       }
     }
 
-    // === Auto-close AI-takeover games when no real players are active ===
-    if (room.status === 'active' && room.isAI && room.disconnectedPlayerId) {
+    // === Auto-close AI games when real player(s) stop polling ===
+    if (room.status === 'active' && room.isAI) {
       const now = Date.now()
       const p1LastSeen = room.player1LastSeen ? new Date(room.player1LastSeen).getTime() : 0
       const p2LastSeen = room.player2LastSeen ? new Date(room.player2LastSeen).getTime() : 0
-      const latestSeen = Math.max(p1LastSeen, p2LastSeen)
-      const bothElapsed = latestSeen > 0 ? (now - latestSeen) / 1000 : 999
 
-      if (bothElapsed > 8) {
-        // No real player has polled for 8+ seconds → auto-close the room
-        // Refund both players' bets (no winner)
+      // For pure AI games (no disconnectedPlayerId), check if player1 stopped polling
+      // For AI-takeover games (disconnectedPlayerId set), check if remaining real player stopped
+      const isPureAI = !room.disconnectedPlayerId
+      let shouldClose = false
+
+      if (isPureAI) {
+        // Pure AI game: only player1 is real, check if they stopped polling
+        const p1Elapsed = p1LastSeen > 0 ? (now - p1LastSeen) / 1000 : 999
+        shouldClose = p1Elapsed > 8
+      } else {
+        // AI-takeover: check if the remaining real player stopped polling
+        const latestSeen = Math.max(p1LastSeen, p2LastSeen)
+        const bothElapsed = latestSeen > 0 ? (now - latestSeen) / 1000 : 999
+        shouldClose = bothElapsed > 8
+      }
+
+      if (shouldClose) {
+        // No real player has polled → auto-close the room
+        // Refund bets (no winner)
         if (room.betAmount > 0) {
           const field = room.betCurrency === 'CFC' ? 'credits' : 'jetonBalance'
           const txns = [prisma.user.update({ where: { id: room.player1Id }, data: { [field]: { increment: room.betAmount } } })]

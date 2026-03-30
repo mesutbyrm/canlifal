@@ -69,13 +69,21 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
       }
     }
 
-    // Auto-close AI-takeover games when no real players active
-    if (game.status === 'active' && game.isAI && game.disconnectedPlayerId) {
+    // Auto-close AI games when real player(s) stop polling
+    if (game.status === 'active' && game.isAI) {
       const now = Date.now()
       const p1Last = game.player1LastSeen ? new Date(game.player1LastSeen).getTime() : 0
       const p2Last = game.player2LastSeen ? new Date(game.player2LastSeen).getTime() : 0
-      const latestSeen = Math.max(p1Last, p2Last)
-      if (latestSeen > 0 && (now - latestSeen) / 1000 > 8) {
+      const isPureAI = !game.disconnectedPlayerId
+      let shouldClose = false
+      if (isPureAI) {
+        const p1Elapsed = p1Last > 0 ? (now - p1Last) / 1000 : 999
+        shouldClose = p1Elapsed > 8
+      } else {
+        const latestSeen = Math.max(p1Last, p2Last)
+        shouldClose = latestSeen > 0 ? (now - latestSeen) / 1000 > 8 : true
+      }
+      if (shouldClose) {
         if (game.betAmount > 0) {
           const field = game.betCurrency === 'CFC' ? 'credits' : 'jetonBalance'
           const txns = [prisma.user.update({ where: { id: game.player1Id }, data: { [field]: { increment: game.betAmount } } })]
