@@ -99,15 +99,27 @@ export async function GET(req: NextRequest) {
 
     // ===== LIVE TABLES =====
     if (section === 'live_tables') {
+      const staleThreshold = new Date(Date.now() - 2 * 60 * 1000)
+      const waitingStaleThreshold = new Date(Date.now() - 5 * 60 * 1000)
       const [rooms, sosRooms] = await Promise.all([
         prisma.gameRoom.findMany({
-          where: { status: { in: ['active', 'waiting'] } },
+          where: {
+            OR: [
+              { status: 'active', lastMoveAt: { gte: staleThreshold } },
+              { status: 'waiting', createdAt: { gte: waitingStaleThreshold } },
+            ]
+          },
           orderBy: { updatedAt: 'desc' },
           take: 30,
           include: { _count: { select: { viewers: true } } },
         }),
         prisma.sosGame.findMany({
-          where: { status: { in: ['active', 'waiting'] } },
+          where: {
+            OR: [
+              { status: 'active', lastMoveAt: { gte: staleThreshold } },
+              { status: 'waiting', createdAt: { gte: waitingStaleThreshold } },
+            ]
+          },
           orderBy: { updatedAt: 'desc' },
           take: 10,
           include: { _count: { select: { viewers: true } } },
@@ -341,16 +353,25 @@ export async function GET(req: NextRequest) {
 
     // ===== SPECTATOR: Most watched active games =====
     if (section === 'spectator') {
+      const spectatorStale = new Date(Date.now() - 2 * 60 * 1000)
       const rooms = await prisma.gameRoom.findMany({
-        where: { status: 'active', isAI: false },
+        where: { status: 'active', isAI: false, lastMoveAt: { gte: spectatorStale } },
         orderBy: { updatedAt: 'desc' },
         take: 20,
         include: { _count: { select: { viewers: true } } },
       })
 
+      // Also get SOS active games
+      const sosRooms = await prisma.sosGame.findMany({
+        where: { status: 'active', isAI: false, lastMoveAt: { gte: spectatorStale } },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        include: { _count: { select: { viewers: true } } },
+      })
+
       // Sort by viewer count desc
-      const sorted = rooms
-        .map((r: any) => ({
+      const sorted = [
+        ...rooms.map((r: any) => ({
           id: r.id,
           gameType: r.gameType,
           player1Name: r.player1Name,
@@ -364,8 +385,23 @@ export async function GET(req: NextRequest) {
           turnTimer: r.turnTimer,
           startedAt: r.createdAt,
           lastMoveAt: r.lastMoveAt,
-        }))
-        .sort((a: any, b: any) => b.viewerCount - a.viewerCount)
+        })),
+        ...sosRooms.map((r: any) => ({
+          id: r.id,
+          gameType: 'sos',
+          player1Name: r.player1Name,
+          player2Name: r.player2Name,
+          player1Score: r.player1Score,
+          player2Score: r.player2Score,
+          betAmount: r.betAmount,
+          betCurrency: r.betCurrency,
+          viewerCount: r._count.viewers,
+          currentTurn: r.currentTurn,
+          turnTimer: r.turnTimer,
+          startedAt: r.createdAt,
+          lastMoveAt: r.lastMoveAt,
+        })),
+      ].sort((a: any, b: any) => b.viewerCount - a.viewerCount)
 
       return NextResponse.json({ games: sorted })
     }

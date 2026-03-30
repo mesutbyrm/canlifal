@@ -1085,14 +1085,27 @@ export default function GameLobbyPage() {
     setMatchLoading(true)
     try {
       const gt = gameType === 'sayi-tahmin' ? 'sayi_tahmin' : gameType
-      const createRes = await fetch('/api/games/room', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
-      })
-      const createData = await createRes.json()
-      if (createData.success) {
-        router.push(`/${lang}/oyunlar/${gameSlug(gameType)}?room=${createData.roomId}`)
+      // SOS uses a separate API
+      if (gt === 'sos') {
+        const createRes = await fetch('/api/games/sos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gridSize: 6, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+        })
+        const createData = await createRes.json()
+        if (createData.success || createData.gameId) {
+          router.push(`/${lang}/oyunlar/sos?room=${createData.gameId}`)
+        }
+      } else {
+        const createRes = await fetch('/api/games/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+        })
+        const createData = await createRes.json()
+        if (createData.success) {
+          router.push(`/${lang}/oyunlar/${gameSlug(gameType)}?room=${createData.roomId}`)
+        }
       }
     } catch (e) {
       console.error('Open table error:', e)

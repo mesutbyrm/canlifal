@@ -41,8 +41,14 @@ export default function TarotFortunePage() {
       if (!response?.ok) {
         let errorMsg = 'Fal yorumu oluşturulamadı'
         try {
-          const errorData = await response.json()
-          errorMsg = errorData?.error || errorMsg
+          const contentType = response.headers.get('content-type') || ''
+          if (contentType.includes('application/json')) {
+            const errorData = await response.json()
+            errorMsg = errorData?.error || errorMsg
+          } else {
+            const text = await response.text()
+            if (text && !text.startsWith('<!')) errorMsg = text
+          }
         } catch (_) {}
         throw new Error(errorMsg)
       }

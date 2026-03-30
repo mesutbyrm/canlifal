@@ -41,8 +41,11 @@ export default function DreamFortunePage() {
       if (!response?.ok) {
         let errorMsg = 'Fal yorumu oluşturulamadı'
         try {
-          const errorData = await response.json()
-          errorMsg = errorData?.error || errorMsg
+          const ct = response.headers.get('content-type') || ''
+          if (ct.includes('application/json')) {
+            const errorData = await response.json()
+            errorMsg = errorData?.error || errorMsg
+          }
         } catch (_) {}
         throw new Error(errorMsg)
       }
