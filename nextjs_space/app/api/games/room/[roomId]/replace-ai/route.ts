@@ -11,46 +11,50 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
+    // Try gameRoom first, then sosGame
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
-    if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
-    if (!room.isAI) return NextResponse.json({ error: 'Bu oda yapay zeka oyunu değil' }, { status: 400 })
-    if (room.status !== 'active') return NextResponse.json({ error: 'Oyun aktif değil' }, { status: 400 })
+    const sosRoom = room ? null : await prisma.sosGame.findUnique({ where: { id: params.roomId } })
+    const target = room || sosRoom
+    const isSos = !room && !!sosRoom
+
+    if (!target) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+    if (!target.isAI) return NextResponse.json({ error: 'Bu oda yapay zeka oyunu değil' }, { status: 400 })
+    if (target.status !== 'active') return NextResponse.json({ error: 'Oyun aktif değil' }, { status: 400 })
 
     // Allow reconnection: if this user is the disconnected player, let them rejoin
-    const isReconnecting = room.disconnectedPlayerId === session.user.id
-    if (!isReconnecting && room.player1Id === session.user.id) {
+    const isReconnecting = target.disconnectedPlayerId === session.user.id
+    if (!isReconnecting && target.player1Id === session.user.id) {
       return NextResponse.json({ error: 'Kendi oyununuza katılamazsınız' }, { status: 400 })
     }
 
     const userName = (session.user as any)?.name || 'Oyuncu 2'
 
     if (isReconnecting) {
-      // Reconnecting: restore original player, clear disconnect flag
-      const isP1 = room.player1Id === session.user.id
-      const updated = await prisma.gameRoom.update({
-        where: { id: params.roomId },
-        data: {
-          isAI: false,
-          disconnectedPlayerId: null,
-          lastMoveAt: new Date(),
-          ...(isP1 ? { player1LastSeen: new Date() } : { player2LastSeen: new Date() }),
-        },
-      })
+      const isP1 = target.player1Id === session.user.id
+      const updateData = {
+        isAI: false,
+        disconnectedPlayerId: null,
+        lastMoveAt: new Date(),
+        ...(isP1 ? { player1LastSeen: new Date() } : { player2LastSeen: new Date() }),
+      }
+      const updated = isSos
+        ? await prisma.sosGame.update({ where: { id: params.roomId }, data: updateData })
+        : await prisma.gameRoom.update({ where: { id: params.roomId }, data: updateData })
       return NextResponse.json({ success: true, room: updated, reconnected: true })
     }
 
     // New player replacing AI
-    const updated = await prisma.gameRoom.update({
-      where: { id: params.roomId },
-      data: {
-        player2Id: session.user.id,
-        player2Name: userName,
-        isAI: false,
-        disconnectedPlayerId: null,
-        lastMoveAt: new Date(),
-        player2LastSeen: new Date(),
-      },
-    })
+    const updateData = {
+      player2Id: session.user.id,
+      player2Name: userName,
+      isAI: false,
+      disconnectedPlayerId: null,
+      lastMoveAt: new Date(),
+      player2LastSeen: new Date(),
+    }
+    const updated = isSos
+      ? await prisma.sosGame.update({ where: { id: params.roomId }, data: updateData })
+      : await prisma.gameRoom.update({ where: { id: params.roomId }, data: updateData })
 
     return NextResponse.json({ success: true, room: updated })
   } catch (error: any) {
