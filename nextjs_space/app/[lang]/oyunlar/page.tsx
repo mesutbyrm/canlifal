@@ -167,6 +167,7 @@ interface GameProfile {
   level: number
   levelTitle: string
   cfcBalance: number
+  jetonBalance: number
   userReferralCode: string | null
 }
 
@@ -277,8 +278,10 @@ function HeroQuickStart({
   setSelectedGame: (g: string) => void
   topGames: GameTypeStats[]
 }) {
+  const [gamesOpen, setGamesOpen] = useState(false)
   const gameTypes = Object.keys(GAME_INFO)
   const perGameMap = Object.fromEntries(topGames.map(g => [g.gameType, g]))
+  const selectedInfo = gameInfo(selectedGame)
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-br from-[#1a0a2e] via-[#2d1252] to-[#1a0a2e] p-5 sm:p-6">
@@ -296,37 +299,70 @@ function HeroQuickStart({
           <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Tek tıkla oyuna katıl, masa bul veya izle</p>
         </div>
 
-        {/* Game selector grid */}
-        <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 mb-4">
-          {gameTypes.map((gt) => {
-            const info = gameInfo(gt)
-            const shortName: Record<string, string> = {
-              xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
-              sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+'
-            }
-            const gameStats = perGameMap[gt]
-            const onlineCount = gameStats ? (gameStats.activePlayers + gameStats.waitingTables) : 0
-            return (
-              <button
-                key={gt}
-                onClick={() => setSelectedGame(gt)}
-                className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
-                  selectedGame === gt
-                    ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
-                    : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
-                }`}
+        {/* Game selector - collapsible dropdown */}
+        <div className="mb-4">
+          <button
+            onClick={() => setGamesOpen(!gamesOpen)}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-900/60 to-fuchsia-900/60 border border-fuchsia-500/30 hover:border-fuchsia-400/50 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{selectedInfo.emoji}</span>
+              <div className="text-left">
+                <p className="text-white font-bold text-sm">{selectedInfo.name}</p>
+                <p className="text-fuchsia-300/50 text-[10px]">{selectedInfo.desc}</p>
+              </div>
+            </div>
+            <motion.div animate={{ rotate: gamesOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className="w-5 h-5 text-fuchsia-400" />
+            </motion.div>
+          </button>
+
+          <AnimatePresence>
+            {gamesOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden"
               >
-                {onlineCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    {onlineCount}
-                  </span>
-                )}
-                <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
-                <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
-              </button>
-            )
-          })}
+                <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 pt-3">
+                  {gameTypes.map((gt) => {
+                    const info = gameInfo(gt)
+                    const shortName: Record<string, string> = {
+                      xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
+                      sayi_tahmin: 'S.Tahmin', zar: 'Zar', okey: 'Okey', okey101: '101 Okey', yuzbirokey: '101+',
+                      connect4: 'C4', reversi: 'Reversi', dama: 'Dama', mangala: 'Mangala',
+                      tas_kagit_makas: 'TKM', gomoku: 'Gomoku', amiral_batti: 'A.Battı',
+                      kelime_duellosu: 'K.Düello', quiz_1v1: 'Quiz', kart_eslestirme_pvp: 'K.Eşleş',
+                    }
+                    const gameStats = perGameMap[gt]
+                    const onlineCount = gameStats ? (gameStats.activePlayers + gameStats.waitingTables) : 0
+                    return (
+                      <button
+                        key={gt}
+                        onClick={() => { setSelectedGame(gt); setGamesOpen(false) }}
+                        className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
+                          selectedGame === gt
+                            ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
+                            : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
+                        }`}
+                      >
+                        {onlineCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            {onlineCount}
+                          </span>
+                        )}
+                        <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
+                        <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Action buttons */}
@@ -578,12 +614,35 @@ function FindTableModal({
   onJoinTable: (roomId: string, gameType: string) => void
   onReplaceAI: (roomId: string, gameType: string) => void
 }) {
+  const [freshTables, setFreshTables] = useState<LiveTable[]>([])
+  const [loadingTables, setLoadingTables] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    const fetchFresh = async () => {
+      setLoadingTables(true)
+      try {
+        const res = await fetch('/api/games/lobby?section=live_tables')
+        if (res.ok && !cancelled) {
+          const data = await res.json()
+          setFreshTables(data.tables || [])
+        }
+      } catch {}
+      if (!cancelled) setLoadingTables(false)
+    }
+    fetchFresh()
+    const iv = setInterval(fetchFresh, 3000)
+    return () => { cancelled = true; clearInterval(iv) }
+  }, [isOpen])
+
   if (!isOpen) return null
 
+  const allTables = freshTables.length > 0 ? freshTables : tables
   // Waiting rooms with a real player (not the current user)
-  const waitingRooms = tables.filter(t => t.status === 'waiting' && !t.isAI && t.player1Id !== userId)
+  const waitingRooms = allTables.filter(t => t.status === 'waiting' && !t.isAI && t.player1Id !== userId)
   // Active AI games (real player vs AI) where current user is not already playing
-  const aiGames = tables.filter(t => t.status === 'active' && t.isAI && t.player1Id !== userId)
+  const aiGames = allTables.filter(t => t.status === 'active' && t.isAI && t.player1Id !== userId)
 
   return (
     <motion.div
@@ -608,6 +667,13 @@ function FindTableModal({
             <X className="w-5 h-5 text-fuchsia-400" />
           </button>
         </div>
+
+        {loadingTables && freshTables.length === 0 && (
+          <div className="text-center py-4 text-fuchsia-300/60 text-sm">
+            <div className="w-6 h-6 border-2 border-fuchsia-400/40 border-t-fuchsia-400 rounded-full animate-spin mx-auto mb-2" />
+            Masalar yükleniyor...
+          </div>
+        )}
 
         {/* Waiting rooms - real players */}
         {waitingRooms.length > 0 && (
@@ -675,7 +741,7 @@ function FindTableModal({
                       onClick={() => { onReplaceAI(t.id, t.gameType); onClose() }}
                       className="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-cyan-500/20"
                     >
-                      🎮 AI Yerine Geç
+                      🎮 AI Yerine Otur
                     </button>
                   </motion.div>
                 )
@@ -684,11 +750,11 @@ function FindTableModal({
           </div>
         )}
 
-        {waitingRooms.length === 0 && aiGames.length === 0 && (
+        {!loadingTables && waitingRooms.length === 0 && aiGames.length === 0 && (
           <div className="text-center py-8 text-fuchsia-300/40 text-sm">
             <Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            <p>Şu an boş masa yok</p>
-            <p className="text-xs mt-1">Rastgele Eşleş ile yeni bir masa oluşturabilirsin!</p>
+            <p>Şu an rakip bekleyen masa yok</p>
+            <p className="text-xs mt-1">Kendin bir oda aç ve rakip bekle!</p>
           </div>
         )}
       </motion.div>
@@ -1037,13 +1103,15 @@ export default function GameLobbyPage() {
     if (!session?.user) { router.push(`/${lang}/giris`); return }
     setMatchLoading(true)
     try {
-      const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
-      const res = await fetch(`/api/games/lobby?section=auto_match&gameType=${gt}`)
+      // Search across ALL game types for any waiting room
+      const res = await fetch('/api/games/lobby?section=auto_match_any')
       const data = await res.json()
-      if (data.action === 'join') {
-        router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?join=${data.roomId}`)
+      if (data.action === 'join' && data.roomId && data.gameType) {
+        const slug = gameSlug(data.gameType)
+        router.push(`/${lang}/oyunlar/${slug}?join=${data.roomId}`)
       } else {
-        // No waiting room found, create a new one and wait
+        // No waiting room found anywhere, create one for selected game
+        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
         const createRes = await fetch('/api/games/room', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1513,10 +1581,17 @@ export default function GameLobbyPage() {
           </div>
           <div className="flex items-center gap-2">
             {profile && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
-                <Coins className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
-                <span className="text-fuchsia-400/60 text-xs">CFC</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
+                  <Coins className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
+                  <span className="text-fuchsia-400/60 text-xs">CFC</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-900/40 rounded-full border border-blue-500/30">
+                  <Zap className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-300 font-bold text-sm">{profile.jetonBalance}</span>
+                  <span className="text-blue-400/60 text-xs">Jeton</span>
+                </div>
               </div>
             )}
             {!session?.user && (

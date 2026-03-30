@@ -6,7 +6,7 @@ import { getInitialState } from '@/lib/game-logic'
 
 export const dynamic = 'force-dynamic'
 
-const VALID_TYPES = ['xox', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey']
+const VALID_TYPES = ['xox', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas', 'gomoku', 'amiral_batti', 'kelime_duellosu', 'quiz_1v1', 'kart_eslestirme_pvp']
 
 // POST: Create a new game room
 export async function POST(req: NextRequest) {
@@ -17,8 +17,9 @@ export async function POST(req: NextRequest) {
     const { gameType, isAI, betAmount, betCurrency, turnTimer, gridSize: reqGridSize } = await req.json()
     if (!VALID_TYPES.includes(gameType)) return NextResponse.json({ error: 'Geçersiz oyun tipi' }, { status: 400 })
 
-    const currency = ['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE'
-    const amount = currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0))
+    // AI games are always free - no betting allowed
+    const currency = isAI ? 'FREE' : (['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE')
+    const amount = isAI ? 0 : (currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0)))
     const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0
     // Grid size for XOX (default 3, range 3-30)
     const gridSize = gameType === 'xox' && reqGridSize ? Math.max(3, Math.min(30, Math.floor(reqGridSize))) : undefined
@@ -36,10 +37,7 @@ export async function POST(req: NextRequest) {
 
     const initialState = getInitialState(gameType, gridSize ? { gridSize } : undefined)
     const userName = (session.user as any)?.name || 'Oyuncu 1'
-    const aiNames: Record<string, string> = {
-      xox: 'Yapay Zeka', tombala: 'Yapay Zeka', tavla: 'Yapay Zeka',
-      pisti: 'Yapay Zeka', sayi_tahmin: 'Yapay Zeka', zar: 'Yapay Zeka', okey: 'Yapay Zeka', okey101: 'Yapay Zeka', yuzbirokey: 'Yapay Zeka'
-    }
+    const aiNames: Record<string, string> = Object.fromEntries(VALID_TYPES.map(t => [t, 'Yapay Zeka']))
 
     const room = await prisma.gameRoom.create({
       data: {

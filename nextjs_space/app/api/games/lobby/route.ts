@@ -384,6 +384,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ action: 'create', message: 'Uygun masa bulunamadı, yeni masa oluşturun' })
     }
 
+    // ===== AUTO MATCH ANY (across all game types) =====
+    if (section === 'auto_match_any') {
+      if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+
+      // Find ANY waiting room across all game types
+      const waitingRoom = await prisma.gameRoom.findFirst({
+        where: {
+          status: 'waiting',
+          isAI: false,
+          player1Id: { not: session.user.id },
+        },
+        orderBy: { createdAt: 'asc' },
+      })
+
+      if (waitingRoom) {
+        return NextResponse.json({ action: 'join', roomId: waitingRoom.id, gameType: waitingRoom.gameType })
+      }
+
+      return NextResponse.json({ action: 'create', message: 'Bekleyen masa bulunamadı' })
+    }
+
     return NextResponse.json({ error: 'Geçersiz section' }, { status: 400 })
   } catch (error: any) {
     console.error('Lobby API error:', error)
