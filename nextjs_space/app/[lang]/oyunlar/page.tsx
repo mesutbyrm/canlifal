@@ -270,7 +270,7 @@ function HeroQuickStart({
   setSelectedGame,
   topGames,
 }: {
-  onOpenTable: (gameType: string) => void
+  onOpenTable: (gameType?: string) => void
   onWatchLive: () => void
   onFindTable: () => void
   loading: boolean
@@ -278,22 +278,10 @@ function HeroQuickStart({
   setSelectedGame: (g: string) => void
   topGames: GameTypeStats[]
 }) {
-  const [gamesOpen, setGamesOpen] = useState(false)
-
-  // Filter to only games with active players or waiting tables, sort by activePlayers desc, max 5
+  // Filter to only games with active players or waiting tables, sort by activePlayers desc
   const activeGames = topGames
     .filter(g => g.activePlayers > 0 || g.waitingTables > 0)
     .sort((a, b) => (b.activePlayers + b.waitingTables) - (a.activePlayers + a.waitingTables))
-    .slice(0, 5)
-
-  // Auto-select the most popular active game if current selection isn't in active list
-  const activeGameTypes = activeGames.map(g => g.gameType)
-  const isSelectedActive = activeGameTypes.includes(selectedGame)
-
-  // All games for the dropdown (when user wants to pick from all)
-  const allGameTypes = Object.keys(GAME_INFO)
-  const perGameMap = Object.fromEntries(topGames.map(g => [g.gameType, g]))
-  const selectedInfo = gameInfo(selectedGame)
 
   const shortName: Record<string, string> = {
     xox: 'XOX', sos: 'SOS', tombala: 'Tombala', tavla: 'Tavla', pisti: 'Pişti',
@@ -316,26 +304,27 @@ function HeroQuickStart({
           <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-fuchsia-400 via-amber-300 to-fuchsia-400 bg-clip-text text-transparent">
             🎮 Hemen Oyna
           </h1>
-          <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Tek tıkla oyuna katıl, masa bul veya izle</p>
+          <p className="text-fuchsia-300/60 text-xs sm:text-sm mt-1">Masa aç, oyuna katıl veya canlı izle</p>
         </div>
 
-        {/* Active games - shown directly (max 5, sorted by player count) */}
-        <div className="mb-4">
-          {activeGames.length > 0 ? (
-            <div className="grid grid-cols-5 gap-1.5">
-              {activeGames.map((g) => {
+        {/* Only active games shown here */}
+        {activeGames.length > 0 && (
+          <div className="mb-4">
+            <p className="text-fuchsia-300/50 text-[10px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Activity className="w-3 h-3 text-green-400" />
+              Şu An Aktif Oyunlar
+            </p>
+            <div className={`grid gap-1.5 ${activeGames.length <= 3 ? 'grid-cols-3' : activeGames.length <= 5 ? 'grid-cols-5' : 'grid-cols-5'}`}>
+              {activeGames.slice(0, 10).map((g) => {
                 const gt = g.gameType
                 const info = gameInfo(gt)
                 const onlineCount = g.activePlayers + g.waitingTables
                 return (
                   <button
                     key={gt}
-                    onClick={() => setSelectedGame(gt)}
-                    className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
-                      selectedGame === gt
-                        ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
-                        : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
-                    }`}
+                    onClick={() => onOpenTable(gt)}
+                    disabled={loading}
+                    className="relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all bg-purple-900/40 text-fuchsia-300/70 hover:bg-fuchsia-600/30 hover:scale-105 border border-fuchsia-500/10 hover:border-fuchsia-400/40 disabled:opacity-50"
                   >
                     <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
                       <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -347,75 +336,13 @@ function HeroQuickStart({
                 )
               })}
             </div>
-          ) : (
-            <div className="text-center py-3 px-4 rounded-xl bg-purple-900/30 border border-fuchsia-500/10">
-              <p className="text-fuchsia-300/50 text-xs">Şu anda aktif oyun yok</p>
-              <p className="text-fuchsia-300/30 text-[10px] mt-0.5">Aşağıdan oyun seçerek ilk masayı aç!</p>
-            </div>
-          )}
-
-          {/* Dropdown for all games */}
-          <button
-            onClick={() => setGamesOpen(!gamesOpen)}
-            className="w-full flex items-center justify-between gap-3 px-4 py-2.5 mt-2 rounded-xl bg-gradient-to-r from-purple-900/40 to-fuchsia-900/40 border border-fuchsia-500/20 hover:border-fuchsia-400/40 transition-all"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{selectedInfo.emoji}</span>
-              <span className="text-fuchsia-300/70 text-xs font-medium">{isSelectedActive ? selectedInfo.name : `Seçili: ${selectedInfo.name}`}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-fuchsia-400/50 text-[10px]">Tüm oyunlar</span>
-              <motion.div animate={{ rotate: gamesOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                <ChevronDown className="w-4 h-4 text-fuchsia-400/60" />
-              </motion.div>
-            </div>
-          </button>
-
-          <AnimatePresence>
-            {gamesOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className="grid grid-cols-5 sm:grid-cols-5 gap-1.5 pt-2">
-                  {allGameTypes.map((gt) => {
-                    const info = gameInfo(gt)
-                    const gameStats = perGameMap[gt]
-                    const onlineCount = gameStats ? (gameStats.activePlayers + gameStats.waitingTables) : 0
-                    return (
-                      <button
-                        key={gt}
-                        onClick={() => { setSelectedGame(gt); setGamesOpen(false) }}
-                        className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl text-center transition-all ${
-                          selectedGame === gt
-                            ? 'bg-fuchsia-600 text-white scale-105 shadow-lg shadow-fuchsia-500/30 border border-fuchsia-400/50'
-                            : 'bg-purple-900/40 text-fuchsia-300/70 hover:bg-purple-800/50 border border-fuchsia-500/10'
-                        }`}
-                      >
-                        {onlineCount > 0 && (
-                          <span className="absolute -top-1.5 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full shadow-lg shadow-green-500/40 z-10">
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                            {onlineCount}
-                          </span>
-                        )}
-                        <span className="text-lg sm:text-xl leading-none">{info.emoji}</span>
-                        <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate w-full">{shortName[gt] || info.name}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button
-            onClick={() => onOpenTable(selectedGame)}
+            onClick={() => onOpenTable()}
             disabled={loading}
             className="flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 transition-all hover:scale-[1.02] shadow-lg shadow-fuchsia-500/20 disabled:opacity-50"
           >
