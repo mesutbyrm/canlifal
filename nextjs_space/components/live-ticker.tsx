@@ -233,7 +233,11 @@ export default function LiveTicker() {
                 style={{ color: badge.color, backgroundColor: badge.bgColor + '33', borderColor: badge.color + '66' }}
                 title={badge.name}
               >
-                <span>{badge.icon}</span>
+                {badge.icon && (badge.icon.startsWith('/') || badge.icon.startsWith('http')) ? (
+                  <img src={badge.icon} alt={badge.name} className="w-3.5 h-3.5 object-contain" />
+                ) : (
+                  <span>{badge.icon}</span>
+                )}
               </span>
             ))}
           </div>
