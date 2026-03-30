@@ -11,7 +11,7 @@ import {
   Gamepad2, Trophy, Gift, Star, Zap, Target, ArrowLeft,
   Coins, Crown, ChevronRight, Check, Lock, X, Sparkles,
   RotateCcw, Copy, Share2, Users, Calendar, Flame, Award,
-  Eye, Play, Shuffle, Search, Monitor, Clock, Swords,
+  Eye, Play, PlusCircle, Search, Monitor, Clock, Swords,
   TrendingUp, Activity, Radio, DoorOpen, UserPlus,
   PieChart, Lightbulb, Medal, Timer, ChevronDown, Bot
 } from 'lucide-react'
@@ -262,7 +262,7 @@ function LiveStatsBar({ stats }: { stats: LobbyStats }) {
 
 // ========== HERO QUICK START ==========
 function HeroQuickStart({
-  onQuickMatch,
+  onOpenTable,
   onWatchLive,
   onFindTable,
   loading,
@@ -270,7 +270,7 @@ function HeroQuickStart({
   setSelectedGame,
   topGames,
 }: {
-  onQuickMatch: () => void
+  onOpenTable: (gameType: string) => void
   onWatchLive: () => void
   onFindTable: () => void
   loading: boolean
@@ -415,12 +415,12 @@ function HeroQuickStart({
         {/* Action buttons */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button
-            onClick={onQuickMatch}
+            onClick={() => onOpenTable(selectedGame)}
             disabled={loading}
             className="flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-700 hover:from-fuchsia-500 hover:to-purple-600 transition-all hover:scale-[1.02] shadow-lg shadow-fuchsia-500/20 disabled:opacity-50"
           >
-            <Shuffle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            <span className="text-white font-bold text-[10px] sm:text-xs">Rastgele Eşleş</span>
+            <PlusCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white font-bold text-[10px] sm:text-xs">Masa Aç</span>
           </button>
           <button
             onClick={onWatchLive}
@@ -1146,31 +1146,29 @@ export default function GameLobbyPage() {
   }
 
   // ===== ACTIONS =====
-  const handleQuickMatch = async () => {
+  const [showOpenTablePicker, setShowOpenTablePicker] = useState(false)
+
+  const handleOpenTable = async (gameType?: string) => {
     if (!session?.user) { router.push(`/${lang}/giris`); return }
+    if (!gameType) {
+      // Show game picker modal
+      setShowOpenTablePicker(true)
+      return
+    }
     setMatchLoading(true)
     try {
-      // Search across ALL game types for any waiting room
-      const res = await fetch('/api/games/lobby?section=auto_match_any')
-      const data = await res.json()
-      if (data.action === 'join' && data.roomId && data.gameType) {
-        const slug = gameSlug(data.gameType)
-        router.push(`/${lang}/oyunlar/${slug}?join=${data.roomId}`)
-      } else {
-        // No waiting room found anywhere, create one for selected game
-        const gt = selectedGame === 'sayi-tahmin' ? 'sayi_tahmin' : selectedGame
-        const createRes = await fetch('/api/games/room', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
-        })
-        const createData = await createRes.json()
-        if (createData.success) {
-          router.push(`/${lang}/oyunlar/${gameSlug(selectedGame)}?room=${createData.roomId}`)
-        }
+      const gt = gameType === 'sayi-tahmin' ? 'sayi_tahmin' : gameType
+      const createRes = await fetch('/api/games/room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameType: gt, isAI: false, betAmount: 0, betCurrency: 'FREE', turnTimer: 0 }),
+      })
+      const createData = await createRes.json()
+      if (createData.success) {
+        router.push(`/${lang}/oyunlar/${gameSlug(gameType)}?room=${createData.roomId}`)
       }
     } catch (e) {
-      console.error('Quick match error:', e)
+      console.error('Open table error:', e)
     } finally {
       setMatchLoading(false)
     }
@@ -1706,7 +1704,7 @@ export default function GameLobbyPage() {
             <div className="space-y-5">
               {/* Hero Quick Start */}
               <HeroQuickStart
-                onQuickMatch={handleQuickMatch}
+                onOpenTable={handleOpenTable}
                 onWatchLive={handleWatchLive}
                 onFindTable={handleFindTable}
                 loading={matchLoading}
@@ -2555,6 +2553,55 @@ export default function GameLobbyPage() {
           onJoinTable={handleJoinTable}
           onReplaceAI={handleReplaceAI}
         />
+      </AnimatePresence>
+
+      {/* Open Table Picker Modal (Masa Aç) */}
+      <AnimatePresence>
+        {showOpenTablePicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowOpenTablePicker(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="w-full max-w-md bg-gradient-to-br from-[#1a0a2e] via-[#2d1252] to-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold bg-gradient-to-r from-fuchsia-400 to-amber-300 bg-clip-text text-transparent flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-fuchsia-400" />
+                  Masa Aç
+                </h3>
+                <button onClick={() => setShowOpenTablePicker(false)} className="text-fuchsia-300/60 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-fuchsia-300/60 text-xs mb-4">Oynamak istediğin oyunu seç, masa hemen açılsın!</p>
+              <div className="grid grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+                {Object.entries(GAME_INFO).map(([gt, info]) => (
+                  <button
+                    key={gt}
+                    disabled={matchLoading}
+                    onClick={() => {
+                      setShowOpenTablePicker(false)
+                      handleOpenTable(gt)
+                    }}
+                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-purple-900/40 border border-fuchsia-500/10 hover:bg-fuchsia-600/30 hover:border-fuchsia-400/40 hover:scale-105 transition-all disabled:opacity-50"
+                  >
+                    <span className="text-2xl leading-none">{info.emoji}</span>
+                    <span className="text-[9px] sm:text-[10px] font-bold text-fuchsia-300/80 leading-tight mt-1 text-center">{info.name}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <div className="h-20" />
