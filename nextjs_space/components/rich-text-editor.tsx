@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useCallback, useState, useEffect } from 'react'
-import { Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Undo, Redo, Type, Quote, Minus, Code, Palette, Upload, X, Loader2 } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Undo, Redo, Type, Quote, Minus, Code, Palette, Upload, X, Loader2, FileCode, Eye } from 'lucide-react'
 
 interface RichTextEditorProps {
   value: string
@@ -22,6 +22,8 @@ export default function RichTextEditor({ value, onChange, placeholder = 'İçeri
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const [wordCount, setWordCount] = useState(0)
+  const [isSourceMode, setIsSourceMode] = useState(false)
+  const sourceRef = useRef<HTMLTextAreaElement>(null)
 
   // Initialize editor content
   useEffect(() => {
@@ -34,10 +36,9 @@ export default function RichTextEditor({ value, onChange, placeholder = 'İçeri
 
   // Sync external value changes
   useEffect(() => {
-    if (editorRef.current && isInitialized) {
+    if (editorRef.current && isInitialized && !isSourceMode) {
       const currentHtml = editorRef.current.innerHTML
       if (value !== currentHtml && value !== undefined) {
-        // Only update if significantly different (not just whitespace/formatting)
         const cleanCurrent = currentHtml.replace(/<br\s*\/?>/gi, '').trim()
         const cleanValue = (value || '').replace(/<br\s*\/?>/gi, '').trim()
         if (cleanCurrent === '' && cleanValue !== '') {
@@ -46,7 +47,21 @@ export default function RichTextEditor({ value, onChange, placeholder = 'İçeri
         }
       }
     }
-  }, [value, isInitialized])
+  }, [value, isInitialized, isSourceMode])
+
+  // Toggle between source and visual mode
+  const toggleSourceMode = () => {
+    if (isSourceMode) {
+      // Switching from source to visual
+      const html = sourceRef.current?.value || ''
+      onChange(html)
+      if (editorRef.current) {
+        editorRef.current.innerHTML = html
+        updateWordCount()
+      }
+    }
+    setIsSourceMode(!isSourceMode)
+  }
 
   const updateWordCount = () => {
     if (editorRef.current) {
@@ -298,25 +313,52 @@ export default function RichTextEditor({ value, onChange, placeholder = 'İçeri
           <Redo className="w-4 h-4" />
         </ToolButton>
 
+        <div className="w-px h-5 bg-white/10 mx-1" />
+
+        {/* Source Mode Toggle */}
+        <ToolButton
+          onClick={toggleSourceMode}
+          active={isSourceMode}
+          title={isSourceMode ? 'Görsel Mod' : 'HTML Kaynak Modu'}
+        >
+          {isSourceMode ? <Eye className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
+        </ToolButton>
+
         {/* Word count */}
-        <div className="ml-auto text-xs text-gray-500">
+        <div className="ml-auto text-xs text-gray-500 flex items-center gap-2">
+          {isSourceMode && <span className="text-amber-400/70 font-medium">HTML</span>}
           {wordCount} kelime
         </div>
       </div>
 
-      {/* Editor Area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onPaste={handlePaste}
-        onDrop={handleDrop}
-        onDragOver={e => e.preventDefault()}
-        data-placeholder={placeholder}
-        className="prose prose-invert max-w-none p-4 text-white text-sm focus:outline-none overflow-y-auto"
-        style={{ minHeight, maxHeight: '600px' }}
-      />
+      {/* Editor Area - Visual Mode */}
+      {!isSourceMode && (
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+          data-placeholder={placeholder}
+          className="prose prose-invert max-w-none p-4 text-white text-sm focus:outline-none overflow-y-auto"
+          style={{ minHeight, maxHeight: '600px' }}
+        />
+      )}
+
+      {/* Editor Area - HTML Source Mode */}
+      {isSourceMode && (
+        <textarea
+          ref={sourceRef}
+          defaultValue={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="HTML kodunu buraya yapıştırın... Örn: <h2>Başlık</h2><p>İçerik</p>"
+          className="w-full p-4 bg-gray-950/50 text-green-300 font-mono text-xs focus:outline-none resize-none overflow-y-auto border-0"
+          style={{ minHeight, maxHeight: '600px' }}
+          spellCheck={false}
+        />
+      )}
 
       {/* Image upload hint */}
       <div className="flex items-center gap-2 px-4 py-2 border-t border-white/10 bg-white/3">
