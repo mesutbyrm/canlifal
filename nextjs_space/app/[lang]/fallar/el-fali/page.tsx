@@ -8,6 +8,7 @@ import { Hand, Sparkles, Upload, X, Camera, RotateCcw, CheckCircle, AlertCircle,
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
+import InstagramShare from '@/components/instagram-share'
 import TextToSpeech from '@/components/text-to-speech'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
@@ -431,6 +432,7 @@ export default function PalmReadingPage() {
           
           {/* Share Buttons */}
           <div className="flex flex-wrap gap-2">
+            <InstagramShare sharerName={(session as any)?.user?.name || 'Misafir'} resultMessage={response} fortuneType="palm" />
             <ShareToSocial fortuneType="palm" content={response} />
             <SocialShare 
               title={'El Falım'} 

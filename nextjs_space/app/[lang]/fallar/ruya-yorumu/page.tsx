@@ -11,6 +11,7 @@ import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
 import ShareToSocial from '@/components/share-to-social'
+import InstagramShare from '@/components/instagram-share'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
 import RelatedContentLinks from '@/components/related-content-links'
@@ -180,6 +181,7 @@ export default function DreamFortunePage() {
           
           {/* Share Buttons */}
           <div className="flex flex-wrap gap-2">
+            <InstagramShare sharerName={(session as any)?.user?.name || 'Misafir'} resultMessage={fortune} fortuneType="ruya" />
             <ShareToSocial fortuneType="dream" content={fortune} />
             <SocialShare 
               title={'Rüya Yorumum'} 

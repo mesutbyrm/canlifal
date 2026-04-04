@@ -9,6 +9,7 @@ import { Coffee, Sparkles, AlertCircle, Camera, FileText, X, ImageIcon, CheckCir
 import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import ShareToSocial from '@/components/share-to-social'
+import InstagramShare from '@/components/instagram-share'
 import TextToSpeech from '@/components/text-to-speech'
 import VoiceInput from '@/components/voice-input'
 import FortunePageLayout from '@/components/fortune-page-layout'
@@ -588,6 +589,7 @@ export default function CoffeeFortunePage() {
           
           {/* Share Buttons */}
           <div className="flex flex-wrap gap-2">
+            <InstagramShare sharerName={(session as any)?.user?.name || 'Misafir'} resultMessage={fortune} fortuneType="coffee" />
             <ShareToSocial fortuneType="coffee" content={fortune} />
             <SocialShare 
               title={'Kahve Falı Sonucum'} 

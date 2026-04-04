@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/loading-spinner'
 import SocialShare from '@/components/social-share'
 import TextToSpeech from '@/components/text-to-speech'
 import ShareToSocial from '@/components/share-to-social'
+import InstagramShare from '@/components/instagram-share'
 import FortunePageLayout from '@/components/fortune-page-layout'
 import FortuneAccessGate from '@/components/fortune-access-gate'
 import RelatedContentLinks from '@/components/related-content-links'
@@ -202,6 +203,7 @@ export default function TarotFortunePage() {
           
           {/* Share Buttons */}
           <div className="flex flex-wrap gap-2">
+            <InstagramShare sharerName={(session as any)?.user?.name || 'Misafir'} resultMessage={fortune} fortuneType="tarot" />
             <ShareToSocial fortuneType="tarot" content={fortune} />
             <SocialShare 
               title={'Tarot Okumam'} 
