@@ -14,6 +14,7 @@ interface InstagramShareProps {
   iconSrc?: string
   onClose?: () => void
   trigger?: React.ReactNode
+  autoOpen?: boolean
 }
 
 const DEFAULT_SITE_URL = 'canlifal.com'
@@ -192,8 +193,10 @@ export default function InstagramShare({
   iconSrc = DEFAULT_ICON,
   onClose,
   trigger,
+  autoOpen = false,
 }: InstagramShareProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const autoOpenedRef = useRef(false)
   const [copied, setCopied] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState<'post' | 'story'>('post')
@@ -218,6 +221,14 @@ export default function InstagramShare({
       generateStory()
     }, 100)
   }
+
+  // Auto-open support for external state control
+  useEffect(() => {
+    if (autoOpen && !autoOpenedRef.current) {
+      autoOpenedRef.current = true
+      handleOpen()
+    }
+  }, [autoOpen])
 
   const handleClose = () => {
     setIsOpen(false)
