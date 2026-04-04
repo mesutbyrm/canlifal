@@ -19,7 +19,7 @@ interface InstagramShareProps {
 const DEFAULT_SITE_URL = 'canlifal.com'
 const DEFAULT_IG_HANDLE = '@canlifal0'
 const DEFAULT_LOGO = '/canlifal-logo.png'
-const DEFAULT_ICON = '/logo.png'
+const DEFAULT_ICON = '/canlifal-logo.png'
 
 // Fortune type labels
 const FORTUNE_LABELS: Record<string, string> = {
