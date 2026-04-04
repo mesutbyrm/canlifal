@@ -66,8 +66,12 @@ export default function HoroscopePage() {
       })
 
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Burç yorumu alınamadı')
+        const ct = res.headers.get('content-type') || ''
+        if (ct.includes('application/json')) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || 'Burç yorumu alınamadı')
+        }
+        throw new Error('Burç yorumu alınamadı. Lütfen tekrar deneyin.')
       }
 
       const reader = res.body?.getReader()

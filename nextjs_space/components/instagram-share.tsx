@@ -37,6 +37,10 @@ const FORTUNE_LABELS: Record<string, string> = {
   yesno: 'Evet/Hayır',
   istihare: 'İstihare',
   ruya: 'Rüya Yorumu',
+  blog: 'Blog Yazısı',
+  'dream-dictionary': 'Rüya Sözlüğü',
+  'dream-detail': 'Rüya Tabiri',
+  'fortune-detail': 'Fal Paylaşımı',
 }
 
 // Truncate text to fit canvas
