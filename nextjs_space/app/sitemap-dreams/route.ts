@@ -28,7 +28,7 @@ export async function GET() {
       where: { isPublished: true },
       select: { slug: true, title: true, updatedAt: true },
       orderBy: { createdAt: 'desc' },
-      take: 5000,
+      take: 10000,
     })
 
     dreamEntries = dreams.map((d: any) => {
@@ -39,8 +39,8 @@ export async function GET() {
     // Dream symbols
     const symbols = await prisma.dreamSymbol.findMany({
       where: { isPublished: true },
-      select: { slug: true, updatedAt: true },
-      take: 2000,
+      select: { slug: true, name: true, updatedAt: true },
+      take: 10000,
     })
 
     symbolEntries = symbols.map((s: any) => {
@@ -56,12 +56,27 @@ export async function GET() {
   <url>
     <loc>${baseUrl}/ruya</loc>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>${baseUrl}/ruya-sozlugu</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/ruya-istatistikleri</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/ruya-trendleri</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/ruya-takvimi</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
 ${dreamEntries.join('\n')}
 ${symbolEntries.join('\n')}
@@ -70,7 +85,7 @@ ${symbolEntries.join('\n')}
   return new NextResponse(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
     },
   })
 }

@@ -100,6 +100,11 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#1a0a2e" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        {/* DNS Prefetch & Preconnect for faster external resource loading */}
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://apps.abacus.ai" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
