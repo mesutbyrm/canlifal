@@ -889,6 +889,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { key: 'blog', label: 'Blog', icon: '📖', href: '/blog', sortOrder: 5 },
     { key: 'ruya', label: 'Rüya Tabiri', icon: '🌙', href: '/ruya', sortOrder: 6 },
     { key: 'bana-ozel', label: 'Bana Özel', icon: '✨', href: '/bana-ozel', sortOrder: 7, specialBehavior: 'bana-ozel' },
+    { key: 'sorbak', label: 'Soru&Cevap', icon: '❓', href: '/sorbak', sortOrder: 8 },
   ]
   for (const btn of homepageButtons) {
     await prisma.homepageButton.upsert({
