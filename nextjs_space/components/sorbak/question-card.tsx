@@ -9,10 +9,10 @@ function timeAgo(dateStr: string): string {
   const now = new Date()
   const date = new Date(dateStr)
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (diff < 60) return 'Az \u00f6nce'
+  if (diff < 60) return 'Az önce'
   if (diff < 3600) return `${Math.floor(diff / 60)} dk`
   if (diff < 86400) return `${Math.floor(diff / 3600)} saat`
-  if (diff < 604800) return `${Math.floor(diff / 86400)} g\u00fcn`
+  if (diff < 604800) return `${Math.floor(diff / 86400)} gün`
   return `${Math.floor(diff / 604800)} hafta`
 }
 
@@ -56,7 +56,7 @@ export default function QuestionCard({ question }: { question: SBQuestion }) {
           )}
           {question.isEditorPick && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-semibold">
-              <Star className="w-3 h-3" /> Edit\u00f6r Se\u00e7imi
+              <Star className="w-3 h-3" /> Editör Seçimi
             </span>
           )}
           {question.isPremium && (
@@ -66,7 +66,7 @@ export default function QuestionCard({ question }: { question: SBQuestion }) {
           )}
           {question.targetAudience !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-semibold">
-              <Users className="w-3 h-3" /> {question.targetAudience === 'female' ? 'Kad\u0131nlara' : 'Erkeklere'}
+              <Users className="w-3 h-3" /> {question.targetAudience === 'female' ? 'Kadınlara' : 'Erkeklere'}
             </span>
           )}
         </div>

@@ -165,7 +165,7 @@ export default function HomePage() {
   
   // DB-driven fortune cards & hero/ticker settings
   const [dbFortuneCards, setDbFortuneCards] = useState<Array<{ id: string; name: string; icon: string; image: string; href: string }>>([])
-  const [heroSettings, setHeroSettings] = useState<{ visible: boolean; icon: string; title: string; subtitle: string; link: string; items: Array<{ id: string; icon: string; title: string; subtitle: string; link: string }> }>({ visible: true, icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal', items: [] })
+  const [heroSettings, setHeroSettings] = useState<{ visible: boolean; icon: string; title: string; subtitle: string; link: string; items: Array<{ id: string; icon: string; title: string; subtitle: string; link: string }> }>({ visible: false, icon: '🔮', title: '', subtitle: '', link: '/online-fal', items: [] })
   
   // Theme detection
   const isFalci = theme === 'falci'

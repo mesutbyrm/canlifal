@@ -34,14 +34,14 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
   const handleAISuggest = () => {
     setAiSuggesting(true)
     setTimeout(() => {
-      if (title.length > 5) setTitle(title + ' - Nas\u0131l ba\u015fa \u00e7\u0131kar\u0131m?')
+      if (title.length > 5) setTitle(title + ' - Nasıl başa çıkarım?')
       setAiSuggesting(false)
     }, 1000)
   }
 
   const audiences = [
     { value: 'all' as const, label: 'Herkes', icon: '\ud83c\udf0d' },
-    { value: 'female' as const, label: 'Kad\u0131nlar', icon: '\ud83d\udc69' },
+    { value: 'female' as const, label: 'Kadınlar', icon: '\ud83d\udc69' },
     { value: 'male' as const, label: 'Erkekler', icon: '\ud83d\udc68' },
   ]
 
@@ -62,13 +62,13 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
         <div className="p-4 space-y-4">
           {/* Title */}
           <div>
-            <label className="text-sm font-medium text-white/70 mb-1.5 block">Ba\u015fl\u0131k</label>
+            <label className="text-sm font-medium text-white/70 mb-1.5 block">Başlık</label>
             <div className="relative">
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Akl\u0131ndaki soruyu yaz..."
+                placeholder="Aklındaki soruyu yaz..."
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/20 transition text-sm"
                 maxLength={200}
               />
@@ -77,7 +77,7 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
                 disabled={aiSuggesting || title.length < 3}
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-[11px] font-medium hover:bg-purple-500/30 transition disabled:opacity-30"
               >
-                <Wand2 className={`w-3.5 h-3.5 inline mr-1 ${aiSuggesting ? 'animate-spin' : ''}`} />AI \u00d6ner
+                <Wand2 className={`w-3.5 h-3.5 inline mr-1 ${aiSuggesting ? 'animate-spin' : ''}`} />AI Öner
               </button>
             </div>
             <p className="text-[11px] text-white/30 mt-1">{title.length}/200</p>
@@ -85,11 +85,11 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
 
           {/* Body */}
           <div>
-            <label className="text-sm font-medium text-white/70 mb-1.5 block">A\u00e7\u0131klama</label>
+            <label className="text-sm font-medium text-white/70 mb-1.5 block">Açıklama</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Sorunu detayl\u0131 a\u00e7\u0131kla... (iste\u011fe ba\u011fl\u0131)"
+              placeholder="Sorunu detaylı açıkla... (isteğe bağlı)"
               rows={4}
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/20 transition text-sm resize-none"
             />
@@ -166,7 +166,7 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
           >
             <span className="flex items-center gap-2 text-sm">
               {isAnonymous ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              Anonim Payla\u015f
+              Anonim Paylaş
             </span>
             <div className={`w-10 h-5 rounded-full transition-colors ${isAnonymous ? 'bg-purple-500' : 'bg-white/20'}`}>
               <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-transform ${isAnonymous ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -198,7 +198,7 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
                     type="text"
                     value={opt}
                     onChange={(e) => updatePollOption(idx, e.target.value)}
-                    placeholder={`Se\u00e7enek ${idx + 1}`}
+                    placeholder={`Seçenek ${idx + 1}`}
                     className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none focus:border-purple-500/50"
                   />
                   {pollOptions.length > 2 && (
@@ -208,7 +208,7 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
               ))}
               {pollOptions.length < 5 && (
                 <button onClick={addPollOption} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300">
-                  <Plus className="w-3.5 h-3.5" /> Se\u00e7enek Ekle
+                  <Plus className="w-3.5 h-3.5" /> Seçenek Ekle
                 </button>
               )}
             </div>
@@ -219,7 +219,7 @@ export default function AskQuestionModal({ isOpen, onClose }: AskQuestionModalPr
             disabled={title.trim().length < 5 || !categoryId}
             className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm flex items-center justify-center gap-2 hover:from-purple-500 hover:to-purple-400 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" /> Yay\u0131nla
+            <Send className="w-4 h-4" /> Yayınla
           </button>
         </div>
       </div>

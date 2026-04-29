@@ -4,13 +4,13 @@ import { FeedTab } from '@/lib/sorbak/types'
 import { Flame, Sparkles, Clock, Trophy, BarChart3, GraduationCap, Star } from 'lucide-react'
 
 const tabs: { key: FeedTab; label: string; icon: React.ReactNode }[] = [
-  { key: 'foryou', label: 'Sana \u00d6zel', icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { key: 'foryou', label: 'Sana Özel', icon: <Sparkles className="w-3.5 h-3.5" /> },
   { key: 'trending', label: 'Trend', icon: <Flame className="w-3.5 h-3.5" /> },
   { key: 'new', label: 'Yeni', icon: <Clock className="w-3.5 h-3.5" /> },
-  { key: 'top', label: 'En \u0130yi', icon: <Trophy className="w-3.5 h-3.5" /> },
+  { key: 'top', label: 'En İyi', icon: <Trophy className="w-3.5 h-3.5" /> },
   { key: 'polls', label: 'Anketler', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   { key: 'expert', label: 'Uzman', icon: <GraduationCap className="w-3.5 h-3.5" /> },
-  { key: 'editor', label: 'Se\u00e7me', icon: <Star className="w-3.5 h-3.5" /> },
+  { key: 'editor', label: 'Seçme', icon: <Star className="w-3.5 h-3.5" /> },
 ]
 
 interface FeedTabsProps {

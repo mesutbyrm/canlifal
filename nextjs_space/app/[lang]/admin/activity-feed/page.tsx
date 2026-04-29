@@ -29,17 +29,17 @@ interface RecentActivity {
 }
 
 const ACTIVITY_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
-  fortune_read: { label: 'Fal Bakt\u0131rma', icon: <Sparkles className="w-4 h-4 text-purple-400" /> },
-  chat_join: { label: 'Sohbete Kat\u0131lma', icon: <MessageCircle className="w-4 h-4 text-blue-400" /> },
-  dream_shared: { label: 'R\u00fcya Payla\u015f\u0131m\u0131', icon: <Eye className="w-4 h-4 text-indigo-400" /> },
-  stream_started: { label: 'Yay\u0131n Ba\u015flatma', icon: <Tv className="w-4 h-4 text-red-400" /> },
-  gift_sent: { label: 'Hediye G\u00f6nderme', icon: <Gift className="w-4 h-4 text-yellow-400" /> },
-  signup: { label: 'Kay\u0131t Olma', icon: <UserPlus className="w-4 h-4 text-green-400" /> },
+  fortune_read: { label: 'Fal Baktırma', icon: <Sparkles className="w-4 h-4 text-purple-400" /> },
+  chat_join: { label: 'Sohbete Katılma', icon: <MessageCircle className="w-4 h-4 text-blue-400" /> },
+  dream_shared: { label: 'Rüya Paylaşımı', icon: <Eye className="w-4 h-4 text-indigo-400" /> },
+  stream_started: { label: 'Yayın Başlatma', icon: <Tv className="w-4 h-4 text-red-400" /> },
+  gift_sent: { label: 'Hediye Gönderme', icon: <Gift className="w-4 h-4 text-yellow-400" /> },
+  signup: { label: 'Kayıt Olma', icon: <UserPlus className="w-4 h-4 text-green-400" /> },
   blog_read: { label: 'Blog Okuma', icon: <BookOpen className="w-4 h-4 text-cyan-400" /> },
   comment: { label: 'Yorum Yapma', icon: <MessageCircle className="w-4 h-4 text-emerald-400" /> },
   follow: { label: 'Takip Etme', icon: <Heart className="w-4 h-4 text-pink-400" /> },
   game_played: { label: 'Oyun Oynama', icon: <Gamepad2 className="w-4 h-4 text-orange-400" /> },
-  live_session: { label: 'Canl\u0131 Seans', icon: <Users className="w-4 h-4 text-fuchsia-400" /> },
+  live_session: { label: 'Canlı Seans', icon: <Users className="w-4 h-4 text-fuchsia-400" /> },
 }
 
 export default function ActivityFeedAdminPage() {
@@ -100,7 +100,7 @@ export default function ActivityFeedAdminPage() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Yetkisiz eri\u015fim</p>
+        <p className="text-gray-400">Yetkisiz erişim</p>
       </div>
     )
   }
@@ -116,13 +116,13 @@ export default function ActivityFeedAdminPage() {
   if (!config) return null
 
   const groups = [
-    { key: 'visibleToGuests' as const, label: 'Kay\u0131ts\u0131z Kullan\u0131c\u0131lar', emoji: '\ud83d\udc64', desc: 'Giri\u015f yapmam\u0131\u015f ziyaret\u00e7iler' },
-    { key: 'visibleToBasic' as const, label: 'Basic \u00dcyeler', emoji: '\u2b50', desc: 'Temel \u00fcyelik' },
-    { key: 'visibleToPremium' as const, label: 'Premium \u00dcyeler', emoji: '\ud83d\udc8e', desc: 'Premium \u00fcyelik' },
-    { key: 'visibleToGold' as const, label: 'Gold \u00dcyeler', emoji: '\ud83e\udd47', desc: 'Gold \u00fcyelik' },
-    { key: 'visibleToDiamond' as const, label: 'Diamond \u00dcyeler', emoji: '\ud83d\udc8e', desc: 'Diamond \u00fcyelik' },
-    { key: 'visibleToModerator' as const, label: 'Moderat\u00f6rler', emoji: '\ud83d\udee1\ufe0f', desc: 'Moderat\u00f6r rol\u00fc' },
-    { key: 'visibleToAdmin' as const, label: 'Y\u00f6neticiler', emoji: '\ud83d\udc51', desc: 'Admin & Y\u00f6netici' },
+    { key: 'visibleToGuests' as const, label: 'Kayıtsız Kullanıcılar', emoji: '\ud83d\udc64', desc: 'Giriş yapmamış ziyaretçiler' },
+    { key: 'visibleToBasic' as const, label: 'Basic Üyeler', emoji: '\u2b50', desc: 'Temel üyelik' },
+    { key: 'visibleToPremium' as const, label: 'Premium Üyeler', emoji: '\ud83d\udc8e', desc: 'Premium üyelik' },
+    { key: 'visibleToGold' as const, label: 'Gold Üyeler', emoji: '\ud83e\udd47', desc: 'Gold üyelik' },
+    { key: 'visibleToDiamond' as const, label: 'Diamond Üyeler', emoji: '\ud83d\udc8e', desc: 'Diamond üyelik' },
+    { key: 'visibleToModerator' as const, label: 'Moderatörler', emoji: '\ud83d\udee1\ufe0f', desc: 'Moderatör rolü' },
+    { key: 'visibleToAdmin' as const, label: 'Yöneticiler', emoji: '\ud83d\udc51', desc: 'Admin & Yönetici' },
   ]
 
   return (
@@ -135,9 +135,9 @@ export default function ActivityFeedAdminPage() {
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-400" />
-            Canl\u0131 Aktivite Ak\u0131\u015f\u0131
+            Canlı Aktivite Akışı
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">Sitede kim ne yap\u0131yor b\u00f6l\u00fcm\u00fcn\u00fc y\u00f6netin</p>
+          <p className="text-xs text-gray-400 mt-0.5">Sitede kim ne yapıyor bölümünü yönetin</p>
         </div>
       </div>
 
@@ -148,8 +148,8 @@ export default function ActivityFeedAdminPage() {
             <div className="flex items-center gap-3">
               <Settings className="w-5 h-5 text-purple-400" />
               <div>
-                <p className="text-sm font-semibold text-white">Aktivite Ak\u0131\u015f\u0131</p>
-                <p className="text-xs text-gray-400">Ana sayfada canl\u0131 aktivite g\u00f6sterimi</p>
+                <p className="text-sm font-semibold text-white">Aktivite Akışı</p>
+                <p className="text-xs text-gray-400">Ana sayfada canlı aktivite gösterimi</p>
               </div>
             </div>
             <button
@@ -166,7 +166,7 @@ export default function ActivityFeedAdminPage() {
 
           {/* Max items */}
           <div className="mt-4 flex items-center gap-3">
-            <label className="text-xs text-gray-400">G\u00f6sterilecek max aktivite:</label>
+            <label className="text-xs text-gray-400">Gösterilecek max aktivite:</label>
             <select
               value={config.maxItems}
               onChange={(e) => setConfig({ ...config, maxItems: parseInt(e.target.value) })}
@@ -183,7 +183,7 @@ export default function ActivityFeedAdminPage() {
         <div className="rounded-xl bg-white/5 border border-purple-500/10 p-4">
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-purple-400" />
-            <p className="text-sm font-semibold text-white">Kimler G\u00f6rs\u00fcn?</p>
+            <p className="text-sm font-semibold text-white">Kimler Görsün?</p>
           </div>
 
           <div className="space-y-2">
@@ -219,14 +219,14 @@ export default function ActivityFeedAdminPage() {
           <div className="flex items-center gap-2 mb-3">
             <Star className="w-5 h-5 text-yellow-400" />
             <div>
-              <p className="text-sm font-semibold text-white">Belirli Kullan\u0131c\u0131lar</p>
-              <p className="text-[10px] text-gray-400">Sadece bu kullan\u0131c\u0131lar g\u00f6rs\u00fcn (bo\u015f b\u0131rak\u0131l\u0131rsa herkes i\u00e7in ge\u00e7erli)</p>
+              <p className="text-sm font-semibold text-white">Belirli Kullanıcılar</p>
+              <p className="text-[10px] text-gray-400">Sadece bu kullanıcılar görsün (boş bırakılırsa herkes için geçerli)</p>
             </div>
           </div>
           <textarea
             value={config.specificUserIds || ''}
             onChange={(e) => setConfig({ ...config, specificUserIds: e.target.value || null })}
-            placeholder="Kullan\u0131c\u0131 ID'lerini virg\u00fclle ay\u0131r\u0131n: id1, id2, id3"
+            placeholder="Kullanıcı ID'lerini virgülle ayırın: id1, id2, id3"
             className="w-full bg-white/5 border border-purple-500/20 rounded-lg px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500 min-h-[60px] resize-none"
           />
         </div>

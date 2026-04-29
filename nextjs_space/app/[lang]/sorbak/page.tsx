@@ -42,7 +42,7 @@ export default function SorBakPage() {
             <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">
               <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 inline text-purple-400 mr-1" />{PLATFORM_NAME}
             </h1>
-            <p className="text-sm text-white/50">Merak etti\u011fin her \u015feyi sor, topluluktan cevap al</p>
+            <p className="text-sm text-white/50">Merak ettiğin her şeyi sor, topluluktan cevap al</p>
           </div>
 
           {/* Search + Ask */}
@@ -74,7 +74,7 @@ export default function SorBakPage() {
               <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-purple-400" />
               </div>
-              <span className="text-sm text-white/30 group-hover:text-white/50 transition">Akl\u0131ndaki soruyu yaz...</span>
+              <span className="text-sm text-white/30 group-hover:text-white/50 transition">Aklındaki soruyu yaz...</span>
             </div>
           </div>
 
@@ -116,9 +116,9 @@ export default function SorBakPage() {
               ) : (
                 <div className="text-center py-12">
                   <MessageCircle className="w-12 h-12 text-white/10 mx-auto mb-3" />
-                  <p className="text-white/30 text-sm">Bu kategoride hen\u00fcz soru yok</p>
+                  <p className="text-white/30 text-sm">Bu kategoride henüz soru yok</p>
                   <button onClick={() => setShowAskModal(true)} className="mt-3 px-4 py-2 bg-purple-500/20 text-purple-300 text-sm rounded-xl hover:bg-purple-500/30 transition">
-                    \u0130lk soruyu sen sor!
+                    İlk soruyu sen sor!
                   </button>
                 </div>
               )}
@@ -143,7 +143,7 @@ export default function SorBakPage() {
           </Link>
           <Link href="/sorbak" className="flex flex-col items-center gap-0.5 text-white/40">
             <Search className="w-5 h-5" />
-            <span className="text-[10px]">Ke\u015ffet</span>
+            <span className="text-[10px]">Keşfet</span>
           </Link>
           <button
             onClick={() => setShowAskModal(true)}

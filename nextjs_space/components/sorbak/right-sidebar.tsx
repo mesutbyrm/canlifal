@@ -31,7 +31,7 @@ export default function RightSidebar() {
       {/* Weekly Active */}
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
-          <Trophy className="w-4 h-4 text-amber-400" /> Haftan\u0131n Aktif \u00dcyeleri
+          <Trophy className="w-4 h-4 text-amber-400" /> Haftanın Aktif Üyeleri
         </h3>
         <div className="divide-y divide-white/5">
           {weeklyActiveUsers.map((u, i) => (
@@ -43,7 +43,7 @@ export default function RightSidebar() {
       {/* Trending Tags */}
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-red-400" /> Pop\u00fcler Etiketler
+          <TrendingUp className="w-4 h-4 text-red-400" /> Popüler Etiketler
         </h3>
         <div className="flex flex-wrap gap-1.5">
           {mockTags.slice(0, 8).map(tag => (
@@ -57,7 +57,7 @@ export default function RightSidebar() {
       {/* Top Answerers */}
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
-          <Star className="w-4 h-4 text-purple-400" /> En \u00c7ok Cevap Verenler
+          <Star className="w-4 h-4 text-purple-400" /> En Çok Cevap Verenler
         </h3>
         <div className="divide-y divide-white/5">
           {topAnswerers.map((u) => (
@@ -70,9 +70,9 @@ export default function RightSidebar() {
       <div className="bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/20 rounded-2xl p-4 text-center">
         <Crown className="w-8 h-8 text-amber-400 mx-auto mb-2" />
         <h3 className="text-sm font-bold text-white mb-1">Premium Ol</h3>
-        <p className="text-[11px] text-white/50 mb-3">Sorular\u0131n\u0131 \u00f6ne \u00e7\u0131kar, uzmanlara sor, AI \u00f6zelliklerini kullan</p>
+        <p className="text-[11px] text-white/50 mb-3">Sorularını öne çıkar, uzmanlara sor, AI özelliklerini kullan</p>
         <button className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition shadow-lg shadow-amber-500/20">
-          \u00dc\u00e7retsize Ba\u015fla
+          Üçretsize Başla
         </button>
       </div>
     </div>

@@ -151,7 +151,7 @@ export async function handleFortuneRequest(options: FortuneHandlerOptions) {
   } catch (error) {
     console.error(`Fortune ${fortuneType} error:`, error)
     return NextResponse.json(
-      { error: 'Fal olu\u015fturulurken bir hata olu\u015ftu' },
+      { error: 'Fal oluşturulurken bir hata oluştu' },
       { status: 500 }
     )
   }

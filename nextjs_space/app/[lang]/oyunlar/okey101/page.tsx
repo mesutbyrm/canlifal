@@ -20,7 +20,7 @@ function Portal({ children }: { children: React.ReactNode }): JSX.Element | null
 }
 
 const TC: Record<number, string> = { 0: '#dc2626', 1: '#2563eb', 2: '#16a34a', 3: '#1f2937', 4: '#b45309' }
-const SEAT_NAMES = ['Sen', 'Do\u011fu \ud83e\udd16', 'Kuzey \ud83e\udd16', 'Bat\u0131 \ud83e\udd16']
+const SEAT_NAMES = ['Sen', 'Doğu \ud83e\udd16', 'Kuzey \ud83e\udd16', 'Batı \ud83e\udd16']
 const DIFF_LABELS: Record<string, { label: string; emoji: string }> = { easy: { label: 'Kolay', emoji: '\ud83d\udfe2' }, medium: { label: 'Orta', emoji: '\ud83d\udfe1' }, hard: { label: 'Zor', emoji: '\ud83d\udd34' } }
 
 function playTileSound() { try { const c=new(window.AudioContext||(window as any).webkitAudioContext)();const b=c.createBuffer(1,Math.floor(c.sampleRate*0.06),c.sampleRate);const d=b.getChannelData(0);for(let j=0;j<d.length;j++)d[j]=(Math.random()*2-1)*Math.pow(1-j/d.length,2)*0.3;const s=c.createBufferSource();s.buffer=b;const g=c.createGain();g.gain.setValueAtTime(0.15,c.currentTime);const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=1000;s.connect(f);f.connect(g);g.connect(c.destination);s.start()}catch{} }
@@ -35,7 +35,7 @@ function LandscapePrompt() {
   useEffect(() => { setM(true) }, [])
   useEffect(() => { const c=()=>{if(typeof window!=='undefined')setShow(window.innerHeight>window.innerWidth&&window.innerWidth<768)};c();window.addEventListener('resize',c);window.addEventListener('orientationchange',c);return()=>{window.removeEventListener('resize',c);window.removeEventListener('orientationchange',c)} }, [])
   if (!show || !m) return null
-  return <Portal><div style={{position:'fixed',inset:0,zIndex:999999,background:'rgba(10,30,40,0.98)',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center',padding:32}}><div style={{fontSize:56,marginBottom:16}}>\ud83d\udcf1</div><h2 style={{fontSize:20,fontWeight:700,color:'white',marginBottom:8}}>Ekran\u0131 \u00c7evir</h2><p style={{fontSize:13,color:'#94a3b8'}}>101 Okey yatay modda oynan\u0131r.</p></div></div></Portal>
+  return <Portal><div style={{position:'fixed',inset:0,zIndex:999999,background:'rgba(10,30,40,0.98)',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center',padding:32}}><div style={{fontSize:56,marginBottom:16}}>\ud83d\udcf1</div><h2 style={{fontSize:20,fontWeight:700,color:'white',marginBottom:8}}>Ekranı Çevir</h2><p style={{fontSize:13,color:'#94a3b8'}}>101 Okey yatay modda oynanır.</p></div></div></Portal>
 }
 
 /* === TILE === */
@@ -93,7 +93,7 @@ function ActBtn({ label, icon, onClick, disabled, color }: { label: string; icon
 
 export default function Okey101Page() {
   return (
-    <GameShell gameType="okey101" gameName="101 Okey" gameEmoji="\ud83d\udcaf" gameDesc="\u00c7ok rauntlu 101 Okey! \u0130lk 101 puana ula\u015fan elenir." supportsAI={true}>
+    <GameShell gameType="okey101" gameName="101 Okey" gameEmoji="\ud83d\udcaf" gameDesc="Çok rauntlu 101 Okey! İlk 101 puana ulaşan elenir." supportsAI={true}>
       {({ room, state, isMyTurn, isSpectator, playerNum, sendMove, sendAIState, soundEnabled }) => (
         <Board room={room} state={state} isMyTurn={isMyTurn} isSpectator={isSpectator} sendAIState={sendAIState} soundEnabled={soundEnabled} playerNum={playerNum} />
       )}
@@ -139,7 +139,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
   useEffect(() => { if (state && !diffSet && room?.status === 'active' && !state.difficulty) { sendAIState({ state: { ...state, difficulty: diff }, currentTurn: s2t(state.currentSeat), status: 'active', player1Score: room.player1Score, player2Score: room.player2Score, winnerId: null }); setDiffSet(true) } }, [state, room])
   const showM = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
-  useEffect(() => { if (cs !== lastSR.current) { setSel(new Set()); lastSR.current = cs; if (isMT && !isSpectator && room.status === 'active' && !win) showM('S\u0131ra sende!') } }, [cs])
+  useEffect(() => { if (cs !== lastSR.current) { setSel(new Set()); lastSR.current = cs; if (isMT && !isSpectator && room.status === 'active' && !win) showM('Sıra sende!') } }, [cs])
 
   const procRE = async (c: any, rw: number) => {
     const ns = [...(c.scores || [0,0,0,0])]; const rp = [0,0,0,0]
@@ -174,8 +174,8 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
   const hDiscard=async(tid:number)=>{if(!isMT||ph!=='discard'||isSpectator||room.status!=='active')return;const r=okeyDiscard(state,mySeat,tid);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(r.state.currentSeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
   const hTap=(tid:number)=>{if(!isMT||isSpectator||room.status!=='active'||ph!=='discard')return;setSel(p=>{const n=new Set(p);if(n.has(tid))n.delete(tid);else n.add(tid);return n})}
   const hDblTap=(tid:number)=>{if(!isMT||ph!=='discard'||isSpectator)return;hDiscard(tid)}
-  const hLay=async(type:'run'|'set')=>{if(!isMT||ph!=='discard'||sel.size<3){showM('En az 3 ta\u015f se\u00e7!');return};const r=okey101LayMeld(state,mySeat,[Array.from(sel)]);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
-  const hAdd=async(mi:number)=>{if(!isMT||ph!=='discard'||sel.size===0||!myOp){showM(myOp?'Ta\u015f se\u00e7!':'\u00d6nce a\u00e7\u0131l!');return};const r=okey101AddToMeld(state,mySeat,Array.from(sel),mi);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
+  const hLay=async(type:'run'|'set')=>{if(!isMT||ph!=='discard'||sel.size<3){showM('En az 3 taş seç!');return};const r=okey101LayMeld(state,mySeat,[Array.from(sel)]);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
+  const hAdd=async(mi:number)=>{if(!isMT||ph!=='discard'||sel.size===0||!myOp){showM(myOp?'Taş seç!':'Önce açıl!');return};const r=okey101AddToMeld(state,mySeat,Array.from(sel),mi);if(r.error){showM(r.error);return};if(soundEnabled)playTileSound();if(r.state.hands[mySeat].length===0){if(soundEnabled)playWinSound();await procRE(r.state,mySeat)}else await sendAIState({state:r.state,currentTurn:s2t(mySeat),status:'active',player1Score:room.player1Score,player2Score:room.player2Score,winnerId:null});setSel(new Set())}
 
   const topD=(s:number):OkeyTile|null=>{const d=discards[s];return d?.length>0?d[d.length-1]:null}
   const prevD=topD((mySeat+3)%4)
@@ -188,13 +188,13 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
       <LandscapePrompt/>
 
       {/* Diff overlay */}
-      {showDS&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.96)',padding:28,borderRadius:14,border:'2px solid #2a6a7a'}}><div style={{color:'#7dd3fc',fontSize:16,marginBottom:14,textAlign:'center',fontWeight:700}}>Zorluk Se\u00e7</div><div style={{display:'flex',gap:10}}>{(['easy','medium','hard']as const).map(d=>(<button key={d} onClick={()=>{setDiff(d);setDiffSet(true);sendAIState({state:{...state,difficulty:d},currentTurn:1,status:'active',player1Score:0,player2Score:0,winnerId:null})}} style={{padding:'10px 20px',borderRadius:8,fontSize:13,fontWeight:700,cursor:'pointer',background:diff===d?'#0ea5e9':'#1e3a4a',border:`2px solid ${diff===d?'#38bdf8':'#2a5a6a'}`,color:'white'}}>{DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}</button>))}</div></div>)}
+      {showDS&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.96)',padding:28,borderRadius:14,border:'2px solid #2a6a7a'}}><div style={{color:'#7dd3fc',fontSize:16,marginBottom:14,textAlign:'center',fontWeight:700}}>Zorluk Seç</div><div style={{display:'flex',gap:10}}>{(['easy','medium','hard']as const).map(d=>(<button key={d} onClick={()=>{setDiff(d);setDiffSet(true);sendAIState({state:{...state,difficulty:d},currentTurn:1,status:'active',player1Score:0,player2Score:0,winnerId:null})}} style={{padding:'10px 20px',borderRadius:8,fontSize:13,fontWeight:700,cursor:'pointer',background:diff===d?'#0ea5e9':'#1e3a4a',border:`2px solid ${diff===d?'#38bdf8':'#2a5a6a'}`,color:'white'}}>{DIFF_LABELS[d].emoji} {DIFF_LABELS[d].label}</button>))}</div></div>)}
 
       {/* Round end */}
-      {(state?.showingRoundResult||showRE)&&!gOver&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.97)',padding:28,borderRadius:14,border:'2px solid #fbbf24',textAlign:'center',minWidth:300}}><h3 style={{fontSize:20,fontWeight:700,color:'#fbbf24',marginBottom:10}}>\ud83c\udfc6 Raunt {round} Bitti!</h3><p style={{fontSize:14,color:'#94a3b8',marginBottom:14}}>{SEAT_NAMES[state?.roundWinner??0]} kazand\u0131!</p>{state?.roundHistory?.length>0&&(<div style={{display:'flex',gap:14,justifyContent:'center',marginBottom:14}}>{SEAT_NAMES.map((n,i)=>{const lr=state.roundHistory[state.roundHistory.length-1];return(<div key={i} style={{textAlign:'center'}}><div style={{fontSize:10,color:'#94a3b8'}}>{n.split(' ')[0]}</div><div style={{fontSize:14,color:'#f87171',fontWeight:700}}>+{lr?.penalties?.[i]||0}</div></div>)})}</div>)}<button onClick={startNR} style={{padding:'10px 24px',background:'#0ea5e9',color:'white',border:'none',borderRadius:10,fontWeight:700,fontSize:14,cursor:'pointer'}}>Sonraki Raunt \u2192</button></div>)}
+      {(state?.showingRoundResult||showRE)&&!gOver&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.97)',padding:28,borderRadius:14,border:'2px solid #fbbf24',textAlign:'center',minWidth:300}}><h3 style={{fontSize:20,fontWeight:700,color:'#fbbf24',marginBottom:10}}>\ud83c\udfc6 Raunt {round} Bitti!</h3><p style={{fontSize:14,color:'#94a3b8',marginBottom:14}}>{SEAT_NAMES[state?.roundWinner??0]} kazandı!</p>{state?.roundHistory?.length>0&&(<div style={{display:'flex',gap:14,justifyContent:'center',marginBottom:14}}>{SEAT_NAMES.map((n,i)=>{const lr=state.roundHistory[state.roundHistory.length-1];return(<div key={i} style={{textAlign:'center'}}><div style={{fontSize:10,color:'#94a3b8'}}>{n.split(' ')[0]}</div><div style={{fontSize:14,color:'#f87171',fontWeight:700}}>+{lr?.penalties?.[i]||0}</div></div>)})}</div>)}<button onClick={startNR} style={{padding:'10px 24px',background:'#0ea5e9',color:'white',border:'none',borderRadius:10,fontWeight:700,fontSize:14,cursor:'pointer'}}>Sonraki Raunt \u2192</button></div>)}
 
       {/* Game over */}
-      {gOver&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.97)',padding:28,borderRadius:14,border:'2px solid #fbbf24',textAlign:'center',minWidth:320}}><h3 style={{fontSize:22,fontWeight:700,color:'#fbbf24',marginBottom:10}}>\ud83c\udf89 Oyun Bitti!</h3><p style={{fontSize:15,color:'#94a3b8',marginBottom:14}}>{SEAT_NAMES[win??0]} kazand\u0131!</p><div style={{display:'flex',gap:10,justifyContent:'center'}}>{SEAT_NAMES.map((n,i)=>(<div key={i} style={{textAlign:'center',padding:'8px 12px',borderRadius:8,background:i===win?'rgba(250,204,21,0.15)':'rgba(255,255,255,0.05)',border:`2px solid ${i===win?'#fbbf24':'#334155'}`}}><div style={{fontSize:11,fontWeight:700,color:'#94a3b8'}}>{n.split(' ')[0]}</div><div style={{fontSize:18,fontWeight:800,color:'white'}}>{scores[i]}</div>{i===win&&<div style={{fontSize:10,color:'#fbbf24'}}>\ud83c\udfc6</div>}{elim[i]&&i!==win&&<div style={{fontSize:9,color:'#f87171'}}>ELEND\u0130</div>}</div>))}</div></div>)}
+      {gOver&&(<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:200,background:'rgba(10,26,32,0.97)',padding:28,borderRadius:14,border:'2px solid #fbbf24',textAlign:'center',minWidth:320}}><h3 style={{fontSize:22,fontWeight:700,color:'#fbbf24',marginBottom:10}}>\ud83c\udf89 Oyun Bitti!</h3><p style={{fontSize:15,color:'#94a3b8',marginBottom:14}}>{SEAT_NAMES[win??0]} kazandı!</p><div style={{display:'flex',gap:10,justifyContent:'center'}}>{SEAT_NAMES.map((n,i)=>(<div key={i} style={{textAlign:'center',padding:'8px 12px',borderRadius:8,background:i===win?'rgba(250,204,21,0.15)':'rgba(255,255,255,0.05)',border:`2px solid ${i===win?'#fbbf24':'#334155'}`}}><div style={{fontSize:11,fontWeight:700,color:'#94a3b8'}}>{n.split(' ')[0]}</div><div style={{fontSize:18,fontWeight:800,color:'white'}}>{scores[i]}</div>{i===win&&<div style={{fontSize:10,color:'#fbbf24'}}>\ud83c\udfc6</div>}{elim[i]&&i!==win&&<div style={{fontSize:9,color:'#f87171'}}>ELENDİ</div>}</div>))}</div></div>)}
 
       {/* === MAIN GAME === */}
       {!state?.showingRoundResult&&!gOver&&(
@@ -219,7 +219,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
               <Badge score={scores[opponentSeats[2]]} style={{bottom:6,left:6}} />
               <Badge score={scores[mySeat]} style={{bottom:6,right:6}} />
 
-              {/* LEFT: opponent (Bat\u0131) */}
+              {/* LEFT: opponent (Batı) */}
               <div style={{width:44,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,padding:'36px 2px'}}>
                 {!elim[opponentSeats[2]]&&(<>
                   <span style={{fontSize:7,color:'rgba(255,255,255,0.5)',fontWeight:700}}>{SEAT_NAMES[opponentSeats[2]].split(' ')[0]}</span>
@@ -252,9 +252,9 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                   {/* CENTER INFO (pile + indicator + info panel) */}
                   <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,minWidth:120}}>
 
-                    {/* Info labels like screenshot: E\u015fli, Yard\u0131ml\u0131, Katlamal\u0131, round */}
+                    {/* Info labels like screenshot: Eşli, Yardımlı, Katlamalı, round */}
                     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1,fontSize:9,fontWeight:600}}>
-                      <span style={{color:myOp?'#4ade80':'#fbbf24'}}>{myOp?'A\u00e7\u0131k':'Kapal\u0131'}</span>
+                      <span style={{color:myOp?'#4ade80':'#fbbf24'}}>{myOp?'Açık':'Kapalı'}</span>
                       <span style={{color:'rgba(255,255,255,0.4)'}}>{round}/3 El</span>
                     </div>
 
@@ -273,7 +273,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
                         <div style={{width:28,height:40,borderRadius:4,background:'linear-gradient(180deg,#1e3a5f,#0f2440)',border:'2px solid #2a4a6a',display:'flex',alignItems:'center',justifyContent:'center'}}>
                           <span style={{color:'#4a6a7a',fontSize:9,fontWeight:700}}>{pile.length}</span>
                         </div>
-                        <span style={{fontSize:6,color:'#7dd3fc'}}>Y\u0131\u011f\u0131n</span>
+                        <span style={{fontSize:6,color:'#7dd3fc'}}>Yığın</span>
                       </div>
                       {prevD&&<div onClick={()=>hDraw('discard')} style={{cursor:isMT&&ph==='draw'?'pointer':'not-allowed',opacity:isMT&&ph==='draw'?1:0.3,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
                         <T tile={prevD} w={28} h={40} fs={14} jk={isJk(prevD)}/>
@@ -290,8 +290,8 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
                 {/* Status bar */}
                 <div style={{textAlign:'center',padding:'3px 0',fontSize:11,fontWeight:700,color:isMT?'#7dd3fc':'#4a6a7a'}}>
-                  {win!==null?<span style={{color:'#fbbf24'}}>\ud83c\udfc6 {win===mySeat?'Kazand\u0131n!':`${SEAT_NAMES[win]} kazand\u0131!`}</span>
-                    :<span>{isMT?`${ph==='draw'?'Ta\u015f \u00c7ek':myOp?'At veya A\u00e7':'At veya A\u00e7\u0131l (min 101)'}`:`${SEAT_NAMES[cs]} d\u00fc\u015f\u00fcn\u00fcyor...`}</span>}
+                  {win!==null?<span style={{color:'#fbbf24'}}>\ud83c\udfc6 {win===mySeat?'Kazandın!':`${SEAT_NAMES[win]} kazandı!`}</span>
+                    :<span>{isMT?`${ph==='draw'?'Taş Çek':myOp?'At veya Aç':'At veya Açıl (min 101)'}`:`${SEAT_NAMES[cs]} düşünüyor...`}</span>}
                 </div>
               </div>
 
@@ -308,10 +308,10 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
 
                 {/* ACTION BUTTONS */}
                 <div style={{display:'flex',flexDirection:'column',gap:5,width:'100%',marginBottom:42}}>
-                  <ActBtn label={"SER\u0130 A\u00c7"} icon={"\ud83c\udccf"} onClick={()=>hLay('run')} disabled={!canLay}/>
-                  <ActBtn label={"\u00c7\u0130FT A\u00c7"} icon={"\ud83c\udfb4"} onClick={()=>hLay('set')} disabled={!canLay}/>
-                  <ActBtn label={"GER\u0130 TOPLA"} icon={"\u21a9\ufe0f"} onClick={()=>setSel(new Set())} disabled={sel.size===0} color="#5a1a1a"/>
-                  <ActBtn label={"TA\u015eLARI \u0130\u015eLE"} icon={"\u2699\ufe0f"} onClick={()=>{if(canAdd&&melds.length>0)hAdd(0)}} disabled={!canAdd}/>
+                  <ActBtn label={"SERİ AÇ"} icon={"\ud83c\udccf"} onClick={()=>hLay('run')} disabled={!canLay}/>
+                  <ActBtn label={"ÇİFT AÇ"} icon={"\ud83c\udfb4"} onClick={()=>hLay('set')} disabled={!canLay}/>
+                  <ActBtn label={"GERİ TOPLA"} icon={"\u21a9\ufe0f"} onClick={()=>setSel(new Set())} disabled={sel.size===0} color="#5a1a1a"/>
+                  <ActBtn label={"TAŞLARI İŞLE"} icon={"\u2699\ufe0f"} onClick={()=>{if(canAdd&&melds.length>0)hAdd(0)}} disabled={!canAdd}/>
                 </div>
               </div>
             </div>
@@ -327,18 +327,18 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
               {/* 101 watermark on shelf */}
               <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:40,fontWeight:900,color:'rgba(255,255,255,0.06)',letterSpacing:6,pointerEvents:'none'}}>101</div>
 
-              {/* Bottom corner buttons: \u00c7\u0130FT D\u0130Z (left) and SER\u0130 D\u0130Z (right) */}
+              {/* Bottom corner buttons: ÇİFT DİZ (left) and SERİ DİZ (right) */}
               <div style={{position:'absolute',left:0,top:0,bottom:0,display:'flex',alignItems:'center',zIndex:10}}>
-                <button onClick={()=>hLay('set')} disabled={!canLay} style={{padding:'6px 6px',borderRadius:'0 5px 5px 0',fontSize:8,fontWeight:800,background:canLay?'#1a3a5a':'#0a1a2a',border:'2px solid #2a5a7a',borderLeft:'none',color:canLay?'white':'#3a5a6a',cursor:canLay?'pointer':'not-allowed',opacity:canLay?1:0.5,writingMode:'horizontal-tb',lineHeight:1.2,textAlign:'center'}}><span style={{fontSize:10}}>\ud83c\udfb4</span><br/>\u00c7\u0130FT<br/>D\u0130Z</button>
+                <button onClick={()=>hLay('set')} disabled={!canLay} style={{padding:'6px 6px',borderRadius:'0 5px 5px 0',fontSize:8,fontWeight:800,background:canLay?'#1a3a5a':'#0a1a2a',border:'2px solid #2a5a7a',borderLeft:'none',color:canLay?'white':'#3a5a6a',cursor:canLay?'pointer':'not-allowed',opacity:canLay?1:0.5,writingMode:'horizontal-tb',lineHeight:1.2,textAlign:'center'}}><span style={{fontSize:10}}>\ud83c\udfb4</span><br/>ÇİFT<br/>DİZ</button>
               </div>
               <div style={{position:'absolute',right:0,top:0,bottom:0,display:'flex',alignItems:'center',zIndex:10}}>
-                <button onClick={()=>hLay('run')} disabled={!canLay} style={{padding:'6px 6px',borderRadius:'5px 0 0 5px',fontSize:8,fontWeight:800,background:canLay?'#1a3a5a':'#0a1a2a',border:'2px solid #2a5a7a',borderRight:'none',color:canLay?'white':'#3a5a6a',cursor:canLay?'pointer':'not-allowed',opacity:canLay?1:0.5,writingMode:'horizontal-tb',lineHeight:1.2,textAlign:'center'}}><span style={{fontSize:10}}>\ud83c\udccf</span><br/>SER\u0130<br/>D\u0130Z</button>
+                <button onClick={()=>hLay('run')} disabled={!canLay} style={{padding:'6px 6px',borderRadius:'5px 0 0 5px',fontSize:8,fontWeight:800,background:canLay?'#1a3a5a':'#0a1a2a',border:'2px solid #2a5a7a',borderRight:'none',color:canLay?'white':'#3a5a6a',cursor:canLay?'pointer':'not-allowed',opacity:canLay?1:0.5,writingMode:'horizontal-tb',lineHeight:1.2,textAlign:'center'}}><span style={{fontSize:10}}>\ud83c\udccf</span><br/>SERİ<br/>DİZ</button>
               </div>
 
               {/* Hand info */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:4}}>
-                <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{myH.length} ta\u015f</span>
-                {sel.size>0&&<span style={{fontSize:9,color:'#fbbf24'}}>({sel.size} se\u00e7ili)</span>}
+                <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{myH.length} taş</span>
+                {sel.size>0&&<span style={{fontSize:9,color:'#fbbf24'}}>({sel.size} seçili)</span>}
               </div>
 
               {/* TILES - larger like screenshot */}
@@ -355,7 +355,7 @@ function Board({ room, state, isMyTurn, isSpectator, sendAIState, soundEnabled, 
               {/* Hint */}
               {isMT&&!isSpectator&&!win&&!gOver&&(
                 <div style={{textAlign:'center',fontSize:8,color:'rgba(255,255,255,0.35)',marginTop:3}}>
-                  {ph==='draw'?'Y\u0131\u011f\u0131ndan veya yerden ta\u015f \u00e7ek':sel.size>0?'Seri/\u00c7ift A\u00e7 | Masadaki gruba t\u0131kla | \u00c7ift t\u0131kla \u2192 at':'Ta\u015flara t\u0131kla \u2192 se\u00e7 | \u00c7ift t\u0131kla \u2192 at'}
+                  {ph==='draw'?'Yığından veya yerden taş çek':sel.size>0?'Seri/Çift Aç | Masadaki gruba tıkla | Çift tıkla \u2192 at':'Taşlara tıkla \u2192 seç | Çift tıkla \u2192 at'}
                 </div>
               )}
             </div>

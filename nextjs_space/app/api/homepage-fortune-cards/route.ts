@@ -39,10 +39,10 @@ export async function GET() {
     return NextResponse.json({
       cards,
       hero: {
-        visible: getSetting(allSettings, 'homepage_hero_visible', 'true') === 'true',
+        visible: getSetting(allSettings, 'homepage_hero_visible', 'false') === 'true',
         icon: getSetting(allSettings, 'homepage_hero_icon', '🔮'),
-        title: getSetting(allSettings, 'homepage_hero_title', 'Canli Fal'),
-        subtitle: getSetting(allSettings, 'homepage_hero_subtitle', 'Geleceğini keşfet, falına bak'),
+        title: getSetting(allSettings, 'homepage_hero_title', ''),
+        subtitle: getSetting(allSettings, 'homepage_hero_subtitle', ''),
         link: getSetting(allSettings, 'homepage_hero_link', '/online-fal'),
         items: getJsonSetting(allSettings, 'homepage_hero_items', []),
       },
@@ -64,7 +64,7 @@ export async function GET() {
     console.error('Error fetching homepage fortune cards:', error)
     return NextResponse.json({
       cards: [],
-      hero: { visible: true, icon: '🔮', title: 'Canli Fal', subtitle: 'Geleceğini keşfet, falına bak', link: '/online-fal', items: [] },
+      hero: { visible: false, icon: '🔮', title: '', subtitle: '', link: '/online-fal', items: [] },
       ticker: { buttonText: 'Canlı Falcı', buttonIcon: '✨', buttonLink: '/canli-falcilar', buttonVisible: 'true', scrollDirection: 'rtl', scrollSpeed: '20', bgColor: '', bgGradient: '', customTexts: [], onlineDisplay: 'single', textEffect: 'none' }
     })
   }
