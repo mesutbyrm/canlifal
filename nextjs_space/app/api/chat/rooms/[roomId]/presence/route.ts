@@ -155,12 +155,29 @@ export async function POST(
     
     // Handle sendBeacon delete (page unload)
     const isDelete = request.nextUrl.searchParams.get('_delete') === '1'
+    const isLeave = request.nextUrl.searchParams.get('leave') === '1'
     if (isDelete) {
       try {
+        // Get nickname before clearing presence
+        const presenceRecord = await prisma.chatPresence.findUnique({
+          where: { roomId_userId: { roomId, userId: session.user.id } },
+          select: { nickname: true }
+        })
         await prisma.chatPresence.update({
           where: { roomId_userId: { roomId, userId: session.user.id } },
           data: { lastSeen: new Date(0) }
         })
+        // Create leave message so other users see departure immediately
+        if (isLeave) {
+          const displayName = presenceRecord?.nickname || session.user.name || 'Kullanıcı'
+          await prisma.chatMessage.create({
+            data: {
+              roomId,
+              userId: session.user.id,
+              content: `[SYSTEM_LEAVE]${displayName}`
+            }
+          })
+        }
       } catch { /* ignore */ }
       return NextResponse.json({ success: true })
     }

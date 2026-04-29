@@ -15,15 +15,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     }
 
     const { roomId } = params
-    const { recipientId, giftTypeId, paymentType } = await req.json()
-    // paymentType: 'jeton' or 'cfc'
+    const { recipientId, giftTypeId, paymentType: _pt } = await req.json()
+    const paymentType = 'jeton' // Only jeton is supported in chat rooms
 
-    if (!recipientId || !giftTypeId || !paymentType) {
+    if (!recipientId || !giftTypeId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    if (!['jeton', 'cfc'].includes(paymentType)) {
-      return NextResponse.json({ error: 'Invalid payment type' }, { status: 400 })
     }
 
     if (recipientId === session.user.id) {
@@ -56,15 +52,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const price = giftType.price
 
-    // Check balance
-    if (paymentType === 'jeton') {
-      if ((sender.jetonBalance ?? 0) < price) {
-        return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
-      }
-    } else {
-      if ((sender.credits ?? 0) < price) {
-        return NextResponse.json({ error: 'insufficient_cfc', message: 'Yetersiz CFC bakiyesi' }, { status: 400 })
-      }
+    // Check jeton balance
+    if ((sender.jetonBalance ?? 0) < price) {
+      return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
     }
 
     // Get recipient
@@ -87,65 +77,57 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
 
-    // Deduct from sender
-    if (paymentType === 'jeton') {
+    // Deduct jetons from sender
+    await prisma.user.update({
+      where: { id: sender.id },
+      data: { jetonBalance: { decrement: price } }
+    })
+    // Record jeton transaction for sender
+    await prisma.jetonTransaction.create({
+      data: {
+        userId: sender.id,
+        amount: -price,
+        type: 'gift_sent',
+        description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
+        balanceBefore: sender.jetonBalance ?? 0,
+        balanceAfter: (sender.jetonBalance ?? 0) - price
+      }
+    })
+    // Add jetons to recipient (minus commission) - sadece normal kullanıcılardan
+    if (recipientAmount > 0 && !senderExcluded) {
+      const recipientBefore = recipient.jetonBalance ?? 0
       await prisma.user.update({
-        where: { id: sender.id },
-        data: { jetonBalance: { decrement: price } }
+        where: { id: recipient.id },
+        data: { jetonBalance: { increment: recipientAmount } }
       })
-      // Record jeton transaction for sender
       await prisma.jetonTransaction.create({
         data: {
-          userId: sender.id,
-          amount: -price,
-          type: 'gift_sent',
-          description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
-          balanceBefore: sender.jetonBalance ?? 0,
-          balanceAfter: (sender.jetonBalance ?? 0) - price
+          userId: recipient.id,
+          amount: recipientAmount,
+          type: 'gift_received',
+          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı`,
+          balanceBefore: recipientBefore,
+          balanceAfter: recipientBefore + recipientAmount
         }
       })
-      // Add jetons to recipient (minus commission) - sadece normal kullanıcılardan
-      if (recipientAmount > 0 && !senderExcluded) {
-        const recipientBefore = recipient.jetonBalance ?? 0
-        await prisma.user.update({
-          where: { id: recipient.id },
-          data: { jetonBalance: { increment: recipientAmount } }
-        })
-        await prisma.jetonTransaction.create({
-          data: {
-            userId: recipient.id,
-            amount: recipientAmount,
-            type: 'gift_received',
-            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı`,
-            balanceBefore: recipientBefore,
-            balanceAfter: recipientBefore + recipientAmount
-          }
-        })
-      }
-      // Give commission to beneficiary - sadece normal kullanıcılardan
-      if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id && !senderExcluded) {
-        const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })
-        const bBefore = beneficiary?.jetonBalance ?? 0
-        await prisma.user.update({
-          where: { id: beneficiaryId },
-          data: { jetonBalance: { increment: commissionAmount } }
-        })
-        await prisma.jetonTransaction.create({
-          data: {
-            userId: beneficiaryId,
-            amount: commissionAmount,
-            type: 'gift_commission',
-            description: `Oda komisyonu: ${giftType.name} hediyesinden %${commissionPercent} (${room.nameTr})`,
-            balanceBefore: bBefore,
-            balanceAfter: bBefore + commissionAmount
-          }
-        })
-      }
-    } else {
-      // CFC payment - deduct CFC from sender, recipient sees it but doesn't get money
+    }
+    // Give commission to beneficiary - sadece normal kullanıcılardan
+    if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id && !senderExcluded) {
+      const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })
+      const bBefore = beneficiary?.jetonBalance ?? 0
       await prisma.user.update({
-        where: { id: sender.id },
-        data: { credits: { decrement: price } }
+        where: { id: beneficiaryId },
+        data: { jetonBalance: { increment: commissionAmount } }
+      })
+      await prisma.jetonTransaction.create({
+        data: {
+          userId: beneficiaryId,
+          amount: commissionAmount,
+          type: 'gift_commission',
+          description: `Oda komisyonu: ${giftType.name} hediyesinden %${commissionPercent} (${room.nameTr})`,
+          balanceBefore: bBefore,
+          balanceAfter: bBefore + commissionAmount
+        }
       })
     }
 
@@ -170,7 +152,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         userId: recipient.id,
         type: 'gift_received',
         title: 'Sohbet Hediyesi! 🎁',
-        message: `${sender.name} size ${giftType.icon} ${giftType.name} hediye gönderdi! (${paymentType === 'jeton' ? 'Jeton' : 'CFC'})`,
+        message: `size ${giftType.name} hediye gönderdi!`,
         fromUserId: sender.id,
         fromUserName: sender.name,
         data: JSON.stringify({

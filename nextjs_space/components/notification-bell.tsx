@@ -187,7 +187,7 @@ export default function NotificationBell() {
       case 'profile_view': return `${senderName} profilini görüntüledi`
       case 'message': return `${senderName} sana mesaj gönderdi`
       case 'stream_start': case 'stream_live': return `${senderName} canlı yayın başlattı`
-      case 'gift': return `${senderName} sana hediye gönderdi`
+      case 'gift': case 'gift_received': return `${senderName} ${notif.message || 'hediye gönderdi'}`
       default: return notif.fromUserName ? `${senderName} ${notif.message}` : notif.message
     }
   }

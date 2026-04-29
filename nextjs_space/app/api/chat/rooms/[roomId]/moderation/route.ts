@@ -72,8 +72,9 @@ export async function POST(
       })
       targetRoleLevel = ROLE_HIERARCHY[(targetRole?.role as ChatRole) || 'none']
 
-      // Cannot act on users with same or higher role (except global admin)
-      if (targetRoleLevel >= actorRoleLevel && !permissions.isGlobalAdmin) {
+      // Cannot act on users with same or higher role (except global admin or self-role-assign)
+      const isSelfAction = targetUserId === session.user.id
+      if (targetRoleLevel >= actorRoleLevel && !permissions.isGlobalAdmin && !isSelfAction) {
         return NextResponse.json({ error: 'Cannot moderate users with same or higher role' }, { status: 403 })
       }
     }

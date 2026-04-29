@@ -153,7 +153,7 @@ export default function ChatRoomPage() {
   const [giftTargetUser, setGiftTargetUser] = useState<ActiveUser | null>(null)
   const [giftTypes, setGiftTypes] = useState<Array<{id: string; name: string; icon: string; price: number}>>([])
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
-  const [giftPaymentType, setGiftPaymentType] = useState<'jeton' | 'cfc'>('jeton')
+  const giftPaymentType = 'jeton' as const
   const [sendingGift, setSendingGift] = useState(false)
   const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
   const lastGiftPollRef = useRef<string>(new Date().toISOString())
@@ -497,8 +497,10 @@ export default function ChatRoomPage() {
         clearInterval(typingInterval)
         clearInterval(balanceInterval)
         window.removeEventListener('beforeunload', handleBeforeUnload)
-        // Don't DELETE presence on unmount — may be a React re-render, not a real leave.
-        // Presence will naturally expire via the 120s threshold.
+        // Send leave beacon on cleanup (covers client-side navigation)
+        if (room?.id) {
+          navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1&leave=1`, '')
+        }
       }
     }
   }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers, fetchBroadcastImages, fetchBalance])
@@ -1491,7 +1493,11 @@ export default function ChatRoomPage() {
                         {'Aktif kullanıcı yok'}
                       </p>
                     ) : (
-                      activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
+                      activeUsers.filter(u => {
+                        // Superadmins can see themselves to self-assign roles
+                        if (u.id === session?.user?.id && myPermissions?.role === 'superadmin') return true
+                        return u.id !== session?.user?.id
+                      }).map(user => (
                         <div key={user.id} className="bg-[#0d0520] rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className={`font-medium ${user.chatRole ? ROLE_COLORS[user.chatRole] : 'text-purple-200'}`}>
@@ -1780,8 +1786,6 @@ export default function ChatRoomPage() {
               {session?.user && (
                 <div className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-purple-900/40 border border-purple-500/20 text-[10px]">
                   <span className="text-yellow-400 font-bold" title="Jeton">💎{userJetonBalance}</span>
-                  <span className="text-purple-500/50">|</span>
-                  <span className="text-blue-400 font-bold" title="CFC">🪙{userCfcBalance}</span>
                 </div>
               )}
               {/* Yönet Button */}
@@ -1846,7 +1850,7 @@ export default function ChatRoomPage() {
                   )}
                 </div>
                 {/* Grid */}
-                <div className={`grid gap-1.5 ${displayUsers.length <= 3 ? 'grid-cols-3' : displayUsers.length <= 4 ? 'grid-cols-4' : displayUsers.length <= 6 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-4 sm:grid-cols-8'}`}>
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   {displayUsers.map((user) => {
                     const isOwner = isRoomOwner(user.id)
                     const isMe = user.id === session?.user?.id
@@ -1856,36 +1860,35 @@ export default function ChatRoomPage() {
                     return (
                       <div
                         key={user.id}
-                        className={`relative rounded-lg overflow-hidden cursor-pointer group ${isOwner ? 'ring-2 ring-yellow-400/60' : badge ? `ring-1 ${badge.border}` : 'ring-1 ring-purple-500/30'}`}
-                        style={{ aspectRatio: '1' }}
+                        className="flex flex-col items-center gap-0.5 cursor-pointer group"
                         onClick={() => user.id !== session?.user?.id && openGiftModal(user)}
                       >
-                        {/* Profile Image / Avatar */}
-                        {displayImage ? (
-                          <img loading="lazy" src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-900/80 to-yellow-900/50' : 'bg-gradient-to-br from-purple-900/80 to-indigo-900/50'}`}>
-                            <span className="text-xl font-bold text-white/80">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</span>
-                          </div>
-                        )}
-                        {/* Dark gradient overlay at bottom */}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-6 pb-1 px-1">
-                          <p className={`text-[10px] font-bold truncate text-center ${getNameEffectClass(user)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white'}`}
-                            {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
-                          >
-                            {getDisplayName(user)}
-                          </p>
+                        {/* Circular Avatar */}
+                        <div className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden ${isOwner ? 'ring-2 ring-yellow-400/80' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-purple-500/30'}`}>
+                          {displayImage ? (
+                            <img loading="lazy" src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-900/80 to-yellow-900/50' : 'bg-gradient-to-br from-purple-900/80 to-indigo-900/50'}`}>
+                              <span className="text-lg font-bold text-white/80">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</span>
+                            </div>
+                          )}
+                          {/* Role Badge - bottom right */}
+                          {(isOwner || badge) && (
+                            <div className={`absolute -bottom-0.5 -right-0.5 px-1 py-0.5 rounded-full text-[7px] font-bold ${isOwner ? 'bg-red-600/90 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
+                              {isOwner ? '👑' : user.roleSymbol}
+                            </div>
+                          )}
+                          {/* Speaking indicator */}
+                          {speakingUsers.has(user.id) && (
+                            <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full animate-pulse border border-green-300" />
+                          )}
                         </div>
-                        {/* Role Badge - top left */}
-                        {(isOwner || badge) && (
-                          <div className={`absolute top-0.5 left-0.5 px-1 py-0.5 rounded text-[8px] font-bold ${isOwner ? 'bg-red-600/90 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
-                            {isOwner ? '👑' : user.roleSymbol}
-                          </div>
-                        )}
-                        {/* Speaking indicator */}
-                        {speakingUsers.has(user.id) && (
-                          <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-green-500 rounded-full animate-pulse border border-green-300" />
-                        )}
+                        {/* Name below */}
+                        <p className={`text-[9px] font-bold truncate text-center max-w-[52px] ${getNameEffectClass(user)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/70'}`}
+                          {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
+                        >
+                          {getDisplayName(user)}
+                        </p>
                       </div>
                     )
                   })}
@@ -2019,78 +2022,23 @@ export default function ChatRoomPage() {
                       )
                     }
                     
-                    // VIP entry with auto-hide after 3 seconds
+                    // VIP entry - compact single-line, shown once
                     if (isVipJoin && vipType && vipLabels[vipType]) {
                       const vipInfo = vipLabels[vipType]
-                      const isHidden = hiddenVipEntries.has(msg.id)
                       
-                      // Schedule auto-hide after 3 seconds
-                      if (!isHidden && !hiddenVipEntries.has(msg.id)) {
-                        setTimeout(() => {
-                          setHiddenVipEntries(prev => new Set([...prev, msg.id]))
-                        }, 3000)
-                      }
-                      
-                      // Show simple text after animation ends
-                      if (isHidden) {
-                        return (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="px-2 py-1 text-center"
-                          >
-                            <span className={`text-xs ${vipInfo.color}`}>
-                              {vipInfo.icon} <span className="font-medium">{joinName}</span>{' '}
-                              <span className="text-white/60">
-                                {'odaya giriş yaptı'}
-                              </span>
-                            </span>
-                          </motion.div>
-                        )
-                      }
-                      
-                      // Show grand VIP entry animation
                       return (
                         <motion.div
                           key={msg.id}
-                          initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          transition={{ duration: 0.5, type: 'spring' }}
-                          className={`mx-2 my-2 p-3 rounded-xl border ${vipInfo.bgColor} relative overflow-hidden`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="px-2 py-0.5 text-center"
                         >
-                          {/* Animated background effect */}
-                          <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: '100%' }}
-                            transition={{ duration: 1.5, repeat: 2, ease: 'linear' }}
-                          />
-                          <div className="relative z-10 flex items-center justify-center gap-2">
-                            <motion.span
-                              className="text-2xl"
-                              animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }}
-                              transition={{ duration: 0.8, repeat: 2 }}
-                            >
-                              {vipInfo.icon}
-                            </motion.span>
-                            <div className="text-center">
-                              <span className={`font-bold ${vipInfo.color}`}>{joinName}</span>
-                              <span className="text-white/80 mx-2">
-                                {'odaya giriş yaptı!'}
-                              </span>
-                            </div>
-                            <motion.span
-                              className="text-2xl"
-                              animate={{ scale: [1, 1.3, 1], rotate: [0, -10, 10, 0] }}
-                              transition={{ duration: 0.8, repeat: 2 }}
-                            >
-                              {vipInfo.icon}
-                            </motion.span>
-                          </div>
-                          <div className="text-center text-xs mt-1 text-white/60">
-                            {vipInfo.label}
-                          </div>
+                          <span className={`text-xs ${vipInfo.color}`}>
+                            {vipInfo.icon} <span className="font-bold">{joinName}</span>{' '}
+                            <span className="text-white/60">odaya giriş yaptı</span>
+                            <span className="text-[10px] text-white/40 ml-1">({vipInfo.label})</span>
+                          </span>
                         </motion.div>
                       )
                     }
@@ -2209,7 +2157,6 @@ export default function ChatRoomPage() {
                       </span>
                       <span className="text-white truncate max-w-[60px]">{entry.name}</span>
                       {entry.jetonTotal > 0 && <span className="text-yellow-400">💎{entry.jetonTotal}</span>}
-                      {entry.cfcTotal > 0 && <span className="text-blue-400">💰{entry.cfcTotal}</span>}
                     </div>
                   ))}
                 </div>
@@ -2432,174 +2379,36 @@ export default function ChatRoomPage() {
         {giftAnimations.map((anim) => (
           <motion.div
             key={anim.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
+            className="fixed top-14 left-2 right-2 z-50 pointer-events-none"
           >
-            {/* Dark overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: anim.phase === 'exit' ? 0 : 0.5 }}
-              transition={{ duration: 0.4 }}
-              className="absolute inset-0 bg-black"
-            />
-
-            {/* Recipient profile card - slides in from right, exits right */}
-            <motion.div
-              initial={{ x: 300, opacity: 0, scale: 0.7 }}
-              animate={
-                anim.phase === 'exit'
-                  ? { x: 300, opacity: 0, scale: 0.7 }
-                  : { x: 0, opacity: 1, scale: 1 }
-              }
-              transition={{ 
-                duration: anim.phase === 'exit' ? 0.6 : 0.5, 
-                ease: anim.phase === 'exit' ? 'easeIn' : [0.34, 1.56, 0.64, 1]
-              }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <div className="flex flex-col items-center">
-                {/* Glow ring behind avatar */}
-                <motion.div
-                  animate={
-                    anim.phase === 'burst' || anim.phase === 'hit'
-                      ? { scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }
-                      : { scale: 1, opacity: 0.3 }
-                  }
-                  transition={{ duration: 1, repeat: anim.phase === 'burst' ? 2 : 0 }}
-                  className="absolute w-36 h-36 rounded-full bg-gradient-to-r from-yellow-400/40 via-purple-500/40 to-pink-500/40 blur-xl"
-                />
-                {/* Avatar circle */}
-                <motion.div
-                  animate={
-                    anim.phase === 'hit'
-                      ? { scale: [1, 1.15, 0.95, 1.05, 1] }
-                      : { scale: 1 }
-                  }
-                  transition={{ duration: 0.5 }}
-                  className="relative w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center border-4 border-yellow-400 shadow-[0_0_30px_rgba(168,85,247,0.6)]"
-                >
-                  <span className="text-3xl font-bold text-white">
-                    {anim.recipientName.charAt(0).toUpperCase()}
-                  </span>
-                </motion.div>
-                {/* Recipient name */}
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-3 text-white font-bold text-lg drop-shadow-lg"
-                >
-                  {anim.recipientName}
-                </motion.p>
-                {/* Sender info */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-yellow-300 text-sm mt-1"
-                >
-                  {anim.senderName} → 🎁
-                </motion.p>
-                {/* CanlıFal branding */}
-                <motion.p
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8, type: 'spring', stiffness: 200 }}
-                  className="text-[10px] text-purple-400/60 mt-2 font-medium tracking-wider"
-                >
-                  CanlıFal
-                </motion.p>
-              </div>
-            </motion.div>
-
-            {/* Flying gift - appears after profile card, flies to center */}
-            {(anim.phase === 'hit' || anim.phase === 'burst') && (
-              <motion.div
-                initial={{ y: 200, x: '-50%', scale: 1.5, opacity: 0 }}
-                animate={{ y: -20, x: '-50%', scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-                className="absolute left-1/2 top-1/2"
-                style={{ marginTop: '-70px' }}
-              >
+            <div className="bg-gradient-to-r from-yellow-500/20 via-purple-500/20 to-pink-500/20 border border-yellow-500/40 rounded-xl px-3 py-2 backdrop-blur-md flex items-center gap-2 shadow-lg shadow-purple-500/20 max-w-md mx-auto">
+              {/* Gift icon */}
+              <div className="flex-shrink-0 w-8 h-8">
                 {anim.giftImage ? (
-                  <img loading="lazy" src={anim.giftImage} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
+                  <img loading="lazy" src={anim.giftImage} alt="gift" className="w-8 h-8 object-contain" />
                 ) : anim.giftIcon?.startsWith('/') ? (
-                  <img loading="lazy" src={anim.giftIcon} alt="gift" className="w-20 h-20 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
+                  <img loading="lazy" src={anim.giftIcon} alt="gift" className="w-8 h-8 object-contain" />
                 ) : (
-                  <span className="text-6xl">{anim.giftIcon}</span>
+                  <span className="text-2xl">{anim.giftIcon}</span>
                 )}
-              </motion.div>
-            )}
-
-            {/* Star burst particles on hit */}
-            {(anim.phase === 'burst') && (
-              <>
-                {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map((i) => {
-                  const angle = (i / 16) * Math.PI * 2
-                  const dist = 80 + (i * 11) % 60
-                  const sz = 12 + (i * 5) % 14
-                  const colors = ['text-yellow-300', 'text-yellow-400', 'text-amber-300', 'text-orange-400', 'text-pink-400', 'text-purple-300']
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ 
-                        left: '50%', 
-                        top: '50%', 
-                        x: -sz/2, 
-                        y: -sz/2, 
-                        scale: 0, 
-                        opacity: 0 
-                      }}
-                      animate={{ 
-                        x: Math.cos(angle) * dist - sz/2, 
-                        y: Math.sin(angle) * dist - sz/2 - 20, 
-                        scale: [0, 2, 0], 
-                        opacity: [0, 1, 0],
-                        rotate: [0, 180 + i * 30]
-                      }}
-                      transition={{ duration: 1.2, ease: 'easeOut' }}
-                      className={`absolute ${colors[i % colors.length]}`}
-                      style={{ fontSize: `${sz}px` }}
-                    >
-                      {i % 3 === 0 ? '✦' : i % 3 === 1 ? '⭐' : '✨'}
-                    </motion.div>
-                  )
-                })}
-                {/* Shockwave ring */}
-                <motion.div
-                  initial={{ scale: 0, opacity: 0.8 }}
-                  animate={{ scale: 3, opacity: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-yellow-400"
-                  style={{ marginTop: '-10px' }}
-                />
-              </>
-            )}
-
-            {/* Gift amount badge + CanlıFal branding */}
-            {(anim.phase === 'hit' || anim.phase === 'burst') && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 flex flex-col items-center"
-                style={{ marginTop: '50px' }}
-              >
-                <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold px-4 py-1.5 rounded-full text-sm shadow-lg shadow-yellow-500/50">
-                  x{anim.amount}
-                </div>
-                <motion.span
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="mt-2 text-xs font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent tracking-widest"
-                >
-                  CanlıFal
-                </motion.span>
-              </motion.div>
-            )}
+              </div>
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white truncate">
+                  <span className="text-yellow-300 font-bold">{anim.senderName}</span>
+                  <span className="text-white/60 mx-1">→</span>
+                  <span className="text-purple-300 font-bold">{anim.recipientName}</span>
+                </p>
+              </div>
+              {/* Amount */}
+              <div className="flex-shrink-0 bg-yellow-500/30 text-yellow-300 font-bold text-xs px-2 py-0.5 rounded-full">
+                x{anim.amount}
+              </div>
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
@@ -2633,24 +2442,10 @@ export default function ChatRoomPage() {
                 </p>
               </div>
 
-              {/* Payment Type Toggle */}
+              {/* Payment Info */}
               <div className="p-3 border-b border-purple-500/20">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setGiftPaymentType('jeton')}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'jeton' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
-                  >
-                    <Coins className="w-4 h-4 inline mr-1" /> Jeton
-                  </button>
-                  <button
-                    onClick={() => setGiftPaymentType('cfc')}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${giftPaymentType === 'cfc' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}
-                  >
-                    💰 CFC
-                  </button>
-                </div>
-                <p className="text-xs text-purple-400/70 mt-1 text-center">
-                  {giftPaymentType === 'jeton' ? '💎 Jeton ile gönderilen hediyeler bakiyenizden düşer' : '💰 CFC ile gönderilen hediyeler CFC bakiyenizden düşer'}
+                <p className="text-xs text-purple-400/70 text-center">
+                  💎 Jeton ile gönderilen hediyeler bakiyenizden düşer
                 </p>
               </div>
 
@@ -2680,7 +2475,7 @@ export default function ChatRoomPage() {
                   disabled={!selectedGiftType || sendingGift}
                   className="w-full py-2.5 bg-gradient-to-r from-gold-500 to-yellow-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-gold-400 hover:to-yellow-400 transition-all"
                 >
-                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} ${giftPaymentType === 'jeton' ? 'Jeton' : 'CFC'})`}
+                  {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} Jeton)`}
                 </button>
               </div>
             </motion.div>
