@@ -78,8 +78,9 @@ export async function GET(
             const nicknameMap = new Map(userPresences.map((p: { userId: string; nickname: string | null }) => [p.userId, p.nickname]))
 
             const roleSymbols: Record<string, string> = ROLE_SYMBOLS as Record<string, string>
+            const globalAdminRolesMsg = ['admin', 'moderator', 'site_manager']
             const messagesWithRoles = newMessages.map((msg: { userId: string; user: { name: string; role: string } }) => {
-              const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
+              const chatRole = roleMap.get(msg.userId) || (globalAdminRolesMsg.includes(msg.user.role) ? 'superadmin' : null)
               const roleSymbol = chatRole && typeof chatRole === 'string' ? roleSymbols[chatRole] || '' : ''
               const nickname = nicknameMap.get(msg.userId) || msg.user.name
               return {
@@ -116,10 +117,12 @@ export async function GET(
             })
             const activeRoleMap = new Map(activeUserRoles.map((r: { userId: string; role: string }) => [r.userId, r.role]))
 
-            const roleLevels: Record<string, number> = { founder: 5, admin: 4, op: 3, voice: 2 }
+            const roleLevels: Record<string, number> = { superadmin: 6, founder: 5, sop: 4, admin: 4, op: 3, voice: 2 }
             const roleSymbolsActive: Record<string, string> = ROLE_SYMBOLS as Record<string, string>
+            const globalAdminRolesP = ['admin', 'moderator', 'site_manager']
             const activeUsers = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; user: { name: string; role: string } }) => {
-              const chatRole = activeRoleMap.get(p.userId) || (p.user.role === 'admin' ? 'founder' : null)
+              const isGlobalAdminP = globalAdminRolesP.includes(p.user.role)
+              const chatRole = activeRoleMap.get(p.userId) || (isGlobalAdminP ? 'superadmin' : null)
               const roleLevel = chatRole && typeof chatRole === 'string' ? roleLevels[chatRole] || 0 : 0
               return {
                 id: p.userId,
@@ -129,7 +132,7 @@ export async function GET(
                 chatRole,
                 roleSymbol: chatRole && typeof chatRole === 'string' ? roleSymbolsActive[chatRole] : null,
                 roleLevel,
-                isAdmin: p.user.role === 'admin'
+                isAdmin: isGlobalAdminP
               }
             })
 

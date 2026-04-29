@@ -3,8 +3,8 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// DELETE old chat messages (older than 24 hours)
-// Can be called by a scheduled task/cron job
+// DELETE all chat messages at midnight Turkey time (00:00 UTC+3)
+// Called by scheduled task daily or can be triggered manually
 export async function DELETE(req: NextRequest) {
   try {
     // Verify internal/cron authorization
@@ -15,22 +15,16 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
     }
 
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    
-    const result = await prisma.chatMessage.deleteMany({
-      where: {
-        createdAt: {
-          lt: twentyFourHoursAgo
-        }
-      }
-    })
+    // Delete ALL chat messages (midnight cleanup - fresh start each day)
+    const result = await prisma.chatMessage.deleteMany({})
 
-    console.log(`[Chat Cleanup] Deleted ${result.count} messages older than 24 hours`)
+    console.log(`[Chat Cleanup] Midnight Turkey time cleanup - Deleted ${result.count} messages`)
     
     return NextResponse.json({ 
       success: true, 
       deletedCount: result.count,
-      olderThan: twentyFourHoursAgo.toISOString()
+      cleanupTime: new Date().toISOString(),
+      reason: 'Gece yarısı temizliği (Türkiye saati 00:00)'
     })
   } catch (error) {
     console.error('Chat cleanup error:', error)
@@ -40,5 +34,10 @@ export async function DELETE(req: NextRequest) {
 
 // Also support GET for easier cron integration
 export async function GET(req: NextRequest) {
+  return DELETE(req)
+}
+
+// POST - Also support POST for scheduled task webhook
+export async function POST(req: NextRequest) {
   return DELETE(req)
 }

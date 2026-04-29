@@ -53,8 +53,10 @@ export async function GET(
     })
 
     const activeUsers = presences.map((p: any) => {
-      // Site admin gets founder role in chat
-      const chatRole = roleMap.get(p.user.id) || (p.user.role === 'admin' ? 'founder' : null)
+      // Global admin/moderator/site_manager gets superadmin role in chat
+      const globalAdminRoles = ['admin', 'moderator', 'site_manager']
+      const isGlobalAdmin = globalAdminRoles.includes(p.user.role)
+      const chatRole = roleMap.get(p.user.id) || (isGlobalAdmin ? 'superadmin' : null)
       const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const roleLevel = chatRole ? ROLE_HIERARCHY[chatRole as keyof typeof ROLE_HIERARCHY] : 0
 
@@ -67,7 +69,7 @@ export async function GET(
         chatRole,
         roleSymbol,
         roleLevel,
-        isAdmin: p.user.role === 'admin'
+        isAdmin: isGlobalAdmin
       }
     })
 
@@ -118,11 +120,14 @@ async function getUserSpecialRole(roomId: string, userId: string): Promise<{ rol
     select: { role: true }
   })
   
+  if (chatRole?.role === 'superadmin') {
+    return { role: 'superadmin', isSpecial: true, entryType: 'SUPERADMIN' }
+  }
   if (chatRole?.role === 'founder') {
     return { role: 'founder', isSpecial: true, entryType: 'FOUNDER' }
   }
-  if (chatRole?.role === 'admin') {
-    return { role: 'admin', isSpecial: true, entryType: 'MODERATOR' }
+  if (chatRole?.role === 'sop' || chatRole?.role === 'admin') {
+    return { role: 'sop', isSpecial: true, entryType: 'MODERATOR' }
   }
   if (chatRole?.role === 'op') {
     return { role: 'op', isSpecial: true, entryType: 'OP' }
@@ -308,7 +313,9 @@ export async function POST(
     })
 
     const activeUsers = presences.map((p: any) => {
-      const chatRole = roleMap.get(p.user.id) || (p.user.role === 'admin' ? 'founder' : null)
+      const globalAdminRoles2 = ['admin', 'moderator', 'site_manager']
+      const isGlobalAdmin2 = globalAdminRoles2.includes(p.user.role)
+      const chatRole = roleMap.get(p.user.id) || (isGlobalAdmin2 ? 'superadmin' : null)
       const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const roleLevel = chatRole ? ROLE_HIERARCHY[chatRole as keyof typeof ROLE_HIERARCHY] : 0
 
@@ -321,7 +328,7 @@ export async function POST(
         chatRole,
         roleSymbol,
         roleLevel,
-        isAdmin: p.user.role === 'admin'
+        isAdmin: isGlobalAdmin2
       }
     })
 

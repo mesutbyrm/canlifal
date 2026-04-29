@@ -199,8 +199,12 @@ export async function POST(
         if (newRole === 'founder' && !permissions.canGiveFounder) {
           return NextResponse.json({ error: 'Only site admin can grant founder role' }, { status: 403 })
         }
-        if (newRole === 'admin' && !permissions.canGiveAdmin) {
-          return NextResponse.json({ error: 'No permission to grant admin role' }, { status: 403 })
+        if (newRole === 'sop' && !permissions.canGiveSop) {
+          return NextResponse.json({ error: 'No permission to grant SOP role' }, { status: 403 })
+        }
+        if ((newRole as string) === 'admin' && !permissions.canGiveSop) {
+          // backward compat: 'admin' maps to 'sop'
+          return NextResponse.json({ error: 'No permission to grant SOP role' }, { status: 403 })
         }
         if (newRole === 'op' && !permissions.canGiveOp) {
           return NextResponse.json({ error: 'No permission to grant op role' }, { status: 403 })

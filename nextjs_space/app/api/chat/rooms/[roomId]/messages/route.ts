@@ -77,7 +77,8 @@ export async function GET(
 
     // Add role symbol and nickname to messages
     const messagesWithRoles = messages.map((msg: any) => {
-      const chatRole = roleMap.get(msg.userId) || (msg.user.role === 'admin' ? 'founder' : null)
+      const globalAdminRoles = ['admin', 'moderator', 'site_manager']
+      const chatRole = roleMap.get(msg.userId) || (globalAdminRoles.includes(msg.user.role) ? 'superadmin' : null)
       const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
       const nickname = nicknameMap.get(msg.userId) || msg.user.name
       return {

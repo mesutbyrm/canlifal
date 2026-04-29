@@ -17,8 +17,10 @@ interface ChatRoom {
   descEn: string
   icon: string
   isActive: boolean
+  isMuted: boolean
   ownerId: string | null
   owner: { id: string; name: string; username: string | null } | null
+  giftCommissionPercent: number
   _count: { messages: number; chatGifts: number; presences: number }
 }
 
@@ -144,7 +146,9 @@ export default function AdminChatRoomsPage() {
           descTr: editingRoom.descTr,
           descEn: editingRoom.descEn,
           icon: editingRoom.icon,
-          isActive: editingRoom.isActive
+          isActive: editingRoom.isActive,
+          isMuted: editingRoom.isMuted,
+          giftCommissionPercent: editingRoom.giftCommissionPercent
         })
       })
       if (res.ok) {
@@ -320,6 +324,14 @@ export default function AdminChatRoomsPage() {
                       <span className={`px-2 py-0.5 rounded-full ${room.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                         {room.isActive ? 'Aktif' : 'Pasif'}
                       </span>
+                      {room.isMuted && (
+                        <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400">Susturulmuş</span>
+                      )}
+                      {room.giftCommissionPercent > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">
+                          %{room.giftCommissionPercent} Komisyon
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -513,15 +525,39 @@ export default function AdminChatRoomsPage() {
                   </div>
                 </div>
                 
-                <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingRoom.isActive}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-fuchsia-500/30"
+                    />
+                    <span className="text-fuchsia-300/70 text-sm">Aktif</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingRoom.isMuted}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, isMuted: e.target.checked })}
+                      className="w-4 h-4 rounded border-orange-500/30"
+                    />
+                    <span className="text-orange-300/70 text-sm">Oda Susturulmuş</span>
+                  </label>
+                </div>
+                
+                <div>
+                  <label className="text-fuchsia-300/70 text-sm block mb-1">Hediye Komisyon Oranı (%)</label>
                   <input
-                    type="checkbox"
-                    checked={editingRoom.isActive}
-                    onChange={(e) => setEditingRoom({ ...editingRoom, isActive: e.target.checked })}
-                    className="w-4 h-4 rounded border-fuchsia-500/30"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editingRoom.giftCommissionPercent}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, giftCommissionPercent: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 rounded-xl bg-fuchsia-900/30 border border-fuchsia-500/30 text-white text-sm focus:outline-none"
                   />
-                  <span className="text-fuchsia-300/70 text-sm">Aktif</span>
-                </label>
+                  <p className="text-fuchsia-300/40 text-xs mt-1">Hediye gönderimlerinden alınacak komisyon oranı (0-100)</p>
+                </div>
                 
                 <div className="flex gap-2">
                   <button

@@ -57,29 +57,36 @@ interface MyPermissions {
   canMuteRoom: boolean
   canGiveVoice: boolean
   canGiveOp: boolean
-  canGiveAdmin: boolean
+  canGiveSop: boolean
   canGiveFounder: boolean
+  canManageRoom: boolean
   isGlobalAdmin: boolean
   isRoomOwner: boolean
 }
 
 const ROLE_COLORS: Record<string, string> = {
+  superadmin: 'text-yellow-300',
   founder: 'text-red-400',
-  admin: 'text-orange-400',
+  sop: 'text-orange-400',
+  admin: 'text-orange-400', // backward compat
   op: 'text-green-400',
   voice: 'text-blue-400'
 }
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
+  superadmin: <Shield className="w-3 h-3" />,
   founder: <Crown className="w-3 h-3" />,
-  admin: <Shield className="w-3 h-3" />,
+  sop: <Shield className="w-3 h-3" />,
+  admin: <Shield className="w-3 h-3" />, // backward compat
   op: <Star className="w-3 h-3" />,
   voice: <Mic className="w-3 h-3" />
 }
 
 const ROLE_BADGE_STYLES: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  superadmin: { bg: 'bg-yellow-500/20', border: 'border-yellow-500/60', text: 'text-yellow-300', label: '%Admin' },
   founder: { bg: 'bg-red-500/20', border: 'border-red-500/60', text: 'text-red-300', label: '~Kurucu' },
-  admin: { bg: 'bg-orange-500/20', border: 'border-orange-500/60', text: 'text-orange-300', label: '&Moderatör' },
+  sop: { bg: 'bg-orange-500/20', border: 'border-orange-500/60', text: 'text-orange-300', label: '&SOP' },
+  admin: { bg: 'bg-orange-500/20', border: 'border-orange-500/60', text: 'text-orange-300', label: '&SOP' }, // backward compat
   op: { bg: 'bg-green-500/20', border: 'border-green-500/60', text: 'text-green-300', label: '@Operatör' },
   voice: { bg: 'bg-blue-500/20', border: 'border-blue-500/60', text: 'text-blue-300', label: '+Ses' },
 }
@@ -1151,8 +1158,9 @@ export default function ChatRoomPage() {
   // Get username effect class based on role/membership
   const getNameEffectClass = (user: { chatRole?: string; membership?: string; role?: string }) => {
     if (user.role === 'admin') return 'effect-glitch'
+    if (user.chatRole === 'superadmin') return 'effect-glitch'
     if (user.chatRole === 'founder') return 'effect-glitch-flash'
-    if (user.chatRole === 'admin' || user.chatRole === 'op') return 'effect-glitch-flash'
+    if (user.chatRole === 'sop' || user.chatRole === 'admin' || user.chatRole === 'op') return 'effect-glitch-flash'
     if (user.membership === 'diamond') return 'effect-neon-glow'
     if (user.membership === 'gold') return 'effect-neon-flicker'
     if (user.membership === 'premium') return 'effect-blink'
@@ -1287,7 +1295,7 @@ export default function ChatRoomPage() {
     // Global admin can always use voice
     if (myPermissions?.isGlobalAdmin) return true
     // Users with voice role or higher can use voice
-    const allowedRoles = ['voice', 'op', 'admin', 'founder']
+    const allowedRoles = ['voice', 'op', 'sop', 'admin', 'founder', 'superadmin']
     return myPermissions?.role && allowedRoles.includes(myPermissions.role)
   }
 
@@ -1322,8 +1330,9 @@ export default function ChatRoomPage() {
     myPermissions.canMuteRoom ||
     myPermissions.canGiveVoice ||
     myPermissions.canGiveOp ||
-    myPermissions.canGiveAdmin ||
+    myPermissions.canGiveSop ||
     myPermissions.canGiveFounder ||
+    myPermissions.canManageRoom ||
     myPermissions.isGlobalAdmin
   )
 
@@ -1457,7 +1466,7 @@ export default function ChatRoomPage() {
                       {soundEnabled ? ('Bildirim Sesi Açık') : ('Bildirim Sesi Kapalı')}
                     </button>
                     {/* Room owner, founder, op and global admin see clear messages option */}
-                    {(myPermissions?.isRoomOwner || myPermissions?.role === 'founder' || myPermissions?.role === 'op' || myPermissions?.isGlobalAdmin) && (
+                    {(myPermissions?.isRoomOwner || myPermissions?.canManageRoom || myPermissions?.role === 'founder' || myPermissions?.role === 'superadmin' || myPermissions?.isGlobalAdmin) && (
                       <button
                         onClick={() => { clearAllMessages(); setShowManagePopup(false); }}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-600/30 text-red-300 hover:bg-red-600/50"
@@ -1537,17 +1546,17 @@ export default function ChatRoomPage() {
                                 @o
                               </button>
                             )}
-                            {/* Give admin */}
-                            {myPermissions?.canGiveAdmin && (
+                            {/* Give SOP */}
+                            {myPermissions?.canGiveSop && (
                               <button
-                                onClick={() => performModAction('set_role', user.id, { role: 'admin' })}
+                                onClick={() => performModAction('set_role', user.id, { role: 'sop' })}
                                 className="px-2 py-1 bg-orange-600/30 text-orange-300 rounded text-xs hover:bg-orange-600/50"
                               >
-                                &a
+                                &SOP
                               </button>
                             )}
                             {/* Remove roles */}
-                            {user.chatRole && (myPermissions?.canGiveVoice || myPermissions?.canGiveOp || myPermissions?.canGiveAdmin) && (
+                            {user.chatRole && (myPermissions?.canGiveVoice || myPermissions?.canGiveOp || myPermissions?.canGiveSop) && (
                               <button
                                 onClick={() => performModAction('remove_role', user.id)}
                                 className="px-2 py-1 bg-gray-600/30 text-gray-300 rounded text-xs hover:bg-gray-600/50"
@@ -1797,9 +1806,9 @@ export default function ChatRoomPage() {
             </div>
           </div>
 
-          {/* Privileged Users Grid - Shows users with roles (~founder, &admin, @op) */}
+          {/* Privileged Users Grid - Shows users with roles (%superadmin, ~founder, &sop, @op) */}
           {(() => {
-            const privilegedUsers = activeUsers.filter(u => u.chatRole && ['founder', 'admin', 'op'].includes(u.chatRole))
+            const privilegedUsers = activeUsers.filter(u => u.chatRole && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(u.chatRole))
             // Also include room owner if not already in the list
             const ownerInList = room.owner && !privilegedUsers.find(u => u.id === room.owner?.id)
             const ownerUser = ownerInList ? activeUsers.find(u => u.id === room.owner?.id) : null
