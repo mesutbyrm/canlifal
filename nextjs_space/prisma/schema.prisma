@@ -1279,8 +1279,8 @@ model MembershipPlan {
 model MembershipPurchase {
   id              String   @id @default(cuid())
   userId          String
-  planId          String
-  plan            MembershipPlan @relation(fields: [planId], references: [id])
+  planId          String?
+  plan            MembershipPlan? @relation(fields: [planId], references: [id])
   priceType       String   // jeton, money
   pricePaid       Int      // Amount paid
   currency        String   @default("TRY")
@@ -1288,6 +1288,7 @@ model MembershipPurchase {
   expiresAt       DateTime
   status          String   @default("active") // active, expired, cancelled
   createdAt       DateTime @default(now())
+  grantedBy       String?  // Admin who granted the membership (for free grants)
 
   @@index([userId])
   @@index([planId])

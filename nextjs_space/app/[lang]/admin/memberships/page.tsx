@@ -227,6 +227,9 @@ export default function AdminMembershipsPage() {
         setGrantData({ userId: '', userName: '', planId: '', customTier: 'gold', durationDays: 30, freeGrant: true })
         setSearchQuery('')
         setUserSearchResults([])
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Üyelik verilemedi, lütfen tekrar deneyin')
       }
     } catch (e) {
       console.error(e)

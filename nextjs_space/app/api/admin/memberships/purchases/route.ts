@@ -138,12 +138,13 @@ export async function POST(req: NextRequest) {
     const purchase = await prisma.membershipPurchase.create({
       data: {
         userId,
-        planId: planId || 'admin_grant',
+        planId: planId || null,
         priceType,
         pricePaid,
         startsAt: now,
         expiresAt,
-        status: 'active'
+        status: 'active',
+        grantedBy: freeGrant ? session.user.id : null
       }
     })
 
@@ -250,9 +251,9 @@ export async function PATCH(req: NextRequest) {
       })
 
       // Fetch plan tier
-      const plan = await prisma.membershipPlan.findUnique({
+      const plan = purchase.planId ? await prisma.membershipPlan.findUnique({
         where: { id: purchase.planId }
-      })
+      }) : null
 
       await prisma.user.update({
         where: { id: purchase.userId },
