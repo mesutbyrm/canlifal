@@ -49,18 +49,23 @@ function getBadgeCount(key: string, counts: Record<string, number>, isTeller: bo
 }
 
 // Dynamic href based on special behaviors
-function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean): string {
+function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean, hasAgency: boolean): string {
   if (btn.specialBehavior === 'teller') {
     if (!session?.user) return '/giris'
     return isTeller ? '/profil' : btn.href
+  }
+  if (btn.specialBehavior === 'ajans') {
+    if (!session?.user) return btn.href
+    return hasAgency ? '/ajans-paneli' : btn.href
   }
   if (btn.key === 'gifts' && !session?.user) return '/giris'
   return btn.href
 }
 
-// Dynamic label for teller button
-function getEffectiveLabel(btn: HomepageButton, isTeller: boolean): string {
+// Dynamic label for special buttons
+function getEffectiveLabel(btn: HomepageButton, isTeller: boolean, hasAgency: boolean): string {
   if (btn.specialBehavior === 'teller' && isTeller) return 'Falcı Paneli'
+  if (btn.specialBehavior === 'ajans' && hasAgency) return 'Ajans Paneli'
   return btn.label
 }
 
@@ -86,6 +91,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
   const [mounted, setMounted] = useState(false)
   const [showBanaOzel, setShowBanaOzel] = useState(false)
   const [buttons, setButtons] = useState<HomepageButton[]>([])
+  const [hasAgency, setHasAgency] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -105,6 +111,21 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
     }
     fetchButtons()
   }, [])
+
+  // Check if user has an agency membership
+  useEffect(() => {
+    if (!session?.user) { setHasAgency(false); return }
+    const checkAgency = async () => {
+      try {
+        const res = await fetch('/api/agency/my')
+        if (res.ok) {
+          const data = await res.json()
+          setHasAgency(!!(data.membership || data.ownedAgency))
+        }
+      } catch { /* ignore */ }
+    }
+    checkAgency()
+  }, [session?.user])
 
   const resolvedVariant = variant || (theme === 'cosmic' ? 'cosmic' : theme === 'falci' ? 'falci' : 'falclub')
   const themeStyle = THEME_STYLES[resolvedVariant]?.default || THEME_STYLES.falclub.default
@@ -133,8 +154,8 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       <div className={`grid gap-1.5 sm:gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(colCount, 4)}, minmax(0, 1fr))` }}>
         {buttons.map((btn) => {
           const badgeCount = getBadgeCount(btn.key, counts as unknown as Record<string, number>, isTeller, pendingRequestCount)
-          const effectiveHref = getEffectiveHref(btn, session, isTeller)
-          const effectiveLabel = getEffectiveLabel(btn, isTeller)
+          const effectiveHref = getEffectiveHref(btn, session, isTeller, hasAgency)
+          const effectiveLabel = getEffectiveLabel(btn, isTeller, hasAgency)
           const isBanaOzel = btn.specialBehavior === 'bana-ozel'
 
           if (isBanaOzel) {
