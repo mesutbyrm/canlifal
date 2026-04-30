@@ -24,6 +24,9 @@ interface FortuneTeller {
   isInSession?: boolean
   pendingCount?: number
   queuePosition?: number
+  isNewTeller?: boolean
+  trendingScore?: number
+  tellerLevel?: string
   user: {
     name: string
     image: string | null
@@ -413,6 +416,20 @@ export default function LiveTellersPage() {
                         )}
                         {teller.isVerified && (
                           <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        )}
+                        {teller.isNewTeller && (
+                          <span className="inline-flex items-center gap-0.5 bg-green-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            🆕 Yeni
+                          </span>
+                        )}
+                        {teller.tellerLevel && teller.tellerLevel !== 'bronze' && (
+                          <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            teller.tellerLevel === 'diamond' ? 'bg-cyan-500/90 text-white' :
+                            teller.tellerLevel === 'gold' ? 'bg-yellow-500/90 text-black' :
+                            'bg-gray-300/90 text-black'
+                          }`}>
+                            {teller.tellerLevel === 'diamond' ? '💎' : teller.tellerLevel === 'gold' ? '🥇' : '🥈'}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
