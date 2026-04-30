@@ -8,13 +8,17 @@ import GiftNotificationBanner from '@/components/gift-notification-banner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
-  getRTCConfiguration,
-  getMediaConstraints,
-  setPreferredCodec,
-  applyInitialBitrate,
-  AdaptiveBitrateManager,
-  setupConnectionRecovery,
-} from '@/lib/webrtc-config'
+  createAgoraClient,
+  createLocalTracks,
+  fetchAgoraToken,
+  leaveChannel,
+  getCameras,
+  type IAgoraRTCClient,
+  type ICameraVideoTrack,
+  type IMicrophoneAudioTrack,
+  type IAgoraRTCRemoteUser,
+  type UID,
+} from '@/lib/agora-client'
 import {
   Heart,
   MessageCircle,
@@ -134,7 +138,7 @@ export default function BroadcastPage() {
   // Pending co-broadcast request popup
   const [pendingCoBroadcastRequest, setPendingCoBroadcastRequest] = useState<CoBroadcaster | null>(null)
   // Connection states for reconnection handling
-  const [guestConnectionStates, setGuestConnectionStates] = useState<Map<string, RTCPeerConnectionState>>(new Map())
+  const [guestConnectionStates, setGuestConnectionStates] = useState<Map<string, string>>(new Map())
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
   const [duration, setDuration] = useState(0)
@@ -191,22 +195,17 @@ export default function BroadcastPage() {
   const [mutedViewers, setMutedViewers] = useState<Set<string>>(new Set())
 
 
-  const localVideoRef = useRef<HTMLVideoElement>(null)
+  const localVideoRef = useRef<HTMLDivElement>(null)
   // Video refs for up to 4 guests (dynamically created in render)
-  const guestVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map())
-  const broadcasterVideoRef = useRef<HTMLVideoElement>(null) // For co-host to see broadcaster
+  const guestVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const broadcasterVideoRef = useRef<HTMLDivElement>(null) // For co-host to see broadcaster
   const shownNotificationIdsRef = useRef<Set<string>>(new Set())
-  const localStreamRef = useRef<MediaStream | null>(null)
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
-  // PeerConnections for each guest (Map: guestId -> RTCPeerConnection)
-  const guestPcRefs = useRef<Map<string, RTCPeerConnection>>(new Map())
-  const broadcasterPcRef = useRef<RTCPeerConnection | null>(null) // Co-host's connection to broadcaster
-  const processedViewersRef = useRef<Set<string>>(new Set())
+  // Agora refs
+  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
+  const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
+  const localVideoTrackRef = useRef<ICameraVideoTrack | null>(null)
+  const remoteUsersRef = useRef<Map<string, IAgoraRTCRemoteUser>>(new Map())
   const processedGuestsRef = useRef<Set<string>>(new Set())
-  const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
-  const guestCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map())
-  const broadcasterCandidatesRef = useRef<RTCIceCandidate[]>([]) // For co-host
-  const reconnectAttemptsRef = useRef<Map<string, number>>(new Map())
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -242,40 +241,15 @@ export default function BroadcastPage() {
         fetchGifts()
         fetchViewers()
         fetchCoBroadcasters()
-        pollViewerSignals()
-        pollCoBroadcasterSignals()
         fetchNotifications()
         fetchModerators()
         fetchFortuneRequesters()
       }
     }, 1000)
 
-    // Handle visibility change to fix audio/video when navigating away and back
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Page became visible - try to play video again
-        if (localVideoRef.current && localStreamRef.current) {
-          localVideoRef.current.srcObject = localStreamRef.current
-          localVideoRef.current.play().catch(() => {})
-        }
-        if (broadcasterVideoRef.current && broadcasterVideoRef.current.srcObject) {
-          broadcasterVideoRef.current.play().catch(() => {})
-        }
-        // Check all guest video refs
-        guestVideoRefs.current.forEach((videoEl) => {
-          if (videoEl.srcObject) {
-            videoEl.play().catch(() => {})
-          }
-        })
-      }
-    }
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
       isUnmountedRef.current = true
       clearInterval(durationInterval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
       cleanup()
     }
@@ -310,251 +284,59 @@ export default function BroadcastPage() {
 
   const startBroadcast = async () => {
     try {
-      const constraints = getMediaConstraints('high', facingMode)
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints)
-      } catch (mediaErr) {
-        console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr)
-        stream = await navigator.mediaDevices.getUserMedia(getMediaConstraints('medium', facingMode))
-      }
-      
-      localStreamRef.current = stream
+      // Create Agora client as host
+      const client = await createAgoraClient('host')
+      agoraClientRef.current = client
+
+      // Set up remote user event handlers (for co-broadcasters)
+      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        await client.subscribe(user, mediaType)
+        remoteUsersRef.current.set(String(user.uid), user)
+        
+        if (mediaType === 'video') {
+          const container = guestVideoRefs.current.get(String(user.uid)) || broadcasterVideoRef.current
+          if (container) {
+            user.videoTrack?.play(container)
+          }
+        }
+        if (mediaType === 'audio') {
+          user.audioTrack?.play()
+          setRemoteAudioEnabled(true)
+        }
+      })
+
+      client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        if (mediaType === 'video') {
+          user.videoTrack?.stop()
+        }
+      })
+
+      client.on('user-left', (user: IAgoraRTCRemoteUser) => {
+        remoteUsersRef.current.delete(String(user.uid))
+      })
+
+      // Create local tracks
+      const [audioTrack, videoTrack] = await createLocalTracks(facingMode)
+      localAudioTrackRef.current = audioTrack
+      localVideoTrackRef.current = videoTrack
+
+      // Play local video in container
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream
+        videoTrack.play(localVideoRef.current)
       }
+
+      // Use streamId as channel name for Agora
+      const channelName = `stream_${streamId}`
+      const { token, uid, appId } = await fetchAgoraToken(channelName, 'host')
+      await client.join(appId, channelName, token, uid)
+      await client.publish([audioTrack, videoTrack])
+
+      console.log('🎬 Agora: Joined channel as host, uid:', uid)
     } catch (error) {
-      console.error('Camera error:', error)
-      alert('Kamera erişimi sağlanamadı')
+      console.error('Agora broadcast error:', error)
+      alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
       router.back()
     }
-  }
-
-  // Co-host: Poll for broadcaster signals and send our stream + receive broadcaster's stream
-  // Co-host receives offer from broadcaster and sends answer
-  const pollCohostSignals = async () => {
-    if (!localStreamRef.current || isUnmountedRef.current || !isCohost) return
-    
-    try {
-      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=cohost`)
-      if (!res.ok) return
-      const signals = await res.json()
-
-      for (const signal of signals) {
-        if (isUnmountedRef.current) break
-        
-        // Broadcaster sent us an offer
-        if (signal.type === 'broadcaster-offer' && signal.data?.offer && signal.data?.broadcasterId) {
-          const broadcasterId = signal.data.broadcasterId
-          
-          // Create peer connection if not exists
-          if (!broadcasterPcRef.current) {
-            console.log('🎤 Co-host: Creating peer connection for broadcaster', broadcasterId)
-            
-            const pc = new RTCPeerConnection(getRTCConfiguration())
-            broadcasterPcRef.current = pc
-
-            // Add our local tracks to send video/audio to broadcaster
-            localStreamRef.current.getTracks().forEach(track => {
-              console.log('🎤 Co-host: Adding track to PC:', track.kind)
-              pc.addTrack(track, localStreamRef.current!)
-            })
-            setPreferredCodec(pc, 'video/H264')
-            
-            // Handle incoming broadcaster stream
-            pc.ontrack = (event) => {
-              console.log('🎤 Co-host received broadcaster track:', event.track.kind)
-              if (broadcasterVideoRef.current && event.streams[0]) {
-                console.log('🎤 Co-host: Setting broadcaster video stream')
-                broadcasterVideoRef.current.srcObject = event.streams[0]
-                broadcasterVideoRef.current.muted = false
-                broadcasterVideoRef.current.volume = 1.0
-                broadcasterVideoRef.current.play().then(() => {
-                  console.log('🎤 Co-host: Broadcaster video playing with audio')
-                  setRemoteAudioEnabled(true)
-                }).catch(e => {
-                  console.log('🎤 Co-host: Autoplay blocked, trying muted first:', e)
-                  if (broadcasterVideoRef.current) {
-                    broadcasterVideoRef.current.muted = true
-                    broadcasterVideoRef.current.play().catch(() => {})
-                  }
-                })
-              }
-            }
-
-            pc.onicecandidate = async (event) => {
-              if (event.candidate && !isUnmountedRef.current) {
-                console.log('🎤 Co-host: Sending ICE candidate to broadcaster')
-                await fetch('/api/video-streams/signal', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    streamId,
-                    type: 'cohost-ice-candidate',
-                    receiverId: broadcasterId,
-                    data: { candidate: event.candidate.toJSON(), fromCohost: true }
-                  })
-                }).catch(() => {})
-              }
-            }
-
-            pc.onconnectionstatechange = () => {
-              console.log('🎤 Co-host: Connection state:', pc.connectionState)
-            }
-
-            // Set remote description (broadcaster's offer) and create answer
-            try {
-              console.log('🎤 Co-host: Setting remote description (broadcaster offer)')
-              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
-              
-              // Add any pending ICE candidates
-              for (const candidate of broadcasterCandidatesRef.current) {
-                try { await pc.addIceCandidate(candidate) } catch (e) {}
-              }
-              broadcasterCandidatesRef.current = []
-              
-              // Create and send answer
-              const answer = await pc.createAnswer()
-              await pc.setLocalDescription(answer)
-              
-              console.log('🎤 Co-host: Sending answer to broadcaster')
-              await fetch('/api/video-streams/signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  streamId,
-                  type: 'cohost-answer',
-                  receiverId: broadcasterId,
-                  data: { answer: pc.localDescription?.toJSON() }
-                })
-              })
-            } catch (e) {
-              console.error('🎤 Co-host: Error handling offer:', e)
-            }
-          }
-        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && signal.data?.fromBroadcaster && broadcasterPcRef.current) {
-          // ICE candidate from broadcaster
-          try {
-            console.log('🎤 Co-host: Received ICE candidate from broadcaster')
-            if (broadcasterPcRef.current.remoteDescription) {
-              await broadcasterPcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
-            } else {
-              broadcasterCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
-            }
-          } catch (e) {}
-        }
-      }
-    } catch (error) {}
-  }
-
-  const pollViewerSignals = async () => {
-    if (!localStreamRef.current || isUnmountedRef.current) return
-    
-    // If we are cohost, poll for cohost signals instead
-    if (isCohost) {
-      await pollCohostSignals()
-      return
-    }
-    
-    try {
-      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=broadcaster`)
-      if (!res.ok) return
-      const signals = await res.json()
-
-      for (const signal of signals) {
-        if (isUnmountedRef.current) break
-        
-        const viewerId = signal.data?.viewerId || signal.senderId
-        if (!viewerId) continue
-        
-        if (signal.type === 'viewer-join') {
-          // Always recreate connection for viewer (handles page refresh reconnection)
-          const existingPc = peerConnectionsRef.current.get(viewerId)
-          if (existingPc) {
-            try { existingPc.close() } catch {}
-            peerConnectionsRef.current.delete(viewerId)
-          }
-          processedViewersRef.current.add(viewerId)
-          await createConnectionForViewer(viewerId)
-        } else if (signal.type === 'answer' && signal.data?.answer) {
-          const pc = peerConnectionsRef.current.get(viewerId)
-          if (pc && pc.signalingState === 'have-local-offer') {
-            try {
-              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
-              const pending = pendingCandidatesRef.current.get(viewerId) || []
-              for (const candidate of pending) {
-                try { await pc.addIceCandidate(candidate) } catch (e) {}
-              }
-              pendingCandidatesRef.current.set(viewerId, [])
-            } catch (e) {}
-          }
-        } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
-          const pc = peerConnectionsRef.current.get(viewerId)
-          if (pc) {
-            try {
-              if (pc.remoteDescription) {
-                await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
-              } else {
-                const pending = pendingCandidatesRef.current.get(viewerId) || []
-                pending.push(new RTCIceCandidate(signal.data.candidate))
-                pendingCandidatesRef.current.set(viewerId, pending)
-              }
-            } catch (e) {}
-          }
-        }
-      }
-    } catch (error) {}
-  }
-
-  const createConnectionForViewer = async (viewerId: string) => {
-    if (!localStreamRef.current || isUnmountedRef.current) return
-    
-    const pc = new RTCPeerConnection(getRTCConfiguration())
-    peerConnectionsRef.current.set(viewerId, pc)
-
-    localStreamRef.current.getTracks().forEach(track => {
-      if (localStreamRef.current) pc.addTrack(track, localStreamRef.current)
-    })
-    setPreferredCodec(pc, 'video/H264')
-
-    pc.onicecandidate = async (event) => {
-      if (event.candidate && !isUnmountedRef.current) {
-        await fetch('/api/video-streams/signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            streamId,
-            type: 'ice-candidate',
-            receiverId: viewerId,
-            data: { candidate: event.candidate.toJSON() }
-          })
-        }).catch(() => {})
-      }
-    }
-
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') {
-        setConnectedViewers(prev => prev + 1)
-      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        setConnectedViewers(prev => Math.max(0, prev - 1))
-      }
-    }
-
-    try {
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-      
-      await fetch('/api/video-streams/signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          streamId,
-          type: 'offer',
-          receiverId: viewerId,
-          data: { offer: pc.localDescription?.toJSON() }
-        })
-      })
-    } catch (e) {}
   }
 
   const fetchStats = async () => {
@@ -619,26 +401,20 @@ export default function BroadcastPage() {
           .filter((cb: CoBroadcaster) => cb.status === 'active')
           .slice(0, MAX_GUESTS)
         
-        // Check for new guests to connect
+        // Track guests (Agora handles connections automatically)
         for (const guest of currentActive) {
           if (!processedGuestsRef.current.has(guest.userId)) {
             console.log('🎬 New guest joined:', guest.userId)
             processedGuestsRef.current.add(guest.userId)
-            setupGuestConnection(guest.userId)
           }
         }
         
         // Check for guests who left
         const currentGuestIds = new Set(currentActive.map(g => g.userId))
-        for (const [guestId, pc] of guestPcRefs.current) {
+        for (const guestId of processedGuestsRef.current) {
           if (!currentGuestIds.has(guestId)) {
             console.log('🎬 Guest left:', guestId)
-            pc.close()
-            guestPcRefs.current.delete(guestId)
-            guestVideoRefs.current.delete(guestId)
             processedGuestsRef.current.delete(guestId)
-            reconnectAttemptsRef.current.delete(guestId)
-            guestCandidatesRef.current.delete(guestId)
           }
         }
         
@@ -647,204 +423,6 @@ export default function BroadcastPage() {
       }
     } catch (e) {}
   }
-
-  // Setup WebRTC connection to exchange streams with a guest (bidirectional)
-  // Broadcaster creates offer, guest answers
-  // Supports up to MAX_GUESTS simultaneous connections with reconnection
-  const setupGuestConnection = async (guestId: string, isReconnect: boolean = false) => {
-    if (!localStreamRef.current) return
-    
-    const attempts = reconnectAttemptsRef.current.get(guestId) || 0
-    if (isReconnect && attempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.log('🎬 Broadcaster: Max reconnect attempts reached for guest', guestId)
-      return
-    }
-    
-    if (isReconnect) {
-      reconnectAttemptsRef.current.set(guestId, attempts + 1)
-      console.log(`🎬 Broadcaster: Reconnect attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS} for guest`, guestId)
-    } else {
-      reconnectAttemptsRef.current.set(guestId, 0)
-    }
-    
-    // Close existing connection if any
-    const existingPc = guestPcRefs.current.get(guestId)
-    if (existingPc) {
-      existingPc.close()
-      guestPcRefs.current.delete(guestId)
-    }
-    
-    console.log('🎬 Broadcaster: Setting up connection with guest', guestId)
-    
-    const pc = new RTCPeerConnection(getRTCConfiguration())
-    guestPcRefs.current.set(guestId, pc)
-
-    // Add our local tracks to send video/audio to guest
-    localStreamRef.current.getTracks().forEach(track => {
-      console.log('🎬 Broadcaster: Adding track to guest PC:', track.kind)
-      pc.addTrack(track, localStreamRef.current!)
-    })
-    setPreferredCodec(pc, 'video/H264')
-
-    // Handle incoming tracks from guest
-    pc.ontrack = (event) => {
-      console.log('🎬 Broadcaster received guest track:', event.track.kind, 'from', guestId)
-      const videoEl = guestVideoRefs.current.get(guestId)
-      if (videoEl && event.streams[0]) {
-        console.log('🎬 Broadcaster: Setting guest video stream for', guestId)
-        videoEl.srcObject = event.streams[0]
-        videoEl.muted = false
-        videoEl.volume = 1.0
-        videoEl.play().then(() => {
-          console.log('🎬 Broadcaster: Guest video playing with audio for', guestId)
-          setRemoteAudioEnabled(true)
-          reconnectAttemptsRef.current.set(guestId, 0) // Reset on successful connection
-        }).catch(e => {
-          console.log('🎬 Broadcaster: Autoplay blocked for guest, trying muted first:', e)
-          videoEl.muted = true
-          videoEl.play().catch(() => {})
-        })
-      }
-    }
-
-    pc.onicecandidate = async (event) => {
-      if (event.candidate && !isUnmountedRef.current) {
-        console.log('🎬 Broadcaster: Sending ICE candidate to guest', guestId)
-        await fetch('/api/video-streams/signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            streamId,
-            type: 'guest-ice-candidate',
-            receiverId: guestId,
-            data: { candidate: event.candidate.toJSON(), fromBroadcaster: true, guestId }
-          })
-        }).catch(() => {})
-      }
-    }
-
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState
-      console.log('🎬 Broadcaster: Connection state for guest', guestId, ':', state)
-      setGuestConnectionStates(prev => new Map(prev).set(guestId, state))
-      
-      // Handle reconnection
-      if (state === 'failed' || state === 'disconnected') {
-        console.log('🎬 Broadcaster: Connection lost with guest', guestId, '- attempting reconnect')
-        setTimeout(() => {
-          if (!isUnmountedRef.current && activeGuests.some(g => g.userId === guestId)) {
-            setupGuestConnection(guestId, true)
-          }
-        }, RECONNECT_DELAY)
-      } else if (state === 'connected') {
-        reconnectAttemptsRef.current.set(guestId, 0)
-      }
-    }
-    
-    pc.oniceconnectionstatechange = () => {
-      console.log('🎬 Broadcaster: ICE connection state for guest', guestId, ':', pc.iceConnectionState)
-      // ICE restart if needed
-      if (pc.iceConnectionState === 'failed') {
-        console.log('🎬 Broadcaster: ICE failed, attempting restart for guest', guestId)
-        pc.restartIce()
-      }
-    }
-
-    // Create and send offer to guest
-    try {
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      })
-      await pc.setLocalDescription(offer)
-      
-      console.log('🎬 Broadcaster: Sending offer to guest', guestId)
-      await fetch('/api/video-streams/signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          streamId,
-          type: 'broadcaster-offer',
-          receiverId: guestId,
-          data: { offer: pc.localDescription?.toJSON(), broadcasterId: session?.user?.id, guestId }
-        })
-      })
-    } catch (e) {
-      console.error('🎬 Broadcaster: Error creating offer for guest', guestId, ':', e)
-    }
-  }
-  
-  // Legacy alias for backward compatibility
-  const setupCoBroadcasterConnection = setupGuestConnection
-
-  // Poll for guest signals (broadcaster side) - supports multiple guests
-  const pollGuestSignals = async () => {
-    if (activeGuests.length === 0 || isUnmountedRef.current || isCohost) return
-    
-    try {
-      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${session?.user?.id}&type=guest`)
-      if (!res.ok) return
-      const signals = await res.json()
-
-      for (const signal of signals) {
-        if (isUnmountedRef.current) break
-        
-        const guestId = signal.data?.guestId || signal.senderId
-        if (!guestId) continue
-        
-        const pc = guestPcRefs.current.get(guestId)
-        
-        // Guest answered our offer
-        if (signal.type === 'guest-answer' && signal.data?.answer && pc) {
-          try {
-            console.log('🎬 Broadcaster: Received answer from guest', guestId)
-            if (pc.signalingState === 'have-local-offer') {
-              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
-              
-              // Add pending ICE candidates for this guest
-              const pending = guestCandidatesRef.current.get(guestId) || []
-              for (const candidate of pending) {
-                try { await pc.addIceCandidate(candidate) } catch (e) {}
-              }
-              guestCandidatesRef.current.set(guestId, [])
-            }
-          } catch (e) {
-            console.error('🎬 Broadcaster: Error setting answer from guest', guestId, ':', e)
-          }
-        } else if (signal.type === 'guest-ice-candidate' && signal.data?.candidate && !signal.data?.fromBroadcaster && pc) {
-          // ICE candidate from guest (not from broadcaster)
-          try {
-            console.log('🎬 Broadcaster: Received ICE candidate from guest', guestId)
-            if (pc.remoteDescription) {
-              await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
-            } else {
-              const pending = guestCandidatesRef.current.get(guestId) || []
-              pending.push(new RTCIceCandidate(signal.data.candidate))
-              guestCandidatesRef.current.set(guestId, pending)
-            }
-          } catch (e) {}
-        }
-        // Also handle legacy cohost signals for backward compatibility
-        else if (signal.type === 'cohost-answer' && signal.data?.answer && pc) {
-          try {
-            console.log('🎬 Broadcaster: Received legacy answer from guest', guestId)
-            if (pc.signalingState === 'have-local-offer') {
-              await pc.setRemoteDescription(new RTCSessionDescription(signal.data.answer))
-            }
-          } catch (e) {}
-        } else if (signal.type === 'cohost-ice-candidate' && signal.data?.candidate && !signal.data?.fromBroadcaster && pc) {
-          try {
-            if (pc.remoteDescription) {
-              await pc.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
-            }
-          } catch (e) {}
-        }
-      }
-    } catch (error) {}
-  }
-  
-  // Legacy alias
-  const pollCoBroadcasterSignals = pollGuestSignals
 
   const addToast = (type: 'success' | 'error' | 'info', message: string, userName?: string, userImage?: string | null) => {
     const id = Date.now().toString()
@@ -924,57 +502,40 @@ export default function BroadcastPage() {
     setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== heart.id)), 2000)
   }
 
-  const toggleVideo = () => {
-    const track = localStreamRef.current?.getVideoTracks()[0]
-    if (track) { track.enabled = !track.enabled; setIsVideoOn(track.enabled) }
+  const toggleVideo = async () => {
+    if (localVideoTrackRef.current) {
+      await localVideoTrackRef.current.setEnabled(!isVideoOn)
+      setIsVideoOn(!isVideoOn)
+    }
   }
 
-  const toggleAudio = () => {
-    const track = localStreamRef.current?.getAudioTracks()[0]
-    if (track) { track.enabled = !track.enabled; setIsAudioOn(track.enabled) }
+  const toggleAudio = async () => {
+    if (localAudioTrackRef.current) {
+      await localAudioTrackRef.current.setEnabled(!isAudioOn)
+      setIsAudioOn(!isAudioOn)
+    }
   }
 
   // Enable remote audio on user interaction (for browser autoplay policy)
   const enableRemoteAudio = () => {
-    // Enable guest audio for broadcaster
-    activeGuests.forEach(guest => {
-      const videoEl = guestVideoRefs.current.get(guest.userId)
-      if (videoEl) {
-        videoEl.muted = false
-        videoEl.volume = 1.0
-        videoEl.play().catch(() => {})
-      }
+    remoteUsersRef.current.forEach(user => {
+      user.audioTrack?.play()
     })
-    // Enable broadcaster audio for co-host
-    if (broadcasterVideoRef.current) {
-      broadcasterVideoRef.current.muted = false
-      broadcasterVideoRef.current.volume = 1.0
-      broadcasterVideoRef.current.play().catch(() => {})
-    }
     setRemoteAudioEnabled(true)
   }
 
-  const switchCamera = async () => {
+  const switchCameraFn = async () => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newFacing)
     try {
-      const switchConstraints = getMediaConstraints('high', newFacing)
-      const newStream = await navigator.mediaDevices.getUserMedia(switchConstraints)
-      
-      localStreamRef.current?.getTracks().forEach(t => t.stop())
-      localStreamRef.current = newStream
-      if (localVideoRef.current) localVideoRef.current.srcObject = newStream
-
-      peerConnectionsRef.current.forEach(async (pc) => {
-        const senders = pc.getSenders()
-        const videoTrack = newStream.getVideoTracks()[0]
-        const audioTrack = newStream.getAudioTracks()[0]
-        const videoSender = senders.find(s => s.track?.kind === 'video')
-        const audioSender = senders.find(s => s.track?.kind === 'audio')
-        if (videoSender && videoTrack) await videoSender.replaceTrack(videoTrack)
-        if (audioSender && audioTrack) await audioSender.replaceTrack(audioTrack)
-      })
-    } catch (e) {}
+      const devices = await getCameras()
+      if (devices.length > 1 && localVideoTrackRef.current) {
+        const targetIndex = newFacing === 'user' ? 0 : devices.length - 1
+        await localVideoTrackRef.current.setDevice(devices[targetIndex].deviceId)
+      }
+    } catch (e) {
+      console.error('Switch camera error:', e)
+    }
   }
 
   const handleSendComment = async () => {
@@ -1239,29 +800,24 @@ export default function BroadcastPage() {
     }
   }
 
-  const cleanup = () => {
-    // Close viewer connections
-    peerConnectionsRef.current.forEach(pc => pc.close())
-    peerConnectionsRef.current.clear()
-    processedViewersRef.current.clear()
-    pendingCandidatesRef.current.clear()
-    
-    // Close all guest connections
-    guestPcRefs.current.forEach(pc => pc.close())
-    guestPcRefs.current.clear()
-    guestVideoRefs.current.clear()
-    processedGuestsRef.current.clear()
-    guestCandidatesRef.current.clear()
-    reconnectAttemptsRef.current.clear()
-    
-    // Close broadcaster connection (for co-host)
-    if (broadcasterPcRef.current) {
-      broadcasterPcRef.current.close()
-      broadcasterPcRef.current = null
+  const cleanup = async () => {
+    // Leave Agora channel and cleanup tracks
+    if (agoraClientRef.current) {
+      try {
+        await leaveChannel(
+          agoraClientRef.current,
+          localAudioTrackRef.current,
+          localVideoTrackRef.current
+        )
+      } catch (e) {
+        console.error('Agora cleanup error:', e)
+      }
+      agoraClientRef.current = null
     }
-    
-    // Stop local stream
-    localStreamRef.current?.getTracks().forEach(t => t.stop())
+    localAudioTrackRef.current = null
+    localVideoTrackRef.current = null
+    remoteUsersRef.current.clear()
+    processedGuestsRef.current.clear()
     
     // Update stream status
     fetch(`/api/video-streams/${streamId}`, {
@@ -1305,11 +861,9 @@ export default function BroadcastPage() {
       {isCohost ? (
         <>
           {/* Co-host mode: Broadcaster video fullscreen */}
-          <video
+          <div
             ref={broadcasterVideoRef}
-            autoPlay
-            playsInline
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="absolute inset-0 w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
           />
           
           {/* Co-host's own video as PiP popup */}
@@ -1318,12 +872,9 @@ export default function BroadcastPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="absolute top-20 right-3 w-28 h-40 sm:w-32 sm:h-44 bg-gray-900 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-2xl z-20"
           >
-            <video
+            <div
               ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover bg-black"
+              className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             {/* My info bar */}
@@ -1342,7 +893,7 @@ export default function BroadcastPage() {
             </div>
             {/* Camera switch button */}
             <button
-              onClick={switchCamera}
+              onClick={switchCameraFn}
               className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
             >
               <SwitchCamera className="w-3 h-3 text-white" />
@@ -1352,12 +903,9 @@ export default function BroadcastPage() {
       ) : (
         <>
           {/* Broadcaster mode: My video fullscreen */}
-          <video
+          <div
             ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="absolute inset-0 w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
 
@@ -1384,15 +932,13 @@ export default function BroadcastPage() {
                   style={popupStyle}
                 >
                   {/* Guest video */}
-                  <video
+                  <div
                     ref={(el) => {
                       if (el) {
                         guestVideoRefs.current.set(guest.userId, el)
                       }
                     }}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover bg-black"
+                    className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
                   />
                   
                   {/* Connection status overlay */}
@@ -1450,8 +996,8 @@ export default function BroadcastPage() {
         </>
       )}
 
-      {/* Hidden video for co-host mode (to receive broadcaster stream) */}
-      {!isCohost && <video ref={broadcasterVideoRef} className="hidden" />}
+      {/* Hidden container for co-host mode (to receive broadcaster stream) */}
+      {!isCohost && <div ref={broadcasterVideoRef} className="hidden" />}
 
 
 
@@ -1924,7 +1470,7 @@ export default function BroadcastPage() {
           <button onClick={toggleAudio} className={`w-12 h-12 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
             {isAudioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
           </button>
-          <button onClick={switchCamera} className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+          <button onClick={switchCameraFn} className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
           

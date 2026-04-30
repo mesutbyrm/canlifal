@@ -8,7 +8,13 @@ import GiftNotificationBanner from '@/components/gift-notification-banner'
 import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { getRTCConfiguration } from '@/lib/webrtc-config'
+import {
+  createAgoraClient,
+  fetchAgoraToken,
+  leaveChannel,
+  type IAgoraRTCClient,
+  type IAgoraRTCRemoteUser,
+} from '@/lib/agora-client'
 import {
   Heart,
   MessageCircle,
@@ -109,7 +115,7 @@ const getHeartLevelText = (count: number): string => {
   if (level > 100) return '100k+'
   return `${level}k`
 }
-// ICE sunucuları merkezi yapılandırmadan alınıyor (webrtc-config.ts)
+// Video streaming powered by Agora.io SDK
 
 function VideoStreamPageInner() {
   const { data: session } = useSession() || {}
@@ -179,17 +185,15 @@ function VideoStreamPageInner() {
   const lastFortuneStatusRef = useRef<string | null>(null)
   
   const touchStartY = useRef(0)
-  const remoteVideoRef = useRef<HTMLVideoElement>(null)
-  const coBroadcasterVideoRef = useRef<HTMLVideoElement>(null)
+  const remoteVideoRef = useRef<HTMLDivElement>(null)
+  const coBroadcasterVideoRef = useRef<HTMLDivElement>(null)
   const heartIdRef = useRef(0)
-  const pcRef = useRef<RTCPeerConnection | null>(null)
-  const coBroadcasterPcRef = useRef<RTCPeerConnection | null>(null)
+  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
   const viewerIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentStreamIdRef = useRef<string>('')
   const isUnmountedRef = useRef(false)
   const hasJoinedRef = useRef(false)
-  const pendingCandidatesRef = useRef<RTCIceCandidate[]>([])
   const lastGiftIdRef = useRef<string>('')
   const commentInputRef = useRef<HTMLInputElement>(null)
   const sessionRef = useRef(session)
@@ -223,8 +227,7 @@ function VideoStreamPageInner() {
     // Reset all connection refs on mount to ensure fresh connection
     currentStreamIdRef.current = ''
     hasJoinedRef.current = false
-    pcRef.current = null
-    pendingCandidatesRef.current = []
+    agoraClientRef.current = null
     setConnectionStatus('connecting')
   }, [])
 
@@ -242,35 +245,10 @@ function VideoStreamPageInner() {
     const inviteInterval = setInterval(checkCoBroadcastInvite, 10000)
     const streamInterval = setInterval(fetchStreams, 15000)
     
-    // Handle visibility change to fix audio/video when navigating away and back
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && currentStreamIdRef.current) {
-        // Page became visible - check if connection is still good
-        if (pcRef.current) {
-          const state = pcRef.current.connectionState
-          if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-            // Reconnect
-            retryConnection()
-          } else {
-            // Try to play video again (might have been paused)
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.play().catch(() => {})
-            }
-          }
-        } else if (currentStreamIdRef.current) {
-          // No connection - reconnect
-          retryConnection()
-        }
-      }
-    }
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    
     return () => {
       isUnmountedRef.current = true
       clearInterval(inviteInterval)
       clearInterval(streamInterval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
       cleanup()
     }
   }, [session?.user])
@@ -284,7 +262,6 @@ function VideoStreamPageInner() {
       currentStreamIdRef.current = currentStream.id
       hasJoinedRef.current = false
       setConnectionStatus('connecting')
-      pendingCandidatesRef.current = []
       // Reset fortune request state when switching streams
       lastFortuneStatusRef.current = null
       setHasPendingFortune(false)
@@ -329,19 +306,21 @@ function VideoStreamPageInner() {
     }
   }, [])
 
-  const cleanup = () => {
+  const cleanup = async () => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
       pollIntervalRef.current = null
     }
-    if (pcRef.current) {
-      pcRef.current.close()
-      pcRef.current = null
+    // Leave Agora channel
+    if (agoraClientRef.current) {
+      try {
+        await agoraClientRef.current.leave()
+      } catch (e) {}
+      agoraClientRef.current = null
     }
     if (currentStreamIdRef.current) {
       fetch(`/api/video-streams/${currentStreamIdRef.current}/join?viewerId=${viewerIdRef.current}`, { method: 'DELETE' }).catch(() => {})
     }
-    pendingCandidatesRef.current = []
   }
 
   const joinStream = async (streamId: string) => {
@@ -349,72 +328,52 @@ function VideoStreamPageInner() {
     hasJoinedRef.current = true
     
     try {
+      // Register as viewer in our backend
       await fetch(`/api/video-streams/${streamId}/join`, { method: 'POST' })
 
-      const pc = new RTCPeerConnection(getRTCConfiguration())
-      pcRef.current = pc
+      // Create Agora client as audience
+      const client = await createAgoraClient('audience')
+      agoraClientRef.current = client
 
-      pc.addTransceiver('video', { direction: 'recvonly' })
-      pc.addTransceiver('audio', { direction: 'recvonly' })
-
-      pc.ontrack = (event) => {
-        if (remoteVideoRef.current && event.streams[0]) {
-          remoteVideoRef.current.srcObject = event.streams[0]
-          remoteVideoRef.current.play().catch(e => console.log('Autoplay error:', e))
+      // Handle remote user events (broadcaster + co-broadcasters)
+      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        if (isUnmountedRef.current) return
+        await client.subscribe(user, mediaType)
+        
+        if (mediaType === 'video') {
+          // Play in remoteVideoRef (main broadcaster) or coBroadcasterVideoRef
+          const container = remoteVideoRef.current
+          if (container) {
+            user.videoTrack?.play(container)
+          }
           setConnectionStatus('connected')
         }
-      }
-
-      pc.onicecandidate = async (event) => {
-        if (event.candidate && !isUnmountedRef.current) {
-          await fetch('/api/video-streams/signal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              streamId,
-              type: 'ice-candidate',
-              receiverId: 'broadcaster',
-              data: { candidate: event.candidate.toJSON(), viewerId: viewerIdRef.current }
-            })
-          }).catch(() => {})
+        if (mediaType === 'audio') {
+          user.audioTrack?.play()
         }
-      }
-
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          setConnectionStatus('connected')
-        } else if (pc.iceConnectionState === 'failed') {
-          setConnectionStatus('failed')
-          // Auto-retry on ICE failure
-          setTimeout(() => retryConnection(), 2000)
-        }
-      }
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') {
-          setConnectionStatus('connected')
-        } else if (pc.connectionState === 'failed') {
-          setConnectionStatus('failed')
-          // Auto-retry on connection failure
-          setTimeout(() => retryConnection(), 2000)
-        }
-      }
-
-      await fetch('/api/video-streams/signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          streamId,
-          type: 'viewer-join',
-          receiverId: 'broadcaster',
-          data: { viewerId: viewerIdRef.current }
-        })
       })
 
-      let pollCount = 0
+      client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        if (mediaType === 'video') {
+          user.videoTrack?.stop()
+        }
+      })
+
+      client.on('user-left', () => {
+        // Broadcaster left - stream ended
+        setConnectionStatus('failed')
+      })
+
+      // Join Agora channel as audience
+      const channelName = `stream_${streamId}`
+      const { token, uid, appId } = await fetchAgoraToken(channelName, 'audience')
+      await client.join(appId, channelName, token, uid)
+      
+      console.log('🎬 Agora: Joined channel as audience, uid:', uid)
+
+      // Start polling for other data (gifts, comments, stats, etc.)
       const pollFn = () => {
         if (!isUnmountedRef.current) {
-          pollSignals(streamId)
           fetchStreamStats(streamId)
           pollGifts(streamId)
           fetchViewers(streamId)
@@ -425,66 +384,12 @@ function VideoStreamPageInner() {
       }
 
       pollFn()
-      pollIntervalRef.current = setInterval(() => {
-        pollCount++
-        pollFn()
-      }, pollCount < 10 ? 1000 : 1500)
+      pollIntervalRef.current = setInterval(pollFn, 1500)
 
     } catch (error) {
       console.error('Join stream error:', error)
       setConnectionStatus('failed')
     }
-  }
-
-  const pollSignals = async (streamId: string) => {
-    if (!pcRef.current || isUnmountedRef.current) return
-    
-    try {
-      const res = await fetch(`/api/video-streams/signal?streamId=${streamId}&recipientId=${viewerIdRef.current}`)
-      if (!res.ok) return
-      const signals = await res.json()
-
-      for (const signal of signals) {
-        if (isUnmountedRef.current || !pcRef.current) break
-        
-        if (signal.type === 'offer' && signal.data?.offer) {
-          try {
-            if (pcRef.current.signalingState === 'stable' || pcRef.current.signalingState === 'have-local-pranswer') {
-              await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.data.offer))
-              
-              for (const candidate of pendingCandidatesRef.current) {
-                try {
-                  await pcRef.current.addIceCandidate(candidate)
-                } catch (e) {}
-              }
-              pendingCandidatesRef.current = []
-              
-              const answer = await pcRef.current.createAnswer()
-              await pcRef.current.setLocalDescription(answer)
-              
-              await fetch('/api/video-streams/signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  streamId,
-                  type: 'answer',
-                  receiverId: 'broadcaster',
-                  data: { answer: pcRef.current.localDescription?.toJSON(), viewerId: viewerIdRef.current }
-                })
-              })
-            }
-          } catch (e) {}
-        } else if (signal.type === 'ice-candidate' && signal.data?.candidate) {
-          try {
-            if (pcRef.current.remoteDescription) {
-              await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.data.candidate))
-            } else {
-              pendingCandidatesRef.current.push(new RTCIceCandidate(signal.data.candidate))
-            }
-          } catch (e) {}
-        }
-      }
-    } catch (error) {}
   }
 
   const retryConnection = () => {
@@ -493,7 +398,6 @@ function VideoStreamPageInner() {
       currentStreamIdRef.current = ''
       hasJoinedRef.current = false
       setConnectionStatus('connecting')
-      pendingCandidatesRef.current = []
       // Keep actual user ID for logged-in users, only regenerate for guests
       if (!session?.user?.id) {
         viewerIdRef.current = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -1127,12 +1031,9 @@ function VideoStreamPageInner() {
                 <div className="h-full grid grid-cols-2 gap-1">
                   {/* Broadcaster Video (top-left) */}
                   <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                    <video
+                    <div
                       ref={remoteVideoRef}
-                      autoPlay
-                      playsInline
-                      muted={isMuted}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
                     />
                     <div className="absolute bottom-1 left-1 right-1 z-10">
                       <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
@@ -1153,12 +1054,9 @@ function VideoStreamPageInner() {
 
                   {/* Co-Broadcaster Video (top-right) */}
                   <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                    <video
+                    <div
                       ref={coBroadcasterVideoRef}
-                      autoPlay
-                      playsInline
-                      muted={isMuted}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
                     />
                     <div className="absolute bottom-1 left-1 right-1 z-10">
                       <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
@@ -1228,19 +1126,16 @@ function VideoStreamPageInner() {
           ) : (
             /* Normal Solo Broadcast View - TikTok 9:16 style */
             <div className="absolute inset-0 flex items-center justify-center bg-black">
-              <video 
+              <div 
                 ref={remoteVideoRef} 
-                autoPlay 
-                playsInline 
-                muted={isMuted} 
-                className="w-full h-full object-contain bg-black"
+                className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
                 style={{ aspectRatio: '9/16' }}
               />
             </div>
           )}
           
-          {/* Hidden co-broadcaster video for non-VS mode */}
-          {!isSplitMode && <video ref={coBroadcasterVideoRef} className="hidden" />}
+          {/* Hidden co-broadcaster container for non-VS mode */}
+          {!isSplitMode && <div ref={coBroadcasterVideoRef} className="hidden" />}
           
           {/* Connection overlay */}
           {connectionStatus !== 'connected' && (
@@ -1563,7 +1458,19 @@ function VideoStreamPageInner() {
             {/* Sound Toggle - Red if muted, Green if unmuted */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                const newMuted = !isMuted;
+                setIsMuted(newMuted);
+                // Mute/unmute all remote audio tracks in Agora
+                if (agoraClientRef.current) {
+                  agoraClientRef.current.remoteUsers.forEach(user => {
+                    if (user.audioTrack) {
+                      user.audioTrack.setVolume(newMuted ? 0 : 100);
+                    }
+                  });
+                }
+              }}
               className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg ${
                 isMuted 
                   ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30' 
