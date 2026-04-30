@@ -188,6 +188,10 @@ model LiveFortuneTeller {
   isFrozen          Boolean            @default(false)
   rejectedAt        DateTime?
   totalEarnings     Int                @default(0)
+  // Level system: bronze, silver, gold, diamond
+  tellerLevel       String             @default("bronze") // bronze, silver, gold, diamond
+  levelPoints       Int                @default(0) // Accumulated points for level calculation
+  levelUpdatedAt    DateTime?
   // Teller permissions (admin controlled)
   canGoOnline       Boolean            @default(true)
   canChat           Boolean            @default(true)
@@ -1390,19 +1394,28 @@ model HomepageFortuneCard {
 
 // Withdrawal Requests - users/tellers request money withdrawal
 model WithdrawalRequest {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
-  amount          Int      // Amount in jetons to withdraw
-  amountTL        Float    // Equivalent TL amount
-  method          String   // bank_transfer, papara, etc.
-  accountDetails  String?  @db.Text // JSON: IBAN, name, etc.
-  status          String   @default("pending") // pending, approved, rejected, processing
+  amount          Int       // Amount in jetons to withdraw
+  amountTL        Float     // Equivalent TL amount
+  method          String    // bank_transfer, papara, etc.
+  accountDetails  String?   @db.Text // JSON: IBAN, name, etc.
+  // 3-stage approval: pending → agency_approved → approved/rejected
+  status          String    @default("pending") // pending, agency_approved, approved, rejected, processing, completed
+  // Agency approval stage
+  agencyId        String?   // Agency of the teller (if any)
+  agencyApprovedBy String?  // Agency owner/manager who approved
+  agencyApprovedAt DateTime?
+  agencyNote      String?
+  // Admin approval stage
   adminNote       String?
   processedBy     String?
   processedAt     DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([userId])
+  @@index([agencyId])
   @@index([status])
   @@index([createdAt])
   @@map("withdrawal_requests")

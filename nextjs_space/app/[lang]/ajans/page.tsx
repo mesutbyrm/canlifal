@@ -146,10 +146,13 @@ export default function AgencyPage() {
             Rol: {myAgency.membership.role === 'owner' ? 'Sahip' : myAgency.membership.role === 'manager' ? 'Yönetici' : 'Üye'}
           </p>
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/ajans-paneli" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${btnPrimary} text-sm font-medium`}>
               <ExternalLink className="w-4 h-4" />
               Ajans Paneli
+            </Link>
+            <Link href="/ajans-siralama" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${tabInactive} hover:opacity-80 text-sm font-medium`}>
+              🏆 Sıralama
             </Link>
             {myAgency.membership.role !== 'owner' && (
               <button

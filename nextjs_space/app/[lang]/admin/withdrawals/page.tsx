@@ -20,6 +20,10 @@ interface WithdrawalRequest {
   method: string
   accountDetails: string
   status: string
+  agencyId: string | null
+  agencyNote: string | null
+  agencyApprovedBy: string | null
+  agencyApprovedAt: string | null
   adminNote: string | null
   createdAt: string
   user: {
@@ -29,6 +33,7 @@ interface WithdrawalRequest {
     image: string | null
     jetonBalance: number
   }
+  agency: { id: string; name: string } | null
 }
 
 interface TellerAward {
@@ -56,7 +61,7 @@ export default function AdminWithdrawalsPage() {
   const [tellers, setTellers] = useState<Teller[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [filter, setFilter] = useState<string>('pending')
+  const [filter, setFilter] = useState<string>('agency_approved')
   const [noteMap, setNoteMap] = useState<Record<string, string>>({})
 
   // Award form
@@ -93,7 +98,7 @@ export default function AdminWithdrawalsPage() {
     finally { setLoading(false) }
   }
 
-  const handleWithdrawalAction = async (requestId: string, action: 'approve' | 'reject') => {
+  const handleWithdrawalAction = async (requestId: string, action: 'approve' | 'reject' | 'complete') => {
     setActionLoading(requestId)
     try {
       const res = await fetch('/api/admin/withdrawals', {
@@ -172,9 +177,9 @@ export default function AdminWithdrawalsPage() {
                 activeTab === tab ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-900/50'
               }`}>
               {tab === 'withdrawals' ? ('Çekim Talepleri') : ('Ödüller')}
-              {tab === 'withdrawals' && withdrawals.filter(w => w.status === 'pending').length > 0 && (
+              {tab === 'withdrawals' && withdrawals.filter(w => ['pending', 'agency_approved'].includes(w.status)).length > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black text-[10px] rounded-full font-bold">
-                  {withdrawals.filter(w => w.status === 'pending').length}
+                  {withdrawals.filter(w => ['pending', 'agency_approved'].includes(w.status)).length}
                 </span>
               )}
             </button>
@@ -184,18 +189,18 @@ export default function AdminWithdrawalsPage() {
         {/* WITHDRAWALS TAB */}
         {activeTab === 'withdrawals' && (
           <div>
-            <div className="flex gap-2 mb-4">
-              {['pending', 'approved', 'rejected', 'all'].map(f => (
-                <button key={f} onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    filter === f ? 'bg-purple-500 text-white' : 'bg-purple-900/20 text-purple-400 hover:bg-purple-900/40'
-                  }`}>
-                  {f === 'pending' ? ('Bekleyen') :
-                   f === 'approved' ? ('Onaylı') :
-                   f === 'rejected' ? ('Reddedilen') :
-                   ('Tümü')}
-                </button>
-              ))}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+              {['agency_approved', 'pending', 'approved', 'completed', 'rejected', 'all'].map(f => {
+                const labels: Record<string, string> = { pending: 'Ajans Bekliyor', agency_approved: 'Admin Bekliyor', approved: 'Onaylı', completed: 'Tamamlandı', rejected: 'Reddedilen', all: 'Tümü' }
+                return (
+                  <button key={f} onClick={() => setFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                      filter === f ? 'bg-purple-500 text-white' : 'bg-purple-900/20 text-purple-400 hover:bg-purple-900/40'
+                    }`}>
+                    {labels[f]}
+                  </button>
+                )
+              })}
             </div>
 
             {filteredWithdrawals.length === 0 ? (
@@ -220,13 +225,17 @@ export default function AdminWithdrawalsPage() {
                         </div>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        wr.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        wr.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                        wr.status === 'pending' ? 'bg-orange-500/20 text-orange-400' :
+                        wr.status === 'agency_approved' ? 'bg-yellow-500/20 text-yellow-400' :
+                        wr.status === 'approved' ? 'bg-blue-500/20 text-blue-400' :
+                        wr.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                         'bg-red-500/20 text-red-400'
                       }`}>
-                        {wr.status === 'pending' ? ('Bekliyor') :
-                         wr.status === 'approved' ? ('Onaylı') :
-                         ('Reddedildi')}
+                        {wr.status === 'pending' ? 'Ajans Bekliyor' :
+                         wr.status === 'agency_approved' ? 'Admin Bekliyor' :
+                         wr.status === 'approved' ? 'Onaylandı' :
+                         wr.status === 'completed' ? 'Tamamlandı' :
+                         'Reddedildi'}
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -239,11 +248,25 @@ export default function AdminWithdrawalsPage() {
                       <span className="text-purple-400 text-xs">Hesap:</span>
                       <p className="text-white text-sm bg-black/20 rounded-lg p-2 mt-1 break-all">{wr.accountDetails}</p>
                     </div>
-                    {wr.status === 'pending' && (
+                    {/* Agency info */}
+                    {wr.agency && (
+                      <div className="mt-2 text-xs text-purple-300 bg-purple-900/30 rounded-lg p-2 flex items-center gap-1.5">
+                        🏢 Ajans: <span className="font-medium text-white">{wr.agency.name}</span>
+                        {wr.agencyApprovedAt && <span className="ml-auto">Ajans onayı: {new Date(wr.agencyApprovedAt).toLocaleString('tr-TR')}</span>}
+                      </div>
+                    )}
+                    {wr.agencyNote && (
+                      <p className="mt-1 text-xs text-orange-300 bg-orange-900/20 rounded-lg p-2">📝 Ajans notu: {wr.agencyNote}</p>
+                    )}
+                    {/* Admin actions for agency_approved (normal flow) or pending (no-agency cases) */}
+                    {['agency_approved', 'pending'].includes(wr.status) && (
                       <div className="mt-3 space-y-2">
+                        {wr.status === 'pending' && wr.agency && (
+                          <div className="text-xs text-orange-400 bg-orange-500/10 rounded-lg p-2">⏳ Bu talep henüz ajans onayı bekliyor</div>
+                        )}
                         <input
                           type="text"
-                          placeholder={'Admin notu (isteğe bağlı)'}
+                          placeholder="Admin notu (isteğe bağlı)"
                           value={noteMap[wr.id] || ''}
                           onChange={e => setNoteMap(prev => ({ ...prev, [wr.id]: e.target.value }))}
                           className="w-full px-3 py-2 bg-black/20 border border-purple-500/20 rounded-lg text-white text-sm outline-none"
@@ -251,17 +274,26 @@ export default function AdminWithdrawalsPage() {
                         <div className="flex gap-2">
                           <button onClick={() => handleWithdrawalAction(wr.id, 'approve')} disabled={actionLoading === wr.id}
                             className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                            {actionLoading === wr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> {'Onayla'}</>}
+                            {actionLoading === wr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Onayla</>}
                           </button>
                           <button onClick={() => handleWithdrawalAction(wr.id, 'reject')} disabled={actionLoading === wr.id}
                             className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-                            <X className="w-4 h-4" /> {'Reddet'}
+                            <X className="w-4 h-4" /> Reddet
                           </button>
                         </div>
                       </div>
                     )}
+                    {/* Complete button for approved requests */}
+                    {wr.status === 'approved' && (
+                      <div className="mt-3">
+                        <button onClick={() => handleWithdrawalAction(wr.id, 'complete')} disabled={actionLoading === wr.id}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 disabled:opacity-50">
+                          {actionLoading === wr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Ödeme Tamamlandı</>}
+                        </button>
+                      </div>
+                    )}
                     {wr.adminNote && (
-                      <p className="mt-2 text-xs text-purple-300 bg-purple-900/30 rounded-lg p-2">📝 {wr.adminNote}</p>
+                      <p className="mt-2 text-xs text-purple-300 bg-purple-900/30 rounded-lg p-2">🔑 Admin notu: {wr.adminNote}</p>
                     )}
                   </motion.div>
                 ))}

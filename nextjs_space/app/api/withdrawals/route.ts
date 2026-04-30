@@ -16,7 +16,7 @@ export async function GET() {
     const requests = await prisma.withdrawalRequest.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 50,
     });
 
     return NextResponse.json({ requests });
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Check for pending requests
     const pending = await prisma.withdrawalRequest.findFirst({
-      where: { userId: session.user.id, status: 'pending' },
+      where: { userId: session.user.id, status: { in: ['pending', 'agency_approved'] } },
     });
     if (pending) {
       return NextResponse.json({ error: 'Zaten bekleyen bir çekim talebiniz var' }, { status: 400 });
@@ -86,7 +86,13 @@ export async function POST(request: NextRequest) {
     const jetonTlRate = rateSetting ? parseFloat(rateSetting.value) : 0.5;
     const amountTL = parseFloat((amount * jetonTlRate).toFixed(2));
 
-    // Create withdrawal request (don't deduct yet - admin will approve)
+    // Check if user belongs to an agency
+    const agencyMembership = await prisma.agencyUser.findFirst({
+      where: { userId: session.user.id, isActive: true },
+      select: { agencyId: true },
+    });
+
+    // Create withdrawal request
     const withdrawal = await prisma.withdrawalRequest.create({
       data: {
         userId: session.user.id,
@@ -94,7 +100,10 @@ export async function POST(request: NextRequest) {
         amountTL,
         method,
         accountDetails,
-        status: 'pending',
+        agencyId: agencyMembership?.agencyId || null,
+        // If user is in agency → pending (needs agency approval first)
+        // If no agency → agency_approved (skip to admin approval)
+        status: agencyMembership ? 'pending' : 'agency_approved',
       },
     });
 

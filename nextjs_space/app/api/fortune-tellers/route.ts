@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const specialty = searchParams.get('specialty');
     const onlineOnly = searchParams.get('online') === 'true';
+    const sort = searchParams.get('sort') || 'default'; // default, trending, new, top_rated, price_low, price_high
 
     const where: Record<string, unknown> = {
       isActive: true,
@@ -26,6 +27,24 @@ export async function GET(request: NextRequest) {
       where.specialties = { has: specialty };
     }
 
+    // Determine orderBy based on sort param
+    let orderBy: any[] = [
+      { isOnline: 'desc' },
+      { rating: 'desc' },
+      { totalSessions: 'desc' }
+    ];
+
+    if (sort === 'new') {
+      orderBy = [{ isOnline: 'desc' }, { createdAt: 'desc' }];
+    } else if (sort === 'top_rated') {
+      orderBy = [{ isOnline: 'desc' }, { rating: 'desc' }, { totalReviews: 'desc' }];
+    } else if (sort === 'price_low') {
+      orderBy = [{ isOnline: 'desc' }, { pricePerSession: 'asc' }];
+    } else if (sort === 'price_high') {
+      orderBy = [{ isOnline: 'desc' }, { pricePerSession: 'desc' }];
+    }
+    // For 'trending', we'll calculate after fetch
+
     const tellers = await prisma.liveFortuneTeller.findMany({
       where,
       include: {
@@ -38,11 +57,7 @@ export async function GET(request: NextRequest) {
           orderBy: { createdAt: 'asc' }
         }
       },
-      orderBy: [
-        { isOnline: 'desc' },
-        { rating: 'desc' },
-        { totalSessions: 'desc' }
-      ]
+      orderBy
     });
 
     // Check for active video streams for each teller
@@ -75,14 +90,38 @@ export async function GET(request: NextRequest) {
 
       // Remove sessions from response to keep payload small
       const { sessions, ...tellerData } = teller;
+
+      // Calculate "new teller" badge (first 7 days after approval)
+      const isNewTeller = tellerData.approvedAt
+        ? (Date.now() - new Date(tellerData.approvedAt).getTime()) < 7 * 24 * 60 * 60 * 1000
+        : (Date.now() - new Date(tellerData.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
+
+      // Trending score: sessions weight + queue weight + online bonus
+      const trendingScore = (pendingSessions.length * 3) +
+        (activeSessions.length * 5) +
+        (teller.isOnline ? 10 : 0) +
+        (isStreaming ? 8 : 0) +
+        (teller.rating >= 4.5 ? 5 : 0);
+
       return {
         ...tellerData,
         isStreaming,
         isInSession,
         pendingCount: pendingSessions.length,
-        queuePosition
+        queuePosition,
+        isNewTeller,
+        trendingScore,
       };
     });
+
+    // If sort=trending, re-sort by trending score
+    if (sort === 'trending') {
+      enrichedTellers.sort((a: any, b: any) => {
+        // Online first
+        if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+        return b.trendingScore - a.trendingScore;
+      });
+    }
 
     return NextResponse.json({ tellers: enrichedTellers });
   } catch (error) {

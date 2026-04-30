@@ -228,6 +228,7 @@ export default function ProfilePage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   // Teller panel states
+  const [tellerLevel, setTellerLevel] = useState<{ level: string; levelLabel: string; emoji: string; color: string; points: number; progress: number; nextLevel: { key: string; label: string; emoji: string; pointsNeeded: number } | null } | null>(null)
   const [tellerProfile, setTellerProfile] = useState<TellerProfile | null>(null)
   const [tellerSessions, setTellerSessions] = useState<TellerSession[]>([])
   const [isTeller, setIsTeller] = useState(false)
@@ -326,6 +327,11 @@ export default function ProfilePage() {
         const data = await res.json()
         setTellerProfile(data)
         setIsTeller(true)
+        // Fetch teller level
+        try {
+          const levelRes = await fetch('/api/teller/level')
+          if (levelRes.ok) { const ld = await levelRes.json(); setTellerLevel(ld) }
+        } catch {}
         // Fetch sessions
         const sessRes = await fetch(`/api/fortune-tellers/${data.id}/session`)
         if (sessRes.ok) {
@@ -758,6 +764,32 @@ export default function ProfilePage() {
                         <p className={`text-[10px] ${textSecondary}`}>{'Ücret'}</p>
                       </div>
                     </div>
+
+                    {/* Teller Level Badge */}
+                    {tellerLevel && (
+                      <div className={`mt-3 rounded-xl p-3 ${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-purple-900/30 border border-purple-500/20'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{tellerLevel.emoji}</span>
+                            <div>
+                              <span className="font-bold text-sm" style={{ color: tellerLevel.color }}>{tellerLevel.levelLabel}</span>
+                              <span className={`text-[10px] ml-1.5 ${textSecondary}`}>{tellerLevel.points} puan</span>
+                            </div>
+                          </div>
+                          {tellerLevel.nextLevel && (
+                            <span className={`text-[10px] ${textSecondary}`}>
+                              {tellerLevel.nextLevel.emoji} {tellerLevel.nextLevel.label}&apos;e {tellerLevel.nextLevel.pointsNeeded} puan
+                            </span>
+                          )}
+                        </div>
+                        <div className={`w-full h-2 rounded-full ${isFacebook ? 'bg-gray-200' : 'bg-black/30'}`}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${tellerLevel.progress}%`, backgroundColor: tellerLevel.color }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Session Tabs */}
                     <div className={`mt-3 flex rounded-xl overflow-hidden border ${isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>

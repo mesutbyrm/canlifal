@@ -55,6 +55,7 @@ export default function LiveTellersPage() {
   const [tellers, setTellers] = useState<FortuneTeller[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'online'>('all')
+  const [sortMode, setSortMode] = useState<string>('default')
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
   const [tellerStatus, setTellerStatus] = useState<TellerStatus | null>(null)
   const [togglingOnline, setTogglingOnline] = useState(false)
@@ -64,7 +65,7 @@ export default function LiveTellersPage() {
     if (session?.user) {
       fetchTellerStatus()
     }
-  }, [filter, specialtyFilter, session])
+  }, [filter, specialtyFilter, sortMode, session])
 
   const fetchTellerStatus = async () => {
     try {
@@ -102,7 +103,8 @@ export default function LiveTellersPage() {
     try {
       let url = '/api/fortune-tellers?'
       if (filter === 'online') url += 'online=true&'
-      if (specialtyFilter) url += `specialty=${specialtyFilter}`
+      if (specialtyFilter) url += `specialty=${specialtyFilter}&`
+      if (sortMode && sortMode !== 'default') url += `sort=${sortMode}&`
       
       const res = await fetch(url)
       const data = await res.json()
@@ -319,6 +321,18 @@ export default function LiveTellersPage() {
             {Object.entries(FORTUNE_TYPES).map(([key, val]) => (
               <option key={key} value={key}>{val.icon} {val[language]}</option>
             ))}
+          </select>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value)}
+            className="px-4 py-2 bg-purple-900/30 border border-purple-700/50 rounded-lg text-purple-200 focus:outline-none focus:border-gold-500"
+          >
+            <option value="default">Varsayılan</option>
+            <option value="trending">🔥 Trend</option>
+            <option value="new">🆕 Yeni Falcılar</option>
+            <option value="top_rated">⭐ En Yüksek Puan</option>
+            <option value="price_low">💰 Fiyat (Düşük→Yüksek)</option>
+            <option value="price_high">💎 Fiyat (Yüksek→Düşük)</option>
           </select>
         </motion.div>
 
