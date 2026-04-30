@@ -16,7 +16,7 @@ import dynamic from 'next/dynamic'
 const ActionButtonsRow = dynamic(() => import('@/components/action-buttons-row'), { ssr: false })
 const HomepageTicker = dynamic(() => import('@/components/homepage-ticker'), { ssr: false })
 const LiveTicker = dynamic(() => import('@/components/live-ticker'), { ssr: false })
-const BanaOzelSection = dynamic(() => import('@/components/bana-ozel-section'), { ssr: false })
+// BanaOzelSection moved to /bana-ozel page
 const GuestLanding = dynamic(() => import('@/components/guest-landing'), { ssr: false })
 const LiveActivityFeed = dynamic(() => import('@/components/live-activity-feed'), { ssr: false })
 
@@ -415,9 +415,6 @@ export default function HomePage() {
             <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falclub" />
           </motion.div>
 
-          {/* Live Activity Feed */}
-          <LiveActivityFeed />
-
           {/* CANLI YAYINLAR Section */}
           <motion.div
             className="falclub-card p-4 relative overflow-hidden"
@@ -613,44 +610,32 @@ export default function HomePage() {
               {'POPÜLER FALCILAR'}
             </h2>
             
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-              {sortedTellers.slice(0, 6).map((teller) => (
+            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 px-1">
+              {sortedTellers.slice(0, 8).map((teller) => (
                 <Link
                   key={teller.id}
                   href={`/canli-falcilar/${teller.id}`}
-                  className={`flex-shrink-0 w-28 rounded-2xl ${teller.isOnline ? 'rainbow-border rainbow-border-live' : 'opacity-50'}`}
+                  className={`flex-shrink-0 flex flex-col items-center w-20 ${!teller.isOnline ? 'opacity-50' : ''}`}
                 >
-                  <div className="rounded-2xl overflow-hidden" style={{
-                    border: teller.isOnline ? '1px solid rgba(168, 85, 247, 0.2)' : '2px solid rgba(100, 60, 140, 0.3)',
-                    background: 'linear-gradient(135deg, #0f0520 0%, #1e0b38 50%, #0f0520 100%)',
-                  }}>
-                  <div className="relative w-full aspect-square overflow-hidden">
+                  <div className={`relative w-16 h-16 rounded-full overflow-hidden ${teller.isOnline ? 'ring-2 ring-fuchsia-500 ring-offset-2 ring-offset-[#0f0520]' : 'ring-1 ring-purple-700/50'}`}>
                     {teller.avatar ? (
                       <Image src={teller.avatar} alt={teller.displayName} fill className={`object-cover ${!teller.isOnline ? 'grayscale' : ''}`} />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-purple-800 via-fuchsia-900 to-purple-900 flex items-center justify-center">
-                        <span className="text-white font-bold text-2xl">{teller.displayName?.[0]}</span>
+                        <span className="text-white font-bold text-lg">{teller.displayName?.[0]}</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0520] via-transparent to-transparent" />
-                    {teller.isOnline ? (
-                      <div className="absolute top-1.5 left-1.5 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded"
+                    {teller.isOnline && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[7px] font-bold px-1.5 py-0 rounded-t"
                         style={{ boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}>
                         CANLI
                       </div>
-                    ) : (
-                      <div className="absolute top-1.5 left-1.5 bg-gray-600/80 text-gray-300 text-[8px] font-bold px-1.5 py-0.5 rounded">
-                        {'ÇEVRİMDIŞI'}
-                      </div>
                     )}
                   </div>
-                  <div className="p-1.5 text-center">
-                    <p className="text-white text-xs truncate">{teller.displayName}</p>
-                    <div className="flex items-center justify-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-yellow-400 text-[10px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
-                    </div>
-                  </div>
+                  <p className="text-white text-[10px] mt-1.5 truncate w-full text-center">{teller.displayName}</p>
+                  <div className="flex items-center gap-0.5">
+                    <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
+                    <span className="text-yellow-400 text-[9px]">{teller.averageRating?.toFixed(1) || '5.0'}</span>
                   </div>
                 </Link>
               ))}
@@ -752,8 +737,8 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* BANA ÖZEL Section - Only for logged-in users */}
-          {session?.user && <BanaOzelSection />}
+          {/* Live Activity Feed - Bottom */}
+          <LiveActivityFeed />
         </div>
       </div>
     )
@@ -789,9 +774,6 @@ export default function HomePage() {
         <div className="pt-[108px] sm:pt-[118px] pb-28 px-3 sm:px-4 space-y-3 sm:space-y-4 relative z-10">
           {/* Action Buttons Row */}
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="falci" />
-
-          {/* Live Activity Feed */}
-          <LiveActivityFeed />
 
           {/* Live Streams Section - White Card */}
           <div className="bg-white/95 rounded-xl p-4 border-l-4 border-indigo-500" style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
@@ -881,8 +863,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* BANA ÖZEL Section - Only for logged-in users */}
-          {session?.user && <BanaOzelSection />}
+          {/* Live Activity Feed - Bottom */}
+          <LiveActivityFeed />
         </div>
       </div>
     )
@@ -903,9 +885,6 @@ export default function HomePage() {
         {/* Action Buttons Row */}
         <div className="px-3 sm:px-4 pb-3 sm:pb-4">
           <ActionButtonsRow isTeller={isTeller} pendingRequestCount={pendingRequestCount} variant="cosmic" />
-
-          {/* Live Activity Feed */}
-          <LiveActivityFeed />
         </div>
 
         {/* Live Tellers Section */}
@@ -1050,12 +1029,10 @@ export default function HomePage() {
           </div>
         </div>
 
-      {/* BANA ÖZEL Section - Only for logged-in users */}
-      {session?.user && (
-        <div className="px-4 pb-4">
-          <BanaOzelSection />
-        </div>
-      )}
+      {/* Live Activity Feed - Bottom */}
+      <div className="px-4 pb-4">
+        <LiveActivityFeed />
+      </div>
 
       {/* Footer - Legal Links */}
       <div className="px-4 pb-24 pt-6">

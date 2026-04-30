@@ -118,7 +118,7 @@ export default function ActionButtonsRow({ isTeller = false, pendingRequestCount
       if (!session?.user) {
         router.push('/giris')
       } else {
-        setShowBanaOzel(true)
+        router.push('/bana-ozel')
       }
       return true
     }
