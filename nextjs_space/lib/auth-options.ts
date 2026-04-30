@@ -97,6 +97,27 @@ export const authOptions: NextAuthOptions = {
       return baseUrl
     },
   },
+  events: {
+    async createUser({ user }) {
+      // Auto-follow admin and yonetici users for new OAuth signups
+      try {
+        const staffUsers = await prisma.user.findMany({
+          where: { role: { in: ['admin', 'yonetici'] } },
+          select: { id: true },
+        })
+        if (staffUsers.length > 0 && user.id) {
+          await prisma.follow.createMany({
+            data: staffUsers
+              .filter(s => s.id !== user.id)
+              .map(s => ({ followerId: user.id, followingId: s.id })),
+            skipDuplicates: true,
+          })
+        }
+      } catch (e) {
+        console.error('Auto-follow on OAuth signup error:', e)
+      }
+    },
+  },
   pages: {
     signIn: '/giris',
   },

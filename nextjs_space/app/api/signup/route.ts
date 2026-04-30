@@ -126,6 +126,24 @@ export async function POST(request: Request) {
       detail: 'siteye katıldı 🎉',
     })
 
+    // Auto-follow admin and yonetici users
+    try {
+      const staffUsers = await prisma.user.findMany({
+        where: { role: { in: ['admin', 'yonetici'] } },
+        select: { id: true },
+      })
+      if (staffUsers.length > 0) {
+        await prisma.follow.createMany({
+          data: staffUsers
+            .filter(s => s.id !== user.id)
+            .map(s => ({ followerId: user.id, followingId: s.id })),
+          skipDuplicates: true,
+        })
+      }
+    } catch (e) {
+      console.error('Auto-follow error:', e)
+    }
+
     // If referred, create referral record and give referrer credits
     if (referrer) {
       await prisma.$transaction([
