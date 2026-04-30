@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { isExcludedFromFinance } from '@/lib/admin-check'
+import { processAgencyCommission } from '@/lib/agency-commission'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,6 +112,15 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         }
       })
     }
+    // Process agency commission if recipient is in an agency
+    if (recipientAmount > 0 && !senderExcluded) {
+      processAgencyCommission({
+        userId: recipient.id,
+        earnedAmount: recipientAmount,
+        sourceType: 'chat_gift',
+      }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
+    }
+
     // Give commission to beneficiary - sadece normal kullanıcılardan
     if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id && !senderExcluded) {
       const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })

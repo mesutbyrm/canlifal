@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
+import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -149,12 +150,27 @@ export async function POST(
 
     // Sadece normal kullanıcıların hediyeleri yayıncıya bakiye olarak yansır
     if (!senderExcluded) {
-      txOps.push(
-        prisma.user.update({
-          where: { id: stream.userId },
-          data: { jetonBalance: { increment: Math.floor(totalPrice * 0.7) } }
-        })
-      )
+      // Get configurable commission rate from platform settings (default 30%)
+      const streamCommissionStr = await getPlatformSetting('stream_gift_commission', '30')
+      const streamCommissionPercent = Math.min(100, Math.max(0, parseInt(streamCommissionStr) || 30))
+      const recipientAmount = Math.floor(totalPrice * (100 - streamCommissionPercent) / 100)
+      
+      if (recipientAmount > 0) {
+        txOps.push(
+          prisma.user.update({
+            where: { id: stream.userId },
+            data: { jetonBalance: { increment: recipientAmount } }
+          })
+        )
+      }
+
+      // Process agency commission if broadcaster is in an agency
+      processAgencyCommission({
+        userId: stream.userId,
+        earnedAmount: recipientAmount,
+        sourceType: 'stream_gift',
+        sourceId: params.streamId,
+      }).catch(err => console.error('[Stream Gift] Agency commission error:', err))
     }
 
     const [gift] = await prisma.$transaction(txOps)

@@ -28,6 +28,10 @@ import {
 
 interface PlatformSettings {
   commission_rate: string
+  stream_gift_commission: string
+  direct_gift_commission: string
+  jeton_transfer_commission: string
+  default_agency_commission: string
   min_withdrawal: string
   referral_bonus: string
   welcome_credits: string
@@ -50,6 +54,10 @@ export default function AdminSettingsPage() {
 
   const [settings, setSettings] = useState<PlatformSettings>({
     commission_rate: '20',
+    stream_gift_commission: '30',
+    direct_gift_commission: '0',
+    jeton_transfer_commission: '0',
+    default_agency_commission: '5',
     min_withdrawal: '100',
     referral_bonus: '50',
     welcome_credits: '10',
@@ -174,11 +182,43 @@ export default function AdminSettingsPage() {
   const settingItems = [
     {
       key: 'commission_rate',
-      label: 'Komisyon Oranı (%)',
-      description: 'Falcı kazançlarından kesilecek komisyon oranı',
+      label: 'Falcı Komisyon Oranı (%)',
+      description: 'Falcı tip/bahşiş kazançlarından kesilecek platform komisyon oranı',
       icon: Percent,
       min: 0,
       max: 100
+    },
+    {
+      key: 'stream_gift_commission',
+      label: 'Canlı Yayın Hediye Komisyonu (%)',
+      description: 'Canlı yayında gönderilen hediyelerden kesilecek platform komisyon oranı',
+      icon: Percent,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'direct_gift_commission',
+      label: 'Direkt Hediye Komisyonu (%)',
+      description: 'Profil üzerinden gönderilen hediyelerden kesilecek platform komisyon oranı',
+      icon: Percent,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'jeton_transfer_commission',
+      label: 'Jeton Transfer Komisyonu (%)',
+      description: 'Kullanıcılar arası jeton transferinden kesilecek komisyon oranı',
+      icon: Percent,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'default_agency_commission',
+      label: 'Varsayılan Ajans Komisyonu (%)',
+      description: 'Yeni ajanslar için varsayılan komisyon oranı (ajans bazında değiştirilebilir)',
+      icon: Percent,
+      min: 0,
+      max: 50
     },
     {
       key: 'min_withdrawal',

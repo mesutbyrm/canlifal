@@ -107,6 +107,8 @@ model User {
   level                 Int                  @default(1)
   loginStreak           Int                  @default(0)
   lastLoginRewardDate   DateTime?            @db.Date
+  // Agency system
+  agencyMembership      AgencyUser?
 
   @@index([referralCode])
   @@index([referredById])
@@ -2250,4 +2252,153 @@ model ActivityFeedConfig {
   updatedAt       DateTime @updatedAt
 
   @@map("activity_feed_config")
+}
+
+// ========== AGENCY SYSTEM ==========
+
+model Agency {
+  id                  String          @id @default(cuid())
+  name                String          @unique
+  description         String?
+  ownerId             String          // User who applied
+  ownerName           String
+  status              String          @default("pending") // pending, approved, rejected, suspended
+  commissionRate      Float           @default(5.0)  // Agency commission % on member earnings
+  contactEmail        String?
+  contactPhone        String?
+  logoUrl             String?
+  // Performance
+  totalEarnings       Float           @default(0)
+  totalMembers        Int             @default(0)
+  activeMembers       Int             @default(0)
+  performanceScore    Float           @default(0) // APS: 0-100
+  // Penalty tracking
+  penaltyLevel        Int             @default(0) // 0=clean, 1=warning, 2=invites_disabled, 3=commission_reduced, 4=suspended
+  penaltyNote         String?
+  invitesDisabled     Boolean         @default(false)
+  // Metadata
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectedReason      String?
+  suspendedAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  // Relations
+  members             AgencyUser[]
+  earnings            AgencyEarning[]
+  inviteCodes         InviteCode[]
+  tasks               AgencyTask[]
+  penalties           AgencyPenalty[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("agencies")
+}
+
+model AgencyUser {
+  id              String    @id @default(cuid())
+  agencyId        String
+  userId          String    @unique // One user can only be in one agency
+  role            String    @default("member") // owner, manager, member
+  joinedVia       String?   // invite_code, referral_link, direct
+  inviteCodeId    String?
+  totalEarnings   Float     @default(0) // Total earnings contributed to agency
+  isActive        Boolean   @default(true)
+  joinedAt        DateTime  @default(now())
+  leftAt          DateTime?
+  // Fraud tracking
+  joinIp          String?
+  joinDeviceId    String?
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteCode      InviteCode? @relation(fields: [inviteCodeId], references: [id])
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("agency_users")
+}
+
+model AgencyEarning {
+  id              String   @id @default(cuid())
+  agencyId        String
+  userId          String   // The member who generated the earning
+  amount          Float    // Commission amount earned by agency
+  sourceType      String   // chat_gift, stream_gift, direct_gift, tip, bonus
+  sourceId        String?  // Gift/transaction ID
+  originalAmount  Float    // Original gift amount before commission
+  commissionRate  Float    // Rate applied at the time
+  createdAt       DateTime @default(now())
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([sourceType])
+  @@map("agency_earnings")
+}
+
+model InviteCode {
+  id              String       @id @default(cuid())
+  agencyId        String
+  code            String       @unique
+  createdById     String       // User who created the code
+  maxUses         Int          @default(0) // 0 = unlimited
+  usedCount       Int          @default(0)
+  isActive        Boolean      @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+  agency          Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  usedBy          AgencyUser[]
+
+  @@index([agencyId])
+  @@index([code])
+  @@map("invite_codes")
+}
+
+model AgencyTask {
+  id              String   @id @default(cuid())
+  agencyId        String
+  weekStart       DateTime // Monday of the task week
+  weekEnd         DateTime // Sunday of the task week
+  // Dynamic targets
+  earningsTarget  Float    @default(0)
+  newUsersTarget  Int      @default(0)
+  activeUsersTarget Int    @default(0)
+  // Actual values
+  earningsActual  Float    @default(0)
+  newUsersActual  Int      @default(0)
+  activeUsersActual Int    @default(0)
+  // Scoring
+  completionPercent Float  @default(0)
+  bonusAwarded    Float    @default(0)
+  status          String   @default("active") // active, completed, failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, weekStart])
+  @@index([agencyId])
+  @@index([weekStart])
+  @@index([status])
+  @@map("agency_tasks")
+}
+
+model AgencyPenalty {
+  id              String   @id @default(cuid())
+  agencyId        String
+  level           Int      // 1=warning, 2=disable_invites, 3=reduce_commission, 4=suspend
+  reason          String
+  appliedBy       String?  // Admin userId or 'system'
+  isActive        Boolean  @default(true)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolvedNote    String?
+  createdAt       DateTime @default(now())
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([isActive])
+  @@map("agency_penalties")
 }

@@ -132,6 +132,13 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     ],
   },
   {
+    groupLabel: '🏢 Ajans Yönetimi',
+    groupIcon: '🏢',
+    links: [
+      { href: `/admin/ajanslar`, icon: Shield, trLabel: 'Ajans Yönetimi', enLabel: 'Agency Management' },
+    ],
+  },
+  {
     groupLabel: '👥 Kullanıcı & Üyelik',
     groupIcon: '👥',
     links: [
@@ -1226,9 +1233,13 @@ export default function AdminPage() {
       <div className="space-y-6">
         <div className={`${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-fuchsia-900/20 border border-fuchsia-500/20'} rounded-xl p-4`}>
           <h3 className={`${accentColor} font-medium text-sm mb-1`}>{'Hediye Komisyon Sistemi'}</h3>
-          <p className={`${textSecondary} text-xs`}>
+          <p className={`${textSecondary} text-xs mb-2`}>
             {'Her sohbet odasında hediye gönderildiğinde, belirlenen yüzde oda sahibine veya atadığı kişiye komisyon olarak gider. Jeton hediyeleri için geçerlidir.'}
           </p>
+          <Link href={`/${language}/admin/settings`} className={`inline-flex items-center gap-1.5 text-xs font-medium ${accentColor} hover:underline`}>
+            <Settings className="w-3.5 h-3.5" />
+            Tüm komisyon oranları → Platform Ayarları
+          </Link>
         </div>
 
         {commissionLoading ? (

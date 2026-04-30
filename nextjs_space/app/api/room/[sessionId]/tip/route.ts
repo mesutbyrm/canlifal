@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { processAgencyCommission } from '@/lib/agency-commission';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,16 @@ export async function POST(
     const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
     const commissionAmount = Math.floor(amount * commissionRate / 100);
     const tellerEarnings = amount - commissionAmount;
+
+    // Process agency commission if teller's user is in an agency
+    if (tellerEarnings > 0) {
+      processAgencyCommission({
+        userId: liveSession.teller.userId || '',
+        earnedAmount: tellerEarnings,
+        sourceType: 'tip',
+        sourceId: params.sessionId,
+      }).catch(err => console.error('[Tip] Agency commission error:', err));
+    }
 
     // Transaction: deduct jetons, add to teller earnings, create system messages
     await prisma.$transaction([

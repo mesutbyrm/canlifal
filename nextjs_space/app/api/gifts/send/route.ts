@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
+import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 
 async function createGiftAnnouncement(
   senderName: string | null, senderUsername: string | null,
@@ -126,6 +127,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
 
+      // Get configurable commission for direct gifts (default 0% - no commission on direct gifts)
+      const directGiftCommStr = await getPlatformSetting('direct_gift_commission', '0')
+      const directGiftCommPercent = Math.min(100, Math.max(0, parseInt(directGiftCommStr) || 0))
+      const commissionAmount = directGiftCommPercent > 0 ? Math.floor(giftType.price * directGiftCommPercent / 100) : 0
+      const recipientAmount = giftType.price - commissionAmount
+
       // Deduct jetons from sender
       await prisma.user.update({
         where: { id: sender.id },
@@ -143,6 +150,33 @@ export async function POST(req: NextRequest) {
           balanceAfter: senderJetons - giftType.price
         }
       })
+
+      // Credit recipient (minus commission) - sadece normal kullanıcılardan
+      if (!senderExcluded && recipientAmount > 0) {
+        const recipientUser = await prisma.user.findUnique({ where: { id: recipient.id }, select: { jetonBalance: true } })
+        const rBefore = recipientUser?.jetonBalance ?? 0
+        await prisma.user.update({
+          where: { id: recipient.id },
+          data: { jetonBalance: { increment: recipientAmount } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: recipient.id,
+            amount: recipientAmount,
+            type: 'gift_received',
+            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı${commissionAmount > 0 ? ` (%${directGiftCommPercent} komisyon düşüldü)` : ''}`,
+            balanceBefore: rBefore,
+            balanceAfter: rBefore + recipientAmount
+          }
+        })
+
+        // Process agency commission
+        processAgencyCommission({
+          userId: recipient.id,
+          earnedAmount: recipientAmount,
+          sourceType: 'direct_gift',
+        }).catch(err => console.error('[Direct Gift] Agency commission error:', err))
+      }
 
       // Send notification + push to recipient
       createNotificationWithPush({
@@ -205,12 +239,25 @@ export async function POST(req: NextRequest) {
         data: { jetonBalance: { decrement: amount } }
       })
 
+      // Get configurable commission for jeton transfers (default 0%)
+      const jetonTransferCommStr = await getPlatformSetting('jeton_transfer_commission', '0')
+      const jetonTransferCommPercent = Math.min(100, Math.max(0, parseInt(jetonTransferCommStr) || 0))
+      const jetonCommission = jetonTransferCommPercent > 0 ? Math.floor(amount * jetonTransferCommPercent / 100) : 0
+      const jetonRecipientAmount = amount - jetonCommission
+
       // Add to recipient - sadece normal kullanıcılardan
-      if (!senderExcluded) {
+      if (!senderExcluded && jetonRecipientAmount > 0) {
         await prisma.user.update({
           where: { id: recipient.id },
-          data: { jetonBalance: { increment: amount } }
+          data: { jetonBalance: { increment: jetonRecipientAmount } }
         })
+
+        // Process agency commission
+        processAgencyCommission({
+          userId: recipient.id,
+          earnedAmount: jetonRecipientAmount,
+          sourceType: 'direct_gift',
+        }).catch(err => console.error('[Jeton Transfer] Agency commission error:', err))
       }
 
       // Record jeton transactions

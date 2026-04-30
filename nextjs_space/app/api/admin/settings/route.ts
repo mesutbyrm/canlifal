@@ -24,6 +24,10 @@ export async function GET() {
     // Set defaults if not exists
     const defaults: Record<string, string> = {
       'commission_rate': '20',
+      'stream_gift_commission': '30',
+      'direct_gift_commission': '0',
+      'jeton_transfer_commission': '0',
+      'default_agency_commission': '5',
       'min_withdrawal': '100',
       'referral_bonus': '50',
       'welcome_credits': '10'
