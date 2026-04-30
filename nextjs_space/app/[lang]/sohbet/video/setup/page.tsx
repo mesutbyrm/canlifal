@@ -310,11 +310,21 @@ export default function StreamSetupPage() {
         stopCamera()
         router.push(`/sohbet/video/broadcast/${data.id}`)
       } else {
-        console.error('Failed to create stream')
+        try {
+          const errData = await res.json()
+          if (errData.error === 'COOLDOWN_ACTIVE' && errData.remainingMinutes) {
+            alert(`Yayın bekleme süresi aktif. ${errData.remainingMinutes} dakika sonra tekrar yayın açabilirsiniz.`)
+          } else {
+            alert(errData.message || 'Yayın oluşturulamadı.')
+          }
+        } catch {
+          alert('Yayın oluşturulamadı.')
+        }
         setIsStarting(false)
       }
     } catch (error) {
       console.error('Error creating stream:', error)
+      alert('Yayın başlatılırken bir hata oluştu.')
       setIsStarting(false)
     }
   }

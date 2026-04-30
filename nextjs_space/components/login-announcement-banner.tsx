@@ -244,7 +244,7 @@ export default function LoginAnnouncementBanner() {
   useEffect(() => {
     const fetchAnnouncementSettings = async () => {
       try {
-        const res = await fetch('/api/admin/settings')
+        const res = await fetch('/api/public/announcement-settings')
         if (res.ok) {
           const data = await res.json()
           if (data.entry_announcement_enabled !== undefined) {
