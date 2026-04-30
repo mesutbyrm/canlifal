@@ -933,6 +933,30 @@ model StreamModerator {
   @@map("stream_moderators")
 }
 
+// PK Battle between two streamers (TikTok-style)
+model PKBattle {
+  id              String   @id @default(cuid())
+  stream1Id       String   // Challenger stream
+  stream2Id       String   // Opponent stream
+  user1Id         String   // Challenger user
+  user2Id         String   // Opponent user
+  score1          Int      @default(0) // Gift points for stream1
+  score2          Int      @default(0) // Gift points for stream2
+  status          String   @default("pending") // pending, active, completed, cancelled, rejected
+  duration        Int      @default(180) // Duration in seconds (default 3 min)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  winnerId        String?  // Winner user ID
+  createdAt       DateTime @default(now())
+
+  @@index([stream1Id])
+  @@index([stream2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([status])
+  @@map("pk_battles")
+}
+
 // Fortune request types (admin configurable)
 model FortuneRequestType {
   id          String   @id @default(cuid())

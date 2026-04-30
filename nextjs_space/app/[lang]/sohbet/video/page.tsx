@@ -37,8 +37,11 @@ import {
   Eye,
   User,
   Settings,
-  Check
+  Check,
+  Swords,
+  Grid
 } from 'lucide-react'
+import PKBattleOverlay from '@/components/pk-battle-overlay'
 
 interface VideoStream {
   id: string
@@ -180,6 +183,19 @@ function VideoStreamPageInner() {
   const [refundedTypeName, setRefundedTypeName] = useState('')
   const [refundedTypeIcon, setRefundedTypeIcon] = useState('')
   const [jetonAnimationCoins, setJetonAnimationCoins] = useState<number[]>([])
+  // PK Battle state
+  const [pkBattle, setPkBattle] = useState<{
+    id: string; stream1Id: string; stream2Id: string; user1Id: string; user2Id: string;
+    score1: number; score2: number; status: string; duration: number;
+    startedAt: string | null; endedAt: string | null; winnerId: string | null;
+    user1?: { id: string; name: string | null; image: string | null } | null;
+    user2?: { id: string; name: string | null; image: string | null } | null;
+  } | null>(null)
+  // Multi-view state
+  const [multiViewMode, setMultiViewMode] = useState(false)
+  const [multiViewStreams, setMultiViewStreams] = useState<string[]>([])
+  const [multiViewClients, setMultiViewClients] = useState<Map<string, IAgoraRTCClient>>(new Map())
+  const multiViewRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastFortuneStatusRef = useRef<string | null>(null)
@@ -380,6 +396,7 @@ function VideoStreamPageInner() {
           fetchComments(streamId)
           fetchCoBroadcasters(streamId)
           pollFortuneRequestStatus(streamId)
+          fetchPKBattle(streamId)
         }
       }
 
@@ -557,6 +574,17 @@ function VideoStreamPageInner() {
         }
       }
     } catch (e) {}
+  }
+
+  // Fetch PK battle for current stream
+  const fetchPKBattle = async (streamId: string) => {
+    try {
+      const res = await fetch(`/api/video-streams/pk?streamId=${streamId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setPkBattle(data || null)
+      }
+    } catch {}
   }
 
   // Fetch co-broadcasters for split screen mode
@@ -1021,6 +1049,91 @@ function VideoStreamPageInner() {
             <X className="w-5 h-5" /> {'Çıkış'}
           </button>
         </div>
+      ) : multiViewMode && streams.length > 1 ? (
+        /* ============== MULTI-VIEW GRID MODE ============== */
+        <div className="absolute inset-0 bg-black pt-2 pb-2 px-1">
+          <div className="h-full grid grid-cols-2 gap-1 auto-rows-fr" style={{ gridTemplateRows: `repeat(${Math.ceil(Math.min(streams.length, 4) / 2)}, 1fr)` }}>
+            {streams.slice(0, 4).map((stream, idx) => (
+              <button
+                key={stream.id}
+                onClick={() => {
+                  setCurrentIndex(idx)
+                  setMultiViewMode(false)
+                }}
+                className="relative bg-gray-900 rounded-lg overflow-hidden"
+              >
+                {/* Stream Thumbnail / Placeholder */}
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-pink-900/50">
+                  {stream.user.image ? (
+                    <Image src={stream.user.image} alt={stream.user.name || ''} fill className="object-cover opacity-40" />
+                  ) : null}
+                  <div className="relative z-10 flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-white/30 overflow-hidden">
+                      {stream.user.image ? (
+                        <Image src={stream.user.image} alt="" width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-white font-bold text-lg">{(stream.user.name || '?')[0]}</span>
+                      )}
+                    </div>
+                    <p className="text-white text-xs font-medium truncate max-w-[100px]">{stream.user.name || 'Yayıncı'}</p>
+                  </div>
+                </div>
+                
+                {/* Live badge */}
+                <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-500/90 px-2 py-0.5 rounded-full">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  <span className="text-white text-[10px] font-bold">CANLI</span>
+                </div>
+                
+                {/* Stats */}
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full">
+                    <Users className="w-3 h-3 text-white" />
+                    <span className="text-white text-[10px]">{stream.viewerCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full">
+                    <Heart className="w-3 h-3 text-pink-400" fill="#ec4899" />
+                    <span className="text-white text-[10px]">{stream.likeCount}</span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                {stream.title && (
+                  <div className="absolute top-2 right-2 bg-black/60 px-2 py-0.5 rounded-full">
+                    <span className="text-white text-[10px] truncate max-w-[80px] block">{stream.title}</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          {/* Close multi-view button */}
+          <div className="absolute top-3 right-3 z-30">
+            <button 
+              onClick={() => setMultiViewMode(false)}
+              className="bg-black/60 backdrop-blur-md rounded-full p-2 border border-white/20"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+          
+          {/* Start Stream button */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
+            <button
+              onClick={handleStartStream}
+              className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-pink-500/30"
+            >
+              <Plus className="w-5 h-5" />
+              Yayın Başlat
+            </button>
+          </div>
+
+          {streams.length > 4 && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30">
+              <p className="text-white/50 text-xs">+{streams.length - 4} daha fazla yayın</p>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           {/* TikTok-style 2x2 Grid Mode - Co-broadcast */}
@@ -1455,6 +1568,25 @@ function VideoStreamPageInner() {
               </div>
             )}
             
+            {/* Multi-View Toggle */}
+            {streams.length > 1 && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { 
+                    e.stopPropagation()
+                    setMultiViewMode(!multiViewMode)
+                  }}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg ${
+                    multiViewMode ? 'bg-gradient-to-br from-pink-500 to-fuchsia-600 shadow-pink-500/30' : 'bg-white/20'
+                  }`}
+                >
+                  <Grid className="w-5 h-5 text-white" />
+                </motion.button>
+                <span className="text-white text-[10px] mt-0.5">Çoklu</span>
+              </div>
+            )}
+
             {/* Sound Toggle - Red if muted, Green if unmuted */}
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -1568,6 +1700,14 @@ function VideoStreamPageInner() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* PK Battle Overlay */}
+          {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && currentStream && (
+            <PKBattleOverlay
+              battle={pkBattle}
+              currentStreamId={currentStream.id}
+            />
+          )}
 
           {/* Floating Hearts Animation */}
           <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">

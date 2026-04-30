@@ -45,9 +45,11 @@ import {
   Crown,
   Shield,
   UserCheck,
-  UserX
+  UserX,
+  Swords
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import PKBattleOverlay from '@/components/pk-battle-overlay'
 
 interface Comment {
   id: string
@@ -193,6 +195,17 @@ export default function BroadcastPage() {
   } | null>(null)
   // Muted viewers
   const [mutedViewers, setMutedViewers] = useState<Set<string>>(new Set())
+  // PK Battle state
+  const [pkBattle, setPkBattle] = useState<{
+    id: string; stream1Id: string; stream2Id: string; user1Id: string; user2Id: string;
+    score1: number; score2: number; status: string; duration: number;
+    startedAt: string | null; endedAt: string | null; winnerId: string | null;
+    user1?: { id: string; name: string | null; image: string | null } | null;
+    user2?: { id: string; name: string | null; image: string | null } | null;
+  } | null>(null)
+  const [showPKModal, setShowPKModal] = useState(false)
+  const [pkDuration, setPkDuration] = useState(180)
+  const [pendingPKRequest, setPendingPKRequest] = useState<typeof pkBattle>(null)
 
 
   const localVideoRef = useRef<HTMLDivElement>(null)
@@ -244,6 +257,7 @@ export default function BroadcastPage() {
         fetchNotifications()
         fetchModerators()
         fetchFortuneRequesters()
+        fetchPKBattle()
       }
     }, 1000)
 
@@ -366,6 +380,105 @@ export default function BroadcastPage() {
         setViewers(await res.json())
       }
     } catch (e) {}
+  }
+
+  // PK Battle functions
+  const fetchPKBattle = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/pk?streamId=${streamId}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data) {
+          setPkBattle(data)
+          // Show pending PK request popup if we're the target
+          if (data.status === 'pending' && data.user2Id === session?.user?.id) {
+            setPendingPKRequest(data)
+          }
+          // Auto-end PK if time is up
+          if (data.status === 'active' && data.startedAt) {
+            const elapsed = (Date.now() - new Date(data.startedAt).getTime()) / 1000
+            if (elapsed >= data.duration) {
+              fetch('/api/video-streams/pk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'end', battleId: data.id })
+              }).catch(() => {})
+            }
+          }
+        } else {
+          setPkBattle(null)
+          setPendingPKRequest(null)
+        }
+      }
+    } catch {}
+  }
+
+  const handleStartPK = async (targetStreamId: string) => {
+    try {
+      const res = await fetch('/api/video-streams/pk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', streamId, targetStreamId, duration: pkDuration })
+      })
+      if (res.ok) {
+        setShowPKModal(false)
+        setShowLiveBroadcasters(false)
+        addToast('info', 'PK isteği gönderildi! ⚔️')
+      } else {
+        const data = await res.json()
+        addToast('error', data.error || 'PK başlatılamadı')
+      }
+    } catch { addToast('error', 'PK başlatılamadı') }
+  }
+
+  const handleAcceptPK = async () => {
+    if (!pendingPKRequest) return
+    try {
+      const res = await fetch('/api/video-streams/pk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept', battleId: pendingPKRequest.id })
+      })
+      if (res.ok) {
+        setPendingPKRequest(null)
+        addToast('success', 'PK başladı! ⚔️')
+      }
+    } catch {}
+  }
+
+  const handleRejectPK = async () => {
+    if (!pendingPKRequest) return
+    try {
+      await fetch('/api/video-streams/pk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', battleId: pendingPKRequest.id })
+      })
+      setPendingPKRequest(null)
+    } catch {}
+  }
+
+  const handleCancelPK = async () => {
+    if (!pkBattle) return
+    try {
+      await fetch('/api/video-streams/pk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', battleId: pkBattle.id })
+      })
+      setPkBattle(null)
+    } catch {}
+  }
+
+  const handleEndPK = async () => {
+    if (!pkBattle) return
+    try {
+      await fetch('/api/video-streams/pk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'end', battleId: pkBattle.id })
+      })
+    } catch {}
   }
 
   const fetchLiveBroadcasters = async () => {
@@ -1474,6 +1587,17 @@ export default function BroadcastPage() {
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
           
+          {/* PK Battle Button */}
+          {!isCohost && (
+            <button 
+              onClick={() => { setShowPKModal(true); setShowLiveBroadcasters(true) }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${pkBattle?.status === 'active' ? 'bg-gradient-to-r from-red-500 to-orange-500 animate-pulse' : pkBattle?.status === 'pending' ? 'bg-yellow-500' : 'bg-white/20'}`}
+              title="PK Battle"
+            >
+              <Swords className="w-5 h-5 text-white" />
+            </button>
+          )}
+          
           {/* Image Mode Toggle */}
           <button 
             onClick={handleToggleImageMode} 
@@ -1938,6 +2062,153 @@ export default function BroadcastPage() {
                   {'Bitir'}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PK Battle Overlay */}
+      {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && (
+        <PKBattleOverlay
+          battle={pkBattle}
+          currentStreamId={streamId}
+          onEnd={handleEndPK}
+        />
+      )}
+
+      {/* PK Request Popup (incoming) */}
+      <AnimatePresence>
+        {pendingPKRequest && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-br from-red-900/95 to-orange-900/95 backdrop-blur-xl rounded-3xl p-6 w-full max-w-sm text-center border border-yellow-500/30"
+            >
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mx-auto mb-4"
+              >
+                <Swords className="w-10 h-10 text-white" />
+              </motion.div>
+              
+              <h2 className="text-xl font-bold text-white mb-2">PK İsteği! ⚔️</h2>
+              
+              <div className="flex items-center justify-center gap-3 mb-4">
+                {pendingPKRequest.user1?.image ? (
+                  <Image src={pendingPKRequest.user1.image} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center border-2 border-yellow-500">
+                    <span className="text-white font-bold text-lg">{(pendingPKRequest.user1?.name || '?')[0]}</span>
+                  </div>
+                )}
+                <span className="text-yellow-400 font-bold text-lg">{pendingPKRequest.user1?.name || 'Yayıncı'}</span>
+              </div>
+              
+              <p className="text-white/70 text-sm mb-4">
+                sizi {Math.floor(pendingPKRequest.duration / 60)} dakikalık PK&apos;ya davet ediyor!
+              </p>
+              
+              <div className="flex gap-3">
+                <button onClick={handleRejectPK} className="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold hover:bg-white/20 transition">
+                  Reddet
+                </button>
+                <button onClick={handleAcceptPK} className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 text-white py-3 rounded-xl font-bold hover:from-red-600 hover:to-orange-600 transition">
+                  Kabul Et ⚔️
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PK Modal - Select broadcaster to challenge */}
+      <AnimatePresence>
+        {showPKModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 flex items-end z-50"
+            onClick={() => setShowPKModal(false)}
+          >
+            <motion.div
+              initial={{ y: 300 }}
+              animate={{ y: 0 }}
+              exit={{ y: 300 }}
+              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-3xl p-6 w-full max-h-[70vh] overflow-y-auto border-t border-yellow-500/30"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Swords className="w-5 h-5 text-yellow-400" /> PK Başlat
+                </h3>
+                <button onClick={() => setShowPKModal(false)} className="text-white/60"><X className="w-5 h-5" /></button>
+              </div>
+              
+              {/* PK Duration selector */}
+              <div className="flex gap-2 mb-4">
+                {[60, 180, 300, 600].map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setPkDuration(d)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${pkDuration === d ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white' : 'bg-white/10 text-white/60'}`}
+                  >
+                    {d >= 60 ? `${Math.floor(d / 60)} dk` : `${d} sn`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active PK status */}
+              {pkBattle && (pkBattle.status === 'pending' || pkBattle.status === 'active') && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-4">
+                  <p className="text-yellow-400 text-sm font-medium mb-2">
+                    {pkBattle.status === 'pending' ? '⏳ PK isteği bekleniyor...' : '⚔️ PK devam ediyor!'}
+                  </p>
+                  <button onClick={pkBattle.status === 'pending' ? handleCancelPK : handleEndPK} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-red-500/30 transition">
+                    {pkBattle.status === 'pending' ? 'İptal Et' : 'PK Bitir'}
+                  </button>
+                </div>
+              )}
+              
+              {/* Live broadcasters list */}
+              <p className="text-white/40 text-xs mb-3">Canlı yayıncıları seçerek PK başlatın:</p>
+              {liveBroadcasters.filter(b => b.userId !== session?.user?.id).length === 0 ? (
+                <p className="text-white/40 text-sm text-center py-8">Şu an başka canlı yayıncı yok</p>
+              ) : (
+                <div className="space-y-2">
+                  {liveBroadcasters.filter(b => b.userId !== session?.user?.id).map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => handleStartPK(b.id)}
+                      disabled={!!pkBattle && (pkBattle.status === 'pending' || pkBattle.status === 'active')}
+                      className="w-full flex items-center gap-3 bg-white/5 hover:bg-white/10 rounded-xl p-3 transition disabled:opacity-40"
+                    >
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-red-500 shrink-0">
+                        {b.user.image ? (
+                          <Image src={b.user.image} alt="" fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-white font-bold">{(b.user.name || '?')[0]}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-white font-medium text-sm truncate">{b.user.name || 'Yayıncı'}</p>
+                        <p className="text-white/40 text-xs">{b.viewerCount} izleyici · {b.title || 'Canlı Yayın'}</p>
+                      </div>
+                      <div className="bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-lg">
+                        <Swords className="w-4 h-4 text-white" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

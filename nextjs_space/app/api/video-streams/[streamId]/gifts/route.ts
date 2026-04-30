@@ -221,10 +221,33 @@ export async function POST(
       giftType.icon, giftType.name, totalPrice, giftType.id
     ).catch(err => console.error('Stream gift announcement error:', err))
 
+    // PK Battle: update scores if stream is in an active PK
+    let pkUpdate = null
+    try {
+      const activePK = await prisma.pKBattle.findFirst({
+        where: {
+          OR: [
+            { stream1Id: params.streamId },
+            { stream2Id: params.streamId }
+          ],
+          status: 'active'
+        }
+      })
+      if (activePK && !senderExcluded) {
+        const isStream1 = activePK.stream1Id === params.streamId
+        const updated = await prisma.pKBattle.update({
+          where: { id: activePK.id },
+          data: isStream1 ? { score1: { increment: totalPrice } } : { score2: { increment: totalPrice } }
+        })
+        pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
+      }
+    } catch (pkErr) { console.error('PK score update error:', pkErr) }
+
     return NextResponse.json({
       success: true,
       gift,
-      newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice
+      newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice,
+      pkUpdate
     })
   } catch (error) {
     console.error('Error sending gift:', error)
