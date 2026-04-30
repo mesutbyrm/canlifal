@@ -229,6 +229,71 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    if (section === 'daily-revenue') {
+      // Son 30 günlük günlük gelir trendi
+      const excludedUserIds = await getExcludedUserIds()
+      const excludeUserFilter = excludedUserIds.length > 0 ? { userId: { notIn: excludedUserIds } } : {}
+      const excludeSenderFilter = excludedUserIds.length > 0 ? { senderId: { notIn: excludedUserIds } } : {}
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      thirtyDaysAgo.setHours(0, 0, 0, 0)
+
+      // Günlük jeton harcama (negatif transactions) - raw SQL for groupBy date
+      const dailySpend = (await prisma.$queryRawUnsafe(`
+        SELECT DATE(created_at) as date, SUM(ABS(amount)) as total
+        FROM jeton_transactions 
+        WHERE amount < 0 AND created_at >= $1
+        ${excludedUserIds.length > 0 ? `AND user_id NOT IN (${excludedUserIds.map(id => `'${id}'`).join(',')})` : ''}
+        GROUP BY DATE(created_at) ORDER BY date ASC
+      `, thirtyDaysAgo).catch(() => [])) as any[]
+
+      // Günlük jeton gelir (pozitif transactions)
+      const dailyIncome = (await prisma.$queryRawUnsafe(`
+        SELECT DATE(created_at) as date, SUM(amount) as total
+        FROM jeton_transactions 
+        WHERE amount > 0 AND created_at >= $1
+        ${excludedUserIds.length > 0 ? `AND user_id NOT IN (${excludedUserIds.map(id => `'${id}'`).join(',')})` : ''}
+        GROUP BY DATE(created_at) ORDER BY date ASC
+      `, thirtyDaysAgo).catch(() => [])) as any[]
+
+      // Günlük TRY gelir (ödemeler)
+      const dailyPayments = (await prisma.$queryRawUnsafe(`
+        SELECT DATE(created_at) as date, SUM(amount) as total, COUNT(*) as count
+        FROM payments 
+        WHERE status = 'completed' AND created_at >= $1
+        GROUP BY DATE(created_at) ORDER BY date ASC
+      `, thirtyDaysAgo).catch(() => [])) as any[]
+
+      // Son 30 gün tarih listesi oluştur
+      const days: { date: string; jetonSpend: number; jetonIncome: number; tryRevenue: number; paymentCount: number }[] = []
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const dateStr = d.toISOString().split('T')[0]
+        const spend = dailySpend.find((r: any) => {
+          const rDate = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0]
+          return rDate === dateStr
+        })
+        const income = dailyIncome.find((r: any) => {
+          const rDate = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0]
+          return rDate === dateStr
+        })
+        const payment = dailyPayments.find((r: any) => {
+          const rDate = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0]
+          return rDate === dateStr
+        })
+        days.push({
+          date: dateStr,
+          jetonSpend: spend ? Number(spend.total) : 0,
+          jetonIncome: income ? Number(income.total) : 0,
+          tryRevenue: payment ? Number(payment.total) : 0,
+          paymentCount: payment ? Number(payment.count) : 0,
+        })
+      }
+
+      return NextResponse.json({ days })
+    }
+
     if (section === 'commission-settings') {
       // Fetch all commission-related platform settings
       const keys = [

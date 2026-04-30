@@ -3,6 +3,7 @@ import MobileFooter from '@/components/mobile-footer'
 import StarBackground from '@/components/star-background'
 import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
 import PresenceTracker from '@/components/presence-tracker'
+import OnboardingTour from '@/components/onboarding-tour'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import LoginAnnouncementBanner from '@/components/login-announcement-banner'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
@@ -23,6 +24,9 @@ export default function LangLayout({
         
         {/* Silent presence tracker for online users */}
         <PresenceTracker />
+        
+        {/* Onboarding tour for first-time users */}
+        <OnboardingTour />
         
         {/* Navbar first */}
         <Navbar />

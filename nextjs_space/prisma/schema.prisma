@@ -200,6 +200,10 @@ model LiveFortuneTeller {
   canEditProfile    Boolean            @default(true)
   canViewEarnings   Boolean            @default(true)
   canWithdraw       Boolean            @default(false)
+  // Kimlik doğrulama
+  verificationDocUrl String?
+  verificationStatus String             @default("none") // none, pending, approved, rejected
+  verificationNote   String?
   maxSessionsPerDay Int                @default(10)
   commissionRate    Int                @default(20)
   adminNotes        String?
@@ -2415,3 +2419,54 @@ model AgencyPenalty {
   @@index([isActive])
   @@map("agency_penalties")
 }
+
+// Haftalık Turnuva Sistemi
+model WeeklyTournament {
+  id          String   @id @default(cuid())
+  weekStart   DateTime
+  weekEnd     DateTime
+  type        String   @default("jeton_spend") // jeton_spend, session_count, gift_sent, fortune_count
+  title       String
+  description String?
+  status      String   @default("active") // active, completed
+  rewards     String?  // JSON: [{ rank: 1, prize: 500 }, ...]
+  createdAt   DateTime @default(now())
+
+  entries     WeeklyTournamentEntry[]
+
+  @@unique([weekStart, type])
+  @@index([status])
+  @@map("weekly_tournaments")
+}
+
+model WeeklyTournamentEntry {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  score        Int      @default(0)
+  rank         Int?
+  rewarded     Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  tournament   WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+  @@index([userId])
+  @@map("weekly_tournament_entries")
+}
+
+// Favori Falcılar
+model FavoriteTeller {
+  id        String   @id @default(cuid())
+  userId    String
+  tellerId  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tellerId])
+  @@index([userId])
+  @@index([tellerId])
+  @@map("favorite_tellers")
+}
+

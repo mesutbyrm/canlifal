@@ -4,6 +4,7 @@ import prisma from '@/lib/db'
 import { sendNotificationEmail, getWelcomeEmailHtml, getNewUserSignupEmailHtml } from '@/lib/email-service'
 import { randomBytes } from 'crypto'
 import { logActivity } from '@/lib/activity-logger'
+import { authLimiter } from '@/lib/rate-limiter'
 
 // Dynamic values from platform_settings, loaded per request
 async function getPlatformSetting(key: string, defaultVal: number): Promise<number> {
@@ -19,6 +20,13 @@ function generateReferralCode(): string {
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+    const { success: rateLimitOk } = authLimiter.check(`signup:${ip}`)
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Çok fazla istek. Lütfen biraz bekleyin.' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { email, password, name, preferredLanguage, referralCode, username, birthDate, birthTime } = body
 

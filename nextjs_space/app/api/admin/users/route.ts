@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const role = searchParams.get('role')
     const membership = searchParams.get('membership')
+    const segment = searchParams.get('segment') || 'all'
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortDir = searchParams.get('sortDir') || 'desc'
 
     const where: any = {}
     
@@ -36,6 +39,47 @@ export async function GET(request: NextRequest) {
       where.membership = membership
     }
 
+    // Segment filtreleri
+    const now = new Date()
+    if (segment === 'active') {
+      // Son 7 günde aktif
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      where.lastActiveAt = { gte: weekAgo }
+    } else if (segment === 'passive') {
+      // 30 günden fazla aktif olmayan veya hiç aktif olmamış
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      where.OR = [
+        ...(where.OR || []),
+        { lastActiveAt: { lt: monthAgo } },
+        { lastActiveAt: null },
+      ]
+      if (!search) delete where.OR // merge issue fix
+      if (segment === 'passive') {
+        where.AND = [
+          ...(where.AND || []),
+          { OR: [{ lastActiveAt: { lt: monthAgo } }, { lastActiveAt: null }] },
+        ]
+        if (search) {
+          where.AND.push({ OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } },
+          ]})
+          delete where.OR
+        }
+      }
+    } else if (segment === 'vip') {
+      // VIP veya premium üyelik
+      where.membership = { in: ['vip', 'premium', 'elite'] }
+    } else if (segment === 'new') {
+      // Son 7 günde kayıt
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      where.createdAt = { gte: weekAgo }
+    } else if (segment === 'spender') {
+      // Yüksek harcama yapanlar (10000+ jeton toplam harcama)
+      where.jetonBalance = { gte: 1000 }
+    }
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -49,6 +93,8 @@ export async function GET(request: NextRequest) {
           jetonBalance: true,
           role: true,
           membership: true,
+          level: true,
+          lastActiveAt: true,
           createdAt: true,
           _count: {
             select: {
@@ -56,18 +102,29 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sortBy]: sortDir === 'asc' ? 'asc' : 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
       prisma.user.count({ where })
     ])
 
+    // Segment counts
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const [totalAll, activeCount, newCount, vipCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { lastActiveAt: { gte: weekAgo } } }),
+      prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.user.count({ where: { membership: { in: ['vip', 'premium', 'elite'] } } }),
+    ])
+
     return NextResponse.json({
       users,
       total,
       page,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      segmentCounts: { all: totalAll, active: activeCount, new: newCount, vip: vipCount, passive: totalAll - activeCount },
     })
   } catch (error) {
     console.error('Error fetching users:', error)

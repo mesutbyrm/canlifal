@@ -140,6 +140,11 @@ export default function AdminFinancePage() {
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([])
   const [searching, setSearching] = useState(false)
 
+  // Daily revenue chart
+  const [dailyRevenue, setDailyRevenue] = useState<{ date: string; jetonSpend: number; jetonIncome: number; tryRevenue: number; paymentCount: number }[]>([])
+  const [chartRange, setChartRange] = useState<'week' | 'month'>('month')
+  const [chartMetric, setChartMetric] = useState<'jetonSpend' | 'jetonIncome' | 'tryRevenue'>('jetonSpend')
+
   // User profile popup
   const [userProfile, setUserProfile] = useState<UserFinancialProfile | null>(null)
   const [userProfileLoading, setUserProfileLoading] = useState(false)
@@ -166,7 +171,15 @@ export default function AdminFinancePage() {
       const res = await fetch(url)
       const data = await res.json()
 
-      if (tab === 'overview') setOverview(data)
+      if (tab === 'overview') {
+        setOverview(data)
+        // Also fetch daily revenue chart data
+        try {
+          const chartRes = await fetch('/api/admin/finance?section=daily-revenue')
+          const chartData = await chartRes.json()
+          if (chartData.days) setDailyRevenue(chartData.days)
+        } catch (e) { console.error('Chart fetch error:', e) }
+      }
       else if (tab === 'commission-settings') setCommissionSettings(data)
       else if (tab === 'gift-history') setGiftHistory(data.gifts || [])
       else if (tab === 'top-jeton-holders' || tab === 'top-cfc-holders') setHolders(data)
@@ -354,7 +367,7 @@ export default function AdminFinancePage() {
         ) : (
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-              {activeTab === 'overview' && overview && <OverviewSection data={overview} formatNumber={formatNumber} formatCurrency={formatCurrency} onAdjustProfit={() => setShowProfitAdjust(true)} />}
+              {activeTab === 'overview' && overview && <OverviewSection data={overview} formatNumber={formatNumber} formatCurrency={formatCurrency} onAdjustProfit={() => setShowProfitAdjust(true)} dailyRevenue={dailyRevenue} chartRange={chartRange} setChartRange={setChartRange} chartMetric={chartMetric} setChartMetric={setChartMetric} />}
               {activeTab === 'commission-settings' && commissionSettings && <CommissionSettingsSection settings={commissionSettings} onUpdate={() => fetchData('commission-settings')} />}
               {activeTab === 'gift-history' && <GiftHistorySection gifts={giftHistory} formatNumber={formatNumber} formatDate={formatDate} ClickableUser={ClickableUser} />}
               {activeTab === 'top-earners' && <EarnersSection data={rankedUsers} formatNumber={formatNumber} ClickableUser={ClickableUser} onAdjust={(u) => setAdjustModal({ user: u.user })} />}
@@ -573,10 +586,26 @@ export default function AdminFinancePage() {
 
 // ========= Sub Components =========
 
-function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }: { data: OverviewData; formatNumber: (n: number) => string; formatCurrency: (n: number) => string; onAdjustProfit: () => void }) {
+function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit, dailyRevenue, chartRange, setChartRange, chartMetric, setChartMetric }: { 
+  data: OverviewData; formatNumber: (n: number) => string; formatCurrency: (n: number) => string; onAdjustProfit: () => void;
+  dailyRevenue: { date: string; jetonSpend: number; jetonIncome: number; tryRevenue: number; paymentCount: number }[];
+  chartRange: 'week' | 'month'; setChartRange: (v: 'week' | 'month') => void;
+  chartMetric: 'jetonSpend' | 'jetonIncome' | 'tryRevenue'; setChartMetric: (v: 'jetonSpend' | 'jetonIncome' | 'tryRevenue') => void;
+}) {
   const isProfit = data.platformProfit >= 0
   const bd = data.breakdown
   const cm = data.commissions
+
+  // Chart data
+  const chartData = chartRange === 'week' ? dailyRevenue.slice(-7) : dailyRevenue
+  const maxChartVal = Math.max(...chartData.map(d => d[chartMetric]), 1)
+  const chartTotal = chartData.reduce((s, d) => s + d[chartMetric], 0)
+  const metricLabels: Record<string, { label: string; color: string; unit: string }> = {
+    jetonSpend: { label: 'Jeton Harcama', color: 'bg-red-500', unit: 'jeton' },
+    jetonIncome: { label: 'Jeton Gelir', color: 'bg-green-500', unit: 'jeton' },
+    tryRevenue: { label: 'TRY Gelir', color: 'bg-blue-500', unit: '₺' },
+  }
+  const ml = metricLabels[chartMetric]
 
   // Jeton harcama türleri label map
   const spendLabels: Record<string, string> = {
@@ -627,6 +656,66 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit }:
         <StatCard icon={<Wallet className="w-5 h-5 text-purple-400" />} label="Komisyon Geliri" value={formatNumber(data.totalCommission) + ' jeton'} color="purple" />
         <StatCard icon={<Award className="w-5 h-5 text-cyan-400" />} label="Siteye Kalan Jeton" value={formatNumber(data.platformProfit) + ' jeton'} color={isProfit ? 'green' : 'red'} />
       </div>
+
+      {/* 📊 Günlük Gelir/Gider Grafiği */}
+      {dailyRevenue.length > 0 && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 className="text-sm font-bold text-purple-200 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-purple-400" /> Günlük Gelir Trendi
+            </h3>
+            <div className="flex gap-1">
+              {(['jetonSpend', 'jetonIncome', 'tryRevenue'] as const).map(m => (
+                <button key={m} onClick={() => setChartMetric(m)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${chartMetric === m ? 'bg-purple-600/50 text-purple-200 border border-purple-400/30' : 'bg-white/5 text-gray-500 border border-white/5 hover:bg-white/10'}`}>
+                  {metricLabels[m].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-2xl font-bold text-white">
+                {ml.unit === '₺' ? `₺${formatNumber(chartTotal)}` : `${formatNumber(chartTotal)} ${ml.unit}`}
+              </p>
+              <p className="text-[10px] text-gray-500">Son {chartRange === 'week' ? '7 gün' : '30 gün'} toplam</p>
+            </div>
+            <div className="flex gap-1">
+              {(['week', 'month'] as const).map(r => (
+                <button key={r} onClick={() => setChartRange(r)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${chartRange === r ? 'bg-white/10 text-white border border-white/20' : 'bg-white/5 text-gray-500 border border-white/5 hover:bg-white/10'}`}>
+                  {r === 'week' ? '7 Gün' : '30 Gün'}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Bar Chart */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[9px] text-gray-600 px-1">
+              <span>{formatNumber(maxChartVal)}</span>
+              <span>{formatNumber(Math.floor(maxChartVal / 2))}</span>
+              <span>0</span>
+            </div>
+            <div className="flex items-end gap-[2px]" style={{ height: '140px' }}>
+              {chartData.map((d, i) => {
+                const h = maxChartVal > 0 ? (d[chartMetric] / maxChartVal) * 100 : 0
+                const dayLabel = new Date(d.date + 'T12:00:00').toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/90 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      {dayLabel}: {ml.unit === '₺' ? `₺${formatNumber(d[chartMetric])}` : `${formatNumber(d[chartMetric])}`}
+                    </div>
+                    <div className={`w-full rounded-t-sm ${ml.color} opacity-80 group-hover:opacity-100 transition-all min-h-[2px]`} style={{ height: `${Math.max(h, 2)}%` }} />
+                    {(chartRange === 'week' || i % 5 === 0 || i === chartData.length - 1) && (
+                      <span className="text-[7px] text-gray-600 mt-1 leading-none">{dayLabel}</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Jeton Harcama Kaynakları Detaylı */}
       {bd && (

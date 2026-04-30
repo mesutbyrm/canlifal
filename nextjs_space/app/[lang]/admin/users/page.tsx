@@ -102,6 +102,8 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [membershipFilter, setMembershipFilter] = useState<string>('all')
+  const [segmentFilter, setSegmentFilter] = useState<string>('all')
+  const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   
@@ -145,7 +147,7 @@ export default function AdminUsersPage() {
       return
     }
     fetchUsers()
-  }, [session, page, searchQuery, roleFilter, membershipFilter])
+  }, [session, page, searchQuery, roleFilter, membershipFilter, segmentFilter])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -156,12 +158,14 @@ export default function AdminUsersPage() {
         ...(searchQuery && { search: searchQuery }),
         ...(roleFilter !== 'all' && { role: roleFilter }),
         ...(membershipFilter !== 'all' && { membership: membershipFilter }),
+        ...(segmentFilter !== 'all' && { segment: segmentFilter }),
       })
       const res = await fetch(`/api/admin/users?${params}`)
       if (res.ok) {
         const data = await res.json()
         setUsers(data.users || data)
         setTotalPages(data.totalPages || 1)
+        if (data.segmentCounts) setSegmentCounts(data.segmentCounts)
       }
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -485,6 +489,25 @@ export default function AdminUsersPage() {
           <button onClick={() => fetchUsers()} className="p-2 text-purple-300 hover:text-white">
             <RefreshCw className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Segment Pills */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          {[
+            { key: 'all', label: 'Tümü', icon: '👥', color: 'purple' },
+            { key: 'active', label: 'Aktif', icon: '🟢', color: 'green' },
+            { key: 'passive', label: 'Pasif', icon: '😴', color: 'gray' },
+            { key: 'vip', label: 'VIP', icon: '👑', color: 'yellow' },
+            { key: 'new', label: 'Yeni', icon: '🆕', color: 'blue' },
+          ].map(seg => (
+            <button key={seg.key} onClick={() => { setSegmentFilter(seg.key); setPage(1) }}
+              className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
+                segmentFilter === seg.key ? 'bg-purple-600/50 text-white border border-purple-400/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+              }`}>
+              <span>{seg.icon}</span> {seg.label}
+              {segmentCounts[seg.key] !== undefined && <span className="text-[10px] opacity-70">({segmentCounts[seg.key]})</span>}
+            </button>
+          ))}
         </div>
 
         {/* Filters */}
