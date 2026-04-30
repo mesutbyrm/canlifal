@@ -196,6 +196,8 @@ function VideoStreamPageInner() {
   const [multiViewStreams, setMultiViewStreams] = useState<string[]>([])
   const [multiViewClients, setMultiViewClients] = useState<Map<string, IAgoraRTCClient>>(new Map())
   const multiViewRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
+  // Admin PK tap counter - every 3 taps = 3 PK points (only during active PK)
+  const pkTapCountRef = useRef(0)
   const lastTapRef = useRef(0)
   const guestTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastFortuneStatusRef = useRef<string | null>(null)
@@ -582,6 +584,10 @@ function VideoStreamPageInner() {
       const res = await fetch(`/api/video-streams/pk?streamId=${streamId}`)
       if (res.ok) {
         const data = await res.json()
+        // Reset tap counter when PK status changes (starts/ends)
+        if (data?.status !== pkBattle?.status) {
+          pkTapCountRef.current = 0
+        }
         setPkBattle(data || null)
       }
     } catch {}
@@ -731,6 +737,22 @@ function VideoStreamPageInner() {
     
     // Add floating heart at tap position
     addFloatingHeart(tapX)
+    
+    // Admin PK tap scoring: every 3 taps = 3 PK points (only during active PK)
+    const userRole = (session?.user as any)?.role
+    const isAdmin = userRole === 'admin' || userRole === 'yonetici'
+    if (isAdmin && pkBattle?.status === 'active' && currentStream) {
+      pkTapCountRef.current += 1
+      if (pkTapCountRef.current >= 3) {
+        pkTapCountRef.current = 0
+        // Send 3 PK points via API
+        fetch('/api/video-streams/pk/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ battleId: pkBattle.id, streamId: currentStream.id, points: 3 })
+        }).catch(() => {})
+      }
+    }
     
     // Send like to server (both logged-in users and guests can like)
     try {
