@@ -12,13 +12,17 @@ export async function GET(req: NextRequest) {
     const streamId = searchParams.get('streamId')
     if (!streamId) return NextResponse.json({ error: 'streamId gerekli' }, { status: 400 })
 
+    // Include recently completed battles (last 5 min) so PK result screen stays visible
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
     const battle = await prisma.pKBattle.findFirst({
       where: {
-        OR: [
-          { stream1Id: streamId },
-          { stream2Id: streamId }
-        ],
-        status: { in: ['pending', 'active'] }
+        AND: [
+          { OR: [{ stream1Id: streamId }, { stream2Id: streamId }] },
+          { OR: [
+            { status: { in: ['pending', 'active'] } },
+            { status: 'completed', endedAt: { gte: fiveMinAgo } }
+          ]}
+        ]
       },
       orderBy: { createdAt: 'desc' }
     })

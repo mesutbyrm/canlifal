@@ -181,6 +181,14 @@ export async function POST(
       }).catch(err => console.error('[Stream Gift] Agency commission error:', err))
     }
 
+    // Update lastGiftAt for auto-close tracking
+    txOps.push(
+      prisma.videoStream.update({
+        where: { id: params.streamId },
+        data: { lastGiftAt: new Date() }
+      })
+    )
+
     const [gift] = await prisma.$transaction(txOps)
 
     // Log gift activity

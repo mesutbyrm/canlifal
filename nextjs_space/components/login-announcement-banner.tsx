@@ -227,6 +227,9 @@ export default function LoginAnnouncementBanner() {
   const [trigger, setTrigger] = useState(0)
   const [showBanaOzel, setShowBanaOzel] = useState(false)
   const initializedRef = useRef(false)
+  const [announcementEnabled, setAnnouncementEnabled] = useState(true)
+  const [announcementDuration, setAnnouncementDuration] = useState(2) // seconds
+  const [announcementStyle, setAnnouncementStyle] = useState<'fade' | 'slide' | 'flash'>('fade')
 
   // Load seen IDs from sessionStorage on mount
   useEffect(() => {
@@ -235,6 +238,28 @@ export default function LoginAnnouncementBanner() {
       const sessionSeen = getSessionSeenIds()
       sessionSeen.forEach(id => seenIdsRef.current.add(id))
     }
+  }, [])
+
+  // Fetch announcement display settings from platform settings
+  useEffect(() => {
+    const fetchAnnouncementSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/settings')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.entry_announcement_enabled !== undefined) {
+            setAnnouncementEnabled(data.entry_announcement_enabled === 'true')
+          }
+          if (data.entry_announcement_duration) {
+            setAnnouncementDuration(parseInt(data.entry_announcement_duration) || 2)
+          }
+          if (data.entry_announcement_style) {
+            setAnnouncementStyle(data.entry_announcement_style as 'fade' | 'slide' | 'flash')
+          }
+        }
+      } catch {}
+    }
+    fetchAnnouncementSettings()
   }, [])
 
   const fetchAnnouncements = useCallback(async () => {
@@ -291,15 +316,15 @@ export default function LoginAnnouncementBanner() {
     }
 
     if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
-    // Flash for 1 second then move to next pass
+    // Show for announcementDuration seconds then move to next pass
     animationTimerRef.current = setTimeout(() => {
       setPassCount(prev => prev + 1)
-    }, 1000)
+    }, announcementDuration * 1000)
 
     return () => {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
     }
-  }, [isAnimating, currentAnnouncement, passCount])
+  }, [isAnimating, currentAnnouncement, passCount, announcementDuration])
 
   // Cleanup old seen IDs (keep in sync with sessionStorage)
   useEffect(() => {
@@ -313,6 +338,7 @@ export default function LoginAnnouncementBanner() {
     return () => clearInterval(cleanup)
   }, [])
 
+  if (!announcementEnabled) return null
   if (!currentAnnouncement || passCount >= (currentAnnouncement.maxPasses || 1)) return null
 
   const colors = getTeamColors(currentAnnouncement.color)
@@ -357,12 +383,12 @@ export default function LoginAnnouncementBanner() {
         }}
       />
 
-      {/* Flash/fade content - centered */}
+      {/* Animated content - centered */}
       <div
         key={`${currentAnnouncement.id}-pass-${passCount}`}
         className="absolute inset-0 flex items-center justify-center whitespace-nowrap px-4"
         style={{
-          animation: 'loginBannerFlash 1s ease-in-out forwards',
+          animation: `loginBanner${announcementStyle === 'slide' ? 'Slide' : announcementStyle === 'flash' ? 'FlashBright' : 'Flash'} ${announcementDuration}s ease-in-out forwards`,
         }}
       >
         <span className="inline-flex items-center gap-3 max-w-full overflow-hidden" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
@@ -384,9 +410,23 @@ export default function LoginAnnouncementBanner() {
       <style jsx>{`
         @keyframes loginBannerFlash {
           0% { opacity: 0; transform: scale(0.95); }
-          15% { opacity: 1; transform: scale(1); }
+          10% { opacity: 1; transform: scale(1); }
           85% { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0.95); }
+        }
+        @keyframes loginBannerSlide {
+          0% { opacity: 0; transform: translateY(-100%); }
+          10% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-100%); }
+        }
+        @keyframes loginBannerFlashBright {
+          0% { opacity: 0; transform: scale(1.2); filter: brightness(2); }
+          10% { opacity: 1; transform: scale(1); filter: brightness(1.5); }
+          20% { filter: brightness(1); }
+          80% { opacity: 1; filter: brightness(1); }
+          90% { filter: brightness(1.5); }
+          100% { opacity: 0; transform: scale(1.1); filter: brightness(2); }
         }
         @keyframes loginBannerBgShift {
           0% { background-position: 0% 0; }

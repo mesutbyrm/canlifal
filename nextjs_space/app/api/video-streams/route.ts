@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { sendOneSignalPushToMany } from '@/lib/onesignal'
 import { logActivity } from '@/lib/activity-logger'
+import { getPlatformSetting } from '@/lib/agency-commission'
 
 /**
  * Notify all followers of a user that they went live.
@@ -129,6 +130,34 @@ export async function POST(request: NextRequest) {
         error: 'ACCOUNT_RESTRICTED',
         message: 'Your live fortune teller account is currently restricted'
       }, { status: 403 })
+    }
+
+    // Check cooldown: if user's last stream was auto-closed, enforce cooldown period
+    const cooldownStr = await getPlatformSetting('stream_reopen_cooldown', '30')
+    const cooldownMinutes = parseInt(cooldownStr) || 30
+    
+    if (cooldownMinutes > 0) {
+      const lastAutoClosedStream = await prisma.videoStream.findFirst({
+        where: {
+          userId: session.user.id,
+          autoClosedAt: { not: null }
+        },
+        orderBy: { autoClosedAt: 'desc' },
+        select: { autoClosedAt: true }
+      })
+
+      if (lastAutoClosedStream?.autoClosedAt) {
+        const cooldownMs = cooldownMinutes * 60 * 1000
+        const elapsed = Date.now() - new Date(lastAutoClosedStream.autoClosedAt).getTime()
+        if (elapsed < cooldownMs) {
+          const remainingMin = Math.ceil((cooldownMs - elapsed) / 60000)
+          return NextResponse.json({
+            error: 'COOLDOWN_ACTIVE',
+            message: `Yayınınız otomatik kapatıldığı için ${remainingMin} dakika daha beklemeniz gerekiyor.`,
+            remainingMinutes: remainingMin
+          }, { status: 429 })
+        }
+      }
     }
 
     const { title, description, category } = await request.json()

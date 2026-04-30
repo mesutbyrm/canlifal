@@ -45,6 +45,11 @@ interface PlatformSettings {
   ad_daily_limit_registered: string
   ad_daily_limit_unregistered: string
   ad_credits_per_watch: string
+  stream_no_gift_timeout: string
+  stream_reopen_cooldown: string
+  entry_announcement_enabled: string
+  entry_announcement_duration: string
+  entry_announcement_style: string
 }
 
 export default function AdminSettingsPage() {
@@ -70,7 +75,12 @@ export default function AdminSettingsPage() {
     support_email: '',
     ad_daily_limit_registered: '10',
     ad_daily_limit_unregistered: '10',
-    ad_credits_per_watch: '5'
+    ad_credits_per_watch: '5',
+    stream_no_gift_timeout: '15',
+    stream_reopen_cooldown: '30',
+    entry_announcement_enabled: 'true',
+    entry_announcement_duration: '2',
+    entry_announcement_style: 'fade'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -323,6 +333,30 @@ export default function AdminSettingsPage() {
       icon: Coins,
       min: 1,
       max: 100
+    },
+    {
+      key: 'stream_no_gift_timeout',
+      label: 'Hediye Zaman Aşımı (dk)',
+      description: 'Bu süre boyunca hediye gelmezse yayın otomatik kapanır',
+      icon: Timer,
+      min: 1,
+      max: 120
+    },
+    {
+      key: 'stream_reopen_cooldown',
+      label: 'Yayın Tekrar Açma Bekleme (dk)',
+      description: 'Otomatik kapanan yayın için tekrar açabilme bekleme süresi',
+      icon: Clock,
+      min: 0,
+      max: 1440
+    },
+    {
+      key: 'entry_announcement_duration',
+      label: 'Giriş Duyurusu Süresi (sn)',
+      description: 'Giriş duyurusu ekranda kalma süresi (saniye)',
+      icon: Timer,
+      min: 1,
+      max: 10
     },
   ]
 
@@ -641,6 +675,54 @@ export default function AdminSettingsPage() {
               </div>
             </motion.div>
           ))}
+
+          {/* Entry Announcement Toggle & Style */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-fuchsia-500/20 p-6 space-y-4"
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">📢 Giriş Duyurusu Ayarları</h3>
+            <p className="text-sm text-fuchsia-400 mb-4">Kullanıcı giriş duyurularının görünüm ayarları</p>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Durum:</span>
+                <button
+                  onClick={() => {
+                    const newVal = settings.entry_announcement_enabled === 'true' ? 'false' : 'true'
+                    setSettings(prev => ({ ...prev, entry_announcement_enabled: newVal }))
+                    saveSetting('entry_announcement_enabled', newVal)
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    settings.entry_announcement_enabled === 'true'
+                      ? 'bg-green-600/20 border-green-500/30 text-green-300'
+                      : 'bg-red-600/20 border-red-500/30 text-red-300'
+                  }`}
+                >
+                  {settings.entry_announcement_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}
+                </button>
+              </div>
+
+              {/* Display Style Select */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Stil:</span>
+                <select
+                  value={settings.entry_announcement_style}
+                  onChange={(e) => {
+                    setSettings(prev => ({ ...prev, entry_announcement_style: e.target.value }))
+                    saveSetting('entry_announcement_style', e.target.value)
+                  }}
+                  className="px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm"
+                >
+                  <option value="fade">Belir & Kaybol</option>
+                  <option value="slide">Yukarıdan Kayma</option>
+                  <option value="flash">Parlak Flash</option>
+                </select>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

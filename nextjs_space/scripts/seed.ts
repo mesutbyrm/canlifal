@@ -1109,6 +1109,23 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Profile frames seeded!')
 
+  // Seed stream auto-close and announcement settings
+  const streamSettings = [
+    { key: 'stream_no_gift_timeout', value: '15', description: 'Hediye gelmezse yayını otomatik kapatma süresi (dakika)' },
+    { key: 'stream_reopen_cooldown', value: '30', description: 'Otomatik kapanan yayın tekrar açma bekleme süresi (dakika)' },
+    { key: 'entry_announcement_enabled', value: 'true', description: 'Giriş duyurularının gösterilip gösterilmeyeceği' },
+    { key: 'entry_announcement_duration', value: '2', description: 'Giriş duyurusu gösterim süresi (saniye)' },
+    { key: 'entry_announcement_style', value: 'fade', description: 'Giriş duyurusu gösterim stili (fade, slide, flash)' },
+  ]
+  for (const s of streamSettings) {
+    await prisma.platformSettings.upsert({
+      where: { key: s.key },
+      update: {},
+      create: s,
+    })
+  }
+  console.log('Stream & announcement settings seeded!')
+
   console.log('Seed completed successfully!')
 }
 

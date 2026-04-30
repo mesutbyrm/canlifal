@@ -206,6 +206,9 @@ export default function BroadcastPage() {
   const [showPKModal, setShowPKModal] = useState(false)
   const [pkDuration, setPkDuration] = useState(180)
   const [pendingPKRequest, setPendingPKRequest] = useState<typeof pkBattle>(null)
+  // Auto-close state
+  const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null)
+  const autoCloseCheckRef = useRef<NodeJS.Timeout | null>(null)
 
 
   const localVideoRef = useRef<HTMLDivElement>(null)
@@ -947,6 +950,43 @@ export default function BroadcastPage() {
     router.push(`/`)
   }
 
+  // Auto-close check: poll every 30s to see if no gift timeout exceeded
+  const checkAutoClose = async () => {
+    try {
+      const res = await fetch(`/api/video-streams/${streamId}/auto-close`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.shouldClose) {
+          // Show warning then auto-close
+          setAutoCloseWarning(data.message)
+          // Wait 5 seconds then actually close
+          setTimeout(async () => {
+            try {
+              await fetch(`/api/video-streams/${streamId}/auto-close`, { method: 'POST' })
+            } catch {}
+            cleanup()
+            router.push('/')
+          }, 5000)
+        } else if (data.remainingMinutes !== undefined && data.remainingMinutes <= 3) {
+          setAutoCloseWarning(`⏰ ${data.remainingMinutes} dakika içinde hediye gelmezse yayın kapanacak!`)
+        } else {
+          setAutoCloseWarning(null)
+        }
+      }
+    } catch {}
+  }
+
+  // Start auto-close check interval
+  useEffect(() => {
+    if (!session?.user) return
+    // Check every 30 seconds
+    checkAutoClose()
+    autoCloseCheckRef.current = setInterval(checkAutoClose, 30000)
+    return () => {
+      if (autoCloseCheckRef.current) clearInterval(autoCloseCheckRef.current)
+    }
+  }, [session, streamId])
+
   const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
   const formatCount = (n: number) => n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
 
@@ -970,6 +1010,14 @@ export default function BroadcastPage() {
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
+      {/* Auto-close warning banner */}
+      {autoCloseWarning && (
+        <div className="absolute top-16 left-2 right-2 z-50 animate-pulse">
+          <div className="bg-red-600/90 backdrop-blur-sm border border-red-400/50 rounded-xl px-4 py-3 text-white text-sm font-medium text-center shadow-lg shadow-red-500/30">
+            ⚠️ {autoCloseWarning}
+          </div>
+        </div>
+      )}
       {/* Main broadcaster video is always fullscreen */}
       {isCohost ? (
         <>
@@ -1503,6 +1551,17 @@ export default function BroadcastPage() {
                           )
                         )}
                         
+                        {/* Invite as guest co-broadcaster */}
+                        {viewer.odUserId && !coBroadcasters.some(cb => cb.userId === viewer.odUserId && (cb.status === 'invited' || cb.status === 'active')) && activeGuests.length < MAX_GUESTS && (
+                          <DropdownMenu.Item
+                            onClick={() => viewer.odUserId && handleInviteCoBroadcast(viewer.odUserId)}
+                            className="flex items-center gap-2 px-3 py-2 text-fuchsia-400 text-sm rounded cursor-pointer hover:bg-white/10"
+                          >
+                            <Video className="w-4 h-4" />
+                            {'Misafir Davet Et'}
+                          </DropdownMenu.Item>
+                        )}
+
                         {/* Ban */}
                         <DropdownMenu.Item
                           onClick={() => viewer.odUserId && handleBanUser(viewer.odUserId)}
@@ -2174,6 +2233,17 @@ export default function BroadcastPage() {
                   </p>
                   <button onClick={pkBattle.status === 'pending' ? handleCancelPK : handleEndPK} className="bg-red-500/20 text-red-400 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-red-500/30 transition">
                     {pkBattle.status === 'pending' ? 'İptal Et' : 'PK Bitir'}
+                  </button>
+                </div>
+              )}
+              {/* Completed PK status - user can dismiss */}
+              {pkBattle && pkBattle.status === 'completed' && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
+                  <p className="text-green-400 text-sm font-medium mb-2">
+                    🏆 PK tamamlandı! {pkBattle.score1} - {pkBattle.score2}
+                  </p>
+                  <button onClick={() => setPkBattle(null)} className="bg-white/10 text-white/70 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-white/20 transition">
+                    Sonucu Kapat
                   </button>
                 </div>
               )}

@@ -53,7 +53,6 @@ export default function PKBattleOverlay({ battle, currentStreamId, onEnd }: PKBa
       setTimeLeft(remaining)
 
       if (remaining <= 0 && battle.status === 'active') {
-        setShowResult(true)
         onEnd?.()
       }
     }
