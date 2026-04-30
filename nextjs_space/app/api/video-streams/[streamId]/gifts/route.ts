@@ -233,7 +233,7 @@ export async function POST(
           status: 'active'
         }
       })
-      if (activePK && !senderExcluded) {
+      if (activePK) {
         const isStream1 = activePK.stream1Id === params.streamId
         const updated = await prisma.pKBattle.update({
           where: { id: activePK.id },

@@ -291,9 +291,10 @@ export default function LoginAnnouncementBanner() {
     }
 
     if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
+    // Flash for 1 second then move to next pass
     animationTimerRef.current = setTimeout(() => {
       setPassCount(prev => prev + 1)
-    }, 6000)
+    }, 1000)
 
     return () => {
       if (animationTimerRef.current) clearTimeout(animationTimerRef.current)
@@ -356,35 +357,36 @@ export default function LoginAnnouncementBanner() {
         }}
       />
 
-      {/* Scrolling content - right to left */}
+      {/* Flash/fade content - centered */}
       <div
         key={`${currentAnnouncement.id}-pass-${passCount}`}
-        className="absolute whitespace-nowrap flex items-center h-full"
+        className="absolute inset-0 flex items-center justify-center whitespace-nowrap px-4"
         style={{
-          animation: 'loginBannerScroll 6s linear forwards',
+          animation: 'loginBannerFlash 1s ease-in-out forwards',
         }}
       >
-        <span className="inline-flex items-center gap-3" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
-          <span style={{ fontSize: '20px', animation: 'loginPulse 1s ease-in-out infinite' }}>{colors.emoji}</span>
-          <span style={{
+        <span className="inline-flex items-center gap-3 max-w-full overflow-hidden" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
+          <span style={{ fontSize: '20px' }}>{colors.emoji}</span>
+          <span className="truncate" style={{
             background: colors.text,
             backgroundSize: '200% 100%',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            animation: 'loginTextShift 3s linear infinite',
             filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
           }}>
             {currentAnnouncement.message}
           </span>
-          <span style={{ fontSize: '20px', animation: 'loginPulse 1s ease-in-out infinite', animationDelay: '0.5s' }}>{colors.emoji}</span>
+          <span style={{ fontSize: '20px' }}>{colors.emoji}</span>
         </span>
       </div>
 
       <style jsx>{`
-        @keyframes loginBannerScroll {
-          0% { transform: translateX(100vw); }
-          100% { transform: translateX(-100%); }
+        @keyframes loginBannerFlash {
+          0% { opacity: 0; transform: scale(0.95); }
+          15% { opacity: 1; transform: scale(1); }
+          85% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.95); }
         }
         @keyframes loginBannerBgShift {
           0% { background-position: 0% 0; }
