@@ -42,21 +42,25 @@ export async function POST(req: NextRequest) {
     // Get user balance
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, credits: true, jetonBalance: true }
+      select: { id: true, credits: true, jetonBalance: true, role: true }
     })
 
     if (!user) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    // Check balance
-    if (paymentType === 'jeton') {
-      if ((user.jetonBalance ?? 0) < cost) {
-        return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
-      }
-    } else {
-      if ((user.credits ?? 0) < cost) {
-        return NextResponse.json({ error: 'insufficient_cfc', message: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+    const isStaff = user.role === 'admin' || user.role === 'yonetici'
+
+    // Check balance (staff skip)
+    if (!isStaff) {
+      if (paymentType === 'jeton') {
+        if ((user.jetonBalance ?? 0) < cost) {
+          return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
+        }
+      } else {
+        if ((user.credits ?? 0) < cost) {
+          return NextResponse.json({ error: 'insufficient_cfc', message: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+        }
       }
     }
 
@@ -70,28 +74,29 @@ export async function POST(req: NextRequest) {
       counter++
     }
 
-    // Deduct balance and create room
-    if (paymentType === 'jeton') {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { jetonBalance: { decrement: cost } }
-      })
-      // Record transaction
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: user.id,
-          amount: -cost,
-          type: 'spend',
-          description: `Sohbet odası oluşturma: ${name}`,
-          balanceBefore: user.jetonBalance ?? 0,
-          balanceAfter: (user.jetonBalance ?? 0) - cost
-        }
-      })
-    } else {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { credits: { decrement: cost } }
-      })
+    // Deduct balance and create room (staff skip payment)
+    if (!isStaff) {
+      if (paymentType === 'jeton') {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { jetonBalance: { decrement: cost } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: user.id,
+            amount: -cost,
+            type: 'spend',
+            description: `Sohbet odası oluşturma: ${name}`,
+            balanceBefore: user.jetonBalance ?? 0,
+            balanceAfter: (user.jetonBalance ?? 0) - cost
+          }
+        })
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { credits: { decrement: cost } }
+        })
+      }
     }
 
     // Create the room

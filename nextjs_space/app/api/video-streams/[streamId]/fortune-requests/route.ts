@@ -114,10 +114,11 @@ export async function POST(
     // Check user's jeton balance
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true }
+      select: { jetonBalance: true, role: true }
     })
+    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
     
-    if (!user || user.jetonBalance < fortuneType.jetonCost) {
+    if (!user || (!isStaff && user.jetonBalance < fortuneType.jetonCost)) {
       return NextResponse.json({ 
         error: 'Yetersiz jeton bakiyesi', 
         errorEn: 'Insufficient jeton balance',
@@ -126,12 +127,17 @@ export async function POST(
       }, { status: 400 })
     }
     
-    // Deduct jetons and create request in a transaction
-    const [updatedUser, fortuneRequest] = await prisma.$transaction([
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { jetonBalance: { decrement: fortuneType.jetonCost } }
-      }),
+    // Create request (and deduct jetons for non-staff)
+    const txOps: any[] = []
+    if (!isStaff) {
+      txOps.push(
+        prisma.user.update({
+          where: { id: session.user.id },
+          data: { jetonBalance: { decrement: fortuneType.jetonCost } }
+        })
+      )
+    }
+    txOps.push(
       prisma.streamFortuneRequest.upsert({
         where: {
           streamId_userId: {
@@ -144,7 +150,7 @@ export async function POST(
           nickname: nickname || null,
           isHidden: isHidden || false,
           question: question || null,
-          jetonAmount: fortuneType.jetonCost,
+          jetonAmount: isStaff ? 0 : fortuneType.jetonCost,
           status: 'pending',
           refundedAt: null
         },
@@ -155,14 +161,16 @@ export async function POST(
           nickname: nickname || null,
           isHidden: isHidden || false,
           question: question || null,
-          jetonAmount: fortuneType.jetonCost
+          jetonAmount: isStaff ? 0 : fortuneType.jetonCost
         }
       })
-    ])
+    )
+    const txResult = await prisma.$transaction(txOps)
+    const fortuneRequest = txResult[txResult.length - 1]
     
     return NextResponse.json({
       ...fortuneRequest,
-      newBalance: updatedUser.jetonBalance
+      newBalance: isStaff ? (user.jetonBalance ?? 0) : (user.jetonBalance ?? 0) - fortuneType.jetonCost
     })
   } catch (error) {
     console.error('Error creating fortune request:', error)

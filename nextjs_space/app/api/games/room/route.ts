@@ -25,14 +25,17 @@ export async function POST(req: NextRequest) {
     const gridSize = gameType === 'xox' && reqGridSize ? Math.max(3, Math.min(30, Math.floor(reqGridSize))) : undefined
 
     if (amount > 0) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true } })
+      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true, role: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
-      if (currency === 'CFC' && user.credits < amount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
-      if (currency === 'JETON' && user.jetonBalance < amount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: currency === 'CFC' ? { credits: { decrement: amount } } : { jetonBalance: { decrement: amount } },
-      })
+      const gameStaff = user.role === 'admin' || user.role === 'yonetici'
+      if (!gameStaff) {
+        if (currency === 'CFC' && user.credits < amount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+        if (currency === 'JETON' && user.jetonBalance < amount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: currency === 'CFC' ? { credits: { decrement: amount } } : { jetonBalance: { decrement: amount } },
+        })
+      }
     }
 
     const initialState = getInitialState(gameType, gridSize ? { gridSize } : undefined)

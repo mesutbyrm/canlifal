@@ -29,47 +29,44 @@ export async function POST(req: NextRequest) {
     // Get the user
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true, credits: true, membership: true, membershipExpiresAt: true }
+      select: { jetonBalance: true, credits: true, membership: true, membershipExpiresAt: true, role: true }
     })
 
     if (!user) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    // Allow payment with jeton or CFC
-    if (method === 'cfc') {
-      if (user.credits < plan.price) {
-        return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
-      }
+    const isStaff = user.role === 'admin' || user.role === 'yonetici'
 
-      // Deduct CFC
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { credits: { decrement: plan.price } }
-      })
-    } else {
-      // Jeton payment
-      if (user.jetonBalance < plan.price) {
-        return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
-      }
-
-      // Deduct jetons
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { jetonBalance: { decrement: plan.price } }
-      })
-
-      // Record jeton transaction
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: session.user.id,
-          amount: -plan.price,
-          type: 'spend',
-          description: `${plan.name} üyelik satın alındı`,
-          balanceBefore: user.jetonBalance,
-          balanceAfter: user.jetonBalance - plan.price
+    // Allow payment with jeton or CFC (staff skip payment)
+    if (!isStaff) {
+      if (method === 'cfc') {
+        if (user.credits < plan.price) {
+          return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         }
-      })
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { credits: { decrement: plan.price } }
+        })
+      } else {
+        if (user.jetonBalance < plan.price) {
+          return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
+        }
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { jetonBalance: { decrement: plan.price } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: session.user.id,
+            amount: -plan.price,
+            type: 'spend',
+            description: `${plan.name} üyelik satın alındı`,
+            balanceBefore: user.jetonBalance,
+            balanceAfter: user.jetonBalance - plan.price
+          }
+        })
+      }
     }
 
     // Calculate expiration date

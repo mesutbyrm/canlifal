@@ -32,9 +32,10 @@ export async function POST(req: NextRequest) {
     // Check jeton balance
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { jetonBalance: true, zodiacSign: true, risingSign: true, name: true, birthDate: true },
+      select: { jetonBalance: true, zodiacSign: true, risingSign: true, name: true, birthDate: true, role: true },
     })
-    if (!user || user.jetonBalance < JETON_COST) {
+    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
+    if (!user || (!isStaff && user.jetonBalance < JETON_COST)) {
       return NextResponse.json({ error: `Yetersiz jeton. Bu işlem ${JETON_COST} jeton gerektirir.`, jetonRequired: JETON_COST }, { status: 402 })
     }
 
@@ -103,26 +104,26 @@ Kurallar:
 
     const interpretation = completion.choices[0]?.message?.content || 'Yorum oluşturulamadı.'
 
-    // Deduct jetons
-    await prisma.user.update({
-      where: { id: userId },
-      data: { jetonBalance: { decrement: JETON_COST } },
-    })
-
-    // Log jeton transaction
-    try {
-      await prisma.jetonTransaction.create({
-        data: {
-          userId,
-          amount: -JETON_COST,
-          type: 'spend',
-          description: 'Kişiselleştirilmiş rüya yorumu',
-          balanceBefore: user.jetonBalance,
-          balanceAfter: user.jetonBalance - JETON_COST,
-        },
+    // Deduct jetons (staff skip)
+    if (!isStaff) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { jetonBalance: { decrement: JETON_COST } },
       })
-    } catch (e) {
-      console.error('Jeton transaction log error:', e)
+      try {
+        await prisma.jetonTransaction.create({
+          data: {
+            userId,
+            amount: -JETON_COST,
+            type: 'spend',
+            description: 'Kişiselleştirilmiş rüya yorumu',
+            balanceBefore: user.jetonBalance,
+            balanceAfter: user.jetonBalance - JETON_COST,
+          },
+        })
+      } catch (e) {
+        console.error('Jeton transaction log error:', e)
+      }
     }
 
     // Auto-share to social feed
@@ -151,8 +152,8 @@ Kurallar:
       interpretation,
       socialPostId,
       sharedToSocial: !!socialPostId,
-      jetonSpent: JETON_COST,
-      jetonBalance: user.jetonBalance - JETON_COST,
+      jetonSpent: isStaff ? 0 : JETON_COST,
+      jetonBalance: isStaff ? user.jetonBalance : user.jetonBalance - JETON_COST,
       isPersonalized: !!(user.zodiacSign || recentDiaries.length > 0),
     })
   } catch (error) {

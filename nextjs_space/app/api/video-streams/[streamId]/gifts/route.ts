@@ -108,10 +108,12 @@ export async function POST(
     // Check user jeton balance (stream gifts require jetons)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true }
+      select: { jetonBalance: true, role: true }
     })
 
-    if (!user || (user.jetonBalance ?? 0) < totalPrice) {
+    // Staff kullanıcılar (admin/yonetici) sınırsız bakiyeye sahiptir
+    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
+    if (!isStaff && (!user || (user.jetonBalance ?? 0) < totalPrice)) {
       return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
     }
 
@@ -135,18 +137,24 @@ export async function POST(
           senderId: session.user.id,
           giftTypeId,
           quantity,
-          totalPrice
+          totalPrice: senderExcluded ? 0 : totalPrice
         },
         include: {
           sender: { select: { name: true, image: true } },
           giftType: true
         }
       }),
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { jetonBalance: { decrement: totalPrice } }
-      }),
     ]
+
+    // Staff kullanıcılardan jeton düşülmez (sınırsız bakiye)
+    if (!senderExcluded) {
+      txOps.push(
+        prisma.user.update({
+          where: { id: session.user.id },
+          data: { jetonBalance: { decrement: totalPrice } }
+        })
+      )
+    }
 
     // Sadece normal kullanıcıların hediyeleri yayıncıya bakiye olarak yansır
     if (!senderExcluded) {
@@ -216,7 +224,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       gift,
-      newBalance: (user.jetonBalance ?? 0) - totalPrice
+      newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice
     })
   } catch (error) {
     console.error('Error sending gift:', error)

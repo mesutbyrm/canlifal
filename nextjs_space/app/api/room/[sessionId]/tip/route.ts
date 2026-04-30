@@ -42,8 +42,15 @@ export async function POST(
       return NextResponse.json({ error: 'Sadece kullanıcı bahşiş verebilir' }, { status: 403 });
     }
 
-    // Check jeton balance
-    if ((liveSession.user.jetonBalance ?? 0) < amount) {
+    // Check if tipper is staff
+    const tipperUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    });
+    const tipperIsStaff = tipperUser?.role === 'admin' || tipperUser?.role === 'yonetici';
+
+    // Check jeton balance (staff skip)
+    if (!tipperIsStaff && (liveSession.user.jetonBalance ?? 0) < amount) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
     }
 
@@ -55,8 +62,8 @@ export async function POST(
     const commissionAmount = Math.floor(amount * commissionRate / 100);
     const tellerEarnings = amount - commissionAmount;
 
-    // Process agency commission if teller's user is in an agency
-    if (tellerEarnings > 0) {
+    // Process agency commission if teller's user is in an agency (staff skip financial)
+    if (!tipperIsStaff && tellerEarnings > 0) {
       processAgencyCommission({
         userId: liveSession.teller.userId || '',
         earnedAmount: tellerEarnings,
@@ -66,17 +73,7 @@ export async function POST(
     }
 
     // Transaction: deduct jetons, add to teller earnings, create system messages
-    await prisma.$transaction([
-      // Deduct jetons from user
-      prisma.user.update({
-        where: { id: liveSession.userId },
-        data: { jetonBalance: { decrement: amount } }
-      }),
-      // Add earnings to teller
-      prisma.liveFortuneTeller.update({
-        where: { id: liveSession.tellerId },
-        data: { totalEarnings: { increment: tellerEarnings } }
-      }),
+    const tipTx: any[] = [
       // Create tip message for teller (shows popup on teller's screen)
       prisma.liveSessionMessage.create({
         data: {
@@ -93,7 +90,20 @@ export async function POST(
           message: `[TIP_THANKS:${amount}:${liveSession.teller.user.name || 'Falcı'}]`
         }
       })
-    ]);
+    ];
+    if (!tipperIsStaff) {
+      tipTx.unshift(
+        prisma.user.update({
+          where: { id: liveSession.userId },
+          data: { jetonBalance: { decrement: amount } }
+        }),
+        prisma.liveFortuneTeller.update({
+          where: { id: liveSession.tellerId },
+          data: { totalEarnings: { increment: tellerEarnings } }
+        })
+      );
+    }
+    await prisma.$transaction(tipTx);
 
     // Get updated balance
     const updatedUser = await prisma.user.findUnique({

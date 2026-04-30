@@ -14,6 +14,17 @@ export function isYonetici(role: string | undefined | null): boolean {
   return role === 'yonetici';
 }
 
+/**
+ * Staff users whose spending should NOT affect financials.
+ * - No jeton/CFC deducted from them (unlimited balance)
+ * - No earnings credited to recipients
+ * - No agency commission, no teller earnings
+ * - Gift animations/notifications still fire normally
+ */
+export function isStaffSpender(role: string | undefined | null): boolean {
+  return FULL_ADMIN_ROLES.includes(role as any);
+}
+
 export const ROLE_LABELS: Record<string, string> = {
   user: 'Kullanıcı',
   moderator: 'Moderatör',

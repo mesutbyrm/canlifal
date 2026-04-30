@@ -105,13 +105,14 @@ export async function POST(req: NextRequest) {
 
     const sender = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, username: true, credits: true, jetonBalance: true }
+      select: { id: true, name: true, username: true, credits: true, jetonBalance: true, role: true }
     })
 
     if (!sender) {
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
 
+    const isStaff = sender.role === 'admin' || sender.role === 'yonetici'
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
 
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
       }
 
       const senderJetons = sender.jetonBalance ?? 0
-      if (senderJetons < giftType.price) {
+      if (!isStaff && senderJetons < giftType.price) {
         return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
 
@@ -133,23 +134,23 @@ export async function POST(req: NextRequest) {
       const commissionAmount = directGiftCommPercent > 0 ? Math.floor(giftType.price * directGiftCommPercent / 100) : 0
       const recipientAmount = giftType.price - commissionAmount
 
-      // Deduct jetons from sender
-      await prisma.user.update({
-        where: { id: sender.id },
-        data: { jetonBalance: { decrement: giftType.price } }
-      })
-
-      // Record jeton transaction for sender
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: sender.id,
-          amount: -giftType.price,
-          type: 'gift_sent',
-          description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi`,
-          balanceBefore: senderJetons,
-          balanceAfter: senderJetons - giftType.price
-        }
-      })
+      // Deduct jetons from sender (staff skip)
+      if (!isStaff) {
+        await prisma.user.update({
+          where: { id: sender.id },
+          data: { jetonBalance: { decrement: giftType.price } }
+        })
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: sender.id,
+            amount: -giftType.price,
+            type: 'gift_sent',
+            description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi`,
+            balanceBefore: senderJetons,
+            balanceAfter: senderJetons - giftType.price
+          }
+        })
+      }
 
       // Credit recipient (minus commission) - sadece normal kullanıcılardan
       if (!senderExcluded && recipientAmount > 0) {
@@ -229,21 +230,34 @@ export async function POST(req: NextRequest) {
         requestedAmount: amount
       })
 
-      if (senderJetonBalance < amount) {
+      if (!isStaff && senderJetonBalance < amount) {
         return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
-
-      // Deduct from sender
-      await prisma.user.update({
-        where: { id: sender.id },
-        data: { jetonBalance: { decrement: amount } }
-      })
 
       // Get configurable commission for jeton transfers (default 0%)
       const jetonTransferCommStr = await getPlatformSetting('jeton_transfer_commission', '0')
       const jetonTransferCommPercent = Math.min(100, Math.max(0, parseInt(jetonTransferCommStr) || 0))
       const jetonCommission = jetonTransferCommPercent > 0 ? Math.floor(amount * jetonTransferCommPercent / 100) : 0
       const jetonRecipientAmount = amount - jetonCommission
+
+      if (!isStaff) {
+        // Deduct from sender
+        await prisma.user.update({
+          where: { id: sender.id },
+          data: { jetonBalance: { decrement: amount } }
+        })
+        // Record sender transaction
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: sender.id,
+            amount: -amount,
+            type: 'spend',
+            description: `${recipient.name} kişisine ${amount} jeton gönderildi`,
+            balanceBefore: sender.jetonBalance,
+            balanceAfter: (sender.jetonBalance ?? 0) - amount
+          }
+        })
+      }
 
       // Add to recipient - sadece normal kullanıcılardan
       if (!senderExcluded && jetonRecipientAmount > 0) {
@@ -260,28 +274,19 @@ export async function POST(req: NextRequest) {
         }).catch(err => console.error('[Jeton Transfer] Agency commission error:', err))
       }
 
-      // Record jeton transactions
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: sender.id,
-          amount: -amount,
-          type: 'spend',
-          description: `${recipient.name} kişisine ${amount} jeton gönderildi`,
-          balanceBefore: sender.jetonBalance,
-          balanceAfter: sender.jetonBalance - amount
-        }
-      })
-
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: recipient.id,
-          amount: amount,
-          type: 'purchase',
-          description: `${sender.name} kişisinden ${amount} jeton hediye alındı`,
-          balanceBefore: 0, // we don't know recipient balance easily
-          balanceAfter: 0
-        }
-      })
+      // Record recipient transaction (only if not excluded)
+      if (!senderExcluded) {
+        await prisma.jetonTransaction.create({
+          data: {
+            userId: recipient.id,
+            amount: amount,
+            type: 'purchase',
+            description: `${sender.name} kişisinden ${amount} jeton hediye alındı`,
+            balanceBefore: 0,
+            balanceAfter: 0
+          }
+        })
+      }
 
       // Send notification
       createNotificationWithPush({

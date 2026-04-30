@@ -45,16 +45,17 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Get sender
     const sender = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, credits: true, jetonBalance: true }
+      select: { id: true, name: true, credits: true, jetonBalance: true, role: true }
     })
     if (!sender) {
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
 
     const price = giftType.price
+    const isStaff = sender.role === 'admin' || sender.role === 'yonetici'
 
-    // Check jeton balance
-    if ((sender.jetonBalance ?? 0) < price) {
+    // Check jeton balance (staff skip)
+    if (!isStaff && (sender.jetonBalance ?? 0) < price) {
       return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
     }
 
@@ -78,22 +79,23 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
 
-    // Deduct jetons from sender
-    await prisma.user.update({
-      where: { id: sender.id },
-      data: { jetonBalance: { decrement: price } }
-    })
-    // Record jeton transaction for sender
-    await prisma.jetonTransaction.create({
-      data: {
-        userId: sender.id,
-        amount: -price,
-        type: 'gift_sent',
-        description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
-        balanceBefore: sender.jetonBalance ?? 0,
-        balanceAfter: (sender.jetonBalance ?? 0) - price
-      }
-    })
+    // Deduct jetons from sender (staff skip - unlimited balance)
+    if (!isStaff) {
+      await prisma.user.update({
+        where: { id: sender.id },
+        data: { jetonBalance: { decrement: price } }
+      })
+      await prisma.jetonTransaction.create({
+        data: {
+          userId: sender.id,
+          amount: -price,
+          type: 'gift_sent',
+          description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
+          balanceBefore: sender.jetonBalance ?? 0,
+          balanceAfter: (sender.jetonBalance ?? 0) - price
+        }
+      })
+    }
     // Add jetons to recipient (minus commission) - sadece normal kullanıcılardan
     if (recipientAmount > 0 && !senderExcluded) {
       const recipientBefore = recipient.jetonBalance ?? 0

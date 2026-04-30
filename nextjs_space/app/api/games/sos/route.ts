@@ -25,24 +25,25 @@ export async function POST(req: NextRequest) {
     if (amount > 0) {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { credits: true, jetonBalance: true, name: true }
+        select: { credits: true, jetonBalance: true, name: true, role: true }
       })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+      const sosStaff = user.role === 'admin' || user.role === 'yonetici'
 
-      if (currency === 'CFC' && user.credits < amount) {
-        return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+      if (!sosStaff) {
+        if (currency === 'CFC' && user.credits < amount) {
+          return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+        }
+        if (currency === 'JETON' && user.jetonBalance < amount) {
+          return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
+        }
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: currency === 'CFC'
+            ? { credits: { decrement: amount } }
+            : { jetonBalance: { decrement: amount } }
+        })
       }
-      if (currency === 'JETON' && user.jetonBalance < amount) {
-        return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
-      }
-
-      // Deduct bet from player 1
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: currency === 'CFC'
-          ? { credits: { decrement: amount } }
-          : { jetonBalance: { decrement: amount } }
-      })
     }
 
     // Create empty board

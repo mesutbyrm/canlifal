@@ -93,7 +93,7 @@ export async function PATCH(
 
     const liveSession = await prisma.liveSession.findUnique({
       where: { id: params.sessionId },
-      include: { teller: true, user: true }
+      include: { teller: true, user: { select: { id: true, name: true, email: true, image: true, role: true, jetonBalance: true, credits: true, membership: true } } }
     });
 
     if (!liveSession) {
@@ -102,6 +102,7 @@ export async function PATCH(
 
     const isUser = liveSession.userId === session.user.id;
     const isTeller = liveSession.teller.userId === session.user.id;
+    const sessionUserIsStaff = liveSession.user.role === 'admin' || liveSession.user.role === 'yonetici';
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -175,33 +176,39 @@ export async function PATCH(
         // Check user jetons
         const currentUser = await prisma.user.findUnique({
           where: { id: liveSession.userId },
-          select: { jetonBalance: true }
+          select: { jetonBalance: true, role: true }
         });
+        const addUserIsStaff = currentUser?.role === 'admin' || currentUser?.role === 'yonetici';
 
-        if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
+        if (!currentUser || (!addUserIsStaff && (currentUser.jetonBalance ?? 0) < jetonsNeeded)) {
           return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok' }, { status: 400 });
         }
 
-        // Deduct jetons and add time
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: liveSession.userId },
-            data: { jetonBalance: { decrement: jetonsNeeded } }
-          }),
+        // Deduct jetons and add time (staff skip deduction)
+        const addTimeTx: any[] = [
           prisma.liveSession.update({
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: addMinutes },
-              creditsCharged: { increment: jetonsNeeded }
+              creditsCharged: addUserIsStaff ? undefined : { increment: jetonsNeeded }
             }
           })
-        ]);
+        ];
+        if (!addUserIsStaff) {
+          addTimeTx.unshift(
+            prisma.user.update({
+              where: { id: liveSession.userId },
+              data: { jetonBalance: { decrement: jetonsNeeded } }
+            })
+          );
+        }
+        await prisma.$transaction(addTimeTx);
 
         return NextResponse.json({ 
           added: addMinutes, 
-          jetonsUsed: jetonsNeeded,
+          jetonsUsed: addUserIsStaff ? 0 : jetonsNeeded,
           newMaxMinutes: liveSession.maxMinutes + addMinutes,
-          userJetonsRemaining: (currentUser.jetonBalance ?? 0) - jetonsNeeded
+          userJetonsRemaining: addUserIsStaff ? (currentUser.jetonBalance ?? 0) : (currentUser.jetonBalance ?? 0) - jetonsNeeded
         });
       }
 
@@ -218,34 +225,40 @@ export async function PATCH(
         const jetonsNeeded = extendMinutes * sessionRate;
 
         // Get latest user jeton balance
-        const currentUser = await prisma.user.findUnique({
+        const extUser = await prisma.user.findUnique({
           where: { id: liveSession.userId },
-          select: { jetonBalance: true }
+          select: { jetonBalance: true, role: true }
         });
+        const extUserIsStaff = extUser?.role === 'admin' || extUser?.role === 'yonetici';
 
-        if (!currentUser || (currentUser.jetonBalance ?? 0) < jetonsNeeded) {
+        if (!extUser || (!extUserIsStaff && (extUser.jetonBalance ?? 0) < jetonsNeeded)) {
           return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 });
         }
 
-        // Deduct jetons and extend time
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: liveSession.userId },
-            data: { jetonBalance: { decrement: jetonsNeeded } }
-          }),
+        // Deduct jetons and extend time (staff skip deduction)
+        const extTx: any[] = [
           prisma.liveSession.update({
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: extendMinutes },
-              creditsCharged: { increment: jetonsNeeded }
+              creditsCharged: extUserIsStaff ? undefined : { increment: jetonsNeeded }
             }
           })
-        ]);
+        ];
+        if (!extUserIsStaff) {
+          extTx.unshift(
+            prisma.user.update({
+              where: { id: liveSession.userId },
+              data: { jetonBalance: { decrement: jetonsNeeded } }
+            })
+          );
+        }
+        await prisma.$transaction(extTx);
 
         return NextResponse.json({ 
           extended: extendMinutes, 
-          jetonsUsed: jetonsNeeded,
-          jetonsRemaining: (currentUser.jetonBalance ?? 0) - jetonsNeeded,
+          jetonsUsed: extUserIsStaff ? 0 : jetonsNeeded,
+          jetonsRemaining: extUserIsStaff ? (extUser.jetonBalance ?? 0) : (extUser.jetonBalance ?? 0) - jetonsNeeded,
           newMaxMinutes: liveSession.maxMinutes + extendMinutes
         });
       }

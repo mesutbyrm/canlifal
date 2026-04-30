@@ -181,14 +181,17 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // Skip bet deduction for AI replace (original player already paid)
     if (room.betAmount > 0 && !isAIReplace) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true } })
+      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true, role: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
-      if (room.betCurrency === 'CFC' && user.credits < room.betAmount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
-      if (room.betCurrency === 'JETON' && user.jetonBalance < room.betAmount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: room.betCurrency === 'CFC' ? { credits: { decrement: room.betAmount } } : { jetonBalance: { decrement: room.betAmount } },
-      })
+      const joinStaff = user.role === 'admin' || user.role === 'yonetici'
+      if (!joinStaff) {
+        if (room.betCurrency === 'CFC' && user.credits < room.betAmount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
+        if (room.betCurrency === 'JETON' && user.jetonBalance < room.betAmount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: room.betCurrency === 'CFC' ? { credits: { decrement: room.betAmount } } : { jetonBalance: { decrement: room.betAmount } },
+        })
+      }
     }
 
     const userName = (session.user as any)?.name || 'Oyuncu 2'

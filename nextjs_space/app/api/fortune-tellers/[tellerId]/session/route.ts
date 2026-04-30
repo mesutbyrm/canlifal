@@ -40,10 +40,16 @@ export async function POST(
     // Check user jeton balance (live sessions require jetons)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true }
+      select: { jetonBalance: true, role: true }
     });
 
-    if (!user || (user.jetonBalance ?? 0) < totalCost) {
+    if (!user) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
+    }
+
+    const isStaff = user.role === 'admin' || user.role === 'yonetici';
+
+    if (!isStaff && (user.jetonBalance ?? 0) < totalCost) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
     }
 
@@ -53,24 +59,29 @@ export async function POST(
       select: { name: true, email: true }
     });
 
-    // Create session with duration and deduct credits
-    const [liveSession] = await prisma.$transaction([
+    // Create session with duration and deduct credits (staff skip deduction)
+    const txOps: any[] = [
       prisma.liveSession.create({
         data: {
           tellerId: teller.id,
           userId: session.user.id,
           fortuneType: fortuneType || 'general',
-          creditsCharged: totalCost,
+          creditsCharged: isStaff ? 0 : totalCost,
           maxMinutes: duration,
           creditsPerMinute: creditsPerMinute,
           status: 'pending'
         }
-      }),
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { jetonBalance: { decrement: totalCost } }
       })
-    ]);
+    ];
+    if (!isStaff) {
+      txOps.push(
+        prisma.user.update({
+          where: { id: session.user.id },
+          data: { jetonBalance: { decrement: totalCost } }
+        })
+      );
+    }
+    const [liveSession] = await prisma.$transaction(txOps);
 
     // Send notification to the fortune teller
     const fortuneTypeNames: Record<string, string> = {
