@@ -17,7 +17,7 @@ const ActionButtonsRow = dynamic(() => import('@/components/action-buttons-row')
 const HomepageTicker = dynamic(() => import('@/components/homepage-ticker'), { ssr: false })
 const LiveTicker = dynamic(() => import('@/components/live-ticker'), { ssr: false })
 // BanaOzelSection moved to /bana-ozel page
-const GuestLanding = dynamic(() => import('@/components/guest-landing'), { ssr: false })
+// GuestLanding removed - normal homepage shown for all users
 const LiveActivityFeed = dynamic(() => import('@/components/live-activity-feed'), { ssr: false })
 
 interface LiveTeller {
@@ -283,10 +283,7 @@ export default function HomePage() {
     )
   }
 
-  // Show guest landing page for non-logged-in users
-  if (sessionStatus === 'unauthenticated') {
-    return <GuestLanding />
-  }
+  // Non-logged-in users see the normal homepage (no separate guest landing)
 
   // FalClub Theme - Premium Neon Pink Design (exact match to provided image)
   if (isFalclub) {
