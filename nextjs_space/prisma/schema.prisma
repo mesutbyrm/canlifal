@@ -109,6 +109,7 @@ model User {
   lastLoginRewardDate   DateTime?            @db.Date
   // Agency system
   agencyMembership      AgencyUser?
+  agencyLeaveRequests   AgencyLeaveRequest[]
 
   @@index([referralCode])
   @@index([referredById])
@@ -2306,6 +2307,7 @@ model Agency {
   inviteCodes         InviteCode[]
   tasks               AgencyTask[]
   penalties           AgencyPenalty[]
+  leaveRequests       AgencyLeaveRequest[]
 
   @@index([ownerId])
   @@index([status])
@@ -2418,6 +2420,26 @@ model AgencyPenalty {
   @@index([agencyId])
   @@index([isActive])
   @@map("agency_penalties")
+}
+
+// Ajanstan Çıkma Talepleri
+model AgencyLeaveRequest {
+  id              String    @id @default(cuid())
+  agencyId        String
+  userId          String
+  reason          String?
+  status          String    @default("pending") // pending, approved, rejected
+  reviewedBy      String?   // Agency owner/manager who reviewed
+  reviewNote      String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([status])
+  @@map("agency_leave_requests")
 }
 
 // Haftalık Turnuva Sistemi

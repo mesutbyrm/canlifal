@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
+// POST: Submit leave request (member) or approve/reject leave request (owner/manager)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -12,6 +13,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
+    const body = await req.json()
+    const { action, requestId, reviewNote, reason } = body
+
+    // If action is approve/reject, handle as owner/manager
+    if (action === 'approve' || action === 'reject') {
+      const myMembership = await prisma.agencyUser.findUnique({
+        where: { userId: session.user.id },
+      })
+      if (!myMembership || !['owner', 'manager'].includes(myMembership.role)) {
+        return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      }
+
+      const leaveReq = await prisma.agencyLeaveRequest.findUnique({
+        where: { id: requestId },
+      })
+      if (!leaveReq || leaveReq.agencyId !== myMembership.agencyId || leaveReq.status !== 'pending') {
+        return NextResponse.json({ error: 'Talep bulunamadı veya zaten işlenmiş' }, { status: 404 })
+      }
+
+      if (action === 'approve') {
+        // Approve: remove the member and update the request
+        const targetMember = await prisma.agencyUser.findUnique({
+          where: { userId: leaveReq.userId },
+        })
+
+        await prisma.agencyLeaveRequest.update({
+          where: { id: requestId },
+          data: { status: 'approved', reviewedBy: session.user.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
+        })
+
+        if (targetMember && targetMember.agencyId === myMembership.agencyId) {
+          await prisma.agencyUser.delete({ where: { id: targetMember.id } })
+          await prisma.agency.update({
+            where: { id: myMembership.agencyId },
+            data: {
+              totalMembers: { decrement: 1 },
+              activeMembers: targetMember.isActive ? { decrement: 1 } : undefined,
+            },
+          })
+        }
+
+        return NextResponse.json({ success: true, message: 'Çıkış talebi onaylandı, üye ayrıldı' })
+      } else {
+        // Reject
+        await prisma.agencyLeaveRequest.update({
+          where: { id: requestId },
+          data: { status: 'rejected', reviewedBy: session.user.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
+        })
+        return NextResponse.json({ success: true, message: 'Çıkış talebi reddedildi' })
+      }
+    }
+
+    // Otherwise, submit a new leave request
     const membership = await prisma.agencyUser.findUnique({
       where: { userId: session.user.id },
       include: { agency: { select: { id: true, ownerId: true } } }
@@ -21,26 +75,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Herhangi bir ajansa üye değilsiniz' }, { status: 400 })
     }
 
-    // Agency owners cannot leave (they must transfer or close)
     if (membership.agency.ownerId === session.user.id) {
-      return NextResponse.json({ error: 'Ajans sahibi olarak ayrılamazsınız. Ajansı kapatmanız gerekiyor.' }, { status: 400 })
+      return NextResponse.json({ error: 'Ajans sahibi olarak çıkış talebi gönderemezsiniz.' }, { status: 400 })
     }
 
-    // Delete membership
-    await prisma.agencyUser.delete({ where: { id: membership.id } })
+    // Check existing pending request
+    const existingReq = await prisma.agencyLeaveRequest.findFirst({
+      where: { userId: session.user.id, agencyId: membership.agencyId, status: 'pending' },
+    })
+    if (existingReq) {
+      return NextResponse.json({ error: 'Zaten bekleyen bir çıkış talebiniz var' }, { status: 409 })
+    }
 
-    // Update agency counts
-    await prisma.agency.update({
-      where: { id: membership.agencyId },
+    await prisma.agencyLeaveRequest.create({
       data: {
-        totalMembers: { decrement: 1 },
-        activeMembers: membership.isActive ? { decrement: 1 } : undefined,
+        agencyId: membership.agencyId,
+        userId: session.user.id,
+        reason: reason || null,
       }
     })
 
-    return NextResponse.json({ success: true, message: 'Ajanstan başarıyla ayrıldınız' })
+    return NextResponse.json({ success: true, message: 'Çıkış talebiniz gönderildi. Ajans yönetimi onaylayınca ayrılacaksınız.' })
   } catch (error: any) {
     console.error('[Agency Leave] Error:', error)
-    return NextResponse.json({ error: 'Ayrılma sırasında hata oluştu' }, { status: 500 })
+    return NextResponse.json({ error: 'İşlem sırasında hata oluştu' }, { status: 500 })
+  }
+}
+
+// DELETE: Cancel own pending leave request
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+
+    const pending = await prisma.agencyLeaveRequest.findFirst({
+      where: { userId: session.user.id, status: 'pending' },
+    })
+    if (!pending) {
+      return NextResponse.json({ error: 'Bekleyen talep bulunamadı' }, { status: 404 })
+    }
+
+    await prisma.agencyLeaveRequest.delete({ where: { id: pending.id } })
+
+    return NextResponse.json({ success: true, message: 'Çıkış talebi iptal edildi' })
+  } catch (error: any) {
+    console.error('[Agency Leave DELETE] Error:', error)
+    return NextResponse.json({ error: 'İptal sırasında hata oluştu' }, { status: 500 })
   }
 }

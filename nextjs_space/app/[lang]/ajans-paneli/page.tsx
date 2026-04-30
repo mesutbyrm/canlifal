@@ -7,7 +7,8 @@ import { useSiteTheme } from '@/lib/theme-context'
 import {
   Building2, Users, TrendingUp, Copy, Plus, RefreshCw, UserPlus,
   DollarSign, Clock, ChevronRight, Award, Trash2, Check, X, Link as LinkIcon,
-  ArrowLeft, BarChart3, AlertTriangle, Share2, Wallet, Loader2
+  ArrowLeft, BarChart3, AlertTriangle, Share2, Wallet, Loader2, Pencil, UserMinus,
+  LogOut, MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -34,6 +35,7 @@ interface AgencyInfo {
   } | null
   ownedAgency: any
   isOwner: boolean
+  pendingLeaveRequest: any
 }
 
 interface Member {
@@ -119,6 +121,22 @@ export default function AgencyPanelPage() {
   const [newCodeMaxUses, setNewCodeMaxUses] = useState(0)
   const [newCodeDays, setNewCodeDays] = useState(7)
   const [copied, setCopied] = useState('')
+  // Rename agency
+  const [editingName, setEditingName] = useState(false)
+  const [newAgencyName, setNewAgencyName] = useState('')
+  const [newAgencyDesc, setNewAgencyDesc] = useState('')
+  const [savingName, setSavingName] = useState(false)
+  // Add member
+  const [addUsername, setAddUsername] = useState('')
+  const [addingMember, setAddingMember] = useState(false)
+  const [removingMember, setRemovingMember] = useState<string | null>(null)
+  // Leave requests
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([])
+  const [leaveActionLoading, setLeaveActionLoading] = useState<string | null>(null)
+  // User leave request
+  const [leaveReason, setLeaveReason] = useState('')
+  const [submittingLeave, setSubmittingLeave] = useState(false)
+  const [showLeaveForm, setShowLeaveForm] = useState(false)
 
   const isFacebook = theme === 'facebook'
   const isCosmic = theme === 'cosmic'
@@ -142,7 +160,11 @@ export default function AgencyPanelPage() {
   const fetchMembers = async () => {
     try {
       const res = await fetch('/api/agency/members')
-      if (res.ok) { const d = await res.json(); setMembers(d.members) }
+      if (res.ok) {
+        const d = await res.json()
+        setMembers(d.members)
+        setLeaveRequests(d.leaveRequests || [])
+      }
     } catch (e) { console.error(e) }
   }
 
@@ -232,6 +254,114 @@ export default function AgencyPanelPage() {
     setTimeout(() => setCopied(''), 2000)
   }
 
+  // Rename agency
+  const handleRenameAgency = async () => {
+    setSavingName(true)
+    try {
+      const res = await fetch('/api/agency/my', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newAgencyName, description: newAgencyDesc }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setEditingName(false)
+        fetchInfo()
+      } else {
+        alert(d.error || 'Hata oluştu')
+      }
+    } catch { alert('Hata oluştu') } finally { setSavingName(false) }
+  }
+
+  // Add member
+  const handleAddMember = async () => {
+    if (!addUsername.trim()) return
+    setAddingMember(true)
+    try {
+      const res = await fetch('/api/agency/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: addUsername.trim() }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setAddUsername('')
+        fetchMembers()
+        fetchInfo()
+        alert(d.message || 'Üye eklendi')
+      } else {
+        alert(d.error || 'Hata oluştu')
+      }
+    } catch { alert('Hata oluştu') } finally { setAddingMember(false) }
+  }
+
+  // Remove member
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Bu üyeyi ajansdan çıkarmak istediğinize emin misiniz?')) return
+    setRemovingMember(memberId)
+    try {
+      const res = await fetch(`/api/agency/members?memberId=${memberId}`, { method: 'DELETE' })
+      const d = await res.json()
+      if (res.ok) {
+        fetchMembers()
+        fetchInfo()
+      } else {
+        alert(d.error || 'Hata oluştu')
+      }
+    } catch { alert('Hata oluştu') } finally { setRemovingMember(null) }
+  }
+
+  // Handle leave request (approve/reject)
+  const handleLeaveAction = async (requestId: string, action: 'approve' | 'reject') => {
+    setLeaveActionLoading(requestId)
+    try {
+      const res = await fetch('/api/agency/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, requestId }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        fetchMembers()
+        fetchInfo()
+      } else {
+        alert(d.error || 'Hata oluştu')
+      }
+    } catch { alert('Hata oluştu') } finally { setLeaveActionLoading(null) }
+  }
+
+  // Submit leave request (member)
+  const handleSubmitLeave = async () => {
+    setSubmittingLeave(true)
+    try {
+      const res = await fetch('/api/agency/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: leaveReason }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setShowLeaveForm(false)
+        setLeaveReason('')
+        fetchInfo()
+        alert(d.message || 'Talep gönderildi')
+      } else {
+        alert(d.error || 'Hata oluştu')
+      }
+    } catch { alert('Hata oluştu') } finally { setSubmittingLeave(false) }
+  }
+
+  // Cancel leave request
+  const handleCancelLeave = async () => {
+    try {
+      const res = await fetch('/api/agency/leave', { method: 'DELETE' })
+      if (res.ok) {
+        fetchInfo()
+        alert('Çıkış talebi iptal edildi')
+      }
+    } catch { alert('Hata oluştu') }
+  }
+
   const agency = info?.membership?.agency || info?.ownedAgency
   const isManager = info?.membership?.role === 'owner' || info?.membership?.role === 'manager'
 
@@ -275,16 +405,117 @@ export default function AgencyPanelPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
-            <Building2 className={`w-6 h-6 ${accentColor}`} />
-            {agency.name}
-          </h1>
-          <p className={`${textSecondary} text-xs`}>
-            {agency.status === 'approved' ? 'Aktif Ajans' : agency.status === 'pending' ? 'Onay Bekliyor' : agency.status}
-            {agency.penaltyLevel > 0 && ` • Ceza Seviyesi: ${agency.penaltyLevel}`}
-          </p>
+          {editingName ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={newAgencyName}
+                onChange={e => setNewAgencyName(e.target.value)}
+                placeholder="Ajans Adı"
+                className={`w-full px-3 py-2 rounded-lg border text-sm font-bold ${inputBg}`}
+              />
+              <input
+                type="text"
+                value={newAgencyDesc}
+                onChange={e => setNewAgencyDesc(e.target.value)}
+                placeholder="Açıklama (opsiyonel)"
+                className={`w-full px-3 py-1.5 rounded-lg border text-xs ${inputBg}`}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRenameAgency}
+                  disabled={savingName || newAgencyName.trim().length < 2}
+                  className={`px-3 py-1.5 rounded-lg ${btnPrimary} text-xs font-medium flex items-center gap-1 disabled:opacity-50`}
+                >
+                  {savingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                  Kaydet
+                </button>
+                <button onClick={() => setEditingName(false)} className={`px-3 py-1.5 rounded-lg ${tabInactive} text-xs`}>
+                  İptal
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
+                <Building2 className={`w-6 h-6 ${accentColor}`} />
+                {agency.name}
+                {info?.isOwner && (
+                  <button
+                    onClick={() => { setNewAgencyName(agency.name); setNewAgencyDesc(agency.description || ''); setEditingName(true) }}
+                    className={`p-1 rounded-lg hover:opacity-80 transition ${tabInactive}`}
+                    title="Ajans ismini düzenle"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </h1>
+              <p className={`${textSecondary} text-xs`}>
+                {agency.status === 'approved' ? 'Aktif Ajans' : agency.status === 'pending' ? 'Onay Bekliyor' : agency.status}
+                {agency.penaltyLevel > 0 && ` • Ceza Seviyesi: ${agency.penaltyLevel}`}
+              </p>
+            </>
+          )}
         </div>
       </div>
+
+      {/* User Leave Request Section (non-owner members) */}
+      {info?.membership && !info?.isOwner && info?.membership?.role !== 'owner' && (
+        <div className={`${cardBg} rounded-xl p-4 mb-6`}>
+          {info.pendingLeaveRequest ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400">
+                <Clock className="w-5 h-5" />
+                <span className="font-medium text-sm">Çıkış talebiniz beklemede</span>
+              </div>
+              <p className={`text-xs ${textSecondary}`}>
+                Ajans yönetimi talebinizi onayladığında otomatik olarak ayrılacaksınız.
+              </p>
+              <button
+                onClick={handleCancelLeave}
+                className="px-3 py-1.5 rounded-lg bg-red-600/20 text-red-400 text-xs font-medium hover:bg-red-600/30 transition"
+              >
+                Talebi İptal Et
+              </button>
+            </div>
+          ) : showLeaveForm ? (
+            <div className="space-y-3">
+              <h3 className={`font-medium ${textPrimary} text-sm flex items-center gap-2`}>
+                <LogOut className="w-4 h-4 text-red-400" />
+                Ajanstan Çıkış Talebi
+              </h3>
+              <textarea
+                value={leaveReason}
+                onChange={e => setLeaveReason(e.target.value)}
+                placeholder="Ayrılma nedeniniz (opsiyonel)..."
+                rows={2}
+                className={`w-full px-3 py-2 rounded-lg border text-xs ${inputBg}`}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSubmitLeave}
+                  disabled={submittingLeave}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {submittingLeave ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+                  Talep Gönder
+                </button>
+                <button onClick={() => setShowLeaveForm(false)} className={`px-3 py-2 rounded-lg ${tabInactive} text-xs`}>
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowLeaveForm(true)}
+              className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm font-medium transition"
+            >
+              <LogOut className="w-4 h-4" />
+              Ajanstan Ayrılmak İstiyorum
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -512,7 +743,86 @@ export default function AgencyPanelPage() {
 
       {/* Members */}
       {activeTab === 'members' && isManager && (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Add Member Form */}
+          <div className={`${cardBg} rounded-xl p-4`}>
+            <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+              <UserPlus className={`w-4 h-4 ${accentColor}`} />
+              Üye Ekle
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={addUsername}
+                onChange={e => setAddUsername(e.target.value)}
+                placeholder="Kullanıcı adı girin..."
+                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${inputBg}`}
+                onKeyDown={e => e.key === 'Enter' && handleAddMember()}
+              />
+              <button
+                onClick={handleAddMember}
+                disabled={addingMember || !addUsername.trim()}
+                className={`px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium flex items-center gap-1.5 disabled:opacity-50`}
+              >
+                {addingMember ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Ekle
+              </button>
+            </div>
+          </div>
+
+          {/* Leave Requests */}
+          {leaveRequests.length > 0 && (
+            <div className={`${cardBg} rounded-xl p-4`}>
+              <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                <LogOut className="w-4 h-4 text-orange-400" />
+                Çıkış Talepleri
+                <span className="ml-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-orange-500 text-white text-[10px] font-bold">{leaveRequests.length}</span>
+              </h3>
+              <div className="space-y-2">
+                {leaveRequests.map((lr: any) => (
+                  <div key={lr.id} className={`p-3 rounded-xl bg-black/20 space-y-2`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-bold text-xs">
+                        {lr.user?.name?.charAt(0) || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-medium ${textPrimary} truncate`}>{lr.user?.name}</div>
+                        <div className={`text-[10px] ${textSecondary}`}>
+                          @{lr.user?.username} • {new Date(lr.createdAt).toLocaleDateString('tr-TR')}
+                        </div>
+                      </div>
+                    </div>
+                    {lr.reason && (
+                      <p className={`text-xs ${textSecondary} flex items-start gap-1`}>
+                        <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        {lr.reason}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleLeaveAction(lr.id, 'approve')}
+                        disabled={leaveActionLoading === lr.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-medium disabled:opacity-50"
+                      >
+                        {leaveActionLoading === lr.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                        Onayla
+                      </button>
+                      <button
+                        onClick={() => handleLeaveAction(lr.id, 'reject')}
+                        disabled={leaveActionLoading === lr.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-medium disabled:opacity-50"
+                      >
+                        {leaveActionLoading === lr.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                        Reddet
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Member List */}
           {members.length === 0 ? (
             <div className={`${cardBg} rounded-xl p-8 text-center`}>
               <Users className={`w-10 h-10 ${textSecondary} mx-auto mb-2`} />
@@ -527,15 +837,29 @@ export default function AgencyPanelPage() {
                 <div className={`font-medium ${textPrimary} text-sm truncate`}>{m.user.name}</div>
                 <div className={`text-[10px] ${textSecondary}`}>
                   {m.role === 'owner' ? 'Sahip' : m.role === 'manager' ? 'Yönetici' : 'Üye'}
+                  {m.user.username && ` • @${m.user.username}`}
                   {' • '}
                   {new Date(m.joinedAt).toLocaleDateString('tr-TR')}
                 </div>
               </div>
-              <div className="text-right">
-                <div className={`text-sm font-bold ${accentColor}`}>{Math.floor(m.totalEarnings)} J</div>
-                <div className={`text-[10px] ${m.isActive ? 'text-green-400' : 'text-red-400'}`}>
-                  {m.isActive ? 'Aktif' : 'Pasif'}
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <div className={`text-sm font-bold ${accentColor}`}>{Math.floor(m.totalEarnings)} J</div>
+                  <div className={`text-[10px] ${m.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                    {m.isActive ? 'Aktif' : 'Pasif'}
+                  </div>
                 </div>
+                {/* Remove button (not for owner) */}
+                {m.role !== 'owner' && m.user.id !== agency?.ownerId && (
+                  <button
+                    onClick={() => handleRemoveMember(m.id)}
+                    disabled={removingMember === m.id}
+                    className="p-1.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 transition disabled:opacity-50"
+                    title="Üyeyi çıkar"
+                  >
+                    {removingMember === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserMinus className="w-3.5 h-3.5" />}
+                  </button>
+                )}
               </div>
             </div>
           ))}
