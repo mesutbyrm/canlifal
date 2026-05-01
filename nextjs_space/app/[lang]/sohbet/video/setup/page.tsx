@@ -532,143 +532,128 @@ export default function StreamSetupPage() {
 
       </div>
 
-      {/* Beauty Effects Panel - Bottom Scrollable */}
-      {showEffects && (
-        <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          className="absolute bottom-0 inset-x-0 z-30"
-        >
-          {/* Transparent overlay with blur */}
-          <div className="bg-black/40 backdrop-blur-sm rounded-t-3xl overflow-hidden max-h-[60vh]">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-pink-400" />
-                {'Efektler'}
-              </h3>
-              <button onClick={() => setShowEffects(false)} className="text-white/60 p-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="overflow-y-auto max-h-[45vh] p-4">
-              {/* Enable/Disable Toggle */}
-              <div className="flex items-center justify-between mb-4 p-3 bg-white/5 rounded-xl">
-                <span className="text-white/80 text-sm font-medium">Güzelleştirme Efektleri</span>
-                <button
-                  onClick={() => updateBeauty({ enabled: !beautySettings.enabled })}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    beautySettings.enabled
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                      : 'bg-white/10 text-white/50'
-                  }`}
-                >
-                  {beautySettings.enabled ? 'AÇIK' : 'KAPALI'}
-                </button>
-              </div>
-
-              {/* Preset Buttons - Horizontal Scroll */}
-              <div className="mb-6">
-                <p className="text-white/60 text-xs mb-3">
-                  {'Hazır Ayarlar'}
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {BEAUTY_PRESETS.map((preset, idx) => {
-                    const isActive = beautySettings.enabled
-                      ? (beautySettings.smoothnessLevel === preset.settings.smoothnessLevel &&
-                         beautySettings.lighteningLevel === preset.settings.lighteningLevel &&
-                         beautySettings.rednessLevel === preset.settings.rednessLevel)
-                      : idx === 0
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => applyPreset(idx)}
-                        className={`flex-shrink-0 px-4 py-2 text-white text-sm rounded-full whitespace-nowrap transition-all ${
-                          isActive
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30'
-                            : 'bg-white/10 hover:bg-white/20'
-                        }`}
-                      >
-                        {preset.icon} {preset.name}
-                      </button>
-                    )
-                  })}
+      {/* Beauty Effects Panel - Compact overlay at bottom, camera stays visible */}
+      <AnimatePresence>
+        {showEffects && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute bottom-0 inset-x-0 z-30"
+          >
+            {/* Semi-transparent panel - max 38% height so camera preview (top 62%) stays visible */}
+            <div className="bg-black/60 backdrop-blur-md rounded-t-3xl overflow-hidden" style={{ maxHeight: '38vh' }}>
+              {/* Drag Handle + Header */}
+              <div className="flex flex-col items-center pt-2 pb-1">
+                <div className="w-10 h-1 bg-white/30 rounded-full mb-2" />
+                <div className="flex items-center justify-between w-full px-4 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                    <span className="text-white font-semibold text-sm">Efektler</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateBeauty({ enabled: !beautySettings.enabled })}
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                        beautySettings.enabled
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                          : 'bg-white/15 text-white/50'
+                      }`}
+                    >
+                      {beautySettings.enabled ? 'AÇIK' : 'KAPALI'}
+                    </button>
+                    <button onClick={() => setShowEffects(false)} className="text-white/60 p-0.5">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Sliders */}
-              <div className="space-y-4">
-                <SliderControl
-                  icon={Droplet}
-                  label={'Cilt Pürüzsüzlüğü'}
-                  value={Math.round(beautySettings.smoothnessLevel * 100)}
-                  min={0}
-                  max={100}
-                  onChange={(v) => updateBeauty({ enabled: true, smoothnessLevel: v / 100 })}
-                />
-
-                <SliderControl
-                  icon={Sun}
-                  label={'Parlaklık / Beyazlatma'}
-                  value={Math.round(beautySettings.lighteningLevel * 100)}
-                  min={0}
-                  max={100}
-                  onChange={(v) => updateBeauty({ enabled: true, lighteningLevel: v / 100 })}
-                />
-
-                <SliderControl
-                  icon={Heart}
-                  label={'Allık / Kızarıklık'}
-                  value={Math.round(beautySettings.rednessLevel * 100)}
-                  min={0}
-                  max={100}
-                  onChange={(v) => updateBeauty({ enabled: true, rednessLevel: v / 100 })}
-                />
-
-                {/* Contrast Level Buttons */}
-                <div>
-                  <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-                    <Sun className="w-4 h-4" />
-                    <span>Kontrast Seviyesi</span>
+              {/* Scrollable compact content */}
+              <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: 'calc(38vh - 60px)' }}>
+                {/* Preset Buttons - Horizontal Scroll */}
+                <div className="mb-3">
+                  <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+                    {BEAUTY_PRESETS.map((preset, idx) => {
+                      const isActive = beautySettings.enabled
+                        ? (beautySettings.smoothnessLevel === preset.settings.smoothnessLevel &&
+                           beautySettings.lighteningLevel === preset.settings.lighteningLevel &&
+                           beautySettings.rednessLevel === preset.settings.rednessLevel)
+                        : idx === 0
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => applyPreset(idx)}
+                          className={`flex-shrink-0 px-3 py-1.5 text-white text-xs rounded-full whitespace-nowrap transition-all ${
+                            isActive
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30'
+                              : 'bg-white/10 hover:bg-white/20'
+                          }`}
+                        >
+                          {preset.icon} {preset.name}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 0 as const, label: 'Düşük' },
-                      { value: 1 as const, label: 'Normal' },
-                      { value: 2 as const, label: 'Yüksek' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => updateBeauty({ enabled: true, lighteningContrastLevel: opt.value })}
-                        className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                          beautySettings.lighteningContrastLevel === opt.value
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-                            : 'bg-white/10 text-white/60 hover:bg-white/20'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                </div>
+
+                {/* Compact Sliders */}
+                <div className="space-y-2.5">
+                  <SliderControl
+                    icon={Droplet}
+                    label={'Pürüzsüzlük'}
+                    value={Math.round(beautySettings.smoothnessLevel * 100)}
+                    min={0}
+                    max={100}
+                    onChange={(v) => updateBeauty({ enabled: true, smoothnessLevel: v / 100 })}
+                  />
+                  <SliderControl
+                    icon={Sun}
+                    label={'Parlaklık'}
+                    value={Math.round(beautySettings.lighteningLevel * 100)}
+                    min={0}
+                    max={100}
+                    onChange={(v) => updateBeauty({ enabled: true, lighteningLevel: v / 100 })}
+                  />
+                  <SliderControl
+                    icon={Heart}
+                    label={'Allık'}
+                    value={Math.round(beautySettings.rednessLevel * 100)}
+                    min={0}
+                    max={100}
+                    onChange={(v) => updateBeauty({ enabled: true, rednessLevel: v / 100 })}
+                  />
+
+                  {/* Contrast - inline */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/60 text-xs whitespace-nowrap">Kontrast:</span>
+                    <div className="flex gap-1.5 flex-1">
+                      {[
+                        { value: 0 as const, label: 'Düşük' },
+                        { value: 1 as const, label: 'Normal' },
+                        { value: 2 as const, label: 'Yüksek' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => updateBeauty({ enabled: true, lighteningContrastLevel: opt.value })}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                            beautySettings.lighteningContrastLevel === opt.value
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                              : 'bg-white/10 text-white/50 hover:bg-white/20'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Close button at bottom */}
-            <div className="p-4 border-t border-white/10">
-              <button
-                onClick={() => setShowEffects(false)}
-                className="w-full py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20"
-              >
-                {'Tamam'}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Controls */}
       <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-6 z-20 transition-opacity ${showEffects ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
