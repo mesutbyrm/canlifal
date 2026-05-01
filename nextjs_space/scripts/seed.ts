@@ -1116,6 +1116,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { key: 'entry_announcement_enabled', value: 'true', description: 'Giriş duyurularının gösterilip gösterilmeyeceği' },
     { key: 'entry_announcement_duration', value: '2', description: 'Giriş duyurusu gösterim süresi (saniye)' },
     { key: 'entry_announcement_style', value: 'fade', description: 'Giriş duyurusu gösterim stili (fade, slide, flash)' },
+    { key: 'jeton_unit_price', value: '0.50', description: 'Jeton başına birim fiyat (TRY)' },
   ]
   for (const s of streamSettings) {
     await prisma.platformSettings.upsert({

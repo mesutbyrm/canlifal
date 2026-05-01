@@ -71,6 +71,10 @@ export default function CreditsPage() {
   const [membershipExpiresAt, setMembershipExpiresAt] = useState<string | null>(null)
   const [showPaymentMethodsPopup, setShowPaymentMethodsPopup] = useState(false)
   const [activePaymentPopup, setActivePaymentPopup] = useState<string | null>(null)
+  const [unitPrice, setUnitPrice] = useState(0.50)
+  const [customMode, setCustomMode] = useState<'jeton' | 'fiyat'>('jeton')
+  const [customJeton, setCustomJeton] = useState('')
+  const [customPrice, setCustomPrice] = useState('')
 
   // Theme colors
   const isCosmic = theme === 'cosmic'
@@ -102,10 +106,11 @@ export default function CreditsPage() {
 
   const fetchData = async () => {
     try {
-      const [packagesRes, methodsRes, settingsRes] = await Promise.all([
+      const [packagesRes, methodsRes, settingsRes, priceRes] = await Promise.all([
         fetch('/api/credit-packages'),
         fetch('/api/payment-methods'),
-        fetch('/api/payment-settings')
+        fetch('/api/payment-settings'),
+        fetch('/api/public/jeton-price')
       ])
       if (packagesRes.ok) {
         const data = await packagesRes.json()
@@ -121,6 +126,10 @@ export default function CreditsPage() {
         const waMessage = settings.whatsapp_message || ''
         const waEnabled = settings.whatsapp_enabled === 'true'
         setWhatsappSettings({ number: waNumber, message: waMessage, enabled: waEnabled })
+      }
+      if (priceRes.ok) {
+        const priceData = await priceRes.json()
+        if (priceData.unitPrice) setUnitPrice(priceData.unitPrice)
       }
     } catch (err) {
       console.error('Fetch error:', err)
@@ -160,6 +169,54 @@ export default function CreditsPage() {
     setSelectedPackage(pkg)
     setShowPaymentMethodsPopup(true)
   }
+
+  const handleCustomBuy = () => {
+    if (!session?.user) {
+      router.push(`/giris`)
+      return
+    }
+    let jetons = 0
+    let price = 0
+    if (customMode === 'jeton') {
+      jetons = parseInt(customJeton) || 0
+      if (jetons < 1) return
+      price = Math.round(jetons * unitPrice * 100) / 100
+    } else {
+      const inputPrice = parseFloat(customPrice) || 0
+      if (inputPrice < unitPrice) return
+      jetons = Math.floor(inputPrice / unitPrice)
+      price = Math.round(jetons * unitPrice * 100) / 100
+    }
+    const customPkg: CreditPackage = {
+      id: 'custom',
+      name: `${jetons} Jeton`,
+      nameEn: `${jetons} Tokens`,
+      credits: jetons,
+      price: price,
+      currency: 'TRY',
+      bonusCredits: 0,
+      isFeatured: false,
+      isActive: true
+    }
+    setSelectedPackage(customPkg)
+    setShowPaymentMethodsPopup(true)
+  }
+
+  const computedCustomPrice = (() => {
+    if (customMode === 'jeton') {
+      const j = parseInt(customJeton) || 0
+      return j > 0 ? Math.round(j * unitPrice * 100) / 100 : 0
+    }
+    return 0
+  })()
+
+  const computedCustomJetons = (() => {
+    if (customMode === 'fiyat') {
+      const p = parseFloat(customPrice) || 0
+      return p >= unitPrice ? Math.floor(p / unitPrice) : 0
+    }
+    return 0
+  })()
 
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text)
@@ -304,9 +361,145 @@ export default function CreditsPage() {
           ))}
         </div>
 
+        {/* Custom Amount Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`rounded-2xl p-4 border-2 mb-4 ${cardBg}`}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${iconBg} flex items-center justify-center`}>
+              <Coins className="w-4 h-4 text-white" />
+            </div>
+            <h3 className={`${textPrimary} font-bold text-sm`}>Özel Miktar Belirle</h3>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className={`flex rounded-xl overflow-hidden border mb-3 ${isFacebook ? 'border-gray-300' : isCosmic ? 'border-blue-500/30' : 'border-fuchsia-500/30'}`}>
+            <button
+              onClick={() => { setCustomMode('jeton'); setCustomPrice('') }}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                customMode === 'jeton'
+                  ? isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white'
+                  : isFacebook ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-purple-300'
+              }`}
+            >
+              Jeton Miktarı Gir
+            </button>
+            <button
+              onClick={() => { setCustomMode('fiyat'); setCustomJeton('') }}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-all ${
+                customMode === 'fiyat'
+                  ? isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white'
+                  : isFacebook ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-purple-300'
+              }`}
+            >
+              Fiyat Gir (₺)
+            </button>
+          </div>
+
+          {/* Input Area */}
+          {customMode === 'jeton' ? (
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="Kaç jeton almak istiyorsun?"
+                  value={customJeton}
+                  onChange={(e) => setCustomJeton(e.target.value.replace(/[^0-9]/g, ''))}
+                  className={`w-full px-4 py-3 rounded-xl text-lg font-bold focus:outline-none transition-all ${
+                    isFacebook
+                      ? 'bg-gray-100 border-2 border-gray-300 text-gray-900 focus:border-blue-500 placeholder-gray-400'
+                      : 'bg-white/5 border-2 border-fuchsia-500/30 text-white focus:border-fuchsia-500 placeholder-purple-400/50'
+                  }`}
+                />
+              </div>
+              {parseInt(customJeton) > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl ${
+                    isFacebook ? 'bg-green-50 border border-green-200' : 'bg-green-500/10 border border-green-500/20'
+                  }`}
+                >
+                  <span className={`text-sm ${isFacebook ? 'text-green-700' : 'text-green-300'}`}>
+                    Ödenecek Tutar:
+                  </span>
+                  <span className={`text-xl font-extrabold ${isFacebook ? 'text-green-700' : 'text-green-400'}`}>
+                    ₺{computedCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                  </span>
+                </motion.div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={unitPrice}
+                  step={0.01}
+                  placeholder="Ne kadarlık almak istiyorsun? (₺)"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl text-lg font-bold focus:outline-none transition-all ${
+                    isFacebook
+                      ? 'bg-gray-100 border-2 border-gray-300 text-gray-900 focus:border-blue-500 placeholder-gray-400'
+                      : 'bg-white/5 border-2 border-fuchsia-500/30 text-white focus:border-fuchsia-500 placeholder-purple-400/50'
+                  }`}
+                />
+              </div>
+              {computedCustomJetons > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl ${
+                    isFacebook ? 'bg-green-50 border border-green-200' : 'bg-green-500/10 border border-green-500/20'
+                  }`}
+                >
+                  <span className={`text-sm ${isFacebook ? 'text-green-700' : 'text-green-300'}`}>
+                    Alacağın Jeton:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-extrabold ${goldColor}`}>
+                      {computedCustomJetons}
+                    </span>
+                    <span className={`text-sm ${isFacebook ? 'text-green-700' : 'text-green-300'}`}>jeton</span>
+                  </div>
+                </motion.div>
+              )}
+              {parseFloat(customPrice) > 0 && computedCustomJetons > 0 && Math.round(computedCustomJetons * unitPrice * 100) / 100 < parseFloat(customPrice) && (
+                <div className={`text-xs px-3 ${isFacebook ? 'text-gray-500' : 'text-purple-300/60'}`}>
+                  * Tutar ₺{(Math.round(computedCustomJetons * unitPrice * 100) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}&apos;ye yuvarlandı
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Buy Button */}
+          <button
+            onClick={handleCustomBuy}
+            disabled={customMode === 'jeton' ? (parseInt(customJeton) || 0) < 1 : computedCustomJetons < 1}
+            className={`w-full mt-3 py-3 rounded-xl font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
+              isFacebook
+                ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300'
+                : 'bg-gradient-to-r from-fuchsia-600 to-pink-600 shadow-lg shadow-fuchsia-900/30'
+            }`}
+          >
+            Satın Al
+          </button>
+
+          <div className={`text-center text-xs mt-2 ${textSecondary}`}>
+            1 Jeton = ₺{unitPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          </div>
+        </motion.div>
+
         {/* Info Note */}
         <div className={`text-center ${textSecondary} text-xs p-3 rounded-xl ${cardBg} border`}>
-          {'👆 Bir paket seçerek ödeme yöntemlerini görüntüleyin'}
+          {'👆 Paket seçin veya özel miktar belirleyerek ödeme yöntemlerini görüntüleyin'}
         </div>
       </div>
 

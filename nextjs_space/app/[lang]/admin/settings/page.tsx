@@ -47,6 +47,7 @@ interface PlatformSettings {
   ad_credits_per_watch: string
   stream_no_gift_timeout: string
   stream_reopen_cooldown: string
+  jeton_unit_price: string
   entry_announcement_enabled: string
   entry_announcement_duration: string
   entry_announcement_style: string
@@ -78,6 +79,7 @@ export default function AdminSettingsPage() {
     ad_credits_per_watch: '5',
     stream_no_gift_timeout: '15',
     stream_reopen_cooldown: '30',
+    jeton_unit_price: '0.50',
     entry_announcement_enabled: 'true',
     entry_announcement_duration: '2',
     entry_announcement_style: 'fade'
@@ -357,6 +359,15 @@ export default function AdminSettingsPage() {
       icon: Timer,
       min: 1,
       max: 10
+    },
+    {
+      key: 'jeton_unit_price',
+      label: 'Jeton Birim Fiyatı (₺)',
+      description: 'Serbest jeton alımında 1 jeton = kaç TRY',
+      icon: Coins,
+      min: 0.01,
+      max: 100,
+      step: 0.01
     },
   ]
 
@@ -651,6 +662,7 @@ export default function AdminSettingsPage() {
                         type="number"
                         min={'min' in item ? item.min : undefined}
                         max={'max' in item ? item.max : undefined}
+                        step={'step' in item ? (item as any).step : undefined}
                         value={settings[item.key as keyof PlatformSettings]}
                         onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
                         className="w-32 px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
