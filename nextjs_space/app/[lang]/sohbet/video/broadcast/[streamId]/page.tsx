@@ -57,6 +57,10 @@ import {
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import PKBattleOverlay from '@/components/pk-battle-overlay'
+import HostControlPanel from '@/components/host-control-panel'
+import type { GuestInfo } from '@/components/host-control-panel'
+import StreamVideoGrid from '@/components/stream-video-grid'
+import type { GridParticipant } from '@/components/stream-video-grid'
 
 interface Comment {
   id: string
@@ -227,7 +231,8 @@ export default function BroadcastPage() {
     return DEFAULT_BEAUTY_SETTINGS
   })
   const [showBeautyPanel, setShowBeautyPanel] = useState(false)
-
+  // Host control panel
+  const [showHostControls, setShowHostControls] = useState(false)
 
   const localVideoRef = useRef<HTMLDivElement>(null)
   // Video refs for up to 4 guests (dynamically created in render)
@@ -723,30 +728,37 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
-  // Accept co-broadcast request
-  const handleAcceptCoBroadcastRequest = async () => {
-    if (!pendingCoBroadcastRequest) return
+  // Accept co-broadcast request (from popup or host panel)
+  const handleAcceptCoBroadcastRequest = async (userIdParam?: string) => {
+    const userId = userIdParam || pendingCoBroadcastRequest?.userId
+    if (!userId) return
     try {
       await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: pendingCoBroadcastRequest.userId, action: 'accept' })
+        body: JSON.stringify({ userId, action: 'approve' })
       })
-      setPendingCoBroadcastRequest(null)
+      if (pendingCoBroadcastRequest?.userId === userId) {
+        setPendingCoBroadcastRequest(null)
+      }
       fetchCoBroadcasters()
+      addToast('success', 'yayına katıldı!', coBroadcasters.find(cb => cb.userId === userId)?.user?.name || 'Kullanıcı')
     } catch (e) {}
   }
 
   // Reject co-broadcast request
-  const handleRejectCoBroadcastRequest = async () => {
-    if (!pendingCoBroadcastRequest) return
+  const handleRejectCoBroadcastRequest = async (userIdParam?: string) => {
+    const userId = userIdParam || pendingCoBroadcastRequest?.userId
+    if (!userId) return
     try {
       await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: pendingCoBroadcastRequest.userId, action: 'reject' })
+        body: JSON.stringify({ userId, action: 'reject_request' })
       })
-      setPendingCoBroadcastRequest(null)
+      if (pendingCoBroadcastRequest?.userId === userId) {
+        setPendingCoBroadcastRequest(null)
+      }
       fetchCoBroadcasters()
     } catch (e) {}
   }
@@ -762,6 +774,17 @@ export default function BroadcastPage() {
     } catch (e) {}
   }
 
+  const handleVideoOffCoBroadcaster = async (userId: string, off: boolean) => {
+    try {
+      await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: off ? 'video_off' : 'video_on' })
+      })
+      fetchCoBroadcasters()
+    } catch (e) {}
+  }
+
   const handleRemoveCoBroadcaster = async (userId: string) => {
     try {
       await fetch(`/api/video-streams/${streamId}/co-broadcast`, {
@@ -769,9 +792,57 @@ export default function BroadcastPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, action: 'remove' })
       })
+      processedGuestsRef.current.delete(userId)
       fetchCoBroadcasters()
+      addToast('info', 'yayından çıkarıldı', coBroadcasters.find(cb => cb.userId === userId)?.user?.name || 'Kullanıcı')
     } catch (e) {}
   }
+
+  // Host control panel data
+  const hostControlGuests: GuestInfo[] = activeGuests.map(g => ({
+    id: g.id,
+    odId: g.id,
+    odUserId: g.userId,
+    name: g.user.name,
+    image: g.user.image || null,
+    isMuted: g.isMuted,
+    isVideoOff: g.isVideoOff,
+    status: g.status,
+  }))
+
+  const hostPendingRequests = coBroadcasters
+    .filter(cb => cb.status === 'requested')
+    .map(cb => ({
+      id: cb.id,
+      userId: cb.userId,
+      name: cb.user.name,
+      image: cb.user.image || null,
+    }))
+
+  // Grid participants for StreamVideoGrid
+  const hasActiveGuests = activeGuests.length > 0
+  const gridParticipants: GridParticipant[] = hasActiveGuests ? [
+    {
+      id: 'host',
+      userId: 'host',
+      name: session?.user?.name || 'Host',
+      image: session?.user?.image || null,
+      isHost: true,
+      isMuted: !isAudioOn,
+      isVideoOff: !isVideoOn,
+    },
+    ...activeGuests.map(g => ({
+      id: g.id,
+      userId: g.userId,
+      name: g.user.name,
+      image: g.user.image || null,
+      isHost: false,
+      isMuted: g.isMuted,
+      isVideoOff: g.isVideoOff,
+      isConnecting: guestConnectionStates.get(g.userId) === 'connecting',
+      isDisconnected: guestConnectionStates.get(g.userId) === 'disconnected',
+    })),
+  ] : []
 
   const handleBanUser = async (userId: string) => {
     try {
@@ -1036,20 +1107,6 @@ export default function BroadcastPage() {
   
   // Legacy alias for backward compatibility (if needed elsewhere)
   const activeCoBroadcaster = activeGuests[0] || null
-  const activeCoBroadcasters = activeGuests
-
-  // Calculate popup positions for guests (positioned in corners/sides)
-  const getGuestPopupStyle = (index: number, total: number): React.CSSProperties => {
-    // Position: top-right, bottom-right, top-left, bottom-left
-    const positions = [
-      { top: '80px', right: '12px' },      // Guest 1: top-right
-      { bottom: '180px', right: '12px' },  // Guest 2: bottom-right (above controls)
-      { top: '80px', left: '12px' },       // Guest 3: top-left
-      { bottom: '180px', left: '12px' },   // Guest 4: bottom-left
-    ]
-    return positions[index] || positions[0]
-  }
-
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       {/* Auto-close warning banner */}
@@ -1060,7 +1117,8 @@ export default function BroadcastPage() {
           </div>
         </div>
       )}
-      {/* Main broadcaster video is always fullscreen */}
+
+      {/* Video Layout */}
       {isCohost ? (
         <>
           {/* Co-host mode: Broadcaster video fullscreen */}
@@ -1080,7 +1138,6 @@ export default function BroadcastPage() {
               className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
-            {/* My info bar */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
               <div className="flex items-center gap-1.5">
                 {session?.user?.image ? (
@@ -1094,18 +1151,59 @@ export default function BroadcastPage() {
                 <span className="text-green-400 text-[8px]">●</span>
               </div>
             </div>
-            {/* Camera switch button */}
-            <button
-              onClick={switchCameraFn}
-              className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-            >
+            <button onClick={switchCameraFn} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors">
               <SwitchCamera className="w-3 h-3 text-white" />
             </button>
           </motion.div>
         </>
+      ) : hasActiveGuests ? (
+        <>
+          {/* MULTI-GUEST GRID MODE: Host + Guests in dynamic grid */}
+          <div className="absolute inset-0 pt-14 pb-28 px-1">
+            <StreamVideoGrid
+              participants={gridParticipants}
+              videoRefs={new Map()}
+              onSetVideoRef={(userId, el) => {
+                if (!el) return
+                if (userId === 'host') {
+                  // Host video ref
+                  if (localVideoRef.current !== el) {
+                    (localVideoRef as any).current = el
+                    // Re-play local video track into new container
+                    const videoTrack = localVideoTrackRef.current
+                    if (videoTrack) {
+                      try { videoTrack.play(el) } catch {}
+                    }
+                  }
+                } else {
+                  // Guest video ref
+                  guestVideoRefs.current.set(userId, el)
+                  // Play remote user's video into container
+                  const remoteUser = remoteUsersRef.current.get(userId)
+                  if (remoteUser?.videoTrack) {
+                    try { remoteUser.videoTrack.play(el) } catch {}
+                  }
+                }
+              }}
+              hostMirror={facingMode === 'user'}
+            />
+          </div>
+
+          {/* Gradients */}
+          <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-[5]" />
+          <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-[5]" />
+
+          {/* Guest count badge */}
+          <div className="absolute top-16 right-3 z-20">
+            <div className="bg-purple-500/30 backdrop-blur-sm border border-purple-500/40 rounded-full px-2.5 py-1 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-purple-300" />
+              <span className="text-purple-200 text-[10px] font-bold">{activeGuests.length} misafir</span>
+            </div>
+          </div>
+        </>
       ) : (
         <>
-          {/* Broadcaster mode: My video fullscreen */}
+          {/* SOLO MODE: Broadcaster video fullscreen */}
           <div
             ref={localVideoRef}
             className="absolute inset-0 w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
@@ -1115,87 +1213,6 @@ export default function BroadcastPage() {
           {/* Gradients for solo mode */}
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
           <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
-
-          {/* Guest video PiP popups - canlı falcı style */}
-          <AnimatePresence>
-            {activeGuests.slice(0, MAX_GUESTS).map((guest, index) => {
-              const connectionState = guestConnectionStates.get(guest.userId)
-              const isConnecting = connectionState === 'connecting' || connectionState === 'new'
-              const isDisconnected = connectionState === 'disconnected' || connectionState === 'failed'
-              const popupStyle = getGuestPopupStyle(index, activeGuests.length)
-              
-              return (
-                <motion.div
-                  key={guest.id}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.5, opacity: 0 }}
-                  transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                  className="absolute w-28 h-40 sm:w-32 sm:h-44 bg-gray-900 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-2xl z-20"
-                  style={popupStyle}
-                >
-                  {/* Guest video */}
-                  <div
-                    ref={(el) => {
-                      if (el) {
-                        guestVideoRefs.current.set(guest.userId, el)
-                      }
-                    }}
-                    className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
-                  />
-                  
-                  {/* Connection status overlay */}
-                  {(isConnecting || isDisconnected) && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
-                      {guest.user.image ? (
-                        <Image src={guest.user.image} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover mb-2" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-2">
-                          <span className="text-white text-sm font-bold">{guest.user.name[0]}</span>
-                        </div>
-                      )}
-                      <p className="text-white text-[10px] text-center px-2">
-                        {isDisconnected 
-                          ? ('Yeniden bağlanıyor...')
-                          : ('Bağlanıyor...')
-                        }
-                      </p>
-                      <div className="mt-1.5 w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    </div>
-                  )}
-                  
-                  {/* Guest info bar */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                    <div className="flex items-center gap-1.5">
-                      {guest.user.image ? (
-                        <Image src={guest.user.image} alt="" width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <span className="text-white text-[6px] font-bold">{guest.user.name[0]}</span>
-                        </div>
-                      )}
-                      <p className="text-white text-[9px] font-medium truncate flex-1">{guest.user.name}</p>
-                      {/* Connection status indicator */}
-                      <span className={`text-[8px] ${
-                        connectionState === 'connected' ? 'text-green-400' :
-                        isDisconnected ? 'text-red-400' :
-                        'text-yellow-400'
-                      }`}>●</span>
-                    </div>
-                  </div>
-
-                  {/* Remove guest button */}
-                  <button 
-                    onClick={() => handleRemoveCoBroadcaster(guest.userId)}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500/70 rounded-full hover:bg-red-500 transition-colors z-10"
-                    title={'Çıkar'}
-                  >
-                    <PhoneOff className="w-3 h-3 text-white" />
-                  </button>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
         </>
       )}
 
@@ -1378,7 +1395,7 @@ export default function BroadcastPage() {
           )}
           
           {/* Active Co-Broadcasters (as circles, old style) */}
-          {activeCoBroadcasters.map(cb => (
+          {activeGuests.map((cb: any) => (
             <motion.div
               key={cb.id}
               initial={{ opacity: 0, scale: 0.8 }}
@@ -1688,6 +1705,23 @@ export default function BroadcastPage() {
             <SwitchCamera className="w-5 h-5 text-white" />
           </button>
           
+          {/* Host Controls Button */}
+          {!isCohost && (
+            <button 
+              onClick={() => setShowHostControls(!showHostControls)} 
+              className={`w-12 h-12 rounded-full flex items-center justify-center relative ${showHostControls ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
+              title="Misafir Kontrolleri"
+            >
+              <Shield className="w-5 h-5 text-white" />
+              {/* Badge for pending requests */}
+              {hostPendingRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {hostPendingRequests.length}
+                </span>
+              )}
+            </button>
+          )}
+          
           {/* PK Battle Button */}
           {!isCohost && (
             <button 
@@ -1718,7 +1752,7 @@ export default function BroadcastPage() {
           </button>
           
           {/* Enable remote audio button - shows when co-broadcast is active and audio not enabled */}
-          {(activeCoBroadcaster || isCohost) && !remoteAudioEnabled && (
+          {(hasActiveGuests || isCohost) && !remoteAudioEnabled && (
             <button 
               onClick={enableRemoteAudio} 
               className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center animate-pulse"
@@ -1962,14 +1996,14 @@ export default function BroadcastPage() {
               
               <div className="flex gap-3">
                 <button
-                  onClick={handleRejectCoBroadcastRequest}
+                  onClick={() => handleRejectCoBroadcastRequest()}
                   className="flex-1 bg-white/10 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-white/20"
                 >
                   <X className="w-5 h-5" />
                   {'Reddet'}
                 </button>
                 <button
-                  onClick={handleAcceptCoBroadcastRequest}
+                  onClick={() => handleAcceptCoBroadcastRequest()}
                   className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-green-400 hover:to-green-500"
                 >
                   <Phone className="w-5 h-5" />
@@ -2425,6 +2459,26 @@ export default function BroadcastPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Host Control Panel */}
+      {!isCohost && (
+        <HostControlPanel
+          streamId={streamId}
+          guests={hostControlGuests}
+          pendingRequests={hostPendingRequests}
+          maxGuests={MAX_GUESTS}
+          onAcceptRequest={(userId) => handleAcceptCoBroadcastRequest(userId)}
+          onRejectRequest={(userId) => handleRejectCoBroadcastRequest(userId)}
+          onMuteGuest={(userId) => handleMuteCoBroadcaster(userId, true)}
+          onUnmuteGuest={(userId) => handleMuteCoBroadcaster(userId, false)}
+          onVideoOffGuest={(userId) => handleVideoOffCoBroadcaster(userId, true)}
+          onVideoOnGuest={(userId) => handleVideoOffCoBroadcaster(userId, false)}
+          onKickGuest={(userId) => handleRemoveCoBroadcaster(userId)}
+          onInviteViewer={() => setShowViewers(true)}
+          onClose={() => setShowHostControls(false)}
+          isVisible={showHostControls}
+        />
+      )}
 
       {/* PK Modal - Select broadcaster to challenge */}
       <AnimatePresence>

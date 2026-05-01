@@ -42,6 +42,7 @@ import {
   Grid
 } from 'lucide-react'
 import PKBattleOverlay from '@/components/pk-battle-overlay'
+import StreamVideoGrid, { GridParticipant } from '@/components/stream-video-grid'
 
 interface VideoStream {
   id: string
@@ -157,12 +158,14 @@ function VideoStreamPageInner() {
   const [guestCountdown, setGuestCountdown] = useState(3)
   const [coBroadcastRequested, setCoBroadcastRequested] = useState(false)
   const [requestingCoBroadcast, setRequestingCoBroadcast] = useState(false)
-  // Co-broadcast state (no PK battle)
-  const [activeCoBroadcaster, setActiveCoBroadcaster] = useState<{
+  // Co-broadcast state - multiple active guests
+  const [activeCoBroadcasters, setActiveCoBroadcasters] = useState<{
     id: string
     userId: string
+    isMuted: boolean
+    isVideoOff: boolean
     user: { id: string; name: string; image: string | null }
-  } | null>(null)
+  }[]>([])
   // Viewer settings (hide/nickname)
   const [viewerSettings, setViewerSettings] = useState<ViewerSettings>({ isHidden: false, nickname: '' })
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -206,6 +209,8 @@ function VideoStreamPageInner() {
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLDivElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLDivElement>(null)
+  const remoteUsersRef = useRef<Map<string, IAgoraRTCRemoteUser>>(new Map())
+  const guestVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const heartIdRef = useRef(0)
   const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
   const viewerIdRef = useRef<string>('')
@@ -359,11 +364,20 @@ function VideoStreamPageInner() {
         if (isUnmountedRef.current) return
         await client.subscribe(user, mediaType)
         
+        // Track remote user
+        remoteUsersRef.current.set(String(user.uid), user)
+        
         if (mediaType === 'video') {
-          // Play in remoteVideoRef (main broadcaster) or coBroadcasterVideoRef
-          const container = remoteVideoRef.current
-          if (container) {
-            user.videoTrack?.play(container)
+          // Check if there's a guest video ref for this UID
+          const guestEl = guestVideoRefs.current.get(String(user.uid))
+          if (guestEl) {
+            try { user.videoTrack?.play(guestEl) } catch {}
+          } else {
+            // Default: play in main remoteVideoRef (host video)
+            const container = remoteVideoRef.current
+            if (container) {
+              user.videoTrack?.play(container)
+            }
           }
           setConnectionStatus('connected')
         }
@@ -378,9 +392,12 @@ function VideoStreamPageInner() {
         }
       })
 
-      client.on('user-left', () => {
-        // Broadcaster left - stream ended
-        setConnectionStatus('failed')
+      client.on('user-left', (user: IAgoraRTCRemoteUser) => {
+        remoteUsersRef.current.delete(String(user.uid))
+        // Check if any remote users remain (if none, broadcaster left)
+        if (remoteUsersRef.current.size === 0) {
+          setConnectionStatus('failed')
+        }
       })
 
       // Join Agora channel as audience
@@ -595,20 +612,25 @@ function VideoStreamPageInner() {
     } catch {}
   }
 
-  // Fetch co-broadcasters for split screen mode
+  // Fetch co-broadcasters for multi-guest grid mode
   const fetchCoBroadcasters = async (streamId: string) => {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/co-broadcast`)
       if (res.ok) {
         const data = await res.json()
-        const active = data.find((cb: any) => cb.status === 'active')
+        const activeList = data.filter((cb: any) => cb.status === 'active')
         
-        if (active && !activeCoBroadcaster) {
-          setActiveCoBroadcaster(active)
-        } else if (!active && activeCoBroadcaster) {
-          // Co-broadcaster left
-          setActiveCoBroadcaster(null)
+        // Check if user's request was approved (navigated to broadcast page)
+        if (coBroadcastRequested) {
+          const myEntry = data.find((cb: any) => cb.userId === sessionRef.current?.user?.id)
+          if (myEntry?.status === 'active') {
+            // Host approved my request - navigate to broadcast as co-host
+            router.push(`/sohbet/video/broadcast/${streamId}?cohost=true`)
+            return
+          }
         }
+        
+        setActiveCoBroadcasters(activeList)
       }
     } catch (e) {}
   }
@@ -795,15 +817,8 @@ function VideoStreamPageInner() {
 
   // Request co-broadcast with the streamer
   const handleRequestCoBroadcast = async () => {
-    if (!currentStream || !session?.user) {
-      alert('Giriş yapmanız gerekiyor!')
-      return
-    }
-    
-    // Can't request co-broadcast with yourself
-    if (currentStream.user.id === session.user.id) {
-      return
-    }
+    if (!currentStream || !session?.user) return
+    if (currentStream.user.id === session.user.id) return
     
     setRequestingCoBroadcast(true)
     try {
@@ -815,11 +830,10 @@ function VideoStreamPageInner() {
       
       if (res.ok) {
         setCoBroadcastRequested(true)
-        alert('Ortak yayın talebiniz gönderildi!')
       } else {
         const data = await res.json()
         if (data.error === 'Already requested or co-broadcasting') {
-          alert('Zaten talep gönderilmiş!')
+          setCoBroadcastRequested(true)
         }
       }
     } catch (e) {
@@ -1039,8 +1053,30 @@ function VideoStreamPageInner() {
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
   const regularViewers = viewers.filter(v => !v.hasGifted)
   
-  // Split screen mode when co-broadcaster is active
-  const isSplitMode = !!activeCoBroadcaster
+  // Multi-guest grid mode when co-broadcasters are active
+  const hasActiveGuests = activeCoBroadcasters.length > 0
+  
+  // Build grid participants for StreamVideoGrid
+  const gridParticipants: GridParticipant[] = hasActiveGuests ? [
+    {
+      id: 'host',
+      userId: 'host',
+      name: currentStream?.user?.name || 'Host',
+      image: currentStream?.user?.image || null,
+      isHost: true,
+      isMuted: false,
+      isVideoOff: false,
+    },
+    ...activeCoBroadcasters.map(g => ({
+      id: g.id,
+      userId: g.userId,
+      name: g.user.name,
+      image: g.user.image || null,
+      isHost: false,
+      isMuted: g.isMuted,
+      isVideoOff: g.isVideoOff,
+    })),
+  ] : []
 
   if (loading) {
     return (
@@ -1164,106 +1200,55 @@ function VideoStreamPageInner() {
         </div>
       ) : (
         <>
-          {/* TikTok-style 2x2 Grid Mode - Co-broadcast */}
-          {isSplitMode ? (
-            <div className="absolute inset-0 flex flex-col">
-              {/* 2x2 Grid Videos */}
-              <div className="flex-1 pt-14 pb-28 px-1">
-                <div className="h-full grid grid-cols-2 gap-1">
-                  {/* Broadcaster Video (top-left) */}
-                  <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                    <div
-                      ref={remoteVideoRef}
-                      className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
-                    />
-                    <div className="absolute bottom-1 left-1 right-1 z-10">
-                      <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                        {currentStream?.user?.image ? (
-                          <Image src={currentStream.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <span className="text-white text-[8px] font-bold">{currentStream?.user?.name?.[0]}</span>
-                          </div>
-                        )}
-                        <p className="text-white text-[10px] font-medium truncate">{currentStream?.user?.name}</p>
-                        <div className="w-4 h-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                          <span className="text-[8px]">👑</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          {/* Multi-guest Grid Mode OR Solo View */}
+          {hasActiveGuests ? (
+            <>
+              {/* StreamVideoGrid with all participants */}
+              <div className="absolute inset-0 pt-14 pb-28 px-1">
+                <StreamVideoGrid
+                  participants={gridParticipants}
+                  videoRefs={new Map()}
+                  onSetVideoRef={(userId, el) => {
+                    if (!el) return
+                    if (userId === 'host') {
+                      // Host = the broadcaster's video, play from remoteVideoRef approach
+                      // Find first remote user (which should be the host/broadcaster)
+                      const hostContainer = remoteVideoRef.current
+                      if (hostContainer !== el) {
+                        (remoteVideoRef as any).current = el
+                        // Re-play all remote users: first one goes to host container
+                        const remoteUsers = Array.from(remoteUsersRef.current.values())
+                        if (remoteUsers.length > 0 && remoteUsers[0].videoTrack) {
+                          try { remoteUsers[0].videoTrack.play(el) } catch {}
+                        }
+                      }
+                    } else {
+                      // Guest video ref - map userId to Agora remote user
+                      guestVideoRefs.current.set(userId, el)
+                      // Find the matching remote user (skip first one which is host)
+                      const remoteUsers = Array.from(remoteUsersRef.current.values())
+                      const guestIndex = activeCoBroadcasters.findIndex(g => g.userId === userId)
+                      const remoteUser = guestIndex >= 0 ? remoteUsers[guestIndex + 1] : undefined
+                      if (remoteUser?.videoTrack) {
+                        try { remoteUser.videoTrack.play(el) } catch {}
+                      }
+                    }
+                  }}
+                />
+              </div>
 
-                  {/* Co-Broadcaster Video (top-right) */}
-                  <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-square">
-                    <div
-                      ref={coBroadcasterVideoRef}
-                      className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
-                    />
-                    <div className="absolute bottom-1 left-1 right-1 z-10">
-                      <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md">
-                        {activeCoBroadcaster.user.image ? (
-                          <Image src={activeCoBroadcaster.user.image} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <span className="text-white text-[8px] font-bold">{activeCoBroadcaster.user.name[0]}</span>
-                          </div>
-                        )}
-                        <p className="text-white text-[10px] font-medium truncate">{activeCoBroadcaster.user.name}</p>
-                      </div>
-                    </div>
-                  </div>
+              {/* Gradients for grid mode */}
+              <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-[5]" />
+              <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-[5]" />
+
+              {/* Guest count badge */}
+              <div className="absolute top-16 right-3 z-20">
+                <div className="bg-purple-500/30 backdrop-blur-sm border border-purple-500/40 rounded-full px-2.5 py-1 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-purple-300" />
+                  <span className="text-purple-200 text-[10px] font-bold">{activeCoBroadcasters.length} misafir</span>
                 </div>
               </div>
-
-              {/* Comments floating above input - Grid Mode */}
-              <div className="absolute left-3 bottom-24 right-20 max-h-32 overflow-hidden z-20 space-y-1">
-                {comments.slice(0, 4).map(c => {
-                  const badge = getUserBadge(c.user)
-                  return (
-                    <motion.div key={c.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-black/50 backdrop-blur-sm rounded-xl px-3 py-1.5 w-fit max-w-[85%]">
-                      <div className="flex items-center gap-1.5">
-                        {badge && <span className={`text-sm ${badge.color}`}>{badge.icon}</span>}
-                        <span className={`text-xs font-bold ${badge ? `${badge.color} ${badge.effectClass}` : 'text-white/70'}`}
-                          {...(badge?.effectClass === 'effect-glitch' ? { 'data-text': `${c.user.name}:` } : {})}
-                        >{c.user.name}:</span>
-                        <span className="text-white text-xs">{c.content}</span>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </div>
-
-              {/* Bottom input and actions - Grid Mode */}
-              <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
-                <div className="flex-1 flex items-center bg-white/10 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
-                  <input
-                    ref={commentInputRef}
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSendComment()}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder={'Mesaj yaz...'}
-                    className="flex-1 bg-transparent text-white text-sm px-4 py-2.5 placeholder:text-white/50 focus:outline-none"
-                  />
-                  <div className="pr-3 text-white/50">▼</div>
-                </div>
-                
-                <button
-                  onClick={(e) => { e.stopPropagation(); /* handleRequestFortune */ }}
-                  className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-bold rounded-full flex-shrink-0"
-                >
-                  {'Fal iste'}
-                </button>
-                
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-                  className="px-3 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium rounded-full flex items-center gap-1.5 flex-shrink-0"
-                >
-                  <span className="text-base">🎁</span>
-                  <span>{'Hediye'}</span>
-                </button>
-              </div>
-            </div>
+            </>
           ) : (
             /* Normal Solo Broadcast View - TikTok 9:16 style */
             <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -1276,7 +1261,7 @@ function VideoStreamPageInner() {
           )}
           
           {/* Hidden co-broadcaster container for non-VS mode */}
-          {!isSplitMode && <div ref={coBroadcasterVideoRef} className="hidden" />}
+          {!hasActiveGuests && <div ref={coBroadcasterVideoRef} className="hidden" />}
           
           {/* Connection overlay */}
           {connectionStatus !== 'connected' && (
@@ -1305,7 +1290,7 @@ function VideoStreamPageInner() {
           )}
 
           {/* Gradients (non-VS mode only) */}
-          {!isSplitMode && (
+          {!hasActiveGuests && (
             <>
               <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-black/95 to-transparent pointer-events-none" />
@@ -1540,6 +1525,47 @@ function VideoStreamPageInner() {
 
           {/* ============== RIGHT SIDEBAR ACTIONS ============== */}
           <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3" data-no-tap>
+            {/* Join Stream Button - Yayına Katıl */}
+            {session?.user && currentStream && currentStream.user.id !== session.user.id && (
+              <div className="flex flex-col items-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { 
+                    e.stopPropagation()
+                    if (!coBroadcastRequested && !requestingCoBroadcast) {
+                      handleRequestCoBroadcast()
+                    }
+                  }}
+                  disabled={coBroadcastRequested || requestingCoBroadcast}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg relative ${
+                    coBroadcastRequested 
+                      ? 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-500/30' 
+                      : requestingCoBroadcast
+                        ? 'bg-gradient-to-br from-gray-500 to-gray-600'
+                        : 'bg-gradient-to-br from-pink-500 to-rose-600 shadow-pink-500/30'
+                  }`}
+                >
+                  {requestingCoBroadcast ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : coBroadcastRequested ? (
+                    <Check className="w-6 h-6 text-white" />
+                  ) : (
+                    <UserPlus className="w-6 h-6 text-white" />
+                  )}
+                  {coBroadcastRequested && (
+                    <motion.div 
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-black"
+                    />
+                  )}
+                </motion.button>
+                <span className="text-white text-[10px] font-medium mt-1 max-w-16 text-center leading-tight">
+                  {coBroadcastRequested ? 'Bekleniyor' : requestingCoBroadcast ? '...' : 'Katıl'}
+                </span>
+              </div>
+            )}
+
             {/* Viewers Button with count */}
             <div className="flex flex-col items-center">
               <motion.button

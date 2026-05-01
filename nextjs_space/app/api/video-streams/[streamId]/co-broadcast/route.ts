@@ -14,7 +14,7 @@ export async function GET(
     const coBroadcasters = await prisma.streamCoBroadcaster.findMany({
       where: { 
         streamId: params.streamId,
-        status: { in: ['invited', 'active'] }
+        status: { in: ['invited', 'active', 'requested'] }
       },
       orderBy: { invitedAt: 'desc' }
     })
@@ -136,6 +136,39 @@ export async function POST(
       return NextResponse.json(coBroadcaster)
     }
 
+    // Host approves a viewer's join request
+    if (action === 'approve') {
+      const activeCount = await prisma.streamCoBroadcaster.count({
+        where: { streamId: params.streamId, status: 'active' }
+      })
+      if (activeCount >= MAX_GUESTS) {
+        return NextResponse.json({ error: 'Maximum guests reached', maxGuests: MAX_GUESTS }, { status: 400 })
+      }
+      const coBroadcaster = await prisma.streamCoBroadcaster.update({
+        where: { streamId_userId: { streamId: params.streamId, userId } },
+        data: { status: 'active', joinedAt: new Date(), isMuted: false, isVideoOff: false }
+      })
+      // Notify the user that their request was approved
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: 'co_broadcast_accepted',
+          title: 'Yayına Katılma Onaylandı',
+          message: `Canlı yayına katılma isteğiniz onaylandı! Şimdi katılabilirsiniz.`,
+          data: JSON.stringify({ streamId: params.streamId, action: 'approved' })
+        }
+      })
+      return NextResponse.json(coBroadcaster)
+    }
+
+    if (action === 'reject_request') {
+      await prisma.streamCoBroadcaster.update({
+        where: { streamId_userId: { streamId: params.streamId, userId } },
+        data: { status: 'ended', leftAt: new Date() }
+      })
+      return NextResponse.json({ success: true })
+    }
+
     if (action === 'mute') {
       const coBroadcaster = await prisma.streamCoBroadcaster.update({
         where: { streamId_userId: { streamId: params.streamId, userId } },
@@ -148,6 +181,22 @@ export async function POST(
       const coBroadcaster = await prisma.streamCoBroadcaster.update({
         where: { streamId_userId: { streamId: params.streamId, userId } },
         data: { isMuted: false }
+      })
+      return NextResponse.json(coBroadcaster)
+    }
+
+    if (action === 'video_off') {
+      const coBroadcaster = await prisma.streamCoBroadcaster.update({
+        where: { streamId_userId: { streamId: params.streamId, userId } },
+        data: { isVideoOff: true }
+      })
+      return NextResponse.json(coBroadcaster)
+    }
+
+    if (action === 'video_on') {
+      const coBroadcaster = await prisma.streamCoBroadcaster.update({
+        where: { streamId_userId: { streamId: params.streamId, userId } },
+        data: { isVideoOff: false }
       })
       return NextResponse.json(coBroadcaster)
     }
