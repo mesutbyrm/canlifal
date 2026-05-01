@@ -69,7 +69,7 @@ export default function ChatPage() {
   const isCosmic = theme === 'cosmic'
 
   // Theme colors
-  const bgColor = isFalclub ? '' : isFalci ? '' : isCosmic ? '' : ''
+  const bgColor = 'bg-[#0a0118]'
   const headerBg = isFalclub ? 'bg-purple-950/95' : isFalci ? 'bg-purple-950/95' : isCosmic ? 'bg-purple-950/95' : 'bg-purple-950/95'
   const borderColor = isFalclub ? 'border-fuchsia-900/30' : isFalci ? 'border-indigo-900/30' : isCosmic ? 'border-blue-900/30' : 'border-purple-900/30'
   const accentColor = isFalclub ? 'text-fuchsia-300' : isFalci ? 'text-indigo-300' : isCosmic ? 'text-blue-300' : 'text-purple-300'
@@ -242,7 +242,7 @@ export default function ChatPage() {
 
   if (loading || status === 'loading') {
     return (
-      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
+      <div className={`fixed inset-0 ${bgColor} flex items-center justify-center z-[52]`}>
         <Loader2 className={`w-8 h-8 ${accentColor} animate-spin`} />
       </div>
     )
@@ -250,7 +250,7 @@ export default function ChatPage() {
 
   if (!user) {
     return (
-      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
+      <div className={`fixed inset-0 ${bgColor} flex items-center justify-center z-[52]`}>
         <p className="text-white/70">
           {'Kullanıcı bulunamadı'}
         </p>
@@ -262,8 +262,8 @@ export default function ChatPage() {
 
   return (
     <div
-      className={`${bgColor} flex flex-col overflow-hidden pt-[60px]`}
-      style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
+      className={`${bgColor} fixed inset-0 flex flex-col overflow-hidden pt-[60px] z-[52]`}
+      style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
     >
       {/* Header - compact with profile */}
       <div className={`flex-shrink-0 ${headerBg} backdrop-blur-sm ${borderColor} border-b z-40`}>

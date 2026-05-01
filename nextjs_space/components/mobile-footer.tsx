@@ -22,9 +22,10 @@ export default function MobileFooter() {
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [profileFrameUrl, setProfileFrameUrl] = useState<string | null>(null)
   
-  // Hide footer on certain pages
+  // Hide footer on certain pages (including individual chat conversations)
   const hiddenPaths = ['/canli-oda', '/sohbet/video', '/giris', '/kayit-ol']
-  const shouldHide = hiddenPaths.some(path => pathname?.includes(path))
+  const isIndividualChat = pathname ? /\/mesajlar\/[^/]+/.test(pathname) : false
+  const shouldHide = hiddenPaths.some(path => pathname?.includes(path)) || isIndividualChat
   
   // Check if we're on messages page (hide floating profile button there)
   const isMessagesPage = pathname?.includes('/mesajlar')
