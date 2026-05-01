@@ -202,16 +202,29 @@ export default function StreamSetupPage() {
         return
       }
 
-      canvas.width = video.videoWidth || 720
-      canvas.height = video.videoHeight || 1280
+      // Set canvas to fill the screen (full screen cover)
+      const screenW = window.innerWidth
+      const screenH = window.innerHeight
+      canvas.width = screenW
+      canvas.height = screenH
+
+      const videoW = video.videoWidth || 720
+      const videoH = video.videoHeight || 1280
+
+      // Calculate "cover" crop: scale video to fill canvas, center and crop overflow
+      const scale = Math.max(screenW / videoW, screenH / videoH)
+      const drawW = videoW * scale
+      const drawH = videoH * scale
+      const dx = (screenW - drawW) / 2
+      const dy = (screenH - drawH) / 2
 
       // Mirror for front camera
       if (facingMode === 'user') {
-        ctx.translate(canvas.width, 0)
+        ctx.translate(screenW, 0)
         ctx.scale(-1, 1)
       }
 
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      ctx.drawImage(video, dx, dy, drawW, drawH)
 
       // Reset transform
       if (facingMode === 'user') {
@@ -242,7 +255,15 @@ export default function StreamSetupPage() {
           ctx.filter = 'none'
         } else {
           ctx.filter = filterString
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          // Re-draw with cover crop + filter
+          if (facingMode === 'user') {
+            ctx.translate(screenW, 0)
+            ctx.scale(-1, 1)
+          }
+          ctx.drawImage(video, dx, dy, drawW, drawH)
+          if (facingMode === 'user') {
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
+          }
           ctx.filter = 'none'
         }
       }
@@ -512,10 +533,10 @@ export default function StreamSetupPage() {
           className="hidden"
         />
         
-        {/* Canvas with effects */}
+        {/* Canvas with effects - full screen cover */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-contain bg-black"
+          className="absolute inset-0 w-full h-full object-cover bg-black"
         />
 
         {!isVideoOn && (
