@@ -8,6 +8,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { getMediaConstraints } from '@/lib/webrtc-config'
 import {
+  BEAUTY_PRESETS,
+  DEFAULT_BEAUTY_SETTINGS,
+  type AgoraBeautySettings,
+} from '@/lib/agora-client'
+import {
   Video,
   VideoOff,
   Mic,
@@ -18,7 +23,6 @@ import {
   X,
   ChevronLeft,
   Sun,
-  Contrast,
   Droplet,
   Loader2,
   Coffee,
@@ -31,13 +35,6 @@ import {
   Flame,
   Check,
 } from 'lucide-react'
-
-interface BeautySettings {
-  smoothness: number  // 0-100
-  brightness: number  // -50 to 50
-  contrast: number    // -50 to 50
-  saturation: number  // -50 to 50
-}
 
 interface StreamCategory {
   id: string
@@ -77,11 +74,14 @@ export default function StreamSetupPage() {
   const [showEffects, setShowEffects] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<StreamCategory | null>(null)
-  const [beautySettings, setBeautySettings] = useState<BeautySettings>({
-    smoothness: 30,
-    brightness: 0,
-    contrast: 0,
-    saturation: 0
+  const [beautySettings, setBeautySettings] = useState<AgoraBeautySettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('agoraBeautySettings')
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return DEFAULT_BEAUTY_SETTINGS
   })
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -145,6 +145,11 @@ export default function StreamSetupPage() {
       applyBeautyFilter()
     }
   }, [beautySettings, isVideoOn, isVideoReady])
+
+  // Save beauty settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('agoraBeautySettings', JSON.stringify(beautySettings))
+  }, [beautySettings])
 
   const handleVideoLoaded = () => {
     setIsVideoReady(true)
@@ -213,30 +218,33 @@ export default function StreamSetupPage() {
         ctx.setTransform(1, 0, 0, 1, 0, 0)
       }
 
-      // Apply beauty filters using CSS filters on canvas
-      const { smoothness, brightness, contrast, saturation } = beautySettings
+      // Apply beauty filters using CSS filters on canvas (preview of Agora effects)
+      const { smoothnessLevel, lighteningLevel, rednessLevel, lighteningContrastLevel, enabled } = beautySettings
       
-      // Apply filter effects
-      let filterString = ''
-      filterString += `brightness(${1 + brightness / 100}) `
-      filterString += `contrast(${1 + contrast / 100}) `
-      filterString += `saturate(${1 + saturation / 100}) `
-      
-      // Apply smoothness using blur + composite
-      if (smoothness > 0) {
-        const blurAmount = smoothness / 50
-        filterString += `blur(${blurAmount}px)`
+      if (enabled) {
+        // Map Agora settings to canvas filter approximations
+        let filterString = ''
+        filterString += `brightness(${1 + lighteningLevel * 0.4}) `
+        const contrastBoost = lighteningContrastLevel === 0 ? -0.1 : lighteningContrastLevel === 2 ? 0.15 : 0
+        filterString += `contrast(${1 + contrastBoost}) `
+        // Redness mapped to a slight warm saturate
+        filterString += `saturate(${1 + rednessLevel * 0.3}) `
         
-        // Draw blurred version
-        ctx.filter = filterString
-        ctx.globalAlpha = smoothness / 100 * 0.5
-        ctx.drawImage(canvas, 0, 0)
-        ctx.globalAlpha = 1
-        ctx.filter = 'none'
-      } else {
-        ctx.filter = filterString
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        ctx.filter = 'none'
+        // Apply smoothness using blur
+        if (smoothnessLevel > 0) {
+          const blurAmount = smoothnessLevel * 1.5
+          filterString += `blur(${blurAmount}px)`
+          
+          ctx.filter = filterString
+          ctx.globalAlpha = smoothnessLevel * 0.4
+          ctx.drawImage(canvas, 0, 0)
+          ctx.globalAlpha = 1
+          ctx.filter = 'none'
+        } else {
+          ctx.filter = filterString
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          ctx.filter = 'none'
+        }
       }
 
       animationFrameRef.current = requestAnimationFrame(render)
@@ -291,8 +299,8 @@ export default function StreamSetupPage() {
     
     setIsStarting(true)
     
-    // Store beauty settings in localStorage for broadcast page
-    localStorage.setItem('streamBeautySettings', JSON.stringify(beautySettings))
+    // Store beauty settings in localStorage for broadcast page (Agora format)
+    localStorage.setItem('agoraBeautySettings', JSON.stringify(beautySettings))
     localStorage.setItem('streamCategory', JSON.stringify(selectedCategory))
     
     try {
@@ -329,20 +337,37 @@ export default function StreamSetupPage() {
     }
   }
 
+  const updateBeauty = (partial: Partial<AgoraBeautySettings>) => {
+    setBeautySettings(prev => ({ ...prev, ...partial }))
+  }
+
+  const applyPreset = (idx: number) => {
+    const preset = BEAUTY_PRESETS[idx]
+    if (!preset) return
+    setBeautySettings({
+      enabled: idx > 0,
+      ...preset.settings,
+    })
+  }
+
   const SliderControl = ({ 
     icon: Icon, 
     label, 
     value, 
     min, 
     max, 
-    onChange 
+    onChange,
+    colorFrom = 'from-purple-500',
+    colorTo = 'to-pink-500',
   }: { 
     icon: any
     label: string
     value: number
     min: number
     max: number
-    onChange: (v: number) => void 
+    onChange: (v: number) => void
+    colorFrom?: string
+    colorTo?: string
   }) => (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-2">
@@ -530,36 +555,47 @@ export default function StreamSetupPage() {
 
             {/* Scrollable Content */}
             <div className="overflow-y-auto max-h-[45vh] p-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-white/5 rounded-xl">
+                <span className="text-white/80 text-sm font-medium">Güzelleştirme Efektleri</span>
+                <button
+                  onClick={() => updateBeauty({ enabled: !beautySettings.enabled })}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    beautySettings.enabled
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'bg-white/10 text-white/50'
+                  }`}
+                >
+                  {beautySettings.enabled ? 'AÇIK' : 'KAPALI'}
+                </button>
+              </div>
+
               {/* Preset Buttons - Horizontal Scroll */}
               <div className="mb-6">
                 <p className="text-white/60 text-xs mb-3">
                   {'Hazır Ayarlar'}
                 </p>
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  <button
-                    onClick={() => setBeautySettings({ smoothness: 0, brightness: 0, contrast: 0, saturation: 0 })}
-                    className="flex-shrink-0 px-4 py-2 bg-white/10 text-white text-sm rounded-full hover:bg-white/20 whitespace-nowrap"
-                  >
-                    ✨ {'Doğal'}
-                  </button>
-                  <button
-                    onClick={() => setBeautySettings({ smoothness: 40, brightness: 10, contrast: 5, saturation: 10 })}
-                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-purple-500/40 to-pink-500/40 text-white text-sm rounded-full hover:from-purple-500/60 hover:to-pink-500/60 whitespace-nowrap"
-                  >
-                    🌸 {'Yumuşak'}
-                  </button>
-                  <button
-                    onClick={() => setBeautySettings({ smoothness: 60, brightness: 15, contrast: 10, saturation: 15 })}
-                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-pink-500/40 to-rose-500/40 text-white text-sm rounded-full hover:from-pink-500/60 hover:to-rose-500/60 whitespace-nowrap"
-                  >
-                    💎 Glamour
-                  </button>
-                  <button
-                    onClick={() => setBeautySettings({ smoothness: 20, brightness: 20, contrast: 15, saturation: 5 })}
-                    className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-yellow-500/40 to-orange-500/40 text-white text-sm rounded-full hover:from-yellow-500/60 hover:to-orange-500/60 whitespace-nowrap"
-                  >
-                    ☀️ {'Parlak'}
-                  </button>
+                  {BEAUTY_PRESETS.map((preset, idx) => {
+                    const isActive = beautySettings.enabled
+                      ? (beautySettings.smoothnessLevel === preset.settings.smoothnessLevel &&
+                         beautySettings.lighteningLevel === preset.settings.lighteningLevel &&
+                         beautySettings.rednessLevel === preset.settings.rednessLevel)
+                      : idx === 0
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => applyPreset(idx)}
+                        className={`flex-shrink-0 px-4 py-2 text-white text-sm rounded-full whitespace-nowrap transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30'
+                            : 'bg-white/10 hover:bg-white/20'
+                        }`}
+                      >
+                        {preset.icon} {preset.name}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -567,39 +603,57 @@ export default function StreamSetupPage() {
               <div className="space-y-4">
                 <SliderControl
                   icon={Droplet}
-                  label={'Pürüzsüzlük'}
-                  value={beautySettings.smoothness}
+                  label={'Cilt Pürüzsüzlüğü'}
+                  value={Math.round(beautySettings.smoothnessLevel * 100)}
                   min={0}
                   max={100}
-                  onChange={(v) => setBeautySettings(prev => ({ ...prev, smoothness: v }))}
+                  onChange={(v) => updateBeauty({ enabled: true, smoothnessLevel: v / 100 })}
                 />
 
                 <SliderControl
                   icon={Sun}
-                  label={'Parlaklık'}
-                  value={beautySettings.brightness}
-                  min={-50}
-                  max={50}
-                  onChange={(v) => setBeautySettings(prev => ({ ...prev, brightness: v }))}
+                  label={'Parlaklık / Beyazlatma'}
+                  value={Math.round(beautySettings.lighteningLevel * 100)}
+                  min={0}
+                  max={100}
+                  onChange={(v) => updateBeauty({ enabled: true, lighteningLevel: v / 100 })}
                 />
 
                 <SliderControl
-                  icon={Contrast}
-                  label={'Kontrast'}
-                  value={beautySettings.contrast}
-                  min={-50}
-                  max={50}
-                  onChange={(v) => setBeautySettings(prev => ({ ...prev, contrast: v }))}
+                  icon={Heart}
+                  label={'Allık / Kızarıklık'}
+                  value={Math.round(beautySettings.rednessLevel * 100)}
+                  min={0}
+                  max={100}
+                  onChange={(v) => updateBeauty({ enabled: true, rednessLevel: v / 100 })}
                 />
 
-                <SliderControl
-                  icon={Sparkles}
-                  label={'Doygunluk'}
-                  value={beautySettings.saturation}
-                  min={-50}
-                  max={50}
-                  onChange={(v) => setBeautySettings(prev => ({ ...prev, saturation: v }))}
-                />
+                {/* Contrast Level Buttons */}
+                <div>
+                  <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                    <Sun className="w-4 h-4" />
+                    <span>Kontrast Seviyesi</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[
+                      { value: 0 as const, label: 'Düşük' },
+                      { value: 1 as const, label: 'Normal' },
+                      { value: 2 as const, label: 'Yüksek' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => updateBeauty({ enabled: true, lighteningContrastLevel: opt.value })}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                          beautySettings.lighteningContrastLevel === opt.value
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                            : 'bg-white/10 text-white/60 hover:bg-white/20'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -682,7 +736,7 @@ export default function StreamSetupPage() {
           
           <button
             onClick={() => setShowEffects(!showEffects)}
-            className={`w-14 h-14 rounded-full flex items-center justify-center ${showEffects ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
+            className={`w-14 h-14 rounded-full flex items-center justify-center ${showEffects || beautySettings.enabled ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
           >
             <Sparkles className="w-6 h-6 text-white" />
           </button>

@@ -13,6 +13,10 @@ import {
   fetchAgoraToken,
   leaveChannel,
   getCameras,
+  applyBeautyEffect,
+  BEAUTY_PRESETS,
+  DEFAULT_BEAUTY_SETTINGS,
+  type AgoraBeautySettings,
   type IAgoraRTCClient,
   type ICameraVideoTrack,
   type IMicrophoneAudioTrack,
@@ -46,7 +50,10 @@ import {
   Shield,
   UserCheck,
   UserX,
-  Swords
+  Swords,
+  Sparkles,
+  Sun,
+  Droplet
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import PKBattleOverlay from '@/components/pk-battle-overlay'
@@ -209,6 +216,17 @@ export default function BroadcastPage() {
   // Auto-close state
   const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null)
   const autoCloseCheckRef = useRef<NodeJS.Timeout | null>(null)
+  // Beauty effects state
+  const [beautySettings, setBeautySettings] = useState<AgoraBeautySettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('agoraBeautySettings')
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return DEFAULT_BEAUTY_SETTINGS
+  })
+  const [showBeautyPanel, setShowBeautyPanel] = useState(false)
 
 
   const localVideoRef = useRef<HTMLDivElement>(null)
@@ -347,6 +365,11 @@ export default function BroadcastPage() {
       const { token, uid, appId } = await fetchAgoraToken(channelName, 'host')
       await client.join(appId, channelName, token, uid)
       await client.publish([audioTrack, videoTrack])
+
+      // Apply saved beauty effects
+      if (beautySettings.enabled) {
+        await applyBeautyEffect(videoTrack, beautySettings)
+      }
 
       console.log('🎬 Agora: Joined channel as host, uid:', uid)
     } catch (error) {
@@ -652,6 +675,25 @@ export default function BroadcastPage() {
     } catch (e) {
       console.error('Switch camera error:', e)
     }
+  }
+
+  // Beauty effect handlers
+  const updateBeautySettings = async (newSettings: AgoraBeautySettings) => {
+    setBeautySettings(newSettings)
+    localStorage.setItem('agoraBeautySettings', JSON.stringify(newSettings))
+    if (localVideoTrackRef.current) {
+      await applyBeautyEffect(localVideoTrackRef.current, newSettings)
+    }
+  }
+
+  const applyBeautyPreset = async (presetIndex: number) => {
+    const preset = BEAUTY_PRESETS[presetIndex]
+    if (!preset) return
+    const newSettings: AgoraBeautySettings = {
+      enabled: presetIndex > 0, // index 0 = "Natural" = off
+      ...preset.settings,
+    }
+    await updateBeautySettings(newSettings)
   }
 
   const handleSendComment = async () => {
@@ -1657,6 +1699,15 @@ export default function BroadcastPage() {
             </button>
           )}
           
+          {/* Beauty Effects Button */}
+          <button 
+            onClick={() => setShowBeautyPanel(!showBeautyPanel)} 
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${beautySettings.enabled ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
+            title={'Güzelleştirme Efektleri'}
+          >
+            <Sparkles className="w-5 h-5 text-white" />
+          </button>
+          
           {/* Image Mode Toggle */}
           <button 
             onClick={handleToggleImageMode} 
@@ -1678,6 +1729,193 @@ export default function BroadcastPage() {
           )}
         </div>
       </div>
+
+      {/* Beauty Effects Panel */}
+      <AnimatePresence>
+        {showBeautyPanel && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute bottom-0 inset-x-0 z-40"
+          >
+            <div className="bg-black/70 backdrop-blur-xl rounded-t-3xl overflow-hidden border-t border-purple-500/30">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-pink-400" />
+                  Güzelleştirme Efektleri
+                </h3>
+                <div className="flex items-center gap-3">
+                  {/* Enable/Disable Toggle */}
+                  <button
+                    onClick={() => updateBeautySettings({ ...beautySettings, enabled: !beautySettings.enabled })}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                      beautySettings.enabled 
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                        : 'bg-white/10 text-white/60'
+                    }`}
+                  >
+                    {beautySettings.enabled ? 'AÇIK' : 'KAPALI'}
+                  </button>
+                  <button onClick={() => setShowBeautyPanel(false)} className="text-white/60 p-1">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-4 max-h-[50vh] overflow-y-auto">
+                {/* Presets */}
+                <div className="mb-5">
+                  <p className="text-white/50 text-xs mb-3 uppercase tracking-wider">Hazır Ayarlar</p>
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {BEAUTY_PRESETS.map((preset, idx) => {
+                      const isActive = beautySettings.enabled 
+                        ? (beautySettings.smoothnessLevel === preset.settings.smoothnessLevel &&
+                           beautySettings.lighteningLevel === preset.settings.lighteningLevel &&
+                           beautySettings.rednessLevel === preset.settings.rednessLevel)
+                        : idx === 0
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => applyBeautyPreset(idx)}
+                          className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                            isActive
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30'
+                              : 'bg-white/10 text-white/70 hover:bg-white/20'
+                          }`}
+                        >
+                          <span className="mr-1.5">{preset.icon}</span>
+                          {preset.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Manual Sliders */}
+                <div className="space-y-5">
+                  {/* Smoothness */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Droplet className="w-4 h-4 text-blue-400" />
+                        <span>Cilt Pürüzsüzlüğü</span>
+                      </div>
+                      <span className="text-white/50 text-xs">{Math.round(beautySettings.smoothnessLevel * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={Math.round(beautySettings.smoothnessLevel * 100)}
+                      onChange={(e) => updateBeautySettings({ ...beautySettings, enabled: true, smoothnessLevel: Number(e.target.value) / 100 })}
+                      className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                        [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-blue-500
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                        [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+                        [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-blue-400 [&::-moz-range-thumb]:to-blue-500
+                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0"
+                    />
+                  </div>
+
+                  {/* Brightness / Whitening */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Sun className="w-4 h-4 text-yellow-400" />
+                        <span>Parlaklık / Beyazlatma</span>
+                      </div>
+                      <span className="text-white/50 text-xs">{Math.round(beautySettings.lighteningLevel * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={Math.round(beautySettings.lighteningLevel * 100)}
+                      onChange={(e) => updateBeautySettings({ ...beautySettings, enabled: true, lighteningLevel: Number(e.target.value) / 100 })}
+                      className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                        [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-yellow-400 [&::-webkit-slider-thumb]:to-orange-400
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                        [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+                        [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-yellow-400 [&::-moz-range-thumb]:to-orange-400
+                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0"
+                    />
+                  </div>
+
+                  {/* Redness / Rosy Cheeks */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Heart className="w-4 h-4 text-pink-400" />
+                        <span>Allık / Kızarıklık</span>
+                      </div>
+                      <span className="text-white/50 text-xs">{Math.round(beautySettings.rednessLevel * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={Math.round(beautySettings.rednessLevel * 100)}
+                      onChange={(e) => updateBeautySettings({ ...beautySettings, enabled: true, rednessLevel: Number(e.target.value) / 100 })}
+                      className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                        [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-pink-400 [&::-webkit-slider-thumb]:to-rose-500
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                        [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+                        [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-pink-400 [&::-moz-range-thumb]:to-rose-500
+                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0"
+                    />
+                  </div>
+
+                  {/* Contrast Level */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Sun className="w-4 h-4 text-purple-400" />
+                        <span>Kontrast Seviyesi</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 0 as const, label: 'Düşük' },
+                        { value: 1 as const, label: 'Normal' },
+                        { value: 2 as const, label: 'Yüksek' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => updateBeautySettings({ ...beautySettings, enabled: true, lighteningContrastLevel: opt.value })}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                            beautySettings.lighteningContrastLevel === opt.value
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                              : 'bg-white/10 text-white/60 hover:bg-white/20'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-white/10">
+                <button
+                  onClick={() => setShowBeautyPanel(false)}
+                  className="w-full py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white font-medium rounded-xl hover:from-purple-500/30 hover:to-pink-500/30 transition-all border border-purple-500/30"
+                >
+                  Tamam
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Co-Broadcast Request Popup */}
       <AnimatePresence>
