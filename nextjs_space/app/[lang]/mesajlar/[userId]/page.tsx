@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -57,8 +57,12 @@ export default function ChatPage() {
   const [requestSent, setRequestSent] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
   const [showRequestModal, setShowRequestModal] = useState(false)
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isUserScrolledUp = useRef(false)
+  const justSentMessage = useRef(false)
 
   const isFalclub = theme === 'falclub'
   const isFalci = theme === 'falci'
@@ -75,6 +79,38 @@ export default function ChatPage() {
   const sendBtnBg = isFalclub ? 'bg-gradient-to-r from-fuchsia-600 to-pink-600' : isFalci ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : isCosmic ? 'bg-gradient-to-r from-blue-600 to-cyan-600' : 'bg-gradient-to-r from-purple-600 to-pink-600'
   const avatarGradient = isFalclub ? 'from-fuchsia-800 to-pink-800' : isFalci ? 'from-indigo-800 to-purple-800' : isCosmic ? 'from-blue-800 to-cyan-800' : 'from-purple-800 to-pink-800'
 
+  // Handle viewport height for mobile keyboard - prevents layout jump
+  useEffect(() => {
+    const updateHeight = () => {
+      if (typeof window !== 'undefined' && window.visualViewport) {
+        setViewportHeight(window.visualViewport.height)
+      } else if (typeof window !== 'undefined') {
+        setViewportHeight(window.innerHeight)
+      }
+    }
+    updateHeight()
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateHeight)
+      window.visualViewport.addEventListener('scroll', updateHeight)
+      return () => {
+        window.visualViewport!.removeEventListener('resize', updateHeight)
+        window.visualViewport!.removeEventListener('scroll', updateHeight)
+      }
+    } else if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updateHeight)
+      return () => window.removeEventListener('resize', updateHeight)
+    }
+  }, [])
+
+  // Track if user has scrolled up (to prevent auto-scroll while reading)
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    const threshold = 100
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+    isUserScrolledUp.current = distanceFromBottom > threshold
+  }, [])
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push(`/giris`)
@@ -90,8 +126,14 @@ export default function ChatPage() {
     }
   }, [status, userId])
 
+  // Smart scroll: only auto-scroll if user is at bottom or just sent a message
   useEffect(() => {
-    scrollToBottom()
+    if (justSentMessage.current) {
+      justSentMessage.current = false
+      scrollToBottom()
+    } else if (!isUserScrolledUp.current) {
+      scrollToBottom()
+    }
   }, [messages])
 
   const fetchChat = async () => {
@@ -131,6 +173,7 @@ export default function ChatPage() {
 
       if (res.ok) {
         const data = await res.json()
+        justSentMessage.current = true
         setMessages(prev => [...prev, data.message])
         setNewMessage('')
       } else {
@@ -218,8 +261,11 @@ export default function ChatPage() {
   const groupedMessages = groupMessagesByDate(messages)
 
   return (
-    <div className={`h-screen ${bgColor} flex flex-col overflow-hidden pt-[60px]`}>
-      {/* Header - compact */}
+    <div
+      className={`${bgColor} flex flex-col overflow-hidden pt-[60px]`}
+      style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
+    >
+      {/* Header - compact with profile */}
       <div className={`flex-shrink-0 ${headerBg} backdrop-blur-sm ${borderColor} border-b z-40`}>
         <div className="max-w-lg mx-auto px-3 py-2 flex items-center gap-2">
           <button onClick={() => router.push(`/mesajlar`)} className="p-1">
@@ -229,7 +275,7 @@ export default function ChatPage() {
             href={`/profil/${user.username || user.id}`}
             className="flex items-center gap-2 flex-1"
           >
-            <div className="w-9 h-9 rounded-full overflow-hidden">
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
               {user.image ? (
                 <Image
                   src={user.image}
@@ -244,9 +290,9 @@ export default function ChatPage() {
                 </div>
               )}
             </div>
-            <div>
-              <p className="font-semibold text-white text-sm">{user.name}</p>
-              <p className="text-xs text-white/50">@{user.username || 'user'}</p>
+            <div className="min-w-0">
+              <p className="font-semibold text-white text-sm truncate">{user.name}</p>
+              <p className="text-xs text-white/50 truncate">@{user.username || 'user'}</p>
             </div>
           </Link>
           <button className="p-1">
@@ -255,8 +301,13 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Messages - sender LEFT, other RIGHT */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+      {/* Messages area */}
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-3 py-3 min-h-0"
+        style={{ overscrollBehaviorY: 'contain' }}
+      >
         <div className="max-w-lg mx-auto space-y-3">
           {Object.entries(groupedMessages).map(([date, msgs]) => (
             <div key={date}>
@@ -268,14 +319,30 @@ export default function ChatPage() {
               {msgs.map((message) => {
                 const isOwn = message.senderId === session?.user?.id
                 return (
-                  <motion.div
+                  <div
                     key={message.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
+                    className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-1.5`}
                   >
+                    {/* Other user's avatar on their messages */}
+                    {!isOwn && (
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 mb-1">
+                        {user.image ? (
+                          <Image
+                            src={user.image}
+                            alt={user.name}
+                            width={24}
+                            height={24}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className={`w-full h-full flex items-center justify-center text-[10px] text-white bg-gradient-to-br ${avatarGradient}`}>
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div
-                      className={`max-w-[75%] px-3 py-2 rounded-2xl ${
+                      className={`max-w-[70%] px-3 py-2 rounded-2xl ${
                         isOwn
                           ? `${myMsgBg} text-white rounded-br-sm`
                           : `${otherMsgBg} text-white/90 rounded-bl-sm`
@@ -284,7 +351,7 @@ export default function ChatPage() {
                       {message.imageUrl && (
                         <Image
                           src={message.imageUrl}
-                          alt="Image"
+                          alt="Mesaj görseli"
                           width={200}
                           height={200}
                           className="rounded-lg mb-1.5"
@@ -300,7 +367,7 @@ export default function ChatPage() {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 )
               })}
             </div>
