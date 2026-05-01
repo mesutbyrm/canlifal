@@ -5,6 +5,7 @@ import SessionProviderWrapper from '@/components/session-provider-wrapper'
 import OneSignalProvider from '@/components/onesignal-provider'
 import { LanguageProvider } from '@/lib/language-context'
 import SiteThemeWrapper from '@/components/site-theme-wrapper'
+import PWAInstallPrompt from '@/components/pwa-install-prompt'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const cinzel = Cinzel({ subsets: ['latin'], variable: '--font-cinzel' })
@@ -39,9 +40,15 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.png',
+    icon: [
+      { url: '/favicon.png', sizes: 'any' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
     shortcut: '/favicon.png',
-    apple: '/icons/icon-192x192.png',
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   openGraph: {
     type: 'website',
@@ -105,8 +112,15 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://apps.abacus.ai" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+        {/* Apple Splash Screens */}
+        <link rel="apple-touch-startup-image" href="/icons/splash-430x932.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/icons/splash-390x844.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/icons/splash-820x1180.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2)" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async />
         {/* OneSignal Web SDK - loaded dynamically by OneSignalProvider component */}
         {/* Google AdSense */}
@@ -260,6 +274,7 @@ export default function RootLayout({
             </LanguageProvider>
           </SiteThemeWrapper>
         </SessionProviderWrapper>
+        <PWAInstallPrompt />
         <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
       </body>
     </html>
