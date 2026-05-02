@@ -90,10 +90,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
 
     const isOwner = room?.ownerId === session.user.id
-    const isAdmin = user?.role === 'admin'
-    const hasVoiceRole = userRole?.role && ['voice', 'op', 'sop', 'admin', 'founder'].includes(userRole.role)
+    const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(user?.role || '')
+    const hasVoiceRole = userRole?.role && ['voice', 'op', 'sop', 'admin', 'founder', 'superadmin'].includes(userRole.role)
 
-    if (!isOwner && !isAdmin && !hasVoiceRole) {
+    if (!isOwner && !isGlobalAdmin && !hasVoiceRole) {
       return NextResponse.json({ error: 'No voice permission' }, { status: 403 })
     }
 

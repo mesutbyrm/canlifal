@@ -171,6 +171,10 @@ export async function POST(
         // Create leave message so other users see departure immediately
         if (isLeave) {
           const displayName = presenceRecord?.nickname || session.user.name || 'Kullanıcı'
+          // Delete all previous leave messages, keep only the latest
+          await prisma.chatMessage.deleteMany({
+            where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
+          })
           await prisma.chatMessage.create({
             data: {
               roomId,
@@ -299,6 +303,17 @@ export async function POST(
         const displayName = nickname || session.user.name || 'Kullanıcı'
         const specialRole = await getUserSpecialRole(roomId, session.user.id)
         
+        // Delete ALL previous join messages in this room (keep only the latest one)
+        await prisma.chatMessage.deleteMany({
+          where: {
+            roomId,
+            OR: [
+              { content: { startsWith: '[SYSTEM_JOIN]' } },
+              { content: { startsWith: '[SYSTEM_VIP_JOIN' } }
+            ]
+          }
+        })
+        
         // Create entry system message
         let systemContent = `[SYSTEM_JOIN]${displayName}`
         if (specialRole.isSpecial && specialRole.entryType) {
@@ -312,8 +327,6 @@ export async function POST(
             content: systemContent
           }
         })
-        
-        // Messages are NOT auto-deleted - only deleted when room empties
       }
     }
 
@@ -438,6 +451,10 @@ export async function DELETE(
     
     // Only create exit message if this is an intentional leave (page close/navigate away)
     if (isIntentionalLeave) {
+      // Delete all previous leave messages, keep only the latest
+      await prisma.chatMessage.deleteMany({
+        where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
+      })
       await prisma.chatMessage.create({
         data: {
           roomId,
