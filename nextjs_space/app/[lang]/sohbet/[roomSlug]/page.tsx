@@ -146,6 +146,7 @@ export default function ChatRoomPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [isListening, setIsListening] = useState(false) // For listen-only mode (audience)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isMicMuted, setIsMicMuted] = useState(false) // Mic muted but still listening
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
   const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
@@ -677,6 +678,27 @@ export default function ChatRoomPage() {
     }
   }
 
+  // Toggle mic mute/unmute (stays connected, can still hear others)
+  const toggleMicMute = useCallback(async () => {
+    if (!agoraAudioTrackRef.current || !voiceEnabled) return
+    try {
+      if (isMicMuted) {
+        // Unmute: re-enable the audio track
+        await agoraAudioTrackRef.current.setEnabled(true)
+        setIsMicMuted(false)
+        console.log('Mic unmuted')
+      } else {
+        // Mute: disable the audio track but stay connected
+        await agoraAudioTrackRef.current.setEnabled(false)
+        setIsMicMuted(true)
+        setIsSpeaking(false)
+        console.log('Mic muted (still listening)')
+      }
+    } catch (e) {
+      console.error('Error toggling mic mute:', e)
+    }
+  }, [voiceEnabled, isMicMuted])
+
   // Stop voice chat (host)
   const stopVoiceChat = useCallback(async () => {
     // Tell server we're leaving
@@ -707,6 +729,7 @@ export default function ChatRoomPage() {
     setVoiceEnabled(false)
     setIsListening(false)
     setIsSpeaking(false)
+    setIsMicMuted(false)
     setSpeakingUsers(new Set())
     fetchVoiceUsers()
   }, [room, voiceEnabled, fetchVoiceUsers])
@@ -2010,27 +2033,55 @@ export default function ChatRoomPage() {
 
               {/* Mic / Voice button */}
               {canUseVoice() && (
-                <button
-                  type="button"
-                  onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
-                  disabled={voiceConnecting}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-                    voiceEnabled
-                      ? 'bg-red-500/60 text-white animate-pulse'
-                      : voiceConnecting
-                        ? 'bg-blue-500/30 text-blue-300 opacity-50'
-                        : 'bg-white/10 text-white/50 hover:bg-white/20'
-                  }`}
-                  title={voiceEnabled ? 'Sesli sohbetten çık' : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'}
-                >
-                  {voiceEnabled ? (
-                    isSpeaking ? <Mic className="w-4 h-4 text-green-300" /> : <MicOff className="w-4 h-4" />
-                  ) : voiceConnecting ? (
-                    <Mic className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Mic className="w-4 h-4" />
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {/* Main mic button: click = mute/unmute when connected, or start voice when not connected */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (voiceEnabled) {
+                        toggleMicMute()
+                      } else {
+                        startVoiceChat()
+                      }
+                    }}
+                    disabled={voiceConnecting}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                      voiceEnabled
+                        ? isMicMuted
+                          ? 'bg-yellow-500/50 text-yellow-200'
+                          : isSpeaking
+                            ? 'bg-green-500/60 text-white animate-pulse'
+                            : 'bg-green-500/40 text-green-300'
+                        : voiceConnecting
+                          ? 'bg-blue-500/30 text-blue-300 opacity-50'
+                          : 'bg-white/10 text-white/50 hover:bg-white/20'
+                    }`}
+                    title={
+                      voiceEnabled
+                        ? isMicMuted ? 'Mikrofonu aç' : 'Mikrofonu kapat (dinlemeye devam)'
+                        : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'
+                    }
+                  >
+                    {voiceEnabled ? (
+                      isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />
+                    ) : voiceConnecting ? (
+                      <Mic className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Mic className="w-4 h-4" />
+                    )}
+                  </button>
+                  {/* Disconnect button: only visible when connected */}
+                  {voiceEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => stopVoiceChat()}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-red-500/60 text-white hover:bg-red-600/80 transition-all"
+                      title="Sesli sohbetten çık"
+                    >
+                      <PhoneOff className="w-3 h-3" />
+                    </button>
                   )}
-                </button>
+                </div>
               )}
 
               {/* Text Input */}
