@@ -1203,29 +1203,25 @@ function VideoStreamPageInner() {
           {/* Multi-guest Grid Mode OR Solo View */}
           {hasActiveGuests ? (
             <>
-              {/* StreamVideoGrid with all participants */}
+              {/* TikTok-style grid with Talep slots */}
               <div className="absolute inset-0 pt-14 pb-28 px-1">
                 <StreamVideoGrid
                   participants={gridParticipants}
+                  maxSlots={9}
                   videoRefs={new Map()}
                   onSetVideoRef={(userId, el) => {
                     if (!el) return
                     if (userId === 'host') {
-                      // Host = the broadcaster's video, play from remoteVideoRef approach
-                      // Find first remote user (which should be the host/broadcaster)
                       const hostContainer = remoteVideoRef.current
                       if (hostContainer !== el) {
                         (remoteVideoRef as any).current = el
-                        // Re-play all remote users: first one goes to host container
                         const remoteUsers = Array.from(remoteUsersRef.current.values())
                         if (remoteUsers.length > 0 && remoteUsers[0].videoTrack) {
                           try { remoteUsers[0].videoTrack.play(el) } catch {}
                         }
                       }
                     } else {
-                      // Guest video ref - map userId to Agora remote user
                       guestVideoRefs.current.set(userId, el)
-                      // Find the matching remote user (skip first one which is host)
                       const remoteUsers = Array.from(remoteUsersRef.current.values())
                       const guestIndex = activeCoBroadcasters.findIndex(g => g.userId === userId)
                       const remoteUser = guestIndex >= 0 ? remoteUsers[guestIndex + 1] : undefined
@@ -1234,20 +1230,19 @@ function VideoStreamPageInner() {
                       }
                     }
                   }}
+                  onRequestJoin={() => {
+                    if (!coBroadcastRequested && !requestingCoBroadcast && session?.user) {
+                      handleRequestCoBroadcast()
+                    }
+                  }}
+                  isHost={false}
+                  hasRequested={coBroadcastRequested}
                 />
               </div>
 
               {/* Gradients for grid mode */}
               <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-[5]" />
               <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-[5]" />
-
-              {/* Guest count badge */}
-              <div className="absolute top-16 right-3 z-20">
-                <div className="bg-purple-500/30 backdrop-blur-sm border border-purple-500/40 rounded-full px-2.5 py-1 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-purple-300" />
-                  <span className="text-purple-200 text-[10px] font-bold">{activeCoBroadcasters.length} misafir</span>
-                </div>
-              </div>
             </>
           ) : (
             /* Normal Solo Broadcast View - TikTok 9:16 style */

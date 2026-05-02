@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
-const MAX_GUESTS = 4 // Maximum simultaneous co-broadcasters allowed
+const MAX_GUESTS = 8 // Maximum simultaneous co-broadcasters allowed
 
 // GET - Get co-broadcasters for a stream
 export async function GET(

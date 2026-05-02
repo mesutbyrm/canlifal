@@ -126,7 +126,7 @@ interface StreamCategory {
 }
 
 const HEART_COLORS = ['#ff2d55', '#ff375f', '#ff6b6b', '#ff85a1', '#ffa9c1']
-const MAX_GUESTS = 4 // Maximum co-broadcasters allowed
+const MAX_GUESTS = 8 // Maximum co-broadcasters allowed (grid slots = MAX_GUESTS + 1 host)
 const RECONNECT_DELAY = 2000 // ms before attempting reconnect
 const MAX_RECONNECT_ATTEMPTS = 5
 
@@ -1158,27 +1158,24 @@ export default function BroadcastPage() {
         </>
       ) : hasActiveGuests ? (
         <>
-          {/* MULTI-GUEST GRID MODE: Host + Guests in dynamic grid */}
+          {/* MULTI-GUEST GRID MODE: Host + Guests in TikTok-style grid with Talep slots */}
           <div className="absolute inset-0 pt-14 pb-28 px-1">
             <StreamVideoGrid
               participants={gridParticipants}
+              maxSlots={MAX_GUESTS + 1}
               videoRefs={new Map()}
               onSetVideoRef={(userId, el) => {
                 if (!el) return
                 if (userId === 'host') {
-                  // Host video ref
                   if (localVideoRef.current !== el) {
                     (localVideoRef as any).current = el
-                    // Re-play local video track into new container
                     const videoTrack = localVideoTrackRef.current
                     if (videoTrack) {
                       try { videoTrack.play(el) } catch {}
                     }
                   }
                 } else {
-                  // Guest video ref
                   guestVideoRefs.current.set(userId, el)
-                  // Play remote user's video into container
                   const remoteUser = remoteUsersRef.current.get(userId)
                   if (remoteUser?.videoTrack) {
                     try { remoteUser.videoTrack.play(el) } catch {}
@@ -1186,20 +1183,13 @@ export default function BroadcastPage() {
                 }
               }}
               hostMirror={facingMode === 'user'}
+              isHost={true}
             />
           </div>
 
           {/* Gradients */}
           <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-[5]" />
           <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-[5]" />
-
-          {/* Guest count badge */}
-          <div className="absolute top-16 right-3 z-20">
-            <div className="bg-purple-500/30 backdrop-blur-sm border border-purple-500/40 rounded-full px-2.5 py-1 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-purple-300" />
-              <span className="text-purple-200 text-[10px] font-bold">{activeGuests.length} misafir</span>
-            </div>
-          </div>
         </>
       ) : (
         <>
