@@ -139,6 +139,7 @@ export default function ChatRoomPage() {
   
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
+  const [showAnnouncement, setShowAnnouncement] = useState(true)
   
   // Voice Chat with Agora
   const [voiceEnabled, setVoiceEnabled] = useState(false)
@@ -1501,714 +1502,523 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* Main Chat Layout */}
-      <div className="flex-1 flex min-h-0">
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0 border-r border-purple-500/30">
-          {/* Header */}
-          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2 gap-1">
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Home Button */}
-              <Link
-                href={`/`}
-                className="flex items-center justify-center w-8 h-8 rounded bg-gold-500/20 text-gold-400 hover:bg-gold-500/40 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-              </Link>
-              
-              {/* Odalar Button */}
-              <button
-                onClick={() => setShowRoomsPopup(true)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold-600/30 text-gold-200 hover:bg-gold-600/50"
-              >
-                <DoorOpen className="w-3 h-3" />
-                <span className="hidden sm:inline">{'Odalar'}</span>
-              </button>
-            </div>
-            
-            {/* Room Name - Center */}
-            <div className="flex-1 min-w-0 flex items-center justify-center px-1">
-              <span className="text-white font-medium text-sm truncate">
-                {room.icon} {room.nameTr}
-              </span>
-              {roomMuted && (
-                <VolumeX className="w-3 h-3 text-red-400 ml-1 flex-shrink-0" />
-              )}
-            </div>
-            
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Balance Display */}
-              {session?.user && (
-                <div className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-purple-900/40 border border-purple-500/20 text-[10px]">
-                  <span className="text-yellow-400 font-bold" title="Jeton">💎{userJetonBalance}</span>
-                </div>
-              )}
-              {/* Yönet Button */}
-              {hasManagePermission && (
-                <button
-                  onClick={() => setShowManagePopup(true)}
-                  className="flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50"
-                >
-                  <Settings className="w-3 h-3" />
-                  <span className="hidden sm:inline">{'Yönet'}</span>
-                </button>
-              )}
+      {/* ═══ Main Chat Layout — Yalla/Bigo-style Voice Room ═══ */}
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Fullscreen wallpaper background */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/room-wallpaper-default.jpg" 
+            alt="" 
+            className="w-full h-full object-cover" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70" />
+        </div>
 
-              {/* Mobile Users Toggle */}
-              <button
-                onClick={() => setShowMobileUsers(!showMobileUsers)}
-                className="md:hidden flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 relative"
-              >
-                <Users className="w-3 h-3" />
-                <span className="bg-purple-500/50 px-1 rounded text-[10px]">{activeUsers.length}</span>
-              </button>
+        {/* ── Top Header Overlay ── */}
+        <div className="relative z-10 flex-shrink-0 flex items-center justify-between px-3 py-2 bg-black/40 backdrop-blur-sm">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Room Owner Avatar */}
+            {room.owner && (
+              <div className="w-8 h-8 rounded-full bg-purple-800 border-2 border-gold-500/60 overflow-hidden flex-shrink-0">
+                <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
+                  {(room.owner.username || room.owner.name || '?').charAt(0).toUpperCase()}
+                </div>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-white text-sm font-bold truncate">{room.icon} {room.nameTr}</p>
+              <p className="text-white/50 text-[10px]">ID:{room.id.slice(-10)}</p>
             </div>
           </div>
+          
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Active Users Count */}
+            <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-sm rounded-full px-2 py-0.5 border border-green-500/30">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-green-300 text-[11px] font-bold">{activeUsers.length}</span>
+            </div>
 
-          {/* Privileged Users Grid - Shows users with roles (%superadmin, ~founder, &sop, @op) */}
-          {(() => {
-            const privilegedUsers = activeUsers.filter(u => u.chatRole && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(u.chatRole))
-            // Also include room owner if not already in the list
-            const ownerInList = room.owner && !privilegedUsers.find(u => u.id === room.owner?.id)
-            const ownerUser = ownerInList ? activeUsers.find(u => u.id === room.owner?.id) : null
-            const gridUsers = ownerUser ? [ownerUser, ...privilegedUsers.filter(u => u.id !== room.owner?.id)] : privilegedUsers
-            const displayUsers = gridUsers.slice(0, gridUserLimit)
-            
-            if (displayUsers.length === 0 && !room.owner) return null
-            
-            // If no privileged users online, show room owner banner
-            if (displayUsers.length === 0 && room.owner) {
-              return (
-                <div className="flex-shrink-0 bg-gradient-to-r from-red-900/60 to-purple-900/40 px-3 py-2 flex items-center gap-2 border-b border-red-500/30">
-                  <Crown className="w-4 h-4 text-yellow-300" />
-                  <span className="text-white text-sm font-medium">Oda Sahibi</span>
-                  <span className="text-yellow-200 text-sm font-bold">{room.owner.username || room.owner.name}</span>
-                </div>
-              )
-            }
-            
-            return (
-              <div className="flex-shrink-0 bg-gradient-to-b from-[#0d0520] to-[#1a0b2e] border-b border-purple-500/30 p-2">
-                {/* Counter */}
-                <div className="flex items-center justify-between mb-1.5 px-1">
-                  <span className="text-[10px] text-purple-400 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    {displayUsers.length}/{activeUsers.length} Yetkili Canlı
-                  </span>
-                  {session?.user && displayUsers.some(u => u.id === session?.user?.id) && broadcastImages.length > 0 && (
-                    <button
-                      onClick={() => setShowImagePicker(true)}
-                      className="text-[10px] text-purple-400 hover:text-purple-200 transition-colors"
-                    >
-                      📷 Resim Değiştir
-                    </button>
-                  )}
-                </div>
-                {/* Grid */}
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {displayUsers.map((user) => {
-                    const isOwner = isRoomOwner(user.id)
-                    const isMe = user.id === session?.user?.id
-                    const badge = user.chatRole ? ROLE_BADGE_STYLES[user.chatRole] : null
-                    const displayImage = isMe && myBroadcastImage ? myBroadcastImage : user.image
+            {/* Yönet / Settings */}
+            {hasManagePermission && (
+              <button
+                onClick={() => setShowManagePopup(true)}
+                className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Odalar */}
+            <button
+              onClick={() => setShowRoomsPopup(true)}
+              className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <DoorOpen className="w-4 h-4" />
+            </button>
+
+            {/* Leave / Power */}
+            <Link
+              href="/sohbet"
+              className="w-8 h-8 rounded-full bg-red-500/30 backdrop-blur-sm flex items-center justify-center text-red-300 hover:bg-red-500/50 transition-colors border border-red-500/40"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {/* ── 5×3 Seat Grid ── */}
+        {(() => {
+          const TOTAL_SEATS = 15
+          const COLS = 5
+          const CENTER_SEAT = 7 // index 7 = row 2, col 3 (center)
+          
+          // Build seat occupants: owner goes to center, then privileged/voice users
+          const privilegedUsers = activeUsers.filter(u => 
+            u.chatRole && ['superadmin', 'founder', 'sop', 'admin', 'op', 'voice'].includes(u.chatRole)
+          )
+          const ownerUser = room.owner ? activeUsers.find(u => u.id === room.owner?.id) : null
+          const otherPrivileged = privilegedUsers.filter(u => u.id !== room.owner?.id)
+          
+          // Create seats array
+          const seats: (ActiveUser | null)[] = new Array(TOTAL_SEATS).fill(null)
+          if (ownerUser) seats[CENTER_SEAT] = ownerUser
+          
+          let seatIdx = 0
+          for (const user of otherPrivileged) {
+            while (seatIdx < TOTAL_SEATS && seats[seatIdx] !== null) seatIdx++
+            if (seatIdx < TOTAL_SEATS) seats[seatIdx] = user
+          }
+          
+          return (
+            <div className="relative z-10 flex-shrink-0 px-3 py-3">
+              <div className={`grid grid-cols-${COLS} gap-2 max-w-sm mx-auto`} style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
+                {seats.map((seatUser, idx) => {
+                  if (seatUser) {
+                    const isOwner = isRoomOwner(seatUser.id)
+                    const badge = seatUser.chatRole ? ROLE_BADGE_STYLES[seatUser.chatRole] : null
+                    const isMe = seatUser.id === session?.user?.id
+                    const displayImage = isMe && myBroadcastImage ? myBroadcastImage : seatUser.image
+                    const isSpeakingSeat = speakingUsers.has(seatUser.id)
                     
                     return (
-                      <div
-                        key={user.id}
-                        className="flex flex-col items-center gap-0.5 cursor-pointer group"
-                        onClick={() => user.id !== session?.user?.id && openGiftModal(user)}
-                      >
-                        {/* Circular Avatar */}
-                        <div className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden ${isOwner ? 'ring-2 ring-yellow-400/80' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-purple-500/30'}`}>
+                      <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
+                        <div 
+                          className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden cursor-pointer transition-all
+                            ${isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-white/20'}
+                          `}
+                          onClick={() => seatUser.id !== session?.user?.id && openGiftModal(seatUser)}
+                        >
                           {displayImage ? (
-                            <img loading="lazy" src={displayImage} alt={getDisplayName(user)} className="w-full h-full object-cover" />
+                            <img loading="lazy" src={displayImage} alt={getDisplayName(seatUser)} className="w-full h-full object-cover" />
                           ) : (
-                            <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-900/80 to-yellow-900/50' : 'bg-gradient-to-br from-purple-900/80 to-indigo-900/50'}`}>
-                              <span className="text-lg font-bold text-white/80">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</span>
+                            <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-800 to-yellow-900' : 'bg-gradient-to-br from-purple-800 to-indigo-900'}`}>
+                              <span className="text-base font-bold text-white/80">{(seatUser.nickname || seatUser.name || '?').charAt(0).toUpperCase()}</span>
                             </div>
                           )}
-                          {/* Role Badge - bottom right */}
+                          {/* Role badge overlay */}
                           {(isOwner || badge) && (
-                            <div className={`absolute -bottom-0.5 -right-0.5 px-1 py-0.5 rounded-full text-[7px] font-bold ${isOwner ? 'bg-red-600/90 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
-                              {isOwner ? '👑' : user.roleSymbol}
+                            <div className={`absolute -bottom-0.5 -right-0.5 px-1 py-0.5 rounded-full text-[7px] font-bold shadow-lg ${isOwner ? 'bg-red-600 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
+                              {isOwner ? '👑' : seatUser.roleSymbol}
                             </div>
                           )}
-                          {/* Speaking indicator */}
-                          {speakingUsers.has(user.id) && (
-                            <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full animate-pulse border border-green-300" />
+                          {/* Speaking glow */}
+                          {isSpeakingSeat && (
+                            <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-30" />
                           )}
                         </div>
-                        {/* Name below */}
-                        <p className={`text-[9px] font-bold truncate text-center max-w-[52px] ${getNameEffectClass(user)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/70'}`}
-                          {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
+                        <p className={`text-[9px] font-bold truncate text-center max-w-[56px] drop-shadow-lg ${getNameEffectClass(seatUser)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80'}`}
+                          {...(getNameEffectClass(seatUser) === 'effect-glitch' ? { 'data-text': getDisplayName(seatUser) } : {})}
                         >
-                          {getDisplayName(user)}
+                          {getDisplayName(seatUser)}
                         </p>
                       </div>
                     )
-                  })}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Image Picker Modal */}
-          <AnimatePresence>
-            {showImagePicker && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-                onClick={() => setShowImagePicker(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-sm w-full overflow-hidden"
-                >
-                  <div className="p-4 border-b border-purple-500/20 flex items-center justify-between">
-                    <h3 className="text-gold-400 font-bold">📷 Profil Resmi Seç</h3>
-                    <button onClick={() => setShowImagePicker(false)} className="text-purple-400 hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="p-3 grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                    {/* Remove image option */}
-                    <button
-                      onClick={() => {
-                        setMyBroadcastImage(null)
-                        if (session?.user?.id) localStorage.removeItem(`chat_broadcast_img_${session.user.id}`)
-                        setShowImagePicker(false)
-                      }}
-                      className={`relative aspect-square rounded-lg border-2 ${!myBroadcastImage ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden flex items-center justify-center bg-purple-900/30 hover:bg-purple-800/40 transition-colors`}
-                    >
-                      <span className="text-purple-300 text-xs text-center">Varsayılan</span>
-                    </button>
-                    {broadcastImages.map((img) => (
-                      <button
-                        key={img.id}
-                        onClick={() => {
-                          setMyBroadcastImage(img.imageUrl)
-                          if (session?.user?.id) localStorage.setItem(`chat_broadcast_img_${session.user.id}`, img.imageUrl)
-                          setShowImagePicker(false)
-                        }}
-                        className={`relative aspect-square rounded-lg border-2 ${myBroadcastImage === img.imageUrl ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden hover:border-purple-400/60 transition-colors`}
-                      >
-                        <img loading="lazy" src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Messages Area */}
-          <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520] p-2 relative" style={{ overscrollBehavior: 'contain' }}>
-            {/* Watermark Room Name */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-              <span className="text-4xl sm:text-6xl md:text-7xl font-bold text-white/10 whitespace-nowrap select-none">
-                {room.icon} {room.nameTr}
-              </span>
-            </div>
-            
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-purple-300/50 relative z-10">
-                <Sparkles className="w-10 h-10 mb-3" />
-                <p className="text-sm">{t('chat.no_messages')}</p>
-              </div>
-            ) : (
-              <div className="space-y-0.5 relative z-10">
-                {messages.map((msg) => {
-                  const displayName = getDisplayName(msg.user)
-                  const isMe = msg.user.id === session?.user?.id
-                  const isOwner = isRoomOwner(msg.user.id)
-                  const isSpeakingUser = speakingUsers.has(msg.user.id)
-                  
-                  // Check if this is a system message
-                  const isSystemJoin = msg.content.startsWith('[SYSTEM_JOIN]')
-                  const isVipJoin = msg.content.startsWith('[SYSTEM_VIP_JOIN:')
-                  const isSystemLeave = msg.content.startsWith('[SYSTEM_LEAVE]')
-                  const isSystemMessage = isSystemJoin || isVipJoin || isSystemLeave
-                  
-                  // Parse VIP join type
-                  let vipType: string | null = null
-                  let joinName = ''
-                  let leaveName = ''
-                  if (isVipJoin) {
-                    const match = msg.content.match(/\[SYSTEM_VIP_JOIN:(\w+)\](.+)/)
-                    if (match) {
-                      vipType = match[1]
-                      joinName = match[2]
-                    }
-                  } else if (isSystemJoin) {
-                    joinName = msg.content.replace('[SYSTEM_JOIN]', '')
-                  } else if (isSystemLeave) {
-                    leaveName = msg.content.replace('[SYSTEM_LEAVE]', '')
                   }
                   
-                  // Render system messages differently
-                  if (isSystemMessage) {
-                    const vipLabels: Record<string, { label: string; labelEn: string; icon: string; color: string; bgColor: string }> = {
-                      'ADMIN': { label: '👑 Site Yöneticisi', labelEn: '👑 Site Admin', icon: '👑', color: 'text-red-400', bgColor: 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-red-500/50' },
-                      'OWNER': { label: '🏠 Oda Sahibi', labelEn: '🏠 Room Owner', icon: '🏠', color: 'text-yellow-400', bgColor: 'bg-gradient-to-r from-yellow-900/50 to-amber-900/50 border-yellow-500/50' },
-                      'FOUNDER': { label: '⭐ Kurucu', labelEn: '⭐ Founder', icon: '⭐', color: 'text-red-400', bgColor: 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-red-500/40' },
-                      'MODERATOR': { label: '🛡️ Moderatör', labelEn: '🛡️ Moderator', icon: '🛡️', color: 'text-orange-400', bgColor: 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-500/40' },
-                      'OP': { label: '✨ Operatör', labelEn: '✨ Operator', icon: '✨', color: 'text-green-400', bgColor: 'bg-gradient-to-r from-green-900/40 to-emerald-900/40 border-green-500/40' }
-                    }
-                    
-                    // Leave message
-                    if (isSystemLeave) {
-                      return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="px-2 py-1 text-center"
-                        >
-                          <span className="text-gray-500/70 text-xs">
-                            ← <span className="text-gray-400">{leaveName}</span>{' '}
-                            {'odadan ayrıldı'}
-                          </span>
-                        </motion.div>
-                      )
-                    }
-                    
-                    // VIP entry - compact single-line, shown once
-                    if (isVipJoin && vipType && vipLabels[vipType]) {
-                      const vipInfo = vipLabels[vipType]
-                      
-                      return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="px-2 py-0.5 text-center"
-                        >
-                          <span className={`text-xs ${vipInfo.color}`}>
-                            {vipInfo.icon} <span className="font-bold">{joinName}</span>{' '}
-                            <span className="text-white/60">odaya giriş yaptı</span>
-                            <span className="text-[10px] text-white/40 ml-1">({vipInfo.label})</span>
-                          </span>
-                        </motion.div>
-                      )
-                    }
-                    
-                    // Regular join message
+                  // Empty/Locked seat
+                  return (
+                    <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                      </div>
+                      <p className="text-[9px] text-white/20 font-medium">Kilitli</p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Voice users bar below grid */}
+              {voiceUsers.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-2 px-1 justify-center flex-wrap">
+                  <Phone className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                  {voiceUsers.map((vu: any) => (
+                    <span
+                      key={vu.id}
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                        speakingUsers.has(vu.id)
+                          ? 'bg-green-500/40 text-green-200 border border-green-400/50'
+                          : 'bg-white/10 text-white/60 border border-white/10'
+                      }`}
+                    >
+                      {speakingUsers.has(vu.id) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 mr-0.5 animate-pulse" />}
+                      {vu.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Room ID badge */}
+              <div className="flex items-center justify-center mt-1.5">
+                <span className="text-[10px] text-white/30 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                  Oda ID: {room.id.slice(-10)}
+                </span>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Announcement / Rules overlay ── */}
+        {room.descTr && showAnnouncement && (
+          <div className="relative z-10 mx-3 mb-2">
+            <div className="bg-black/50 backdrop-blur-md rounded-lg border border-white/10 p-3 max-h-32 overflow-y-auto">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-yellow-400 text-xs font-bold mb-1">📢 Duyuru:</p>
+                  <p className="text-white/80 text-xs whitespace-pre-wrap leading-relaxed">{room.descTr}</p>
+                </div>
+                <button onClick={() => setShowAnnouncement(false)} className="text-white/40 hover:text-white flex-shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Chat Messages — floating over wallpaper ── */}
+        <div ref={messagesContainerRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-3 pb-1" style={{ overscrollBehavior: 'contain' }}>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-white/30">
+              <Sparkles className="w-8 h-8 mb-2" />
+              <p className="text-xs">{t('chat.no_messages')}</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5 flex flex-col justify-end min-h-full">
+              {messages.map((msg) => {
+                const displayName = getDisplayName(msg.user)
+                const isMe = msg.user.id === session?.user?.id
+                const isOwner = isRoomOwner(msg.user.id)
+                const isSpeakingUser = speakingUsers.has(msg.user.id)
+                
+                // System messages
+                const isSystemJoin = msg.content.startsWith('[SYSTEM_JOIN]')
+                const isVipJoin = msg.content.startsWith('[SYSTEM_VIP_JOIN:')
+                const isSystemLeave = msg.content.startsWith('[SYSTEM_LEAVE]')
+                const isSystemMessage = isSystemJoin || isVipJoin || isSystemLeave
+                
+                let vipType: string | null = null
+                let joinName = ''
+                let leaveName = ''
+                if (isVipJoin) {
+                  const match = msg.content.match(/\[SYSTEM_VIP_JOIN:(\w+)\](.+)/)
+                  if (match) { vipType = match[1]; joinName = match[2] }
+                } else if (isSystemJoin) {
+                  joinName = msg.content.replace('[SYSTEM_JOIN]', '')
+                } else if (isSystemLeave) {
+                  leaveName = msg.content.replace('[SYSTEM_LEAVE]', '')
+                }
+                
+                if (isSystemMessage) {
+                  const vipLabels: Record<string, { label: string; icon: string; color: string }> = {
+                    'ADMIN': { label: '👑 Site Yöneticisi', icon: '👑', color: 'text-red-400' },
+                    'OWNER': { label: '🏠 Oda Sahibi', icon: '🏠', color: 'text-yellow-400' },
+                    'FOUNDER': { label: '⭐ Kurucu', icon: '⭐', color: 'text-red-400' },
+                    'MODERATOR': { label: '🛡️ Moderatör', icon: '🛡️', color: 'text-orange-400' },
+                    'OP': { label: '✨ Operatör', icon: '✨', color: 'text-green-400' },
+                  }
+                  
+                  if (isSystemLeave) {
                     return (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="px-2 py-1 text-center"
-                      >
-                        <span className="text-purple-400/70 text-xs">
-                          ➜ <span className="text-purple-300">{joinName}</span>{' '}
-                          {'odaya katıldı'}
+                      <motion.div key={msg.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-0.5 text-center">
+                        <span className="text-white/30 text-[11px]">← <span className="text-white/50">{leaveName}</span> odadan ayrıldı</span>
+                      </motion.div>
+                    )
+                  }
+                  
+                  if (isVipJoin && vipType && vipLabels[vipType]) {
+                    const vipInfo = vipLabels[vipType]
+                    return (
+                      <motion.div key={msg.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="py-0.5">
+                        <span className="bg-yellow-500/20 backdrop-blur-sm text-[11px] px-2 py-0.5 rounded-full inline-block border border-yellow-500/30">
+                          <span className={vipInfo.color}>{vipInfo.icon} <span className="font-bold">{joinName}</span></span>
+                          <span className="text-white/50 ml-1">odaya giriş yaptı</span>
                         </span>
                       </motion.div>
                     )
                   }
                   
-                  const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
-                  
                   return (
-                    <div
-                      key={msg.id}
-                      className={`px-2 py-0.5 ${isMentioned ? 'bg-gold-500/20' : ''} ${isOwner ? 'bg-red-900/30' : ''}`}
-                    >
-                      {/* Speaking Indicator */}
-                      {isSpeakingUser && (
-                        <span className="text-green-400 mr-1 animate-pulse">●</span>
-                      )}
-                      {msg.user.chatRole && (
-                        <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-1`}>
-                          {msg.user.roleSymbol}
-                        </span>
-                      )}
-                      {isOwner && (
-                        <span className="text-yellow-400 mr-1">👑</span>
-                      )}
-                      <button
-                        onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
-                        className={`font-medium hover:underline ${getNameEffectClass(msg.user)} ${
-                          isOwner
-                            ? 'text-yellow-300'
-                            : msg.user.chatRole 
-                              ? ROLE_COLORS[msg.user.chatRole] 
-                              : isMe 
-                                ? 'text-gold-400' 
-                                : 'text-purple-300'
-                        }`}
-                        {...(getNameEffectClass(msg.user) === 'effect-glitch' ? { 'data-text': `<${displayName}>` } : {})}
-                      >
-                        &lt;{displayName}&gt;
-                      </button>
-                      <span className="text-white ml-2 break-all">
-                        {msg.content.split(/(@\w+)/g).map((part, i) => 
-                          part.startsWith('@') ? (
-                            <span key={i} className="text-gold-400 font-medium">{part}</span>
-                          ) : (
-                            <span key={i}>{part}</span>
-                          )
-                        )}
-                      </span>
-                    </div>
+                    <motion.div key={msg.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="py-0.5">
+                      <span className="text-white/40 text-[11px]">➜ <span className="text-white/60">{joinName}</span> odaya katıldı</span>
+                    </motion.div>
                   )
-                })}
-                <div ref={messagesEndRef} />
+                }
+                
+                const isMentioned = nickname && msg.content.toLowerCase().includes(`@${nickname.toLowerCase()}`)
+                
+                return (
+                  <div
+                    key={msg.id}
+                    className={`py-0.5 px-1.5 rounded ${isMentioned ? 'bg-yellow-500/20' : ''}`}
+                  >
+                    {isSpeakingUser && <span className="text-green-400 mr-0.5 animate-pulse text-xs">●</span>}
+                    {msg.user.chatRole && (
+                      <span className={`${ROLE_COLORS[msg.user.chatRole]} mr-0.5 text-xs`}>{msg.user.roleSymbol}</span>
+                    )}
+                    {isOwner && <span className="text-yellow-400 mr-0.5 text-xs">👑</span>}
+                    <button
+                      onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
+                      className={`font-bold text-xs hover:underline ${getNameEffectClass(msg.user)} ${
+                        isOwner ? 'text-yellow-300' : msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : isMe ? 'text-gold-400' : 'text-purple-300'
+                      }`}
+                      style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+                      {...(getNameEffectClass(msg.user) === 'effect-glitch' ? { 'data-text': `<${displayName}>` } : {})}
+                    >
+                      &lt;{displayName}&gt;
+                    </button>
+                    <span className="text-white text-xs ml-1 break-all" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+                      {msg.content.split(/(@\w+)/g).map((part, i) =>
+                        part.startsWith('@') ? (
+                          <span key={i} className="text-gold-400 font-medium">{part}</span>
+                        ) : (
+                          <span key={i}>{part}</span>
+                        )
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Typing Indicator */}
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="relative z-10 px-4 py-1 text-white/50 text-[11px] flex items-center gap-2"
+            >
+              <div className="flex gap-0.5">
+                <span className="w-1 h-1 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-1 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-1 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>{typingUsers.slice(0, 3).join(', ')}{typingUsers.length > 3 && ` +${typingUsers.length - 3}`} yazıyor...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error */}
+        {error && !error.includes('banned') && (
+          <div className="relative z-10 mx-3 px-3 py-1 bg-red-900/60 text-red-300 text-[11px] rounded-lg backdrop-blur-sm">{error}</div>
+        )}
+
+        {/* Gift Leaderboard */}
+        {leaderboard.length > 0 && (
+          <div className="relative z-10 mx-3 mb-1">
+            <button
+              onClick={() => setShowLeaderboard(!showLeaderboard)}
+              className="w-full flex items-center justify-between px-2 py-1 text-[11px] bg-black/40 backdrop-blur-sm rounded-t-lg border border-yellow-500/20"
+            >
+              <span className="text-yellow-400 flex items-center gap-1"><Trophy className="w-3 h-3" /> Hediye Sıralaması</span>
+              <span className="text-white/40">{showLeaderboard ? '▲' : '▼'}</span>
+            </button>
+            {showLeaderboard && (
+              <div className="flex gap-1.5 px-2 pb-1.5 overflow-x-auto scrollbar-hide bg-black/30 backdrop-blur-sm rounded-b-lg border-x border-b border-yellow-500/20">
+                {leaderboard.slice(0, 10).map((entry, i) => (
+                  <div key={entry.userId} className={`flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] ${i === 0 ? 'bg-yellow-500/30 border border-yellow-500/40' : i === 1 ? 'bg-gray-400/20 border border-gray-400/30' : i === 2 ? 'bg-orange-500/20 border border-orange-500/30' : 'bg-white/5 border border-white/10'}`}>
+                    <span className={`font-bold ${i === 0 ? 'text-yellow-300' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-300' : 'text-white/50'}`}>{i + 1}.</span>
+                    <span className="text-white truncate max-w-[50px]">{entry.name}</span>
+                    {entry.jetonTotal > 0 && <span className="text-yellow-400">💎{entry.jetonTotal}</span>}
+                  </div>
+                ))}
               </div>
             )}
           </div>
+        )}
 
-          {/* Typing Indicator */}
-          <AnimatePresence>
-            {typingUsers.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-3 py-1 bg-[#1a0b2e] text-purple-300/70 text-xs flex items-center gap-2"
-              >
-                <div className="flex gap-0.5">
-                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        {/* ── Bottom Toolbar ── */}
+        {session?.user ? (
+          <div className="relative z-10 flex-shrink-0 px-2 pb-2 pt-1">
+            {/* Gift User Selection Panel */}
+            {showGiftUserSelect && (
+              <div className="mb-2 bg-black/60 backdrop-blur-md border border-yellow-500/30 rounded-lg p-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-yellow-400 text-[11px] font-bold flex items-center gap-1"><Gift className="w-3 h-3" /> Kime hediye?</span>
+                  <button onClick={() => setShowGiftUserSelect(false)} className="text-white/40 hover:text-white text-xs">✕</button>
                 </div>
-                <span>
-                  {typingUsers.slice(0, 3).join(', ')}
-                  {typingUsers.length > 3 && ` +${typingUsers.length - 3}`}
-                  {' yazıyor...'}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error */}
-          {error && !error.includes('banned') && (
-            <div className="px-3 py-1 bg-red-900/50 text-red-300 text-xs">{error}</div>
-          )}
-
-          {/* Gift Leaderboard */}
-          {leaderboard.length > 0 && (
-            <div className="flex-shrink-0 bg-[#1a0b2e]/80 border-t border-yellow-500/20">
-              <button
-                onClick={() => setShowLeaderboard(!showLeaderboard)}
-                className="w-full flex items-center justify-between px-3 py-1 text-xs"
-              >
-                <span className="text-yellow-400 flex items-center gap-1"><Trophy className="w-3 h-3" /> Hediye Sıralaması</span>
-                <span className="text-purple-400">{showLeaderboard ? '▲' : '▼'}</span>
-              </button>
-              {showLeaderboard && (
-                <div className="flex gap-2 px-3 pb-1.5 overflow-x-auto scrollbar-hide">
-                  {leaderboard.slice(0, 10).map((entry, i) => (
-                    <div key={entry.userId} className={`flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${i === 0 ? 'bg-yellow-500/20 border border-yellow-500/40' : i === 1 ? 'bg-gray-400/20 border border-gray-400/40' : i === 2 ? 'bg-orange-500/20 border border-orange-500/40' : 'bg-purple-900/30 border border-purple-500/20'}`}>
-                      <span className={`font-bold ${i === 0 ? 'text-yellow-300' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-300' : 'text-purple-300'}`}>
-                        {i + 1}.
-                      </span>
-                      <span className="text-white truncate max-w-[60px]">{entry.name}</span>
-                      {entry.jetonTotal > 0 && <span className="text-yellow-400">💎{entry.jetonTotal}</span>}
-                    </div>
+                <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                  {room?.owner && room.owner.id !== session?.user?.id && (
+                    <button
+                      onClick={() => openGiftModal({ id: room.owner!.id, name: room.owner!.username || room.owner!.name || 'Oda Sahibi' })}
+                      className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-[10px] text-yellow-200 hover:bg-yellow-500/30"
+                    >
+                      <Crown className="w-3 h-3 text-yellow-300" />{room.owner.username || room.owner.name}
+                    </button>
+                  )}
+                  {activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
+                    <button
+                      key={user.id}
+                      onClick={() => openGiftModal(user)}
+                      className="px-2 py-0.5 bg-white/10 border border-white/20 rounded-full text-[10px] text-white/80 hover:bg-white/20"
+                    >
+                      {getDisplayName(user)}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Message Input */}
-          {session?.user ? (
-            <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2">
-              {/* Gift User Selection Panel */}
-              {showGiftUserSelect && (
-                <div className="mb-2 bg-[#0d0520] border border-yellow-500/30 rounded-lg p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-yellow-400 text-xs font-bold flex items-center gap-1">
-                      <Gift className="w-3 h-3" /> Kime hediye göndermek istiyorsunuz?
-                    </span>
-                    <button onClick={() => setShowGiftUserSelect(false)} className="text-purple-400 hover:text-white text-xs">✕</button>
-                  </div>
-                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                    {room?.owner && room.owner.id !== session?.user?.id && (
-                      <button
-                        onClick={() => openGiftModal({ id: room.owner!.id, name: room.owner!.username || room.owner!.name || 'Oda Sahibi' })}
-                        className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-xs text-yellow-200 hover:bg-yellow-500/30 transition-colors"
-                      >
-                        <Crown className="w-3 h-3 text-yellow-300" />
-                        {room.owner.username || room.owner.name}
-                      </button>
-                    )}
-                    {activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
-                      <button
-                        key={user.id}
-                        onClick={() => openGiftModal(user)}
-                        className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-xs text-purple-200 hover:bg-purple-500/30 transition-colors"
-                      >
-                        {getDisplayName(user)}
-                      </button>
-                    ))}
-                    {activeUsers.filter(u => u.id !== session?.user?.id).length === 0 && !room?.owner && (
-                      <span className="text-purple-400/50 text-xs">{'Hediye gönderilecek kullanıcı yok'}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {/* Voice Chat Bar - shows active voice users */}
-              {voiceUsers.length > 0 && (
-                <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-900/30 border border-blue-500/20 rounded mb-1">
-                  <div className="flex items-center gap-1 text-blue-400 flex-shrink-0">
-                    <Phone className="w-3 h-3" />
-                    <span className="text-[10px] font-bold">{voiceUsers.length}</span>
-                  </div>
-                  <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar">
-                    {voiceUsers.map((vu: any) => (
-                      <span
-                        key={vu.id}
-                        className={`text-[11px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                          speakingUsers.has(vu.id)
-                            ? 'bg-green-500/30 text-green-300 border border-green-500/50 animate-pulse'
-                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                        }`}
-                      >
-                        {speakingUsers.has(vu.id) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 mr-1 animate-pulse" />}
-                        {vu.name}
-                      </span>
-                    ))}
-                  </div>
-                  {/* Listen button for users without voice permission */}
-                  {!canUseVoice() && !isListening && !voiceEnabled && (
-                    <button
-                      onClick={startListening}
-                      className="flex items-center gap-1 px-2 py-0.5 bg-blue-600/30 text-blue-300 rounded text-[10px] font-medium hover:bg-blue-600/50 flex-shrink-0 border border-blue-500/30"
-                      title="Dinle"
-                    >
-                      <Volume2 className="w-3 h-3" /> Dinle
-                    </button>
-                  )}
-                  {!canUseVoice() && isListening && (
-                    <button
-                      onClick={stopListening}
-                      className="flex items-center gap-1 px-2 py-0.5 bg-red-600/30 text-red-300 rounded text-[10px] font-medium hover:bg-red-600/50 flex-shrink-0 border border-red-500/30"
-                      title="Dinlemeyi Durdur"
-                    >
-                      <VolumeX className="w-3 h-3" /> Kapat
-                    </button>
-                  )}
-                </div>
+            {/* Main input row */}
+            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md rounded-full px-2 py-1.5 border border-white/10">
+              {/* Speaker / Listen toggle */}
+              {!canUseVoice() && voiceUsers.length > 0 && (
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                    isListening ? 'bg-blue-500/40 text-blue-300' : 'bg-white/10 text-white/50 hover:bg-white/20'
+                  }`}
+                  title={isListening ? 'Dinlemeyi Durdur' : 'Dinle'}
+                >
+                  {isListening ? <Volume2 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
               )}
 
-              <form onSubmit={handleSendMessage} className="flex gap-2">
+              {/* Mic / Voice button */}
+              {canUseVoice() && (
                 <button
                   type="button"
-                  onClick={() => setShowGiftUserSelect(!showGiftUserSelect)}
-                  className={`px-3 py-2 rounded text-sm font-medium flex items-center gap-1 transition-all ${showGiftUserSelect ? 'bg-yellow-500 text-black' : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/40'}`}
-                  title="Hediye Gönder"
+                  onClick={() => voiceEnabled ? stopVoiceChat() : startVoiceChat()}
+                  disabled={voiceConnecting}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                    voiceEnabled
+                      ? 'bg-red-500/60 text-white animate-pulse'
+                      : voiceConnecting
+                        ? 'bg-blue-500/30 text-blue-300 opacity-50'
+                        : 'bg-white/10 text-white/50 hover:bg-white/20'
+                  }`}
+                  title={voiceEnabled ? 'Sesli sohbetten çık' : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'}
                 >
-                  <Gift className="w-4 h-4" />
+                  {voiceEnabled ? (
+                    isSpeaking ? <Mic className="w-4 h-4 text-green-300" /> : <MicOff className="w-4 h-4" />
+                  ) : voiceConnecting ? (
+                    <Mic className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </button>
+              )}
 
-                {/* Voice Chat Button - only for users with ~@&%+ roles */}
-                {canUseVoice() && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (voiceEnabled) {
-                        stopVoiceChat()
-                      } else {
-                        startVoiceChat()
-                      }
-                    }}
-                    disabled={voiceConnecting}
-                    className={`px-3 py-2 rounded text-sm font-medium flex items-center gap-1 transition-all ${
-                      voiceEnabled
-                        ? 'bg-red-500/80 text-white hover:bg-red-500 border border-red-500/60 animate-pulse'
-                        : voiceConnecting
-                          ? 'bg-blue-500/30 text-blue-300 border border-blue-500/40 opacity-50 cursor-wait'
-                          : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/40'
-                    }`}
-                    title={voiceEnabled ? 'Sesli sohbetten çık' : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'}
-                  >
-                    {voiceEnabled ? (
-                      <>
-                        {isSpeaking ? (
-                          <Mic className="w-4 h-4 text-green-300" />
-                        ) : (
-                          <PhoneOff className="w-4 h-4" />
-                        )}
-                      </>
-                    ) : voiceConnecting ? (
-                      <Phone className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Phone className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-
+              {/* Text Input */}
+              <form onSubmit={handleSendMessage} className="flex-1 flex items-center gap-1">
                 <input
                   ref={inputRef}
                   type="text"
                   value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value)
-                    handleTyping()
-                  }}
+                  onChange={(e) => { setNewMessage(e.target.value); handleTyping() }}
                   onFocus={handleInputFocus}
                   placeholder={t('chat.placeholder')}
                   maxLength={500}
-                  className="flex-1 bg-[#0d0520] border border-purple-500/30 rounded px-3 py-2 text-sm text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-400"
+                  className="flex-1 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none px-2 py-1"
                 />
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center disabled:opacity-30 hover:bg-purple-500 flex-shrink-0 transition-all"
                 >
                   <Send className="w-4 h-4" />
                 </button>
               </form>
-            </div>
-          ) : (
-            <div className="flex-shrink-0 bg-[#1a0b2e] border-t border-purple-500/30 p-2 text-center">
-              <Link
-                href={`/giris`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-medium text-sm rounded hover:bg-purple-500"
-              >
-                <LogIn className="w-4 h-4" />
-                {t('chat.login_required')}
-              </Link>
-            </div>
-          )}
-        </div>
 
-        {/* Users Panel - Hidden on mobile, overlay when toggled */}
-        {showMobileUsers && (
-          <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setShowMobileUsers(false)} />
-        )}
-        <div className={`${showMobileUsers ? 'fixed right-0 top-0 bottom-0 z-40 w-64' : 'hidden'} md:relative md:block md:w-64 flex flex-col min-h-0 bg-[#1a0b2e]`} style={showMobileUsers ? { height: 'calc(var(--vh, 1vh) * 100)' } : undefined}>
-          <div className="flex-shrink-0 h-12 bg-[#1a0b2e] border-b border-purple-500/30 flex items-center justify-between px-2">
-            <span className="text-purple-300 text-sm font-medium flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {'Kullanıcılar'}
-            </span>
-            <div className="flex items-center gap-1">
-              <span className="text-purple-400 text-xs bg-purple-600/30 px-2 py-0.5 rounded">({activeUsers.length})</span>
-              <button onClick={() => setShowMobileUsers(false)} className="md:hidden text-purple-400 hover:text-white p-1">
-                <X className="w-4 h-4" />
+              {/* Gift Button */}
+              <button
+                type="button"
+                onClick={() => setShowGiftUserSelect(!showGiftUserSelect)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                  showGiftUserSelect ? 'bg-yellow-500/60 text-yellow-200' : 'bg-white/10 text-yellow-400 hover:bg-white/20'
+                }`}
+                title="Hediye Gönder"
+              >
+                <Gift className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          {/* Room Owner at Top */}
-          {room.owner && (
-            <div className="flex-shrink-0 bg-red-600/60 px-2 py-2 border-b border-red-500/30">
-              <p className="text-[10px] text-red-200 uppercase tracking-wider mb-1">
-                {'Oda Sahibi'}
-              </p>
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-yellow-300" />
-                <span className="text-yellow-200 text-sm font-bold truncate flex-1">
-                  {room.owner.username || room.owner.name}
-                </span>
-                {room.owner.id !== session?.user?.id && (
-                  <button
-                    onClick={() => openGiftModal({ id: room.owner!.id, name: room.owner!.username || room.owner!.name || 'Oda Sahibi' })}
-                    className="text-yellow-400 hover:text-yellow-200 transition-colors bg-yellow-500/20 rounded p-1"
-                    title="Hediye Gönder"
-                  >
-                    <Gift className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+            {/* Balance indicator */}
+            <div className="flex items-center justify-center mt-1.5">
+              <span className="text-[10px] text-yellow-400/60">💎 {userJetonBalance} Jeton</span>
             </div>
-          )}
-
-          {/* Users List */}
-          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0d0520]">
-            {activeUsers.length === 0 ? (
-              <p className="text-purple-400/50 text-xs p-2 text-center">
-                {'Kimse yok'}
-              </p>
-            ) : (
-              <div className="py-1">
-                {activeUsers.map((user) => {
-                  const isOwner = isRoomOwner(user.id)
-                  const userIsSpeaking = speakingUsers.has(user.id) || (user.id === session?.user?.id && isSpeaking)
-                  const badge = user.chatRole ? ROLE_BADGE_STYLES[user.chatRole] : null
-                  
-                  return (
-                    <div
-                      key={user.id}
-                      data-user-id={user.id}
-                      onClick={() => {
-                        if (user.id !== session?.user?.id) {
-                          if (hasManagePermission) {
-                            setSelectedUser(user)
-                            setManageTab('users')
-                            setShowManagePopup(true)
-                          } else {
-                            openGiftModal(user)
-                          }
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 cursor-pointer hover:bg-purple-800/30 ${isOwner ? 'bg-red-900/30' : ''}`}
-                    >
-                      {/* Speaking Indicator or Role Icon */}
-                      {userIsSpeaking ? (
-                        <span className="text-green-400 w-4 text-center animate-pulse">●</span>
-                      ) : user.chatRole ? (
-                        <span className={`${ROLE_COLORS[user.chatRole]} text-xs font-bold w-4 text-center`}>
-                          {user.roleSymbol}
-                        </span>
-                      ) : isOwner ? (
-                        <span className="text-yellow-400 w-4 text-center">👑</span>
-                      ) : (
-                        <span className="w-4" />
-                      )}
-                      
-                      <div className="flex-1 min-w-0 flex items-center gap-1">
-                        <span className={`text-xs truncate ${getNameEffectClass(user)} ${
-                          isOwner
-                            ? 'text-yellow-300 font-bold'
-                            : user.chatRole 
-                              ? ROLE_COLORS[user.chatRole] 
-                              : user.isAdmin 
-                                ? 'text-red-400'
-                                : 'text-purple-200'
-                        }`} title={getDisplayName(user)}
-                        {...(getNameEffectClass(user) === 'effect-glitch' ? { 'data-text': getDisplayName(user) } : {})}
-                        >
-                          {getDisplayName(user)}
-                        </span>
-                        {/* Role Badge */}
-                        {badge && (
-                          <span className={`text-[8px] px-1 py-0.5 rounded ${badge.bg} ${badge.text} border ${badge.border} font-medium whitespace-nowrap`}>
-                            {badge.label}
-                          </span>
-                        )}
-                        {isOwner && !badge && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-yellow-300 border border-red-500/40 font-medium whitespace-nowrap">
-                            👑Sahip
-                          </span>
-                        )}
-                      </div>
-                      {user.id !== session?.user?.id && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openGiftModal(user) }}
-                          className="ml-auto text-yellow-400 hover:text-yellow-200 hover:bg-yellow-500/20 rounded p-0.5 transition-all flex-shrink-0"
-                          title="Hediye Gönder"
-                        >
-                          <Gift className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
           </div>
-        </div>
+        ) : (
+          <div className="relative z-10 flex-shrink-0 px-3 pb-3 pt-1">
+            <Link
+              href="/giris"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600/80 backdrop-blur-sm text-white font-medium text-sm rounded-full hover:bg-purple-500/80 w-full border border-purple-500/40"
+            >
+              <LogIn className="w-4 h-4" />
+              {t('chat.login_required')}
+            </Link>
+          </div>
+        )}
+
+        {/* Image Picker Modal */}
+        <AnimatePresence>
+          {showImagePicker && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setShowImagePicker(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-sm w-full overflow-hidden"
+              >
+                <div className="p-4 border-b border-purple-500/20 flex items-center justify-between">
+                  <h3 className="text-gold-400 font-bold">📷 Profil Resmi Seç</h3>
+                  <button onClick={() => setShowImagePicker(false)} className="text-purple-400 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="p-3 grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                  <button
+                    onClick={() => { setMyBroadcastImage(null); if (session?.user?.id) localStorage.removeItem(`chat_broadcast_img_${session.user.id}`); setShowImagePicker(false) }}
+                    className={`relative aspect-square rounded-lg border-2 ${!myBroadcastImage ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden flex items-center justify-center bg-purple-900/30 hover:bg-purple-800/40`}
+                  >
+                    <span className="text-purple-300 text-xs text-center">Varsayılan</span>
+                  </button>
+                  {broadcastImages.map((img) => (
+                    <button
+                      key={img.id}
+                      onClick={() => { setMyBroadcastImage(img.imageUrl); if (session?.user?.id) localStorage.setItem(`chat_broadcast_img_${session.user.id}`, img.imageUrl); setShowImagePicker(false) }}
+                      className={`relative aspect-square rounded-lg border-2 ${myBroadcastImage === img.imageUrl ? 'border-gold-400' : 'border-purple-500/30'} overflow-hidden hover:border-purple-400/60`}
+                    >
+                      <img loading="lazy" src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Gift Animation Overlay - Profile appears center, gift hits, star burst, exit */}
