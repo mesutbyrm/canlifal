@@ -482,6 +482,29 @@ export default function ChatRoomPage() {
 
       updatePresence()
 
+      // ── Visibility change handler: pause polling when tab is hidden, resume + refresh when visible ──
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          // Tab became visible again — immediately refresh everything
+          updatePresence()
+          fetchMessages()
+          fetchActiveUsers()
+          fetchVoiceUsers()
+          fetchBroadcastImages()
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      // ── Online/offline handler: re-sync on reconnect ──
+      const handleOnline = () => {
+        console.log('Network reconnected, refreshing chat...')
+        updatePresence()
+        fetchMessages()
+        fetchActiveUsers()
+        fetchVoiceUsers()
+      }
+      window.addEventListener('online', handleOnline)
+
       // Remove presence when leaving page (intentional leave - show message)
       const handleBeforeUnload = () => {
         if (room?.id) {
@@ -498,6 +521,8 @@ export default function ChatRoomPage() {
         clearInterval(voiceUsersInterval)
         clearInterval(typingInterval)
         clearInterval(balanceInterval)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('online', handleOnline)
         window.removeEventListener('beforeunload', handleBeforeUnload)
         // Send leave beacon on cleanup (covers client-side navigation)
         if (room?.id) {
@@ -583,6 +608,29 @@ export default function ChatRoomPage() {
       client.on('user-unpublished', (remoteUser, mediaType) => {
         if (mediaType === 'audio') {
           remoteUser.audioTrack?.stop()
+        }
+      })
+
+      // Auto-reconnect on connection drop
+      client.on('connection-state-change', (curState, prevState) => {
+        console.log(`Agora connection: ${prevState} → ${curState}`)
+        if (curState === 'DISCONNECTED' && prevState === 'CONNECTED') {
+          console.warn('Agora disconnected, attempting reconnect...')
+          // Agora SDK auto-reconnects in most cases, but if it stays disconnected:
+          setTimeout(async () => {
+            if (agoraClientRef.current?.connectionState === 'DISCONNECTED') {
+              try {
+                const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
+                const ch = `voice_room_${room.id}`
+                const { token: newToken, appId: newAppId } = await reFetch(ch, 'host', agoraUid)
+                await agoraClientRef.current!.join(newAppId, ch, newToken, agoraUid)
+                if (agoraAudioTrackRef.current) {
+                  await agoraClientRef.current!.publish([agoraAudioTrackRef.current])
+                }
+                console.log('Agora reconnected successfully')
+              } catch (e) { console.error('Agora reconnect failed:', e) }
+            }
+          }, 3000)
         }
       })
 
@@ -2080,43 +2128,172 @@ export default function ChatRoomPage() {
         </AnimatePresence>
       </div>
 
-      {/* Gift Animation Overlay - Profile appears center, gift hits, star burst, exit */}
+      {/* ── Gift Animation Overlay — Fullscreen cinematic gift effect ── */}
       <AnimatePresence>
-        {giftAnimations.map((anim) => (
-          <motion.div
-            key={anim.id}
-            initial={{ y: -60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -60, opacity: 0 }}
-            transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
-            className="fixed top-14 left-2 right-2 z-50 pointer-events-none"
-          >
-            <div className="bg-gradient-to-r from-yellow-500/20 via-purple-500/20 to-pink-500/20 border border-yellow-500/40 rounded-xl px-3 py-2 backdrop-blur-md flex items-center gap-2 shadow-lg shadow-purple-500/20 max-w-md mx-auto">
-              {/* Gift icon */}
-              <div className="flex-shrink-0 w-8 h-8">
-                {anim.giftImage ? (
-                  <img loading="lazy" src={anim.giftImage} alt="gift" className="w-8 h-8 object-contain" />
-                ) : anim.giftIcon?.startsWith('/') ? (
-                  <img loading="lazy" src={anim.giftIcon} alt="gift" className="w-8 h-8 object-contain" />
-                ) : (
-                  <span className="text-2xl">{anim.giftIcon}</span>
-                )}
+        {giftAnimations.map((anim) => {
+          const giftSrc = anim.giftImage || (anim.giftIcon?.startsWith('/') ? anim.giftIcon : '')
+          return (
+            <motion.div
+              key={anim.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center"
+            >
+              {/* Full-screen glow backdrop */}
+              <motion.div 
+                className="absolute inset-0"
+                style={{ background: 'radial-gradient(circle, rgba(147,51,234,0.3) 0%, transparent 70%)' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: anim.phase === 'hit' || anim.phase === 'burst' ? 1 : 0 }}
+                transition={{ duration: 0.5 }}
+              />
+
+              {/* Particle burst ring */}
+              {(anim.phase === 'burst' || anim.phase === 'exit') && (
+                <>
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const angle = (i / 12) * 360
+                    const rad = (angle * Math.PI) / 180
+                    const dist = 120 + Math.random() * 60
+                    return (
+                      <motion.div
+                        key={`p-${anim.id}-${i}`}
+                        className="absolute w-2 h-2 rounded-full"
+                        style={{ 
+                          background: ['#FFD700', '#FF69B4', '#00BFFF', '#FF6347', '#7CFC00', '#FFD700', '#FF1493', '#9400D3', '#00CED1', '#FF8C00', '#ADFF2F', '#FF69B4'][i],
+                          boxShadow: `0 0 8px ${['#FFD700', '#FF69B4', '#00BFFF', '#FF6347', '#7CFC00', '#FFD700', '#FF1493', '#9400D3', '#00CED1', '#FF8C00', '#ADFF2F', '#FF69B4'][i]}`
+                        }}
+                        initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                        animate={{
+                          x: Math.cos(rad) * dist,
+                          y: Math.sin(rad) * dist,
+                          scale: 0,
+                          opacity: 0
+                        }}
+                        transition={{ duration: 1.2, ease: 'easeOut' }}
+                      />
+                    )
+                  })}
+                </>
+              )}
+
+              {/* Sparkle stars — continuous during visible */}
+              {anim.phase !== 'exit' && Array.from({ length: 8 }).map((_, i) => (
+                <motion.div
+                  key={`s-${anim.id}-${i}`}
+                  className="absolute text-yellow-300"
+                  style={{ fontSize: 10 + Math.random() * 14 }}
+                  initial={{
+                    x: -80 + Math.random() * 160,
+                    y: -60 + Math.random() * 120,
+                    opacity: 0,
+                    scale: 0,
+                    rotate: 0
+                  }}
+                  animate={{
+                    opacity: [0, 1, 0],
+                    scale: [0, 1.2, 0],
+                    rotate: 360,
+                    y: [-60 + Math.random() * 120, -100 - Math.random() * 80]
+                  }}
+                  transition={{
+                    duration: 1.5 + Math.random() * 1,
+                    delay: Math.random() * 0.8,
+                    repeat: 1,
+                    repeatDelay: 0.5
+                  }}
+                >
+                  ✦
+                </motion.div>
+              ))}
+
+              {/* Center content */}
+              <div className="relative flex flex-col items-center">
+                {/* Gift image — big, zooming in with bounce */}
+                <motion.div
+                  className="relative"
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={
+                    anim.phase === 'enter' ? { scale: 1.2, rotate: 0 } :
+                    anim.phase === 'hit' ? { scale: 1.5, rotate: [0, -5, 5, 0] } :
+                    anim.phase === 'burst' ? { scale: 1, rotate: 0 } :
+                    { scale: 0, rotate: 20, y: -100, opacity: 0 }
+                  }
+                  transition={
+                    anim.phase === 'enter' ? { type: 'spring', stiffness: 300, damping: 15 } :
+                    anim.phase === 'hit' ? { duration: 0.6, ease: 'easeOut' } :
+                    anim.phase === 'burst' ? { duration: 0.4 } :
+                    { duration: 0.5, ease: 'easeIn' }
+                  }
+                >
+                  {/* Glow behind gift */}
+                  <div className="absolute inset-0 blur-2xl bg-yellow-400/40 rounded-full scale-150" />
+                  {giftSrc ? (
+                    <img src={giftSrc} alt="gift" className="relative w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
+                  ) : (
+                    <span className="relative text-7xl sm:text-8xl drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">{anim.giftIcon || '🎁'}</span>
+                  )}
+                  {/* Amount badge */}
+                  {anim.amount > 1 && (
+                    <motion.div
+                      className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white font-black text-sm px-2.5 py-1 rounded-full shadow-lg shadow-red-500/50 border-2 border-white/30"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.3, type: 'spring', stiffness: 400 }}
+                    >
+                      x{anim.amount}
+                    </motion.div>
+                  )}
+                </motion.div>
+
+                {/* Sender → Recipient text */}
+                <motion.div
+                  className="mt-4 text-center"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  <div className="bg-black/60 backdrop-blur-md rounded-2xl px-5 py-2.5 border border-white/10 shadow-xl">
+                    <p className="text-sm sm:text-base font-bold">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-400">{anim.senderName}</span>
+                      <span className="mx-2 text-white/40">→</span>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-400">{anim.recipientName}</span>
+                    </p>
+                  </div>
+                </motion.div>
               </div>
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-white truncate">
-                  <span className="text-yellow-300 font-bold">{anim.senderName}</span>
-                  <span className="text-white/60 mx-1">→</span>
-                  <span className="text-purple-300 font-bold">{anim.recipientName}</span>
-                </p>
-              </div>
-              {/* Amount */}
-              <div className="flex-shrink-0 bg-yellow-500/30 text-yellow-300 font-bold text-xs px-2 py-0.5 rounded-full">
-                x{anim.amount}
-              </div>
-            </div>
-          </motion.div>
-        ))}
+
+              {/* Corner fireworks / light streaks */}
+              {anim.phase === 'hit' && (
+                <>
+                  <motion.div
+                    className="absolute top-1/4 left-1/4 w-32 h-1 bg-gradient-to-r from-yellow-400 to-transparent rounded-full"
+                    initial={{ scaleX: 0, opacity: 0, rotate: -45 }}
+                    animate={{ scaleX: 1, opacity: [0, 1, 0], rotate: -45 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    style={{ transformOrigin: 'left center' }}
+                  />
+                  <motion.div
+                    className="absolute top-1/4 right-1/4 w-32 h-1 bg-gradient-to-l from-pink-400 to-transparent rounded-full"
+                    initial={{ scaleX: 0, opacity: 0, rotate: 45 }}
+                    animate={{ scaleX: 1, opacity: [0, 1, 0], rotate: 45 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    style={{ transformOrigin: 'right center' }}
+                  />
+                  <motion.div
+                    className="absolute bottom-1/3 left-1/3 w-24 h-1 bg-gradient-to-r from-blue-400 to-transparent rounded-full"
+                    initial={{ scaleX: 0, opacity: 0, rotate: 30 }}
+                    animate={{ scaleX: 1, opacity: [0, 1, 0], rotate: 30 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    style={{ transformOrigin: 'left center' }}
+                  />
+                </>
+              )}
+            </motion.div>
+          )
+        })}
       </AnimatePresence>
 
       {/* Gift Modal */}

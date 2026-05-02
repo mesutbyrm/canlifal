@@ -16,12 +16,12 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
-    const twoMinutesAgo = new Date(Date.now() - 120000)
+    const presenceTimeout = new Date(Date.now() - 300000)
 
     const presences = await prisma.chatPresence.findMany({
       where: {
         roomId,
-        lastSeen: { gte: twoMinutesAgo }
+        lastSeen: { gte: presenceTimeout }
       },
       include: {
         user: {
@@ -216,12 +216,12 @@ export async function POST(
     
     // If user wants a seat, validate it's not taken
     if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < 15) {
-      const twoMinAgo = new Date(Date.now() - 120000)
+      const presenceTimeout = new Date(Date.now() - 300000)
       const seatTaken = await prisma.chatPresence.findFirst({
         where: {
           roomId,
           seatIndex,
-          lastSeen: { gte: twoMinAgo },
+          lastSeen: { gte: presenceTimeout },
           userId: { not: session.user.id }
         }
       })
@@ -331,11 +331,11 @@ export async function POST(
     }
 
     // Return updated active users
-    const twoMinutesAgo = new Date(Date.now() - 120000)
+    const presenceTimeout = new Date(Date.now() - 300000)
     const presences = await prisma.chatPresence.findMany({
       where: {
         roomId,
-        lastSeen: { gte: twoMinutesAgo }
+        lastSeen: { gte: presenceTimeout }
       },
       include: {
         user: {

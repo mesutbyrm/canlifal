@@ -58,12 +58,12 @@ export async function PATCH(
 
     // Check the seat is available (if claiming a seat, not vacating)
     if (seatIndex >= 0) {
-      const twoMinAgo = new Date(Date.now() - 120000)
+      const presenceTimeout = new Date(Date.now() - 300000)
       const seatTaken = await prisma.chatPresence.findFirst({
         where: {
           roomId,
           seatIndex,
-          lastSeen: { gte: twoMinAgo },
+          lastSeen: { gte: presenceTimeout },
           userId: { not: actualTargetId }
         }
       })
