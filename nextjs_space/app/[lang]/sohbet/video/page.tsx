@@ -42,6 +42,7 @@ import {
   Grid
 } from 'lucide-react'
 import PKBattleOverlay from '@/components/pk-battle-overlay'
+import PKBattleView from '@/components/pk-battle-view'
 import StreamVideoGrid, { GridParticipant } from '@/components/stream-video-grid'
 
 interface VideoStream {
@@ -1200,8 +1201,24 @@ function VideoStreamPageInner() {
         </div>
       ) : (
         <>
-          {/* Multi-guest Grid Mode OR Solo View */}
-          {hasActiveGuests ? (
+          {/* PK Battle Mode - Side by side videos */}
+          {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && currentStream ? (
+            <PKBattleView
+              battle={pkBattle}
+              currentStreamId={currentStream.id}
+              onMyVideoRef={(el) => {
+                if (!el) return
+                const prev = remoteVideoRef.current
+                if (prev !== el) {
+                  (remoteVideoRef as any).current = el
+                  const remoteUsers = Array.from(remoteUsersRef.current.values())
+                  if (remoteUsers.length > 0 && remoteUsers[0].videoTrack) {
+                    try { remoteUsers[0].videoTrack.play(el) } catch {}
+                  }
+                }
+              }}
+            />
+          ) : hasActiveGuests ? (
             <>
               {/* TikTok-style grid with Talep slots */}
               <div className="absolute inset-0 pt-14 pb-28 px-1">
@@ -1750,8 +1767,8 @@ function VideoStreamPageInner() {
             )}
           </AnimatePresence>
 
-          {/* PK Battle Overlay */}
-          {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && currentStream && (
+          {/* PK Battle Score Overlay (only for non-PK-view modes, e.g. when grid is active during PK) */}
+          {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && currentStream && hasActiveGuests && (
             <PKBattleOverlay
               battle={pkBattle}
               currentStreamId={currentStream.id}
