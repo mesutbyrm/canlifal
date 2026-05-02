@@ -2201,6 +2201,50 @@ export default function ChatRoomPage() {
                   </div>
                 </div>
               )}
+              {/* Voice Chat Bar - shows active voice users */}
+              {voiceUsers.length > 0 && (
+                <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-900/30 border border-blue-500/20 rounded mb-1">
+                  <div className="flex items-center gap-1 text-blue-400 flex-shrink-0">
+                    <Phone className="w-3 h-3" />
+                    <span className="text-[10px] font-bold">{voiceUsers.length}</span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar">
+                    {voiceUsers.map((vu: any) => (
+                      <span
+                        key={vu.id}
+                        className={`text-[11px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                          speakingUsers.has(vu.id)
+                            ? 'bg-green-500/30 text-green-300 border border-green-500/50 animate-pulse'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        }`}
+                      >
+                        {speakingUsers.has(vu.id) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 mr-1 animate-pulse" />}
+                        {vu.name}
+                      </span>
+                    ))}
+                  </div>
+                  {/* Listen button for users without voice permission */}
+                  {!canUseVoice() && !isListening && !voiceEnabled && (
+                    <button
+                      onClick={startListening}
+                      className="flex items-center gap-1 px-2 py-0.5 bg-blue-600/30 text-blue-300 rounded text-[10px] font-medium hover:bg-blue-600/50 flex-shrink-0 border border-blue-500/30"
+                      title="Dinle"
+                    >
+                      <Volume2 className="w-3 h-3" /> Dinle
+                    </button>
+                  )}
+                  {!canUseVoice() && isListening && (
+                    <button
+                      onClick={stopListening}
+                      className="flex items-center gap-1 px-2 py-0.5 bg-red-600/30 text-red-300 rounded text-[10px] font-medium hover:bg-red-600/50 flex-shrink-0 border border-red-500/30"
+                      title="Dinlemeyi Durdur"
+                    >
+                      <VolumeX className="w-3 h-3" /> Kapat
+                    </button>
+                  )}
+                </div>
+              )}
+
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <button
                   type="button"
@@ -2210,6 +2254,44 @@ export default function ChatRoomPage() {
                 >
                   <Gift className="w-4 h-4" />
                 </button>
+
+                {/* Voice Chat Button - only for users with ~@&%+ roles */}
+                {canUseVoice() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (voiceEnabled) {
+                        stopVoiceChat()
+                      } else {
+                        startVoiceChat()
+                      }
+                    }}
+                    disabled={voiceConnecting}
+                    className={`px-3 py-2 rounded text-sm font-medium flex items-center gap-1 transition-all ${
+                      voiceEnabled
+                        ? 'bg-red-500/80 text-white hover:bg-red-500 border border-red-500/60 animate-pulse'
+                        : voiceConnecting
+                          ? 'bg-blue-500/30 text-blue-300 border border-blue-500/40 opacity-50 cursor-wait'
+                          : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/40'
+                    }`}
+                    title={voiceEnabled ? 'Sesli sohbetten çık' : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'}
+                  >
+                    {voiceEnabled ? (
+                      <>
+                        {isSpeaking ? (
+                          <Mic className="w-4 h-4 text-green-300" />
+                        ) : (
+                          <PhoneOff className="w-4 h-4" />
+                        )}
+                      </>
+                    ) : voiceConnecting ? (
+                      <Phone className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Phone className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+
                 <input
                   ref={inputRef}
                   type="text"
