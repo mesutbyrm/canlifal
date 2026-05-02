@@ -34,6 +34,7 @@ interface ActiveUser {
   roleSymbol?: string
   roleLevel: number
   isAdmin: boolean
+  seatIndex: number
 }
 
 interface ChatRoom {
@@ -556,22 +557,7 @@ export default function ChatRoomPage() {
       const client = await createAgoraClient('host')
       agoraClientRef.current = client
 
-      // 4. Get token and join channel
-      const channelName = `voice_room_${room.id}`
-      const { token, appId } = await fetchAgoraToken(channelName, 'host', agoraUid)
-      await client.join(appId, channelName, token, agoraUid)
-
-      // 5. Create and publish mic audio track
-      const audioTrack = await createLocalAudioTrack()
-      agoraAudioTrackRef.current = audioTrack
-      await client.publish([audioTrack])
-
-      // 6. Map own UID
-      if (session?.user?.id) {
-        agoraUidMapRef.current.set(agoraUid, session.user.id)
-      }
-
-      // 7. Enable volume indicator for speaking detection
+      // 4. Register ALL event listeners BEFORE joining (critical for catching remote users)
       client.enableAudioVolumeIndicator()
       client.on('volume-indicator', (volumes) => {
         const newSpeaking = new Set<string>()
@@ -582,14 +568,12 @@ export default function ChatRoomPage() {
           }
         }
         setSpeakingUsers(newSpeaking)
-        // Update own speaking status
         if (session?.user?.id) {
           const amISpeaking = newSpeaking.has(session.user.id)
           setIsSpeaking(amISpeaking)
         }
       })
 
-      // 8. Handle remote users joining/leaving
       client.on('user-published', async (remoteUser, mediaType) => {
         await client.subscribe(remoteUser, mediaType)
         if (mediaType === 'audio') {
@@ -602,11 +586,26 @@ export default function ChatRoomPage() {
         }
       })
 
+      // 5. Map own UID
+      if (session?.user?.id) {
+        agoraUidMapRef.current.set(agoraUid, session.user.id)
+      }
+
+      // 6. Get token and join channel
+      const channelName = `voice_room_${room.id}`
+      const { token, appId } = await fetchAgoraToken(channelName, 'host', agoraUid)
+      await client.join(appId, channelName, token, agoraUid)
+
+      // 7. Create and publish mic audio track
+      const audioTrack = await createLocalAudioTrack()
+      agoraAudioTrackRef.current = audioTrack
+      await client.publish([audioTrack])
+
       setVoiceEnabled(true)
       setVoiceConnecting(false)
       console.log('Agora voice chat started as host')
 
-      // 9. Refresh voice users list
+      // 8. Refresh voice users list
       fetchVoiceUsers()
 
     } catch (error: unknown) {
@@ -674,12 +673,7 @@ export default function ChatRoomPage() {
       const client = await createAgoraClient('audience')
       agoraClientRef.current = client
 
-      const channelName = `voice_room_${room.id}`
-      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
-      const { token, appId } = await fetchAgoraToken(channelName, 'audience', uid)
-      await client.join(appId, channelName, token, uid)
-
-      // Enable volume indicator for speaking detection (audience can see who speaks)
+      // Register ALL event listeners BEFORE joining (critical for catching remote users)
       client.enableAudioVolumeIndicator()
       client.on('volume-indicator', (volumes) => {
         const newSpeaking = new Set<string>()
@@ -692,7 +686,6 @@ export default function ChatRoomPage() {
         setSpeakingUsers(newSpeaking)
       })
 
-      // Subscribe to remote audio automatically
       client.on('user-published', async (remoteUser, mediaType) => {
         await client.subscribe(remoteUser, mediaType)
         if (mediaType === 'audio') {
@@ -704,6 +697,12 @@ export default function ChatRoomPage() {
           remoteUser.audioTrack?.stop()
         }
       })
+
+      // Now join the channel
+      const channelName = `voice_room_${room.id}`
+      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
+      const { token, appId } = await fetchAgoraToken(channelName, 'audience', uid)
+      await client.join(appId, channelName, token, uid)
 
       setIsListening(true)
       console.log('Agora voice listen mode started')
@@ -1031,6 +1030,7 @@ export default function ChatRoomPage() {
       roleSymbol: (user as ActiveUser).roleSymbol,
       roleLevel: (user as ActiveUser).roleLevel ?? 0,
       isAdmin: (user as ActiveUser).isAdmin ?? false,
+      seatIndex: (user as ActiveUser).seatIndex ?? -1,
     }
     setGiftTargetUser(fullUser)
     setShowGiftModal(true)
@@ -1572,23 +1572,61 @@ export default function ChatRoomPage() {
         {(() => {
           const TOTAL_SEATS = 15
           const COLS = 5
-          const CENTER_SEAT = 7 // index 7 = row 2, col 3 (center)
           
-          // Build seat occupants: owner goes to center, then privileged/voice users
-          const privilegedUsers = activeUsers.filter(u => 
-            u.chatRole && ['superadmin', 'founder', 'sop', 'admin', 'op', 'voice'].includes(u.chatRole)
-          )
-          const ownerUser = room.owner ? activeUsers.find(u => u.id === room.owner?.id) : null
-          const otherPrivileged = privilegedUsers.filter(u => u.id !== room.owner?.id)
-          
-          // Create seats array
+          // Build seats from seatIndex — users pick their own seats
           const seats: (ActiveUser | null)[] = new Array(TOTAL_SEATS).fill(null)
-          if (ownerUser) seats[CENTER_SEAT] = ownerUser
+          for (const u of activeUsers) {
+            if (u.seatIndex >= 0 && u.seatIndex < TOTAL_SEATS) {
+              seats[u.seatIndex] = u
+            }
+          }
           
-          let seatIdx = 0
-          for (const user of otherPrivileged) {
-            while (seatIdx < TOTAL_SEATS && seats[seatIdx] !== null) seatIdx++
-            if (seatIdx < TOTAL_SEATS) seats[seatIdx] = user
+          // Can I manage seats (admin/owner)?
+          const canManageSeats = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
+            (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin'].includes(myPermissions.role))
+
+          // Handle claiming a seat for self
+          const handleClaimSeat = async (seatIdx: number) => {
+            if (!room || !session?.user?.id) return
+            try {
+              const res = await fetch(`/api/chat/rooms/${room.id}/seats`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ seatIndex: seatIdx })
+              })
+              if (res.ok) {
+                fetchActiveUsers()
+              } else {
+                const data = await res.json()
+                if (res.status === 409) alert(data.error || 'Bu koltuk dolu!')
+              }
+            } catch {}
+          }
+
+          // Handle leaving seat (go back to -1)
+          const handleLeaveSeat = async () => {
+            if (!room || !session?.user?.id) return
+            try {
+              const res = await fetch(`/api/chat/rooms/${room.id}/seats`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ seatIndex: -1 })
+              })
+              if (res.ok) fetchActiveUsers()
+            } catch {}
+          }
+
+          // Handle kick from seat (admin action)
+          const handleKickFromSeat = async (targetUserId: string) => {
+            if (!room) return
+            try {
+              const res = await fetch(`/api/chat/rooms/${room.id}/seats`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId, seatIndex: -1 })
+              })
+              if (res.ok) fetchActiveUsers()
+            } catch {}
           }
           
           return (
@@ -1603,12 +1641,19 @@ export default function ChatRoomPage() {
                     const isSpeakingSeat = speakingUsers.has(seatUser.id)
                     
                     return (
-                      <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
+                      <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5 relative group">
                         <div 
                           className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden cursor-pointer transition-all
                             ${isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-white/20'}
                           `}
-                          onClick={() => seatUser.id !== session?.user?.id && openGiftModal(seatUser)}
+                          onClick={() => {
+                            if (isMe) {
+                              // Clicking own seat: option to leave
+                              if (confirm('Koltuğunuzdan kalkmak istiyor musunuz?')) handleLeaveSeat()
+                            } else {
+                              openGiftModal(seatUser)
+                            }
+                          }}
                         >
                           {displayImage ? (
                             <img loading="lazy" src={displayImage} alt={getDisplayName(seatUser)} className="w-full h-full object-cover" />
@@ -1633,19 +1678,33 @@ export default function ChatRoomPage() {
                         >
                           {getDisplayName(seatUser)}
                         </p>
+                        {/* Admin: kick from seat button */}
+                        {canManageSeats && !isMe && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleKickFromSeat(seatUser.id) }}
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-white text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-500 z-20"
+                            title="Koltuktan kaldır"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     )
                   }
                   
-                  // Empty/Locked seat
+                  // Empty seat — clickable to claim
                   return (
                     <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      <button
+                        onClick={() => handleClaimSeat(idx)}
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-dashed border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/15 hover:border-white/40 transition-all cursor-pointer group"
+                        title={`Koltuk ${idx + 1} — Oturmak için tıkla`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
-                      </div>
-                      <p className="text-[9px] text-white/20 font-medium">Kilitli</p>
+                      </button>
+                      <p className="text-[9px] text-white/20 font-medium">{idx + 1}</p>
                     </div>
                   )
                 })}

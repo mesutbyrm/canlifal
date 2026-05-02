@@ -453,6 +453,7 @@ model ChatPresence {
   isTyping   Boolean   @default(false)
   lastTyping DateTime?
   lastSeen   DateTime  @default(now())
+  seatIndex  Int       @default(-1) // -1 = no seat, 0-14 = seat position
   room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 

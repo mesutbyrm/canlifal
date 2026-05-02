@@ -69,7 +69,8 @@ export async function GET(
         chatRole,
         roleSymbol,
         roleLevel,
-        isAdmin: isGlobalAdmin
+        isAdmin: isGlobalAdmin,
+        seatIndex: p.seatIndex ?? -1
       }
     })
 
@@ -165,7 +166,7 @@ export async function POST(
         })
         await prisma.chatPresence.update({
           where: { roomId_userId: { roomId, userId: session.user.id } },
-          data: { lastSeen: new Date(0) }
+          data: { lastSeen: new Date(0), seatIndex: -1 }
         })
         // Create leave message so other users see departure immediately
         if (isLeave) {
@@ -182,11 +183,15 @@ export async function POST(
       return NextResponse.json({ success: true })
     }
 
-    // Parse body for nickname
+    // Parse body for nickname and seatIndex
     let nickname: string | undefined
+    let seatIndex: number | undefined
     try {
       const body = await request.json()
       nickname = body.nickname
+      if (typeof body.seatIndex === 'number') {
+        seatIndex = body.seatIndex
+      }
     } catch {
       // Body might be empty for GET-like requests
     }
@@ -205,7 +210,23 @@ export async function POST(
     const thirtySecondsAgo = new Date(Date.now() - 30000)
     const isNewJoin = !existingPresence || existingPresence.lastSeen < thirtySecondsAgo
     
-    // Update presence with nickname (handle race condition with retry)
+    // If user wants a seat, validate it's not taken
+    if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < 15) {
+      const twoMinAgo = new Date(Date.now() - 120000)
+      const seatTaken = await prisma.chatPresence.findFirst({
+        where: {
+          roomId,
+          seatIndex,
+          lastSeen: { gte: twoMinAgo },
+          userId: { not: session.user.id }
+        }
+      })
+      if (seatTaken) {
+        return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
+      }
+    }
+
+    // Update presence with nickname & seatIndex (handle race condition with retry)
     try {
       await prisma.chatPresence.upsert({
         where: {
@@ -216,12 +237,14 @@ export async function POST(
         },
         update: { 
           lastSeen: new Date(),
-          nickname: nickname || undefined
+          ...(nickname ? { nickname } : {}),
+          ...(seatIndex !== undefined ? { seatIndex } : {})
         },
         create: {
           roomId,
           userId: session.user.id,
-          nickname: nickname || undefined
+          ...(nickname ? { nickname } : {}),
+          seatIndex: seatIndex !== undefined ? seatIndex : -1
         }
       })
     } catch (upsertError: unknown) {
@@ -236,7 +259,8 @@ export async function POST(
           },
           data: { 
             lastSeen: new Date(),
-            nickname: nickname || undefined
+            ...(nickname ? { nickname } : {}),
+            ...(seatIndex !== undefined ? { seatIndex } : {})
           }
         })
       } else {
@@ -345,7 +369,8 @@ export async function POST(
         chatRole,
         roleSymbol,
         roleLevel,
-        isAdmin: isGlobalAdmin2
+        isAdmin: isGlobalAdmin2,
+        seatIndex: p.seatIndex ?? -1
       }
     })
 
@@ -393,7 +418,7 @@ export async function DELETE(
     
     const displayName = presence?.nickname || session.user.name || 'Kullanıcı'
 
-    // Set lastSeen to past so user disappears from active list immediately
+    // Set lastSeen to past and reset seat so user disappears from active list immediately
     try {
       await prisma.chatPresence.update({
         where: {
@@ -403,7 +428,8 @@ export async function DELETE(
           }
         },
         data: {
-          lastSeen: new Date(0) // epoch - effectively removes from active list
+          lastSeen: new Date(0), // epoch - effectively removes from active list
+          seatIndex: -1
         }
       })
     } catch {
