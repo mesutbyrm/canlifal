@@ -181,4 +181,15 @@ export async function applyBeautyEffect(
   }
 }
 
+// Create audio-only track (for voice chat rooms)
+export async function createLocalAudioTrack(): Promise<IMicrophoneAudioTrack> {
+  const AgoraRTC = await getAgoraRTC()
+  return AgoraRTC.createMicrophoneAudioTrack({
+    encoderConfig: 'high_quality',
+    AEC: true,
+    ANS: true,
+    AGC: true,
+  })
+}
+
 export type { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, UID }

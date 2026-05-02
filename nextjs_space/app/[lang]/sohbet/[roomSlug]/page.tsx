@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import { getRTCConfiguration } from '@/lib/webrtc-config'
+import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -140,13 +140,15 @@ export default function ChatRoomPage() {
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
   
-  // Voice Chat with WebRTC
+  // Voice Chat with Agora
   const [voiceEnabled, setVoiceEnabled] = useState(false)
-  const [isListening, setIsListening] = useState(false) // For listen-only mode
+  const [isListening, setIsListening] = useState(false) // For listen-only mode (audience)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
+  const agoraAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
+  const agoraUidMapRef = useRef<Map<number, string>>(new Map()) // Agora UID -> userId
   
   // Gift system
   const [showGiftModal, setShowGiftModal] = useState(false)
@@ -175,13 +177,6 @@ export default function ChatRoomPage() {
   // Grid user limit from admin settings
   const [gridUserLimit, setGridUserLimit] = useState(6)
   
-  const mediaStreamRef = useRef<MediaStream | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const voiceIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
-  const remoteAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map())
-  const voicePollRef = useRef<NodeJS.Timeout | null>(null)
-  const lastSignalTimeRef = useRef<number>(0)
   const voiceUsersPollRef = useRef<NodeJS.Timeout | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -191,7 +186,6 @@ export default function ChatRoomPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousMessagesCount = useRef(0)
-  const iceCandidatesBuffer = useRef<Map<string, RTCIceCandidate[]>>(new Map())
 
   // Handle mobile keyboard - ensure input stays visible
   const handleInputFocus = useCallback(() => {
@@ -390,6 +384,12 @@ export default function ChatRoomPage() {
       if (res.ok) {
         const { voiceUsers: users } = await res.json()
         setVoiceUsers(users || [])
+        // Update Agora UID → userId mapping for speaking detection
+        for (const u of (users || [])) {
+          if (u.agoraUid) {
+            agoraUidMapRef.current.set(u.agoraUid, u.id)
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching voice users:', error)
@@ -513,466 +513,214 @@ export default function ChatRoomPage() {
     }
   }, [messages])
 
-  // WebRTC Configuration - STUN + TURN sunucuları merkezi yapılandırmadan
-  const rtcConfig: RTCConfiguration = getRTCConfiguration()
+  // ─── Agora Voice Chat ──────────────────────────────────────────
+  // Helper: generate a stable numeric UID from user ID string
+  const userIdToAgoraUid = useCallback((uid: string): number => {
+    let hash = 0
+    for (let i = 0; i < uid.length; i++) {
+      hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0
+    }
+    return Math.abs(hash) % 1000000000 // Keep within safe range
+  }, [])
 
-  // Create peer connection for a user
-  const createPeerConnection = useCallback((userId: string, isInitiator: boolean) => {
-    if (!room || !mediaStreamRef.current) {
-      console.log('Cannot create peer connection: room or mediaStream missing')
-      return null
-    }
-    
-    // Close existing connection if any
-    const existingPc = peerConnectionsRef.current.get(userId)
-    if (existingPc) {
-      existingPc.close()
-      peerConnectionsRef.current.delete(userId)
-    }
-    
-    console.log(`Creating peer connection for ${userId}, isInitiator: ${isInitiator}`)
-    const pc = new RTCPeerConnection(rtcConfig)
-    peerConnectionsRef.current.set(userId, pc)
-    iceCandidatesBuffer.current.set(userId, [])
-    
-    // Add local audio tracks
-    mediaStreamRef.current.getAudioTracks().forEach(track => {
-      console.log('Adding local audio track:', track.label)
-      pc.addTrack(track, mediaStreamRef.current!)
-    })
-    
-    // Handle incoming audio
-    pc.ontrack = (event) => {
-      console.log('Received remote track from', userId)
-      const remoteAudio = new Audio()
-      remoteAudio.srcObject = event.streams[0]
-      remoteAudio.autoplay = true
-      remoteAudio.volume = 1.0
-      
-      // Try to play with user gesture fallback
-      const playAudio = () => {
-        remoteAudio.play().then(() => {
-          console.log('Remote audio playing for', userId)
-        }).catch(err => {
-          console.log('Audio play failed, will retry:', err)
-          // Retry on user interaction
-          document.addEventListener('click', () => remoteAudio.play(), { once: true })
-        })
-      }
-      playAudio()
-      remoteAudioRef.current.set(userId, remoteAudio)
-      
-      // Update speaking users based on audio activity
-      try {
-        const audioContext = new AudioContext()
-        const source = audioContext.createMediaStreamSource(event.streams[0])
-        const analyser = audioContext.createAnalyser()
-        analyser.fftSize = 256
-        source.connect(analyser)
-        
-        const dataArray = new Uint8Array(analyser.frequencyBinCount)
-        const checkSpeaking = setInterval(() => {
-          if (audioContext.state === 'closed') {
-            clearInterval(checkSpeaking)
-            return
-          }
-          analyser.getByteFrequencyData(dataArray)
-          const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-          setSpeakingUsers(prev => {
-            const next = new Set(prev)
-            if (avg > 20) next.add(userId)
-            else next.delete(userId)
-            return next
-          })
-        }, 100)
-        
-        pc.onconnectionstatechange = () => {
-          console.log(`Connection state for ${userId}:`, pc.connectionState)
-          if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
-            clearInterval(checkSpeaking)
-            audioContext.close().catch(() => {})
-          }
-        }
-      } catch (err) {
-        console.error('Error setting up audio analyser:', err)
-      }
-    }
-    
-    // Handle ICE candidates - buffer them
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log('ICE candidate generated for', userId)
-        const buffer = iceCandidatesBuffer.current.get(userId) || []
-        buffer.push(event.candidate)
-        iceCandidatesBuffer.current.set(userId, buffer)
-      }
-    }
-    
-    // When ICE gathering is complete, send all candidates
-    pc.onicegatheringstatechange = () => {
-      console.log(`ICE gathering state for ${userId}:`, pc.iceGatheringState)
-      if (pc.iceGatheringState === 'complete' && room) {
-        const candidates = iceCandidatesBuffer.current.get(userId) || []
-        if (candidates.length > 0) {
-          console.log(`Sending ${candidates.length} ICE candidates to ${userId}`)
-          fetch(`/api/chat/rooms/${room.id}/voice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'ice-candidates',
-              toUserId: userId,
-              data: JSON.stringify(candidates)
-            })
-          }).catch(console.error)
-        }
-      }
-    }
-    
-    // Connection state change handler
-    pc.onconnectionstatechange = () => {
-      console.log(`Peer ${userId} connection state:`, pc.connectionState)
-      if (pc.connectionState === 'failed') {
-        console.log('Connection failed, will retry...')
-        // Could implement retry logic here
-      }
-    }
-    
-    return pc
-  }, [room])
+  // Start voice chat as HOST (can speak)
+  const startVoiceChat = async () => {
+    if (voiceConnecting || !room) return
+    setVoiceConnecting(true)
 
-  // Send voice signal
-  const sendVoiceSignal = useCallback(async (type: string, data?: string, toUserId?: string) => {
-    if (!room) return
     try {
-      await fetch(`/api/chat/rooms/${room.id}/voice`, {
+      // 1. Check voice permission on the server first
+      const joinRes = await fetch(`/api/chat/rooms/${room.id}/voice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, data, toUserId })
+        body: JSON.stringify({ type: 'join' })
       })
-    } catch (error) {
-      console.error('Error sending voice signal:', error)
-    }
-  }, [room])
 
-  // Poll for voice signals
-  const pollVoiceSignals = useCallback(async () => {
-    if (!room || !voiceEnabled) return
-    
-    try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=${lastSignalTimeRef.current}`)
-      if (!res.ok) return
-      
-      const { signals, voiceUsers: users, timestamp } = await res.json()
-      lastSignalTimeRef.current = timestamp
-      setVoiceUsers(users)
-      
-      for (const signal of signals) {
-        const { fromUserId, type, data } = signal
-        
-        try {
-          if (type === 'join') {
-            // New user joined, create offer
-            console.log('User joined voice:', fromUserId)
-            if (!peerConnectionsRef.current.has(fromUserId) && mediaStreamRef.current) {
-              const pc = createPeerConnection(fromUserId, true)
-              if (pc) {
-                const offer = await pc.createOffer()
-                await pc.setLocalDescription(offer)
-                console.log('Sending offer to', fromUserId)
-                await sendVoiceSignal('offer', JSON.stringify(offer), fromUserId)
-              }
-            }
-          } else if (type === 'leave') {
-            // User left, cleanup
-            console.log('User left voice:', fromUserId)
-            const pc = peerConnectionsRef.current.get(fromUserId)
-            if (pc) {
-              pc.close()
-              peerConnectionsRef.current.delete(fromUserId)
-            }
-            const audio = remoteAudioRef.current.get(fromUserId)
-            if (audio) {
-              audio.pause()
-              audio.srcObject = null
-              remoteAudioRef.current.delete(fromUserId)
-            }
-            setSpeakingUsers(prev => {
-              const next = new Set(prev)
-              next.delete(fromUserId)
-              return next
-            })
-          } else if (type === 'offer' && data) {
-            // Received offer, create answer
-            console.log('Received offer from', fromUserId)
-            let pc: RTCPeerConnection | null | undefined = peerConnectionsRef.current.get(fromUserId)
-            if (!pc) {
-              pc = createPeerConnection(fromUserId, false)
-            }
-            if (pc) {
-              await pc.setRemoteDescription(JSON.parse(data))
-              const answer = await pc.createAnswer()
-              await pc.setLocalDescription(answer)
-              console.log('Sending answer to', fromUserId)
-              await sendVoiceSignal('answer', JSON.stringify(answer), fromUserId)
-            }
-          } else if (type === 'answer' && data) {
-            // Received answer
-            console.log('Received answer from', fromUserId)
-            const pc = peerConnectionsRef.current.get(fromUserId)
-            if (pc && pc.signalingState !== 'stable') {
-              await pc.setRemoteDescription(JSON.parse(data))
-            }
-          } else if (type === 'ice-candidate' && data) {
-            // Received single ICE candidate (legacy)
-            const pc = peerConnectionsRef.current.get(fromUserId)
-            if (pc && pc.remoteDescription) {
-              await pc.addIceCandidate(JSON.parse(data))
-            }
-          } else if (type === 'ice-candidates' && data) {
-            // Received batch of ICE candidates
-            console.log('Received ICE candidates from', fromUserId)
-            const pc = peerConnectionsRef.current.get(fromUserId)
-            if (pc && pc.remoteDescription) {
-              const candidates = JSON.parse(data) as RTCIceCandidate[]
-              for (const candidate of candidates) {
-                try {
-                  await pc.addIceCandidate(candidate)
-                } catch (err) {
-                  console.warn('Failed to add ICE candidate:', err)
-                }
-              }
-            }
-          }
-        } catch (signalError) {
-          console.error('Error processing signal:', type, signalError)
-        }
-      }
-    } catch (error) {
-      console.error('Error polling voice signals:', error)
-    }
-  }, [room, voiceEnabled, createPeerConnection, sendVoiceSignal])
-
-  // Voice chat functions
-  const startVoiceChat = async () => {
-    if (voiceConnecting) return
-    setVoiceConnecting(true)
-    
-    try {
-      console.log('Starting voice chat...')
-      
-      // First get microphone access
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          } 
-        })
-        console.log('Microphone access granted')
-      } catch (micError) {
-        console.error('Microphone error:', micError)
+      if (!joinRes.ok) {
         setVoiceConnecting(false)
-        alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.')
-        return
-      }
-      
-      mediaStreamRef.current = stream
-      
-      // Now check if we have voice permission by trying to join
-      if (room) {
-        const joinRes = await fetch(`/api/chat/rooms/${room.id}/voice`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'join' })
-        })
-        
-        if (!joinRes.ok) {
-          // Stop microphone if permission denied
-          stream.getTracks().forEach(track => track.stop())
-          mediaStreamRef.current = null
-          setVoiceConnecting(false)
-          
-          const errData = await joinRes.json().catch(() => ({}))
-          if (joinRes.status === 403) {
-            alert('Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.')
-            return
-          }
-          throw new Error(errData.error || 'Failed to join voice')
+        if (joinRes.status === 403) {
+          alert('Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.')
+          return
         }
-        console.log('Voice permission granted')
+        throw new Error('Failed to join voice')
       }
-      
-      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-      const source = audioContextRef.current.createMediaStreamSource(stream)
-      analyserRef.current = audioContextRef.current.createAnalyser()
-      analyserRef.current.fftSize = 256
-      source.connect(analyserRef.current)
-      
-      // Check for voice activity (local speaking indicator)
-      const bufferLength = analyserRef.current.frequencyBinCount
-      const dataArray = new Uint8Array(bufferLength)
-      
-      voiceIntervalRef.current = setInterval(() => {
-        if (analyserRef.current) {
-          analyserRef.current.getByteFrequencyData(dataArray)
-          const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength
-          const isTalking = average > 30
-          setIsSpeaking(isTalking)
-          
-          // Update speaking status on server
-          if (room && session?.user?.id) {
-            fetch(`/api/chat/rooms/${room.id}/presence`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                nickname: nickname || session.user.name,
-                isSpeaking: isTalking
-              })
-            }).catch(() => {})
+
+      const joinData = await joinRes.json()
+      const agoraUid = joinData.agoraUid as number
+
+      // 2. Lazy-import Agora helpers
+      const { createAgoraClient, fetchAgoraToken, createLocalAudioTrack } = await import('@/lib/agora-client')
+
+      // 3. Create Agora client in host mode
+      const client = await createAgoraClient('host')
+      agoraClientRef.current = client
+
+      // 4. Get token and join channel
+      const channelName = `voice_room_${room.id}`
+      const { token, appId } = await fetchAgoraToken(channelName, 'host', agoraUid)
+      await client.join(appId, channelName, token, agoraUid)
+
+      // 5. Create and publish mic audio track
+      const audioTrack = await createLocalAudioTrack()
+      agoraAudioTrackRef.current = audioTrack
+      await client.publish([audioTrack])
+
+      // 6. Map own UID
+      if (session?.user?.id) {
+        agoraUidMapRef.current.set(agoraUid, session.user.id)
+      }
+
+      // 7. Enable volume indicator for speaking detection
+      client.enableAudioVolumeIndicator()
+      client.on('volume-indicator', (volumes) => {
+        const newSpeaking = new Set<string>()
+        for (const vol of volumes) {
+          if (vol.level > 5) {
+            const mappedUserId = agoraUidMapRef.current.get(vol.uid as number)
+            if (mappedUserId) newSpeaking.add(mappedUserId)
           }
         }
-      }, 100)
-      
+        setSpeakingUsers(newSpeaking)
+        // Update own speaking status
+        if (session?.user?.id) {
+          const amISpeaking = newSpeaking.has(session.user.id)
+          setIsSpeaking(amISpeaking)
+        }
+      })
+
+      // 8. Handle remote users joining/leaving
+      client.on('user-published', async (remoteUser, mediaType) => {
+        await client.subscribe(remoteUser, mediaType)
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack?.play()
+        }
+      })
+      client.on('user-unpublished', (remoteUser, mediaType) => {
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack?.stop()
+        }
+      })
+
       setVoiceEnabled(true)
       setVoiceConnecting(false)
-      console.log('Voice chat started successfully')
-      
-      // Start polling for signals
-      lastSignalTimeRef.current = Date.now()
-      voicePollRef.current = setInterval(pollVoiceSignals, 300)
-      
-      // Connect to existing voice users after a short delay
-      setTimeout(async () => {
-        if (room && mediaStreamRef.current) {
-          try {
-            const res = await fetch(`/api/chat/rooms/${room.id}/voice?since=0`)
-            if (res.ok) {
-              const { voiceUsers: existingUsers } = await res.json()
-              console.log('Found existing voice users:', existingUsers.length)
-              // Create offers to all existing voice users
-              for (const user of existingUsers) {
-                if (user.id !== session?.user?.id && !peerConnectionsRef.current.has(user.id)) {
-                  console.log('Creating connection to existing user:', user.name)
-                  const pc = createPeerConnection(user.id, true)
-                  if (pc) {
-                    const offer = await pc.createOffer()
-                    await pc.setLocalDescription(offer)
-                    await sendVoiceSignal('offer', JSON.stringify(offer), user.id)
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error connecting to existing users:', error)
-          }
-        }
-      }, 1000)
-      
+      console.log('Agora voice chat started as host')
+
+      // 9. Refresh voice users list
+      fetchVoiceUsers()
+
     } catch (error: unknown) {
-      console.error('Error starting voice chat:', error)
+      console.error('Error starting Agora voice chat:', error)
       setVoiceConnecting(false)
+      // Cleanup on failure
+      if (agoraAudioTrackRef.current) {
+        agoraAudioTrackRef.current.close()
+        agoraAudioTrackRef.current = null
+      }
+      if (agoraClientRef.current) {
+        try { await agoraClientRef.current.leave() } catch {}
+        agoraClientRef.current = null
+      }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
-        alert('Mikrofon erişimi reddedildi')
+      if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
+        alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.')
       } else {
         alert('Sesli sohbet başlatılamadı')
       }
     }
   }
 
-  const stopVoiceChat = useCallback(() => {
-    // Send leave signal
+  // Stop voice chat (host)
+  const stopVoiceChat = useCallback(async () => {
+    // Tell server we're leaving
     if (room && voiceEnabled) {
-      sendVoiceSignal('leave')
+      fetch(`/api/chat/rooms/${room.id}/voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'leave' })
+      }).catch(() => {})
     }
-    
-    // Stop polling
-    if (voicePollRef.current) {
-      clearInterval(voicePollRef.current)
-      voicePollRef.current = null
+
+    // Close Agora audio track
+    if (agoraAudioTrackRef.current) {
+      agoraAudioTrackRef.current.close()
+      agoraAudioTrackRef.current = null
     }
-    
-    // Close all peer connections
-    peerConnectionsRef.current.forEach(pc => pc.close())
-    peerConnectionsRef.current.clear()
-    
-    // Stop all remote audio
-    remoteAudioRef.current.forEach(audio => {
-      audio.pause()
-      audio.srcObject = null
-    })
-    remoteAudioRef.current.clear()
-    
-    // Stop local stream
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop())
-      mediaStreamRef.current = null
+
+    // Leave Agora channel
+    if (agoraClientRef.current) {
+      try {
+        agoraClientRef.current.removeAllListeners()
+        await agoraClientRef.current.leave()
+      } catch {}
+      agoraClientRef.current = null
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close()
-      audioContextRef.current = null
-    }
-    if (voiceIntervalRef.current) {
-      clearInterval(voiceIntervalRef.current)
-      voiceIntervalRef.current = null
-    }
-    
+
+    agoraUidMapRef.current.clear()
     setVoiceEnabled(false)
     setIsListening(false)
     setIsSpeaking(false)
     setSpeakingUsers(new Set())
-  }, [room, voiceEnabled, sendVoiceSignal])
+    fetchVoiceUsers()
+  }, [room, voiceEnabled, fetchVoiceUsers])
 
-  // Listen-only mode (for users without voice permission)
+  // Listen-only mode (audience) — no mic required
   const startListening = async () => {
     if (!room) return
-    
+
     try {
-      // Create a silent audio stream (required for WebRTC)
-      const silentContext = new AudioContext()
-      const oscillator = silentContext.createOscillator()
-      const destination = silentContext.createMediaStreamDestination()
-      oscillator.connect(destination)
-      oscillator.start()
-      // Immediately stop to create silent stream
-      oscillator.frequency.value = 0
-      
-      mediaStreamRef.current = destination.stream
+      const { createAgoraClient, fetchAgoraToken } = await import('@/lib/agora-client')
+
+      const client = await createAgoraClient('audience')
+      agoraClientRef.current = client
+
+      const channelName = `voice_room_${room.id}`
+      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
+      const { token, appId } = await fetchAgoraToken(channelName, 'audience', uid)
+      await client.join(appId, channelName, token, uid)
+
+      // Enable volume indicator for speaking detection (audience can see who speaks)
+      client.enableAudioVolumeIndicator()
+      client.on('volume-indicator', (volumes) => {
+        const newSpeaking = new Set<string>()
+        for (const vol of volumes) {
+          if (vol.level > 5) {
+            const mappedUserId = agoraUidMapRef.current.get(vol.uid as number)
+            if (mappedUserId) newSpeaking.add(mappedUserId)
+          }
+        }
+        setSpeakingUsers(newSpeaking)
+      })
+
+      // Subscribe to remote audio automatically
+      client.on('user-published', async (remoteUser, mediaType) => {
+        await client.subscribe(remoteUser, mediaType)
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack?.play()
+        }
+      })
+      client.on('user-unpublished', (remoteUser, mediaType) => {
+        if (mediaType === 'audio') {
+          remoteUser.audioTrack?.stop()
+        }
+      })
+
       setIsListening(true)
-      
-      // Start polling for signals to receive audio
-      lastSignalTimeRef.current = Date.now()
-      voicePollRef.current = setInterval(pollVoiceSignals, 300)
+      console.log('Agora voice listen mode started')
     } catch (error) {
       console.error('Error starting listen mode:', error)
     }
   }
 
-  const stopListening = useCallback(() => {
-    // Stop polling
-    if (voicePollRef.current) {
-      clearInterval(voicePollRef.current)
-      voicePollRef.current = null
+  // Stop listening (audience)
+  const stopListening = useCallback(async () => {
+    if (agoraClientRef.current) {
+      try {
+        agoraClientRef.current.removeAllListeners()
+        await agoraClientRef.current.leave()
+      } catch {}
+      agoraClientRef.current = null
     }
-    
-    // Close all peer connections
-    peerConnectionsRef.current.forEach(pc => pc.close())
-    peerConnectionsRef.current.clear()
-    
-    // Stop all remote audio
-    remoteAudioRef.current.forEach(audio => {
-      audio.pause()
-      audio.srcObject = null
-    })
-    remoteAudioRef.current.clear()
-    
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop())
-      mediaStreamRef.current = null
-    }
-    
+    agoraUidMapRef.current.clear()
     setIsListening(false)
     setSpeakingUsers(new Set())
   }, [])
@@ -980,9 +728,16 @@ export default function ChatRoomPage() {
   // Cleanup voice on unmount
   useEffect(() => {
     return () => {
-      stopVoiceChat()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (agoraAudioTrackRef.current) {
+        agoraAudioTrackRef.current.close()
+      }
+      if (agoraClientRef.current) {
+        agoraClientRef.current.removeAllListeners()
+        agoraClientRef.current.leave().catch(() => {})
+      }
     }
-  }, [stopVoiceChat])
+  }, [])
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
