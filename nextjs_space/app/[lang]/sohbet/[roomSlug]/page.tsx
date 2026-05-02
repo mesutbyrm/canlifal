@@ -148,6 +148,9 @@ export default function ChatRoomPage() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isMicMuted, setIsMicMuted] = useState(false) // Mic muted but still listening
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set())
+  const autoVoiceJoinedRef = useRef(false) // Prevent double auto-join for voice users
+  const autoListenJoinedRef = useRef(false) // Prevent double auto-listen
+  const voiceReconnectTimerRef = useRef<NodeJS.Timeout | null>(null) // For reconnect retries
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
   const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
   const agoraAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
@@ -552,7 +555,7 @@ export default function ChatRoomPage() {
   }, [])
 
   // Start voice chat as HOST (can speak)
-  const startVoiceChat = async () => {
+  const startVoiceChat = async (silent = false) => {
     if (voiceConnecting || !room) return
     setVoiceConnecting(true)
 
@@ -567,7 +570,7 @@ export default function ChatRoomPage() {
       if (!joinRes.ok) {
         setVoiceConnecting(false)
         if (joinRes.status === 403) {
-          alert('Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.')
+          if (!silent) alert('Sesli sohbet için yetkiniz yok. Oda sahibi veya yetkili size "+" (voice) rolü vermelidir.')
           return
         }
         throw new Error('Failed to join voice')
@@ -612,26 +615,58 @@ export default function ChatRoomPage() {
         }
       })
 
-      // Auto-reconnect on connection drop
+      // Token refresh before expiry (fires ~30s before expiration)
+      client.on('token-privilege-will-expire', async () => {
+        console.log('Agora token expiring soon, refreshing...')
+        try {
+          const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
+          const ch = `voice_room_${room.id}`
+          const { token: newToken } = await reFetch(ch, 'host', agoraUid)
+          await client.renewToken(newToken)
+          console.log('Agora token refreshed successfully')
+        } catch (e) { console.error('Agora token refresh failed:', e) }
+      })
+
+      // Robust auto-reconnect on connection drop with retry
       client.on('connection-state-change', (curState, prevState) => {
-        console.log(`Agora connection: ${prevState} → ${curState}`)
-        if (curState === 'DISCONNECTED' && prevState === 'CONNECTED') {
-          console.warn('Agora disconnected, attempting reconnect...')
-          // Agora SDK auto-reconnects in most cases, but if it stays disconnected:
-          setTimeout(async () => {
-            if (agoraClientRef.current?.connectionState === 'DISCONNECTED') {
-              try {
-                const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
-                const ch = `voice_room_${room.id}`
-                const { token: newToken, appId: newAppId } = await reFetch(ch, 'host', agoraUid)
-                await agoraClientRef.current!.join(newAppId, ch, newToken, agoraUid)
-                if (agoraAudioTrackRef.current) {
-                  await agoraClientRef.current!.publish([agoraAudioTrackRef.current])
-                }
-                console.log('Agora reconnected successfully')
-              } catch (e) { console.error('Agora reconnect failed:', e) }
+        console.log(`Agora host connection: ${prevState} → ${curState}`)
+        
+        // Clear any pending reconnect timer
+        if (voiceReconnectTimerRef.current) {
+          clearTimeout(voiceReconnectTimerRef.current)
+          voiceReconnectTimerRef.current = null
+        }
+        
+        if (curState === 'DISCONNECTED' && prevState !== 'DISCONNECTING') {
+          console.warn('Agora host disconnected, will retry reconnect...')
+          let retryCount = 0
+          const maxRetries = 5
+          
+          const attemptReconnect = async () => {
+            if (!agoraClientRef.current || agoraClientRef.current.connectionState !== 'DISCONNECTED') return
+            retryCount++
+            console.log(`Agora reconnect attempt ${retryCount}/${maxRetries}`)
+            try {
+              const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
+              const ch = `voice_room_${room.id}`
+              const { token: newToken, appId: newAppId } = await reFetch(ch, 'host', agoraUid)
+              await agoraClientRef.current!.join(newAppId, ch, newToken, agoraUid)
+              if (agoraAudioTrackRef.current) {
+                await agoraClientRef.current!.publish([agoraAudioTrackRef.current])
+              }
+              console.log('Agora host reconnected successfully')
+            } catch (e) {
+              console.error(`Agora reconnect attempt ${retryCount} failed:`, e)
+              if (retryCount < maxRetries) {
+                const delay = Math.min(3000 * Math.pow(1.5, retryCount), 15000) // Exponential backoff, max 15s
+                voiceReconnectTimerRef.current = setTimeout(attemptReconnect, delay)
+              } else {
+                console.error('Agora reconnect: max retries exceeded')
+              }
             }
-          }, 3000)
+          }
+          
+          voiceReconnectTimerRef.current = setTimeout(attemptReconnect, 2000)
         }
       })
 
@@ -670,10 +705,12 @@ export default function ChatRoomPage() {
         agoraClientRef.current = null
       }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
-        alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.')
-      } else {
-        alert('Sesli sohbet başlatılamadı')
+      if (!silent) {
+        if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
+          alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.')
+        } else {
+          alert('Sesli sohbet başlatılamadı')
+        }
       }
     }
   }
@@ -701,6 +738,12 @@ export default function ChatRoomPage() {
 
   // Stop voice chat (host)
   const stopVoiceChat = useCallback(async () => {
+    // Clear reconnect timer
+    if (voiceReconnectTimerRef.current) {
+      clearTimeout(voiceReconnectTimerRef.current)
+      voiceReconnectTimerRef.current = null
+    }
+
     // Tell server we're leaving
     if (room && voiceEnabled) {
       fetch(`/api/chat/rooms/${room.id}/voice`, {
@@ -726,6 +769,7 @@ export default function ChatRoomPage() {
     }
 
     agoraUidMapRef.current.clear()
+    autoVoiceJoinedRef.current = false
     setVoiceEnabled(false)
     setIsListening(false)
     setIsSpeaking(false)
@@ -736,7 +780,7 @@ export default function ChatRoomPage() {
 
   // Listen-only mode (audience) — no mic required
   const startListening = async () => {
-    if (!room) return
+    if (!room || isListening || voiceEnabled) return
 
     try {
       const { createAgoraClient, fetchAgoraToken } = await import('@/lib/agora-client')
@@ -744,7 +788,9 @@ export default function ChatRoomPage() {
       const client = await createAgoraClient('audience')
       agoraClientRef.current = client
 
-      // Register ALL event listeners BEFORE joining (critical for catching remote users)
+      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
+
+      // Register ALL event listeners BEFORE joining
       client.enableAudioVolumeIndicator()
       client.on('volume-indicator', (volumes) => {
         const newSpeaking = new Set<string>()
@@ -769,9 +815,57 @@ export default function ChatRoomPage() {
         }
       })
 
-      // Now join the channel
+      // Token refresh before expiry
+      client.on('token-privilege-will-expire', async () => {
+        console.log('Agora listener token expiring, refreshing...')
+        try {
+          const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
+          const ch = `voice_room_${room.id}`
+          const { token: newToken } = await reFetch(ch, 'audience', uid)
+          await client.renewToken(newToken)
+          console.log('Agora listener token refreshed')
+        } catch (e) { console.error('Agora listener token refresh failed:', e) }
+      })
+
+      // Auto-reconnect for listener mode with retry
+      client.on('connection-state-change', (curState, prevState) => {
+        console.log(`Agora listener connection: ${prevState} → ${curState}`)
+        
+        if (voiceReconnectTimerRef.current) {
+          clearTimeout(voiceReconnectTimerRef.current)
+          voiceReconnectTimerRef.current = null
+        }
+        
+        if (curState === 'DISCONNECTED' && prevState !== 'DISCONNECTING') {
+          console.warn('Agora listener disconnected, will retry reconnect...')
+          let retryCount = 0
+          const maxRetries = 5
+          
+          const attemptReconnect = async () => {
+            if (!agoraClientRef.current || agoraClientRef.current.connectionState !== 'DISCONNECTED') return
+            retryCount++
+            console.log(`Agora listener reconnect attempt ${retryCount}/${maxRetries}`)
+            try {
+              const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
+              const ch = `voice_room_${room.id}`
+              const { token: newToken, appId: newAppId } = await reFetch(ch, 'audience', uid)
+              await agoraClientRef.current!.join(newAppId, ch, newToken, uid)
+              console.log('Agora listener reconnected successfully')
+            } catch (e) {
+              console.error(`Agora listener reconnect attempt ${retryCount} failed:`, e)
+              if (retryCount < maxRetries) {
+                const delay = Math.min(3000 * Math.pow(1.5, retryCount), 15000)
+                voiceReconnectTimerRef.current = setTimeout(attemptReconnect, delay)
+              }
+            }
+          }
+          
+          voiceReconnectTimerRef.current = setTimeout(attemptReconnect, 2000)
+        }
+      })
+
+      // Join the channel
       const channelName = `voice_room_${room.id}`
-      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
       const { token, appId } = await fetchAgoraToken(channelName, 'audience', uid)
       await client.join(appId, channelName, token, uid)
 
@@ -784,6 +878,10 @@ export default function ChatRoomPage() {
 
   // Stop listening (audience)
   const stopListening = useCallback(async () => {
+    if (voiceReconnectTimerRef.current) {
+      clearTimeout(voiceReconnectTimerRef.current)
+      voiceReconnectTimerRef.current = null
+    }
     if (agoraClientRef.current) {
       try {
         agoraClientRef.current.removeAllListeners()
@@ -792,6 +890,7 @@ export default function ChatRoomPage() {
       agoraClientRef.current = null
     }
     agoraUidMapRef.current.clear()
+    autoListenJoinedRef.current = false
     setIsListening(false)
     setSpeakingUsers(new Set())
   }, [])
@@ -800,6 +899,9 @@ export default function ChatRoomPage() {
   useEffect(() => {
     return () => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (voiceReconnectTimerRef.current) {
+        clearTimeout(voiceReconnectTimerRef.current)
+      }
       if (agoraAudioTrackRef.current) {
         agoraAudioTrackRef.current.close()
       }
@@ -809,6 +911,47 @@ export default function ChatRoomPage() {
       }
     }
   }, [])
+
+  // Auto-join voice for authorized users when entering room
+  useEffect(() => {
+    if (!room || !myPermissions || !session?.user?.id) return
+    if (autoVoiceJoinedRef.current || voiceEnabled || voiceConnecting || isListening) return
+    
+    // Check if user has voice permission
+    const hasVoice = (() => {
+      if (room.ownerId === session.user.id) return true
+      if (myPermissions.isGlobalAdmin) return true
+      const allowedRoles = ['voice', 'op', 'sop', 'admin', 'founder', 'superadmin']
+      return myPermissions.role ? allowedRoles.includes(myPermissions.role) : false
+    })()
+    
+    if (hasVoice) {
+      autoVoiceJoinedRef.current = true
+      console.log('Auto-joining voice chat (authorized user)')
+      startVoiceChat(true) // silent = true, no alert on failure
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, myPermissions, session?.user?.id])
+
+  // Auto-listen for non-voice users when voice users are active
+  useEffect(() => {
+    if (!room || !session?.user?.id) return
+    // Don't auto-listen if already in voice or listening mode
+    if (voiceEnabled || isListening || voiceConnecting) return
+    // Only auto-listen for non-voice users
+    if (canUseVoice()) return
+    
+    if (voiceUsers.length > 0 && !autoListenJoinedRef.current) {
+      autoListenJoinedRef.current = true
+      console.log('Auto-starting listen mode (voice users detected)')
+      startListening()
+    } else if (voiceUsers.length === 0 && isListening) {
+      // Stop listening when no more voice users
+      console.log('No more voice users, stopping listen')
+      stopListening()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceUsers, room, session?.user?.id, voiceEnabled, isListening, voiceConnecting])
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -2018,23 +2161,23 @@ export default function ChatRoomPage() {
 
             {/* Main input row */}
             <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md rounded-full px-2 py-1.5 border border-white/10">
-              {/* Speaker / Listen toggle */}
-              {!canUseVoice() && voiceUsers.length > 0 && (
+              {/* Speaker / Listen toggle for non-voice users */}
+              {!canUseVoice() && (isListening || voiceUsers.length > 0) && (
                 <button
                   onClick={isListening ? stopListening : startListening}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
                     isListening ? 'bg-blue-500/40 text-blue-300' : 'bg-white/10 text-white/50 hover:bg-white/20'
                   }`}
-                  title={isListening ? 'Dinlemeyi Durdur' : 'Dinle'}
+                  title={isListening ? 'Sesi Kapat' : 'Sesi Aç'}
                 >
-                  {isListening ? <Volume2 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  {isListening ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
               )}
 
-              {/* Mic / Voice button */}
+              {/* Mic / Voice buttons for voice-permitted users */}
               {canUseVoice() && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  {/* Main mic button: click = mute/unmute when connected, or start voice when not connected */}
+                  {/* Mic mute/unmute button (when connected) or join voice (when not) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -2058,8 +2201,8 @@ export default function ChatRoomPage() {
                     }`}
                     title={
                       voiceEnabled
-                        ? isMicMuted ? 'Mikrofonu aç' : 'Mikrofonu kapat (dinlemeye devam)'
-                        : voiceConnecting ? 'Bağlanıyor...' : 'Sesli sohbete katıl'
+                        ? isMicMuted ? 'Mikrofonu Aç' : 'Mikrofonu Kapat'
+                        : voiceConnecting ? 'Bağlanıyor...' : 'Sesli Sohbete Katıl'
                     }
                   >
                     {voiceEnabled ? (
@@ -2076,7 +2219,7 @@ export default function ChatRoomPage() {
                       type="button"
                       onClick={() => stopVoiceChat()}
                       className="w-6 h-6 rounded-full flex items-center justify-center bg-red-500/60 text-white hover:bg-red-600/80 transition-all"
-                      title="Sesli sohbetten çık"
+                      title="Sesli Sohbetten Çık"
                     >
                       <PhoneOff className="w-3 h-3" />
                     </button>
