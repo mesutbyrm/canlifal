@@ -86,6 +86,7 @@ export default function StreamSetupPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
@@ -202,25 +203,26 @@ export default function StreamSetupPage() {
         return
       }
 
-      // Set canvas to fill the screen (full screen cover)
-      const screenW = window.innerWidth
-      const screenH = window.innerHeight
-      canvas.width = screenW
-      canvas.height = screenH
+      // Use the actual container dimensions (not window) to prevent over-zooming
+      const container = canvasContainerRef.current
+      const containerW = container ? container.clientWidth : window.innerWidth
+      const containerH = container ? container.clientHeight : window.innerHeight
+      canvas.width = containerW
+      canvas.height = containerH
 
       const videoW = video.videoWidth || 720
       const videoH = video.videoHeight || 1280
 
-      // Calculate "cover" crop: scale video to fill canvas, center and crop overflow
-      const scale = Math.max(screenW / videoW, screenH / videoH)
+      // Calculate "contain" fit: scale video to fit inside canvas, center with letterbox
+      const scale = Math.min(containerW / videoW, containerH / videoH)
       const drawW = videoW * scale
       const drawH = videoH * scale
-      const dx = (screenW - drawW) / 2
-      const dy = (screenH - drawH) / 2
+      const dx = (containerW - drawW) / 2
+      const dy = (containerH - drawH) / 2
 
       // Mirror for front camera
       if (facingMode === 'user') {
-        ctx.translate(screenW, 0)
+        ctx.translate(containerW, 0)
         ctx.scale(-1, 1)
       }
 
@@ -255,9 +257,9 @@ export default function StreamSetupPage() {
           ctx.filter = 'none'
         } else {
           ctx.filter = filterString
-          // Re-draw with cover crop + filter
+          // Re-draw with contain fit + filter
           if (facingMode === 'user') {
-            ctx.translate(screenW, 0)
+            ctx.translate(containerW, 0)
             ctx.scale(-1, 1)
           }
           ctx.drawImage(video, dx, dy, drawW, drawH)
@@ -523,7 +525,7 @@ export default function StreamSetupPage() {
       </div>
 
       {/* Camera Preview */}
-      <div className="flex-1 relative">
+      <div ref={canvasContainerRef} className="flex-1 relative overflow-hidden">
         {/* Hidden video element for source */}
         <video
           ref={videoRef}
@@ -533,10 +535,10 @@ export default function StreamSetupPage() {
           className="hidden"
         />
         
-        {/* Canvas with effects - full screen cover */}
+        {/* Canvas with effects - fit within container */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover bg-black"
+          className="absolute inset-0 w-full h-full bg-black"
         />
 
         {!isVideoOn && (
