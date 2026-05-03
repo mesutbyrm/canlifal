@@ -19,7 +19,7 @@ export async function PATCH(
 
     const { roomId } = await params
     const body = await request.json()
-    const { targetUserId, seatIndex } = body
+    const { targetUserId, seatIndex, forceThrone } = body
 
     if (typeof seatIndex !== 'number' || seatIndex < -1 || seatIndex >= 15) {
       return NextResponse.json({ error: 'Geçersiz koltuk numarası' }, { status: 400 })
@@ -68,7 +68,26 @@ export async function PATCH(
         }
       })
       if (seatTaken) {
-        return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
+        // If forceThrone and seat 0, displace the current occupant to next available seat
+        if (forceThrone && seatIndex === 0) {
+          // Find next empty seat for displaced user
+          const allPresences = await prisma.chatPresence.findMany({
+            where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
+            select: { seatIndex: true }
+          })
+          const occupiedSet = new Set(allPresences.map(p => p.seatIndex))
+          let nextSeat = -1
+          for (let i = 1; i < 15; i++) {
+            if (!occupiedSet.has(i)) { nextSeat = i; break }
+          }
+          // Move displaced user to next seat (or -1 if all full)
+          await prisma.chatPresence.update({
+            where: { roomId_userId: { roomId, userId: seatTaken.userId } },
+            data: { seatIndex: nextSeat }
+          })
+        } else {
+          return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
+        }
       }
     }
 

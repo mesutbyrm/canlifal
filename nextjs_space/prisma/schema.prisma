@@ -395,6 +395,7 @@ model ChatRoom {
   giftCommissionPercent Int            @default(0) // 0-100, percentage of gift value going to beneficiary
   giftBeneficiaryId     String?        // Who receives the commission (null = room owner)
   giftBeneficiary       User?          @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
+  backgroundImage       String?        // Background image URL for room
   createdAt             DateTime       @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]

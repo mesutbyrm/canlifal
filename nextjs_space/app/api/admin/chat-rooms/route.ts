@@ -89,7 +89,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
-    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId, giftCommissionPercent, isMuted } = await req.json()
+    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId, giftCommissionPercent, isMuted, backgroundImage } = await req.json()
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID required' }, { status: 400 })
     }
@@ -102,6 +102,7 @@ export async function PUT(req: NextRequest) {
     if (icon !== undefined) updateData.icon = icon
     if (isActive !== undefined) updateData.isActive = isActive
     if (typeof isMuted === 'boolean') updateData.isMuted = isMuted
+    if (backgroundImage !== undefined) updateData.backgroundImage = backgroundImage || null
     if (giftCommissionPercent !== undefined) {
       const pct = Math.max(0, Math.min(100, parseInt(giftCommissionPercent) || 0))
       updateData.giftCommissionPercent = pct

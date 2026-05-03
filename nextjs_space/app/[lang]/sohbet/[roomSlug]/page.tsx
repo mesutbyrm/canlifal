@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
 interface Message {
@@ -47,6 +47,7 @@ interface ChatRoom {
   icon: string
   ownerId?: string | null
   owner?: { id: string; name: string; username?: string | null } | null
+  backgroundImage?: string | null
   userCount?: number
 }
 
@@ -141,6 +142,14 @@ export default function ChatRoomPage() {
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
   const [showAnnouncement, setShowAnnouncement] = useState(true)
+  
+  // Room owner controls
+  const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false)
+  const [editAnnouncementText, setEditAnnouncementText] = useState('')
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false)
+  const [showBgPicker, setShowBgPicker] = useState(false)
+  const [adminBgImages, setAdminBgImages] = useState<Array<{id: string, name: string, imageUrl: string}>>([])
+  const [savingBg, setSavingBg] = useState(false)
   
   // Voice Chat with Agora
   const [voiceEnabled, setVoiceEnabled] = useState(false)
@@ -311,6 +320,62 @@ export default function ChatRoomPage() {
       console.error('Error fetching room:', error)
     }
   }, [roomSlug])
+
+  // Save announcement text
+  const handleSaveAnnouncement = async () => {
+    if (!room) return
+    setSavingAnnouncement(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descTr: editAnnouncementText })
+      })
+      if (res.ok) {
+        setRoom(prev => prev ? { ...prev, descTr: editAnnouncementText } : prev)
+        setShowAnnouncementEdit(false)
+        setShowAnnouncement(true)
+      }
+    } catch (e) {
+      console.error('Error saving announcement:', e)
+    } finally {
+      setSavingAnnouncement(false)
+    }
+  }
+
+  // Fetch available background images
+  const fetchAdminBgImages = async () => {
+    try {
+      const res = await fetch('/api/broadcast-images')
+      if (res.ok) {
+        const data = await res.json()
+        setAdminBgImages(data)
+      }
+    } catch (e) {
+      console.error('Error fetching bg images:', e)
+    }
+  }
+
+  // Save background image
+  const handleSaveBg = async (imageUrl: string | null) => {
+    if (!room) return
+    setSavingBg(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backgroundImage: imageUrl || '' })
+      })
+      if (res.ok) {
+        setRoom(prev => prev ? { ...prev, backgroundImage: imageUrl } : prev)
+        setShowBgPicker(false)
+      }
+    } catch (e) {
+      console.error('Error saving background:', e)
+    } finally {
+      setSavingBg(false)
+    }
+  }
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -1008,16 +1073,41 @@ export default function ChatRoomPage() {
     }
     
     // Determine role level for priority seating
-    const myRoleLevel = myPermissions.role ? 
-      ({ superadmin: 5, founder: 4, sop: 3, op: 2, voice: 1 } as Record<string, number>)[myPermissions.role] || 0 : 0
+    const ROLE_LEVELS: Record<string, number> = { superadmin: 5, founder: 4, sop: 3, op: 2, voice: 1 }
+    const myRoleLevel = myPermissions.role ? (ROLE_LEVELS[myPermissions.role] || 0) : 0
     const isHighestRank = room.ownerId === session.user.id || myPermissions.isGlobalAdmin || myRoleLevel >= 4
     
     // Seat 0 (throne) priority: room owner or highest-ranked user
     let targetSeat = -1
-    if (isHighestRank && !occupiedSeats.has(0)) {
-      targetSeat = 0
-    } else {
-      // Find first empty seat (skip 0 if not highest rank)
+    let forceThrone = false
+    
+    if (isHighestRank) {
+      if (!occupiedSeats.has(0)) {
+        targetSeat = 0
+      } else {
+        // Check if current seat 0 occupant is lower ranked
+        const seat0User = activeUsers.find(u => u.seatIndex === 0)
+        if (seat0User && seat0User.id !== session.user.id) {
+          // Compare ranks: room owner always wins, then by role level
+          const isOwner = room.ownerId === session.user.id
+          const seat0IsOwner = room.ownerId === seat0User.id
+          if (isOwner && !seat0IsOwner) {
+            targetSeat = 0
+            forceThrone = true
+          } else if (!seat0IsOwner && myRoleLevel > 0) {
+            // Compare by roleLevel (already available in ActiveUser)
+            const seat0Level = seat0User.roleLevel || 0
+            if (myRoleLevel > seat0Level) {
+              targetSeat = 0
+              forceThrone = true
+            }
+          }
+        }
+      }
+    }
+    
+    // If not claiming throne, find first empty seat
+    if (targetSeat < 0) {
       for (let i = 0; i < TOTAL_SEATS; i++) {
         if (!occupiedSeats.has(i)) {
           targetSeat = i
@@ -1027,12 +1117,12 @@ export default function ChatRoomPage() {
     }
     
     if (targetSeat >= 0) {
-      console.log(`Auto-seating at seat ${targetSeat}`)
+      console.log(`Auto-seating at seat ${targetSeat}${forceThrone ? ' (throne override)' : ''}`)
       mySeatIndexRef.current = targetSeat
       fetch(`/api/chat/rooms/${room.id}/seats`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seatIndex: targetSeat })
+        body: JSON.stringify({ seatIndex: targetSeat, forceThrone })
       }).then(res => {
         if (res.ok) fetchActiveUsers()
       }).catch(() => {})
@@ -1817,9 +1907,10 @@ export default function ChatRoomPage() {
         {/* Fullscreen wallpaper background */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="/room-wallpaper-default.jpg" 
+            src={room.backgroundImage || '/room-wallpaper-default.jpg'} 
             alt="" 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
+            key={room.backgroundImage || 'default'}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70" />
         </div>
@@ -1847,6 +1938,17 @@ export default function ChatRoomPage() {
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
               <span className="text-green-300 text-[11px] font-bold">{activeUsers.length}</span>
             </div>
+
+            {/* Background Image */}
+            {(myPermissions?.canManageRoom || myPermissions?.isGlobalAdmin) && (
+              <button
+                onClick={() => { fetchAdminBgImages(); setShowBgPicker(true) }}
+                className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                title="Arkaplan Değiştir"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Yönet / Settings */}
             {hasManagePermission && (
@@ -2075,18 +2177,122 @@ export default function ChatRoomPage() {
         })()}
 
         {/* ── Announcement / Rules overlay ── */}
-        {room.descTr && showAnnouncement && (
+        {showAnnouncementEdit ? (
+          <div className="relative z-10 mx-3 mb-2">
+            <div className="bg-black/70 backdrop-blur-md rounded-lg border border-yellow-500/30 p-3">
+              <p className="text-yellow-400 text-xs font-bold mb-2">📢 Duyuruyu Düzenle:</p>
+              <textarea
+                value={editAnnouncementText}
+                onChange={e => setEditAnnouncementText(e.target.value)}
+                className="w-full bg-white/10 text-white text-xs rounded-lg p-2 border border-white/20 focus:outline-none focus:border-yellow-500/50 resize-none"
+                rows={3}
+                placeholder="Oda duyurusu yazın..."
+                maxLength={500}
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-white/30 text-[10px]">{editAnnouncementText.length}/500</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowAnnouncementEdit(false)} className="px-3 py-1 text-xs bg-white/10 text-white/70 rounded-lg hover:bg-white/20">İptal</button>
+                  <button 
+                    onClick={handleSaveAnnouncement} 
+                    disabled={savingAnnouncement}
+                    className="px-3 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {savingAnnouncement ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    Kaydet
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : room.descTr && showAnnouncement ? (
           <div className="relative z-10 mx-3 mb-2">
             <div className="bg-black/50 backdrop-blur-md rounded-lg border border-white/10 p-3 max-h-32 overflow-y-auto">
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-yellow-400 text-xs font-bold mb-1">📢 Duyuru:</p>
                   <p className="text-white/80 text-xs whitespace-pre-wrap leading-relaxed">{room.descTr}</p>
                 </div>
-                <button onClick={() => setShowAnnouncement(false)} className="text-white/40 hover:text-white flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {(myPermissions?.canManageRoom || myPermissions?.isGlobalAdmin) && (
+                    <button onClick={() => { setEditAnnouncementText(room.descTr || ''); setShowAnnouncementEdit(true) }} className="text-yellow-400/60 hover:text-yellow-400">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button onClick={() => setShowAnnouncement(false)} className="text-white/40 hover:text-white">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+            </div>
+          </div>
+        ) : !room.descTr && (myPermissions?.canManageRoom || myPermissions?.isGlobalAdmin) ? (
+          <div className="relative z-10 mx-3 mb-2">
+            <button 
+              onClick={() => { setEditAnnouncementText(''); setShowAnnouncementEdit(true) }}
+              className="w-full text-left bg-black/30 backdrop-blur-sm rounded-lg border border-dashed border-yellow-500/20 p-2 text-yellow-400/50 text-xs hover:bg-black/40 hover:border-yellow-500/40 transition-all"
+            >
+              📢 Duyuru eklemek için tıklayın...
+            </button>
+          </div>
+        ) : null}
+
+        {/* ── Background Image Picker Modal ── */}
+        {showBgPicker && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBgPicker(false)}>
+            <div className="bg-[#1a0a2e] rounded-2xl border border-purple-500/30 p-4 w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-purple-400" />
+                  Arkaplan Resmi Seç
+                </h3>
+                <button onClick={() => setShowBgPicker(false)} className="text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+              
+              {/* Remove background option */}
+              <button 
+                onClick={() => handleSaveBg(null)}
+                disabled={savingBg}
+                className={`w-full mb-3 p-3 rounded-xl border-2 transition text-sm ${!room.backgroundImage ? 'border-purple-500 bg-purple-500/20 text-purple-300' : 'border-white/10 bg-white/5 text-white/60 hover:border-purple-500/50'}`}
+              >
+                🚫 Arkaplan Yok (Varsayılan)
+              </button>
+              
+              {adminBgImages.length === 0 ? (
+                <p className="text-white/40 text-xs text-center py-4">Henüz arkaplan resmi eklenmemiş</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {adminBgImages.map(img => (
+                    <button
+                      key={img.id}
+                      onClick={() => handleSaveBg(img.imageUrl)}
+                      disabled={savingBg}
+                      className={`relative aspect-video rounded-xl overflow-hidden border-2 transition ${
+                        room.backgroundImage === img.imageUrl
+                          ? 'border-purple-500 ring-2 ring-purple-500/50'
+                          : 'border-white/10 hover:border-purple-500/50'
+                      }`}
+                    >
+                      <img src={img.imageUrl} alt={img.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
+                        <p className="text-white text-[10px] font-medium truncate">{img.name}</p>
+                      </div>
+                      {room.backgroundImage === img.imageUrl && (
+                        <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {savingBg && (
+                <div className="flex items-center justify-center gap-2 mt-3 text-purple-400 text-xs">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Kaydediliyor...
+                </div>
+              )}
             </div>
           </div>
         )}

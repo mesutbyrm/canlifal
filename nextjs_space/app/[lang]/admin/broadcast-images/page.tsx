@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, Trash2, Edit2, Image, Save, X, GripVertical, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Edit2, Image, Save, X, GripVertical, Eye, EyeOff, Loader2, Upload } from 'lucide-react'
 import Link from 'next/link'
 import NextImage from 'next/image'
 import AdminBackButton from '@/components/admin-back-button'
@@ -36,6 +36,40 @@ export default function AdminBroadcastImagesPage() {
   const [formName, setFormName] = useState('')
   const [formImageUrl, setFormImageUrl] = useState('')
   const [formSortOrder, setFormSortOrder] = useState(0)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) return
+    setUploading(true)
+    try {
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+      })
+      if (!presignedRes.ok) throw new Error('Upload URL alınamadı')
+      const { uploadUrl, cloud_storage_path, publicUrl } = await presignedRes.json()
+      
+      const signedHeadersMatch = uploadUrl.match(/X-Amz-SignedHeaders=([^&]+)/)
+      const signedHeaders = signedHeadersMatch ? decodeURIComponent(signedHeadersMatch[1]) : 'host'
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (signedHeaders.includes('content-disposition')) {
+        headers['Content-Disposition'] = 'attachment'
+      }
+      
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
+      if (!uploadRes.ok) throw new Error('Dosya yüklenemedi')
+      
+      setFormImageUrl(publicUrl || uploadUrl.split('?')[0])
+      if (!formName.trim()) setFormName(file.name.replace(/\.[^.]+$/, ''))
+    } catch (e) {
+      console.error('Upload error:', e)
+      alert('Resim yüklenirken hata oluştu')
+    } finally {
+      setUploading(false)
+    }
+  }
   
   const fetchImages = useCallback(async () => {
     try {
@@ -180,7 +214,7 @@ export default function AdminBroadcastImagesPage() {
             <div className="flex items-center gap-2">
               <Image className="w-6 h-6 text-purple-400" />
               <h1 className="text-xl font-bold">
-                {'Yayın Resimleri'}
+                Arkaplan Resimleri
               </h1>
             </div>
           </div>
@@ -198,7 +232,7 @@ export default function AdminBroadcastImagesPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         <p className="text-white/60 text-sm mb-6">
-          {'Yayıncıların ekran görüntüsü olarak kullanabileceği resimleri buradan yönetebilirsiniz. Yayıncılar sadece bu listedeki aktif resimleri seçebilir.'}
+          Sohbet odaları ve canlı yayınlarda kullanılacak arkaplan resimlerini buradan yönetebilirsiniz. Oda sahipleri ve yayıncılar aktif resimleri seçebilir.
         </p>
         
         {images.length === 0 ? (
@@ -340,13 +374,42 @@ export default function AdminBroadcastImagesPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">
-                    {'Resim URL'}
+                    Resim Yükle veya URL Gir
                   </label>
+                  
+                  {/* File Upload */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileUpload(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 mb-2 bg-purple-500/20 border border-purple-500/30 rounded-xl text-purple-300 hover:bg-purple-500/30 transition disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {uploading ? 'Yükleniyor...' : 'Bilgisayardan Resim Yükle'}
+                  </button>
+                  
+                  <div className="flex items-center gap-2 my-2">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-white/30 text-xs">veya</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                  
                   <input
                     type="url"
                     value={formImageUrl}
                     onChange={e => setFormImageUrl(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
+                    placeholder="https://image.shutterstock.com/image-vector/default-ui-image-placeholder-wireframes-260nw-1037719192.jpg"
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500"
                   />
                 </div>
