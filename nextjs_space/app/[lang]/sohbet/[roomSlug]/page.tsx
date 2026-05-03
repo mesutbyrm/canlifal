@@ -151,6 +151,10 @@ export default function ChatRoomPage() {
   const autoVoiceJoinedRef = useRef(false) // Prevent double auto-join for voice users
   const autoListenJoinedRef = useRef(false) // Prevent double auto-listen
   const voiceReconnectTimerRef = useRef<NodeJS.Timeout | null>(null) // For reconnect retries
+  const mySeatIndexRef = useRef<number>(-1) // Track current seat to preserve across heartbeats
+  const autoSeatClaimedRef = useRef(false) // Prevent double auto-seat
+  const isLeavingPageRef = useRef(false) // Distinguish intentional leave from effect cleanup
+  const roomIdRef = useRef<string | null>(null) // For cleanup on unmount
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
   const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
   const agoraAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
@@ -352,10 +356,15 @@ export default function ChatRoomPage() {
   const updatePresence = useCallback(async () => {
     if (!room || !session?.user) return
     try {
+      const body: Record<string, unknown> = { nickname: nickname || session.user.name }
+      // Always send current seatIndex to preserve it across heartbeats
+      if (mySeatIndexRef.current >= 0) {
+        body.seatIndex = mySeatIndexRef.current
+      }
       const res = await fetch(`/api/chat/rooms/${room.id}/presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nickname || session.user.name })
+        body: JSON.stringify(body)
       })
       // After posting presence, immediately fetch updated user list
       if (res.ok) {
@@ -511,6 +520,7 @@ export default function ChatRoomPage() {
 
       // Remove presence when leaving page (intentional leave - show message)
       const handleBeforeUnload = () => {
+        isLeavingPageRef.current = true
         if (room?.id) {
           navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1&leave=1`, '')
         }
@@ -528,13 +538,24 @@ export default function ChatRoomPage() {
         document.removeEventListener('visibilitychange', handleVisibilityChange)
         window.removeEventListener('online', handleOnline)
         window.removeEventListener('beforeunload', handleBeforeUnload)
-        // Send leave beacon on cleanup (covers client-side navigation)
-        if (room?.id) {
-          navigator.sendBeacon(`/api/chat/rooms/${room.id}/presence?_delete=1&leave=1`, '')
-        }
       }
     }
   }, [room, fetchMessages, fetchActiveUsers, checkBan, updatePresence, fetchAllRooms, fetchVoiceUsers, fetchTypingUsers, fetchBroadcastImages, fetchBalance])
+
+  // Keep roomIdRef in sync for unmount cleanup
+  useEffect(() => {
+    if (room?.id) roomIdRef.current = room.id
+  }, [room?.id])
+
+  // Proper leave beacon ONLY on component unmount (SPA navigation away from chat room)
+  useEffect(() => {
+    return () => {
+      if (roomIdRef.current) {
+        navigator.sendBeacon(`/api/chat/rooms/${roomIdRef.current}/presence?_delete=1&leave=1`, '')
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
@@ -952,6 +973,81 @@ export default function ChatRoomPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceUsers, room, session?.user?.id, voiceEnabled, isListening, voiceConnecting])
+
+  // Auto-seat voice-permitted users when entering room
+  useEffect(() => {
+    if (!room || !myPermissions || !session?.user?.id || !activeUsers.length) return
+    if (autoSeatClaimedRef.current) return
+    
+    // Check if already seated
+    const myCurrentSeat = activeUsers.find(u => u.id === session.user?.id)
+    if (myCurrentSeat && myCurrentSeat.seatIndex >= 0) {
+      mySeatIndexRef.current = myCurrentSeat.seatIndex
+      autoSeatClaimedRef.current = true
+      return
+    }
+    
+    // Check if user has voice permission (same logic as canUseVoice)
+    const hasVoice = (() => {
+      if (room.ownerId === session.user.id) return true
+      if (myPermissions.isGlobalAdmin) return true
+      const allowedRoles = ['voice', 'op', 'sop', 'admin', 'founder', 'superadmin']
+      return myPermissions.role ? allowedRoles.includes(myPermissions.role) : false
+    })()
+    
+    if (!hasVoice) return
+    autoSeatClaimedRef.current = true
+    
+    // Build occupied seats
+    const TOTAL_SEATS = 15
+    const occupiedSeats = new Set<number>()
+    for (const u of activeUsers) {
+      if (u.seatIndex >= 0 && u.seatIndex < TOTAL_SEATS) {
+        occupiedSeats.add(u.seatIndex)
+      }
+    }
+    
+    // Determine role level for priority seating
+    const myRoleLevel = myPermissions.role ? 
+      ({ superadmin: 5, founder: 4, sop: 3, op: 2, voice: 1 } as Record<string, number>)[myPermissions.role] || 0 : 0
+    const isHighestRank = room.ownerId === session.user.id || myPermissions.isGlobalAdmin || myRoleLevel >= 4
+    
+    // Seat 0 (throne) priority: room owner or highest-ranked user
+    let targetSeat = -1
+    if (isHighestRank && !occupiedSeats.has(0)) {
+      targetSeat = 0
+    } else {
+      // Find first empty seat (skip 0 if not highest rank)
+      for (let i = 0; i < TOTAL_SEATS; i++) {
+        if (!occupiedSeats.has(i)) {
+          targetSeat = i
+          break
+        }
+      }
+    }
+    
+    if (targetSeat >= 0) {
+      console.log(`Auto-seating at seat ${targetSeat}`)
+      mySeatIndexRef.current = targetSeat
+      fetch(`/api/chat/rooms/${room.id}/seats`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seatIndex: targetSeat })
+      }).then(res => {
+        if (res.ok) fetchActiveUsers()
+      }).catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, myPermissions, session?.user?.id, activeUsers])
+
+  // Sync mySeatIndexRef when activeUsers updates
+  useEffect(() => {
+    if (!session?.user?.id) return
+    const me = activeUsers.find(u => u.id === session.user?.id)
+    if (me && me.seatIndex >= 0) {
+      mySeatIndexRef.current = me.seatIndex
+    }
+  }, [activeUsers, session?.user?.id])
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -1809,6 +1905,7 @@ export default function ChatRoomPage() {
                 body: JSON.stringify({ seatIndex: seatIdx })
               })
               if (res.ok) {
+                mySeatIndexRef.current = seatIdx
                 fetchActiveUsers()
               } else {
                 const data = await res.json()
@@ -1826,7 +1923,10 @@ export default function ChatRoomPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ seatIndex: -1 })
               })
-              if (res.ok) fetchActiveUsers()
+              if (res.ok) {
+                mySeatIndexRef.current = -1
+                fetchActiveUsers()
+              }
             } catch {}
           }
 
@@ -1843,10 +1943,14 @@ export default function ChatRoomPage() {
             } catch {}
           }
           
+          const isThroneSeat = (idx: number) => idx === 0
+
           return (
             <div className="relative z-10 flex-shrink-0 px-3 py-3">
               <div className={`grid grid-cols-${COLS} gap-2 max-w-sm mx-auto`} style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
                 {seats.map((seatUser, idx) => {
+                  const isThrone = isThroneSeat(idx)
+                  
                   if (seatUser) {
                     const isOwner = isRoomOwner(seatUser.id)
                     const badge = seatUser.chatRole ? ROLE_BADGE_STYLES[seatUser.chatRole] : null
@@ -1855,14 +1959,18 @@ export default function ChatRoomPage() {
                     const isSpeakingSeat = speakingUsers.has(seatUser.id)
                     
                     return (
-                      <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5 relative group">
+                      <div key={`seat-${idx}`} className={`flex flex-col items-center gap-0.5 relative group ${isThrone ? 'z-10' : ''}`}>
+                        {/* Throne glow for seat 0 */}
+                        {isThrone && (
+                          <div className="absolute -inset-1 bg-gradient-to-br from-yellow-400/30 via-amber-500/20 to-orange-500/30 rounded-full blur-sm animate-pulse" />
+                        )}
                         <div 
-                          className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden cursor-pointer transition-all
-                            ${isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-white/20'}
+                          className={`relative overflow-hidden cursor-pointer transition-all
+                            ${isThrone ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-yellow-400/80 shadow-lg shadow-yellow-500/30' : 'w-12 h-12 sm:w-14 sm:h-14 rounded-full'}
+                            ${!isThrone && (isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-white/20')}
                           `}
                           onClick={() => {
                             if (isMe) {
-                              // Clicking own seat: option to leave
                               if (confirm('Koltuğunuzdan kalkmak istiyor musunuz?')) handleLeaveSeat()
                             } else {
                               openGiftModal(seatUser)
@@ -1872,22 +1980,26 @@ export default function ChatRoomPage() {
                           {displayImage ? (
                             <img loading="lazy" src={displayImage} alt={getDisplayName(seatUser)} className="w-full h-full object-cover" />
                           ) : (
-                            <div className={`w-full h-full flex items-center justify-center ${isOwner ? 'bg-gradient-to-br from-red-800 to-yellow-900' : 'bg-gradient-to-br from-purple-800 to-indigo-900'}`}>
-                              <span className="text-base font-bold text-white/80">{(seatUser.nickname || seatUser.name || '?').charAt(0).toUpperCase()}</span>
+                            <div className={`w-full h-full flex items-center justify-center ${isThrone ? 'bg-gradient-to-br from-yellow-700 via-amber-800 to-yellow-900' : isOwner ? 'bg-gradient-to-br from-red-800 to-yellow-900' : 'bg-gradient-to-br from-purple-800 to-indigo-900'}`}>
+                              <span className={`font-bold text-white/80 ${isThrone ? 'text-lg' : 'text-base'}`}>{(seatUser.nickname || seatUser.name || '?').charAt(0).toUpperCase()}</span>
                             </div>
                           )}
+                          {/* Throne crown overlay */}
+                          {isThrone && (
+                            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-sm drop-shadow-lg z-10">👑</div>
+                          )}
                           {/* Role badge overlay */}
-                          {(isOwner || badge) && (
+                          {!isThrone && (isOwner || badge) && (
                             <div className={`absolute -bottom-0.5 -right-0.5 px-1 py-0.5 rounded-full text-[7px] font-bold shadow-lg ${isOwner ? 'bg-red-600 text-yellow-200' : badge ? `${badge.bg} ${badge.text}` : ''}`}>
                               {isOwner ? '👑' : seatUser.roleSymbol}
                             </div>
                           )}
                           {/* Speaking glow */}
                           {isSpeakingSeat && (
-                            <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-30" />
+                            <div className={`absolute inset-0 ${isThrone ? 'rounded-2xl' : 'rounded-full'} border-2 border-green-400 animate-ping opacity-30`} />
                           )}
                         </div>
-                        <p className={`text-[9px] font-bold truncate text-center max-w-[56px] drop-shadow-lg ${getNameEffectClass(seatUser)} ${isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80'}`}
+                        <p className={`text-[9px] font-bold truncate text-center drop-shadow-lg ${isThrone ? 'max-w-[64px] text-yellow-300' : 'max-w-[56px]'} ${getNameEffectClass(seatUser)} ${!isThrone && (isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80')}`}
                           {...(getNameEffectClass(seatUser) === 'effect-glitch' ? { 'data-text': getDisplayName(seatUser) } : {})}
                         >
                           {getDisplayName(seatUser)}
@@ -1911,14 +2023,22 @@ export default function ChatRoomPage() {
                     <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={() => handleClaimSeat(idx)}
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-dashed border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/15 hover:border-white/40 transition-all cursor-pointer group"
-                        title={`Koltuk ${idx + 1} — Oturmak için tıkla`}
+                        className={`flex items-center justify-center backdrop-blur-sm transition-all cursor-pointer group
+                          ${isThrone 
+                            ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-2 border-dashed border-yellow-500/30 hover:border-yellow-400/60 hover:bg-yellow-900/30 shadow-inner' 
+                            : 'w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-dashed border-white/20 hover:bg-white/15 hover:border-white/40'
+                          }`}
+                        title={isThrone ? 'Taht Koltuğu — Oturmak için tıkla' : `Koltuk ${idx + 1} — Oturmak için tıkla`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
+                        {isThrone ? (
+                          <span className="text-yellow-500/30 group-hover:text-yellow-400/60 text-lg transition-colors">👑</span>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        )}
                       </button>
-                      <p className="text-[9px] text-white/20 font-medium">{idx + 1}</p>
+                      <p className={`text-[9px] font-medium ${isThrone ? 'text-yellow-500/30' : 'text-white/20'}`}>{isThrone ? '👑' : idx + 1}</p>
                     </div>
                   )
                 })}

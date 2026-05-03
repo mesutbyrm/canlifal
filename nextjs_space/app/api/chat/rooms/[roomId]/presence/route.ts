@@ -162,13 +162,17 @@ export async function POST(
         // Get nickname before clearing presence
         const presenceRecord = await prisma.chatPresence.findUnique({
           where: { roomId_userId: { roomId, userId: session.user.id } },
-          select: { nickname: true }
+          select: { nickname: true, seatIndex: true }
         })
+        // Only reset seat if explicitly leaving (not just a heartbeat cleanup)
         await prisma.chatPresence.update({
           where: { roomId_userId: { roomId, userId: session.user.id } },
-          data: { lastSeen: new Date(0), seatIndex: -1 }
+          data: { 
+            lastSeen: new Date(0),
+            ...(isLeave ? { seatIndex: -1 } : {})
+          }
         })
-        // Create leave message so other users see departure immediately
+        // Create leave message only on intentional leave
         if (isLeave) {
           const displayName = presenceRecord?.nickname || session.user.name || 'Kullanıcı'
           // Delete all previous leave messages, keep only the latest
@@ -431,7 +435,8 @@ export async function DELETE(
     
     const displayName = presence?.nickname || session.user.name || 'Kullanıcı'
 
-    // Set lastSeen to past and reset seat so user disappears from active list immediately
+    // Set lastSeen to past so user disappears from active list immediately
+    // Only reset seat if this is an intentional leave
     try {
       await prisma.chatPresence.update({
         where: {
@@ -442,7 +447,7 @@ export async function DELETE(
         },
         data: {
           lastSeen: new Date(0), // epoch - effectively removes from active list
-          seatIndex: -1
+          ...(isIntentionalLeave ? { seatIndex: -1 } : {})
         }
       })
     } catch {
