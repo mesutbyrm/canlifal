@@ -61,6 +61,8 @@ import HostControlPanel from '@/components/host-control-panel'
 import type { GuestInfo } from '@/components/host-control-panel'
 import StreamVideoGrid from '@/components/stream-video-grid'
 import type { GridParticipant } from '@/components/stream-video-grid'
+import StreamProfilePopup from '@/components/stream-profile-popup'
+import StreamJoinToast, { useJoinToasts } from '@/components/stream-join-toast'
 
 interface Comment {
   id: string
@@ -231,6 +233,9 @@ export default function BroadcastPage() {
     return DEFAULT_BEAUTY_SETTINGS
   })
   const [showBeautyPanel, setShowBeautyPanel] = useState(false)
+  const [profilePopupUserId, setProfilePopupUserId] = useState<string | null>(null)
+  const { events: joinEvents, addJoinEvent, addLeaveEvent } = useJoinToasts()
+  const prevViewerIdsRef = useRef<Set<string>>(new Set())
   // Host control panel
   const [showHostControls, setShowHostControls] = useState(false)
 
@@ -408,7 +413,24 @@ export default function BroadcastPage() {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/viewers`)
       if (res.ok) {
-        setViewers(await res.json())
+        const newViewers: Viewer[] = await res.json()
+        setViewers(newViewers)
+        
+        // Detect joins/leaves for toast notifications
+        const newIds = new Set(newViewers.map((v: Viewer) => v.id))
+        const prevIds = prevViewerIdsRef.current
+        if (prevIds.size > 0) {
+          newViewers.forEach((v: Viewer) => {
+            if (!prevIds.has(v.id)) addJoinEvent(v.name, v.image)
+          })
+          prevIds.forEach(id => {
+            if (!newIds.has(id)) {
+              const prev = viewers.find((v: Viewer) => v.id === id)
+              if (prev) addLeaveEvent(prev.name, prev.image)
+            }
+          })
+        }
+        prevViewerIdsRef.current = newIds
       }
     } catch (e) {}
   }
@@ -1184,6 +1206,9 @@ export default function BroadcastPage() {
               }}
               hostMirror={facingMode === 'user'}
               isHost={true}
+              onParticipantClick={(p) => {
+                if (p.userId !== 'host') setProfilePopupUserId(p.userId)
+              }}
             />
           </div>
 
@@ -2565,6 +2590,17 @@ export default function BroadcastPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Join/Leave Toast Notifications */}
+      <StreamJoinToast events={joinEvents} />
+
+      {/* Profile Popup */}
+      {profilePopupUserId && (
+        <StreamProfilePopup
+          userId={profilePopupUserId}
+          onClose={() => setProfilePopupUserId(null)}
+        />
+      )}
     </div>
   )
 }

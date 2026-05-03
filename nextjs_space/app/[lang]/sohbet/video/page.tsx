@@ -44,6 +44,8 @@ import {
 import PKBattleOverlay from '@/components/pk-battle-overlay'
 import PKBattleView from '@/components/pk-battle-view'
 import StreamVideoGrid, { GridParticipant } from '@/components/stream-video-grid'
+import StreamProfilePopup from '@/components/stream-profile-popup'
+import StreamJoinToast, { useJoinToasts } from '@/components/stream-join-toast'
 
 interface VideoStream {
   id: string
@@ -140,6 +142,8 @@ function VideoStreamPageInner() {
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [viewerCount, setViewerCount] = useState(0)
+  const [streamDuration, setStreamDuration] = useState(0)
+  const streamDurationRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [showStartModal, setShowStartModal] = useState(false)
   const [streamTitle, setStreamTitle] = useState('')
   const [isStartingStream, setIsStartingStream] = useState(false)
@@ -158,6 +162,9 @@ function VideoStreamPageInner() {
   const [showGuestModal, setShowGuestModal] = useState(false)
   const [guestCountdown, setGuestCountdown] = useState(3)
   const [coBroadcastRequested, setCoBroadcastRequested] = useState(false)
+  const [profilePopupUserId, setProfilePopupUserId] = useState<string | null>(null)
+  const { events: joinEvents, addJoinEvent, addLeaveEvent } = useJoinToasts()
+  const prevViewerIdsRef = useRef<Set<string>>(new Set())
   const [requestingCoBroadcast, setRequestingCoBroadcast] = useState(false)
   // Co-broadcast state - multiple active guests
   const [activeCoBroadcasters, setActiveCoBroadcasters] = useState<{
@@ -293,6 +300,11 @@ function VideoStreamPageInner() {
       joinStream(currentStream.id)
       setLikeCount(currentStream.likeCount)
       setViewerCount(currentStream.viewerCount)
+      
+      // Start stream duration timer
+      setStreamDuration(0)
+      if (streamDurationRef.current) clearInterval(streamDurationRef.current)
+      streamDurationRef.current = setInterval(() => setStreamDuration(prev => prev + 1), 1000)
       checkIfLiked(currentStream.id)
       fetchComments(currentStream.id)
       fetchBroadcasterInfo(currentStream.user.id)
@@ -335,6 +347,10 @@ function VideoStreamPageInner() {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
       pollIntervalRef.current = null
+    }
+    if (streamDurationRef.current) {
+      clearInterval(streamDurationRef.current)
+      streamDurationRef.current = null
     }
     // Leave Agora channel
     if (agoraClientRef.current) {
@@ -460,7 +476,28 @@ function VideoStreamPageInner() {
     try {
       const res = await fetch(`/api/video-streams/${streamId}/viewers`)
       if (res.ok) {
-        setViewers(await res.json())
+        const newViewers: Viewer[] = await res.json()
+        setViewers(newViewers)
+        
+        // Detect joins/leaves for toast notifications
+        const newIds = new Set(newViewers.map((v: Viewer) => v.id))
+        const prevIds = prevViewerIdsRef.current
+        if (prevIds.size > 0) {
+          // New joins
+          newViewers.forEach((v: Viewer) => {
+            if (!prevIds.has(v.id)) {
+              addJoinEvent(v.name, v.image)
+            }
+          })
+          // Leaves
+          prevIds.forEach(id => {
+            if (!newIds.has(id)) {
+              const prev = viewers.find((v: Viewer) => v.id === id)
+              if (prev) addLeaveEvent(prev.name, prev.image)
+            }
+          })
+        }
+        prevViewerIdsRef.current = newIds
       }
     } catch (e) {}
   }
@@ -1049,6 +1086,7 @@ function VideoStreamPageInner() {
   }
 
   const formatCount = (n: number) => n >= 1000000 ? (n/1000000).toFixed(1) + 'M' : n >= 1000 ? (n/1000).toFixed(1) + 'K' : n.toString()
+  const formatDuration = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
 
   // Separate gifters and regular viewers
   const gifters = viewers.filter(v => v.hasGifted).sort((a, b) => b.totalGiftAmount - a.totalGiftAmount)
@@ -1252,6 +1290,7 @@ function VideoStreamPageInner() {
                       handleRequestCoBroadcast()
                     }
                   }}
+                  onParticipantClick={(p) => setProfilePopupUserId(p.userId === 'host' ? (currentStream?.user?.id || null) : p.userId)}
                   isHost={false}
                   hasRequested={coBroadcastRequested}
                 />
@@ -1454,8 +1493,8 @@ function VideoStreamPageInner() {
               
               <div className="relative bg-gradient-to-r from-black/80 to-black/60 backdrop-blur-md px-3 py-2 rounded-xl border border-pink-500/30">
                 <div className="flex items-center gap-2.5">
-                  {/* Avatar with gold ring */}
-                  <div className="relative">
+                  {/* Avatar with gold ring - clickable for profile */}
+                  <div className="relative cursor-pointer" onClick={() => currentStream?.user?.id && setProfilePopupUserId(currentStream.user.id)}>
                     <div className="w-12 h-12 rounded-full border-2 border-amber-400 p-0.5 bg-gradient-to-br from-amber-400 to-amber-600">
                       {currentStream?.user?.image ? (
                         <Image src={currentStream.user.image} alt="" width={48} height={48} className="w-full h-full rounded-full object-cover" />
@@ -1481,7 +1520,11 @@ function VideoStreamPageInner() {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
                       <span className="text-white font-bold text-sm">{currentStream?.user?.name}</span>
-                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-white text-[10px] font-bold rounded">VIP</span>
+                      <div className="flex items-center gap-0.5 bg-[#fe2c55] px-1.5 py-0.5 rounded">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        <span className="text-white text-[10px] font-bold">LIVE</span>
+                      </div>
+                      <span className="text-white/50 text-[10px]">{formatDuration(streamDuration)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-yellow-400 text-xs">
@@ -2409,6 +2452,21 @@ function VideoStreamPageInner() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Join/Leave Toast Notifications */}
+      <StreamJoinToast events={joinEvents} />
+
+      {/* Profile Popup */}
+      {profilePopupUserId && (
+        <StreamProfilePopup
+          userId={profilePopupUserId}
+          onClose={() => setProfilePopupUserId(null)}
+          onSendGift={(userId) => {
+            setProfilePopupUserId(null)
+            setShowGifts(true)
+          }}
+        />
+      )}
 
     </div>
   )
