@@ -147,7 +147,7 @@ export default function ChatRoomsPage() {
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles className={`w-5 h-5 ${sectionIconColor}`} />
-                {'Fal Sohbet Odaları'}
+                {'Sesli Sohbet Odaları'}
               </h1>
               <p className={`${descColor} text-xs sm:text-sm mt-1`}>
                 {'Sohbet odalarına katılın ve diğer kullanıcılarla konuşun'}

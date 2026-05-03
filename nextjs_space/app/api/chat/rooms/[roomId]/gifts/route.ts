@@ -68,13 +68,27 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
     }
 
-    // Calculate commission
-    const commissionPercent = room.giftCommissionPercent || 0
-    const commissionAmount = commissionPercent > 0 ? Math.floor(price * commissionPercent / 100) : 0
-    const recipientAmount = price - commissionAmount
-    // Determine who gets the commission: beneficiary or room owner
-    const beneficiaryUser = room.giftBeneficiary || room.owner
-    const beneficiaryId = beneficiaryUser?.id || null
+    // Commission: 50% site, 50% recipient. If recipient is seated, additional 10% to room owner
+    const siteCommissionPercent = 50
+    const siteCommissionAmount = Math.floor(price * siteCommissionPercent / 100)
+    const recipientAmount = price - siteCommissionAmount
+
+    // Check if recipient is seated (for room owner commission)
+    let ownerCommissionAmount = 0
+    const roomOwnerId = room.ownerId
+    if (roomOwnerId && roomOwnerId !== recipientId && roomOwnerId !== session.user.id) {
+      // Check if recipient is currently sitting in a seat
+      const recipientPresence = await prisma.chatPresence.findUnique({
+        where: { roomId_userId: { roomId, userId: recipientId } },
+        select: { seatIndex: true, lastSeen: true }
+      })
+      const presenceTimeout = new Date(Date.now() - 300000) // 5 min
+      if (recipientPresence && recipientPresence.seatIndex >= 0 && recipientPresence.lastSeen >= presenceTimeout) {
+        ownerCommissionAmount = Math.floor(price * 10 / 100) // 10% to room owner
+      }
+    }
+
+    const totalCommission = siteCommissionAmount + ownerCommissionAmount
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
@@ -96,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         }
       })
     }
-    // Add jetons to recipient (minus commission) - sadece normal kullanıcılardan
+    // Add jetons to recipient (50%) - sadece normal kullanıcılardan
     if (recipientAmount > 0 && !senderExcluded) {
       const recipientBefore = recipient.jetonBalance ?? 0
       await prisma.user.update({
@@ -108,7 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
           userId: recipient.id,
           amount: recipientAmount,
           type: 'gift_received',
-          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı`,
+          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (%50)`,
           balanceBefore: recipientBefore,
           balanceAfter: recipientBefore + recipientAmount
         }
@@ -123,22 +137,22 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
     }
 
-    // Give commission to beneficiary - sadece normal kullanıcılardan
-    if (commissionAmount > 0 && beneficiaryId && beneficiaryId !== recipient.id && !senderExcluded) {
-      const beneficiary = await prisma.user.findUnique({ where: { id: beneficiaryId }, select: { jetonBalance: true } })
-      const bBefore = beneficiary?.jetonBalance ?? 0
+    // Give 10% commission to room owner if recipient is seated
+    if (ownerCommissionAmount > 0 && roomOwnerId && !senderExcluded) {
+      const ownerUser = await prisma.user.findUnique({ where: { id: roomOwnerId }, select: { jetonBalance: true } })
+      const ownerBefore = ownerUser?.jetonBalance ?? 0
       await prisma.user.update({
-        where: { id: beneficiaryId },
-        data: { jetonBalance: { increment: commissionAmount } }
+        where: { id: roomOwnerId },
+        data: { jetonBalance: { increment: ownerCommissionAmount } }
       })
       await prisma.jetonTransaction.create({
         data: {
-          userId: beneficiaryId,
-          amount: commissionAmount,
+          userId: roomOwnerId,
+          amount: ownerCommissionAmount,
           type: 'gift_commission',
-          description: `Oda komisyonu: ${giftType.name} hediyesinden %${commissionPercent} (${room.nameTr})`,
-          balanceBefore: bBefore,
-          balanceAfter: bBefore + commissionAmount
+          description: `Oda sahibi komisyonu: ${giftType.name} hediyesinden %10 (${room.nameTr})`,
+          balanceBefore: ownerBefore,
+          balanceAfter: ownerBefore + ownerCommissionAmount
         }
       })
     }
@@ -153,8 +167,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         quantity: 1,
         totalPrice: price,
         currencyType: paymentType,
-        commissionAmount,
-        beneficiaryId
+        commissionAmount: totalCommission,
+        beneficiaryId: ownerCommissionAmount > 0 ? roomOwnerId : null
       }
     })
 

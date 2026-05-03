@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
           select: { messages: true }
         },
         owner: {
-          select: { id: true, name: true, username: true }
+          select: { id: true, name: true, username: true, image: true }
         },
         presences: {
           where: {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       descTr: string | null
       icon: string
       ownerId: string | null
-      owner: { id: string; name: string | null; username: string | null } | null
+      owner: { id: string; name: string | null; username: string | null; image: string | null } | null
       _count: { messages: number }
       presences: PresenceUser[]
     }

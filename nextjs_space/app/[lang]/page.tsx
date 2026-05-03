@@ -706,7 +706,7 @@ export default function HomePage() {
                 { href: '/astroloji-paneli', icon: '🔮', label: 'Astroloji Paneli', desc: 'Kişisel paneliniz' },
                 { href: '/ruya-istatistikleri', icon: '📊', label: 'Rüya İstatistikleri', desc: 'Kişisel trendlerin' },
                 { href: '/basarimlar', icon: '🏅', label: 'Başarımlar', desc: 'Rozetlerini topla' },
-                { href: '/sohbet', icon: '💬', label: 'Sohbet', desc: 'Canlı sohbet odaları' },
+                { href: '/sohbet', icon: '🎙️', label: 'Sesli Sohbet', desc: 'Sesli sohbet odaları' },
               ].map((item, idx) => (
                 <motion.div
                   key={item.href}

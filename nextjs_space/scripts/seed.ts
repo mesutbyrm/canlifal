@@ -303,7 +303,7 @@ async function main() {
     { languageCode: 'en', translationKey: 'chat.login_required', translationValue: 'Please login to join the chat' },
 
     // Chat - Turkish
-    { languageCode: 'tr', translationKey: 'chat.title', translationValue: 'Sosyal Sohbet Odaları' },
+    { languageCode: 'tr', translationKey: 'chat.title', translationValue: 'Sesli Sohbet Odaları' },
     { languageCode: 'tr', translationKey: 'chat.subtitle', translationValue: 'Mistik bilgelik arayanlarla bağlantı kurun' },
     { languageCode: 'tr', translationKey: 'chat.online', translationValue: 'çevrimiçi' },
     { languageCode: 'tr', translationKey: 'chat.send', translationValue: 'Gönder' },
@@ -885,7 +885,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { key: 'gifts', label: 'Hediyeler', icon: '🎁', href: '/hediyeler', sortOrder: 1 },
     { key: 'teller', label: 'Falcı Ol', icon: '📹', href: '/falci-ol', sortOrder: 2, specialBehavior: 'teller' },
     { key: 'social', label: 'Sosyal', icon: '👥', href: '/sosyal', sortOrder: 3 },
-    { key: 'chat', label: 'Sohbet', icon: '💬', href: '/sohbet', sortOrder: 4 },
+    { key: 'chat', label: 'Sesli Sohbet', icon: '🎙️', href: '/sohbet', sortOrder: 4 },
     { key: 'blog', label: 'Blog', icon: '📖', href: '/blog', sortOrder: 5 },
     { key: 'ruya', label: 'Rüya Tabiri', icon: '🌙', href: '/ruya', sortOrder: 6 },
     { key: 'bana-ozel', label: 'Bana Özel', icon: '✨', href: '/bana-ozel', sortOrder: 7, specialBehavior: 'bana-ozel' },

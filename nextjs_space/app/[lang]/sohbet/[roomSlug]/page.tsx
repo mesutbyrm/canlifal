@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2 } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
 interface Message {
@@ -46,7 +46,7 @@ interface ChatRoom {
   descTr: string
   icon: string
   ownerId?: string | null
-  owner?: { id: string; name: string; username?: string | null } | null
+  owner?: { id: string; name: string; username?: string | null; image?: string | null } | null
   backgroundImage?: string | null
   userCount?: number
 }
@@ -195,6 +195,16 @@ export default function ChatRoomPage() {
   
   // Grid user limit from admin settings
   const [gridUserLimit, setGridUserLimit] = useState(6)
+  
+  // User profile popup (for follow/unfollow)
+  const [profilePopupUser, setProfilePopupUser] = useState<{ id: string; name: string; nickname?: string; image?: string | null } | null>(null)
+  const [profileFollowing, setProfileFollowing] = useState(false)
+  const [profileFollowLoading, setProfileFollowLoading] = useState(false)
+  
+  // Transfer ownership
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null)
+  const [transferring, setTransferring] = useState(false)
   
   const voiceUsersPollRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -1437,6 +1447,65 @@ export default function ChatRoomPage() {
     setShowGiftUserSelect(false)
   }
 
+  // Open user profile popup with follow status
+  const openUserProfile = async (user: { id: string; name: string; nickname?: string; image?: string | null }) => {
+    if (!session?.user?.id || user.id === session.user.id) return
+    setProfilePopupUser(user)
+    setProfileFollowing(false)
+    setProfileFollowLoading(true)
+    try {
+      const res = await fetch(`/api/user/${user.id}/follow-status`)
+      if (res.ok) {
+        const data = await res.json()
+        setProfileFollowing(data.isFollowing)
+      }
+    } catch (e) { console.error('Follow status error:', e) }
+    setProfileFollowLoading(false)
+  }
+
+  // Toggle follow/unfollow
+  const handleFollowToggle = async () => {
+    if (!profilePopupUser || profileFollowLoading) return
+    setProfileFollowLoading(true)
+    try {
+      const res = await fetch(`/api/user/${profilePopupUser.id}/follow`, {
+        method: profileFollowing ? 'DELETE' : 'POST',
+      })
+      if (res.ok) {
+        setProfileFollowing(!profileFollowing)
+      }
+    } catch (e) { console.error('Follow toggle error:', e) }
+    setProfileFollowLoading(false)
+  }
+
+  // Transfer ownership
+  const handleTransferOwnership = async () => {
+    if (!room || !transferTargetId || transferring) return
+    if (!confirm('Oda sahipliğini bu kullanıcıya devretmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return
+    setTransferring(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/transfer-ownership`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newOwnerId: transferTargetId })
+      })
+      if (res.ok) {
+        alert('Oda sahipliği başarıyla devredildi!')
+        setShowTransferModal(false)
+        setTransferTargetId(null)
+        setShowManagePopup(false)
+        fetchRoom()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Bir hata oluştu')
+      }
+    } catch (e) {
+      console.error('Transfer ownership error:', e)
+      alert('Bir hata oluştu')
+    }
+    setTransferring(false)
+  }
+
   useEffect(() => {
     if (room) {
       fetchGiftTypes()
@@ -1633,6 +1702,16 @@ export default function ChatRoomPage() {
                         {'Tüm Mesajları Temizle'}
                       </button>
                     )}
+                    {/* Transfer ownership - only room owner */}
+                    {myPermissions?.isRoomOwner && (
+                      <button
+                        onClick={() => { setShowTransferModal(true); setTransferTargetId(null) }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-amber-600/30 text-amber-300 hover:bg-amber-600/50"
+                      >
+                        <ArrowRightLeft className="w-5 h-5" />
+                        {'Sahipliği Devret'}
+                      </button>
+                    )}
                     <button
                       onClick={() => setShowNicknameModal(true)}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-purple-600/30 text-purple-300 hover:bg-purple-600/50"
@@ -1660,6 +1739,14 @@ export default function ChatRoomPage() {
                               {user.roleSymbol && <span className="mr-1">{user.roleSymbol}</span>}
                               {getDisplayName(user)}
                             </span>
+                            {user.id !== session?.user?.id && (
+                              <button
+                                onClick={() => openUserProfile(user)}
+                                className="px-2 py-1 bg-purple-600/30 text-purple-300 rounded text-xs hover:bg-purple-600/50 flex items-center gap-1"
+                              >
+                                <UserPlus className="w-3 h-3" />Profil
+                              </button>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {/* Mute users */}
@@ -1920,11 +2007,18 @@ export default function ChatRoomPage() {
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Room Owner Avatar */}
             {room.owner && (
-              <div className="w-8 h-8 rounded-full bg-purple-800 border-2 border-gold-500/60 overflow-hidden flex-shrink-0">
-                <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
-                  {(room.owner.username || room.owner.name || '?').charAt(0).toUpperCase()}
-                </div>
-              </div>
+              <button 
+                onClick={() => openUserProfile({ id: room.owner!.id, name: room.owner!.name, image: room.owner!.image })}
+                className="w-8 h-8 rounded-full bg-purple-800 border-2 border-gold-500/60 overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-gold-400 transition-all"
+              >
+                {room.owner.image ? (
+                  <img src={room.owner.image} alt={room.owner.name || ''} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
+                    {(room.owner.username || room.owner.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </button>
             )}
             <div className="min-w-0">
               <p className="text-white text-sm font-bold truncate">{room.icon} {room.nameTr}</p>
@@ -2379,11 +2473,21 @@ export default function ChatRoomPage() {
                     )}
                     {isOwner && <span className="text-yellow-400 mr-0.5 text-xs">👑</span>}
                     <button
-                      onClick={() => msg.user.id !== session?.user?.id && addMention(displayName)}
+                      onClick={() => {
+                        if (msg.user.id !== session?.user?.id) {
+                          addMention(displayName)
+                        }
+                      }}
+                      onDoubleClick={() => {
+                        if (msg.user.id !== session?.user?.id) {
+                          openUserProfile({ id: msg.user.id, name: msg.user.name, nickname: msg.user.nickname })
+                        }
+                      }}
                       className={`font-bold text-xs hover:underline ${getNameEffectClass(msg.user)} ${
                         isOwner ? 'text-yellow-300' : msg.user.chatRole ? ROLE_COLORS[msg.user.chatRole] : isMe ? 'text-gold-400' : 'text-purple-300'
                       }`}
                       style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+                      title={msg.user.id !== session?.user?.id ? 'Tıkla: bahset | Çift tıkla: profil' : ''}
                       {...(getNameEffectClass(msg.user) === 'effect-glitch' ? { 'data-text': `<${displayName}>` } : {})}
                     >
                       &lt;{displayName}&gt;
@@ -2880,6 +2984,162 @@ export default function ChatRoomPage() {
                 >
                   {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} Jeton)`}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Profile Popup (Follow/Unfollow) */}
+      <AnimatePresence>
+        {profilePopupUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setProfilePopupUser(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-xs w-full p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col items-center gap-3">
+                {/* Avatar */}
+                <div className="w-16 h-16 rounded-full bg-purple-800 border-2 border-gold-500/60 overflow-hidden">
+                  {profilePopupUser.image ? (
+                    <img src={profilePopupUser.image} alt={profilePopupUser.name || ''} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                      {(profilePopupUser.nickname || profilePopupUser.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                {/* Name */}
+                <h3 className="text-white font-bold text-lg">{profilePopupUser.nickname || profilePopupUser.name}</h3>
+                {/* Follow/Unfollow Button */}
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={profileFollowLoading}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    profileFollowing
+                      ? 'bg-purple-600/30 text-purple-300 hover:bg-red-600/30 hover:text-red-300 border border-purple-500/30'
+                      : 'bg-gradient-to-r from-gold-500 to-yellow-500 text-black hover:from-gold-400 hover:to-yellow-400'
+                  } disabled:opacity-50`}
+                >
+                  {profileFollowLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : profileFollowing ? (
+                    <><UserCheck className="w-4 h-4" />Takip Ediliyor</>
+                  ) : (
+                    <><UserPlus className="w-4 h-4" />Takip Et</>
+                  )}
+                </button>
+                {/* Gift Button */}
+                <button
+                  onClick={() => {
+                    const activeUser = activeUsers.find(u => u.id === profilePopupUser.id)
+                    if (activeUser) {
+                      openGiftModal(activeUser)
+                    } else {
+                      openGiftModal({
+                        id: profilePopupUser.id,
+                        name: profilePopupUser.name,
+                        nickname: profilePopupUser.nickname,
+                        image: profilePopupUser.image
+                      })
+                    }
+                    setProfilePopupUser(null)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm bg-pink-600/30 text-pink-300 hover:bg-pink-600/50 border border-pink-500/30"
+                >
+                  <Gift className="w-4 h-4" />Hediye Gönder
+                </button>
+                {/* Close */}
+                <button
+                  onClick={() => setProfilePopupUser(null)}
+                  className="text-purple-400/60 hover:text-white text-sm mt-1"
+                >
+                  Kapat
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transfer Ownership Modal */}
+      <AnimatePresence>
+        {showTransferModal && room && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowTransferModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1a0b2e] border border-purple-500/30 rounded-xl max-w-md w-full max-h-[70vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-purple-500/30">
+                <h3 className="text-lg font-semibold text-amber-400 flex items-center gap-2">
+                  <ArrowRightLeft className="w-5 h-5" />
+                  Sahipliği Devret
+                </h3>
+                <button onClick={() => setShowTransferModal(false)} className="text-purple-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4">
+                <p className="text-purple-300/80 text-sm mb-4">
+                  Oda sahipliğini devretmek istediğiniz kullanıcıyı seçin. Bu işlem geri alınamaz.
+                </p>
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                  {activeUsers.filter(u => u.id !== session?.user?.id).length === 0 ? (
+                    <p className="text-purple-400/50 text-sm text-center py-4">Odada başka aktif kullanıcı yok</p>
+                  ) : (
+                    activeUsers.filter(u => u.id !== session?.user?.id).map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => setTransferTargetId(user.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                          transferTargetId === user.id
+                            ? 'bg-amber-600/30 border border-amber-500/50 text-amber-200'
+                            : 'bg-[#0d0520] text-purple-200 hover:bg-purple-600/20'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-800 overflow-hidden flex-shrink-0">
+                          {user.image ? (
+                            <img src={user.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
+                              {(user.nickname || user.name || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium">{getDisplayName(user)}</span>
+                        {transferTargetId === user.id && <UserCheck className="w-4 h-4 text-amber-400 ml-auto" />}
+                      </button>
+                    ))
+                  )}
+                </div>
+                {transferTargetId && (
+                  <button
+                    onClick={handleTransferOwnership}
+                    disabled={transferring}
+                    className="w-full mt-4 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 text-white font-bold rounded-lg disabled:opacity-50 hover:from-amber-500 hover:to-yellow-500 transition-all flex items-center justify-center gap-2"
+                  >
+                    {transferring ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
+                    {transferring ? 'Devrediliyor...' : 'Sahipliği Devret'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
