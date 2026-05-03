@@ -51,6 +51,10 @@ interface PlatformSettings {
   entry_announcement_enabled: string
   entry_announcement_duration: string
   entry_announcement_style: string
+  chat_marquee_enabled: string
+  chat_marquee_effect: string
+  chat_marquee_speed: string
+  chat_marquee_repeat: string
 }
 
 export default function AdminSettingsPage() {
@@ -82,7 +86,11 @@ export default function AdminSettingsPage() {
     jeton_unit_price: '0.50',
     entry_announcement_enabled: 'true',
     entry_announcement_duration: '2',
-    entry_announcement_style: 'fade'
+    entry_announcement_style: 'fade',
+    chat_marquee_enabled: 'true',
+    chat_marquee_effect: 'scroll-left',
+    chat_marquee_speed: '10',
+    chat_marquee_repeat: '0'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -732,6 +740,90 @@ export default function AdminSettingsPage() {
                   <option value="slide">Yukarıdan Kayma</option>
                   <option value="flash">Parlak Flash</option>
                 </select>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Chat Marquee Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="bg-gradient-to-r from-deep-purple-800/50 to-purple-900/30 rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">📜 Sohbet Odası Kayan Yazı Ayarları</h3>
+            <p className="text-sm text-fuchsia-400 mb-4">Sohbet odalarındaki kayan yazı bandı ayarları</p>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Durum:</span>
+                <button
+                  onClick={() => {
+                    const newVal = settings.chat_marquee_enabled === 'true' ? 'false' : 'true'
+                    setSettings(prev => ({ ...prev, chat_marquee_enabled: newVal }))
+                    saveSetting('chat_marquee_enabled', newVal)
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    settings.chat_marquee_enabled === 'true'
+                      ? 'bg-green-600/20 border-green-500/30 text-green-300'
+                      : 'bg-red-600/20 border-red-500/30 text-red-300'
+                  }`}
+                >
+                  {settings.chat_marquee_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}
+                </button>
+              </div>
+
+              {/* Effect Type Select */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Efekt:</span>
+                <select
+                  value={settings.chat_marquee_effect}
+                  onChange={(e) => {
+                    setSettings(prev => ({ ...prev, chat_marquee_effect: e.target.value }))
+                    saveSetting('chat_marquee_effect', e.target.value)
+                  }}
+                  className="px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm"
+                >
+                  <option value="scroll-left">← Sağdan Sola Kayma</option>
+                  <option value="scroll-right">→ Soldan Sağa Kayma</option>
+                  <option value="bounce">↔ Sağa Sola Sekme</option>
+                  <option value="fade-scroll">✨ Belirerek Kayma</option>
+                  <option value="typewriter">⌨️ Daktilo Efekti</option>
+                </select>
+              </div>
+
+              {/* Speed Input */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Hız (sn):</span>
+                <input
+                  type="number"
+                  min="3"
+                  max="60"
+                  value={settings.chat_marquee_speed}
+                  onChange={(e) => {
+                    setSettings(prev => ({ ...prev, chat_marquee_speed: e.target.value }))
+                  }}
+                  onBlur={() => saveSetting('chat_marquee_speed', settings.chat_marquee_speed)}
+                  className="w-20 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm text-center"
+                />
+              </div>
+
+              {/* Repeat Count Input */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-purple-200">Tekrar:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={settings.chat_marquee_repeat}
+                  onChange={(e) => {
+                    setSettings(prev => ({ ...prev, chat_marquee_repeat: e.target.value }))
+                  }}
+                  onBlur={() => saveSetting('chat_marquee_repeat', settings.chat_marquee_repeat)}
+                  className="w-20 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm text-center"
+                />
+                <span className="text-xs text-purple-400">(0 = sonsuz)</span>
               </div>
             </div>
           </motion.div>

@@ -7,7 +7,10 @@ export async function GET() {
   try {
     const settings = await prisma.platformSettings.findMany({
       where: {
-        key: { in: ['entry_announcement_enabled', 'entry_announcement_duration', 'entry_announcement_style'] }
+        key: { in: [
+          'entry_announcement_enabled', 'entry_announcement_duration', 'entry_announcement_style',
+          'chat_marquee_effect', 'chat_marquee_speed', 'chat_marquee_repeat', 'chat_marquee_enabled'
+        ] }
       }
     });
     const result: Record<string, string> = {};

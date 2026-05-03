@@ -8,6 +8,7 @@ import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
+import ChatRoomMarquee from '@/components/chat-room-marquee'
 
 interface Message {
   id: string
@@ -107,6 +108,7 @@ export default function ChatRoomPage() {
   const [room, setRoom] = useState<ChatRoom | null>(null)
   const [allRooms, setAllRooms] = useState<ChatRoom[]>([])
   const [messages, setMessages] = useState<Message[]>([])
+  const [marqueeJoinEvents, setMarqueeJoinEvents] = useState<{ id: string; name: string; isVip: boolean; vipType?: string }[]>([])
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -404,6 +406,20 @@ export default function ChatRoomPage() {
           const lastMsg = data.messages[data.messages.length - 1]
           if (lastMsg.user.id !== session?.user?.id) {
             audioRef.current?.play()
+          }
+          // Extract new join events for marquee
+          const newMsgs = data.messages.slice(previousMessagesCount.current)
+          const newJoins: { id: string; name: string; isVip: boolean; vipType?: string }[] = []
+          for (const m of newMsgs) {
+            if (m.content.startsWith('[SYSTEM_VIP_JOIN:')) {
+              const match = m.content.match(/\[SYSTEM_VIP_JOIN:(\w+)\](.+)/)
+              if (match) newJoins.push({ id: m.id, name: match[2], isVip: true, vipType: match[1] })
+            } else if (m.content.startsWith('[SYSTEM_JOIN]')) {
+              newJoins.push({ id: m.id, name: m.content.replace('[SYSTEM_JOIN]', ''), isVip: false })
+            }
+          }
+          if (newJoins.length > 0) {
+            setMarqueeJoinEvents(prev => [...prev, ...newJoins].slice(-10))
           }
         }
         previousMessagesCount.current = data.messages?.length || 0
@@ -2331,6 +2347,9 @@ export default function ChatRoomPage() {
           </div>
         ) : null}
 
+        {/* ── Chat Room Marquee (scrolling text below duyuru) ── */}
+        <ChatRoomMarquee joinEvents={marqueeJoinEvents} />
+
         {/* ── Background Image Picker Modal ── */}
         {showBgPicker && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBgPicker(false)}>
@@ -2975,8 +2994,8 @@ export default function ChatRoomPage() {
                 ))}
               </div>
 
-              {/* Send Button */}
-              <div className="p-3 border-t border-purple-500/20">
+              {/* Send Button + Jeton Yükle */}
+              <div className="p-3 border-t border-purple-500/20 space-y-2">
                 <button
                   onClick={sendGift}
                   disabled={!selectedGiftType || sendingGift}
@@ -2984,6 +3003,17 @@ export default function ChatRoomPage() {
                 >
                   {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} Jeton)`}
                 </button>
+                <button
+                  onClick={() => {
+                    setShowGiftModal(false)
+                    window.open(`/${language}/jeton`, '_blank')
+                  }}
+                  className="w-full py-2 bg-purple-600/30 text-purple-200 font-medium rounded-lg hover:bg-purple-600/50 transition-all text-sm flex items-center justify-center gap-2 border border-purple-500/30"
+                >
+                  <Coins className="w-4 h-4 text-gold-400" />
+                  Jeton Yükle
+                </button>
+                <p className="text-center text-purple-400/50 text-[10px]">Bakiye: {userJetonBalance.toLocaleString()} Jeton</p>
               </div>
             </motion.div>
           </motion.div>
