@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft, Music } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft, Music, RefreshCw } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import YouTubeMusicModal from '@/components/youtube-music-modal'
@@ -3111,6 +3111,17 @@ export default function ChatRoomPage() {
             </Link>
           </div>
         )}
+
+        {/* ── Refresh Page Button ── */}
+        <div className="relative z-10 flex-shrink-0 px-3 pb-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 border border-white/10 rounded-xl text-purple-300/70 text-xs hover:bg-white/10 hover:text-purple-200 transition-all"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Sayfayı Yenile
+          </button>
+        </div>
 
         {/* Image Picker Modal */}
         <AnimatePresence>
