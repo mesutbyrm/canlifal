@@ -396,6 +396,9 @@ model ChatRoom {
   giftBeneficiaryId     String?        // Who receives the commission (null = room owner)
   giftBeneficiary       User?          @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
   backgroundImage       String?        // Background image URL for room
+  currentMusicVideoId   String?        // Currently playing YouTube video ID
+  currentMusicTitle     String?        // Currently playing music title
+  currentMusicStartedAt DateTime?      // When the music started playing
   createdAt             DateTime       @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]

@@ -9,6 +9,7 @@ import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
+import YouTubeMusicModal from '@/components/youtube-music-modal'
 
 interface Message {
   id: string
@@ -202,6 +203,11 @@ export default function ChatRoomPage() {
   const [profilePopupUser, setProfilePopupUser] = useState<{ id: string; name: string; nickname?: string; image?: string | null } | null>(null)
   const [profileFollowing, setProfileFollowing] = useState(false)
   const [profileFollowLoading, setProfileFollowLoading] = useState(false)
+  
+  // YouTube Music
+  const [showMusicModal, setShowMusicModal] = useState(false)
+  const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
+  const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
   
   // Transfer ownership
   const [showTransferModal, setShowTransferModal] = useState(false)
@@ -647,6 +653,25 @@ export default function ChatRoomPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Poll for current music in room
+  useEffect(() => {
+    if (!room?.id) return
+    let cancelled = false
+    const fetchMusic = async () => {
+      try {
+        const res = await fetch(`/api/chat/rooms/${room.id}/music`)
+        if (res.ok && !cancelled) {
+          const data = await res.json()
+          setCurrentMusicVideoId(data.videoId || null)
+          setCurrentMusicTitle(data.title || null)
+        }
+      } catch {}
+    }
+    fetchMusic()
+    const interval = setInterval(fetchMusic, 5000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [room?.id])
 
   // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
@@ -2520,20 +2545,31 @@ export default function ChatRoomPage() {
         {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
           <div className="relative z-10 mx-3 mb-2">
             <button
-              onClick={() => {
-                const url = prompt('YouTube veya müzik URL\'si girin:')
-                if (url) {
-                  // Send as a system message
-                  fetch(`/api/chat/rooms/${room.id}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: `🎶 Şu an çalıyor: ${url}` })
-                  }).then(() => fetchMessages())
-                }
-              }}
+              onClick={() => setShowMusicModal(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-purple-300 text-xs hover:from-purple-600/50 hover:to-pink-600/50 transition-all"
             >
               <span className="text-base">🎵</span> Müzik Aç
+            </button>
+          </div>
+        )}
+
+        {/* ── Floating Music Player Bar (visible to everyone when music is playing) ── */}
+        {currentMusicVideoId && currentMusicTitle && (
+          <div className="relative z-10 mx-3 mb-2">
+            <button
+              onClick={() => setShowMusicModal(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-purple-900/60 border border-purple-500/30 rounded-xl backdrop-blur-sm hover:border-purple-400/50 transition-all group"
+            >
+              <div className="flex items-end gap-0.5 mr-1 flex-shrink-0">
+                <span className="w-1 h-3 bg-purple-400 rounded-full animate-pulse" />
+                <span className="w-1 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                <span className="w-1 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-[10px] text-purple-300 opacity-70">🎶 Şu an çalıyor</p>
+                <p className="text-white text-xs font-medium truncate">{currentMusicTitle}</p>
+              </div>
+              <span className="text-purple-400/50 text-[10px] group-hover:text-purple-300 transition-colors">▶</span>
             </button>
           </div>
         )}
@@ -3401,6 +3437,27 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
+      {/* ── YouTube Music Modal ── */}
+      <YouTubeMusicModal
+        isOpen={showMusicModal}
+        onClose={() => setShowMusicModal(false)}
+        roomId={room?.id || ''}
+        currentVideoId={currentMusicVideoId}
+        currentTitle={currentMusicTitle}
+        canControl={!!(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom)}
+      />
+
+      {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
+      {currentMusicVideoId && !showMusicModal && (
+        <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
+          <iframe
+            key={currentMusicVideoId}
+            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
+            allow="autoplay; encrypted-media"
+            style={{ width: 1, height: 1, border: 'none' }}
+          />
+        </div>
+      )}
 
     </div>
   )
