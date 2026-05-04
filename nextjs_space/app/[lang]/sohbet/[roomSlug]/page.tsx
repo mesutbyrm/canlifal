@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft, Music } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import YouTubeMusicModal from '@/components/youtube-music-modal'
@@ -208,6 +208,10 @@ export default function ChatRoomPage() {
   const [showMusicModal, setShowMusicModal] = useState(false)
   const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
+  const [musicMuted, setMusicMuted] = useState(false)
+  
+  // Commands panel
+  const [showCommandsPanel, setShowCommandsPanel] = useState(false)
   
   // Transfer ownership
   const [showTransferModal, setShowTransferModal] = useState(false)
@@ -672,6 +676,34 @@ export default function ChatRoomPage() {
     const interval = setInterval(fetchMusic, 5000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [room?.id])
+
+  // Auto-mute all Agora voice when music is playing, unmute when stopped
+  useEffect(() => {
+    if (!agoraClientRef.current) return
+    const client = agoraClientRef.current
+    const isMusicPlaying = !!currentMusicVideoId
+    try {
+      client.remoteUsers?.forEach((ru: any) => {
+        if (ru.audioTrack) {
+          if (isMusicPlaying) {
+            ru.audioTrack.setVolume(0)
+          } else {
+            ru.audioTrack.setVolume(100)
+          }
+        }
+      })
+      // Also mute own mic if music playing
+      if (agoraAudioTrackRef.current && voiceEnabled) {
+        if (isMusicPlaying && !isMicMuted) {
+          agoraAudioTrackRef.current.setEnabled(false)
+          setIsMicMuted(true)
+        }
+      }
+    } catch (e) {
+      console.error('Music auto-mute error:', e)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMusicVideoId, voiceEnabled])
 
   // Auto-scroll - use scrollTop on container to prevent parent scroll
   useEffect(() => {
@@ -1330,6 +1362,74 @@ export default function ChatRoomPage() {
         setCommandFlash('Kullanım: !yetki kullanıcı &/@/+')
         setTimeout(() => setCommandFlash(null), 3000)
       }
+      return true
+    }
+
+    if (cmd === '!at' && arg && canMod) {
+      // Kick user from room
+      const targetUser = activeUsers.find(u => 
+        (u.nickname || u.name || '').toLowerCase() === arg.toLowerCase() ||
+        (u.name || '').toLowerCase() === arg.toLowerCase()
+      )
+      if (targetUser) {
+        try {
+          await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'kick_user', targetUserId: targetUser.id, reason: 'Chat komutu ile atıldı' })
+          })
+          setCommandFlash(`👢 ${arg} odadan atıldı`)
+          setTimeout(() => setCommandFlash(null), 3000)
+          fetchActiveUsers()
+        } catch {}
+      } else {
+        setCommandFlash(`❌ Kullanıcı bulunamadı: ${arg}`)
+        setTimeout(() => setCommandFlash(null), 3000)
+      }
+      return true
+    }
+
+    if (cmd === '!duyuru' && arg && canMod) {
+      // Set announcement
+      try {
+        await fetch(`/api/chat/rooms/${room.id}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `📢 [DUYURU] ${arg}` })
+        })
+        fetchMessages()
+        setCommandFlash(`📢 Duyuru yayınlandı`)
+        setTimeout(() => setCommandFlash(null), 3000)
+      } catch {}
+      return true
+    }
+
+    if (cmd === '!kural') {
+      // Show rules
+      const rules = [
+        '📋 ODA KURALLARI:',
+        '1. Saygılı olun, küfür ve hakaret yasaktır',
+        '2. Spam yapmayın, aynı mesajı tekrar etmeyin',
+        '3. Reklam ve link paylaşımı yasaktır',
+        '4. Yetkililerin uyarılarına uyun',
+        '5. Mikrofon kullanırken sesli müzik çalmayın'
+      ].join('\n')
+      setCommandFlash(rules)
+      setTimeout(() => setCommandFlash(null), 8000)
+      return true
+    }
+
+    if (cmd === '!bilgi') {
+      // Show room info
+      const info = `ℹ️ Oda: ${room.nameTr}\n👥 Kişi: ${activeUsers.length}\n👑 Sahip: ${room.owner?.name || 'Bilinmiyor'}`
+      setCommandFlash(info)
+      setTimeout(() => setCommandFlash(null), 5000)
+      return true
+    }
+
+    if (cmd === '!yardım' || cmd === '!komutlar') {
+      // Show help
+      setShowCommandsPanel(true)
       return true
     }
 
@@ -2555,21 +2655,35 @@ export default function ChatRoomPage() {
 
         {/* ── Floating Music Player Bar (visible to everyone when music is playing) ── */}
         {currentMusicVideoId && currentMusicTitle && (
-          <div className="relative z-10 mx-3 mb-2">
+          <div className="relative z-10 mx-3 mb-2 flex items-center gap-1.5">
             <button
               onClick={() => setShowMusicModal(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-purple-900/60 border border-purple-500/30 rounded-xl backdrop-blur-sm hover:border-purple-400/50 transition-all group"
+              className="flex-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-purple-900/60 border border-purple-500/30 rounded-xl backdrop-blur-sm hover:border-purple-400/50 transition-all group min-w-0"
             >
-              <div className="flex items-end gap-0.5 mr-1 flex-shrink-0">
-                <span className="w-1 h-3 bg-purple-400 rounded-full animate-pulse" />
-                <span className="w-1 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-                <span className="w-1 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-              </div>
+              {!musicMuted && (
+                <div className="flex items-end gap-0.5 mr-1 flex-shrink-0">
+                  <span className="w-1 h-3 bg-purple-400 rounded-full animate-pulse" />
+                  <span className="w-1 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                  <span className="w-1 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                </div>
+              )}
+              {musicMuted && <VolumeX className="w-4 h-4 text-red-400 flex-shrink-0" />}
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-[10px] text-purple-300 opacity-70">🎶 Şu an çalıyor</p>
                 <p className="text-white text-xs font-medium truncate">{currentMusicTitle}</p>
               </div>
-              <span className="text-purple-400/50 text-[10px] group-hover:text-purple-300 transition-colors">▶</span>
+            </button>
+            {/* Music mute/unmute button */}
+            <button
+              onClick={() => setMusicMuted(!musicMuted)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all flex-shrink-0 ${
+                musicMuted 
+                  ? 'bg-red-600/30 border-red-500/40 text-red-300 hover:bg-red-600/50' 
+                  : 'bg-purple-600/30 border-purple-500/30 text-purple-300 hover:bg-purple-600/50'
+              }`}
+              title={musicMuted ? 'Müzik sesini aç' : 'Müzik sesini kapat'}
+            >
+              {musicMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
           </div>
         )}
@@ -2803,6 +2917,18 @@ export default function ChatRoomPage() {
           <div className="relative z-10 mx-3 px-3 py-1 bg-red-900/60 text-red-300 text-[11px] rounded-lg backdrop-blur-sm">{error}</div>
         )}
 
+        {/* ── Commands Panel Toggle (right edge arrow button for authorized users) ── */}
+        {session?.user && (myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
+          (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
+          <button
+            onClick={() => setShowCommandsPanel(!showCommandsPanel)}
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-30 w-6 h-14 bg-gradient-to-l from-purple-700/80 to-purple-900/60 border border-purple-500/30 border-r-0 rounded-l-lg flex items-center justify-center text-purple-300 hover:text-white hover:from-purple-600/90 transition-all backdrop-blur-sm shadow-lg"
+            title="Komutlar"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Gift Leaderboard */}
         {leaderboard.length > 0 && (
           <div className="relative z-10 mx-3 mb-1">
@@ -2960,20 +3086,18 @@ export default function ChatRoomPage() {
                 <Gift className="w-4 h-4" />
               </button>
 
-              {/* Jeton Yükle Button */}
+            </div>
+
+            {/* Jeton Loading Area */}
+            <div className="flex items-center justify-between mt-1.5 px-1">
+              <span className="text-[10px] text-yellow-400/70 flex items-center gap-0.5">💎 {userJetonBalance.toLocaleString()} Jeton</span>
               <button
                 type="button"
                 onClick={() => window.open(`/${language}/jeton`, '_blank')}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-yellow-500/20 to-amber-500/20 text-yellow-400 hover:from-yellow-500/40 hover:to-amber-500/40 transition-all flex-shrink-0 border border-yellow-500/30"
-                title="Jeton Yükle"
+                className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border border-yellow-500/40 rounded-full text-yellow-300 text-[10px] font-bold hover:from-yellow-500/50 hover:to-amber-500/50 transition-all"
               >
-                <Coins className="w-4 h-4" />
+                <Coins className="w-3 h-3" /> Jeton Yükle
               </button>
-            </div>
-
-            {/* Balance indicator */}
-            <div className="flex items-center justify-center mt-1.5">
-              <span className="text-[10px] text-yellow-400/60">💎 {userJetonBalance} Jeton</span>
             </div>
           </div>
         ) : (
@@ -3281,7 +3405,7 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* User Profile Popup (Follow/Unfollow) */}
+      {/* User Profile Popup (Follow/Unfollow + Jeton) */}
       <AnimatePresence>
         {profilePopupUser && (
           <motion.div
@@ -3356,6 +3480,118 @@ export default function ChatRoomPage() {
                 >
                   Kapat
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Commands Panel (right side slide-out for authorized users) ── */}
+      <AnimatePresence>
+        {showCommandsPanel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowCommandsPanel(false)}
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 w-72 bg-gradient-to-b from-[#1a0b2e] to-[#0d0518] border-l border-purple-500/30 shadow-2xl overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/60 backdrop-blur-md border-b border-purple-500/20">
+                <h3 className="text-gold-400 font-bold text-sm flex items-center gap-2">
+                  <Settings className="w-4 h-4" /> Oda Komutları
+                </h3>
+                <button onClick={() => setShowCommandsPanel(false)} className="text-purple-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Herkes için komutlar */}
+              <div className="p-4 space-y-4">
+                <div>
+                  <h4 className="text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">👤 Herkes</h4>
+                  <div className="space-y-1.5">
+                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
+                      <code className="text-yellow-300 text-xs font-mono">!istek şarkı adı</code>
+                      <p className="text-purple-300/70 text-[10px] mt-0.5">🎵 Şarkı isteği gönderir (yetkililere görünür)</p>
+                    </div>
+                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
+                      <code className="text-yellow-300 text-xs font-mono">!kural</code>
+                      <p className="text-purple-300/70 text-[10px] mt-0.5">📋 Oda kurallarını gösterir</p>
+                    </div>
+                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
+                      <code className="text-yellow-300 text-xs font-mono">!bilgi</code>
+                      <p className="text-purple-300/70 text-[10px] mt-0.5">ℹ️ Oda bilgilerini gösterir</p>
+                    </div>
+                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
+                      <code className="text-yellow-300 text-xs font-mono">!yardım</code>
+                      <p className="text-purple-300/70 text-[10px] mt-0.5">📖 Bu paneli açar</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Yetkili komutları */}
+                {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
+                  (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
+                  <div>
+                    <h4 className="text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">🛡️ Yetkili Komutları</h4>
+                    <div className="space-y-1.5">
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!ban kullanıcı</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">🚫 Kullanıcıyı odadan banlar</p>
+                      </div>
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!sessiz kullanıcı</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">🔇 30 dakika susturur</p>
+                      </div>
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!at kullanıcı</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">👢 Kullanıcıyı odadan atar</p>
+                      </div>
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!temizle</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">💫 Tüm sohbeti temizler</p>
+                      </div>
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!duyuru mesaj</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">📢 Duyuru mesajı yayınlar</p>
+                      </div>
+                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
+                        <code className="text-yellow-300 text-xs font-mono">!yetki kullanıcı sembol</code>
+                        <p className="text-orange-300/70 text-[10px] mt-0.5">✅ Rol verir</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <span className="text-[9px] px-1.5 py-0.5 bg-yellow-500/20 rounded text-yellow-300">~ Founder</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-red-500/20 rounded text-red-300">% SuperAdmin</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-orange-500/20 rounded text-orange-300">& SOP</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 rounded text-green-300">@ OP</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-300">+ Voice</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Jeton Bilgisi */}
+                <div className="mt-4 bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/30 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-yellow-400 text-xs font-bold flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> Jeton Bakiye</span>
+                    <span className="text-yellow-300 font-bold text-sm">💎 {userJetonBalance.toLocaleString()}</span>
+                  </div>
+                  <button
+                    onClick={() => { setShowCommandsPanel(false); window.open(`/${language}/jeton`, '_blank') }}
+                    className="w-full py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-lg text-xs hover:from-yellow-400 hover:to-amber-400 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Coins className="w-3.5 h-3.5" /> Jeton Yükle
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -3448,7 +3684,7 @@ export default function ChatRoomPage() {
       />
 
       {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
-      {currentMusicVideoId && !showMusicModal && (
+      {currentMusicVideoId && !showMusicModal && !musicMuted && (
         <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
           <iframe
             key={currentMusicVideoId}

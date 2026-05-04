@@ -70,6 +70,8 @@ export default function YouTubeMusicModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId: video.id, title: video.title }),
       })
+      // Auto-close modal after selecting a song
+      onClose()
     } catch (e) {
       console.error('Set music error:', e)
     } finally {

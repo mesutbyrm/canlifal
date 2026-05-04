@@ -54,7 +54,7 @@ export default function FloatingProfile() {
   const [unreadMessages, setUnreadMessages] = useState(0)
 
   // Don't show on these pages
-  const hiddenPaths = ['/giris', '/kayit-ol', '/canli-oda', '/canli-falcilar/dashboard', '/mesajlar', '/sohbet/video']
+  const hiddenPaths = ['/giris', '/kayit-ol', '/canli-oda', '/canli-falcilar/dashboard', '/mesajlar', '/sohbet/video', '/sohbet/']
   const shouldHide = hiddenPaths.some(path => pathname.includes(path))
 
   useEffect(() => {
