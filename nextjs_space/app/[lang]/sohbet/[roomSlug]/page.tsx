@@ -1045,6 +1045,32 @@ export default function ChatRoomPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room, myPermissions, session?.user?.id])
 
+  // Auto-mute admin when alone in room, auto-unmute when someone joins
+  const prevActiveCountRef = useRef(0)
+  useEffect(() => {
+    if (!room || !session?.user?.id || !voiceEnabled || !agoraAudioTrackRef.current) return
+    const isAdminOrOwner = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
+      (session.user as any).role === 'admin' || (session.user as any).role === 'yonetici'
+    if (!isAdminOrOwner) return
+    
+    const otherUsers = activeUsers.filter(u => u.id !== session.user?.id)
+    const prevCount = prevActiveCountRef.current
+    prevActiveCountRef.current = otherUsers.length
+    
+    if (otherUsers.length === 0 && !isMicMuted) {
+      // Admin alone - auto mute
+      agoraAudioTrackRef.current.setEnabled(false)
+      setIsMicMuted(true)
+      console.log('Admin alone - auto-muted')
+    } else if (otherUsers.length > 0 && prevCount === 0 && isMicMuted) {
+      // Someone joined - auto unmute
+      agoraAudioTrackRef.current.setEnabled(true)
+      setIsMicMuted(false)
+      console.log('User joined - admin auto-unmuted')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUsers, voiceEnabled, room, session?.user?.id])
+
   // Auto-listen for non-voice users when voice users are active
   useEffect(() => {
     if (!room || !session?.user?.id) return
@@ -1165,10 +1191,138 @@ export default function ChatRoomPage() {
     }
   }, [activeUsers, session?.user?.id])
 
+  // ── Chat Commands ──
+  const [commandFlash, setCommandFlash] = useState<string | null>(null)
+  
+  const handleChatCommand = async (msg: string): Promise<boolean> => {
+    if (!msg.startsWith('!') || !room || !session?.user) return false
+    const parts = msg.split(' ')
+    const cmd = parts[0].toLowerCase()
+    const arg = parts.slice(1).join(' ').trim()
+
+    const canMod = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
+      (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))
+
+    if (cmd === '!istek' && arg) {
+      // Send song request - visible only to authorized users as flashing text
+      try {
+        await fetch(`/api/chat/rooms/${room.id}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `🎵 [İSTEK] ${arg}`, isCommand: true })
+        })
+        fetchMessages()
+      } catch {}
+      return true
+    }
+
+    if (cmd === '!temizle' && canMod) {
+      // Clear all messages
+      try {
+        await fetch(`/api/chat/rooms/${room.id}/messages`, { method: 'DELETE' })
+        fetchMessages()
+        setCommandFlash('💫 Sohbet temizlendi')
+        setTimeout(() => setCommandFlash(null), 3000)
+      } catch {}
+      return true
+    }
+
+    if (cmd === '!ban' && arg && canMod) {
+      // Ban user by username
+      const targetUser = activeUsers.find(u => 
+        (u.nickname || u.name || '').toLowerCase() === arg.toLowerCase() ||
+        (u.name || '').toLowerCase() === arg.toLowerCase()
+      )
+      if (targetUser) {
+        try {
+          await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'ban_user', targetUserId: targetUser.id, reason: 'Chat komutu ile banlandı' })
+          })
+          setCommandFlash(`🚫 ${arg} banlandı`)
+          setTimeout(() => setCommandFlash(null), 3000)
+          fetchActiveUsers()
+        } catch {}
+      } else {
+        setCommandFlash(`❌ Kullanıcı bulunamadı: ${arg}`)
+        setTimeout(() => setCommandFlash(null), 3000)
+      }
+      return true
+    }
+
+    if (cmd === '!sessiz' && arg && canMod) {
+      // Mute user by username
+      const targetUser = activeUsers.find(u => 
+        (u.nickname || u.name || '').toLowerCase() === arg.toLowerCase() ||
+        (u.name || '').toLowerCase() === arg.toLowerCase()
+      )
+      if (targetUser) {
+        try {
+          await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'mute_user', targetUserId: targetUser.id, duration: 30, reason: 'Chat komutu ile susturuldu' })
+          })
+          setCommandFlash(`🔇 ${arg} susturuldu (30dk)`)
+          setTimeout(() => setCommandFlash(null), 3000)
+        } catch {}
+      } else {
+        setCommandFlash(`❌ Kullanıcı bulunamadı: ${arg}`)
+        setTimeout(() => setCommandFlash(null), 3000)
+      }
+      return true
+    }
+
+    if (cmd === '!yetki' && arg && canMod) {
+      // Assign role: !yetki kullanıcı &@+
+      const roleMatch = arg.match(/^(.+?)\s+([&@+%~])$/)
+      if (roleMatch) {
+        const username = roleMatch[1].trim()
+        const roleSymbol = roleMatch[2]
+        const roleMap: Record<string, string> = { '&': 'sop', '@': 'op', '+': 'voice', '%': 'superadmin', '~': 'founder' }
+        const roleName = roleMap[roleSymbol]
+        const targetUser = activeUsers.find(u => 
+          (u.nickname || u.name || '').toLowerCase() === username.toLowerCase() ||
+          (u.name || '').toLowerCase() === username.toLowerCase()
+        )
+        if (targetUser && roleName) {
+          try {
+            await fetch(`/api/chat/rooms/${room.id}/moderation`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'set_role', targetUserId: targetUser.id, role: roleName })
+            })
+            setCommandFlash(`✅ ${username} → ${roleSymbol} (${roleName}) yetkisi verildi`)
+            setTimeout(() => setCommandFlash(null), 3000)
+            fetchActiveUsers()
+          } catch {}
+        } else {
+          setCommandFlash(`❌ Kullanıcı veya rol bulunamadı`)
+          setTimeout(() => setCommandFlash(null), 3000)
+        }
+      } else {
+        setCommandFlash('Kullanım: !yetki kullanıcı &/@/+')
+        setTimeout(() => setCommandFlash(null), 3000)
+      }
+      return true
+    }
+
+    return false
+  }
+
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMessage.trim() || !room || !session?.user || sending) return
+
+    // Check for chat commands first
+    const isCommand = await handleChatCommand(newMessage.trim())
+    if (isCommand) {
+      setNewMessage('')
+      requestAnimationFrame(() => inputRef.current?.focus())
+      return
+    }
 
     setSending(true)
     try {
@@ -2090,7 +2244,7 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        {/* ── 5×3 Seat Grid ── */}
+        {/* ── Dynamic Seat Grid (only show occupied rows + 1 extra) ── */}
         {(() => {
           const TOTAL_SEATS = 15
           const COLS = 5
@@ -2102,6 +2256,18 @@ export default function ChatRoomPage() {
               seats[u.seatIndex] = u
             }
           }
+          
+          // Find the last occupied row and show up to that row + 1 extra row
+          let lastOccupiedRow = -1
+          for (let i = 0; i < TOTAL_SEATS; i++) {
+            if (seats[i]) {
+              const row = Math.floor(i / COLS)
+              if (row > lastOccupiedRow) lastOccupiedRow = row
+            }
+          }
+          // Show at least 1 row, and 1 extra empty row after last occupied
+          const visibleRows = Math.min(Math.max(lastOccupiedRow + 2, 1), 3)
+          const visibleSeats = visibleRows * COLS
           
           // Can I manage seats (admin/owner)?
           const canManageSeats = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
@@ -2160,7 +2326,7 @@ export default function ChatRoomPage() {
           return (
             <div className="relative z-10 flex-shrink-0 px-3 py-3">
               <div className={`grid grid-cols-${COLS} gap-2 max-w-sm mx-auto`} style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
-                {seats.map((seatUser, idx) => {
+                {seats.slice(0, visibleSeats).map((seatUser, idx) => {
                   const isThrone = isThroneSeat(idx)
                   
                   if (seatUser) {
@@ -2349,6 +2515,55 @@ export default function ChatRoomPage() {
 
         {/* ── Chat Room Marquee (scrolling text below duyuru) ── */}
         <ChatRoomMarquee joinEvents={marqueeJoinEvents} />
+
+        {/* ── Music Icon (under announcement) ── */}
+        {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
+          <div className="relative z-10 mx-3 mb-2">
+            <button
+              onClick={() => {
+                const url = prompt('YouTube veya müzik URL\'si girin:')
+                if (url) {
+                  // Send as a system message
+                  fetch(`/api/chat/rooms/${room.id}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: `🎶 Şu an çalıyor: ${url}` })
+                  }).then(() => fetchMessages())
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-purple-300 text-xs hover:from-purple-600/50 hover:to-pink-600/50 transition-all"
+            >
+              <span className="text-base">🎵</span> Müzik Aç
+            </button>
+          </div>
+        )}
+
+        {/* ── Command Flash Overlay ── */}
+        {commandFlash && (
+          <div className="relative z-20 mx-3 mb-2 animate-pulse">
+            <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/30 to-yellow-500/20 border border-yellow-500/40 rounded-lg px-4 py-2 text-center">
+              <span className="text-yellow-300 text-sm font-bold drop-shadow-lg">{commandFlash}</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Song Request Flash (for authorized users) ── */}
+        {messages.length > 0 && (() => {
+          const lastMsg = messages[messages.length - 1]
+          const isRequest = lastMsg?.content?.includes('[İSTEK]')
+          const canSeeRequests = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
+            (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))
+          if (isRequest && canSeeRequests) {
+            return (
+              <div className="relative z-20 mx-3 mb-2">
+                <div className="bg-gradient-to-r from-pink-500/20 via-fuchsia-500/30 to-purple-500/20 border border-fuchsia-500/40 rounded-lg px-4 py-2 text-center animate-pulse">
+                  <span className="text-fuchsia-300 text-sm font-bold">{lastMsg.content}</span>
+                </div>
+              </div>
+            )
+          }
+          return null
+        })()}
 
         {/* ── Background Image Picker Modal ── */}
         {showBgPicker && (
@@ -2707,6 +2922,16 @@ export default function ChatRoomPage() {
                 title="Hediye Gönder"
               >
                 <Gift className="w-4 h-4" />
+              </button>
+
+              {/* Jeton Yükle Button */}
+              <button
+                type="button"
+                onClick={() => window.open(`/${language}/jeton`, '_blank')}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-yellow-500/20 to-amber-500/20 text-yellow-400 hover:from-yellow-500/40 hover:to-amber-500/40 transition-all flex-shrink-0 border border-yellow-500/30"
+                title="Jeton Yükle"
+              >
+                <Coins className="w-4 h-4" />
               </button>
             </div>
 

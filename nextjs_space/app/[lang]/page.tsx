@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2, MessageCircle } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Video, Radio, Eye, Heart, Users, Circle, Plus, Gift, Coins, X, Gamepad2, MessageCircle, Mic } from 'lucide-react'
 import { useSectionPresence } from '@/hooks/use-section-presence'
 import { AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
@@ -159,6 +159,7 @@ export default function HomePage() {
   const { theme } = useSiteTheme()
   const [liveTellers, setLiveTellers] = useState<LiveTeller[]>([])
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
+  const [chatRooms, setChatRooms] = useState<Array<{id: string; slug: string; nameTr: string; nameEn: string; icon: string; onlineCount: number; recentUsers: Array<{id: string; name: string | null; image: string | null}>}>>([])
   const [isTeller, setIsTeller] = useState(false)
   const [pendingRequestCount, setPendingRequestCount] = useState(0)
   const { counts: sectionCounts } = useSectionPresence()
@@ -217,14 +218,30 @@ export default function HomePage() {
       } catch (e) {}
     }
 
+    // Fetch chat rooms for voice chat section
+    const fetchChatRooms = async () => {
+      try {
+        const res = await fetch('/api/chat/rooms?withCounts=true')
+        if (res.ok) {
+          const data = await res.json()
+          // Sort by online count descending
+          const sorted = (data || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0))
+          setChatRooms(sorted)
+        }
+      } catch (e) {}
+    }
+
     fetchTellers()
     fetchStreams()
     fetchHomepageCards()
+    fetchChatRooms()
     const tellerInterval = setInterval(fetchTellers, 45000)
     const streamInterval = setInterval(fetchStreams, 30000)
+    const roomInterval = setInterval(fetchChatRooms, 20000)
     return () => {
       clearInterval(tellerInterval)
       clearInterval(streamInterval)
+      clearInterval(roomInterval)
     }
   }, [])
 
@@ -484,6 +501,72 @@ export default function HomePage() {
               )}
             </div>
           </motion.div>
+
+          {/* SESLİ SOHBET ODALARI Section */}
+          {chatRooms.length > 0 && (
+            <motion.div
+              className="falclub-card p-4 relative overflow-hidden"
+              custom={0.5}
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-blue-900/30 via-purple-900/20 to-transparent" />
+              
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <h2 className="falclub-section-title">
+                  <Mic className="w-5 h-5" />
+                  {'SESLİ SOHBET'}
+                </h2>
+                <Link href="/sohbet" className="text-fuchsia-300 text-xs flex items-center gap-1 hover:text-fuchsia-200">
+                  Tümü <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+              
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide relative z-10 pb-2">
+                {chatRooms.map((room) => (
+                  <Link
+                    key={room.id}
+                    href={`/sohbet/${room.slug}`}
+                    className="flex flex-col items-center flex-shrink-0 group"
+                  >
+                    <div className="relative">
+                      {/* Glow ring for active rooms */}
+                      {room.onlineCount > 0 && (
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-green-400/40 via-emerald-500/30 to-teal-400/40 blur-sm animate-pulse" />
+                      )}
+                      <div 
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center text-2xl border-2 transition-all group-hover:scale-105
+                          ${room.onlineCount > 0 
+                            ? 'border-green-400/70 bg-gradient-to-br from-purple-900/80 to-indigo-900/80 shadow-lg shadow-green-500/20' 
+                            : 'border-purple-500/40 bg-gradient-to-br from-purple-900/60 to-indigo-900/60'
+                          }`}
+                        style={room.onlineCount > 0 ? { boxShadow: '0 0 20px rgba(74, 222, 128, 0.3)' } : {}}
+                      >
+                        <span className="text-2xl drop-shadow-lg">{room.icon}</span>
+                        {/* Online count badge */}
+                        {room.onlineCount > 0 && (
+                          <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg border border-green-400">
+                            {room.onlineCount}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-fuchsia-200 text-[10px] mt-1.5 font-medium truncate w-16 text-center leading-tight">
+                      {room.nameTr}
+                    </span>
+                    {room.onlineCount > 0 && (
+                      <span className="text-green-400 text-[8px] font-bold flex items-center gap-0.5">
+                        <span className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
+                        {room.onlineCount} kişi
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* FALLAR Section */}
           <motion.div

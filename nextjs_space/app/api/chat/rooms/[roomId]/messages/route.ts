@@ -128,6 +128,31 @@ export async function GET(
   }
 }
 
+// DELETE all messages (clear chat - moderator+)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+    const { roomId } = await params
+    const permissions = await getUserPermissions(roomId, session.user.id)
+    const canMod = permissions.isRoomOwner || permissions.isGlobalAdmin || 
+      (permissions.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(permissions.role))
+    if (!canMod) {
+      return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+    }
+    await prisma.chatMessage.deleteMany({ where: { roomId } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error clearing messages:', error)
+    return NextResponse.json({ error: 'Mesajlar silinemedi' }, { status: 500 })
+  }
+}
+
 // POST a new message
 export async function POST(
   request: NextRequest,
