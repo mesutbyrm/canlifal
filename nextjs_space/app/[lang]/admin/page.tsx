@@ -10,7 +10,7 @@ import {
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
-  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award
+  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -186,6 +186,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/popups`, icon: MessageSquare, trLabel: 'Popup Yönetimi', enLabel: 'Popup Management' },
       { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
       { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
+      { href: `/admin/backup`, icon: HardDrive, trLabel: 'Site Yedekleme', enLabel: 'Site Backup' },
     ],
   },
 ]
