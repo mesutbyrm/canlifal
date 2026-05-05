@@ -97,6 +97,42 @@ export async function POST(
       return NextResponse.json({ error: 'Video bilgisi eksik' }, { status: 400 })
     }
 
+    // Check if music is already playing
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: params.roomId },
+      select: { currentMusicVideoId: true }
+    })
+
+    if (room?.currentMusicVideoId) {
+      // Music is already playing — add to queue as FREE (DJ) request instead of replacing
+      const durText = duration ? duration.trim() : ''
+      await prisma.chatMessage.create({
+        data: {
+          roomId: params.roomId,
+          userId: session.user.id,
+          content: `[SONG_REQUEST_FREE] ${videoId}|${title}|${durText}`,
+        }
+      })
+
+      // Get user name for system message
+      const djUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, username: true }
+      })
+      const djName = djUser?.name || djUser?.username || 'DJ'
+
+      await prisma.chatMessage.create({
+        data: {
+          roomId: params.roomId,
+          userId: session.user.id,
+          content: `🎧 ${djName} sıraya şarkı ekledi: ${title}`,
+        }
+      })
+
+      return NextResponse.json({ success: true, queued: true })
+    }
+
+    // No music playing — set as current
     await prisma.chatRoom.update({
       where: { id: params.roomId },
       data: {
@@ -116,7 +152,7 @@ export async function POST(
       }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, queued: false })
   } catch (error) {
     console.error('Set music error:', error)
     return NextResponse.json({ error: 'Müzik ayarlanamadı' }, { status: 500 })

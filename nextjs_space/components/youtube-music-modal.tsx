@@ -61,17 +61,26 @@ export default function YouTubeMusicModal({
     searchTimeoutRef.current = setTimeout(() => handleSearch(value), 600)
   }
 
+  const [queuedMsg, setQueuedMsg] = useState<string | null>(null)
+
   const selectVideo = async (video: YouTubeVideo) => {
     if (!canControl) return
     setSetting(true)
+    setQueuedMsg(null)
     try {
-      await fetch(`/api/chat/rooms/${roomId}/music`, {
+      const res = await fetch(`/api/chat/rooms/${roomId}/music`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId: video.id, title: video.title, duration: video.duration || '' }),
       })
-      // Auto-close modal after selecting a song
-      onClose()
+      const data = await res.json()
+      if (data.queued) {
+        // Song was added to queue instead of playing immediately
+        setQueuedMsg(`🎵 "${video.title}" sıraya eklendi`)
+        setTimeout(() => setQueuedMsg(null), 3000)
+      } else {
+        onClose()
+      }
     } catch (e) {
       console.error('Set music error:', e)
     } finally {
@@ -175,6 +184,13 @@ export default function YouTubeMusicModal({
                   allow="autoplay; encrypted-media"
                   style={{ width: 1, height: 1, border: 'none' }}
                 />
+              </div>
+            )}
+
+            {/* Queued notification */}
+            {queuedMsg && (
+              <div className="px-4 py-2 bg-green-900/40 border-b border-green-500/30">
+                <p className="text-green-300 text-xs font-medium text-center">{queuedMsg}</p>
               </div>
             )}
 

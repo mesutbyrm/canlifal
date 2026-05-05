@@ -847,7 +847,7 @@ export default function ChatRoomPage() {
         const res = await fetch(`/api/chat/rooms/${room.id}/song-request`)
         if (res.ok && !cancelled) {
           const data = await res.json()
-          const queue = data.queue || []
+          const queue = (data.queue || []).map((q: any) => ({ ...q, requestedBy: q.requestedBy || q.userName || 'Anonim' }))
           setMusicQueue(queue)
 
           // Auto-play next from queue if no music is playing and queue has items
