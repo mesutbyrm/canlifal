@@ -407,16 +407,21 @@ export default function ChatRoomPage() {
         }
         lastMessageIdRef.current = newLastId
         
-        // Inject local rules message on first load
+        // Inject local rules message on first load (auto-dismiss after 15s)
         if (!rulesShownRef.current && incoming.length >= 0) {
           rulesShownRef.current = true
+          const rulesId = 'local-rules-' + Date.now()
           const rulesMsg = {
-            id: 'local-rules-' + Date.now(),
+            id: rulesId,
             content: '[SYSTEM_RULES]📋 ODA KURALLARI:\n1. Saygılı olun, küfür ve hakaret yasaktır\n2. Spam yapmayın, aynı mesajı tekrar etmeyin\n3. Reklam ve link paylaşımı yasaktır\n4. Yetkililerin uyarılarına uyun\n5. Mikrofon kullanırken sesli müzik çalmayın',
             createdAt: new Date().toISOString(),
             user: { id: 'system', name: 'Sistem', image: null }
           }
           incoming = [rulesMsg, ...incoming]
+          // Auto-remove rules message after 15 seconds
+          setTimeout(() => {
+            setMessages(prev => prev.filter(m => m.id !== rulesId))
+          }, 15000)
         }
         setMessages(incoming)
         setRoomMuted(data.roomMuted || false)
@@ -3322,9 +3327,9 @@ export default function ChatRoomPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white flex items-center justify-center disabled:opacity-30 hover:from-purple-400 hover:to-fuchsia-500 flex-shrink-0 transition-all shadow-lg shadow-purple-500/30 active:scale-95"
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white flex items-center justify-center disabled:opacity-30 hover:from-purple-400 hover:to-fuchsia-500 flex-shrink-0 transition-all shadow-lg shadow-purple-500/30 active:scale-95"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-7 h-7" />
                 </button>
               </form>
 
@@ -3345,7 +3350,9 @@ export default function ChatRoomPage() {
             {/* Jeton Loading Area */}
             <div className="flex items-center justify-between mt-1.5 px-1">
               <span className="text-[10px] text-yellow-400/70 flex items-center gap-0.5">💎 {userJetonBalance.toLocaleString()} Jeton</span>
-              <img src="/chat-cat-sticker.png" alt="Kedi" className="w-6 h-6 object-contain flex-shrink-0" />
+              <button type="button" onClick={() => { fetchMessages(); fetchActiveUsers() }} className="p-1 rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-all active:scale-90" title="Yenile">
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
               <button
                 type="button"
                 onClick={() => window.open(`/${language}/jeton`, '_blank')}
