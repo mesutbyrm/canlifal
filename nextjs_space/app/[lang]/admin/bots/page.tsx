@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield, Play, Pause, Radio, MessageCircle, Globe, ThumbsUp, MessageSquare, UserPlus, Video } from 'lucide-react'
+import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield, Play, Pause, Radio, MessageCircle, Globe, ThumbsUp, MessageSquare, UserPlus, Video, Moon, BookOpen, Star, Coffee } from 'lucide-react'
 
 const PERSONALITY_MAP: Record<string, { label: string; emoji: string; color: string }> = {
   shy: { label: 'Utangaç', emoji: '😳', color: 'text-blue-400' },
@@ -73,6 +73,12 @@ export default function AdminBotsPage() {
   const [socialAutoInterval, setSocialAutoInterval] = useState<NodeJS.Timeout | null>(null)
   const [socialAutoActive, setSocialAutoActive] = useState(false)
   const [socialLog, setSocialLog] = useState<Array<{ time: string; actions: any[] }>>([])
+  // Fortune simulation states
+  const [fortuneStatus, setFortuneStatus] = useState<any>(null)
+  const [fortuneRunning, setFortuneRunning] = useState(false)
+  const [fortuneAutoInterval, setFortuneAutoInterval] = useState<NodeJS.Timeout | null>(null)
+  const [fortuneAutoActive, setFortuneAutoActive] = useState(false)
+  const [fortuneLog, setFortuneLog] = useState<Array<{ time: string; actions: any[] }>>([])
 
   const fetchBots = useCallback(async () => {
     try {
@@ -220,6 +226,53 @@ export default function AdminBotsPage() {
     return () => { if (socialAutoInterval) clearInterval(socialAutoInterval) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socialAutoInterval])
+
+  // Fortune simulation functions
+  const fetchFortuneStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/bots/simulate-fortune')
+      if (res.ok) setFortuneStatus(await res.json())
+    } catch {}
+  }, [])
+
+  useEffect(() => { fetchFortuneStatus() }, [fetchFortuneStatus])
+
+  const runFortuneCycle = async () => {
+    setFortuneRunning(true)
+    try {
+      const res = await fetch('/api/admin/bots/simulate-fortune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const timeStr = new Date().toLocaleTimeString('tr-TR')
+        setFortuneLog(prev => [{ time: timeStr, actions: data.actions || [] }, ...prev].slice(0, 20))
+        fetchFortuneStatus()
+      }
+    } catch {} finally {
+      setFortuneRunning(false)
+    }
+  }
+
+  const toggleFortuneAutoSim = () => {
+    if (fortuneAutoActive) {
+      if (fortuneAutoInterval) clearInterval(fortuneAutoInterval)
+      setFortuneAutoInterval(null)
+      setFortuneAutoActive(false)
+    } else {
+      runFortuneCycle()
+      const interval = setInterval(runFortuneCycle, 60000) // Every 60 seconds
+      setFortuneAutoInterval(interval)
+      setFortuneAutoActive(true)
+    }
+  }
+
+  useEffect(() => {
+    return () => { if (fortuneAutoInterval) clearInterval(fortuneAutoInterval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fortuneAutoInterval])
 
   if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">Yetkisiz erişim</div>
@@ -467,6 +520,103 @@ export default function AdminBotsPage() {
                            a.action === 'stream_comment' ? '🎥 Yayın Yorum' :
                            a.action === 'stream_like' ? '⭐ Yayın Beğeni' :
                            a.action === 'stream_view' ? '👁️ Yayın İzle' :
+                           a.action}
+                        </span>
+                        <span className="text-white/70 font-medium">{a.bot}</span>
+                        {a.target && <span className="text-gray-600">→ {a.target}</span>}
+                        {a.detail && <span className="text-gray-500 truncate max-w-[150px]">&quot;{a.detail}&quot;</span>}
+                      </div>
+                    ))}
+                    {entry.actions.length === 0 && (
+                      <div className="text-[10px] text-gray-600">{entry.time} — Aksiyon yok</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Fortune & Dream Simulation Control Panel */}
+        <div className="bg-gradient-to-r from-amber-900/30 to-emerald-900/30 rounded-xl p-4 border border-amber-500/20 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-amber-300 flex items-center gap-2">
+              <Moon className="w-4 h-4" /> Fal & Rüya Simülasyon Paneli
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runFortuneCycle}
+                disabled={fortuneRunning}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-xs text-amber-300 hover:bg-amber-500/30 transition disabled:opacity-50"
+              >
+                {fortuneRunning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                {fortuneRunning ? 'Çalışıyor...' : 'Tek Döngü'}
+              </button>
+              <button
+                onClick={toggleFortuneAutoSim}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition ${
+                  fortuneAutoActive
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {fortuneAutoActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                {fortuneAutoActive ? 'Otomatik: AÇIK (60sn)' : 'Otomatik Başlat'}
+              </button>
+            </div>
+          </div>
+
+          {/* Fortune Status */}
+          {fortuneStatus && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-amber-400">{fortuneStatus.botDreamComments24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Rüya Yorum (24s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-yellow-400">{fortuneStatus.botDreamFavorites || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><Star className="w-3 h-3" /> Rüya Favori</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-emerald-400">{fortuneStatus.botDreamViews24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><Eye className="w-3 h-3" /> Rüya Görüntüleme (24s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-orange-400">{fortuneStatus.botFortunePosts24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><Coffee className="w-3 h-3" /> Fal Paylaşım (24s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-purple-400">{fortuneStatus.botDreamCommentsTotal || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><BookOpen className="w-3 h-3" /> Toplam Rüya Yorum</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-blue-400">{fortuneStatus.totalDreams || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><Moon className="w-3 h-3" /> Yayında Rüya Tabiri</div>
+              </div>
+            </div>
+          )}
+
+          {/* Fortune Action Log */}
+          {fortuneLog.length > 0 && (
+            <div className="max-h-32 overflow-y-auto">
+              <p className="text-[10px] text-gray-500 mb-1">Son Fal/Rüya Aksiyonlar:</p>
+              <div className="space-y-1">
+                {fortuneLog.map((entry, i) => (
+                  <div key={i}>
+                    {entry.actions.map((a: any, j: number) => (
+                      <div key={j} className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span className="text-gray-600">{entry.time}</span>
+                        <span className={
+                          a.action === 'dream_comment' ? 'text-amber-400' :
+                          a.action === 'dream_favorite' ? 'text-yellow-400' :
+                          a.action === 'dream_view' ? 'text-emerald-400' :
+                          a.action === 'fortune_post' ? 'text-orange-400' :
+                          'text-blue-400'
+                        }>
+                          {a.action === 'dream_comment' ? '💬 Rüya Yorum' :
+                           a.action === 'dream_favorite' ? '⭐ Rüya Favori' :
+                           a.action === 'dream_view' ? '👁️ Rüya Görüntüleme' :
+                           a.action === 'fortune_post' ? '🔮 Fal Paylaşım' :
                            a.action}
                         </span>
                         <span className="text-white/70 font-medium">{a.bot}</span>
