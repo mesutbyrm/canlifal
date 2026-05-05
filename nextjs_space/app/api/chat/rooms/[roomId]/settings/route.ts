@@ -43,6 +43,7 @@ export async function GET(
         giftBeneficiaryId: true,
         giftBeneficiary: { select: { id: true, name: true, username: true } },
         backgroundImage: true,
+        bannedWords: true,
       }
     })
 
@@ -80,7 +81,7 @@ export async function PATCH(
     const {
       nameTr, nameEn, descTr, descEn, icon,
       isMuted, isActive,
-      giftCommissionPercent, backgroundImage
+      giftCommissionPercent, backgroundImage, bannedWords
     } = body
 
     const updateData: Record<string, any> = {}
@@ -94,6 +95,7 @@ export async function PATCH(
     if (typeof isMuted === 'boolean') updateData.isMuted = isMuted
     if (typeof isActive === 'boolean') updateData.isActive = isActive
     if (backgroundImage !== undefined) updateData.backgroundImage = backgroundImage || null
+    if (bannedWords !== undefined) updateData.bannedWords = bannedWords || null
 
     // Commission - only global admin (superadmin) can set
     if (giftCommissionPercent !== undefined && permissions.isGlobalAdmin) {
@@ -120,6 +122,7 @@ export async function PATCH(
         isMuted: true,
         giftCommissionPercent: true,
         backgroundImage: true,
+        bannedWords: true,
       }
     })
 

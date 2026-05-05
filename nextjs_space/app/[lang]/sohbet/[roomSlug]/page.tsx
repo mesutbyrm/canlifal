@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -50,6 +50,7 @@ interface ChatRoom {
   ownerId?: string | null
   owner?: { id: string; name: string; username?: string | null; image?: string | null } | null
   backgroundImage?: string | null
+  bannedWords?: string | null
   userCount?: number
 }
 
@@ -1613,9 +1614,26 @@ export default function ChatRoomPage() {
   const BANNED_WORDS = ['amk','aq','amına','amina','orospu','oç','piç','sik','yarrak','göt','pezevenk','gavat','ibne','kaltak','fahişe','şerefsiz','bok','siktir','hassiktir','puşt','dangalak','gerizekalı','salak','aptal','mal','döl','taşak','meme','am','yarak','sikerim','ananı','bacını','avradını']
   const profanityAlertedRef = useRef<Set<string>>(new Set())
   
+  // Merge hardcoded banned words with room owner's custom banned words
+  const allBannedWords = useMemo(() => {
+    const words = [...BANNED_WORDS]
+    if (room?.bannedWords) {
+      try {
+        const custom = JSON.parse(room.bannedWords)
+        if (Array.isArray(custom)) {
+          custom.forEach((w: string) => {
+            const trimmed = w.trim().toLowerCase()
+            if (trimmed && !words.includes(trimmed)) words.push(trimmed)
+          })
+        }
+      } catch {}
+    }
+    return words
+  }, [room?.bannedWords])
+
   const checkProfanity = (text: string): boolean => {
     const lower = text.toLowerCase().replace(/[ıİ]/g, 'i').replace(/[şŞ]/g, 's').replace(/[çÇ]/g, 'c').replace(/[öÖ]/g, 'o').replace(/[üÜ]/g, 'u').replace(/[ğĞ]/g, 'g')
-    return BANNED_WORDS.some(word => {
+    return allBannedWords.some(word => {
       const pattern = new RegExp(`\\b${word}\\b|${word}`, 'i')
       return pattern.test(lower)
     })
@@ -3313,17 +3331,31 @@ export default function ChatRoomPage() {
           <div className="relative z-10 mx-3 px-3 py-1 bg-red-900/60 text-red-300 text-[11px] rounded-lg backdrop-blur-sm">{error}</div>
         )}
 
-        {/* ── Commands Panel Toggle (right edge arrow button for authorized users) ── */}
-        {session?.user && (myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
-          (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
-          <button
-            onClick={() => setShowCommandsPanel(!showCommandsPanel)}
-            className="fixed right-0 top-1/2 -translate-y-1/2 z-30 w-6 h-14 bg-gradient-to-l from-purple-700/80 to-purple-900/60 border border-purple-500/30 border-r-0 rounded-l-lg flex items-center justify-center text-purple-300 hover:text-white hover:from-purple-600/90 transition-all backdrop-blur-sm shadow-lg"
-            title="Komutlar"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        )}
+        {/* ── Right Edge Buttons: Commands Toggle + Song Request ── */}
+        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1.5">
+          {/* Commands Panel Toggle (for authorized users) */}
+          {session?.user && (myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
+            (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
+            <button
+              onClick={() => setShowCommandsPanel(!showCommandsPanel)}
+              className="w-7 h-12 bg-gradient-to-l from-purple-700/80 to-purple-900/60 border border-purple-500/30 border-r-0 rounded-l-lg flex items-center justify-center text-purple-300 hover:text-white hover:from-purple-600/90 transition-all backdrop-blur-sm shadow-lg"
+              title="Komutlar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Song Request Button (for all logged-in users) */}
+          {session?.user && (
+            <button
+              onClick={() => setShowSongRequestModal(true)}
+              className="w-7 h-12 bg-gradient-to-l from-fuchsia-700/80 to-purple-900/60 border border-fuchsia-500/30 border-r-0 rounded-l-lg flex items-center justify-center text-fuchsia-300 hover:text-white hover:from-fuchsia-600/90 transition-all backdrop-blur-sm shadow-lg"
+              title="Şarkı İsteği (10 💎)"
+            >
+              <Music className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Gift Leaderboard */}
         {leaderboard.length > 0 && (
@@ -3483,15 +3515,7 @@ export default function ChatRoomPage() {
                 <Gift className="w-4 h-4" />
               </button>
 
-              {/* Song Request Button */}
-              <button
-                type="button"
-                onClick={() => setShowSongRequestModal(true)}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 bg-white/10 text-fuchsia-400 hover:bg-fuchsia-500/30 hover:text-fuchsia-300"
-                title="Şarkı İsteği (10 💎)"
-              >
-                <Music className="w-4 h-4" />
-              </button>
+              
 
             </div>
 
@@ -4134,6 +4158,80 @@ export default function ChatRoomPage() {
                     <Coins className="w-3.5 h-3.5" /> Jeton Yükle
                   </button>
                 </div>
+
+                {/* Yasaklı Kelimeler - Oda Sahibi / Yetkililer */}
+                {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
+                  <div className="mt-4">
+                    <h4 className="text-red-300 text-xs font-bold uppercase tracking-wider mb-2">🚫 Yasaklı Kelimeler</h4>
+                    <p className="text-purple-400/70 text-[10px] mb-2">Bu kelimeleri içeren mesajlar moderatörlere bildirilir.</p>
+                    <div className="space-y-2">
+                      {/* Mevcut kelimeler */}
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          let customWords: string[] = []
+                          try { customWords = room?.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
+                          if (!Array.isArray(customWords)) customWords = []
+                          return customWords.map((word, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-900/30 border border-red-500/30 rounded-full text-red-300 text-[10px]">
+                              {word}
+                              <button
+                                onClick={async () => {
+                                  const updated = customWords.filter((_, idx) => idx !== i)
+                                  try {
+                                    const res = await fetch(`/api/chat/rooms/${room?.id}/settings`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ bannedWords: updated.length > 0 ? JSON.stringify(updated) : null })
+                                    })
+                                    if (res.ok) setRoom(prev => prev ? { ...prev, bannedWords: updated.length > 0 ? JSON.stringify(updated) : null } : prev)
+                                  } catch {}
+                                }}
+                                className="text-red-400 hover:text-white"
+                              >×</button>
+                            </span>
+                          ))
+                        })()}
+                      </div>
+                      {/* Yeni kelime ekleme */}
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault()
+                          const input = (e.target as HTMLFormElement).elements.namedItem('newBannedWord') as HTMLInputElement
+                          const word = input.value.trim().toLowerCase()
+                          if (!word || !room) return
+                          let currentWords: string[] = []
+                          try { currentWords = room.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
+                          if (!Array.isArray(currentWords)) currentWords = []
+                          if (currentWords.includes(word)) { input.value = ''; return }
+                          const updated = [...currentWords, word]
+                          try {
+                            const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ bannedWords: JSON.stringify(updated) })
+                            })
+                            if (res.ok) {
+                              setRoom(prev => prev ? { ...prev, bannedWords: JSON.stringify(updated) } : prev)
+                              input.value = ''
+                            }
+                          } catch {}
+                        }}
+                        className="flex gap-1.5"
+                      >
+                        <input
+                          name="newBannedWord"
+                          type="text"
+                          placeholder="Yasaklı kelime ekle..."
+                          maxLength={30}
+                          className="flex-1 px-2 py-1.5 bg-white/10 border border-red-500/30 rounded-lg text-white text-xs placeholder-purple-300/40 focus:outline-none focus:border-red-500/50"
+                        />
+                        <button type="submit" className="px-3 py-1.5 bg-red-600/40 border border-red-500/30 rounded-lg text-red-200 text-xs font-medium hover:bg-red-600/60 transition-all">
+                          Ekle
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
