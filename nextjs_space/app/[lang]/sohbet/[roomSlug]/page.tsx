@@ -218,6 +218,20 @@ export default function ChatRoomPage() {
   const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
   const [musicMuted, setMusicMuted] = useState(false)
+  const [musicPaused, setMusicPaused] = useState(false)
+  
+  // Song Request System
+  const [showSongRequestModal, setShowSongRequestModal] = useState(false)
+  const [songRequestQuery, setSongRequestQuery] = useState('')
+  const [songRequestResults, setSongRequestResults] = useState<Array<{id: string; title: string; thumbnail: string; channel: string}>>([])
+  const [songRequestSearching, setSongRequestSearching] = useState(false)
+  const [songRequestSelected, setSongRequestSelected] = useState<{id: string; title: string} | null>(null)
+  const [songRequestDedication, setSongRequestDedication] = useState('')
+  const [songRequestNote, setSongRequestNote] = useState('')
+  const [songRequestSending, setSongRequestSending] = useState(false)
+  const songRequestSearchTimeout = useRef<NodeJS.Timeout | null>(null)
+  const [musicQueue, setMusicQueue] = useState<Array<{videoId: string; title: string; dedication?: string; note?: string; isPaid: boolean; requestedBy: string}>>([])
+  const musicQueueProcessingRef = useRef(false)
   
   // Commands panel
   const [showCommandsPanel, setShowCommandsPanel] = useState(false)
@@ -730,6 +744,108 @@ export default function ChatRoomPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMusicVideoId, voiceEnabled])
+
+  // ── Song Request: YouTube Search ──
+  const handleSongRequestSearch = useCallback(async (query: string) => {
+    if (query.trim().length < 2) { setSongRequestResults([]); return }
+    setSongRequestSearching(true)
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query.trim())}`)
+      const data = await res.json()
+      if (data.videos) setSongRequestResults(data.videos)
+    } catch {} finally { setSongRequestSearching(false) }
+  }, [])
+
+  const onSongRequestInput = (val: string) => {
+    setSongRequestQuery(val)
+    if (songRequestSearchTimeout.current) clearTimeout(songRequestSearchTimeout.current)
+    songRequestSearchTimeout.current = setTimeout(() => handleSongRequestSearch(val), 600)
+  }
+
+  // ── Song Request: Submit (10 jeton) ──
+  const submitSongRequest = async () => {
+    if (!songRequestSelected || !room || !session?.user || songRequestSending) return
+    if (userJetonBalance < 10) {
+      alert('Şarkı istemek için en az 10 jetonunuz olmalıdır!')
+      return
+    }
+    setSongRequestSending(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/song-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: songRequestSelected.id,
+          title: songRequestSelected.title,
+          dedication: songRequestDedication.trim() || undefined,
+          note: songRequestNote.trim() || undefined,
+        })
+      })
+      if (res.ok) {
+        fetchMessages()
+        fetchBalance()
+        setShowSongRequestModal(false)
+        setSongRequestSelected(null)
+        setSongRequestQuery('')
+        setSongRequestResults([])
+        setSongRequestDedication('')
+        setSongRequestNote('')
+        setCommandFlash('🎵 Şarkı isteğiniz kuyruğa eklendi!')
+        setTimeout(() => setCommandFlash(null), 4000)
+      } else {
+        const data = await res.json()
+        alert(data.error || 'İstek gönderilemedi')
+      }
+    } catch { alert('Bir hata oluştu') }
+    finally { setSongRequestSending(false) }
+  }
+
+  // ── Music Queue: Poll queue & auto-play next ──
+  useEffect(() => {
+    if (!room?.id) return
+    let cancelled = false
+    const fetchQueue = async () => {
+      try {
+        const res = await fetch(`/api/chat/rooms/${room.id}/song-request`)
+        if (res.ok && !cancelled) {
+          const data = await res.json()
+          const queue = data.queue || []
+          setMusicQueue(queue)
+
+          // Auto-play next from queue if no music is playing and queue has items
+          if (!currentMusicVideoId && queue.length > 0 && !musicQueueProcessingRef.current) {
+            musicQueueProcessingRef.current = true
+            const next = queue[0]
+            try {
+              // PATCH marks as played AND sets music on the room
+              await fetch(`/api/chat/rooms/${room.id}/song-request`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: next.id })
+              })
+              setMusicPaused(false)
+            } catch {} finally {
+              musicQueueProcessingRef.current = false
+            }
+          }
+        }
+      } catch {}
+    }
+    fetchQueue()
+    const interval = setInterval(fetchQueue, 15000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [room?.id, currentMusicVideoId])
+
+  // ── Music stop handler ──
+  const handleStopMusic = async () => {
+    if (!room) return
+    try {
+      await fetch(`/api/chat/rooms/${room.id}/music`, { method: 'DELETE' })
+      setCurrentMusicVideoId(null)
+      setCurrentMusicTitle(null)
+      setMusicPaused(false)
+    } catch {}
+  }
 
   // Auto-scroll — only if user is near the bottom (within 150px), prevents layout thrash
   const isNearBottomRef = useRef(true)
@@ -2900,36 +3016,55 @@ export default function ChatRoomPage() {
 
         {/* ── Floating Music Player Bar (visible to everyone when music is playing) ── */}
         {currentMusicVideoId && currentMusicTitle && (
-          <div className="relative z-10 mx-3 mb-2 flex items-center gap-1.5">
+          <div className="relative z-10 mx-3 mb-2 flex items-center gap-1">
             <button
               onClick={() => setShowMusicModal(true)}
               className="flex-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-purple-900/60 border border-purple-500/30 rounded-xl backdrop-blur-sm hover:border-purple-400/50 transition-all group min-w-0"
             >
-              {!musicMuted && (
+              {!musicMuted && !musicPaused && (
                 <div className="flex items-end gap-0.5 mr-1 flex-shrink-0">
                   <span className="w-1 h-3 bg-purple-400 rounded-full animate-pulse" />
                   <span className="w-1 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
                   <span className="w-1 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
                 </div>
               )}
-              {musicMuted && <VolumeX className="w-4 h-4 text-red-400 flex-shrink-0" />}
+              {musicPaused && <span className="text-yellow-400 text-xs mr-1 flex-shrink-0">⏸</span>}
+              {musicMuted && !musicPaused && <VolumeX className="w-4 h-4 text-red-400 flex-shrink-0" />}
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-[10px] text-purple-300 opacity-70">🎶 Şu an çalıyor</p>
+                <p className="text-[10px] text-purple-300 opacity-70">{musicPaused ? '⏸ Duraklatıldı' : '🎶 Şu an çalıyor'}</p>
                 <p className="text-white text-xs font-medium truncate">{currentMusicTitle}</p>
               </div>
             </button>
-            {/* Music mute/unmute button */}
+            {/* Pause/Resume button */}
+            <button
+              onClick={() => setMusicPaused(!musicPaused)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all flex-shrink-0 ${
+                musicPaused ? 'bg-green-600/30 border-green-500/30 text-green-300 hover:bg-green-600/50' : 'bg-yellow-600/30 border-yellow-500/30 text-yellow-300 hover:bg-yellow-600/50'
+              }`}
+              title={musicPaused ? 'Devam Et' : 'Durdur'}
+            >
+              {musicPaused ? <span className="text-sm">▶</span> : <span className="text-sm">⏸</span>}
+            </button>
+            {/* Mute button */}
             <button
               onClick={() => setMusicMuted(!musicMuted)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all flex-shrink-0 ${
-                musicMuted 
-                  ? 'bg-red-600/30 border-red-500/40 text-red-300 hover:bg-red-600/50' 
-                  : 'bg-purple-600/30 border-purple-500/30 text-purple-300 hover:bg-purple-600/50'
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all flex-shrink-0 ${
+                musicMuted ? 'bg-red-600/30 border-red-500/40 text-red-300 hover:bg-red-600/50' : 'bg-purple-600/30 border-purple-500/30 text-purple-300 hover:bg-purple-600/50'
               }`}
-              title={musicMuted ? 'Müzik sesini aç' : 'Müzik sesini kapat'}
+              title={musicMuted ? 'Sesini aç' : 'Sesini kapat'}
             >
-              {musicMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {musicMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
+            {/* Close/Stop music (moderator only) */}
+            {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
+              <button
+                onClick={handleStopMusic}
+                className="w-8 h-8 rounded-lg flex items-center justify-center border bg-red-600/30 border-red-500/30 text-red-300 hover:bg-red-600/50 transition-all flex-shrink-0"
+                title="Müziği Kapat"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )}
 
@@ -3035,6 +3170,9 @@ export default function ChatRoomPage() {
                 const isOwner = isRoomOwner(msg.user.id)
                 const isSpeakingUser = speakingUsers.has(msg.user.id)
                 
+                // Hide internal song request queue messages
+                if (msg.content.startsWith('[SONG_REQUEST_PAID]') || msg.content.startsWith('[SONG_REQUEST_FREE]')) return null
+
                 // Local rules system message
                 const isRulesMsg = msg.content.startsWith('[SYSTEM_RULES]')
                 if (isRulesMsg) {
@@ -3343,6 +3481,16 @@ export default function ChatRoomPage() {
                 title="Hediye Gönder"
               >
                 <Gift className="w-4 h-4" />
+              </button>
+
+              {/* Song Request Button */}
+              <button
+                type="button"
+                onClick={() => setShowSongRequestModal(true)}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 bg-white/10 text-fuchsia-400 hover:bg-fuchsia-500/30 hover:text-fuchsia-300"
+                title="Şarkı İsteği (10 💎)"
+              >
+                <Music className="w-4 h-4" />
               </button>
 
             </div>
@@ -3669,6 +3817,136 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
+      {/* Song Request Modal */}
+      <AnimatePresence>
+        {showSongRequestModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => { if (!songRequestSending) setShowSongRequestModal(false) }}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="w-full max-w-md bg-gradient-to-b from-[#1a0533] to-[#0d0118] border border-purple-500/30 rounded-t-2xl sm:rounded-2xl p-4 max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-bold flex items-center gap-2">
+                  <Music className="w-5 h-5 text-fuchsia-400" /> Şarkı İsteği
+                </h3>
+                <button onClick={() => setShowSongRequestModal(false)} className="text-purple-400 hover:text-white text-lg">✕</button>
+              </div>
+              <p className="text-purple-300/70 text-xs mb-3">YouTube&apos;dan şarkı arayın ve isteğinizi gönderin. Her istek <span className="text-yellow-400 font-bold">10 💎 Jeton</span> harcar.</p>
+
+              {/* Search */}
+              <div className="relative mb-3">
+                <input
+                  type="text"
+                  value={songRequestQuery}
+                  onChange={(e) => {
+                    setSongRequestQuery(e.target.value)
+                    onSongRequestInput(e.target.value)
+                  }}
+                  placeholder="Şarkı adı veya sanatçı ara..."
+                  className="w-full px-3 py-2.5 bg-white/10 border border-purple-500/30 rounded-xl text-white text-sm placeholder-purple-300/40 focus:outline-none focus:border-fuchsia-500/50"
+                />
+              </div>
+
+              {/* Results */}
+              {songRequestResults.length > 0 && (
+                <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
+                  {songRequestResults.map((video: any) => (
+                    <button
+                      key={video.id}
+                      onClick={() => setSongRequestSelected(video)}
+                      className={`w-full flex items-center gap-2 p-2 rounded-lg transition-all text-left ${
+                        songRequestSelected?.id === video.id
+                          ? 'bg-fuchsia-600/30 border border-fuchsia-500/50'
+                          : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                      }`}
+                    >
+                      <div className="w-12 h-9 rounded overflow-hidden flex-shrink-0 bg-purple-900/50 relative">
+                        {video.thumbnail && <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium truncate">{video.title}</p>
+                        <p className="text-purple-400 text-[10px] truncate">{video.channel} {video.duration ? `• ${video.duration}` : ''}</p>
+                      </div>
+                      {songRequestSelected?.id === video.id && <span className="text-fuchsia-400 text-lg flex-shrink-0">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected song info */}
+              {songRequestSelected && (
+                <div className="bg-fuchsia-600/20 border border-fuchsia-500/30 rounded-xl p-2.5 mb-3">
+                  <p className="text-fuchsia-300 text-xs font-medium truncate">🎵 {songRequestSelected.title}</p>
+                </div>
+              )}
+
+              {/* Dedication & Note */}
+              {songRequestSelected && (
+                <div className="space-y-2 mb-3">
+                  <input
+                    type="text"
+                    value={songRequestDedication}
+                    onChange={(e) => setSongRequestDedication(e.target.value)}
+                    placeholder="Kime armağan? (opsiyonel)"
+                    maxLength={50}
+                    className="w-full px-3 py-2 bg-white/10 border border-purple-500/30 rounded-xl text-white text-sm placeholder-purple-300/40 focus:outline-none focus:border-fuchsia-500/50"
+                  />
+                  <textarea
+                    value={songRequestNote}
+                    onChange={(e) => setSongRequestNote(e.target.value)}
+                    placeholder="Kısa not (opsiyonel)"
+                    maxLength={100}
+                    rows={2}
+                    className="w-full px-3 py-2 bg-white/10 border border-purple-500/30 rounded-xl text-white text-sm placeholder-purple-300/40 focus:outline-none focus:border-fuchsia-500/50 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={submitSongRequest}
+                disabled={!songRequestSelected || songRequestSending}
+                className="w-full py-2.5 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold rounded-xl disabled:opacity-30 hover:from-fuchsia-500 hover:to-purple-500 transition-all text-sm flex items-center justify-center gap-2"
+              >
+                {songRequestSending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Gönderiliyor...</>
+                ) : (
+                  <>🎵 İstek Gönder (10 💎)</>
+                )}
+              </button>
+              <p className="text-center text-purple-400/50 text-[10px] mt-1.5">Bakiye: {userJetonBalance.toLocaleString()} Jeton</p>
+
+              {/* Queue display */}
+              {musicQueue.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-purple-500/20">
+                  <p className="text-purple-300 text-xs font-medium mb-1.5">📋 Sıradaki İstekler ({musicQueue.length})</p>
+                  <div className="space-y-1">
+                    {musicQueue.slice(0, 5).map((q, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10px] text-purple-300/70 bg-white/5 rounded-lg px-2 py-1">
+                        <span className="text-fuchsia-400 font-bold">{i + 1}.</span>
+                        <span className="truncate flex-1">{q.title}</span>
+                        {q.isPaid && <span className="text-yellow-400">💎</span>}
+                        <span className="text-purple-500">{q.requestedBy}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* User Profile Popup (Follow/Unfollow + Jeton) */}
       <AnimatePresence>
         {profilePopupUser && (
@@ -3948,7 +4226,7 @@ export default function ChatRoomPage() {
       />
 
       {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
-      {currentMusicVideoId && !showMusicModal && !musicMuted && (
+      {currentMusicVideoId && !showMusicModal && !musicMuted && !musicPaused && (
         <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
           <iframe
             key={currentMusicVideoId}
