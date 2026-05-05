@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield } from 'lucide-react'
+import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield, Play, Pause, Radio, MessageCircle } from 'lucide-react'
 
 const PERSONALITY_MAP: Record<string, { label: string; emoji: string; color: string }> = {
   shy: { label: 'Utangaç', emoji: '😳', color: 'text-blue-400' },
@@ -61,6 +61,12 @@ export default function AdminBotsPage() {
   const [filterActive, setFilterActive] = useState('')
   const [selectedBots, setSelectedBots] = useState<Set<string>>(new Set())
   const [expandedBot, setExpandedBot] = useState<string | null>(null)
+  // Simulation states
+  const [simStatus, setSimStatus] = useState<any>(null)
+  const [simRunning, setSimRunning] = useState(false)
+  const [simAutoInterval, setSimAutoInterval] = useState<NodeJS.Timeout | null>(null)
+  const [simLog, setSimLog] = useState<Array<{ time: string; actions: any[] }>>([])
+  const [simAutoActive, setSimAutoActive] = useState(false)
 
   const fetchBots = useCallback(async () => {
     try {
@@ -113,6 +119,54 @@ export default function AdminBotsPage() {
     if (selectedBots.size === bots.length) setSelectedBots(new Set())
     else setSelectedBots(new Set(bots.map(b => b.id)))
   }
+
+  // Simulation functions
+  const fetchSimStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/bots/simulate')
+      if (res.ok) setSimStatus(await res.json())
+    } catch {}
+  }, [])
+
+  useEffect(() => { fetchSimStatus() }, [fetchSimStatus])
+
+  const runSimCycle = async () => {
+    setSimRunning(true)
+    try {
+      const res = await fetch('/api/admin/bots/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const timeStr = new Date().toLocaleTimeString('tr-TR')
+        setSimLog(prev => [{ time: timeStr, actions: data.actions || [] }, ...prev].slice(0, 20))
+        fetchSimStatus()
+      }
+    } catch {} finally {
+      setSimRunning(false)
+    }
+  }
+
+  const toggleAutoSim = () => {
+    if (simAutoActive) {
+      if (simAutoInterval) clearInterval(simAutoInterval)
+      setSimAutoInterval(null)
+      setSimAutoActive(false)
+    } else {
+      runSimCycle() // Run immediately
+      const interval = setInterval(runSimCycle, 30000) // Every 30 seconds
+      setSimAutoInterval(interval)
+      setSimAutoActive(true)
+    }
+  }
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => { if (simAutoInterval) clearInterval(simAutoInterval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simAutoInterval])
 
   if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">Yetkisiz erişim</div>
@@ -170,6 +224,103 @@ export default function AdminBotsPage() {
             </div>
           </div>
         )}
+
+        {/* Simulation Control Panel */}
+        <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-xl p-4 border border-indigo-500/20 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-indigo-300 flex items-center gap-2">
+              <Radio className="w-4 h-4" /> Simülasyon Kontrol Paneli
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runSimCycle}
+                disabled={simRunning}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 border border-indigo-500/30 rounded-lg text-xs text-indigo-300 hover:bg-indigo-500/30 transition disabled:opacity-50"
+              >
+                {simRunning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                {simRunning ? 'Çalışıyor...' : 'Tek Döngü'}
+              </button>
+              <button
+                onClick={toggleAutoSim}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition ${
+                  simAutoActive
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {simAutoActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                {simAutoActive ? 'Otomatik: AÇIK (30sn)' : 'Otomatik Başlat'}
+              </button>
+            </div>
+          </div>
+
+          {/* Live Status */}
+          {simStatus && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-green-400">{simStatus.currentlyInRooms || 0}</div>
+                <div className="text-[10px] text-gray-500">Odalarda Aktif</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-blue-400">{simStatus.activeBots || 0}</div>
+                <div className="text-[10px] text-gray-500">Toplam Aktif Bot</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-yellow-400">{simStatus.messagesLastHour || 0}</div>
+                <div className="text-[10px] text-gray-500">Son 1 Saat Mesaj</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-purple-400">{simStatus.presences?.length || 0}</div>
+                <div className="text-[10px] text-gray-500">Aktif Presence</div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Bots in Rooms */}
+          {simStatus?.presences?.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[10px] text-gray-500 mb-1">Odalardaki Botlar:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {simStatus.presences.map((p: any, i: number) => (
+                  <span key={i} className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full text-gray-300">
+                    {PERSONALITY_MAP[p.personality]?.emoji || '🤖'} {p.bot} → {p.room}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Action Log */}
+          {simLog.length > 0 && (
+            <div className="max-h-32 overflow-y-auto">
+              <p className="text-[10px] text-gray-500 mb-1">Son Aksiyonlar:</p>
+              <div className="space-y-1">
+                {simLog.map((entry, i) => (
+                  <div key={i}>
+                    {entry.actions.map((a: any, j: number) => (
+                      <div key={j} className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span className="text-gray-600">{entry.time}</span>
+                        <span className={
+                          a.action === 'join' ? 'text-green-400' :
+                          a.action === 'leave' ? 'text-red-400' :
+                          'text-blue-400'
+                        }>
+                          {a.action === 'join' ? '→ Giriş' : a.action === 'leave' ? '← Çıkış' : '💬 Mesaj'}
+                        </span>
+                        <span className="text-white/70 font-medium">{a.bot}</span>
+                        <span className="text-gray-600">@{a.room}</span>
+                        {a.message && <span className="text-gray-500 truncate max-w-[150px]">"{a.message}"</span>}
+                      </div>
+                    ))}
+                    {entry.actions.length === 0 && (
+                      <div className="text-[10px] text-gray-600">{entry.time} — Aksiyon yok</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Filters & Actions */}
         <div className="flex flex-wrap gap-3 mb-4">
