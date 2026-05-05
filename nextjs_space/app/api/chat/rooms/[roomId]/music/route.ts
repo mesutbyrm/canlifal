@@ -5,23 +5,45 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// Helper to check if user can control music
+// Helper to check if user can control music (DJ system)
 async function canControlMusic(roomId: string, userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
   const isGlobalAdmin = user?.role === 'admin' || user?.role === 'yonetici'
   
-  const room = await prisma.chatRoom.findUnique({ where: { id: roomId }, select: { ownerId: true } })
-  const isOwner = room?.ownerId === userId
+  const room = await prisma.chatRoom.findUnique({
+    where: { id: roomId },
+    select: { ownerId: true, djUserIds: true, activeDjId: true }
+  })
+  if (!room) return false
+  const isOwner = room.ownerId === userId
 
+  // Owner and global admins always can
   if (isGlobalAdmin || isOwner) return true
 
-  // Check chat role
-  const chatRole = await prisma.chatUserRole.findUnique({
-    where: { roomId_userId: { roomId, userId } },
-    select: { role: true }
+  // Check if user is a DJ
+  let djUserIds: string[] = []
+  try { djUserIds = room.djUserIds ? JSON.parse(room.djUserIds) : [] } catch {}
+  if (!Array.isArray(djUserIds)) djUserIds = []
+  
+  const isDj = djUserIds.includes(userId)
+  if (!isDj) return false
+
+  // Check if owner is present
+  const presences = await prisma.chatPresence.findMany({
+    where: { roomId },
+    select: { userId: true }
   })
-  const modRoles = ['superadmin', 'founder', 'sop', 'admin', 'op']
-  return chatRole?.role ? modRoles.includes(chatRole.role) : false
+  const presentUserIds = new Set(presences.map(p => p.userId))
+  const ownerPresent = room.ownerId ? presentUserIds.has(room.ownerId) : false
+
+  if (ownerPresent) {
+    // Owner is present - only the activeDjId can play
+    return room.activeDjId === userId
+  } else {
+    // Owner absent - hierarchical order (first present DJ in list)
+    const presentDjs = djUserIds.filter(id => presentUserIds.has(id))
+    return presentDjs.length > 0 && presentDjs[0] === userId
+  }
 }
 
 // GET: Get currently playing music for a room

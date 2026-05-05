@@ -69,6 +69,9 @@ export async function GET(request: NextRequest) {
       owner: room.owner,
       backgroundImage: (room as any).backgroundImage || null,
       bannedWords: (room as any).bannedWords || null,
+      djUserIds: (room as any).djUserIds || null,
+      activeDjId: (room as any).activeDjId || null,
+      whitelistedWords: (room as any).whitelistedWords || null,
       messageCount: room._count.messages,
       onlineCount: room.presences.length,
       userCount: room.presences.length,  // Alias for the popup

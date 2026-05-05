@@ -51,6 +51,9 @@ interface ChatRoom {
   owner?: { id: string; name: string; username?: string | null; image?: string | null } | null
   backgroundImage?: string | null
   bannedWords?: string | null
+  djUserIds?: string | null
+  activeDjId?: string | null
+  whitelistedWords?: string | null
   userCount?: number
 }
 
@@ -170,7 +173,7 @@ export default function ChatRoomPage() {
   const rulesShownRef = useRef(false) // Show rules once per room entry
   
   // Profanity filter state
-  const [profanityAlert, setProfanityAlert] = useState<{ msgId: string; userId: string; userName: string; content: string } | null>(null)
+  const [profanityAlert, setProfanityAlert] = useState<{ msgId: string; userId: string; userName: string; content: string; detectedWord?: string } | null>(null)
   const [deletedMsgNotice, setDeletedMsgNotice] = useState<string | null>(null)
   
   // Seat assignment state (owner feature)
@@ -220,6 +223,13 @@ export default function ChatRoomPage() {
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
   const [musicMuted, setMusicMuted] = useState(false)
   const [musicPaused, setMusicPaused] = useState(false)
+  
+  // DJ System
+  const [djUsers, setDjUsers] = useState<Array<{id: string; name: string; image?: string | null; isPresent: boolean}>>([])
+  const [activeDjId, setActiveDjId] = useState<string | null>(null)
+  const [ownerPresent, setOwnerPresent] = useState(false)
+  const [canPlayMusic, setCanPlayMusic] = useState(false)
+  const [showDjPanel, setShowDjPanel] = useState(false)
   
   // Song Request System
   const [showSongRequestModal, setShowSongRequestModal] = useState(false)
@@ -717,6 +727,27 @@ export default function ChatRoomPage() {
     const interval = setInterval(fetchMusic, 15000) // was 5s
     return () => { cancelled = true; clearInterval(interval) }
   }, [room?.id])
+
+  // ── DJ System: Poll DJ state ──
+  useEffect(() => {
+    if (!room?.id || !session?.user) return
+    let cancelled = false
+    const fetchDjState = async () => {
+      try {
+        const res = await fetch(`/api/chat/rooms/${room.id}/dj`)
+        if (res.ok && !cancelled) {
+          const data = await res.json()
+          setDjUsers(data.djUsers || [])
+          setActiveDjId(data.activeDjId || null)
+          setOwnerPresent(data.ownerPresent || false)
+          setCanPlayMusic(data.canPlayMusic || false)
+        }
+      } catch {}
+    }
+    fetchDjState()
+    const interval = setInterval(fetchDjState, 10000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [room?.id, session?.user])
 
   // Auto-mute all Agora voice when music is playing, unmute when stopped
   useEffect(() => {
@@ -1614,7 +1645,16 @@ export default function ChatRoomPage() {
   const BANNED_WORDS = ['amk','aq','amına','amina','orospu','oç','piç','sik','yarrak','göt','pezevenk','gavat','ibne','kaltak','fahişe','şerefsiz','bok','siktir','hassiktir','puşt','dangalak','gerizekalı','salak','aptal','mal','döl','taşak','meme','am','yarak','sikerim','ananı','bacını','avradını']
   const profanityAlertedRef = useRef<Set<string>>(new Set())
   
-  // Merge hardcoded banned words with room owner's custom banned words
+  // Whitelisted words (marked safe by moderators)
+  const whitelistedWords = useMemo(() => {
+    let words: string[] = []
+    if (room?.whitelistedWords) {
+      try { words = JSON.parse(room.whitelistedWords) } catch {}
+    }
+    return Array.isArray(words) ? words.map(w => w.toLowerCase().trim()) : []
+  }, [room?.whitelistedWords])
+
+  // Merge hardcoded banned words with room owner's custom banned words, exclude whitelisted
   const allBannedWords = useMemo(() => {
     const words = [...BANNED_WORDS]
     if (room?.bannedWords) {
@@ -1628,15 +1668,17 @@ export default function ChatRoomPage() {
         }
       } catch {}
     }
-    return words
-  }, [room?.bannedWords])
+    // Remove whitelisted words
+    return words.filter(w => !whitelistedWords.includes(w.toLowerCase()))
+  }, [room?.bannedWords, whitelistedWords])
 
-  const checkProfanity = (text: string): boolean => {
+  const checkProfanity = (text: string): string | null => {
     const lower = text.toLowerCase().replace(/[ıİ]/g, 'i').replace(/[şŞ]/g, 's').replace(/[çÇ]/g, 'c').replace(/[öÖ]/g, 'o').replace(/[üÜ]/g, 'u').replace(/[ğĞ]/g, 'g')
-    return allBannedWords.some(word => {
+    for (const word of allBannedWords) {
       const pattern = new RegExp(`\\b${word}\\b|${word}`, 'i')
-      return pattern.test(lower)
-    })
+      if (pattern.test(lower)) return word
+    }
+    return null
   }
 
   // Check incoming messages for profanity (moderator alert)
@@ -1650,24 +1692,81 @@ export default function ChatRoomPage() {
     if (!lastMsg || lastMsg.user.id === 'system' || lastMsg.user.id === session?.user?.id) return
     if (profanityAlertedRef.current.has(lastMsg.id)) return
     
-    if (checkProfanity(lastMsg.content)) {
+    const detectedWord = checkProfanity(lastMsg.content)
+    if (detectedWord) {
       profanityAlertedRef.current.add(lastMsg.id)
       setProfanityAlert({
         msgId: lastMsg.id,
         userId: lastMsg.user.id,
         userName: lastMsg.user.nickname || lastMsg.user.name || 'Kullanıcı',
-        content: lastMsg.content
+        content: lastMsg.content,
+        detectedWord,
       })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, myPermissions])
 
   // Handle profanity mod actions
-  const handleProfanityAction = async (action: 'delete' | 'mute' | 'kick') => {
+  const handleProfanityAction = async (action: 'delete' | 'mute' | 'kick' | 'ignore' | 'blacklist') => {
     if (!profanityAlert || !room) return
-    const { msgId, userId } = profanityAlert
+    const { msgId, userId, detectedWord } = profanityAlert
     
     try {
+      if (action === 'ignore' && detectedWord) {
+        // Add the word to whitelist (mark as safe)
+        let currentWhitelist: string[] = []
+        try { currentWhitelist = room.whitelistedWords ? JSON.parse(room.whitelistedWords) : [] } catch {}
+        if (!Array.isArray(currentWhitelist)) currentWhitelist = []
+        if (!currentWhitelist.includes(detectedWord.toLowerCase())) {
+          const updated = [...currentWhitelist, detectedWord.toLowerCase()]
+          const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whitelistedWords: JSON.stringify(updated) })
+          })
+          if (res.ok) {
+            setRoom(prev => prev ? { ...prev, whitelistedWords: JSON.stringify(updated) } : prev)
+          }
+        }
+        setProfanityAlert(null)
+        return
+      }
+
+      if (action === 'blacklist' && detectedWord) {
+        // Add to room's banned words AND censor the message content with ***
+        let currentBanned: string[] = []
+        try { currentBanned = room.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
+        if (!Array.isArray(currentBanned)) currentBanned = []
+        if (!currentBanned.includes(detectedWord.toLowerCase())) {
+          const updated = [...currentBanned, detectedWord.toLowerCase()]
+          const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bannedWords: JSON.stringify(updated) })
+          })
+          if (res.ok) {
+            setRoom(prev => prev ? { ...prev, bannedWords: JSON.stringify(updated) } : prev)
+          }
+        }
+        // Also remove from whitelist if it was there
+        let currentWhitelist: string[] = []
+        try { currentWhitelist = room.whitelistedWords ? JSON.parse(room.whitelistedWords) : [] } catch {}
+        if (Array.isArray(currentWhitelist) && currentWhitelist.includes(detectedWord.toLowerCase())) {
+          const updatedWl = currentWhitelist.filter(w => w !== detectedWord.toLowerCase())
+          await fetch(`/api/chat/rooms/${room.id}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whitelistedWords: updatedWl.length > 0 ? JSON.stringify(updatedWl) : null })
+          })
+          setRoom(prev => prev ? { ...prev, whitelistedWords: updatedWl.length > 0 ? JSON.stringify(updatedWl) : null } : prev)
+        }
+        // Delete the message
+        await fetch(`/api/chat/rooms/${room.id}/messages?messageId=${msgId}`, { method: 'DELETE' })
+        fetchMessages()
+        setProfanityAlert(null)
+        return
+      }
+
       if (action === 'delete' || action === 'mute' || action === 'kick') {
         // Delete the offending message
         await fetch(`/api/chat/rooms/${room.id}/messages?messageId=${msgId}`, { method: 'DELETE' })
@@ -2560,10 +2659,24 @@ export default function ChatRoomPage() {
                 </div>
                 <h3 className="text-red-400 font-bold text-sm">⚠️ Küfür Tespit Edildi!</h3>
               </div>
-              <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3 mb-4">
+              <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3 mb-3">
                 <p className="text-white/60 text-[10px] mb-1">{profanityAlert.userName}:</p>
                 <p className="text-red-300 text-xs">{profanityAlert.content}</p>
+                {profanityAlert.detectedWord && (
+                  <p className="text-yellow-400/80 text-[10px] mt-1.5">Tespit edilen kelime: <span className="font-bold">&quot;{profanityAlert.detectedWord}&quot;</span></p>
+                )}
               </div>
+              {/* Word action buttons */}
+              {profanityAlert.detectedWord && (
+                <div className="flex gap-2 mb-3">
+                  <button onClick={() => handleProfanityAction('ignore')} className="flex-1 py-2 px-3 bg-green-600/80 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
+                    ✅ Yoksay
+                  </button>
+                  <button onClick={() => handleProfanityAction('blacklist')} className="flex-1 py-2 px-3 bg-red-800/80 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
+                    🚫 Kara Liste
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button onClick={() => handleProfanityAction('delete')} className="flex-1 py-2 px-3 bg-orange-600/80 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
                   <Trash2 className="w-3.5 h-3.5" /> Sil
@@ -3021,14 +3134,23 @@ export default function ChatRoomPage() {
         <ChatRoomMarquee joinEvents={marqueeJoinEvents} />
 
         {/* ── Music Icon (under announcement) ── */}
-        {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
-          <div className="relative z-10 mx-3 mb-2">
+        {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || canPlayMusic) && (
+          <div className="relative z-10 mx-3 mb-2 flex items-center gap-2">
             <button
               onClick={() => setShowMusicModal(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-purple-300 text-xs hover:from-purple-600/50 hover:to-pink-600/50 transition-all"
             >
               <span className="text-base">🎵</span> Müzik Aç
             </button>
+            {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin) && (
+              <button
+                onClick={() => setShowDjPanel(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-500/30 rounded-full text-cyan-300 text-xs hover:from-cyan-600/50 hover:to-blue-600/50 transition-all"
+                title="DJ Yönetimi"
+              >
+                🎧 DJ ({djUsers.length}/5)
+              </button>
+            )}
           </div>
         )}
 
@@ -3074,7 +3196,7 @@ export default function ChatRoomPage() {
               {musicMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
             {/* Close/Stop music (moderator only) */}
-            {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
+            {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || canPlayMusic) && (
               <button
                 onClick={handleStopMusic}
                 className="w-8 h-8 rounded-lg flex items-center justify-center border bg-red-600/30 border-red-500/30 text-red-300 hover:bg-red-600/50 transition-all flex-shrink-0"
@@ -3083,6 +3205,22 @@ export default function ChatRoomPage() {
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+        )}
+
+        {/* ── Music Queue Mini Display (shown in chat) ── */}
+        {musicQueue.length > 0 && currentMusicVideoId && (
+          <div className="relative z-10 mx-3 mb-1">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-fuchsia-900/20 border border-fuchsia-500/15 rounded-lg overflow-x-auto">
+              <span className="text-fuchsia-400 text-[10px] font-bold flex-shrink-0">🎵 Sırada:</span>
+              {musicQueue.slice(0, 3).map((q, i) => (
+                <span key={i} className="text-fuchsia-200/70 text-[10px] truncate max-w-[120px] flex-shrink-0">
+                  {i + 1}. {q.title} <span className="text-fuchsia-400/50">({q.requestedBy})</span>
+                  {i < Math.min(musicQueue.length, 3) - 1 && <span className="text-fuchsia-500/30 mx-0.5">|</span>}
+                </span>
+              ))}
+              {musicQueue.length > 3 && <span className="text-fuchsia-400/50 text-[10px] flex-shrink-0">+{musicQueue.length - 3} daha</span>}
+            </div>
           </div>
         )}
 
@@ -4320,8 +4458,193 @@ export default function ChatRoomPage() {
         roomId={room?.id || ''}
         currentVideoId={currentMusicVideoId}
         currentTitle={currentMusicTitle}
-        canControl={!!(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom)}
+        canControl={!!(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || canPlayMusic)}
       />
+
+      {/* ── DJ Management Panel ── */}
+      <AnimatePresence>
+        {showDjPanel && room && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            onClick={() => setShowDjPanel(false)}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-md max-h-[80vh] bg-gradient-to-br from-gray-900 via-cyan-950/50 to-gray-900 rounded-2xl border border-cyan-500/30 shadow-2xl overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-black/30">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎧</span>
+                  <h2 className="text-white font-bold text-lg">DJ Yönetimi</h2>
+                  <span className="text-cyan-400/60 text-xs">({djUsers.length}/5)</span>
+                </div>
+                <button onClick={() => setShowDjPanel(false)} className="text-gray-400 hover:text-white transition-colors p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Current DJs */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {/* Owner info */}
+                <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-3">
+                  <p className="text-yellow-300 text-xs font-bold mb-1">👑 Oda Sahibi Kuralları</p>
+                  <ul className="text-yellow-200/60 text-[10px] space-y-0.5">
+                    <li>• Oda sahibi her zaman müzik çalabilir</li>
+                    <li>• Oda sahibi odadayken DJ&apos;ler sadece izin verilince çalar</li>
+                    <li>• Oda sahibi yokken sıralamaya göre öncelik belirlenir</li>
+                  </ul>
+                </div>
+
+                {/* DJ List */}
+                {djUsers.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-400 text-sm">Henüz DJ eklenmedi</p>
+                    <p className="text-gray-500 text-xs mt-1">Aşağıdan odadaki kullanıcıları DJ olarak ekleyin</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-cyan-300 text-xs font-bold">🎵 Aktif DJ Listesi</p>
+                    {djUsers.map((dj, idx) => (
+                      <div key={dj.id} className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                        activeDjId === dj.id 
+                          ? 'bg-green-900/30 border-green-500/40' 
+                          : 'bg-white/5 border-white/10'
+                      }`}>
+                        <span className="text-cyan-400 text-xs font-bold w-5">{idx + 1}.</span>
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+                          {dj.image ? <img src={dj.image} alt="" className="w-full h-full object-cover" /> : dj.name[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{dj.name}</p>
+                          <p className="text-gray-400 text-[10px]">
+                            {dj.isPresent ? '🟢 Odada' : '🔴 Çevrimdışı'}
+                            {activeDjId === dj.id && ownerPresent && ' • ✅ İzinli'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {ownerPresent && (
+                            <button
+                              onClick={async () => {
+                                const newDjId = activeDjId === dj.id ? null : dj.id
+                                try {
+                                  const res = await fetch(`/api/chat/rooms/${room.id}/dj`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'set_active_dj', userId: newDjId })
+                                  })
+                                  if (res.ok) setActiveDjId(newDjId)
+                                } catch {}
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                                activeDjId === dj.id
+                                  ? 'bg-green-600/80 text-white hover:bg-red-600/80'
+                                  : 'bg-cyan-600/30 text-cyan-300 hover:bg-cyan-600/50'
+                              }`}
+                            >
+                              {activeDjId === dj.id ? '🔇 Kapat' : '🎵 İzin Ver'}
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/chat/rooms/${room.id}/dj`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ action: 'remove_dj', userId: dj.id })
+                                })
+                                if (res.ok) {
+                                  setDjUsers(prev => prev.filter(d => d.id !== dj.id))
+                                  if (activeDjId === dj.id) setActiveDjId(null)
+                                }
+                              } catch {}
+                            }}
+                            className="p-1.5 bg-red-600/20 hover:bg-red-600/50 border border-red-500/30 rounded-lg text-red-300 transition-all"
+                            title="DJ'den çıkar"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add DJ from room users */}
+                {djUsers.length < 5 && (
+                  <div className="mt-4">
+                    <p className="text-cyan-300 text-xs font-bold mb-2">➕ Odadan DJ Ekle</p>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {activeUsers
+                        .filter(u => u.id !== session?.user?.id && u.id !== room.ownerId && !djUsers.some(d => d.id === u.id))
+                        .slice(0, 20)
+                        .map(u => (
+                          <button
+                            key={u.id}
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/chat/rooms/${room.id}/dj`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ action: 'add_dj', userId: u.id })
+                                })
+                                if (res.ok) {
+                                  setDjUsers(prev => [...prev, { id: u.id, name: u.nickname || u.name || 'Anonim', image: u.image, isPresent: true }])
+                                }
+                              } catch {}
+                            }}
+                            className="w-full flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-cyan-600/20 border border-transparent hover:border-cyan-500/30 transition-all text-left"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0">
+                              {u.image ? <img src={u.image} alt="" className="w-full h-full object-cover" /> : (u.nickname || u.name || '?')[0]?.toUpperCase()}
+                            </div>
+                            <span className="text-white text-xs truncate flex-1">{u.nickname || u.name || 'Kullanıcı'}</span>
+                            <UserPlus className="w-3.5 h-3.5 text-cyan-400" />
+                          </button>
+                        ))}
+                      {activeUsers.filter(u => u.id !== session?.user?.id && u.id !== room.ownerId && !djUsers.some(d => d.id === u.id)).length === 0 && (
+                        <p className="text-gray-500 text-xs text-center py-3">Eklenebilecek kullanıcı yok</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Music Queue Display */}
+                {musicQueue.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-fuchsia-300 text-xs font-bold mb-2">🎵 Şarkı Kuyruğu</p>
+                    <div className="space-y-1.5">
+                      {musicQueue.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-fuchsia-900/20 border border-fuchsia-500/20 rounded-lg">
+                          <span className="text-fuchsia-400 text-xs font-bold w-5">{idx + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs truncate">{item.title}</p>
+                            <p className="text-fuchsia-300/60 text-[10px]">İsteyen: {item.requestedBy}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-4 py-2 border-t border-cyan-500/20 bg-black/20">
+                <p className="text-gray-500 text-[10px] text-center">
+                  {ownerPresent ? '👑 Oda sahibi odada — DJ\'ler yalnızca izin verildiğinde çalabilir' : '🔄 Oda sahibi yok — sıralama ile öncelik belirlenir'}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
       {currentMusicVideoId && !showMusicModal && !musicMuted && !musicPaused && (

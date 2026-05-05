@@ -44,6 +44,9 @@ export async function GET(
         giftBeneficiary: { select: { id: true, name: true, username: true } },
         backgroundImage: true,
         bannedWords: true,
+        djUserIds: true,
+        activeDjId: true,
+        whitelistedWords: true,
       }
     })
 
@@ -96,6 +99,7 @@ export async function PATCH(
     if (typeof isActive === 'boolean') updateData.isActive = isActive
     if (backgroundImage !== undefined) updateData.backgroundImage = backgroundImage || null
     if (bannedWords !== undefined) updateData.bannedWords = bannedWords || null
+    if (body.whitelistedWords !== undefined) updateData.whitelistedWords = body.whitelistedWords || null
 
     // Commission - only global admin (superadmin) can set
     if (giftCommissionPercent !== undefined && permissions.isGlobalAdmin) {
@@ -123,6 +127,9 @@ export async function PATCH(
         giftCommissionPercent: true,
         backgroundImage: true,
         bannedWords: true,
+        djUserIds: true,
+        activeDjId: true,
+        whitelistedWords: true,
       }
     })
 
