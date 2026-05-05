@@ -3350,8 +3350,9 @@ export default function ChatRoomPage() {
             {/* Jeton Loading Area */}
             <div className="flex items-center justify-between mt-1.5 px-1">
               <span className="text-[10px] text-yellow-400/70 flex items-center gap-0.5">💎 {userJetonBalance.toLocaleString()} Jeton</span>
-              <button type="button" onClick={() => { fetchMessages(); fetchActiveUsers() }} className="p-1 rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-all active:scale-90" title="Yenile">
-                <RefreshCw className="w-3.5 h-3.5" />
+              <button type="button" onClick={() => window.location.reload()} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-purple-300/70 hover:text-white transition-all active:scale-90" title="Sayfayı Yenile">
+                <RefreshCw className="w-3 h-3" />
+                <span className="text-[9px] font-medium">Yenile</span>
               </button>
               <button
                 type="button"
@@ -3374,16 +3375,6 @@ export default function ChatRoomPage() {
           </div>
         )}
 
-        {/* ── Refresh Page Button ── */}
-        <div className="relative z-10 flex-shrink-0 px-3 pb-2">
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 border border-white/10 rounded-xl text-purple-300/70 text-xs hover:bg-white/10 hover:text-purple-200 transition-all"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Sayfayı Yenile
-          </button>
-        </div>
 
         {/* Image Picker Modal */}
         <AnimatePresence>
