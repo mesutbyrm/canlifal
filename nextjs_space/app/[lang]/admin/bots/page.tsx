@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield, Play, Pause, Radio, MessageCircle } from 'lucide-react'
+import { Bot, Search, Filter, ToggleLeft, ToggleRight, Users, Activity, MapPin, Clock, Sparkles, ChevronLeft, ChevronDown, ChevronUp, Eye, EyeOff, RefreshCw, User, Zap, Heart, Smile, Shield, Play, Pause, Radio, MessageCircle, Globe, ThumbsUp, MessageSquare, UserPlus, Video } from 'lucide-react'
 
 const PERSONALITY_MAP: Record<string, { label: string; emoji: string; color: string }> = {
   shy: { label: 'Utangaç', emoji: '😳', color: 'text-blue-400' },
@@ -67,6 +67,12 @@ export default function AdminBotsPage() {
   const [simAutoInterval, setSimAutoInterval] = useState<NodeJS.Timeout | null>(null)
   const [simLog, setSimLog] = useState<Array<{ time: string; actions: any[] }>>([])
   const [simAutoActive, setSimAutoActive] = useState(false)
+  // Social simulation states
+  const [socialStatus, setSocialStatus] = useState<any>(null)
+  const [socialRunning, setSocialRunning] = useState(false)
+  const [socialAutoInterval, setSocialAutoInterval] = useState<NodeJS.Timeout | null>(null)
+  const [socialAutoActive, setSocialAutoActive] = useState(false)
+  const [socialLog, setSocialLog] = useState<Array<{ time: string; actions: any[] }>>([])
 
   const fetchBots = useCallback(async () => {
     try {
@@ -167,6 +173,53 @@ export default function AdminBotsPage() {
     return () => { if (simAutoInterval) clearInterval(simAutoInterval) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simAutoInterval])
+
+  // Social simulation functions
+  const fetchSocialStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/bots/simulate-social')
+      if (res.ok) setSocialStatus(await res.json())
+    } catch {}
+  }, [])
+
+  useEffect(() => { fetchSocialStatus() }, [fetchSocialStatus])
+
+  const runSocialCycle = async () => {
+    setSocialRunning(true)
+    try {
+      const res = await fetch('/api/admin/bots/simulate-social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const timeStr = new Date().toLocaleTimeString('tr-TR')
+        setSocialLog(prev => [{ time: timeStr, actions: data.actions || [] }, ...prev].slice(0, 20))
+        fetchSocialStatus()
+      }
+    } catch {} finally {
+      setSocialRunning(false)
+    }
+  }
+
+  const toggleSocialAutoSim = () => {
+    if (socialAutoActive) {
+      if (socialAutoInterval) clearInterval(socialAutoInterval)
+      setSocialAutoInterval(null)
+      setSocialAutoActive(false)
+    } else {
+      runSocialCycle()
+      const interval = setInterval(runSocialCycle, 45000) // Every 45 seconds
+      setSocialAutoInterval(interval)
+      setSocialAutoActive(true)
+    }
+  }
+
+  useEffect(() => {
+    return () => { if (socialAutoInterval) clearInterval(socialAutoInterval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socialAutoInterval])
 
   if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">Yetkisiz erişim</div>
@@ -310,6 +363,115 @@ export default function AdminBotsPage() {
                         <span className="text-white/70 font-medium">{a.bot}</span>
                         <span className="text-gray-600">@{a.room}</span>
                         {a.message && <span className="text-gray-500 truncate max-w-[150px]">"{a.message}"</span>}
+                      </div>
+                    ))}
+                    {entry.actions.length === 0 && (
+                      <div className="text-[10px] text-gray-600">{entry.time} — Aksiyon yok</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Social Simulation Control Panel */}
+        <div className="bg-gradient-to-r from-pink-900/30 to-orange-900/30 rounded-xl p-4 border border-pink-500/20 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-pink-300 flex items-center gap-2">
+              <Globe className="w-4 h-4" /> Sosyal Simülasyon Paneli
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runSocialCycle}
+                disabled={socialRunning}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500/20 border border-pink-500/30 rounded-lg text-xs text-pink-300 hover:bg-pink-500/30 transition disabled:opacity-50"
+              >
+                {socialRunning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                {socialRunning ? 'Çalışıyor...' : 'Tek Döngü'}
+              </button>
+              <button
+                onClick={toggleSocialAutoSim}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition ${
+                  socialAutoActive
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {socialAutoActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                {socialAutoActive ? 'Otomatik: AÇIK (45sn)' : 'Otomatik Başlat'}
+              </button>
+            </div>
+          </div>
+
+          {/* Social Status */}
+          {socialStatus && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-pink-400">{socialStatus.botFollows || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><UserPlus className="w-3 h-3" /> Toplam Takip</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-red-400">{socialStatus.botPostLikes24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> Post Beğeni (24s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-orange-400">{socialStatus.botPostComments24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Post Yorum (24s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-purple-400">{socialStatus.botStreamComments24h || 0}</div>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1"><Video className="w-3 h-3" /> Yayın Yorum (24s)</div>
+              </div>
+            </div>
+          )}
+          {socialStatus && (
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="bg-black/20 rounded-lg px-3 py-2 text-center">
+                <div className="text-sm font-bold text-yellow-400">{socialStatus.botStreamLikes || 0}</div>
+                <div className="text-[10px] text-gray-500">Yayın Beğeni</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2 text-center">
+                <div className="text-sm font-bold text-blue-400">{socialStatus.recentPosts || 0}</div>
+                <div className="text-[10px] text-gray-500">Son Postlar (48s)</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2 text-center">
+                <div className="text-sm font-bold text-green-400">{socialStatus.liveStreams || 0}</div>
+                <div className="text-[10px] text-gray-500">Canlı Yayın</div>
+              </div>
+            </div>
+          )}
+
+          {/* Social Action Log */}
+          {socialLog.length > 0 && (
+            <div className="max-h-32 overflow-y-auto">
+              <p className="text-[10px] text-gray-500 mb-1">Son Sosyal Aksiyonlar:</p>
+              <div className="space-y-1">
+                {socialLog.map((entry, i) => (
+                  <div key={i}>
+                    {entry.actions.map((a: any, j: number) => (
+                      <div key={j} className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span className="text-gray-600">{entry.time}</span>
+                        <span className={
+                          a.action === 'follow' ? 'text-pink-400' :
+                          a.action === 'like_post' ? 'text-red-400' :
+                          a.action === 'comment_post' ? 'text-orange-400' :
+                          a.action === 'stream_comment' ? 'text-purple-400' :
+                          a.action === 'stream_like' ? 'text-yellow-400' :
+                          a.action === 'stream_view' ? 'text-green-400' :
+                          'text-blue-400'
+                        }>
+                          {a.action === 'follow' ? '👥 Takip' :
+                           a.action === 'like_post' ? '❤️ Beğeni' :
+                           a.action === 'comment_post' ? '💬 Yorum' :
+                           a.action === 'stream_comment' ? '🎥 Yayın Yorum' :
+                           a.action === 'stream_like' ? '⭐ Yayın Beğeni' :
+                           a.action === 'stream_view' ? '👁️ Yayın İzle' :
+                           a.action}
+                        </span>
+                        <span className="text-white/70 font-medium">{a.bot}</span>
+                        {a.target && <span className="text-gray-600">→ {a.target}</span>}
+                        {a.detail && <span className="text-gray-500 truncate max-w-[150px]">&quot;{a.detail}&quot;</span>}
                       </div>
                     ))}
                     {entry.actions.length === 0 && (
