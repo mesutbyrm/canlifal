@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import YouTubeMusicModal from '@/components/youtube-music-modal'
@@ -3771,6 +3771,26 @@ export default function ChatRoomPage() {
               <button type="button" onClick={() => window.location.reload()} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-purple-300/70 hover:text-white transition-all active:scale-90" title="Sayfayı Yenile">
                 <RefreshCw className="w-3 h-3" />
                 <span className="text-[9px] font-medium">Yenile</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const shareUrl = `${window.location.origin}/${language}/sohbet/${room?.slug || ''}`
+                  const roomDisplayName = (language === 'tr' ? room?.nameTr : room?.nameEn) || 'Sesli Sohbet'
+                  const shareText = `🔮 ${roomDisplayName} odasına gel! - CanlıFal`
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: `${roomDisplayName} - CanlıFal`, text: shareText, url: shareUrl })
+                    } catch {}
+                  } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`, '_blank')
+                  }
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 hover:bg-green-500/40 text-green-300/80 hover:text-white transition-all active:scale-90 border border-green-500/30"
+                title="Odayı Paylaş"
+              >
+                <Share2 className="w-3 h-3" />
+                <span className="text-[9px] font-medium">Paylaş</span>
               </button>
               <button
                 type="button"
