@@ -32,7 +32,7 @@ export default function ChatRoomLayout({
 
   return (
     <div 
-      className="fixed inset-0  overflow-hidden"
+      className="fixed inset-0 overflow-hidden"
       style={{ 
         position: 'fixed',
         top: 0, 
@@ -41,7 +41,7 @@ export default function ChatRoomLayout({
         bottom: 0,
         zIndex: 99999,
         width: '100vw',
-        height: '100vh'
+        height: 'calc(var(--vh, 1vh) * 100)',
       }}
     >
       {children}

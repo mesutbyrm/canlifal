@@ -228,15 +228,17 @@ export default function ChatRoomPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousMessagesCount = useRef(0)
 
-  // Handle mobile keyboard - recalculate viewport height (lightweight, no scroll forcing)
+  // Handle mobile keyboard - recalculate viewport height
   const handleInputFocus = useCallback(() => {
     const recalc = () => {
       const height = window.visualViewport?.height || window.innerHeight
       const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
     }
-    // Single delayed recalc after keyboard animation
+    // Multiple recalcs to catch different keyboard animation speeds on various devices
+    setTimeout(recalc, 100)
     setTimeout(recalc, 300)
+    setTimeout(recalc, 600)
   }, [])
 
   // Initialize audio
@@ -263,7 +265,7 @@ export default function ChatRoomPage() {
     }
   }, [soundEnabled])
 
-  // Handle mobile viewport height (keyboard open/close) — lightweight, no scroll forcing
+  // Handle mobile viewport height (keyboard open/close)
   useEffect(() => {
     if (typeof window === 'undefined') return
     
@@ -278,12 +280,14 @@ export default function ChatRoomPage() {
     
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', setVH)
+      window.visualViewport.addEventListener('scroll', setVH)
     }
     
     return () => {
       window.removeEventListener('resize', setVH)
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', setVH)
+        window.visualViewport.removeEventListener('scroll', setVH)
       }
     }
   }, [])
@@ -3079,6 +3083,7 @@ export default function ChatRoomPage() {
                   value={newMessage}
                   onChange={(e) => { setNewMessage(e.target.value); handleTyping() }}
                   onFocus={handleInputFocus}
+                  onBlur={handleInputFocus}
                   placeholder={t('chat.placeholder')}
                   maxLength={500}
                   className="flex-1 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none px-2 py-1"
