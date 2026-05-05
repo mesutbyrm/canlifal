@@ -861,6 +861,14 @@ export default function ChatRoomPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ requestId: next.id })
               })
+              // Immediately fetch new music state
+              const mRes = await fetch(`/api/chat/rooms/${room.id}/music`)
+              if (mRes.ok) {
+                const mData = await mRes.json()
+                setCurrentMusicVideoId(mData.videoId || null)
+                setCurrentMusicTitle(mData.title || null)
+                setCurrentMusicDuration(mData.duration || null)
+              }
               setMusicPaused(false)
             } catch {} finally {
               musicQueueProcessingRef.current = false
@@ -884,44 +892,59 @@ export default function ChatRoomPage() {
     return parts[0] || 0
   }
 
-  // ── Music auto-next timer: when duration ends, play next from queue ──
+  // ── Music auto-next: fetch fresh queue from API when duration ends, then play next ──
+  // Uses a ref to always access latest queue for the callback
+  const musicQueueRef = useRef(musicQueue)
+  useEffect(() => { musicQueueRef.current = musicQueue }, [musicQueue])
+
   useEffect(() => {
-    // Clear any existing timer
     if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null }
 
-    if (!currentMusicVideoId || !currentMusicDuration || musicPaused) return
+    if (!currentMusicVideoId || musicPaused) return
 
     const totalSeconds = parseDurationToSeconds(currentMusicDuration)
+    const roomId = room?.id
+    if (!roomId) return
+
+    // If we have duration info, set timer for when song ends
+    // If no duration, we rely on the queue polling (15s) to check
     if (totalSeconds <= 0) return
 
-    // Calculate remaining time
     const elapsed = musicPausedAtRef.current || 0
     const remaining = Math.max((totalSeconds - elapsed) * 1000 + 3000, 1000) // +3s buffer
 
     musicStartTimeRef.current = Date.now() - (elapsed * 1000)
 
     musicTimerRef.current = setTimeout(async () => {
-      // Duration ended - auto-play next or stop
-      if (musicQueue.length > 0 && room?.id) {
-        const next = musicQueue[0]
-        try {
-          await fetch(`/api/chat/rooms/${room.id}/song-request`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requestId: next.id })
-          })
-          musicPausedAtRef.current = 0
-        } catch {}
-      } else if (room?.id) {
-        // No queue - stop music
-        try {
-          await fetch(`/api/chat/rooms/${room.id}/music`, { method: 'DELETE' })
-          setCurrentMusicVideoId(null)
-          setCurrentMusicTitle(null)
-          setCurrentMusicDuration(null)
-          musicPausedAtRef.current = 0
-        } catch {}
-      }
+      // Fetch fresh queue from API instead of using stale closure
+      try {
+        const qRes = await fetch(`/api/chat/rooms/${roomId}/song-request`)
+        if (qRes.ok) {
+          const qData = await qRes.json()
+          const freshQueue = qData.queue || []
+          if (freshQueue.length > 0) {
+            const next = freshQueue[0]
+            await fetch(`/api/chat/rooms/${roomId}/song-request`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ requestId: next.id })
+            })
+            musicPausedAtRef.current = 0
+            // Immediately fetch new music state so iframe updates
+            try {
+              const mRes = await fetch(`/api/chat/rooms/${roomId}/music`)
+              if (mRes.ok) {
+                const mData = await mRes.json()
+                setCurrentMusicVideoId(mData.videoId || null)
+                setCurrentMusicTitle(mData.title || null)
+                setCurrentMusicDuration(mData.duration || null)
+                setMusicPaused(false)
+              }
+            } catch {}
+          }
+          // If no queue: song keeps looping via iframe loop=1
+        }
+      } catch {}
     }, remaining)
 
     return () => { if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null } }
