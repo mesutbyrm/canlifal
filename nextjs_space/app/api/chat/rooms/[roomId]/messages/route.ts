@@ -128,7 +128,7 @@ export async function GET(
   }
 }
 
-// DELETE all messages (clear chat - moderator+)
+// DELETE messages (clear all or single message - moderator+)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
@@ -145,6 +145,19 @@ export async function DELETE(
     if (!canMod) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
+    
+    // Check if single message delete
+    const messageId = request.nextUrl.searchParams.get('messageId')
+    if (messageId) {
+      // Delete single message
+      const msg = await prisma.chatMessage.findFirst({ where: { id: messageId, roomId } })
+      if (!msg) {
+        return NextResponse.json({ error: 'Mesaj bulunamadı' }, { status: 404 })
+      }
+      await prisma.chatMessage.delete({ where: { id: messageId } })
+      return NextResponse.json({ success: true, deletedUserId: msg.userId })
+    }
+    
     await prisma.chatMessage.deleteMany({ where: { roomId } })
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -19,7 +19,7 @@ export async function PATCH(
 
     const { roomId } = await params
     const body = await request.json()
-    const { targetUserId, seatIndex, forceThrone } = body
+    const { targetUserId, seatIndex, forceThrone, forceAssign } = body
 
     if (typeof seatIndex !== 'number' || seatIndex < -1 || seatIndex >= 15) {
       return NextResponse.json({ error: 'Geçersiz koltuk numarası' }, { status: 400 })
@@ -69,7 +69,7 @@ export async function PATCH(
       })
       if (seatTaken) {
         // If forceThrone and seat 0, displace the current occupant to next available seat
-        if (forceThrone && seatIndex === 0) {
+        if ((forceThrone && seatIndex === 0) || forceAssign) {
           // Find next empty seat for displaced user
           const allPresences = await prisma.chatPresence.findMany({
             where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
@@ -91,10 +91,11 @@ export async function PATCH(
       }
     }
 
-    // Update the target user's seat
-    await prisma.chatPresence.update({
+    // Update the target user's seat (upsert in case no presence record yet)
+    await prisma.chatPresence.upsert({
       where: { roomId_userId: { roomId, userId: actualTargetId } },
-      data: { seatIndex }
+      update: { seatIndex, lastSeen: new Date() },
+      create: { roomId, userId: actualTargetId, seatIndex, lastSeen: new Date() }
     })
 
     return NextResponse.json({ success: true, seatIndex })

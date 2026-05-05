@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, ArrowRightLeft, Music, RefreshCw } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import YouTubeMusicModal from '@/components/youtube-music-modal'
@@ -145,6 +145,7 @@ export default function ChatRoomPage() {
   // Rooms Popup
   const [showRoomsPopup, setShowRoomsPopup] = useState(false)
   const [showAnnouncement, setShowAnnouncement] = useState(true)
+  const [announcementProgress, setAnnouncementProgress] = useState(100)
   
   // Room owner controls
   const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false)
@@ -165,6 +166,14 @@ export default function ChatRoomPage() {
   const voiceReconnectTimerRef = useRef<NodeJS.Timeout | null>(null) // For reconnect retries
   const mySeatIndexRef = useRef<number>(-1) // Track current seat to preserve across heartbeats
   const autoSeatClaimedRef = useRef(false) // Prevent double auto-seat
+  const rulesShownRef = useRef(false) // Show rules once per room entry
+  
+  // Profanity filter state
+  const [profanityAlert, setProfanityAlert] = useState<{ msgId: string; userId: string; userName: string; content: string } | null>(null)
+  const [deletedMsgNotice, setDeletedMsgNotice] = useState<string | null>(null)
+  
+  // Seat assignment state (owner feature)
+  const [assignSeatIdx, setAssignSeatIdx] = useState<number | null>(null)
   const isLeavingPageRef = useRef(false) // Distinguish intentional leave from effect cleanup
   const roomIdRef = useRef<string | null>(null) // For cleanup on unmount
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
@@ -389,7 +398,7 @@ export default function ChatRoomPage() {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (res.ok) {
         const data = await res.json()
-        const incoming = (data.messages || []).slice(-100) // Cap at 100 messages
+        let incoming = (data.messages || []).slice(-100) // Cap at 100 messages
         const newLastId = incoming.length > 0 ? incoming[incoming.length - 1].id : null
         
         // Skip state update if messages haven't changed
@@ -398,6 +407,17 @@ export default function ChatRoomPage() {
         }
         lastMessageIdRef.current = newLastId
         
+        // Inject local rules message on first load
+        if (!rulesShownRef.current && incoming.length >= 0) {
+          rulesShownRef.current = true
+          const rulesMsg = {
+            id: 'local-rules-' + Date.now(),
+            content: '[SYSTEM_RULES]📋 ODA KURALLARI:\n1. Saygılı olun, küfür ve hakaret yasaktır\n2. Spam yapmayın, aynı mesajı tekrar etmeyin\n3. Reklam ve link paylaşımı yasaktır\n4. Yetkililerin uyarılarına uyun\n5. Mikrofon kullanırken sesli müzik çalmayın',
+            createdAt: new Date().toISOString(),
+            user: { id: 'system', name: 'Sistem', image: null }
+          }
+          incoming = [rulesMsg, ...incoming]
+        }
         setMessages(incoming)
         setRoomMuted(data.roomMuted || false)
         setMyPermissions(data.myPermissions || null)
@@ -1259,6 +1279,26 @@ export default function ChatRoomPage() {
     }
   }, [activeUsers, session?.user?.id])
 
+  // ── Auto-dismiss announcement after 15 seconds ──
+  useEffect(() => {
+    if (!room?.descTr || !showAnnouncement) return
+    setAnnouncementProgress(100)
+    const duration = 15000
+    const interval = 100
+    const step = (100 * interval) / duration
+    const progressTimer = setInterval(() => {
+      setAnnouncementProgress(prev => {
+        if (prev <= 0) { clearInterval(progressTimer); return 0 }
+        return prev - step
+      })
+    }, interval)
+    const dismissTimer = setTimeout(() => {
+      setShowAnnouncement(false)
+    }, duration)
+    return () => { clearTimeout(dismissTimer); clearInterval(progressTimer) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.descTr])
+
   // ── Chat Commands ──
   const [commandFlash, setCommandFlash] = useState<string | null>(null)
   
@@ -1448,6 +1488,64 @@ export default function ChatRoomPage() {
   }
 
   // Send message
+  // ── Profanity Detection ──
+  const BANNED_WORDS = ['amk','aq','amına','amina','orospu','oç','piç','sik','yarrak','göt','pezevenk','gavat','ibne','kaltak','fahişe','şerefsiz','bok','siktir','hassiktir','puşt','dangalak','gerizekalı','salak','aptal','mal','döl','taşak','meme','am','yarak','sikerim','ananı','bacını','avradını']
+  const profanityAlertedRef = useRef<Set<string>>(new Set())
+  
+  const checkProfanity = (text: string): boolean => {
+    const lower = text.toLowerCase().replace(/[ıİ]/g, 'i').replace(/[şŞ]/g, 's').replace(/[çÇ]/g, 'c').replace(/[öÖ]/g, 'o').replace(/[üÜ]/g, 'u').replace(/[ğĞ]/g, 'g')
+    return BANNED_WORDS.some(word => {
+      const pattern = new RegExp(`\\b${word}\\b|${word}`, 'i')
+      return pattern.test(lower)
+    })
+  }
+
+  // Check incoming messages for profanity (moderator alert)
+  useEffect(() => {
+    if (!messages.length || !myPermissions) return
+    const isMod = myPermissions.isRoomOwner || myPermissions.isGlobalAdmin || 
+      (myPermissions.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))
+    if (!isMod) return
+    
+    const lastMsg = messages[messages.length - 1]
+    if (!lastMsg || lastMsg.user.id === 'system' || lastMsg.user.id === session?.user?.id) return
+    if (profanityAlertedRef.current.has(lastMsg.id)) return
+    
+    if (checkProfanity(lastMsg.content)) {
+      profanityAlertedRef.current.add(lastMsg.id)
+      setProfanityAlert({
+        msgId: lastMsg.id,
+        userId: lastMsg.user.id,
+        userName: lastMsg.user.nickname || lastMsg.user.name || 'Kullanıcı',
+        content: lastMsg.content
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, myPermissions])
+
+  // Handle profanity mod actions
+  const handleProfanityAction = async (action: 'delete' | 'mute' | 'kick') => {
+    if (!profanityAlert || !room) return
+    const { msgId, userId } = profanityAlert
+    
+    try {
+      if (action === 'delete' || action === 'mute' || action === 'kick') {
+        // Delete the offending message
+        await fetch(`/api/chat/rooms/${room.id}/messages?messageId=${msgId}`, { method: 'DELETE' })
+        fetchMessages()
+      }
+      if (action === 'mute') {
+        await performModAction('mute_user', userId, { duration: 10 })
+      }
+      if (action === 'kick') {
+        await performModAction('kick_user', userId)
+      }
+    } catch (err) {
+      console.error('Profanity action error:', err)
+    }
+    setProfanityAlert(null)
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMessage.trim() || !room || !session?.user || sending) return
@@ -2306,6 +2404,68 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
+      {/* Profanity Alert Popup for Moderators */}
+      <AnimatePresence>
+        {profanityAlert && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setProfanityAlert(null)}
+          >
+            <div className="bg-[#1a0a2e] border border-red-500/40 rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-red-500/20 rounded-full">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
+                </div>
+                <h3 className="text-red-400 font-bold text-sm">⚠️ Küfür Tespit Edildi!</h3>
+              </div>
+              <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3 mb-4">
+                <p className="text-white/60 text-[10px] mb-1">{profanityAlert.userName}:</p>
+                <p className="text-red-300 text-xs">{profanityAlert.content}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleProfanityAction('delete')} className="flex-1 py-2 px-3 bg-orange-600/80 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
+                  <Trash2 className="w-3.5 h-3.5" /> Sil
+                </button>
+                <button onClick={() => handleProfanityAction('mute')} className="flex-1 py-2 px-3 bg-yellow-600/80 hover:bg-yellow-500 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
+                  <MicOff className="w-3.5 h-3.5" /> Sustur
+                </button>
+                <button onClick={() => handleProfanityAction('kick')} className="flex-1 py-2 px-3 bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1">
+                  <UserX className="w-3.5 h-3.5" /> At
+                </button>
+              </div>
+              <button onClick={() => setProfanityAlert(null)} className="w-full mt-2 py-1.5 text-white/40 hover:text-white/70 text-[10px] transition-colors">Kapat</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Deleted Message Notice for Users */}
+      <AnimatePresence>
+        {deletedMsgNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500/20 border border-red-500/50 rounded-xl px-6 py-4 shadow-xl backdrop-blur-sm max-w-md"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/30 rounded-full">
+                <ShieldAlert className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="text-red-300 font-medium text-sm">{deletedMsgNotice}</p>
+              </div>
+              <button onClick={() => setDeletedMsgNotice(null)} className="text-red-400 hover:text-white ml-2">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ Main Chat Layout — Yalla/Bigo-style Voice Room ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Fullscreen wallpaper background */}
@@ -2396,13 +2556,20 @@ export default function ChatRoomPage() {
           const TOTAL_SEATS = 15
           const COLS = 5
           
-          // Build seats from seatIndex — users pick their own seats
+          // Build seats — sorted by authority rank (highest first)
           const seats: (ActiveUser | null)[] = new Array(TOTAL_SEATS).fill(null)
-          for (const u of activeUsers) {
-            if (u.seatIndex >= 0 && u.seatIndex < TOTAL_SEATS) {
-              seats[u.seatIndex] = u
-            }
-          }
+          const seatedUsers = activeUsers
+            .filter(u => u.seatIndex >= 0 && u.seatIndex < TOTAL_SEATS)
+            .sort((a, b) => {
+              // Owner always first
+              const aOwner = room.ownerId === a.id ? 100 : 0
+              const bOwner = room.ownerId === b.id ? 100 : 0
+              return (bOwner + (b.roleLevel || 0)) - (aOwner + (a.roleLevel || 0))
+            })
+          // Assign sorted users to seats 0, 1, 2... by rank
+          seatedUsers.forEach((u, i) => {
+            seats[i] = u
+          })
           
           // Find the last occupied row and show up to that row + 1 extra row
           let lastOccupiedRow = -1
@@ -2451,6 +2618,22 @@ export default function ChatRoomPage() {
               if (res.ok) {
                 mySeatIndexRef.current = -1
                 fetchActiveUsers()
+              }
+            } catch {}
+          }
+
+          // Handle assigning user to seat (owner action)
+          const handleAssignSeat = async (targetUserId: string, seatIdx: number) => {
+            if (!room) return
+            try {
+              const res = await fetch(`/api/chat/rooms/${room.id}/seats`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId, seatIndex: seatIdx, forceAssign: true })
+              })
+              if (res.ok) {
+                fetchActiveUsers()
+                setAssignSeatIdx(null)
               }
             } catch {}
           }
@@ -2523,6 +2706,12 @@ export default function ChatRoomPage() {
                           {isSpeakingSeat && (
                             <div className={`absolute inset-0 ${isThrone ? 'rounded-2xl' : 'rounded-full'} border-2 border-green-400 animate-ping opacity-30`} />
                           )}
+                          {/* Mic status indicator */}
+                          {voiceUsers.some(vu => vu.id === seatUser.id) && (
+                            <div className={`absolute top-0 left-0 p-0.5 rounded-full ${isSpeakingSeat ? 'bg-green-500' : isMe && isMicMuted ? 'bg-red-500' : 'bg-blue-500'} shadow-lg z-10`}>
+                              {isMe && isMicMuted ? <MicOff className="w-2.5 h-2.5 text-white" /> : <Mic className="w-2.5 h-2.5 text-white" />}
+                            </div>
+                          )}
                         </div>
                         <p className={`text-[9px] font-bold truncate text-center drop-shadow-lg ${isThrone ? 'max-w-[64px] text-yellow-300' : 'max-w-[56px]'} ${getNameEffectClass(seatUser)} ${!isThrone && (isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80')}`}
                           {...(getNameEffectClass(seatUser) === 'effect-glitch' ? { 'data-text': getDisplayName(seatUser) } : {})}
@@ -2543,11 +2732,15 @@ export default function ChatRoomPage() {
                     )
                   }
                   
-                  // Empty seat — clickable to claim
+                  // Empty seat — clickable to claim (or assign for owners)
                   return (
-                    <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5">
+                    <div key={`seat-${idx}`} className="flex flex-col items-center gap-0.5 relative">
                       <button
                         onClick={() => handleClaimSeat(idx)}
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          if (canManageSeats) setAssignSeatIdx(assignSeatIdx === idx ? null : idx)
+                        }}
                         className={`flex items-center justify-center backdrop-blur-sm transition-all cursor-pointer group
                           ${isThrone 
                             ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-2 border-dashed border-yellow-500/30 hover:border-yellow-400/60 hover:bg-yellow-900/30 shadow-inner' 
@@ -2563,6 +2756,27 @@ export default function ChatRoomPage() {
                           </svg>
                         )}
                       </button>
+                      {/* Owner assign button */}
+                      {canManageSeats && (
+                        <button onClick={() => setAssignSeatIdx(assignSeatIdx === idx ? null : idx)} className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full text-white text-[8px] opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity flex items-center justify-center z-20" title="Kullanıcı ata">
+                          <UserPlus className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                      {/* Assign user picker */}
+                      {assignSeatIdx === idx && (
+                        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-[#1a0a2e] border border-purple-500/30 rounded-lg p-2 z-30 w-40 max-h-40 overflow-y-auto shadow-2xl">
+                          <p className="text-[9px] text-purple-300 font-bold mb-1">Koltuk {idx + 1}&apos;e ata:</p>
+                          {activeUsers.filter(u => u.seatIndex < 0).map(u => (
+                            <button key={u.id} onClick={() => handleAssignSeat(u.id, idx)} className="w-full text-left px-2 py-1 text-[10px] text-white/80 hover:bg-purple-500/20 rounded truncate flex items-center gap-1">
+                              <span className="w-4 h-4 rounded-full bg-purple-800 flex items-center justify-center text-[7px] text-white/60 flex-shrink-0">{(u.nickname || u.name || '?').charAt(0)}</span>
+                              {u.nickname || u.name}
+                            </button>
+                          ))}
+                          {activeUsers.filter(u => u.seatIndex < 0).length === 0 && (
+                            <p className="text-[9px] text-white/30 text-center py-1">Atanacak kullanıcı yok</p>
+                          )}
+                        </div>
+                      )}
                       <p className={`text-[9px] font-medium ${isThrone ? 'text-yellow-500/30' : 'text-white/20'}`}>{isThrone ? '👑' : idx + 1}</p>
                     </div>
                   )
@@ -2630,7 +2844,7 @@ export default function ChatRoomPage() {
           </div>
         ) : room.descTr && showAnnouncement ? (
           <div className="relative z-10 mx-3 mb-2">
-            <div className="bg-black/50 backdrop-blur-md rounded-lg border border-white/10 p-3 max-h-32 overflow-y-auto">
+            <div className="bg-black/50 backdrop-blur-md rounded-lg border border-white/10 p-3 max-h-32 overflow-y-auto relative overflow-hidden">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-yellow-400 text-xs font-bold mb-1">📢 Duyuru:</p>
@@ -2646,6 +2860,10 @@ export default function ChatRoomPage() {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+              {/* Auto-dismiss progress bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/5">
+                <div className="h-full bg-yellow-400/60 transition-all duration-100" style={{ width: `${announcementProgress}%` }} />
               </div>
             </div>
           </div>
@@ -2812,6 +3030,19 @@ export default function ChatRoomPage() {
                 const isOwner = isRoomOwner(msg.user.id)
                 const isSpeakingUser = speakingUsers.has(msg.user.id)
                 
+                // Local rules system message
+                const isRulesMsg = msg.content.startsWith('[SYSTEM_RULES]')
+                if (isRulesMsg) {
+                  const rulesText = msg.content.replace('[SYSTEM_RULES]', '')
+                  return (
+                    <div key={msg.id} className="flex justify-center my-2">
+                      <div className="bg-gradient-to-r from-purple-900/60 via-indigo-900/60 to-purple-900/60 border border-purple-500/20 rounded-lg px-4 py-2.5 max-w-[90%]">
+                        <p className="text-purple-300 text-[11px] whitespace-pre-wrap leading-relaxed">{rulesText}</p>
+                      </div>
+                    </div>
+                  )
+                }
+
                 // System messages
                 const isSystemJoin = msg.content.startsWith('[SYSTEM_JOIN]')
                 const isVipJoin = msg.content.startsWith('[SYSTEM_VIP_JOIN:')
@@ -3091,9 +3322,9 @@ export default function ChatRoomPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center disabled:opacity-30 hover:bg-purple-500 flex-shrink-0 transition-all"
+                  className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white flex items-center justify-center disabled:opacity-30 hover:from-purple-400 hover:to-fuchsia-500 flex-shrink-0 transition-all shadow-lg shadow-purple-500/30 active:scale-95"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" />
                 </button>
               </form>
 
@@ -3114,6 +3345,7 @@ export default function ChatRoomPage() {
             {/* Jeton Loading Area */}
             <div className="flex items-center justify-between mt-1.5 px-1">
               <span className="text-[10px] text-yellow-400/70 flex items-center gap-0.5">💎 {userJetonBalance.toLocaleString()} Jeton</span>
+              <img src="/chat-cat-sticker.png" alt="Kedi" className="w-6 h-6 object-contain flex-shrink-0" />
               <button
                 type="button"
                 onClick={() => window.open(`/${language}/jeton`, '_blank')}
