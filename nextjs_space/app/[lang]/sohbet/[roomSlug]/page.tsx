@@ -3546,7 +3546,7 @@ export default function ChatRoomPage() {
         )}
 
         {/* ── Right Edge Buttons: Commands Toggle + Song Request ── */}
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1.5">
+        <div className="fixed right-0 top-[65%] -translate-y-1/2 z-30 flex flex-col gap-1.5">
           {/* Commands Panel Toggle (for authorized users) */}
           {session?.user && (myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
             (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
@@ -4723,11 +4723,12 @@ export default function ChatRoomPage() {
       </AnimatePresence>
 
       {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
+      {/* loop=1 keeps audio alive in hidden iframe; duration timer handles auto-next */}
       {currentMusicVideoId && !showMusicModal && !musicMuted && !musicPaused && (
         <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
           <iframe
             key={currentMusicVideoId}
-            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=0`}
+            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
             allow="autoplay; encrypted-media"
             style={{ width: 1, height: 1, border: 'none' }}
           />
