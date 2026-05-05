@@ -228,22 +228,15 @@ export default function ChatRoomPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousMessagesCount = useRef(0)
 
-  // Handle mobile keyboard - ensure input stays visible
+  // Handle mobile keyboard - recalculate viewport height (lightweight, no scroll forcing)
   const handleInputFocus = useCallback(() => {
-    // Force recalculate --vh after keyboard animation completes
     const recalc = () => {
       const height = window.visualViewport?.height || window.innerHeight
       const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
-      // Prevent page scroll - reset any scroll on document/window
-      window.scrollTo(0, 0)
-      document.documentElement.scrollTop = 0
-      document.body.scrollTop = 0
     }
-    // Multiple timeouts to catch different keyboard animation speeds
-    setTimeout(recalc, 100)
+    // Single delayed recalc after keyboard animation
     setTimeout(recalc, 300)
-    setTimeout(recalc, 500)
   }, [])
 
   // Initialize audio
@@ -270,42 +263,27 @@ export default function ChatRoomPage() {
     }
   }, [soundEnabled])
 
-  // Handle mobile viewport height (keyboard open/close)
+  // Handle mobile viewport height (keyboard open/close) — lightweight, no scroll forcing
   useEffect(() => {
     if (typeof window === 'undefined') return
     
     const setVH = () => {
-      // Use visualViewport height when available (handles mobile keyboard)
       const height = window.visualViewport?.height || window.innerHeight
       const vh = height * 0.01
       document.documentElement.style.setProperty('--vh', `${vh}px`)
-      // Prevent any document-level scrolling in chat room
-      window.scrollTo(0, 0)
     }
     
     setVH()
     window.addEventListener('resize', setVH)
     
-    // Also handle visual viewport for mobile keyboard
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', setVH)
-      window.visualViewport.addEventListener('scroll', setVH)
     }
-
-    // Prevent document scroll entirely in chat room
-    const preventScroll = (e: Event) => {
-      if (!(e.target as HTMLElement)?.closest?.('.overflow-y-auto')) {
-        window.scrollTo(0, 0)
-      }
-    }
-    document.addEventListener('scroll', preventScroll, { passive: true })
     
     return () => {
       window.removeEventListener('resize', setVH)
-      document.removeEventListener('scroll', preventScroll)
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', setVH)
-        window.visualViewport.removeEventListener('scroll', setVH)
       }
     }
   }, [])
@@ -399,26 +377,36 @@ export default function ChatRoomPage() {
     }
   }
 
-  // Fetch messages
+  // Fetch messages — only updates state when messages actually changed, capped at 100
+  const lastMessageIdRef = useRef<string | null>(null)
   const fetchMessages = useCallback(async () => {
     if (!room) return
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/messages`)
       if (res.ok) {
         const data = await res.json()
-        setMessages(data.messages || [])
+        const incoming = (data.messages || []).slice(-100) // Cap at 100 messages
+        const newLastId = incoming.length > 0 ? incoming[incoming.length - 1].id : null
+        
+        // Skip state update if messages haven't changed
+        if (newLastId === lastMessageIdRef.current && incoming.length === previousMessagesCount.current) {
+          return
+        }
+        lastMessageIdRef.current = newLastId
+        
+        setMessages(incoming)
         setRoomMuted(data.roomMuted || false)
         setMyPermissions(data.myPermissions || null)
         if (data.myNickname) {
           setNickname(data.myNickname)
         }
-        if (data.messages && data.messages.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
-          const lastMsg = data.messages[data.messages.length - 1]
+        if (incoming.length > previousMessagesCount.current && previousMessagesCount.current > 0) {
+          const lastMsg = incoming[incoming.length - 1]
           if (lastMsg.user.id !== session?.user?.id) {
             audioRef.current?.play()
           }
           // Extract new join events for marquee
-          const newMsgs = data.messages.slice(previousMessagesCount.current)
+          const newMsgs = incoming.slice(previousMessagesCount.current)
           const newJoins: { id: string; name: string; isVip: boolean; vipType?: string }[] = []
           for (const m of newMsgs) {
             if (m.content.startsWith('[SYSTEM_VIP_JOIN:')) {
@@ -432,7 +420,7 @@ export default function ChatRoomPage() {
             setMarqueeJoinEvents(prev => [...prev, ...newJoins].slice(-10))
           }
         }
-        previousMessagesCount.current = data.messages?.length || 0
+        previousMessagesCount.current = incoming.length
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -586,25 +574,40 @@ export default function ChatRoomPage() {
       fetchBalance()
       setLoading(false)
 
-      const messageInterval = setInterval(fetchMessages, 3000)
-      const userInterval = setInterval(fetchActiveUsers, 5000)
-      const presenceInterval = setInterval(updatePresence, 10000)
-      const roomsInterval = setInterval(fetchAllRooms, 60000)
-      const voiceUsersInterval = setInterval(fetchVoiceUsers, 5000)
-      const typingInterval = setInterval(fetchTypingUsers, 2000)
-      const balanceInterval = setInterval(fetchBalance, 30000)
-
+      // ── Reduced polling intervals for mobile performance ──
+      const intervalsRef: NodeJS.Timeout[] = []
+      const startPolling = () => {
+        // Clear any existing intervals first
+        intervalsRef.forEach(clearInterval)
+        intervalsRef.length = 0
+        intervalsRef.push(
+          setInterval(fetchMessages, 5000),       // was 3s
+          setInterval(fetchActiveUsers, 15000),   // was 5s
+          setInterval(updatePresence, 20000),     // was 10s
+          setInterval(fetchAllRooms, 90000),      // was 60s
+          setInterval(fetchVoiceUsers, 15000),    // was 5s
+          setInterval(fetchTypingUsers, 8000),    // was 2s
+          setInterval(fetchBalance, 60000),       // was 30s
+        )
+      }
+      const stopPolling = () => {
+        intervalsRef.forEach(clearInterval)
+        intervalsRef.length = 0
+      }
+      startPolling()
       updatePresence()
 
-      // ── Visibility change handler: pause polling when tab is hidden, resume + refresh when visible ──
+      // ── Visibility change: PAUSE polling when hidden, resume when visible ──
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          // Tab became visible again — immediately refresh everything
           updatePresence()
           fetchMessages()
           fetchActiveUsers()
           fetchVoiceUsers()
           fetchBroadcastImages()
+          startPolling()
+        } else {
+          stopPolling() // Stop all intervals when tab is hidden
         }
       }
       document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -629,13 +632,7 @@ export default function ChatRoomPage() {
       window.addEventListener('beforeunload', handleBeforeUnload)
 
       return () => {
-        clearInterval(messageInterval)
-        clearInterval(userInterval)
-        clearInterval(presenceInterval)
-        clearInterval(roomsInterval)
-        clearInterval(voiceUsersInterval)
-        clearInterval(typingInterval)
-        clearInterval(balanceInterval)
+        stopPolling()
         document.removeEventListener('visibilitychange', handleVisibilityChange)
         window.removeEventListener('online', handleOnline)
         window.removeEventListener('beforeunload', handleBeforeUnload)
@@ -673,7 +670,7 @@ export default function ChatRoomPage() {
       } catch {}
     }
     fetchMusic()
-    const interval = setInterval(fetchMusic, 5000)
+    const interval = setInterval(fetchMusic, 15000) // was 5s
     return () => { cancelled = true; clearInterval(interval) }
   }, [room?.id])
 
@@ -705,10 +702,20 @@ export default function ChatRoomPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMusicVideoId, voiceEnabled])
 
-  // Auto-scroll - use scrollTop on container to prevent parent scroll
+  // Auto-scroll — only if user is near the bottom (within 150px), prevents layout thrash
+  const isNearBottomRef = useRef(true)
   useEffect(() => {
     const container = messagesContainerRef.current
-    if (container) {
+    if (!container) return
+    const handleScroll = () => {
+      isNearBottomRef.current = container.scrollHeight - container.scrollTop - container.clientHeight < 150
+    }
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (container && isNearBottomRef.current) {
       container.scrollTop = container.scrollHeight
     }
   }, [messages])
@@ -1479,19 +1486,25 @@ export default function ChatRoomPage() {
     }
   }
 
-  // Typing indicator
+  // Typing indicator — debounced: only sends network request after 600ms of silence
+  const typingActiveRef = useRef(false)
   const handleTyping = useCallback(() => {
     if (!room || !session?.user) return
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
-    fetch(`/api/chat/rooms/${room.id}/typing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isTyping: true })
-    }).catch(() => {})
-
+    // Only send "isTyping: true" once, not on every keystroke
+    if (!typingActiveRef.current) {
+      typingActiveRef.current = true
+      fetch(`/api/chat/rooms/${room.id}/typing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTyping: true })
+      }).catch(() => {})
+    }
+    // After 3s of no typing, send "isTyping: false"
     typingTimeoutRef.current = setTimeout(() => {
+      typingActiveRef.current = false
       fetch(`/api/chat/rooms/${room.id}/typing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1657,6 +1670,11 @@ export default function ChatRoomPage() {
         // Process recent gifts for animation
         const recent = data.recentGifts || []
         const newAnims: Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
+        // Prevent unbounded memory growth — cap seen gift IDs at 200
+        if (seenGiftIdsRef.current.size > 200) {
+          const arr = Array.from(seenGiftIdsRef.current)
+          seenGiftIdsRef.current = new Set(arr.slice(-100))
+        }
         for (const g of recent) {
           if (!seenGiftIdsRef.current.has(g.id)) {
             seenGiftIdsRef.current.add(g.id)
@@ -1805,7 +1823,7 @@ export default function ChatRoomPage() {
     if (room) {
       fetchGiftTypes()
       fetchLeaderboard()
-      const interval = setInterval(fetchLeaderboard, 5000)
+      const interval = setInterval(fetchLeaderboard, 30000) // was 5s
       return () => clearInterval(interval)
     }
   }, [room, fetchGiftTypes, fetchLeaderboard])

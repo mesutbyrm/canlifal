@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Filter by search
-    let filtered = tellers
+    let filtered = tellers as any[]
     if (searchQ) {
       const q = searchQ.toLowerCase()
-      filtered = tellers.filter(t => 
+      filtered = tellers.filter((t: any) => 
         t.displayName.toLowerCase().includes(q) ||
         t.user?.name?.toLowerCase().includes(q) ||
         t.user?.username?.toLowerCase().includes(q) ||
@@ -43,16 +43,16 @@ export async function GET(request: NextRequest) {
 
     // Level distribution stats
     const levelCounts = {
-      bronze: tellers.filter(t => t.tellerLevel === 'bronze').length,
-      silver: tellers.filter(t => t.tellerLevel === 'silver').length,
-      gold: tellers.filter(t => t.tellerLevel === 'gold').length,
-      diamond: tellers.filter(t => t.tellerLevel === 'diamond').length,
+      bronze: tellers.filter((t: any) => t.tellerLevel === 'bronze').length,
+      silver: tellers.filter((t: any) => t.tellerLevel === 'silver').length,
+      gold: tellers.filter((t: any) => t.tellerLevel === 'gold').length,
+      diamond: tellers.filter((t: any) => t.tellerLevel === 'diamond').length,
     }
 
-    const avgRating = tellers.length > 0 ? tellers.reduce((s, t) => s + t.rating, 0) / tellers.length : 0
-    const totalSessions = tellers.reduce((s, t) => s + t.totalSessions, 0)
-    const totalEarnings = tellers.reduce((s, t) => s + t.totalEarnings, 0)
-    const onlineCount = tellers.filter(t => t.isOnline).length
+    const avgRating = tellers.length > 0 ? tellers.reduce((s: number, t: any) => s + t.rating, 0) / tellers.length : 0
+    const totalSessions = tellers.reduce((s: number, t: any) => s + t.totalSessions, 0)
+    const totalEarnings = tellers.reduce((s: number, t: any) => s + t.totalEarnings, 0)
+    const onlineCount = tellers.filter((t: any) => t.isOnline).length
 
     return NextResponse.json({
       tellers: filtered.map(t => ({

@@ -27,8 +27,9 @@ export default function MobileFooter() {
   const isIndividualChat = pathname ? /\/mesajlar\/[^/]+/.test(pathname) : false
   const shouldHide = hiddenPaths.some(path => pathname?.includes(path)) || isIndividualChat
   
-  // Check if we're on messages page (hide floating profile button there)
+  // Check if we're on messages page or chat room (hide floating profile button there)
   const isMessagesPage = pathname?.includes('/mesajlar')
+  const isChatRoom = pathname ? /\/sohbet\/[^/]/.test(pathname) : false
   
   useEffect(() => {
     if (!session?.user) return
@@ -121,8 +122,8 @@ export default function MobileFooter() {
       {/* Spacer to prevent content from being hidden behind footer */}
       <div className="h-20 md:hidden" />
       
-      {/* Floating Profile Button - above footer - HIDDEN on messages page */}
-      {session?.user && !isMessagesPage && (
+      {/* Floating Profile Button - above footer - HIDDEN on messages page and chat rooms */}
+      {session?.user && !isMessagesPage && !isChatRoom && (
         <Link
           href={`/profil/${session.user.id}`}
           className="fixed bottom-[70px] right-3 z-[51] md:hidden"
