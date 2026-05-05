@@ -187,6 +187,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
       { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
       { href: `/admin/backup`, icon: HardDrive, trLabel: 'Site Yedekleme', enLabel: 'Site Backup' },
+      { href: `/admin/bots`, icon: Bot, trLabel: 'AI Bot Yönetimi', enLabel: 'AI Bot Management' },
     ],
   },
 ]

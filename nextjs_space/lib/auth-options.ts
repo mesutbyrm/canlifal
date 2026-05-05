@@ -41,6 +41,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
+        // Prevent bot users from logging in
+        if (user.isBot) {
+          throw new Error('Invalid credentials')
+        }
+
         // Generate unique device token for single-device enforcement
         const deviceToken = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
         await prisma.user.update({

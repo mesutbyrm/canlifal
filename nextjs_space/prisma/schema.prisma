@@ -110,14 +110,39 @@ model User {
   // Agency system
   agencyMembership      AgencyUser?
   agencyLeaveRequests   AgencyLeaveRequest[]
+  // Bot system
+  isBot                 Boolean              @default(false)
+  botProfile            BotProfile?
 
   @@index([referralCode])
+  @@index([isBot])
   @@index([referredById])
   @@index([username])
   @@map("users")
 }
 
 // Follow relationship between users
+model BotProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personality     String   // shy, aggressive, funny, flirty, serious
+  age             Int
+  city            String
+  interests       String?  @db.Text // JSON array
+  activityLevel   String   @default("medium") // low, medium, high
+  activeHoursStart Int     @default(9)  // 0-23
+  activeHoursEnd  Int      @default(23) // 0-23
+  isActive        Boolean  @default(true) // admin can enable/disable
+  lastActionAt    DateTime?
+  totalActions    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([isActive])
+  @@index([personality])
+  @@map("bot_profiles")
+}
+
 model Follow {
   id          String   @id @default(cuid())
   followerId  String   // The user who is following
