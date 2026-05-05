@@ -941,8 +941,17 @@ export default function ChatRoomPage() {
                 setMusicPaused(false)
               }
             } catch {}
+          } else {
+            // Queue empty — stop music instead of looping
+            try {
+              await fetch(`/api/chat/rooms/${roomId}/music`, { method: 'DELETE' })
+            } catch {}
+            musicPausedAtRef.current = 0
+            setCurrentMusicVideoId(null)
+            setCurrentMusicTitle(null)
+            setCurrentMusicDuration(null)
+            setMusicPaused(false)
           }
-          // If no queue: song keeps looping via iframe loop=1
         }
       } catch {}
     }, remaining)
