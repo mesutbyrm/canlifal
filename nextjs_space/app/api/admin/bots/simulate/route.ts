@@ -12,7 +12,8 @@ const MAX_TOTAL_ACTIVE_BOTS = 25        // Max bots active across all rooms
 const MESSAGE_TYPES = ['greeting', 'chat', 'farewell', 'reaction', 'fortune', 'general'] as const
 
 function rand(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min }
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pick(arr: readonly any[]): any { return arr[Math.floor(Math.random() * arr.length)] }
 
 // Check if current hour falls within bot's active hours
 function isInActiveHours(start: number, end: number): boolean {
@@ -72,15 +73,18 @@ export async function POST(req: NextRequest) {
             activityLevel: true,
             activeHoursStart: true,
             activeHoursEnd: true,
-            totalActions: true
+            totalActions: true,
+            lastActionAt: true
           }
         }
       }
     })
 
-    // Filter by active hours
+    // Filter by active hours + cooldown (skip bots that acted in last 2 min)
+    const cooldownMs = 2 * 60 * 1000
     const availableBots = allActiveBots.filter(b =>
-      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd)
+      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd) &&
+      (!b.botProfile.lastActionAt || Date.now() - new Date(b.botProfile.lastActionAt).getTime() > cooldownMs)
     )
 
     if (availableBots.length === 0) {

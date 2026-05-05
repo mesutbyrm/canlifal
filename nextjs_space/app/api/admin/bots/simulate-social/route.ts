@@ -4,8 +4,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { POST_COMMENTS, STREAM_COMMENTS, STREAM_EMOJIS, pickRandom } from '@/lib/bot-social-messages'
+import { POST_COMMENTS, STREAM_COMMENTS, STREAM_EMOJIS } from '@/lib/bot-social-messages'
 import type { Personality } from '@/lib/bot-messages'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pickRandom(arr: readonly any[]): any {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 // ── Configuration ──
 const MAX_FOLLOWS_PER_CYCLE = 5
@@ -53,13 +58,17 @@ export async function POST(req: NextRequest) {
             activityLevel: true,
             activeHoursStart: true,
             activeHoursEnd: true,
+            lastActionAt: true,
           }
         }
       }
     })
 
+    // Filter by active hours + cooldown (skip bots that acted in last 3 min)
+    const cooldownMs = 3 * 60 * 1000
     const availableBots = allActiveBots.filter(b =>
-      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd)
+      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd) &&
+      (!b.botProfile.lastActionAt || Date.now() - new Date(b.botProfile.lastActionAt).getTime() > cooldownMs)
     )
 
     if (availableBots.length === 0) {

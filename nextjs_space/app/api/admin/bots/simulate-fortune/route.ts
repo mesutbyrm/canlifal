@@ -5,8 +5,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { DREAM_COMMENTS, FORTUNE_POST_TEMPLATES, FORTUNE_TYPES, FORTUNE_TYPE_LABELS } from '@/lib/bot-fortune-messages'
-import { pickRandom } from '@/lib/bot-social-messages'
 import type { Personality } from '@/lib/bot-messages'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pick(arr: readonly any[]): any {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 // ── Configuration ──
 const MAX_DREAM_COMMENTS_PER_CYCLE = 4
@@ -53,13 +57,17 @@ export async function POST(req: NextRequest) {
             activityLevel: true,
             activeHoursStart: true,
             activeHoursEnd: true,
+            lastActionAt: true,
           }
         }
       }
     })
 
+    // Filter by active hours + cooldown (skip bots that acted in last 3 min)
+    const cooldownMs = 3 * 60 * 1000
     const availableBots = allActiveBots.filter(b =>
-      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd)
+      b.botProfile && isInActiveHours(b.botProfile.activeHoursStart, b.botProfile.activeHoursEnd) &&
+      (!b.botProfile.lastActionAt || Date.now() - new Date(b.botProfile.lastActionAt).getTime() > cooldownMs)
     )
 
     if (availableBots.length === 0) {
@@ -78,11 +86,11 @@ export async function POST(req: NextRequest) {
       // ── 3. Dream Comments ──
       const commentCount = rand(1, Math.min(MAX_DREAM_COMMENTS_PER_CYCLE, availableBots.length))
       for (let i = 0; i < commentCount; i++) {
-        const bot = pickRandom(availableBots)
-        const dream = pickRandom(dreams)
+        const bot = pick(availableBots)
+        const dream = pick(dreams)
         const personality = (bot.botProfile?.personality || 'shy') as Personality
         const templates = DREAM_COMMENTS[personality] || DREAM_COMMENTS.shy
-        const template = pickRandom(templates)
+        const template = pick(templates)
 
         try {
           await prisma.dreamComment.create({
@@ -106,8 +114,8 @@ export async function POST(req: NextRequest) {
       // ── 4. Dream Favorites ──
       const favCount = rand(2, Math.min(MAX_DREAM_FAVORITES_PER_CYCLE, availableBots.length))
       for (let i = 0; i < favCount; i++) {
-        const bot = pickRandom(availableBots)
-        const dream = pickRandom(dreams)
+        const bot = pick(availableBots)
+        const dream = pick(dreams)
 
         try {
           await prisma.dreamFavorite.upsert({
@@ -126,8 +134,8 @@ export async function POST(req: NextRequest) {
       // ── 5. Dream Views (increase view counts) ──
       const viewCount = rand(3, Math.min(MAX_DREAM_VIEWS_PER_CYCLE, availableBots.length))
       for (let i = 0; i < viewCount; i++) {
-        const bot = pickRandom(availableBots)
-        const dream = pickRandom(dreams)
+        const bot = pick(availableBots)
+        const dream = pick(dreams)
 
         try {
           await prisma.dreamView.create({
@@ -150,12 +158,12 @@ export async function POST(req: NextRequest) {
     // ── 6. Fortune Social Posts (bot shares fortune experience) ──
     const postCount = rand(0, Math.min(MAX_FORTUNE_POSTS_PER_CYCLE, availableBots.length))
     for (let i = 0; i < postCount; i++) {
-      const bot = pickRandom(availableBots)
+      const bot = pick(availableBots)
       const personality = (bot.botProfile?.personality || 'shy') as Personality
       const templates = FORTUNE_POST_TEMPLATES[personality] || FORTUNE_POST_TEMPLATES.shy
-      const content = pickRandom(templates)
+      const content = pick(templates)
       const fortuneTypesArray: string[] = [...FORTUNE_TYPES]
-      const fortuneType = pickRandom(fortuneTypesArray)
+      const fortuneType = pick(fortuneTypesArray)
 
       try {
         await prisma.socialPost.create({

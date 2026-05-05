@@ -79,6 +79,12 @@ export default function AdminBotsPage() {
   const [fortuneAutoInterval, setFortuneAutoInterval] = useState<NodeJS.Timeout | null>(null)
   const [fortuneAutoActive, setFortuneAutoActive] = useState(false)
   const [fortuneLog, setFortuneLog] = useState<Array<{ time: string; actions: any[] }>>([])
+  // Master simulation states
+  const [masterStatus, setMasterStatus] = useState<any>(null)
+  const [masterRunning, setMasterRunning] = useState(false)
+  const [masterAutoInterval, setMasterAutoInterval] = useState<NodeJS.Timeout | null>(null)
+  const [masterAutoActive, setMasterAutoActive] = useState(false)
+  const [masterLog, setMasterLog] = useState<Array<{ time: string; total: number; chat: number; social: number; fortune: number }>>([])
 
   const fetchBots = useCallback(async () => {
     try {
@@ -274,6 +280,89 @@ export default function AdminBotsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fortuneAutoInterval])
 
+  // Master simulation functions
+  const fetchMasterStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/bots/simulate-master')
+      if (res.ok) setMasterStatus(await res.json())
+    } catch {}
+  }, [])
+
+  useEffect(() => { fetchMasterStatus() }, [fetchMasterStatus])
+
+  const runMasterCycle = async () => {
+    setMasterRunning(true)
+    try {
+      const res = await fetch('/api/admin/bots/simulate-master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          const timeStr = new Date().toLocaleTimeString('tr-TR')
+          setMasterLog(prev => [{
+            time: timeStr,
+            total: data.totalActions || 0,
+            chat: data.results?.chat?.actions || 0,
+            social: data.results?.social?.actions || 0,
+            fortune: data.results?.fortune?.actions || 0
+          }, ...prev].slice(0, 30))
+        }
+        fetchMasterStatus()
+        fetchSimStatus()
+        fetchSocialStatus()
+        fetchFortuneStatus()
+      }
+    } catch {} finally {
+      setMasterRunning(false)
+    }
+  }
+
+  const toggleMasterAutoSim = () => {
+    if (masterAutoActive) {
+      if (masterAutoInterval) clearInterval(masterAutoInterval)
+      setMasterAutoInterval(null)
+      setMasterAutoActive(false)
+    } else {
+      runMasterCycle()
+      const interval = setInterval(runMasterCycle, 30000) // Every 30 seconds
+      setMasterAutoInterval(interval)
+      setMasterAutoActive(true)
+    }
+  }
+
+  const stopAllSims = () => {
+    // Stop individual sims
+    if (simAutoActive) {
+      if (simAutoInterval) clearInterval(simAutoInterval)
+      setSimAutoInterval(null)
+      setSimAutoActive(false)
+    }
+    if (socialAutoActive) {
+      if (socialAutoInterval) clearInterval(socialAutoInterval)
+      setSocialAutoInterval(null)
+      setSocialAutoActive(false)
+    }
+    if (fortuneAutoActive) {
+      if (fortuneAutoInterval) clearInterval(fortuneAutoInterval)
+      setFortuneAutoInterval(null)
+      setFortuneAutoActive(false)
+    }
+    // Stop master
+    if (masterAutoActive) {
+      if (masterAutoInterval) clearInterval(masterAutoInterval)
+      setMasterAutoInterval(null)
+      setMasterAutoActive(false)
+    }
+  }
+
+  useEffect(() => {
+    return () => { if (masterAutoInterval) clearInterval(masterAutoInterval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [masterAutoInterval])
+
   if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">Yetkisiz erişim</div>
   }
@@ -330,6 +419,116 @@ export default function AdminBotsPage() {
             </div>
           </div>
         )}
+
+        {/* Master Simulation Control Panel */}
+        <div className="bg-gradient-to-r from-cyan-900/40 to-blue-900/40 rounded-xl p-4 border border-cyan-400/30 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-cyan-300 flex items-center gap-2">
+              <Zap className="w-4 h-4" /> 🎮 Master Simülasyon Kontrolü
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runMasterCycle}
+                disabled={masterRunning}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-xs text-cyan-300 hover:bg-cyan-500/30 transition disabled:opacity-50"
+              >
+                {masterRunning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                {masterRunning ? 'Çalışıyor...' : 'Hepsini Çalıştır'}
+              </button>
+              <button
+                onClick={toggleMasterAutoSim}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition ${
+                  masterAutoActive
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30'
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {masterAutoActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                {masterAutoActive ? 'Master: AÇIK (30sn)' : 'Master Otomatik'}
+              </button>
+              {(simAutoActive || socialAutoActive || fortuneAutoActive || masterAutoActive) && (
+                <button
+                  onClick={stopAllSims}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-lg text-xs text-red-300 hover:bg-red-500/30 transition"
+                >
+                  <Pause className="w-3 h-3" /> Hepsini Durdur
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Master Status Overview */}
+          {masterStatus && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-cyan-400">{masterStatus.overview?.activeBots || 0}<span className="text-xs text-gray-500">/{masterStatus.overview?.totalBots || 0}</span></div>
+                <div className="text-[10px] text-gray-500">Aktif Bot</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-green-400">{masterStatus.chat?.activeInRooms || 0}</div>
+                <div className="text-[10px] text-gray-500">Odalarda</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-yellow-400">{masterStatus.daily?.totalActions || 0}</div>
+                <div className="text-[10px] text-gray-500">Bugünkü Aksiyon</div>
+              </div>
+              <div className="bg-black/20 rounded-lg px-3 py-2">
+                <div className="text-lg font-bold text-purple-400">
+                  {masterStatus.lastMasterRun ? new Date(masterStatus.lastMasterRun).toLocaleTimeString('tr-TR') : '—'}
+                </div>
+                <div className="text-[10px] text-gray-500">Son Çalışma</div>
+              </div>
+            </div>
+          )}
+
+          {/* Combined Stats Row */}
+          {masterStatus && (
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
+              <div className="bg-indigo-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-indigo-400">{masterStatus.chat?.messagesLastHour || 0}</div>
+                <div className="text-[9px] text-gray-500">Sohbet (1s)</div>
+              </div>
+              <div className="bg-pink-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-pink-400">{masterStatus.social?.follows || 0}</div>
+                <div className="text-[9px] text-gray-500">Takip</div>
+              </div>
+              <div className="bg-red-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-red-400">{masterStatus.social?.postLikesH24 || 0}</div>
+                <div className="text-[9px] text-gray-500">Beğeni (24s)</div>
+              </div>
+              <div className="bg-orange-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-orange-400">{masterStatus.social?.postCommentsH24 || 0}</div>
+                <div className="text-[9px] text-gray-500">Yorum (24s)</div>
+              </div>
+              <div className="bg-amber-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-amber-400">{masterStatus.fortune?.dreamCommentsH24 || 0}</div>
+                <div className="text-[9px] text-gray-500">Rüya Yorum (24s)</div>
+              </div>
+              <div className="bg-emerald-500/10 rounded-lg px-2 py-1.5 text-center">
+                <div className="text-sm font-bold text-emerald-400">{masterStatus.fortune?.fortunePostsH24 || 0}</div>
+                <div className="text-[9px] text-gray-500">Fal Post (24s)</div>
+              </div>
+            </div>
+          )}
+
+          {/* Master Action Log */}
+          {masterLog.length > 0 && (
+            <div className="max-h-28 overflow-y-auto">
+              <p className="text-[10px] text-gray-500 mb-1">Master Döngü Geçmişi:</p>
+              <div className="space-y-1">
+                {masterLog.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3 text-[10px] text-gray-400">
+                    <span className="text-gray-600">{entry.time}</span>
+                    <span className="text-cyan-400 font-medium">Toplam: {entry.total}</span>
+                    <span className="text-indigo-400">💬{entry.chat}</span>
+                    <span className="text-pink-400">🌐{entry.social}</span>
+                    <span className="text-amber-400">🔮{entry.fortune}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Simulation Control Panel */}
         <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-xl p-4 border border-indigo-500/20 mb-6">
