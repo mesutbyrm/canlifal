@@ -68,7 +68,7 @@ export default function YouTubeMusicModal({
       await fetch(`/api/chat/rooms/${roomId}/music`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId: video.id, title: video.title }),
+        body: JSON.stringify({ videoId: video.id, title: video.title, duration: video.duration || '' }),
       })
       // Auto-close modal after selecting a song
       onClose()

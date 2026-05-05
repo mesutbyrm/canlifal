@@ -400,6 +400,7 @@ model ChatRoom {
   currentMusicVideoId   String?        // Currently playing YouTube video ID
   currentMusicTitle     String?        // Currently playing music title
   currentMusicStartedAt DateTime?      // When the music started playing
+  currentMusicDuration  String?        // Duration string from YouTube (e.g. "3:45")
   djUserIds             String?        @db.Text // JSON array of user IDs who can DJ (max 5)
   activeDjId            String?        // Currently active DJ user ID (who has permission to play right now)
   whitelistedWords      String?        @db.Text // JSON array of words marked as safe (not profanity)

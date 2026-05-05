@@ -58,6 +58,7 @@ export async function GET(
         currentMusicVideoId: true,
         currentMusicTitle: true,
         currentMusicStartedAt: true,
+        currentMusicDuration: true,
       }
     })
     if (!room) {
@@ -67,6 +68,7 @@ export async function GET(
       videoId: room.currentMusicVideoId,
       title: room.currentMusicTitle,
       startedAt: room.currentMusicStartedAt,
+      duration: room.currentMusicDuration,
     })
   } catch (error) {
     console.error('Get music error:', error)
@@ -90,7 +92,7 @@ export async function POST(
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }
 
-    const { videoId, title } = await req.json()
+    const { videoId, title, duration } = await req.json()
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Video bilgisi eksik' }, { status: 400 })
     }
@@ -101,6 +103,7 @@ export async function POST(
         currentMusicVideoId: videoId,
         currentMusicTitle: title,
         currentMusicStartedAt: new Date(),
+        currentMusicDuration: duration || null,
       }
     })
 
@@ -142,6 +145,7 @@ export async function DELETE(
         currentMusicVideoId: null,
         currentMusicTitle: null,
         currentMusicStartedAt: null,
+        currentMusicDuration: null,
       }
     })
 

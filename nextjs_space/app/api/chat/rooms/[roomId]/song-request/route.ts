@@ -76,7 +76,7 @@ export async function POST(
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const { videoId, title, dedication, note } = await req.json()
+    const { videoId, title, dedication, note, duration } = await req.json()
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
@@ -119,11 +119,12 @@ export async function POST(
     const noteText = note ? note.trim() : ''
 
     // Create song request message (hidden format - parsed by queue)
+    const durText = duration ? duration.trim() : ''
     await prisma.chatMessage.create({
       data: {
         roomId: params.roomId,
         userId: session.user.id,
-        content: `[SONG_REQUEST_PAID] ${videoId}|${title}|${dedText}|${noteText}`,
+        content: `[SONG_REQUEST_PAID] ${videoId}|${title}|${dedText}|${noteText}|${durText}`,
       }
     })
 
@@ -154,6 +155,7 @@ export async function POST(
           currentMusicVideoId: videoId,
           currentMusicTitle: title,
           currentMusicStartedAt: new Date(),
+          currentMusicDuration: duration || null,
         }
       })
       // Mark request message as played
@@ -207,13 +209,14 @@ export async function PATCH(
         data: { content: msg.content + '[PLAYED]' }
       })
 
-      // Parse videoId and title from message
+      // Parse videoId, title, and duration from message
       const isPaid = msg.content.startsWith('[SONG_REQUEST_PAID]')
       const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
       const data = msg.content.replace(prefix, '')
       const parts = data.split('|')
       const videoId = parts[0]
       const title = parts[1]
+      const duration = isPaid ? (parts[4] || '') : (parts[2] || '')
 
       if (videoId && title) {
         // Set as currently playing music
@@ -223,6 +226,7 @@ export async function PATCH(
             currentMusicVideoId: videoId,
             currentMusicTitle: title,
             currentMusicStartedAt: new Date(),
+            currentMusicDuration: duration || null,
           }
         })
       }

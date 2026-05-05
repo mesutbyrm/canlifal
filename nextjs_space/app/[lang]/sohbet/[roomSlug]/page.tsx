@@ -221,8 +221,12 @@ export default function ChatRoomPage() {
   const [showMusicModal, setShowMusicModal] = useState(false)
   const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
+  const [currentMusicDuration, setCurrentMusicDuration] = useState<string | null>(null)
   const [musicMuted, setMusicMuted] = useState(false)
   const [musicPaused, setMusicPaused] = useState(false)
+  const musicTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const musicStartTimeRef = useRef<number | null>(null)
+  const musicPausedAtRef = useRef<number>(0) // elapsed seconds when paused
   
   // DJ System
   const [djUsers, setDjUsers] = useState<Array<{id: string; name: string; image?: string | null; isPresent: boolean}>>([])
@@ -234,14 +238,14 @@ export default function ChatRoomPage() {
   // Song Request System
   const [showSongRequestModal, setShowSongRequestModal] = useState(false)
   const [songRequestQuery, setSongRequestQuery] = useState('')
-  const [songRequestResults, setSongRequestResults] = useState<Array<{id: string; title: string; thumbnail: string; channel: string}>>([])
+  const [songRequestResults, setSongRequestResults] = useState<Array<{id: string; title: string; thumbnail: string; channel: string; duration?: string}>>([])
   const [songRequestSearching, setSongRequestSearching] = useState(false)
-  const [songRequestSelected, setSongRequestSelected] = useState<{id: string; title: string} | null>(null)
+  const [songRequestSelected, setSongRequestSelected] = useState<{id: string; title: string; duration?: string} | null>(null)
   const [songRequestDedication, setSongRequestDedication] = useState('')
   const [songRequestNote, setSongRequestNote] = useState('')
   const [songRequestSending, setSongRequestSending] = useState(false)
   const songRequestSearchTimeout = useRef<NodeJS.Timeout | null>(null)
-  const [musicQueue, setMusicQueue] = useState<Array<{videoId: string; title: string; dedication?: string; note?: string; isPaid: boolean; requestedBy: string}>>([])
+  const [musicQueue, setMusicQueue] = useState<Array<{id: string; videoId: string; title: string; dedication?: string; note?: string; isPaid: boolean; requestedBy: string}>>([])
   const musicQueueProcessingRef = useRef(false)
   
   // Commands panel
@@ -720,6 +724,7 @@ export default function ChatRoomPage() {
           const data = await res.json()
           setCurrentMusicVideoId(data.videoId || null)
           setCurrentMusicTitle(data.title || null)
+          setCurrentMusicDuration(data.duration || null)
         }
       } catch {}
     }
@@ -811,6 +816,7 @@ export default function ChatRoomPage() {
           title: songRequestSelected.title,
           dedication: songRequestDedication.trim() || undefined,
           note: songRequestNote.trim() || undefined,
+          duration: songRequestSelected.duration || undefined,
         })
       })
       if (res.ok) {
@@ -868,6 +874,73 @@ export default function ChatRoomPage() {
     return () => { cancelled = true; clearInterval(interval) }
   }, [room?.id, currentMusicVideoId])
 
+  // ── Helper: parse duration string "3:45" or "1:02:30" to seconds ──
+  const parseDurationToSeconds = (dur: string | null): number => {
+    if (!dur) return 0
+    const parts = dur.split(':').map(Number)
+    if (parts.some(isNaN)) return 0
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    if (parts.length === 2) return parts[0] * 60 + parts[1]
+    return parts[0] || 0
+  }
+
+  // ── Music auto-next timer: when duration ends, play next from queue ──
+  useEffect(() => {
+    // Clear any existing timer
+    if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null }
+
+    if (!currentMusicVideoId || !currentMusicDuration || musicPaused) return
+
+    const totalSeconds = parseDurationToSeconds(currentMusicDuration)
+    if (totalSeconds <= 0) return
+
+    // Calculate remaining time
+    const elapsed = musicPausedAtRef.current || 0
+    const remaining = Math.max((totalSeconds - elapsed) * 1000 + 3000, 1000) // +3s buffer
+
+    musicStartTimeRef.current = Date.now() - (elapsed * 1000)
+
+    musicTimerRef.current = setTimeout(async () => {
+      // Duration ended - auto-play next or stop
+      if (musicQueue.length > 0 && room?.id) {
+        const next = musicQueue[0]
+        try {
+          await fetch(`/api/chat/rooms/${room.id}/song-request`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId: next.id })
+          })
+          musicPausedAtRef.current = 0
+        } catch {}
+      } else if (room?.id) {
+        // No queue - stop music
+        try {
+          await fetch(`/api/chat/rooms/${room.id}/music`, { method: 'DELETE' })
+          setCurrentMusicVideoId(null)
+          setCurrentMusicTitle(null)
+          setCurrentMusicDuration(null)
+          musicPausedAtRef.current = 0
+        } catch {}
+      }
+    }, remaining)
+
+    return () => { if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null } }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMusicVideoId, currentMusicDuration, musicPaused, room?.id])
+
+  // Track elapsed time when pausing
+  useEffect(() => {
+    if (musicPaused && musicStartTimeRef.current) {
+      musicPausedAtRef.current = Math.floor((Date.now() - musicStartTimeRef.current) / 1000)
+    }
+  }, [musicPaused])
+
+  // Reset pause tracking when song changes
+  useEffect(() => {
+    musicPausedAtRef.current = 0
+    musicStartTimeRef.current = currentMusicVideoId ? Date.now() : null
+  }, [currentMusicVideoId])
+
   // ── Music stop handler ──
   const handleStopMusic = async () => {
     if (!room) return
@@ -875,7 +948,10 @@ export default function ChatRoomPage() {
       await fetch(`/api/chat/rooms/${room.id}/music`, { method: 'DELETE' })
       setCurrentMusicVideoId(null)
       setCurrentMusicTitle(null)
+      setCurrentMusicDuration(null)
       setMusicPaused(false)
+      musicPausedAtRef.current = 0
+      if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null }
     } catch {}
   }
 
@@ -3171,7 +3247,7 @@ export default function ChatRoomPage() {
               {musicPaused && <span className="text-yellow-400 text-xs mr-1 flex-shrink-0">⏸</span>}
               {musicMuted && !musicPaused && <VolumeX className="w-4 h-4 text-red-400 flex-shrink-0" />}
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-[10px] text-purple-300 opacity-70">{musicPaused ? '⏸ Duraklatıldı' : '🎶 Şu an çalıyor'}</p>
+                <p className="text-[10px] text-purple-300 opacity-70">{musicPaused ? '⏸ Duraklatıldı' : '🎶 Şu an çalıyor'}{currentMusicDuration ? ` • ${currentMusicDuration}` : ''}</p>
                 <p className="text-white text-xs font-medium truncate">{currentMusicTitle}</p>
               </div>
             </button>
@@ -3211,15 +3287,15 @@ export default function ChatRoomPage() {
         {/* ── Music Queue Mini Display (shown in chat) ── */}
         {musicQueue.length > 0 && currentMusicVideoId && (
           <div className="relative z-10 mx-3 mb-1">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-fuchsia-900/20 border border-fuchsia-500/15 rounded-lg overflow-x-auto">
-              <span className="text-fuchsia-400 text-[10px] font-bold flex-shrink-0">🎵 Sırada:</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-black/50 border border-yellow-500/30 rounded-lg overflow-x-auto">
+              <span className="text-yellow-300 text-[10px] font-bold flex-shrink-0">🎵 Sırada:</span>
               {musicQueue.slice(0, 3).map((q, i) => (
-                <span key={i} className="text-fuchsia-200/70 text-[10px] truncate max-w-[120px] flex-shrink-0">
-                  {i + 1}. {q.title} <span className="text-fuchsia-400/50">({q.requestedBy})</span>
-                  {i < Math.min(musicQueue.length, 3) - 1 && <span className="text-fuchsia-500/30 mx-0.5">|</span>}
+                <span key={i} className="text-white text-[10px] truncate max-w-[140px] flex-shrink-0">
+                  {i + 1}. {q.title} <span className="text-yellow-300/80">({q.requestedBy})</span>
+                  {i < Math.min(musicQueue.length, 3) - 1 && <span className="text-white/40 mx-0.5">|</span>}
                 </span>
               ))}
-              {musicQueue.length > 3 && <span className="text-fuchsia-400/50 text-[10px] flex-shrink-0">+{musicQueue.length - 3} daha</span>}
+              {musicQueue.length > 3 && <span className="text-yellow-300/80 text-[10px] flex-shrink-0">+{musicQueue.length - 3} daha</span>}
             </div>
           </div>
         )}
@@ -3242,8 +3318,8 @@ export default function ChatRoomPage() {
           if (isRequest && canSeeRequests) {
             return (
               <div className="relative z-20 mx-3 mb-2">
-                <div className="bg-gradient-to-r from-pink-500/20 via-fuchsia-500/30 to-purple-500/20 border border-fuchsia-500/40 rounded-lg px-4 py-2 text-center animate-pulse">
-                  <span className="text-fuchsia-300 text-sm font-bold">{lastMsg.content}</span>
+                <div className="bg-gradient-to-r from-yellow-600/30 via-orange-500/30 to-yellow-600/30 border border-yellow-400/50 rounded-lg px-4 py-2 text-center animate-pulse">
+                  <span className="text-yellow-200 text-sm font-bold drop-shadow-lg">{lastMsg.content}</span>
                 </div>
               </div>
             )
@@ -4091,14 +4167,14 @@ export default function ChatRoomPage() {
               {/* Queue display */}
               {musicQueue.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-purple-500/20">
-                  <p className="text-purple-300 text-xs font-medium mb-1.5">📋 Sıradaki İstekler ({musicQueue.length})</p>
+                  <p className="text-yellow-300 text-xs font-medium mb-1.5">📋 Sıradaki İstekler ({musicQueue.length})</p>
                   <div className="space-y-1">
                     {musicQueue.slice(0, 5).map((q, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[10px] text-purple-300/70 bg-white/5 rounded-lg px-2 py-1">
-                        <span className="text-fuchsia-400 font-bold">{i + 1}.</span>
+                      <div key={i} className="flex items-center gap-2 text-[10px] text-white/90 bg-white/10 rounded-lg px-2 py-1">
+                        <span className="text-yellow-400 font-bold">{i + 1}.</span>
                         <span className="truncate flex-1">{q.title}</span>
                         {q.isPaid && <span className="text-yellow-400">💎</span>}
-                        <span className="text-purple-500">{q.requestedBy}</span>
+                        <span className="text-yellow-300/70">{q.requestedBy}</span>
                       </div>
                     ))}
                   </div>
@@ -4619,14 +4695,14 @@ export default function ChatRoomPage() {
                 {/* Music Queue Display */}
                 {musicQueue.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-fuchsia-300 text-xs font-bold mb-2">🎵 Şarkı Kuyruğu</p>
+                    <p className="text-yellow-300 text-xs font-bold mb-2">🎵 Şarkı Kuyruğu</p>
                     <div className="space-y-1.5">
                       {musicQueue.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2 p-2 bg-fuchsia-900/20 border border-fuchsia-500/20 rounded-lg">
-                          <span className="text-fuchsia-400 text-xs font-bold w-5">{idx + 1}.</span>
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-black/30 border border-yellow-500/20 rounded-lg">
+                          <span className="text-yellow-400 text-xs font-bold w-5">{idx + 1}.</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-xs truncate">{item.title}</p>
-                            <p className="text-fuchsia-300/60 text-[10px]">İsteyen: {item.requestedBy}</p>
+                            <p className="text-yellow-300/70 text-[10px]">İsteyen: {item.requestedBy}</p>
                           </div>
                         </div>
                       ))}
@@ -4651,7 +4727,7 @@ export default function ChatRoomPage() {
         <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
           <iframe
             key={currentMusicVideoId}
-            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
+            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=0`}
             allow="autoplay; encrypted-media"
             style={{ width: 1, height: 1, border: 'none' }}
           />
