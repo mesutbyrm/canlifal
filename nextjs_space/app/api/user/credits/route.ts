@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,11 +29,9 @@ export async function GET() {
       )
     }
 
-    // Get jeton to TL rate from platform settings
-    const rateSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'jeton_tl_rate' }
-    })
-    const jetonTlRate = rateSetting ? parseFloat(rateSetting.value) : 0.5 // default 1 jeton = 0.5 TL
+    // Get jeton to TL rate from platform settings (cached)
+    const rateStr = await getCachedPlatformSetting('jeton_tl_rate', '0.5')
+    const jetonTlRate = parseFloat(rateStr) // default 1 jeton = 0.5 TL
 
     return NextResponse.json({ 
       credits: user.credits, 

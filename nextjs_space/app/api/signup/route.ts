@@ -6,12 +6,12 @@ import { randomBytes } from 'crypto'
 import { logActivity } from '@/lib/activity-logger'
 import { authLimiter } from '@/lib/rate-limiter'
 
-// Dynamic values from platform_settings, loaded per request
-async function getPlatformSetting(key: string, defaultVal: number): Promise<number> {
-  try {
-    const setting = await prisma.platformSettings.findUnique({ where: { key } });
-    return setting ? parseInt(setting.value) || defaultVal : defaultVal;
-  } catch { return defaultVal; }
+import { getCachedPlatformSetting } from '@/lib/cache'
+
+// Dynamic values from platform_settings (cached)
+async function getNumericSetting(key: string, defaultVal: number): Promise<number> {
+  const val = await getCachedPlatformSetting(key, String(defaultVal));
+  return parseInt(val) || defaultVal;
 }
 
 function generateReferralCode(): string {
@@ -95,8 +95,8 @@ export async function POST(request: Request) {
     }
 
     // Load dynamic settings from admin panel
-    const WELCOME_CFC = await getPlatformSetting('welcome_credits', 50);
-    const REFERRAL_BONUS = await getPlatformSetting('referral_bonus', 50);
+    const WELCOME_CFC = await getNumericSetting('welcome_credits', 50);
+    const REFERRAL_BONUS = await getNumericSetting('referral_bonus', 50);
     
     // Calculate initial CFC credits (welcome bonus + referral bonus if referred)
     const initialCredits = WELCOME_CFC + (referrer ? REFERRAL_BONUS : 0);

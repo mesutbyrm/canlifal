@@ -1,22 +1,25 @@
-import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
+const ANNOUNCEMENT_KEYS = [
+  'entry_announcement_enabled', 'entry_announcement_duration', 'entry_announcement_style',
+  'entry_announcement_display_mode', 'entry_announcement_box_padding',
+  'chat_marquee_effect', 'chat_marquee_speed', 'chat_marquee_repeat', 'chat_marquee_enabled',
+  'event_announcement_templates'
+];
+
 export async function GET() {
   try {
-    const settings = await prisma.platformSettings.findMany({
-      where: {
-        key: { in: [
-          'entry_announcement_enabled', 'entry_announcement_duration', 'entry_announcement_style',
-          'entry_announcement_display_mode', 'entry_announcement_box_padding',
-          'chat_marquee_effect', 'chat_marquee_speed', 'chat_marquee_repeat', 'chat_marquee_enabled',
-          'event_announcement_templates'
-        ] }
-      }
-    });
+    const entries = await Promise.all(
+      ANNOUNCEMENT_KEYS.map(async (key) => {
+        const value = await getCachedPlatformSetting(key, '');
+        return [key, value] as [string, string];
+      })
+    );
     const result: Record<string, string> = {};
-    settings.forEach((s: { key: string; value: string }) => { result[s.key] = s.value; });
+    entries.forEach(([key, value]) => { if (value) result[key] = value; });
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({});

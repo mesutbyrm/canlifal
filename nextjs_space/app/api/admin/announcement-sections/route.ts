@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { invalidateCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -131,6 +132,8 @@ export async function POST(request: NextRequest) {
           description: 'Gift announcement banner settings (enabled, maxPasses, expireMinutes, minAmount)'
         }
       })
+      invalidateCache('platform:gift_announcement_settings')
+      invalidateCache('platform:__all__')
       return NextResponse.json({ ok: true })
     }
 
@@ -168,6 +171,8 @@ export async function POST(request: NextRequest) {
         description: 'Per-category announcement section visibility settings'
       }
     })
+    invalidateCache('platform:announcement_category_sections')
+    invalidateCache('platform:__all__')
 
     return NextResponse.json({ ok: true })
   } catch (error) {

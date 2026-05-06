@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,11 +34,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment type' }, { status: 400 })
     }
 
-    // Get creation cost
-    const costSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'chat_room_creation_cost' }
-    })
-    const cost = parseInt(costSetting?.value || '100')
+    // Get creation cost (cached)
+    const costStr = await getCachedPlatformSetting('chat_room_creation_cost', '100')
+    const cost = parseInt(costStr)
 
     // Get user balance
     const user = await prisma.user.findUnique({

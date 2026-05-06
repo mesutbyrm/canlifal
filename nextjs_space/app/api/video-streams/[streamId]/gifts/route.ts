@@ -7,6 +7,7 @@ import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -14,9 +15,8 @@ async function createStreamGiftAnnouncement(
   giftIcon: string, giftTypeName: string, amount: number,
   giftTypeId?: string
 ) {
-  const giftAnnouncementSettings = await prisma.platformSettings.findUnique({
-    where: { key: 'gift_announcement_settings' }
-  })
+  const giftAnnouncementSettingsRaw = await getCachedPlatformSetting('gift_announcement_settings', '')
+  const giftAnnouncementSettings = giftAnnouncementSettingsRaw ? { value: giftAnnouncementSettingsRaw } : null
   let maxPasses = 1
   let expireMinutes = 3
   let minAmount = 1000

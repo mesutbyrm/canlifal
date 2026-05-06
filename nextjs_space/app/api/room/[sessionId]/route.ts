@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,11 +45,9 @@ export async function GET(
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
-    // Get credits per minute setting
-    const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'credits_per_minute' }
-    });
-    const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+    // Get credits per minute setting (cached)
+    const creditsPerMinuteStr = await getCachedPlatformSetting('credits_per_minute', '10');
+    const creditsPerMinute = parseInt(creditsPerMinuteStr);
 
     // Use the actual DB maxMinutes (allocated time, incremented by extend actions)
     const maxMinutes = liveSession.maxMinutes;
@@ -166,11 +165,9 @@ export async function PATCH(
 
         const addMinutes = minutes || 5;
         
-        // Get credits per minute (jeton cost per minute)
-        const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'credits_per_minute' }
-        });
-        const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+        // Get credits per minute (cached)
+        const cpmStr = await getCachedPlatformSetting('credits_per_minute', '10');
+        const creditsPerMinute = parseInt(cpmStr);
         const jetonsNeeded = addMinutes * creditsPerMinute;
 
         // Check user jetons
@@ -307,11 +304,9 @@ export async function PATCH(
           });
         }
 
-        // Get commission rate
-        const commissionSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'commission_rate' }
-        });
-        const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
+        // Get commission rate (cached)
+        const commRateStr = await getCachedPlatformSetting('commission_rate', '20');
+        const commissionRate = parseInt(commRateStr);
         const commissionAmount = Math.floor(actualCost * commissionRate / 100);
         const tellerEarnings = actualCost - commissionAmount;
 

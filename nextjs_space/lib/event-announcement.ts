@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 /**
  * Trigger an event-based announcement.
@@ -18,15 +19,13 @@ export async function triggerEventAnnouncement(
   userRole?: string
 ) {
   try {
-    // Get event templates from settings
-    const setting = await prisma.platformSettings.findUnique({
-      where: { key: 'event_announcement_templates' }
-    })
-    if (!setting?.value) return null
+    // Get event templates from settings (cached)
+    const templateValue = await getCachedPlatformSetting('event_announcement_templates', '')
+    if (!templateValue) return null
 
     let templates: Record<string, any>
     try {
-      templates = JSON.parse(setting.value)
+      templates = JSON.parse(templateValue)
     } catch {
       return null
     }

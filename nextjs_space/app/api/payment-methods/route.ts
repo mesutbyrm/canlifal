@@ -1,13 +1,9 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
+import { getCachedPaymentMethods } from '@/lib/cache'
 
 export async function GET() {
   try {
-    const methods = await prisma.paymentMethod.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' }
-    })
-
+    const methods = await getCachedPaymentMethods()
     return NextResponse.json(methods)
   } catch (error) {
     console.error('Error fetching payment methods:', error)

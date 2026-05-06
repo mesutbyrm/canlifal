@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,17 +52,13 @@ export async function PATCH(
           return NextResponse.json({ error: 'Session is not pending' }, { status: 400 });
         }
         
-        // Get session duration settings
-        const durationSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'session_duration_minutes' }
-        });
-        const defaultDuration = durationSetting ? parseInt(durationSetting.value) : 5;
+        // Get session duration settings (cached)
+        const durationStr = await getCachedPlatformSetting('session_duration_minutes', '5');
+        const defaultDuration = parseInt(durationStr);
         
-        // Get credits per minute
-        const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'credits_per_minute' }
-        });
-        const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+        // Get credits per minute (cached)
+        const cpmStr = await getCachedPlatformSetting('credits_per_minute', '10');
+        const creditsPerMinute = parseInt(cpmStr);
         
         // Generate unique room ID
         const roomId = `room_${liveSession.id}_${Date.now()}`;
@@ -98,10 +95,8 @@ export async function PATCH(
         };
         
         // Get commission rate from settings
-        const commissionSetting = await prisma.platformSettings.findUnique({
-          where: { key: 'commission_rate' }
-        });
-        const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
+        const commRateStr = await getCachedPlatformSetting('commission_rate', '20');
+        const commissionRate = parseInt(commRateStr);
         const commissionAmount = Math.floor(liveSession.creditsCharged * commissionRate / 100);
         const tellerEarnings = liveSession.creditsCharged - commissionAmount;
         

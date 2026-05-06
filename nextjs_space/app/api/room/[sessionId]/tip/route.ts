@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { processAgencyCommission } from '@/lib/agency-commission';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,11 +55,9 @@ export async function POST(
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
     }
 
-    // Get commission rate
-    const commissionSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'commission_rate' }
-    });
-    const commissionRate = commissionSetting ? parseInt(commissionSetting.value) : 20;
+    // Get commission rate (cached)
+    const commRateStr = await getCachedPlatformSetting('commission_rate', '20');
+    const commissionRate = parseInt(commRateStr);
     const commissionAmount = Math.floor(amount * commissionRate / 100);
     const tellerEarnings = amount - commissionAmount;
 

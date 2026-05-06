@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,11 +29,9 @@ export async function POST(
       return NextResponse.json({ error: 'Teller not available' }, { status: 400 });
     }
 
-    // Get credits per minute from platform settings
-    const creditsPerMinuteSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'credits_per_minute' }
-    });
-    const creditsPerMinute = creditsPerMinuteSetting ? parseInt(creditsPerMinuteSetting.value) : 10;
+    // Get credits per minute from platform settings (cached)
+    const cpmStr = await getCachedPlatformSetting('credits_per_minute', '10');
+    const creditsPerMinute = parseInt(cpmStr);
     
     // Calculate total cost based on duration
     const totalCost = duration * creditsPerMinute;

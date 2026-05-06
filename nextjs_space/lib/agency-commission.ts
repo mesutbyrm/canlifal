@@ -86,11 +86,4 @@ export async function processAgencyCommission({
 /**
  * Get a platform setting value with fallback
  */
-export async function getPlatformSetting(key: string, fallback: string): Promise<string> {
-  try {
-    const setting = await prisma.platformSettings.findUnique({ where: { key } })
-    return setting?.value ?? fallback
-  } catch {
-    return fallback
-  }
-}
+export { getCachedPlatformSetting as getPlatformSetting } from '@/lib/cache'

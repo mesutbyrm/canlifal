@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { sendNotificationEmail } from '@/lib/email-service'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,9 +37,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get platform commission rate
-    const commissionSetting = await prisma.platformSettings.findUnique({ where: { key: 'commission_rate' } })
-    const platformCommission = commissionSetting ? parseInt(commissionSetting.value) : 20
+    // Get platform commission rate (cached)
+    const commRateStr = await getCachedPlatformSetting('commission_rate', '20')
+    const platformCommission = parseInt(commRateStr)
 
     // Create the application
     const teller = await prisma.liveFortuneTeller.create({

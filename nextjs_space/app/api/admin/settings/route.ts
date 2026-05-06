@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,10 @@ export async function POST(request: NextRequest) {
       update: { value: String(value), description },
       create: { key, value: String(value), description }
     });
+
+    // Invalidate cache for this specific setting and the "all settings" cache
+    invalidateCache(`platform:${key}`);
+    invalidateCache('platform:__all__');
 
     return NextResponse.json(setting);
   } catch (error) {
