@@ -390,6 +390,8 @@ export default function LoginAnnouncementBanner() {
         style={{
           animation: `loginBanner${
              announcementStyle === 'slide' ? 'Slide' : 
+             announcementStyle === 'slideLeft' ? 'SlideLeft' : 
+             announcementStyle === 'slideRight' ? 'SlideRight' : 
              announcementStyle === 'flash' ? 'FlashBright' : 
              announcementStyle === 'zoom' ? 'Zoom' : 
              announcementStyle === 'bounce' ? 'Bounce' : 
@@ -397,6 +399,8 @@ export default function LoginAnnouncementBanner() {
              announcementStyle === 'glow' ? 'Glow' : 
              announcementStyle === 'shake' ? 'Shake' : 
              announcementStyle === 'wave' ? 'Wave' : 
+             announcementStyle === 'flipX' ? 'FlipX' : 
+             announcementStyle === 'elastic' ? 'Elastic' : 
              'Flash'} ${announcementDuration}s ease-in-out forwards`,
         }}
       >
@@ -485,6 +489,31 @@ export default function LoginAnnouncementBanner() {
           40% { transform: translateY(-1px) rotate(0.5deg); }
           55%, 85% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { opacity: 0; transform: translateY(6px) rotate(-1deg); }
+        }
+        @keyframes loginBannerSlideLeft {
+          0% { opacity: 0; transform: translateX(-100%); }
+          12%, 85% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(100%); }
+        }
+        @keyframes loginBannerSlideRight {
+          0% { opacity: 0; transform: translateX(100%); }
+          12%, 85% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(-100%); }
+        }
+        @keyframes loginBannerFlipX {
+          0% { opacity: 0; transform: perspective(400px) rotateY(90deg); }
+          12% { opacity: 1; transform: perspective(400px) rotateY(-10deg); }
+          22% { transform: perspective(400px) rotateY(5deg); }
+          32%, 85% { transform: perspective(400px) rotateY(0deg); opacity: 1; }
+          100% { opacity: 0; transform: perspective(400px) rotateY(90deg); }
+        }
+        @keyframes loginBannerElastic {
+          0% { opacity: 0; transform: scaleX(0.3); }
+          10% { opacity: 1; transform: scaleX(1.1); }
+          20% { transform: scaleX(0.9); }
+          30% { transform: scaleX(1.05); }
+          40%, 85% { transform: scaleX(1); opacity: 1; }
+          100% { opacity: 0; transform: scaleX(0.3); }
         }
         @keyframes loginBannerBgShift {
           0% { background-position: 0% 0; }
