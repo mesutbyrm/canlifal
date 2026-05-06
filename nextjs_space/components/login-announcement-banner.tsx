@@ -229,7 +229,7 @@ export default function LoginAnnouncementBanner() {
   const initializedRef = useRef(false)
   const [announcementEnabled, setAnnouncementEnabled] = useState(true)
   const [announcementDuration, setAnnouncementDuration] = useState(2) // seconds
-  const [announcementStyle, setAnnouncementStyle] = useState<'fade' | 'slide' | 'flash'>('fade')
+  const [announcementStyle, setAnnouncementStyle] = useState<string>('fade')
 
   // Load seen IDs from sessionStorage on mount
   useEffect(() => {
@@ -254,7 +254,7 @@ export default function LoginAnnouncementBanner() {
             setAnnouncementDuration(parseInt(data.entry_announcement_duration) || 2)
           }
           if (data.entry_announcement_style) {
-            setAnnouncementStyle(data.entry_announcement_style as 'fade' | 'slide' | 'flash')
+            setAnnouncementStyle(data.entry_announcement_style)
           }
         }
       } catch {}
@@ -388,7 +388,16 @@ export default function LoginAnnouncementBanner() {
         key={`${currentAnnouncement.id}-pass-${passCount}`}
         className="absolute inset-0 flex items-center justify-center whitespace-nowrap px-4"
         style={{
-          animation: `loginBanner${announcementStyle === 'slide' ? 'Slide' : announcementStyle === 'flash' ? 'FlashBright' : 'Flash'} ${announcementDuration}s ease-in-out forwards`,
+          animation: `loginBanner${
+             announcementStyle === 'slide' ? 'Slide' : 
+             announcementStyle === 'flash' ? 'FlashBright' : 
+             announcementStyle === 'zoom' ? 'Zoom' : 
+             announcementStyle === 'bounce' ? 'Bounce' : 
+             announcementStyle === 'typewriter' ? 'Typewriter' : 
+             announcementStyle === 'glow' ? 'Glow' : 
+             announcementStyle === 'shake' ? 'Shake' : 
+             announcementStyle === 'wave' ? 'Wave' : 
+             'Flash'} ${announcementDuration}s ease-in-out forwards`,
         }}
       >
         <span className="inline-flex items-center gap-3 max-w-full overflow-hidden" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
@@ -427,6 +436,55 @@ export default function LoginAnnouncementBanner() {
           80% { opacity: 1; filter: brightness(1); }
           90% { filter: brightness(1.5); }
           100% { opacity: 0; transform: scale(1.1); filter: brightness(2); }
+        }
+        @keyframes loginBannerZoom {
+          0% { opacity: 0; transform: scale(0.3); }
+          10% { opacity: 1; transform: scale(1.05); }
+          18% { transform: scale(1); }
+          85% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.3); }
+        }
+        @keyframes loginBannerBounce {
+          0% { opacity: 0; transform: translateY(-40px); }
+          10% { opacity: 1; transform: translateY(5px); }
+          18% { transform: translateY(-3px); }
+          25% { transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-40px); }
+        }
+        @keyframes loginBannerTypewriter {
+          0% { clip-path: inset(0 100% 0 0); opacity: 1; }
+          40% { clip-path: inset(0 0 0 0); opacity: 1; }
+          85% { clip-path: inset(0 0 0 0); opacity: 1; }
+          100% { clip-path: inset(0 0 0 100%); opacity: 0; }
+        }
+        @keyframes loginBannerGlow {
+          0% { opacity: 0; filter: drop-shadow(0 0 0px transparent); }
+          10% { opacity: 1; filter: drop-shadow(0 0 12px rgba(0,255,255,0.8)); }
+          30% { filter: drop-shadow(0 0 20px rgba(255,0,255,0.8)); }
+          50% { filter: drop-shadow(0 0 12px rgba(0,255,255,0.8)); }
+          70% { filter: drop-shadow(0 0 20px rgba(255,0,255,0.8)); }
+          85% { opacity: 1; filter: drop-shadow(0 0 12px rgba(0,255,255,0.8)); }
+          100% { opacity: 0; filter: drop-shadow(0 0 0px transparent); }
+        }
+        @keyframes loginBannerShake {
+          0% { opacity: 0; }
+          5% { opacity: 1; transform: translateX(-4px); }
+          10% { transform: translateX(4px); }
+          15% { transform: translateX(-4px); }
+          20% { transform: translateX(4px); }
+          25% { transform: translateX(-2px); }
+          30% { transform: translateX(2px); }
+          35%, 85% { transform: translateX(0); opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes loginBannerWave {
+          0% { opacity: 0; transform: translateY(6px) rotate(-1deg); }
+          10% { opacity: 1; transform: translateY(-3px) rotate(1deg); }
+          25% { transform: translateY(2px) rotate(-0.5deg); }
+          40% { transform: translateY(-1px) rotate(0.5deg); }
+          55%, 85% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { opacity: 0; transform: translateY(6px) rotate(-1deg); }
         }
         @keyframes loginBannerBgShift {
           0% { background-position: 0% 0; }

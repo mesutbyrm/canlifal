@@ -696,51 +696,246 @@ export default function AdminSettingsPage() {
             </motion.div>
           ))}
 
-          {/* Entry Announcement Toggle & Style */}
+          {/* Entry Announcement Toggle & Style - Enhanced with Visual Templates */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-fuchsia-500/20 p-6 space-y-4"
+            className="bg-gradient-to-br from-deep-purple-900/50 to-deep-purple-950/50 rounded-xl border border-fuchsia-500/20 p-6 space-y-5"
           >
-            <h3 className="text-lg font-semibold text-white mb-1">📢 Giriş Duyurusu Ayarları</h3>
-            <p className="text-sm text-fuchsia-400 mb-4">Kullanıcı giriş duyurularının görünüm ayarları</p>
-            
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Enable/Disable Toggle */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-purple-200">Durum:</span>
-                <button
-                  onClick={() => {
-                    const newVal = settings.entry_announcement_enabled === 'true' ? 'false' : 'true'
-                    setSettings(prev => ({ ...prev, entry_announcement_enabled: newVal }))
-                    saveSetting('entry_announcement_enabled', newVal)
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    settings.entry_announcement_enabled === 'true'
-                      ? 'bg-green-600/20 border-green-500/30 text-green-300'
-                      : 'bg-red-600/20 border-red-500/30 text-red-300'
-                  }`}
-                >
-                  {settings.entry_announcement_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}
-                </button>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-1">📢 Giriş Duyurusu Ayarları</h3>
+                <p className="text-sm text-fuchsia-400">Kullanıcı giriş duyurularının görünüm ve geçiş efekti ayarları</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newVal = settings.entry_announcement_enabled === 'true' ? 'false' : 'true'
+                  setSettings(prev => ({ ...prev, entry_announcement_enabled: newVal }))
+                  saveSetting('entry_announcement_enabled', newVal)
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                  settings.entry_announcement_enabled === 'true'
+                    ? 'bg-green-600/20 border-green-500/50 text-green-300 shadow-lg shadow-green-500/10'
+                    : 'bg-red-600/20 border-red-500/50 text-red-300'
+                }`}
+              >
+                {settings.entry_announcement_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}
+              </button>
+            </div>
+
+            {/* Visual Transition Templates */}
+            <div>
+              <p className="text-sm text-purple-200 mb-3 font-medium">🎬 Geçiş Şablonu Seçin:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  {
+                    key: 'fade',
+                    name: 'Belir & Kaybol',
+                    desc: 'Yumuşak geçiş ile belirir ve kaybolur',
+                    icon: '🌟',
+                    gradient: 'from-purple-600/30 to-indigo-600/30',
+                    borderColor: 'border-purple-400/50',
+                    previewAnim: 'announceFadePreview'
+                  },
+                  {
+                    key: 'slide',
+                    name: 'Yukarıdan Kayma',
+                    desc: 'Yukarıdan aşağı kayarak gelir',
+                    icon: '⬇️',
+                    gradient: 'from-blue-600/30 to-cyan-600/30',
+                    borderColor: 'border-blue-400/50',
+                    previewAnim: 'announceSlidePreview'
+                  },
+                  {
+                    key: 'flash',
+                    name: 'Parlak Flash',
+                    desc: 'Parlayarak belirir ve kaybolur',
+                    icon: '⚡',
+                    gradient: 'from-amber-600/30 to-orange-600/30',
+                    borderColor: 'border-amber-400/50',
+                    previewAnim: 'announceFlashPreview'
+                  },
+                  {
+                    key: 'zoom',
+                    name: 'Zoom Efekti',
+                    desc: 'Büyüyerek belirir, küçülerek kaybolur',
+                    icon: '🔍',
+                    gradient: 'from-emerald-600/30 to-teal-600/30',
+                    borderColor: 'border-emerald-400/50',
+                    previewAnim: 'announceZoomPreview'
+                  },
+                  {
+                    key: 'bounce',
+                    name: 'Zıplama Efekti',
+                    desc: 'Zıplayarak belirir, enerjik görünüm',
+                    icon: '🏀',
+                    gradient: 'from-pink-600/30 to-rose-600/30',
+                    borderColor: 'border-pink-400/50',
+                    previewAnim: 'announceBouncePreview'
+                  },
+                  {
+                    key: 'typewriter',
+                    name: 'Daktilo Efekti',
+                    desc: 'Harf harf yazılarak belirir',
+                    icon: '⌨️',
+                    gradient: 'from-violet-600/30 to-fuchsia-600/30',
+                    borderColor: 'border-violet-400/50',
+                    previewAnim: 'announceTypewriterPreview'
+                  },
+                  {
+                    key: 'glow',
+                    name: 'Neon Glow',
+                    desc: 'Neon ışıkla parlayarak belirir',
+                    icon: '💡',
+                    gradient: 'from-cyan-600/30 to-sky-600/30',
+                    borderColor: 'border-cyan-400/50',
+                    previewAnim: 'announceGlowPreview'
+                  },
+                  {
+                    key: 'shake',
+                    name: 'Titreme Efekti',
+                    desc: 'Titreşimle dikkat çeker',
+                    icon: '📳',
+                    gradient: 'from-red-600/30 to-orange-600/30',
+                    borderColor: 'border-red-400/50',
+                    previewAnim: 'announceShakePreview'
+                  },
+                  {
+                    key: 'wave',
+                    name: 'Dalga Efekti',
+                    desc: 'Dalga gibi yumuşak salınım',
+                    icon: '🌊',
+                    gradient: 'from-teal-600/30 to-blue-600/30',
+                    borderColor: 'border-teal-400/50',
+                    previewAnim: 'announceWavePreview'
+                  },
+                ].map((tmpl) => {
+                  const isSelected = settings.entry_announcement_style === tmpl.key
+                  return (
+                    <button
+                      key={tmpl.key}
+                      onClick={() => {
+                        setSettings(prev => ({ ...prev, entry_announcement_style: tmpl.key }))
+                        saveSetting('entry_announcement_style', tmpl.key)
+                      }}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all duration-300 overflow-hidden group ${
+                        isSelected
+                          ? `bg-gradient-to-br ${tmpl.gradient} ${tmpl.borderColor} shadow-lg ring-2 ring-white/20`
+                          : 'bg-purple-900/20 border-purple-700/30 hover:border-purple-500/50 hover:bg-purple-900/30'
+                      }`}
+                    >
+                      {/* Selection checkmark */}
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+
+                      {/* Preview animation area */}
+                      <div className="h-10 mb-3 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center overflow-hidden relative">
+                        <div
+                          className="text-xs font-bold text-white/90 whitespace-nowrap px-2"
+                          style={{
+                            animation: `${tmpl.previewAnim} 3s ease-in-out infinite`,
+                          }}
+                        >
+                          <span className="mr-1">{tmpl.icon}</span>
+                          <span style={{
+                            background: 'linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #ff6b6b)',
+                            backgroundSize: '200% 100%',
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            animation: 'announceTextShimmer 2s linear infinite'
+                          }}>
+                            Örnek Duyuru
+                          </span>
+                          <span className="ml-1">{tmpl.icon}</span>
+                        </div>
+                      </div>
+
+                      {/* Template info */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{tmpl.icon}</span>
+                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-purple-200'}`}>
+                          {tmpl.name}
+                        </span>
+                      </div>
+                      <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-purple-400'}`}>
+                        {tmpl.desc}
+                      </p>
+                    </button>
+                  )
+                })}
               </div>
 
-              {/* Display Style Select */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-purple-200">Stil:</span>
-                <select
-                  value={settings.entry_announcement_style}
-                  onChange={(e) => {
-                    setSettings(prev => ({ ...prev, entry_announcement_style: e.target.value }))
-                    saveSetting('entry_announcement_style', e.target.value)
-                  }}
-                  className="px-4 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm"
-                >
-                  <option value="fade">Belir & Kaybol</option>
-                  <option value="slide">Yukarıdan Kayma</option>
-                  <option value="flash">Parlak Flash</option>
-                </select>
-              </div>
+              {/* Preview animation styles */}
+              <style jsx>{`
+                @keyframes announceFadePreview {
+                  0%, 100% { opacity: 0; }
+                  20%, 80% { opacity: 1; }
+                }
+                @keyframes announceSlidePreview {
+                  0% { opacity: 0; transform: translateY(-100%); }
+                  15% { opacity: 1; transform: translateY(0); }
+                  85% { opacity: 1; transform: translateY(0); }
+                  100% { opacity: 0; transform: translateY(-100%); }
+                }
+                @keyframes announceFlashPreview {
+                  0% { opacity: 0; filter: brightness(3); transform: scale(1.2); }
+                  15% { opacity: 1; filter: brightness(1); transform: scale(1); }
+                  85% { opacity: 1; filter: brightness(1); }
+                  100% { opacity: 0; filter: brightness(3); transform: scale(1.2); }
+                }
+                @keyframes announceZoomPreview {
+                  0% { opacity: 0; transform: scale(0.3); }
+                  15% { opacity: 1; transform: scale(1.05); }
+                  25% { transform: scale(1); }
+                  85% { opacity: 1; transform: scale(1); }
+                  100% { opacity: 0; transform: scale(0.3); }
+                }
+                @keyframes announceBouncePreview {
+                  0% { opacity: 0; transform: translateY(-30px); }
+                  15% { opacity: 1; transform: translateY(4px); }
+                  25% { transform: translateY(-2px); }
+                  35% { transform: translateY(0); }
+                  85% { opacity: 1; transform: translateY(0); }
+                  100% { opacity: 0; transform: translateY(-30px); }
+                }
+                @keyframes announceTypewriterPreview {
+                  0% { clip-path: inset(0 100% 0 0); opacity: 1; }
+                  50% { clip-path: inset(0 0 0 0); opacity: 1; }
+                  85% { clip-path: inset(0 0 0 0); opacity: 1; }
+                  100% { clip-path: inset(0 0 0 100%); opacity: 0; }
+                }
+                @keyframes announceGlowPreview {
+                  0%, 100% { opacity: 0; text-shadow: none; }
+                  20% { opacity: 1; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
+                  50% { text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff; }
+                  80% { opacity: 1; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
+                }
+                @keyframes announceShakePreview {
+                  0%, 100% { opacity: 0; }
+                  10% { opacity: 1; transform: translateX(-3px); }
+                  20% { transform: translateX(3px); }
+                  30% { transform: translateX(-3px); }
+                  40% { transform: translateX(3px); }
+                  50% { transform: translateX(-2px); }
+                  60% { transform: translateX(2px); }
+                  70%, 85% { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes announceWavePreview {
+                  0%, 100% { opacity: 0; transform: translateY(5px) rotate(-1deg); }
+                  15% { opacity: 1; transform: translateY(-2px) rotate(1deg); }
+                  30% { transform: translateY(1px) rotate(-0.5deg); }
+                  45% { transform: translateY(-1px) rotate(0.5deg); }
+                  60%, 85% { transform: translateY(0) rotate(0deg); opacity: 1; }
+                }
+                @keyframes announceTextShimmer {
+                  0% { background-position: 0% 0; }
+                  100% { background-position: 200% 0; }
+                }
+              `}</style>
             </div>
           </motion.div>
 

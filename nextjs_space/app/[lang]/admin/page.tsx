@@ -114,7 +114,7 @@ const SIDEBAR_ITEMS: { id: AdminTab; icon: React.ElementType; trLabel: string; e
   { id: 'statistics', icon: BarChart3, trLabel: 'Tüm İstatistikler', enLabel: 'All Statistics' },
 ]
 
-interface ManagementLink { href: string; icon: React.ElementType; trLabel: string; enLabel: string }
+interface ManagementLink { href: string; icon: React.ElementType; trLabel: string; enLabel: string; emoji?: string; desc?: string }
 interface ManagementGroup { groupLabel: string; groupIcon: string; links: ManagementLink[] }
 
 const MANAGEMENT_GROUPS: ManagementGroup[] = [
@@ -122,72 +122,72 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     groupLabel: '💰 Finans & Jeton',
     groupIcon: '💰',
     links: [
-      { href: `/admin/finance`, icon: TrendingUp, trLabel: 'Finans Yönetimi', enLabel: 'Finance Management' },
-      { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons' },
-      { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages' },
-      { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods' },
-      { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards' },
-      { href: `/admin/currency-config`, icon: Coins, trLabel: 'Jeton / CFC Yönetimi', enLabel: 'Jeton / CFC Management' },
-      { href: `/admin/ad-networks`, icon: Monitor, trLabel: 'Reklam Ağı Yönetimi', enLabel: 'Ad Network Management' },
+      { href: `/admin/finance`, icon: TrendingUp, trLabel: 'Finans Yönetimi', enLabel: 'Finance Management', emoji: '📊', desc: 'Gelir-gider takibi' },
+      { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons', emoji: '🪙', desc: 'Kullanıcılara jeton ekle' },
+      { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages', emoji: '📦', desc: 'Satış paketlerini düzenle' },
+      { href: `/admin/payment-methods`, icon: CreditCard, trLabel: 'Ödeme Yöntemleri', enLabel: 'Payment Methods', emoji: '💳', desc: 'Ödeme seçenekleri' },
+      { href: `/admin/withdrawals`, icon: Wallet, trLabel: 'Çekim & Ödüller', enLabel: 'Withdrawals & Awards', emoji: '🏧', desc: 'Para çekim talepleri' },
+      { href: `/admin/currency-config`, icon: Coins, trLabel: 'Jeton / CFC Yönetimi', enLabel: 'Jeton / CFC Management', emoji: '⚖️', desc: 'Kur ve birim ayarları' },
+      { href: `/admin/ad-networks`, icon: Monitor, trLabel: 'Reklam Ağı Yönetimi', enLabel: 'Ad Network Management', emoji: '📺', desc: 'Reklam entegrasyonları' },
     ],
   },
   {
     groupLabel: '🏢 Ajans Yönetimi',
     groupIcon: '🏢',
     links: [
-      { href: `/admin/ajanslar`, icon: Shield, trLabel: 'Ajans Yönetimi', enLabel: 'Agency Management' },
+      { href: `/admin/ajanslar`, icon: Shield, trLabel: 'Ajans Yönetimi', enLabel: 'Agency Management', emoji: '🏢', desc: 'Ajansları yönet' },
     ],
   },
   {
     groupLabel: '👥 Kullanıcı & Üyelik',
     groupIcon: '👥',
     links: [
-      { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management' },
-      { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt' },
-      { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management' },
-      { href: `/admin/profile-frames`, icon: Shield, trLabel: 'Profil Çerçeve Yönetimi', enLabel: 'Profile Frame Management' },
-      { href: `/admin/membership-badges`, icon: Award, trLabel: 'Üyelik Rozetleri', enLabel: 'Membership Badges' },
-      { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation' },
+      { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management', emoji: '👤', desc: 'Üyeleri düzenle & yönet' },
+      { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt', emoji: '👑', desc: 'VIP üyelik paketleri' },
+      { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management', emoji: '🏅', desc: 'Rozetleri oluştur & ata' },
+      { href: `/admin/profile-frames`, icon: Shield, trLabel: 'Profil Çerçeve Yönetimi', enLabel: 'Profile Frame Management', emoji: '🖼️', desc: 'Profil çerçeveleri' },
+      { href: `/admin/membership-badges`, icon: Award, trLabel: 'Üyelik Rozetleri', enLabel: 'Membership Badges', emoji: '🎖️', desc: 'Üyelik seviye rozetleri' },
+      { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation', emoji: '🛡️', desc: 'Raporlanan içerikler' },
     ],
   },
   {
     groupLabel: '📝 İçerik Yönetimi',
     groupIcon: '📝',
     links: [
-      { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management' },
-      { href: `/admin/dreams`, icon: Moon, trLabel: 'Rüya Tabirleri Yönetimi', enLabel: 'Dream Interpretations' },
-      { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management' },
-      { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content' },
-      { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page' },
+      { href: `/admin/blog`, icon: BookOpen, trLabel: 'Blog Yönetimi', enLabel: 'Blog Management', emoji: '📰', desc: 'Yazıları oluştur & düzenle' },
+      { href: `/admin/dreams`, icon: Moon, trLabel: 'Rüya Tabirleri Yönetimi', enLabel: 'Dream Interpretations', emoji: '🌙', desc: 'Rüya yorumları' },
+      { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management', emoji: '📄', desc: 'Statik sayfaları düzenle' },
+      { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content', emoji: '✨', desc: 'Kişiselleştirilmiş içerik' },
+      { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page', emoji: '🔮', desc: 'Online fal ayarları' },
     ],
   },
   {
     groupLabel: '📺 Canlı & Sohbet',
     groupIcon: '📺',
     links: [
-      { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt' },
-      { href: `/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt' },
-      { href: `/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images' },
-      { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms' },
+      { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt', emoji: '🎯', desc: 'Falcı onay & düzenleme' },
+      { href: `/admin/video-streams`, icon: Radio, trLabel: 'Canlı Yayın Yönetimi', enLabel: 'Stream Mgmt', emoji: '📡', desc: 'Aktif yayınlar & kontrol' },
+      { href: `/admin/broadcast-images`, icon: ImageIcon, trLabel: 'Yayın Resimleri', enLabel: 'Broadcast Images', emoji: '🎨', desc: 'Yayın arka plan görselleri' },
+      { href: `/admin/chat-rooms`, icon: MessagesSquare, trLabel: 'Sohbet Odaları', enLabel: 'Chat Rooms', emoji: '💬', desc: 'Oda oluştur & yönet' },
     ],
   },
   {
     groupLabel: '⚙️ Görünüm & Ayarlar',
     groupIcon: '⚙️',
     links: [
-      { href: `/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings' },
-      { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management' },
-      { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons' },
-      { href: `/admin/homepage-cards`, icon: LayoutDashboard, trLabel: 'Anasayfa Kartları & Hero', enLabel: 'Homepage Cards & Hero' },
-      { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages' },
-      { href: `/admin/activity-feed`, icon: Activity, trLabel: 'Canlı Aktivite Akışı', enLabel: 'Live Activity Feed' },
-      { href: `/admin/notifications`, icon: Bell, trLabel: 'Push Bildirim Yönetimi', enLabel: 'Push Notification Mgmt' },
-      { href: `/admin/announcement-settings`, icon: Megaphone, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings' },
-      { href: `/admin/popups`, icon: MessageSquare, trLabel: 'Popup Yönetimi', enLabel: 'Popup Management' },
-      { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center' },
-      { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management' },
-      { href: `/admin/backup`, icon: HardDrive, trLabel: 'Site Yedekleme', enLabel: 'Site Backup' },
-      { href: `/admin/bots`, icon: Bot, trLabel: 'AI Bot Yönetimi', enLabel: 'AI Bot Management' },
+      { href: `/admin/settings`, icon: Settings, trLabel: 'Platform Ayarları', enLabel: 'Platform Settings', emoji: '⚙️', desc: 'Genel platform yapılandırma' },
+      { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management', emoji: '🎨', desc: 'Site renk & tema değiştir' },
+      { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons', emoji: '🔘', desc: 'Anasayfa buton düzeni' },
+      { href: `/admin/homepage-cards`, icon: LayoutDashboard, trLabel: 'Anasayfa Kartları & Hero', enLabel: 'Homepage Cards & Hero', emoji: '🃏', desc: 'Hero & kart görselleri' },
+      { href: `/admin/ticker-messages`, icon: MessageSquare, trLabel: 'Kayan Yazı Yönetimi', enLabel: 'Ticker Messages', emoji: '📜', desc: 'Kayan duyuru bantları' },
+      { href: `/admin/activity-feed`, icon: Activity, trLabel: 'Canlı Aktivite Akışı', enLabel: 'Live Activity Feed', emoji: '📈', desc: 'Gerçek zamanlı aktivite' },
+      { href: `/admin/notifications`, icon: Bell, trLabel: 'Push Bildirim Yönetimi', enLabel: 'Push Notification Mgmt', emoji: '🔔', desc: 'Bildirim gönder & yönet' },
+      { href: `/admin/announcement-settings`, icon: Megaphone, trLabel: 'Giriş Duyurusu Ayarları', enLabel: 'Entry Announcement Settings', emoji: '📢', desc: 'Duyuru şablonları & efektler' },
+      { href: `/admin/popups`, icon: MessageSquare, trLabel: 'Popup Yönetimi', enLabel: 'Popup Management', emoji: '💫', desc: 'Açılır pencere ayarları' },
+      { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center', emoji: '🎮', desc: 'Oyunları düzenle' },
+      { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management', emoji: '🏆', desc: 'Yarışma oluştur & yönet' },
+      { href: `/admin/backup`, icon: HardDrive, trLabel: 'Site Yedekleme', enLabel: 'Site Backup', emoji: '💾', desc: 'Veri yedekleme işlemleri' },
+      { href: `/admin/bots`, icon: Bot, trLabel: 'AI Bot Yönetimi', enLabel: 'AI Bot Management', emoji: '🤖', desc: 'Bot simülasyonu & kontrol' },
     ],
   },
 ]
@@ -507,13 +507,22 @@ export default function AdminPage() {
                 return (
                   <Link key={link.href} href={link.href}
                     onClick={() => { try { localStorage.setItem('admin_last_visited', link.href); setLastVisitedHref(link.href) } catch {} }}
-                    className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-3 text-center transition-all hover:scale-105 ${isLastVisited ? 'ring-2 ring-amber-400 shadow-lg shadow-amber-400/20' : ''}`}>
+                    className={`${cardBg} rounded-xl p-4 flex flex-col items-center gap-2 text-center transition-all hover:scale-105 ${isLastVisited ? 'ring-2 ring-amber-400 shadow-lg shadow-amber-400/20' : ''}`}>
                     <div className={`w-12 h-12 rounded-full ${isLastVisited ? 'bg-amber-500/20' : isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-500/10' : 'bg-fuchsia-500/10'} flex items-center justify-center`}>
-                      <Icon className={`w-6 h-6 ${isLastVisited ? 'text-amber-400' : accentColor}`} />
+                      {link.emoji ? (
+                        <span className="text-2xl">{link.emoji}</span>
+                      ) : (
+                        <Icon className={`w-6 h-6 ${isLastVisited ? 'text-amber-400' : accentColor}`} />
+                      )}
                     </div>
                     <span className={`${isLastVisited ? 'text-amber-400 font-semibold' : textPrimary} text-xs font-medium leading-tight`}>
                       {link.trLabel}
                     </span>
+                    {link.desc && (
+                      <span className={`${textMuted} text-[10px] leading-tight`}>
+                        {link.desc}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
