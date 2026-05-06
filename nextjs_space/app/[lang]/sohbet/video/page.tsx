@@ -1587,7 +1587,7 @@ function VideoStreamPageInner() {
           </div>
 
           {/* ============== RIGHT SIDEBAR ACTIONS ============== */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3" data-no-tap>
+          <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 sm:gap-3" data-no-tap>
             {/* Join Stream Button - Yayına Katıl */}
             {session?.user && currentStream && currentStream.user.id !== session.user.id && (
               <div className="flex flex-col items-center">
@@ -1600,7 +1600,7 @@ function VideoStreamPageInner() {
                     }
                   }}
                   disabled={coBroadcastRequested || requestingCoBroadcast}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg relative ${
+                  className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-lg relative ${
                     coBroadcastRequested 
                       ? 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-500/30' 
                       : requestingCoBroadcast
@@ -1609,11 +1609,11 @@ function VideoStreamPageInner() {
                   }`}
                 >
                   {requestingCoBroadcast ? (
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-spin" />
                   ) : coBroadcastRequested ? (
-                    <Check className="w-6 h-6 text-white" />
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   ) : (
-                    <UserPlus className="w-6 h-6 text-white" />
+                    <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   )}
                   {coBroadcastRequested && (
                     <motion.div 
@@ -1634,9 +1634,9 @@ function VideoStreamPageInner() {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); setShowViewersList(!showViewersList); }}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30"
+                className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30"
               >
-                <Users className="w-6 h-6 text-white" />
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </motion.button>
               <span className="text-white text-xs font-bold mt-1">{formatCount(viewerCount)}</span>
             </div>
@@ -1646,9 +1646,9 @@ function VideoStreamPageInner() {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); setShowGifts(true); }}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30"
+                className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30"
               >
-                <Gift className="w-6 h-6 text-white" />
+                <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </motion.button>
               <span className="text-white text-xs font-medium mt-1">{'Hediye'}</span>
             </div>
@@ -1659,11 +1659,11 @@ function VideoStreamPageInner() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); handleFortuneRequest(); }}
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center shadow-lg shadow-amber-700/30"
+                  className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center shadow-lg shadow-amber-700/30"
                 >
-                  <span className="text-2xl">☕</span>
+                  <span className="text-xl sm:text-2xl">☕</span>
                 </motion.button>
-                <span className="text-white text-xs font-medium mt-1">{'Fal İste'}</span>
+                <span className="text-white text-[10px] sm:text-xs font-medium mt-1">{'Fal İste'}</span>
               </div>
             )}
             
@@ -1677,9 +1677,9 @@ function VideoStreamPageInner() {
                     setTempNickname(viewerSettings.nickname);
                     setShowSettingsModal(true);
                   }}
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30"
+                  className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30"
                 >
-                  <User className="w-6 h-6 text-white" />
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </motion.button>
                 <span className="text-white text-xs font-medium mt-1 max-w-14 truncate">{viewerSettings.nickname || ('Rumuz')}</span>
               </div>
@@ -1850,9 +1850,9 @@ function VideoStreamPageInner() {
           </div>
 
           {/* ============== BOTTOM INPUT BAR ============== */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 flex items-center gap-1.5 sm:gap-2 z-20" onClick={(e) => e.stopPropagation()}>
             {/* Message Input with Send Button */}
-            <div className="flex-1 flex items-center bg-white/10 backdrop-blur-md rounded-full overflow-hidden border border-white/20">
+            <div className="flex-1 flex items-center bg-white/10 backdrop-blur-md rounded-full overflow-hidden border border-white/20 min-w-0">
               <input
                 ref={commentInputRef}
                 value={newComment}
@@ -1860,15 +1860,15 @@ function VideoStreamPageInner() {
                 onKeyDown={e => e.key === 'Enter' && handleSendComment()}
                 onClick={(e) => e.stopPropagation()}
                 placeholder={'Mesaj yaz...'}
-                className="flex-1 bg-transparent text-white text-sm px-4 py-3 placeholder:text-white/50 focus:outline-none"
+                className="flex-1 bg-transparent text-white text-xs sm:text-sm px-3 sm:px-4 py-2.5 sm:py-3 placeholder:text-white/50 focus:outline-none min-w-0"
               />
               <button
                 onClick={(e) => { e.stopPropagation(); handleSendComment(); }}
                 disabled={!newComment.trim() || !session?.user}
-                className="mr-1.5 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold rounded-full flex items-center gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all"
+                className="mr-1 sm:mr-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs sm:text-sm font-semibold rounded-full flex items-center gap-1 sm:gap-1.5 disabled:opacity-40 disabled:from-gray-500 disabled:to-gray-600 hover:from-pink-400 hover:to-purple-400 transition-all flex-shrink-0"
               >
-                <Send className="w-4 h-4" />
-                <span>{'Gönder'}</span>
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{'Gönder'}</span>
               </button>
             </div>
           </div>

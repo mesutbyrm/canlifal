@@ -1735,14 +1735,14 @@ export default function BroadcastPage() {
         </div>
         
         {/* Control buttons */}
-        <div className="flex justify-center gap-3">
+        <div className="flex justify-center gap-2 sm:gap-3 overflow-x-auto px-2 scrollbar-hide">
           {/* Panel Button with Fortune Request Badge */}
           <button 
             onClick={() => setShowPanel(!showPanel)} 
-            className={`px-4 py-2.5 rounded-full flex items-center gap-2 relative ${showPanel ? 'bg-purple-600' : 'bg-white/20'}`}
+            className={`flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full flex items-center gap-1.5 sm:gap-2 relative ${showPanel ? 'bg-purple-600' : 'bg-white/20'}`}
           >
-            <Settings className="w-5 h-5 text-white" />
-            <span className="text-white text-sm font-medium">Panel</span>
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <span className="text-white text-xs sm:text-sm font-medium">Panel</span>
             {/* Red badge showing fortune request count */}
             {fortuneRequesters.length > 0 && (
               <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
@@ -1751,25 +1751,24 @@ export default function BroadcastPage() {
             )}
           </button>
           
-          <button onClick={toggleVideo} className={`w-12 h-12 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
-            {isVideoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+          <button onClick={toggleVideo} className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${isVideoOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
+            {isVideoOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
           </button>
-          <button onClick={toggleAudio} className={`w-12 h-12 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
-            {isAudioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+          <button onClick={toggleAudio} className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${isAudioOn ? 'bg-white/20' : 'bg-[#fe2c55]'}`}>
+            {isAudioOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
           </button>
-          <button onClick={switchCameraFn} className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <SwitchCamera className="w-5 h-5 text-white" />
+          <button onClick={switchCameraFn} className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <SwitchCamera className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </button>
           
           {/* Host Controls Button */}
           {!isCohost && (
             <button 
               onClick={() => setShowHostControls(!showHostControls)} 
-              className={`w-12 h-12 rounded-full flex items-center justify-center relative ${showHostControls ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center relative ${showHostControls ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
               title="Misafir Kontrolleri"
             >
-              <Shield className="w-5 h-5 text-white" />
-              {/* Badge for pending requests */}
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               {hostPendingRequests.length > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
                   {hostPendingRequests.length}
@@ -1782,48 +1781,48 @@ export default function BroadcastPage() {
           {!isCohost && (
             <button 
               onClick={() => { setShowPKModal(true); setShowLiveBroadcasters(true) }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${pkBattle?.status === 'active' ? 'bg-gradient-to-r from-red-500 to-orange-500 animate-pulse' : pkBattle?.status === 'pending' ? 'bg-yellow-500' : 'bg-white/20'}`}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${pkBattle?.status === 'active' ? 'bg-gradient-to-r from-red-500 to-orange-500 animate-pulse' : pkBattle?.status === 'pending' ? 'bg-yellow-500' : 'bg-white/20'}`}
               title="PK Battle"
             >
-              <Swords className="w-5 h-5 text-white" />
+              <Swords className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
           )}
           
           {/* Beauty Effects Button */}
           <button 
             onClick={() => setShowBeautyPanel(!showBeautyPanel)} 
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${beautySettings.enabled ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
+            className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${beautySettings.enabled ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/20'}`}
             title={'Güzelleştirme Efektleri'}
           >
-            <Sparkles className="w-5 h-5 text-white" />
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </button>
           
           {/* Image Mode Toggle */}
           <button 
             onClick={handleToggleImageMode} 
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${isImageMode ? 'bg-green-500' : 'bg-white/20'}`}
+            className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${isImageMode ? 'bg-green-500' : 'bg-white/20'}`}
             title={'Resim ile Yayın'}
           >
-            <ImageIcon className="w-5 h-5 text-white" />
+            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </button>
 
           {/* Background Image Toggle */}
           <button 
             onClick={handleToggleBackground} 
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${backgroundUrl ? 'bg-blue-500' : 'bg-white/20'}`}
+            className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${backgroundUrl ? 'bg-blue-500' : 'bg-white/20'}`}
             title={'Arka Plan Resmi'}
           >
-            <Palette className="w-5 h-5 text-white" />
+            <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </button>
           
           {/* Enable remote audio button - shows when co-broadcast is active and audio not enabled */}
           {(hasActiveGuests || isCohost) && !remoteAudioEnabled && (
             <button 
               onClick={enableRemoteAudio} 
-              className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center animate-pulse"
+              className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center animate-pulse"
               title={'Sesi Aç'}
             >
-              <Volume2 className="w-5 h-5 text-white" />
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
           )}
         </div>

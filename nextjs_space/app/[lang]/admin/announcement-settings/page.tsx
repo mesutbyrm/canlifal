@@ -723,6 +723,97 @@ export default function AnnouncementSettingsPage() {
             </div>
           </motion.div>
 
+          {/* ── Duyuru Görselleri ── */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-xl border border-emerald-500/30 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(20, 120, 80, 0.2) 0%, rgba(10, 60, 40, 0.4) 100%)' }}>
+            <div className="p-5">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><ImageIcon className="w-5 h-5 text-emerald-400" /> Duyuru Görselleri</h3>
+              <p className="text-xs text-emerald-300 mb-4">Banner arka plan resmi ve duyuru ikonu yükleyin</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Background Image Upload */}
+                <div className="p-4 rounded-xl border border-emerald-500/20 bg-black/20">
+                  <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                    🖼️ Arka Plan Görseli
+                  </p>
+                  <p className="text-[10px] text-purple-300 mb-3">Duyuru bannerı arkasında görünecek resim</p>
+                  
+                  {announcementBgImage ? (
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-emerald-500/30 mb-2">
+                      <img src={announcementBgImage} alt="Banner arka plan" className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => { setAnnouncementBgImage(''); saveGeneralSetting('announcement_bg_image', '') }}
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="aspect-video rounded-lg border-2 border-dashed border-emerald-500/30 bg-black/30 flex flex-col items-center justify-center mb-2">
+                      <ImageIcon className="w-8 h-8 text-emerald-500/40 mb-1" />
+                      <p className="text-[10px] text-purple-400">Henüz görsel yüklenmedi</p>
+                    </div>
+                  )}
+                  
+                  <input type="file" ref={bgInputRef} accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAnnouncementImageUpload(f, 'bg'); e.target.value = '' }} />
+                  <button 
+                    onClick={() => bgInputRef.current?.click()} 
+                    disabled={uploadingBg}
+                    className="w-full px-3 py-2 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/30 text-white text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                  >
+                    {uploadingBg ? <><Loader2 className="w-3 h-3 animate-spin" /> Yükleniyor...</> : <><Upload className="w-3 h-3" /> {announcementBgImage ? 'Değiştir' : 'Görsel Yükle'}</>}
+                  </button>
+                </div>
+
+                {/* Icon Image Upload */}
+                <div className="p-4 rounded-xl border border-emerald-500/20 bg-black/20">
+                  <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                    ✨ Duyuru İkonu
+                  </p>
+                  <p className="text-[10px] text-purple-300 mb-3">Duyuru metninin yanında görünecek ikon/logo</p>
+                  
+                  {announcementIconImage ? (
+                    <div className="relative w-24 h-24 mx-auto rounded-xl overflow-hidden border border-emerald-500/30 mb-2">
+                      <img src={announcementIconImage} alt="Duyuru ikonu" className="w-full h-full object-contain bg-black/50" />
+                      <button 
+                        onClick={() => { setAnnouncementIconImage(''); saveGeneralSetting('announcement_icon_image', '') }}
+                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <X className="w-2.5 h-2.5 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 mx-auto rounded-xl border-2 border-dashed border-emerald-500/30 bg-black/30 flex flex-col items-center justify-center mb-2">
+                      <Sparkles className="w-6 h-6 text-emerald-500/40 mb-1" />
+                      <p className="text-[10px] text-purple-400">Yok</p>
+                    </div>
+                  )}
+                  
+                  <input type="file" ref={iconInputRef} accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAnnouncementImageUpload(f, 'icon'); e.target.value = '' }} />
+                  <button 
+                    onClick={() => iconInputRef.current?.click()} 
+                    disabled={uploadingIcon}
+                    className="w-full px-3 py-2 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/30 text-white text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                  >
+                    {uploadingIcon ? <><Loader2 className="w-3 h-3 animate-spin" /> Yükleniyor...</> : <><Upload className="w-3 h-3" /> {announcementIconImage ? 'Değiştir' : 'İkon Yükle'}</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Preview */}
+              {(announcementBgImage || announcementIconImage) && (
+                <div className="mt-4 p-3 rounded-lg border border-emerald-500/20 bg-black/30">
+                  <p className="text-[10px] text-emerald-400 mb-2 text-center">Önizleme</p>
+                  <div className="relative rounded-lg overflow-hidden py-3 px-4 flex items-center gap-3" style={{ background: announcementBgImage ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${announcementBgImage}) center/cover` : 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))' }}>
+                    {announcementIconImage && (
+                      <img src={announcementIconImage} alt="" className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+                    )}
+                    <span className="text-white text-xs font-medium">🏆 CanlıFal kullanıcısı büyük ödülü kazandı!</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
           {/* ── Chat Marquee Ayarları ── */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-cyan-500/30 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(20, 80, 120, 0.2) 0%, rgba(10, 30, 60, 0.4) 100%)' }}>
             <div className="p-5">
