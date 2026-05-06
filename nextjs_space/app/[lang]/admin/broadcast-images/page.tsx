@@ -37,19 +37,20 @@ export default function AdminBroadcastImagesPage() {
   const [formImageUrl, setFormImageUrl] = useState('')
   const [formSortOrder, setFormSortOrder] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [bulkUploading, setBulkUploading] = useState(false)
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 })
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const handleFileUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) return
-    setUploading(true)
+  const bulkFileInputRef = useRef<HTMLInputElement>(null)
+
+  const uploadSingleFile = async (file: File): Promise<string | null> => {
     try {
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
       })
-      if (!presignedRes.ok) throw new Error('Upload URL alınamadı')
-      const { uploadUrl, cloud_storage_path, publicUrl } = await presignedRes.json()
+      if (!presignedRes.ok) return null
+      const { uploadUrl, publicUrl } = await presignedRes.json()
       
       const signedHeadersMatch = uploadUrl.match(/X-Amz-SignedHeaders=([^&]+)/)
       const signedHeaders = signedHeadersMatch ? decodeURIComponent(signedHeadersMatch[1]) : 'host'
@@ -59,16 +60,68 @@ export default function AdminBroadcastImagesPage() {
       }
       
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
-      if (!uploadRes.ok) throw new Error('Dosya yüklenemedi')
+      if (!uploadRes.ok) return null
       
-      setFormImageUrl(publicUrl || uploadUrl.split('?')[0])
-      if (!formName.trim()) setFormName(file.name.replace(/\.[^.]+$/, ''))
+      return publicUrl || uploadUrl.split('?')[0]
+    } catch {
+      return null
+    }
+  }
+  
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) return
+    setUploading(true)
+    try {
+      const url = await uploadSingleFile(file)
+      if (url) {
+        setFormImageUrl(url)
+        if (!formName.trim()) setFormName(file.name.replace(/\.[^.]+$/, ''))
+      } else {
+        alert('Resim yüklenirken hata oluştu')
+      }
     } catch (e) {
       console.error('Upload error:', e)
       alert('Resim yüklenirken hata oluştu')
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleBulkUpload = async (files: FileList) => {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    if (imageFiles.length === 0) return
+    
+    setBulkUploading(true)
+    setBulkProgress({ current: 0, total: imageFiles.length })
+    
+    let successCount = 0
+    const currentMaxOrder = images.length > 0 ? Math.max(...images.map(i => i.sortOrder)) : 0
+    
+    for (let i = 0; i < imageFiles.length; i++) {
+      setBulkProgress({ current: i + 1, total: imageFiles.length })
+      const file = imageFiles[i]
+      const url = await uploadSingleFile(file)
+      
+      if (url) {
+        try {
+          const res = await fetch('/api/admin/broadcast-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: file.name.replace(/\.[^.]+$/, ''),
+              imageUrl: url,
+              sortOrder: currentMaxOrder + i + 1
+            })
+          })
+          if (res.ok) successCount++
+        } catch {}
+      }
+    }
+    
+    await fetchImages()
+    setBulkUploading(false)
+    setBulkProgress({ current: 0, total: 0 })
+    alert(`${successCount}/${imageFiles.length} resim başarıyla yüklendi!`)
   }
   
   const fetchImages = useCallback(async () => {
@@ -219,13 +272,44 @@ export default function AdminBroadcastImagesPage() {
             </div>
           </div>
           
-          <button
-            onClick={() => { resetForm(); setShowAddModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold text-sm hover:from-purple-400 hover:to-pink-400 transition"
-          >
-            <Plus className="w-4 h-4" />
-            {'Resim Ekle'}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Bulk Upload Hidden Input */}
+            <input
+              ref={bulkFileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={e => {
+                if (e.target.files && e.target.files.length > 0) handleBulkUpload(e.target.files)
+                e.target.value = ''
+              }}
+            />
+            <button
+              onClick={() => bulkFileInputRef.current?.click()}
+              disabled={bulkUploading}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-semibold text-sm hover:from-green-400 hover:to-emerald-400 transition disabled:opacity-50"
+            >
+              {bulkUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {bulkProgress.current}/{bulkProgress.total}
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Toplu Yükle
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => { resetForm(); setShowAddModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold text-sm hover:from-purple-400 hover:to-pink-400 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Resim Ekle
+            </button>
+          </div>
         </div>
       </div>
       

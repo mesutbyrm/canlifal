@@ -52,6 +52,7 @@ interface VideoStream {
   title: string | null
   viewerCount: number
   likeCount: number
+  backgroundUrl?: string | null
   user: { id: string; name: string; image: string | null }
 }
 
@@ -1303,9 +1304,16 @@ function VideoStreamPageInner() {
           ) : (
             /* Normal Solo Broadcast View - TikTok 9:16 style */
             <div className="absolute inset-0 flex items-center justify-center bg-black">
+              {/* Background image from broadcaster */}
+              {currentStream?.backgroundUrl && (
+                <div className="absolute inset-0 z-0">
+                  <img src={currentStream.backgroundUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/20" />
+                </div>
+              )}
               <div 
                 ref={remoteVideoRef} 
-                className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
+                className={`w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain ${currentStream?.backgroundUrl ? 'z-[1]' : 'bg-black'}`}
                 style={{ aspectRatio: '9/16' }}
               />
             </div>

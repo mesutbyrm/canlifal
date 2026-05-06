@@ -2,7 +2,7 @@
 
 import AdminBackButton from '@/components/admin-back-button'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -12,8 +12,10 @@ import {
   MessageCircle, Gamepad2, Users, Gift, BookOpen, 
   Sparkles, Home, User, LayoutDashboard, Crown,
   CheckCircle, Info, Check, ToggleLeft, ToggleRight, RefreshCw,
-  Timer, Eye, Palette, Zap, Play, MapPin, Trophy, Mic, Share2, Star, PlusCircle, Trash2, Type
+  Timer, Eye, Palette, Zap, Play, MapPin, Trophy, Mic, Share2, Star, PlusCircle, Trash2, Type,
+  Upload, ImageIcon, X
 } from 'lucide-react'
+import Image from 'next/image'
 
 // ── Geçiş Efekti Tanımları ──
 const TRANSITION_EFFECTS = [
@@ -164,6 +166,14 @@ export default function AnnouncementSettingsPage() {
   const [savingMarquee, setSavingMarquee] = useState(false)
   const [savedMarquee, setSavedMarquee] = useState(false)
 
+  // Announcement images (location & appearance)
+  const [announcementBgImage, setAnnouncementBgImage] = useState('')
+  const [announcementIconImage, setAnnouncementIconImage] = useState('')
+  const [uploadingBg, setUploadingBg] = useState(false)
+  const [uploadingIcon, setUploadingIcon] = useState(false)
+  const bgInputRef = useRef<HTMLInputElement>(null)
+  const iconInputRef = useRef<HTMLInputElement>(null)
+
   const [settings, setSettings] = useState<AllSettings>(() => {
     const initial: AllSettings = {}
     USER_CATEGORIES.forEach(cat => {
@@ -224,6 +234,8 @@ export default function AnnouncementSettingsPage() {
           if (psData.chat_marquee_effect) setMarqueeEffect(psData.chat_marquee_effect)
           if (psData.chat_marquee_speed) setMarqueeSpeed(psData.chat_marquee_speed)
           if (psData.chat_marquee_repeat) setMarqueeRepeat(psData.chat_marquee_repeat)
+          if (psData.announcement_bg_image) setAnnouncementBgImage(psData.announcement_bg_image)
+          if (psData.announcement_icon_image) setAnnouncementIconImage(psData.announcement_icon_image)
           if (psData.event_announcement_templates) {
             try {
               const et = JSON.parse(psData.event_announcement_templates)
@@ -396,6 +408,35 @@ export default function AnnouncementSettingsPage() {
     }
   }
 
+  // Upload announcement image helper
+  const handleAnnouncementImageUpload = async (file: File, type: 'bg' | 'icon') => {
+    const setUploading = type === 'bg' ? setUploadingBg : setUploadingIcon
+    const setImage = type === 'bg' ? setAnnouncementBgImage : setAnnouncementIconImage
+    const settingKey = type === 'bg' ? 'announcement_bg_image' : 'announcement_icon_image'
+    setUploading(true)
+    try {
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+      })
+      if (!presignedRes.ok) throw new Error('Presigned URL alınamadı')
+      const { uploadUrl, publicUrl } = await presignedRes.json()
+      const signedHeadersMatch = uploadUrl.match(/X-Amz-SignedHeaders=([^&]+)/)
+      const signedHeaders = signedHeadersMatch ? decodeURIComponent(signedHeadersMatch[1]) : 'host'
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (signedHeaders.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: file })
+      if (!uploadRes.ok) throw new Error('Yükleme başarısız')
+      setImage(publicUrl)
+      await saveGeneralSetting(settingKey, publicUrl)
+    } catch (error) {
+      console.error('Upload error:', error)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   // Save placement & marquee settings
   const handleSaveMarquee = async () => {
     setSavingMarquee(true)
@@ -407,6 +448,8 @@ export default function AnnouncementSettingsPage() {
         saveGeneralSetting('chat_marquee_effect', marqueeEffect),
         saveGeneralSetting('chat_marquee_speed', marqueeSpeed),
         saveGeneralSetting('chat_marquee_repeat', marqueeRepeat),
+        saveGeneralSetting('announcement_bg_image', announcementBgImage),
+        saveGeneralSetting('announcement_icon_image', announcementIconImage),
       ])
       setSavedMarquee(true)
       setTimeout(() => setSavedMarquee(false), 3000)

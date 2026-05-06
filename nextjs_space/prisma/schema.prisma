@@ -810,6 +810,7 @@ model VideoStream {
   thumbnailUrl    String?
   broadcastImage  String?             // Image URL for image-only broadcast mode
   isImageMode     Boolean             @default(false) // Whether broadcasting with image instead of video
+  backgroundUrl   String?             // Background image URL for the broadcast
   lastGiftAt      DateTime?           // Last gift received timestamp (for auto-close)
   autoClosedAt    DateTime?           // When stream was auto-closed due to no gifts
   startedAt       DateTime            @default(now())

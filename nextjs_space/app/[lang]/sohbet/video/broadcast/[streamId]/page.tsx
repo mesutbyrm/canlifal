@@ -53,7 +53,8 @@ import {
   Swords,
   Sparkles,
   Sun,
-  Droplet
+  Droplet,
+  Palette
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import PKBattleOverlay from '@/components/pk-battle-overlay'
@@ -174,6 +175,9 @@ export default function BroadcastPage() {
   const [broadcastImage, setBroadcastImage] = useState<string | null>(null)
   const [showImageUpload, setShowImageUpload] = useState(false)
   const [adminBroadcastImages, setAdminBroadcastImages] = useState<AdminBroadcastImage[]>([])
+  // Background image mode
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  const [showBackgroundSelector, setShowBackgroundSelector] = useState(false)
   // Panel mode
   const [showPanel, setShowPanel] = useState(false)
   // Moderators (max 10)
@@ -1051,6 +1055,36 @@ export default function BroadcastPage() {
     }
   }
 
+  // Toggle background selector
+  const handleToggleBackground = () => {
+    if (backgroundUrl) {
+      // Remove background
+      setBackgroundUrl(null)
+      fetch(`/api/video-streams/${streamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backgroundUrl: null })
+      }).catch(() => {})
+    } else {
+      setShowBackgroundSelector(true)
+    }
+  }
+
+  // Select a background image
+  const handleSelectBackground = async (image: AdminBroadcastImage) => {
+    setBackgroundUrl(image.imageUrl)
+    setShowBackgroundSelector(false)
+    try {
+      await fetch(`/api/video-streams/${streamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backgroundUrl: image.imageUrl })
+      })
+    } catch (error) {
+      console.error('Error saving background:', error)
+    }
+  }
+
   const cleanup = async () => {
     // Leave Agora channel and cleanup tracks
     if (agoraClientRef.current) {
@@ -1218,16 +1252,23 @@ export default function BroadcastPage() {
         </>
       ) : (
         <>
+          {/* Background image layer */}
+          {backgroundUrl && (
+            <div className="absolute inset-0 z-0">
+              <img src={backgroundUrl} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
+          )}
           {/* SOLO MODE: Broadcaster video fullscreen */}
           <div
             ref={localVideoRef}
-            className="absolute inset-0 w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
+            className={`absolute inset-0 w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain ${backgroundUrl ? 'z-[1]' : 'bg-black'}`}
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
 
           {/* Gradients for solo mode */}
-          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/70 to-transparent pointer-events-none z-[2]" />
+          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-[2]" />
         </>
       )}
 
@@ -1765,6 +1806,15 @@ export default function BroadcastPage() {
           >
             <ImageIcon className="w-5 h-5 text-white" />
           </button>
+
+          {/* Background Image Toggle */}
+          <button 
+            onClick={handleToggleBackground} 
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${backgroundUrl ? 'bg-blue-500' : 'bg-white/20'}`}
+            title={'Arka Plan Resmi'}
+          >
+            <Palette className="w-5 h-5 text-white" />
+          </button>
           
           {/* Enable remote audio button - shows when co-broadcast is active and audio not enabled */}
           {(hasActiveGuests || isCohost) && !remoteAudioEnabled && (
@@ -2137,6 +2187,13 @@ export default function BroadcastPage() {
                 <ImageIcon className="w-4 h-4" />
                 {'Resim Modu'}
               </button>
+              <button 
+                onClick={handleToggleBackground}
+                className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 ${backgroundUrl ? 'bg-blue-500 text-white' : 'bg-white/10 text-white'}`}
+              >
+                <Palette className="w-4 h-4" />
+                {'Arka Plan'}
+              </button>
             </div>
           </motion.div>
         )}
@@ -2219,6 +2276,88 @@ export default function BroadcastPage() {
                 className="w-full bg-white/10 text-white py-2.5 rounded-xl font-semibold mt-4 text-sm"
               >
                 {'İptal'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Background Selector Modal */}
+      <AnimatePresence>
+        {showBackgroundSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowBackgroundSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-blue-900/95 to-purple-900/95 backdrop-blur-xl rounded-3xl p-5 w-full max-w-md text-center border border-white/10 max-h-[80vh] flex flex-col"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mx-auto mb-3">
+                <Palette className="w-7 h-7 text-white" />
+              </div>
+              
+              <h2 className="text-lg font-bold text-white mb-1">
+                Arka Plan Seç
+              </h2>
+              
+              <p className="text-white/60 text-xs mb-4">
+                Yayın arka planı olarak kullanılacak resmi seçin
+              </p>
+              
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {adminBroadcastImages.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Palette className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                    <p className="text-white/40 text-sm">
+                      Henüz arka plan resmi eklenmemiş
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {adminBroadcastImages.map((image) => (
+                      <motion.button
+                        key={image.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSelectBackground(image)}
+                        className={`relative aspect-video rounded-xl overflow-hidden border-2 transition ${
+                          backgroundUrl === image.imageUrl 
+                            ? 'border-blue-500 ring-2 ring-blue-500/50' 
+                            : 'border-white/10 hover:border-blue-500/50'
+                        }`}
+                      >
+                        <Image
+                          src={image.imageUrl}
+                          alt={image.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                          <p className="text-white text-xs font-medium truncate">{image.name}</p>
+                        </div>
+                        {backgroundUrl === image.imageUrl && (
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setShowBackgroundSelector(false)}
+                className="w-full bg-white/10 text-white py-2.5 rounded-xl font-semibold mt-4 text-sm"
+              >
+                İptal
               </button>
             </motion.div>
           </motion.div>
