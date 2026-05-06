@@ -230,6 +230,8 @@ export default function LoginAnnouncementBanner() {
   const [announcementEnabled, setAnnouncementEnabled] = useState(true)
   const [announcementDuration, setAnnouncementDuration] = useState(2) // seconds
   const [announcementStyle, setAnnouncementStyle] = useState<string>('fade')
+  const [displayMode, setDisplayMode] = useState<string>('fullwidth') // fullwidth or box
+  const [boxPadding, setBoxPadding] = useState(25) // px from left/right
 
   // Load seen IDs from sessionStorage on mount
   useEffect(() => {
@@ -256,6 +258,12 @@ export default function LoginAnnouncementBanner() {
           if (data.entry_announcement_style) {
             setAnnouncementStyle(data.entry_announcement_style)
           }
+          if (data.entry_announcement_display_mode) {
+            setDisplayMode(data.entry_announcement_display_mode)
+          }
+          if (data.entry_announcement_box_padding) {
+            setBoxPadding(parseInt(data.entry_announcement_box_padding) || 25)
+          }
         }
       } catch {}
     }
@@ -267,7 +275,7 @@ export default function LoginAnnouncementBanner() {
       const res = await fetch('/api/announcements')
       if (res.ok) {
         const data: Announcement[] = await res.json()
-        const loginAnnouncements = data.filter(a => a.type === 'login' || a.type === 'section_entry' || a.type === 'gift_announcement')
+        const loginAnnouncements = data.filter(a => a.type === 'login' || a.type === 'section_entry' || a.type === 'gift_announcement' || a.type.startsWith('event_'))
         const newOnes = loginAnnouncements.filter(a => !seenIdsRef.current.has(a.id))
         if (newOnes.length > 0) {
           queueRef.current = [...queueRef.current, ...newOnes]
@@ -343,6 +351,9 @@ export default function LoginAnnouncementBanner() {
 
   const colors = getTeamColors(currentAnnouncement.color)
   const isBanaOzelAnnouncement = currentAnnouncement.message.toLowerCase().includes('bana özel') || currentAnnouncement.message.toLowerCase().includes('bana ozel')
+  const isEventType = currentAnnouncement.type.startsWith('event_')
+  // Event announcements always use box mode
+  const useBoxMode = displayMode === 'box' || isEventType
 
   const handleBannerClick = () => {
     if (isBanaOzelAnnouncement) {
@@ -350,6 +361,75 @@ export default function LoginAnnouncementBanner() {
     }
   }
 
+  const animName = `loginBanner${
+    announcementStyle === 'slide' ? 'Slide' : 
+    announcementStyle === 'slideLeft' ? 'SlideLeft' : 
+    announcementStyle === 'slideRight' ? 'SlideRight' : 
+    announcementStyle === 'flash' ? 'FlashBright' : 
+    announcementStyle === 'zoom' ? 'Zoom' : 
+    announcementStyle === 'bounce' ? 'Bounce' : 
+    announcementStyle === 'typewriter' ? 'Typewriter' : 
+    announcementStyle === 'glow' ? 'Glow' : 
+    announcementStyle === 'shake' ? 'Shake' : 
+    announcementStyle === 'wave' ? 'Wave' : 
+    announcementStyle === 'flipX' ? 'FlipX' : 
+    announcementStyle === 'elastic' ? 'Elastic' : 
+    'Flash'}`
+
+  // BOX MODE - centered floating card
+  if (useBoxMode) {
+    return (
+      <>
+      <div
+        className="w-full flex justify-center pointer-events-none"
+        style={{ padding: `4px ${boxPadding}px` }}
+      >
+        <div
+          key={`${currentAnnouncement.id}-pass-${passCount}`}
+          className={`overflow-hidden relative rounded-xl pointer-events-auto ${isBanaOzelAnnouncement ? 'cursor-pointer' : ''}`}
+          onClick={handleBannerClick}
+          style={{
+            maxWidth: '600px',
+            width: '100%',
+            background: colors.bg,
+            backgroundSize: '200% 100%',
+            animation: `loginBannerBgShift 4s linear infinite, ${animName} ${announcementDuration}s ease-in-out forwards`,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 15px rgba(168,85,247,0.2)',
+            border: '1px solid rgba(168,85,247,0.3)',
+          }}
+        >
+          <div className="px-4 py-2.5 flex items-center justify-center whitespace-nowrap">
+            <span className="inline-flex items-center gap-2 max-w-full overflow-hidden" style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px' }}>
+              <span style={{ fontSize: '14px' }}>{colors.emoji}</span>
+              <span className="truncate" style={{
+                background: colors.text,
+                backgroundSize: '200% 100%',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+              }}>
+                {currentAnnouncement.message}
+              </span>
+              <span style={{ fontSize: '14px' }}>{colors.emoji}</span>
+            </span>
+          </div>
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 pointer-events-none rounded-xl"
+            style={{
+              background: colors.shimmer,
+              animation: 'loginShimmerSweep 2.5s ease-in-out infinite',
+              backgroundSize: '200% 100%'
+            }}
+          />
+        </div>
+      </div>
+      <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
+      </>
+    )
+  }
+
+  // FULL WIDTH MODE (default)
   return (
     <>
     <div
@@ -387,20 +467,7 @@ export default function LoginAnnouncementBanner() {
         key={`${currentAnnouncement.id}-pass-${passCount}`}
         className="absolute inset-0 flex items-center justify-center whitespace-nowrap px-4"
         style={{
-          animation: `loginBanner${
-             announcementStyle === 'slide' ? 'Slide' : 
-             announcementStyle === 'slideLeft' ? 'SlideLeft' : 
-             announcementStyle === 'slideRight' ? 'SlideRight' : 
-             announcementStyle === 'flash' ? 'FlashBright' : 
-             announcementStyle === 'zoom' ? 'Zoom' : 
-             announcementStyle === 'bounce' ? 'Bounce' : 
-             announcementStyle === 'typewriter' ? 'Typewriter' : 
-             announcementStyle === 'glow' ? 'Glow' : 
-             announcementStyle === 'shake' ? 'Shake' : 
-             announcementStyle === 'wave' ? 'Wave' : 
-             announcementStyle === 'flipX' ? 'FlipX' : 
-             announcementStyle === 'elastic' ? 'Elastic' : 
-             'Flash'} ${announcementDuration}s ease-in-out forwards`,
+          animation: `${animName} ${announcementDuration}s ease-in-out forwards`,
         }}
       >
         <span className="inline-flex items-center gap-2 max-w-full overflow-hidden" style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.3px' }}>

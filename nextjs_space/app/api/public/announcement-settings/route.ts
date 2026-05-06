@@ -9,7 +9,9 @@ export async function GET() {
       where: {
         key: { in: [
           'entry_announcement_enabled', 'entry_announcement_duration', 'entry_announcement_style',
-          'chat_marquee_effect', 'chat_marquee_speed', 'chat_marquee_repeat', 'chat_marquee_enabled'
+          'entry_announcement_display_mode', 'entry_announcement_box_padding',
+          'chat_marquee_effect', 'chat_marquee_speed', 'chat_marquee_repeat', 'chat_marquee_enabled',
+          'event_announcement_templates'
         ] }
       }
     });

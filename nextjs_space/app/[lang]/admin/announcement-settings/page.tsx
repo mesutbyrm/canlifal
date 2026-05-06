@@ -12,7 +12,7 @@ import {
   MessageCircle, Gamepad2, Users, Gift, BookOpen, 
   Sparkles, Home, User, LayoutDashboard, Crown,
   CheckCircle, Info, Check, ToggleLeft, ToggleRight, RefreshCw,
-  Timer, Eye, Palette, Zap, Play
+  Timer, Eye, Palette, Zap, Play, MapPin, Trophy, Mic, Share2, Star, PlusCircle, Trash2, Type
 } from 'lucide-react'
 
 // ── Geçiş Efekti Tanımları ──
@@ -32,7 +32,34 @@ const TRANSITION_EFFECTS = [
   { key: 'elastic', label: '🪀 Elastik', desc: 'Lastik gibi esneyerek yerine oturur' },
 ]
 
-// Banner konumu: Navbar altında sabit (sticky)
+// ── Etkinlik Şablon Tipleri ──
+const EVENT_TYPES = [
+  { key: 'game_win', label: '🏆 Oyun Kazanma', desc: 'Oyun kazandığında duyuru', icon: Trophy, placeholder: '{user} SOS oyununda 1. oldu! Tebrikler! 🎉' },
+  { key: 'gift_sent', label: '🎁 Hediye Gönderimi', desc: 'Hediye atıldığında duyuru', icon: Gift, placeholder: '{user} {gift} hediye etti! 💝' },
+  { key: 'voice_room_join', label: '🎙️ Sesli Oda Girişi', desc: 'Sesli odaya girildiğinde duyuru', icon: Mic, placeholder: '{user} {room} sesli odasına katıldı! 🎤' },
+  { key: 'social_post', label: '📝 Sosyal Paylaşım', desc: 'Paylaşım yapıldığında duyuru', icon: Share2, placeholder: '{user} sosyal alanda paylaşımda bulundu! 📢' },
+  { key: 'fortune_reading', label: '🔮 Fal Baktırma', desc: 'Fal baktırdığında duyuru', icon: Star, placeholder: '{user} {fortune} baktırdı! ✨' },
+]
+
+interface EventTemplate {
+  enabled: boolean
+  messageTemplate: string
+  transitionEffect: string
+  duration: number
+  maxPasses: number
+  targetType: 'all' | 'groups'
+  targetGroups: string[]
+}
+
+const DEFAULT_EVENT_TEMPLATE: EventTemplate = {
+  enabled: false,
+  messageTemplate: '',
+  transitionEffect: 'fade',
+  duration: 4,
+  maxPasses: 1,
+  targetType: 'all',
+  targetGroups: []
+}
 
 const USER_CATEGORIES = [
   { key: 'admin', nameTr: 'Admin', icon: '👑', color: 'from-red-500 to-orange-500' },
@@ -112,10 +139,30 @@ export default function AnnouncementSettingsPage() {
   const [announcementEnabled, setAnnouncementEnabled] = useState(true)
   const [announcementDuration, setAnnouncementDuration] = useState(2)
   const [announcementStyle, setAnnouncementStyle] = useState('fade')
+  const [displayMode, setDisplayMode] = useState<'fullwidth' | 'box'>('fullwidth')
+  const [boxPadding, setBoxPadding] = useState(25)
   const [savingGeneral, setSavingGeneral] = useState(false)
   const [savedGeneral, setSavedGeneral] = useState(false)
   const [previewPlaying, setPreviewPlaying] = useState(false)
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'gifts'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'gifts' | 'placement' | 'events'>('general')
+  
+  // Event templates
+  const [eventTemplates, setEventTemplates] = useState<Record<string, EventTemplate>>(() => {
+    const initial: Record<string, EventTemplate> = {}
+    EVENT_TYPES.forEach(et => { initial[et.key] = { ...DEFAULT_EVENT_TEMPLATE, messageTemplate: et.placeholder } })
+    return initial
+  })
+  const [savingEvents, setSavingEvents] = useState(false)
+  const [savedEvents, setSavedEvents] = useState(false)
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null)
+  
+  // Chat marquee settings
+  const [marqueeEffect, setMarqueeEffect] = useState('scroll-left')
+  const [marqueeSpeed, setMarqueeSpeed] = useState('10')
+  const [marqueeRepeat, setMarqueeRepeat] = useState('0')
+  const [marqueeEnabled, setMarqueeEnabled] = useState(true)
+  const [savingMarquee, setSavingMarquee] = useState(false)
+  const [savedMarquee, setSavedMarquee] = useState(false)
 
   const [settings, setSettings] = useState<AllSettings>(() => {
     const initial: AllSettings = {}
@@ -171,6 +218,22 @@ export default function AnnouncementSettingsPage() {
           if (psData.entry_announcement_enabled !== undefined) setAnnouncementEnabled(psData.entry_announcement_enabled === 'true')
           if (psData.entry_announcement_duration) setAnnouncementDuration(parseInt(psData.entry_announcement_duration) || 2)
           if (psData.entry_announcement_style) setAnnouncementStyle(psData.entry_announcement_style)
+          if (psData.entry_announcement_display_mode) setDisplayMode(psData.entry_announcement_display_mode as 'fullwidth' | 'box')
+          if (psData.entry_announcement_box_padding) setBoxPadding(parseInt(psData.entry_announcement_box_padding) || 25)
+          if (psData.chat_marquee_enabled !== undefined) setMarqueeEnabled(psData.chat_marquee_enabled === 'true')
+          if (psData.chat_marquee_effect) setMarqueeEffect(psData.chat_marquee_effect)
+          if (psData.chat_marquee_speed) setMarqueeSpeed(psData.chat_marquee_speed)
+          if (psData.chat_marquee_repeat) setMarqueeRepeat(psData.chat_marquee_repeat)
+          if (psData.event_announcement_templates) {
+            try {
+              const et = JSON.parse(psData.event_announcement_templates)
+              setEventTemplates(prev => {
+                const merged = { ...prev }
+                Object.keys(et).forEach(k => { merged[k] = { ...DEFAULT_EVENT_TEMPLATE, ...et[k] } })
+                return merged
+              })
+            } catch {}
+          }
         }
       } catch {}
 
@@ -209,6 +272,8 @@ export default function AnnouncementSettingsPage() {
         saveGeneralSetting('entry_announcement_enabled', announcementEnabled ? 'true' : 'false'),
         saveGeneralSetting('entry_announcement_duration', String(announcementDuration)),
         saveGeneralSetting('entry_announcement_style', announcementStyle),
+        saveGeneralSetting('entry_announcement_display_mode', displayMode),
+        saveGeneralSetting('entry_announcement_box_padding', String(boxPadding)),
       ])
       setSavedGeneral(true)
       setTimeout(() => setSavedGeneral(false), 3000)
@@ -317,8 +382,45 @@ export default function AnnouncementSettingsPage() {
     )
   }
 
+  // Save event templates
+  const handleSaveEvents = async () => {
+    setSavingEvents(true)
+    try {
+      await saveGeneralSetting('event_announcement_templates', JSON.stringify(eventTemplates))
+      setSavedEvents(true)
+      setTimeout(() => setSavedEvents(false), 3000)
+    } catch (error) {
+      console.error('Failed to save event templates:', error)
+    } finally {
+      setSavingEvents(false)
+    }
+  }
+
+  // Save placement & marquee settings
+  const handleSaveMarquee = async () => {
+    setSavingMarquee(true)
+    try {
+      await Promise.all([
+        saveGeneralSetting('entry_announcement_display_mode', displayMode),
+        saveGeneralSetting('entry_announcement_box_padding', String(boxPadding)),
+        saveGeneralSetting('chat_marquee_enabled', marqueeEnabled ? 'true' : 'false'),
+        saveGeneralSetting('chat_marquee_effect', marqueeEffect),
+        saveGeneralSetting('chat_marquee_speed', marqueeSpeed),
+        saveGeneralSetting('chat_marquee_repeat', marqueeRepeat),
+      ])
+      setSavedMarquee(true)
+      setTimeout(() => setSavedMarquee(false), 3000)
+    } catch (error) {
+      console.error('Failed to save marquee settings:', error)
+    } finally {
+      setSavingMarquee(false)
+    }
+  }
+
   const TABS = [
     { key: 'general' as const, label: '⚙️ Genel Ayarlar', icon: Settings },
+    { key: 'placement' as const, label: '📍 Konum & Görünüm', icon: MapPin },
+    { key: 'events' as const, label: '🎯 Etkinlik Şablonları', icon: Zap },
     { key: 'categories' as const, label: '👥 Kullanıcı Grupları', icon: Users },
     { key: 'gifts' as const, label: '🎁 Hediye Duyuruları', icon: Gift },
   ]
@@ -515,6 +617,250 @@ export default function AnnouncementSettingsPage() {
             </div>
             <p className="text-xs text-purple-400 mt-3 text-center">+ Samsunspor, Kayserispor, Sivasspor, Alanyaspor, Konyaspor ve daha fazlası...</p>
           </motion.div>
+        </div>
+      )}
+
+      {/* ══════════════════════ TAB: KONUM & GÖRÜNÜM ══════════════════════ */}
+      {activeTab === 'placement' && (
+        <div className="max-w-5xl mx-auto px-4 space-y-6">
+          {/* ── Banner Görüntüleme Modu ── */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-fuchsia-500/30 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(120, 20, 120, 0.2) 0%, rgba(40, 10, 60, 0.4) 100%)' }}>
+            <div className="p-5">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><MapPin className="w-5 h-5 text-fuchsia-400" /> Banner Görüntüleme Modu</h3>
+              <p className="text-xs text-purple-300 mb-4">Duyuruların nasıl görüneceğini seçin</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {/* Full-width option */}
+                <button onClick={() => setDisplayMode('fullwidth')} className={`p-4 rounded-xl border-2 transition-all text-left ${displayMode === 'fullwidth' ? 'border-fuchsia-500 bg-fuchsia-500/10 shadow-lg shadow-fuchsia-500/20' : 'border-white/10 hover:border-white/30 bg-white/5'}`}>
+                  <div className="mb-3">
+                    <div className="w-full h-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 mb-1" />
+                    <div className="w-full h-6 rounded bg-gradient-to-r from-fuchsia-500/30 to-purple-500/30 flex items-center justify-center">
+                      <span className="text-[8px] text-fuchsia-300">Duyuru Metni</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 mt-1" />
+                  </div>
+                  <p className="font-semibold text-white text-sm">📐 Tam Genişlik</p>
+                  <p className="text-[10px] text-purple-300 mt-1">Ekranın tamamını kaplar, klasik banner</p>
+                </button>
+
+                {/* Box mode option */}
+                <button onClick={() => setDisplayMode('box')} className={`p-4 rounded-xl border-2 transition-all text-left ${displayMode === 'box' ? 'border-fuchsia-500 bg-fuchsia-500/10 shadow-lg shadow-fuchsia-500/20' : 'border-white/10 hover:border-white/30 bg-white/5'}`}>
+                  <div className="mb-3 px-3">
+                    <div className="w-full h-8 rounded-lg bg-gradient-to-r from-fuchsia-500/30 to-purple-500/30 border border-fuchsia-500/40 flex items-center justify-center shadow-md">
+                      <span className="text-[8px] text-fuchsia-300">Duyuru Metni</span>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-white text-sm">📦 Kutu Modu</p>
+                  <p className="text-[10px] text-purple-300 mt-1">Ortalanmış kart, kenarlardan boşluk</p>
+                </button>
+              </div>
+
+              {/* Box padding slider */}
+              {displayMode === 'box' && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 rounded-lg bg-black/20 border border-fuchsia-500/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-purple-200">Kenar Boşluğu (Sol/Sağ)</span>
+                    <span className="text-sm font-mono text-fuchsia-400 bg-fuchsia-500/20 px-2 py-0.5 rounded">{boxPadding}px</span>
+                  </div>
+                  <input type="range" min="10" max="80" value={boxPadding} onChange={(e) => setBoxPadding(Number(e.target.value))} className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer accent-fuchsia-500" />
+                  <div className="flex justify-between text-[10px] text-purple-400 mt-1">
+                    <span>10px</span><span>80px</span>
+                  </div>
+                  {/* Live preview */}
+                  <div className="mt-3 border border-dashed border-purple-500/30 rounded-lg p-2 bg-black/30 relative overflow-hidden">
+                    <p className="text-[10px] text-purple-400 mb-1 text-center">Önizleme</p>
+                    <div className="relative" style={{ padding: `0 ${boxPadding}px` }}>
+                      <div className="bg-gradient-to-r from-fuchsia-600/80 to-purple-600/80 rounded-lg py-2 px-3 text-center shadow-lg border border-fuchsia-500/30">
+                        <span className="text-[10px] text-white">🏆 CanlıFal kullanıcısı SOS oyununda 1. oldu!</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* ── Chat Marquee Ayarları ── */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-cyan-500/30 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(20, 80, 120, 0.2) 0%, rgba(10, 30, 60, 0.4) 100%)' }}>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2"><Type className="w-5 h-5 text-cyan-400" /> Sesli Oda Kayan Yazı</h3>
+                  <p className="text-xs text-cyan-300 mt-0.5">Sesli sohbet odalarında kayan duyuru yazısı ayarları</p>
+                </div>
+                <button onClick={() => setMarqueeEnabled(!marqueeEnabled)} className="flex-shrink-0">
+                  {marqueeEnabled ? <ToggleRight className="w-10 h-10 text-green-400" /> : <ToggleLeft className="w-10 h-10 text-gray-500" />}
+                </button>
+              </div>
+
+              {marqueeEnabled && (
+                <div className="space-y-4">
+                  {/* Marquee Effect */}
+                  <div>
+                    <label className="text-sm text-purple-200 block mb-2">Kayan Yazı Efekti</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { key: 'scroll-left', label: '⬅️ Sola Kayma', desc: 'Klasik sağdan sola' },
+                        { key: 'scroll-right', label: '➡️ Sağa Kayma', desc: 'Soldan sağa' },
+                        { key: 'bounce', label: '🏀 Zıplama', desc: 'İleri geri zıplama' },
+                        { key: 'fade-scroll', label: '🌟 Solarak Kayma', desc: 'Kayarken solar' },
+                        { key: 'typewriter', label: '⌨️ Daktilo', desc: 'Harf harf yazılır' },
+                      ].map(eff => (
+                        <button key={eff.key} onClick={() => setMarqueeEffect(eff.key)} className={`p-2.5 rounded-lg border text-left transition-all ${marqueeEffect === eff.key ? 'border-cyan-500 bg-cyan-500/10 shadow-md shadow-cyan-500/10' : 'border-white/10 hover:border-white/20 bg-white/5'}`}>
+                          <p className="text-xs font-medium text-white">{eff.label}</p>
+                          <p className="text-[10px] text-purple-400">{eff.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Speed */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-purple-200">Hız (saniye)</label>
+                      <span className="text-sm font-mono text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">{marqueeSpeed}s</span>
+                    </div>
+                    <input type="range" min="3" max="30" value={marqueeSpeed} onChange={(e) => setMarqueeSpeed(e.target.value)} className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                    <div className="flex justify-between text-[10px] text-purple-400 mt-1"><span>3s (hızlı)</span><span>30s (yavaş)</span></div>
+                  </div>
+
+                  {/* Repeat */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-purple-200">Tekrar Sayısı</label>
+                      <span className="text-sm font-mono text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">{marqueeRepeat === '0' ? '♾️ Sonsuz' : `${marqueeRepeat}x`}</span>
+                    </div>
+                    <input type="range" min="0" max="20" value={marqueeRepeat} onChange={(e) => setMarqueeRepeat(e.target.value)} className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                    <div className="flex justify-between text-[10px] text-purple-400 mt-1"><span>0 = Sonsuz</span><span>20x</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Save Marquee */}
+            <div className="border-t border-cyan-500/20 p-4">
+              <motion.button whileTap={{ scale: 0.95 }} onClick={handleSaveMarquee} disabled={savingMarquee} className={`w-full px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${savedMarquee ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white'}`}>
+                {savingMarquee ? <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</> : savedMarquee ? <><CheckCircle className="w-4 h-4" /> Kaydedildi!</> : <><Save className="w-4 h-4" /> Konum & Görünüm Ayarlarını Kaydet</>}
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ══════════════════════ TAB: ETKİNLİK ŞABLONLARI ══════════════════════ */}
+      {activeTab === 'events' && (
+        <div className="max-w-5xl mx-auto px-4 space-y-4">
+          <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3 mb-2">
+            <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-amber-200 text-sm">Etkinlik şablonları ile oyun kazanma, hediye gönderimi gibi olaylar gerçekleştiğinde otomatik duyuru oluşturulur.</p>
+              <p className="text-amber-300/70 text-xs mt-1">Kullanılabilir değişkenler: <code className="bg-black/30 px-1 rounded">{'{user}'}</code> <code className="bg-black/30 px-1 rounded">{'{game}'}</code> <code className="bg-black/30 px-1 rounded">{'{gift}'}</code> <code className="bg-black/30 px-1 rounded">{'{room}'}</code> <code className="bg-black/30 px-1 rounded">{'{fortune}'}</code></p>
+            </div>
+          </div>
+
+          {EVENT_TYPES.map((eventType, idx) => {
+            const template = eventTemplates[eventType.key] || { ...DEFAULT_EVENT_TEMPLATE }
+            const IconComp = eventType.icon
+            const isEnabled = template.enabled
+            
+            const updateTemplate = (field: string, value: any) => {
+              setEventTemplates(prev => ({
+                ...prev,
+                [eventType.key]: { ...prev[eventType.key], [field]: value }
+              }))
+            }
+
+            return (
+              <motion.div key={eventType.key} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className={`rounded-xl border overflow-hidden transition-all ${isEnabled ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-white/10'}`} style={{ background: isEnabled ? 'linear-gradient(135deg, rgba(160, 100, 20, 0.15) 0%, rgba(60, 30, 10, 0.3) 100%)' : 'rgba(255,255,255,0.03)' }}>
+                {/* Header */}
+                <div className="p-4 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow ${isEnabled ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-white/10'}`}>
+                    <IconComp className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold text-sm ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{eventType.label}</p>
+                    <p className="text-[10px] text-purple-400">{eventType.desc}</p>
+                  </div>
+                  <button onClick={() => updateTemplate('enabled', !isEnabled)} className="flex-shrink-0">
+                    {isEnabled ? <ToggleRight className="w-9 h-9 text-green-400" /> : <ToggleLeft className="w-9 h-9 text-gray-500" />}
+                  </button>
+                </div>
+
+                {/* Body */}
+                {isEnabled && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="border-t border-amber-500/20 p-4 space-y-4">
+                    {/* Message Template */}
+                    <div>
+                      <label className="text-xs text-purple-200 block mb-1.5">Mesaj Şablonu</label>
+                      <textarea value={template.messageTemplate} onChange={(e) => updateTemplate('messageTemplate', e.target.value)} placeholder={eventType.placeholder} rows={2} className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-purple-500/50 focus:outline-none focus:border-amber-500/50 resize-none" />
+                      <p className="text-[10px] text-purple-500 mt-1">Örnek: {eventType.placeholder}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Transition Effect */}
+                      <div>
+                        <label className="text-xs text-purple-200 block mb-1.5">Geçiş Efekti</label>
+                        <select value={template.transitionEffect} onChange={(e) => updateTemplate('transitionEffect', e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50">
+                          {TRANSITION_EFFECTS.map(eff => (
+                            <option key={eff.key} value={eff.key}>{eff.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Duration */}
+                      <div>
+                        <label className="text-xs text-purple-200 block mb-1.5">Süre (saniye)</label>
+                        <input type="number" min={2} max={15} value={template.duration} onChange={(e) => updateTemplate('duration', Number(e.target.value))} className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Max Passes */}
+                      <div>
+                        <label className="text-xs text-purple-200 block mb-1.5">Gösterim Sayısı</label>
+                        <input type="number" min={1} max={10} value={template.maxPasses} onChange={(e) => updateTemplate('maxPasses', Number(e.target.value))} className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50" />
+                      </div>
+
+                      {/* Target Type */}
+                      <div>
+                        <label className="text-xs text-purple-200 block mb-1.5">Hedef Kitle</label>
+                        <select value={template.targetType} onChange={(e) => updateTemplate('targetType', e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50">
+                          <option value="all">🌐 Tüm Kullanıcılar</option>
+                          <option value="groups">👥 Belirli Gruplar</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Group checkboxes */}
+                    {template.targetType === 'groups' && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 rounded-lg bg-black/20 border border-white/10">
+                        <p className="text-xs text-purple-300 mb-2">Hangi gruplara gösterilsin?</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {USER_CATEGORIES.map(cat => {
+                            const isSelected = (template.targetGroups || []).includes(cat.key)
+                            return (
+                              <button key={cat.key} onClick={() => {
+                                const groups = template.targetGroups || []
+                                updateTemplate('targetGroups', isSelected ? groups.filter((g: string) => g !== cat.key) : [...groups, cat.key])
+                              }} className={`p-2 rounded-lg border text-left transition-all flex items-center gap-1.5 ${isSelected ? 'border-amber-500/50 bg-amber-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                <span className="text-sm">{cat.icon}</span>
+                                <span className="text-[10px] text-white truncate">{cat.nameTr}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
+            )
+          })}
+
+          {/* Save Events */}
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handleSaveEvents} disabled={savingEvents} className={`w-full px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${savedEvents ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white'}`}>
+            {savingEvents ? <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</> : savedEvents ? <><CheckCircle className="w-4 h-4" /> Kaydedildi!</> : <><Save className="w-4 h-4" /> Etkinlik Şablonlarını Kaydet</>}
+          </motion.button>
         </div>
       )}
 
