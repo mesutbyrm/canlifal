@@ -142,7 +142,6 @@ export default function GiftNotificationBanner() {
       className="w-full overflow-hidden relative"
       style={{
         height: '56px',
-        zIndex: 9999,
         background: bannerBg,
         backgroundSize: '200% 100%',
         animation: 'bannerBgShift 4s linear infinite',

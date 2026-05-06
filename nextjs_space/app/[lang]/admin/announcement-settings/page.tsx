@@ -12,7 +12,7 @@ import {
   MessageCircle, Gamepad2, Users, Gift, BookOpen, 
   Sparkles, Home, User, LayoutDashboard, Crown,
   CheckCircle, Info, Check, ToggleLeft, ToggleRight, RefreshCw,
-  Timer, Eye, Palette, MapPin, Zap, Play
+  Timer, Eye, Palette, Zap, Play
 } from 'lucide-react'
 
 // ── Geçiş Efekti Tanımları ──
@@ -32,13 +32,7 @@ const TRANSITION_EFFECTS = [
   { key: 'elastic', label: '🪀 Elastik', desc: 'Lastik gibi esneyerek yerine oturur' },
 ]
 
-// ── Banner Konum Tanımları ──
-const BANNER_POSITIONS = [
-  { key: 'top', label: '⬆️ Üst (Navbar Altı)', desc: 'Sayfa en üstünde navbar altında' },
-  { key: 'middle', label: '↕️ Orta', desc: 'Sayfa ortasında içerik arası' },
-  { key: 'bottom', label: '⬇️ Alt', desc: 'Sayfa altında footer üstünde' },
-  { key: 'floating', label: '🔲 Sabit (Floating)', desc: 'Scroll olurken sabit kalır' },
-]
+// Banner konumu: Navbar altında sabit (sticky)
 
 const USER_CATEGORIES = [
   { key: 'admin', nameTr: 'Admin', icon: '👑', color: 'from-red-500 to-orange-500' },
@@ -118,11 +112,10 @@ export default function AnnouncementSettingsPage() {
   const [announcementEnabled, setAnnouncementEnabled] = useState(true)
   const [announcementDuration, setAnnouncementDuration] = useState(2)
   const [announcementStyle, setAnnouncementStyle] = useState('fade')
-  const [announcementPosition, setAnnouncementPosition] = useState('top')
   const [savingGeneral, setSavingGeneral] = useState(false)
   const [savedGeneral, setSavedGeneral] = useState(false)
   const [previewPlaying, setPreviewPlaying] = useState(false)
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'gifts' | 'placement'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'gifts'>('general')
 
   const [settings, setSettings] = useState<AllSettings>(() => {
     const initial: AllSettings = {}
@@ -328,7 +321,6 @@ export default function AnnouncementSettingsPage() {
     { key: 'general' as const, label: '⚙️ Genel Ayarlar', icon: Settings },
     { key: 'categories' as const, label: '👥 Kullanıcı Grupları', icon: Users },
     { key: 'gifts' as const, label: '🎁 Hediye Duyuruları', icon: Gift },
-    { key: 'placement' as const, label: '📍 Konum & Görünüm', icon: MapPin },
   ]
 
   return (
@@ -725,202 +717,6 @@ export default function AnnouncementSettingsPage() {
         </div>
       )}
 
-      {/* ══════════════════════ TAB: KONUM & GÖRÜNÜM ══════════════════════ */}
-      {activeTab === 'placement' && (
-        <div className="max-w-5xl mx-auto px-4 space-y-5">
-          {/* Banner Position Selector */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-deep-purple-800/50 to-purple-900/30 rounded-xl p-6 border border-purple-500/20"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-5 h-5 text-fuchsia-400" />
-              <h3 className="text-lg font-semibold text-white">Banner Konum Ayarı</h3>
-            </div>
-            <p className="text-xs text-purple-400 mb-4">Duyuru bandının sayfalarda hangi konumdan geçeceğini belirleyin</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {BANNER_POSITIONS.map(pos => (
-                <button
-                  key={pos.key}
-                  onClick={() => setAnnouncementPosition(pos.key)}
-                  className={`p-4 rounded-xl border transition-all text-center ${
-                    announcementPosition === pos.key
-                      ? 'bg-gradient-to-br from-fuchsia-600/30 to-purple-600/30 border-fuchsia-500/60 shadow-lg shadow-fuchsia-500/10'
-                      : 'bg-purple-900/20 border-purple-500/20 hover:border-purple-400/40'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">{pos.label.split(' ')[0]}</div>
-                  <div className="text-xs font-medium text-white">{pos.label.split(' ').slice(1).join(' ')}</div>
-                  <div className="text-[10px] text-purple-400 mt-1">{pos.desc}</div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Visual Mockups */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gradient-to-r from-deep-purple-800/50 to-purple-900/30 rounded-xl p-6 border border-purple-500/20"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Eye className="w-5 h-5 text-fuchsia-400" />
-              <h3 className="text-lg font-semibold text-white">📍 Sayfa Görünüm Konumları</h3>
-            </div>
-            <p className="text-xs text-purple-400 mb-4">Her sayfada duyuru bandı aşağıdaki konumlardan geçer. Kırmızı bant = duyuru yeri</p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Ana Sayfa Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-purple-600/40 to-fuchsia-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">🏠</span>
-                  <span className="text-xs font-bold text-white">Ana Sayfa</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-4 rounded bg-purple-700/30 flex items-center px-1"><span className="text-[7px] text-purple-300">👥 Online Kullanıcılar</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800, letterSpacing: '0.5px' }}>⬅ DUYURU BANDI BURADAN GEÇER ➡</span>
-                  </div>
-                  <div className="h-5 rounded bg-purple-800/20 flex items-center px-1"><span className="text-[7px] text-purple-400">🔮 Falına Bak / Sohbet Butonları</span></div>
-                  <div className="h-4 rounded bg-purple-800/20 flex items-center px-1"><span className="text-[7px] text-purple-400">📡 Canlı Yayınlar</span></div>
-                  <div className="h-3 rounded bg-purple-800/20 flex items-center px-1"><span className="text-[7px] text-purple-400">🎮 Oyunlar</span></div>
-                </div>
-              </div>
-
-              {/* Oyunlar Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-green-600/40 to-emerald-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">🎮</span>
-                  <span className="text-xs font-bold text-white">Oyunlar</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 0.3s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-4 rounded bg-green-800/20 flex items-center px-1"><span className="text-[7px] text-green-300">🎯 Lobi / Oda Oluştur</span></div>
-                  <div className="h-4 rounded bg-green-800/20 flex items-center px-1"><span className="text-[7px] text-green-300">👀 Canlı İzle</span></div>
-                  <div className="h-4 rounded bg-green-800/20 flex items-center px-1"><span className="text-[7px] text-green-300">🏆 Turnuvalar</span></div>
-                </div>
-              </div>
-
-              {/* Sosyal Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-pink-600/40 to-rose-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">👥</span>
-                  <span className="text-xs font-bold text-white">Sosyal</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-5 rounded bg-pink-800/20 flex items-center px-1"><span className="text-[7px] text-pink-300">📝 Son Paylaşımlar</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 0.6s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-5 rounded bg-pink-800/20 flex items-center px-1"><span className="text-[7px] text-pink-300">✏️ Paylaşım Yap</span></div>
-                </div>
-              </div>
-
-              {/* Blog Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-blue-600/40 to-indigo-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">📰</span>
-                  <span className="text-xs font-bold text-white">Blog</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-4 rounded bg-blue-800/20 flex items-center px-1"><span className="text-[7px] text-blue-300">Blog Başlığı</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 0.9s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-5 rounded bg-blue-800/20 flex items-center px-1"><span className="text-[7px] text-blue-300">📄 Blog Kartları</span></div>
-                </div>
-              </div>
-
-              {/* Rüya Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-indigo-600/40 to-violet-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">🌙</span>
-                  <span className="text-xs font-bold text-white">Rüya Tabirleri</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-4 rounded bg-indigo-800/20 flex items-center px-1"><span className="text-[7px] text-indigo-300">🔍 Rüya Arama</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 1.2s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-5 rounded bg-indigo-800/20 flex items-center px-1"><span className="text-[7px] text-indigo-300">🔮 Rüya Listesi</span></div>
-                </div>
-              </div>
-
-              {/* Canlı Yayın Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-red-600/40 to-orange-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">📡</span>
-                  <span className="text-xs font-bold text-white">Canlı Yayın</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-8 rounded bg-gray-800/40 flex items-center justify-center"><span className="text-[7px] text-gray-300">🎥 Video Alanı</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 1.5s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-4 rounded bg-gray-800/20 flex items-center px-1"><span className="text-[7px] text-gray-400">💬 Sohbet (kapatılmaz)</span></div>
-                </div>
-              </div>
-
-              {/* Fal Sohbet Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-violet-600/40 to-purple-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">💬</span>
-                  <span className="text-xs font-bold text-white">Fal Sohbet Odası</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Oda Başlığı</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 1.8s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-6 rounded bg-violet-800/20 flex items-center px-1"><span className="text-[7px] text-violet-300">💬 Mesajlar</span></div>
-                  <div className="h-3 rounded bg-violet-800/20 flex items-center px-1"><span className="text-[7px] text-violet-300">📝 Mesaj Gönder</span></div>
-                </div>
-              </div>
-
-              {/* Hediyeler Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-amber-600/40 to-yellow-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">🎁</span>
-                  <span className="text-xs font-bold text-white">Hediyeler</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-3 rounded bg-purple-800/40 flex items-center px-1"><span className="text-[7px] text-purple-300">Navbar</span></div>
-                  <div className="h-4 rounded bg-amber-800/20 flex items-center px-1"><span className="text-[7px] text-amber-300">🎁 Hediye Listesi</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 2.1s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-4 rounded bg-amber-800/20 flex items-center px-1"><span className="text-[7px] text-amber-300">💰 Jeton Bakiye</span></div>
-                </div>
-              </div>
-
-              {/* Profil Mockup */}
-              <div className="rounded-xl border border-purple-500/30 overflow-hidden bg-black/30 hover:border-fuchsia-500/50 transition-colors">
-                <div className="bg-gradient-to-r from-cyan-600/40 to-teal-600/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-sm">👤</span>
-                  <span className="text-xs font-bold text-white">Profil Sayfası</span>
-                </div>
-                <div className="p-3 space-y-1.5">
-                  <div className="h-6 rounded bg-cyan-800/20 flex items-center justify-center"><span className="text-[7px] text-cyan-300">👤 Avatar & İsim</span></div>
-                  <div className="h-4 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #c8102e, #ff4444, #c8102e)', animation: 'mockupPulse 2s ease-in-out infinite 2.4s' }}>
-                    <span style={{ fontSize: '6px', color: 'white', fontWeight: 800 }}>⬅ DUYURU BANDI ➡</span>
-                  </div>
-                  <div className="h-4 rounded bg-cyan-800/20 flex items-center px-1"><span className="text-[7px] text-cyan-300">📊 İstatistikler</span></div>
-                  <div className="h-3 rounded bg-cyan-800/20 flex items-center px-1"><span className="text-[7px] text-cyan-300">⚙️ Ayarlar</span></div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* CSS Animations */}
       <style jsx>{`
@@ -1005,10 +801,7 @@ export default function AnnouncementSettingsPage() {
           0% { background-position: 0% 0; }
           100% { background-position: 200% 0; }
         }
-        @keyframes mockupPulse {
-          0%, 100% { opacity: 0.7; transform: scaleX(0.98); }
-          50% { opacity: 1; transform: scaleX(1); }
-        }
+
       `}</style>
     </div>
   )

@@ -31,13 +31,12 @@ export default function LangLayout({
         {/* Navbar first */}
         <Navbar />
         
-        {/* Announcement banners - positioned below navbar */}
-        <div className="fixed top-14 md:top-16 left-0 right-0" style={{ zIndex: 9999 }}>
-          <GiftNotificationBanner />
-          <LoginAnnouncementBanner />
-        </div>
-        
-        <main className="pt-16 pb-0 md:pb-0 relative z-10">
+        <main className="pt-14 md:pt-16 pb-0 md:pb-0 relative z-10">
+          {/* Announcement banners - inside main flow, below navbar */}
+          <div className="sticky top-14 md:top-16 left-0 right-0" style={{ zIndex: 50 }}>
+            <GiftNotificationBanner />
+            <LoginAnnouncementBanner />
+          </div>
           {children}
         </main>
         <MobileFooter />

@@ -357,7 +357,6 @@ export default function LoginAnnouncementBanner() {
       onClick={handleBannerClick}
       style={{
         height: '24px',
-        zIndex: 9998,
         background: colors.bg,
         backgroundSize: '200% 100%',
         animation: 'loginBannerBgShift 4s linear infinite',
