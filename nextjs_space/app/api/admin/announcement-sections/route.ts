@@ -70,7 +70,7 @@ export async function GET() {
       select: { role: true }
     })
 
-    if (!user || !['admin', 'moderator', 'site_manager'].includes(user.role)) {
+    if (!user || !['admin', 'yonetici', 'moderator', 'finans', 'site_manager'].includes(user.role)) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     })
 
-    if (!user || !['admin', 'moderator', 'site_manager'].includes(user.role)) {
+    if (!user || !['admin', 'yonetici', 'moderator', 'finans', 'site_manager'].includes(user.role)) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

@@ -140,7 +140,7 @@ export default function AnnouncementSettingsPage() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || !['admin', 'moderator', 'site_manager'].includes((session.user as { role?: string }).role || '')) {
+    if (!session?.user || !['admin', 'yonetici', 'moderator', 'finans', 'site_manager'].includes((session.user as { role?: string }).role || '')) {
       router.push(`/giris`)
       return
     }

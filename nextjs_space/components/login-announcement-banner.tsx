@@ -356,7 +356,7 @@ export default function LoginAnnouncementBanner() {
       className={`w-full overflow-hidden relative ${isBanaOzelAnnouncement ? 'cursor-pointer' : ''}`}
       onClick={handleBannerClick}
       style={{
-        height: '48px',
+        height: '24px',
         zIndex: 9998,
         background: colors.bg,
         backgroundSize: '200% 100%',
@@ -364,14 +364,14 @@ export default function LoginAnnouncementBanner() {
       }}
     >
       {/* Top border with glow */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
+      <div className="absolute top-0 left-0 right-0 h-[1px]" style={{
         background: colors.border,
-        boxShadow: '0 0 10px rgba(255,255,255,0.3), 0 0 20px rgba(255,255,255,0.15)'
+        boxShadow: '0 0 6px rgba(255,255,255,0.2), 0 0 12px rgba(255,255,255,0.1)'
       }} />
       {/* Bottom border with glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{
+      <div className="absolute bottom-0 left-0 right-0 h-[1px]" style={{
         background: colors.border,
-        boxShadow: '0 0 10px rgba(255,255,255,0.3), 0 0 20px rgba(255,255,255,0.15)'
+        boxShadow: '0 0 6px rgba(255,255,255,0.2), 0 0 12px rgba(255,255,255,0.1)'
       }} />
 
       {/* Shimmer overlay */}
@@ -404,8 +404,8 @@ export default function LoginAnnouncementBanner() {
              'Flash'} ${announcementDuration}s ease-in-out forwards`,
         }}
       >
-        <span className="inline-flex items-center gap-3 max-w-full overflow-hidden" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.5px' }}>
-          <span style={{ fontSize: '20px' }}>{colors.emoji}</span>
+        <span className="inline-flex items-center gap-2 max-w-full overflow-hidden" style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.3px' }}>
+          <span style={{ fontSize: '13px' }}>{colors.emoji}</span>
           <span className="truncate" style={{
             background: colors.text,
             backgroundSize: '200% 100%',
@@ -416,7 +416,7 @@ export default function LoginAnnouncementBanner() {
           }}>
             {currentAnnouncement.message}
           </span>
-          <span style={{ fontSize: '20px' }}>{colors.emoji}</span>
+          <span style={{ fontSize: '13px' }}>{colors.emoji}</span>
         </span>
       </div>
 

@@ -183,7 +183,8 @@ export default function AdminChatRoomsPage() {
       const res = await fetch(`/api/users/search?q=${encodeURIComponent(userSearchQuery)}`)
       if (res.ok) {
         const data = await res.json()
-        setUserSearchResults(data.users || [])
+        // API returns array directly or object with users property
+        setUserSearchResults(Array.isArray(data) ? data : (data.users || []))
       }
     } catch (error) {
       console.error('Error searching users:', error)
