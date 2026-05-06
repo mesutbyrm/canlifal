@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getCached } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,6 +8,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const withCounts = searchParams.get('withCounts') === 'true'
+    const cacheKey = `chatrooms:list:${withCounts}`
+
+    // Cache for 10 seconds - heavily polled from homepage
+    const roomsWithCounts = await getCached(cacheKey, 10, async () => {
 
     const rooms = await prisma.chatRoom.findMany({
       where: { isActive: true },
@@ -57,7 +62,7 @@ export async function GET(request: NextRequest) {
       presences: PresenceUser[]
     }
 
-    const roomsWithCounts = rooms.map((room: RoomType) => ({
+    const result = rooms.map((room: RoomType) => ({
       id: room.id,
       slug: room.slug,
       nameEn: room.nameEn,
@@ -81,6 +86,9 @@ export async function GET(request: NextRequest) {
         image: p.user.image
       }))
     }))
+
+    return result
+    }) // end getCached
 
     return NextResponse.json(roomsWithCounts)
   } catch (error) {

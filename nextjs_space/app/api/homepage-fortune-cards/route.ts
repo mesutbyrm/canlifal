@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getCachedPlatformSetting } from '@/lib/cache'
+import { getCached, getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,11 +17,13 @@ function getJsonSetting(settings: Array<{key: string; value: string}>, key: stri
 // Public API - returns active fortune cards for homepage
 export async function GET() {
   try {
-    const cards = await prisma.homepageFortuneCard.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-      select: { id: true, name: true, icon: true, image: true, href: true, isActive: true, sortOrder: true },
-    })
+    const cards = await getCached('homepage:fortune_cards', 30, () =>
+      prisma.homepageFortuneCard.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, name: true, icon: true, image: true, href: true, isActive: true, sortOrder: true },
+      })
+    )
 
     // Use cached platform settings instead of bulk DB query
     const gs = async (key: string, def: string) => getCachedPlatformSetting(key, def)

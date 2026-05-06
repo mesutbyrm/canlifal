@@ -46,44 +46,39 @@ async function notifyFollowersOfLiveStream(userId: string, userName: string, str
 
 export async function GET() {
   try {
-    const streams = await prisma.videoStream.findMany({
-      where: { status: 'live' },
-      orderBy: { startedAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        _count: {
-          select: {
-            comments: true,
-            likes: true
+    // Cache live stream list for 10 seconds - prevents DB storm from concurrent homepage polls
+    const { getCached } = await import('@/lib/cache')
+    const result = await getCached('streams:live_list', 10, async () => {
+      const streams = await prisma.videoStream.findMany({
+        where: { status: 'live' },
+        orderBy: { startedAt: 'desc' },
+        include: {
+          user: {
+            select: { id: true, name: true, image: true }
+          },
+          _count: {
+            select: { comments: true, likes: true }
           }
         }
-      }
+      })
+
+      const streamIds = streams.map((s: any) => s.id)
+      const viewerCounts = await prisma.videoStreamViewer.groupBy({
+        by: ['streamId'],
+        where: { streamId: { in: streamIds }, leftAt: null },
+        _count: { id: true }
+      })
+      const viewerCountMap = new Map(viewerCounts.map((v: any) => [v.streamId, v._count.id]))
+
+      return streams.map((s: any) => ({
+        ...s,
+        viewerCount: viewerCountMap.get(s.id) || 0,
+        likeCount: s._count.likes,
+        commentCount: s._count.comments
+      }))
     })
 
-    // Get active viewer counts for each stream
-    const streamIds = streams.map((s: any) => s.id)
-    const viewerCounts = await prisma.videoStreamViewer.groupBy({
-      by: ['streamId'],
-      where: {
-        streamId: { in: streamIds },
-        leftAt: null
-      },
-      _count: { id: true }
-    })
-    const viewerCountMap = new Map(viewerCounts.map((v: any) => [v.streamId, v._count.id]))
-
-    return NextResponse.json(streams.map((s: any) => ({
-      ...s,
-      viewerCount: viewerCountMap.get(s.id) || 0,
-      likeCount: s._count.likes,
-      commentCount: s._count.comments
-    })))
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error fetching streams:', error)
     return NextResponse.json([], { status: 500 })

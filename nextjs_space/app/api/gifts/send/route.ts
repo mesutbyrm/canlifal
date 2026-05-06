@@ -6,6 +6,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { heavyLimiter } from '@/lib/rate-limiter'
 
 async function createGiftAnnouncement(
   senderName: string | null, senderUsername: string | null,
@@ -57,6 +58,12 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+
+    // Rate limit gift sending per user (10/min)
+    const { success: rateLimitOk } = heavyLimiter.check(`gift:${session.user.id}`)
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Çok hızlı hediye gönderiyorsunuz. Biraz bekleyin.' }, { status: 429 })
     }
 
     const { recipientUsername, giftTypeId, jetonAmount, type } = await req.json()

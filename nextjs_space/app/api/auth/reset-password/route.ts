@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { authLimiter } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { success: rateLimitOk } = authLimiter.check(`reset:${ip}`);
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Çok fazla istek. Lütfen biraz bekleyin.' }, { status: 429 });
+    }
+
     const { token, password } = await request.json();
 
     if (!token || !password) {

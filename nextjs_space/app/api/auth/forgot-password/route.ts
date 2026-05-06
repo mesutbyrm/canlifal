@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { randomBytes } from 'crypto';
 import { sendNotificationEmail } from '@/lib/email-service';
+import { authLimiter } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { success: rateLimitOk } = authLimiter.check(`forgot:${ip}`);
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'Çok fazla istek. Lütfen biraz bekleyin.' }, { status: 429 });
+    }
+
     const { email } = await request.json();
 
     if (!email) {
