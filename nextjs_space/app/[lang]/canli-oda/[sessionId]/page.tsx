@@ -833,11 +833,11 @@ export default function LiveRoomPage() {
         // Ping server every 15 seconds for timer sync
         pingRef.current = setInterval(pingServer, 15000);
         
-        // Poll for signals every 1.5 seconds
-        signalPollRef.current = setInterval(pollSignals, 1500);
+        // Poll for signals every 3 seconds
+        signalPollRef.current = setInterval(pollSignals, 3000);
         
-        // Poll for messages every 3 seconds
-        messagePollRef.current = setInterval(fetchMessages, 3000);
+        // Poll for messages every 8 seconds
+        messagePollRef.current = setInterval(fetchMessages, 8000);
         
         // Initial fetch
         fetchMessages();

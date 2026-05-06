@@ -294,7 +294,7 @@ export default function BroadcastPage() {
         fetchFortuneRequesters()
         fetchPKBattle()
       }
-    }, 1000)
+    }, 5000)
 
     return () => {
       isUnmountedRef.current = true

@@ -51,9 +51,10 @@ export default function ChatRoomsPage() {
   useEffect(() => {
     fetchRooms()
     fetchRoomCost()
-    // Daha sık güncelleme - 5 saniyede bir
-    const interval = setInterval(fetchRooms, 5000)
-    return () => clearInterval(interval)
+    const interval = setInterval(fetchRooms, 15000)
+    const handleVis = () => { if (!document.hidden) fetchRooms() }
+    document.addEventListener('visibilitychange', handleVis)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', handleVis) }
   }, [])
 
   const fetchRooms = async () => {

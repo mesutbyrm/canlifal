@@ -334,7 +334,7 @@ function ChatPopup({ gameId, isOwner, chatEnabled, onToggleChat }: {
     }
 
     fetchMessages()
-    const iv = setInterval(fetchMessages, 3000)
+    const iv = setInterval(fetchMessages, 5000)
     return () => clearInterval(iv)
   }, [gameId, isOpen])
 
@@ -651,7 +651,7 @@ export default function SOSGamePage() {
   useEffect(() => {
     if (phase === 'lobby') {
       fetchLobby()
-      const iv = setInterval(fetchLobby, 5000)
+      const iv = setInterval(fetchLobby, 10000)
       return () => clearInterval(iv)
     }
   }, [phase, fetchLobby])
@@ -731,7 +731,7 @@ export default function SOSGamePage() {
           }
         } catch {}
       }
-      pollRef.current = setInterval(poll, 2000)
+      pollRef.current = setInterval(poll, 3000)
       return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
   }, [phase, gameId, game?.isAI, game?.disconnectedPlayerId, session?.user?.id, board, lines, soundEnabled, isSpectator])

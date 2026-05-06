@@ -488,7 +488,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         } catch {}
       }
       pollChat()
-      const iv = setInterval(pollChat, 2000)
+      const iv = setInterval(pollChat, 5000)
       return () => clearInterval(iv)
     }
   }, [phase, roomId])
@@ -526,7 +526,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     try { const r = await fetch(`/api/games/room?type=active&gameType=${gameType}`); if (r.ok) setActiveGames(await r.json()) } catch {}
   }, [gameType])
 
-  useEffect(() => { if (phase === 'menu') { fetchLobby(); fetchActive(); const iv = setInterval(() => { fetchLobby(); fetchActive() }, 5000); return () => clearInterval(iv) } }, [phase, fetchLobby, fetchActive])
+  useEffect(() => { if (phase === 'menu') { fetchLobby(); fetchActive(); const iv = setInterval(() => { fetchLobby(); fetchActive() }, 10000); return () => clearInterval(iv) } }, [phase, fetchLobby, fetchActive])
   // Also fetch lobby on mount for guests
   useEffect(() => { fetchLobby(); fetchActive() }, [fetchLobby, fetchActive])
 
@@ -553,7 +553,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           }
         } catch {}
       }
-      pollRef.current = setInterval(poll, 2000); return () => { if (pollRef.current) clearInterval(pollRef.current) }
+      pollRef.current = setInterval(poll, 3000); return () => { if (pollRef.current) clearInterval(pollRef.current) }
     }
   }, [phase, roomId, room?.isAI, room?.disconnectedPlayerId, session?.user?.id, soundEnabled, isSpectator])
 

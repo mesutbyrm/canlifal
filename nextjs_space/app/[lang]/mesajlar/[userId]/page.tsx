@@ -116,7 +116,13 @@ export default function ChatPage() {
       router.push(`/giris`)
     } else if (status === 'authenticated') {
       fetchChat()
-      pollIntervalRef.current = setInterval(fetchChat, 3000)
+      pollIntervalRef.current = setInterval(fetchChat, 8000)
+      const handleVis = () => { if (!document.hidden) fetchChat() }
+      document.addEventListener('visibilitychange', handleVis)
+      return () => {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+        document.removeEventListener('visibilitychange', handleVis)
+      }
     }
 
     return () => {

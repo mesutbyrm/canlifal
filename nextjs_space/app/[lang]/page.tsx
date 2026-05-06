@@ -235,13 +235,19 @@ export default function HomePage() {
     fetchStreams()
     fetchHomepageCards()
     fetchChatRooms()
-    const tellerInterval = setInterval(fetchTellers, 45000)
-    const streamInterval = setInterval(fetchStreams, 30000)
-    const roomInterval = setInterval(fetchChatRooms, 20000)
+    const tellerInterval = setInterval(fetchTellers, 60000)
+    const streamInterval = setInterval(fetchStreams, 45000)
+    const roomInterval = setInterval(fetchChatRooms, 30000)
+    // Pause polling when tab is hidden, refresh immediately on return
+    const handleVis = () => {
+      if (!document.hidden) { fetchTellers(); fetchStreams(); fetchChatRooms() }
+    }
+    document.addEventListener('visibilitychange', handleVis)
     return () => {
       clearInterval(tellerInterval)
       clearInterval(streamInterval)
       clearInterval(roomInterval)
+      document.removeEventListener('visibilitychange', handleVis)
     }
   }, [])
 
@@ -266,7 +272,7 @@ export default function HomePage() {
       } catch {}
     }
     checkTeller()
-    const interval = setInterval(checkTeller, 30000)
+    const interval = setInterval(checkTeller, 60000)
     return () => clearInterval(interval)
   }, [session])
 

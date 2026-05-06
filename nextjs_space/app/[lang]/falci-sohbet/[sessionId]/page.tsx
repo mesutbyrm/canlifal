@@ -72,9 +72,11 @@ export default function ChatPage() {
     }
     fetchChatData()
     
-    // Poll for new messages every 3 seconds
-    const interval = setInterval(fetchChatData, 3000)
-    return () => clearInterval(interval)
+    // Poll for new messages
+    const interval = setInterval(fetchChatData, 8000)
+    const handleVis = () => { if (!document.hidden) fetchChatData() }
+    document.addEventListener('visibilitychange', handleVis)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', handleVis) }
   }, [session, status, sessionId])
 
   useEffect(() => {

@@ -606,7 +606,7 @@ function FindTableModal({
       if (!cancelled) setLoadingTables(false)
     }
     fetchFresh()
-    const iv = setInterval(fetchFresh, 3000)
+    const iv = setInterval(fetchFresh, 8000)
     return () => { cancelled = true; clearInterval(iv) }
   }, [isOpen])
 

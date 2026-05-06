@@ -439,7 +439,7 @@ function VideoStreamPageInner() {
       }
 
       pollFn()
-      pollIntervalRef.current = setInterval(pollFn, 1500)
+      pollIntervalRef.current = setInterval(pollFn, 5000)
 
     } catch (error) {
       console.error('Join stream error:', error)

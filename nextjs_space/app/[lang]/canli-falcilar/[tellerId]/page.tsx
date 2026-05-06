@@ -165,7 +165,7 @@ export default function TellerDetailPage() {
 
   useEffect(() => {
     if (isWaiting && waitingSessionId && !showAd) {
-      pollIntervalRef.current = setInterval(checkSessionStatus, 2000)
+      pollIntervalRef.current = setInterval(checkSessionStatus, 4000)
       return () => {
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
       }
