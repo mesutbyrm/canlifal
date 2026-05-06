@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { triggerEventAnnouncement } from '@/lib/event-announcement';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export async function PATCH(
       where: { id: params.sessionId },
       include: {
         teller: true,
-        user: { select: { id: true, name: true, credits: true } }
+        user: { select: { id: true, name: true, credits: true, role: true } }
       }
     });
 
@@ -120,6 +121,13 @@ export async function PATCH(
         });
         
         notificationMessage = `${liveSession.teller.displayName} ile seansınız tamamlandı. Değerlendirmenizi bekliyoruz!`;
+        
+        // Trigger fortune reading event announcement
+        {
+          const userName = (liveSession.user as any)?.displayName || (liveSession.user as any)?.name || 'Bir kullanıcı'
+          const fortuneType = liveSession.fortuneType || 'fal'
+          triggerEventAnnouncement('fortune_reading', { user: userName, fortune: fortuneType }, (liveSession.user as any)?.id, userName, (liveSession.user as any)?.role || 'free').catch(() => {})
+        }
         break;
 
       case 'cancel':

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
 
@@ -195,6 +196,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         })
       }
     })
+
+    // Trigger gift sent event announcement
+    triggerEventAnnouncement('gift_sent', { user: sender.name || 'Bir kullanıcı', gift: giftType.name }, sender.id, sender.name, sender.role || 'free').catch(() => {})
 
     return NextResponse.json({
       success: true,

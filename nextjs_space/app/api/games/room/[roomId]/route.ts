@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { processMove } from '@/lib/game-logic'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
 
@@ -287,6 +288,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
         updateData.status = 'completed'
         updateData.winnerId = winnerId
         await settleBet(room, winnerId, session.user.id)
+        if (winnerId) {
+          const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
+          const winnerName = winner?.name || 'Bir kullanıcı'
+          const gameLabel = room.gameType === 'sos' ? 'SOS' : room.gameType === 'okey' ? 'Okey' : room.gameType === 'connect4' ? 'Connect4' : room.gameType === 'kelime' ? 'Kelime Düellosu' : room.gameType || 'Oyun'
+          triggerEventAnnouncement('game_win', { user: winnerName, game: gameLabel }, winnerId, winnerName, winner?.role || 'free').catch(() => {})
+        }
       }
       const updated = await prisma.gameRoom.update({ where: { id: params.roomId }, data: updateData })
       return NextResponse.json({ success: true, room: updated })
@@ -335,6 +342,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
 
     if (status === 'completed') {
       await settleBet(room, winnerId, session.user.id)
+      // Trigger event announcement for game win
+      if (winnerId) {
+        const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
+        const winnerName = winner?.name || 'Bir kullanıcı'
+        const gameLabel = room.gameType === 'sos' ? 'SOS' : room.gameType === 'okey' ? 'Okey' : room.gameType === 'connect4' ? 'Connect4' : room.gameType === 'kelime' ? 'Kelime Düellosu' : room.gameType || 'Oyun'
+        triggerEventAnnouncement('game_win', { user: winnerName, game: gameLabel }, winnerId, winnerName, winner?.role || 'free').catch(() => {})
+      }
     }
 
     const updated = await prisma.gameRoom.update({ where: { id: params.roomId }, data: updateData })

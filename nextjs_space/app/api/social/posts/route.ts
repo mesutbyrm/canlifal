@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,6 +133,10 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Trigger social post event announcement
+    const posterName = post.user?.name || session.user.name || 'Bir kullanıcı'
+    triggerEventAnnouncement('social_post', { user: posterName }, session.user.id, posterName, post.user?.role || 'free').catch(() => {})
 
     return NextResponse.json(post, { status: 201 })
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
 
@@ -291,6 +292,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
         }
       }
 
+      // Trigger event announcement for AI game win
+      if (gameOver && winnerId) {
+        const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
+        const winnerName = winner?.name || 'Bir kullanıcı'
+        triggerEventAnnouncement('game_win', { user: winnerName, game: 'SOS' }, winnerId, winnerName, winner?.role || 'free').catch(() => {})
+      }
+
       const updated = await prisma.sosGame.update({
         where: { id: params.gameId },
         data: updateData,
@@ -370,6 +378,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
           ])
         }
       }
+    }
+
+    // Trigger event announcement for 2-player SOS game win
+    if (status === 'completed' && winnerId) {
+      const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
+      const winnerName = winner?.name || 'Bir kullanıcı'
+      triggerEventAnnouncement('game_win', { user: winnerName, game: 'SOS' }, winnerId, winnerName, winner?.role || 'free').catch(() => {})
     }
 
     const updated = await prisma.sosGame.update({

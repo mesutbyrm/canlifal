@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/activity-logger'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -108,7 +109,7 @@ export async function POST(
     // Check user jeton balance (stream gifts require jetons)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { jetonBalance: true, role: true }
+      select: { id: true, name: true, jetonBalance: true, role: true }
     })
 
     // Staff kullanıcılar (admin/yonetici) sınırsız bakiyeye sahiptir
@@ -250,6 +251,10 @@ export async function POST(
         pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
       }
     } catch (pkErr) { console.error('PK score update error:', pkErr) }
+
+    // Trigger gift sent event announcement
+    const giftSenderName = user?.name || 'Bir kullanıcı'
+    triggerEventAnnouncement('gift_sent', { user: giftSenderName, gift: giftType.name }, user?.id, giftSenderName, user?.role || 'free').catch(() => {})
 
     return NextResponse.json({
       success: true,

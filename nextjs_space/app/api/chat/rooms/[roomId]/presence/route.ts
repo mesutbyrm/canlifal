@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
 import { logActivity } from '@/lib/activity-logger'
+import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
 
@@ -286,6 +287,12 @@ export async function POST(
         detail: 'sohbete katıldı 💬',
         targetUrl: `/sohbet`,
       })
+      // Trigger voice room join event announcement
+      const joinUserName = nickname || session.user.name || 'Bir kullanıcı'
+      prisma.chatRoom.findUnique({ where: { id: roomId }, select: { nameTr: true } }).then(r => {
+        const roomName = r?.nameTr || 'Sesli Oda'
+        triggerEventAnnouncement('voice_room_join', { user: joinUserName, room: roomName }, session.user.id, joinUserName, (session.user as any)?.role || 'free').catch(() => {})
+      }).catch(() => {})
     }
 
     // If new join, create a system message (but only once per 5 minutes)
