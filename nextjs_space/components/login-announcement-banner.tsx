@@ -172,13 +172,13 @@ const TEAM_COLORS: Record<string, { bg: string; border: string; text: string; sh
   },
 }
 
-// Default red scheme (for staff or no team)
+// Default: Turkey National Team 🇹🇷 (for users without a team)
 const DEFAULT_COLORS = {
-  bg: 'linear-gradient(90deg, #1a0000, #8b0000, #cc0000, #8b0000, #1a0000)',
-  border: 'linear-gradient(90deg, transparent, #ff0000, #ff4444, #ff0000, transparent)',
-  text: 'linear-gradient(90deg, #ff4444, #ffffff, #ff4444, #ffaaaa, #ff4444)',
-  shimmer: 'linear-gradient(90deg, transparent 0%, rgba(255,0,0,0.08) 20%, rgba(255,255,255,0.1) 50%, rgba(255,0,0,0.08) 80%, transparent 100%)',
-  emoji: '🔴'
+  bg: 'linear-gradient(90deg, #1a0000, #c8102e, #e30a17, #c8102e, #1a0000)',
+  border: 'linear-gradient(90deg, transparent, #e30a17, #ffffff, #e30a17, transparent)',
+  text: 'linear-gradient(90deg, #ff4444, #ffffff, #e30a17, #ffffff, #ff4444)',
+  shimmer: 'linear-gradient(90deg, transparent 0%, rgba(227,10,23,0.08) 20%, rgba(255,255,255,0.15) 50%, rgba(227,10,23,0.08) 80%, transparent 100%)',
+  emoji: '🇹🇷'
 }
 
 const GIFT_COLORS = {
