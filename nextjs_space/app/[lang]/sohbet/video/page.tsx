@@ -7,13 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import {
-  createAgoraClient,
-  fetchAgoraToken,
-  leaveChannel,
-  type IAgoraRTCClient,
-  type IAgoraRTCRemoteUser,
-} from '@/lib/agora-client'
+// TRTC imports are done dynamically inside functions
 import {
   Heart,
   MessageCircle,
@@ -127,7 +121,7 @@ const getHeartLevelText = (count: number): string => {
   if (level > 100) return '100k+'
   return `${level}k`
 }
-// Video streaming powered by Agora.io SDK
+// Video streaming powered by TRTC SDK
 
 function VideoStreamPageInner() {
   const { data: session } = useSession() || {}
@@ -210,7 +204,7 @@ function VideoStreamPageInner() {
   // Multi-view state
   const [multiViewMode, setMultiViewMode] = useState(false)
   const [multiViewStreams, setMultiViewStreams] = useState<string[]>([])
-  const [multiViewClients, setMultiViewClients] = useState<Map<string, IAgoraRTCClient>>(new Map())
+  const [multiViewClients, setMultiViewClients] = useState<Map<string, any>>(new Map())
   const multiViewRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
   // Admin PK tap scoring - 3 PK points total per person per PK battle (one-time)
   const pkTapCountRef = useRef(0)
@@ -222,10 +216,10 @@ function VideoStreamPageInner() {
   const touchStartY = useRef(0)
   const remoteVideoRef = useRef<HTMLDivElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLDivElement>(null)
-  const remoteUsersRef = useRef<Map<string, IAgoraRTCRemoteUser>>(new Map())
+  const remoteUsersRef = useRef<Set<string>>(new Set())
   const guestVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const heartIdRef = useRef(0)
-  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
+  const trtcRef = useRef<import('@/lib/trtc-client').TRTC | null>(null)
   const viewerIdRef = useRef<string>('')
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentStreamIdRef = useRef<string>('')
@@ -264,7 +258,7 @@ function VideoStreamPageInner() {
     // Reset all connection refs on mount to ensure fresh connection
     currentStreamIdRef.current = ''
     hasJoinedRef.current = false
-    agoraClientRef.current = null
+    trtcRef.current = null
     setConnectionStatus('connecting')
   }, [])
 
@@ -357,13 +351,16 @@ function VideoStreamPageInner() {
       clearInterval(streamDurationRef.current)
       streamDurationRef.current = null
     }
-    // Leave Agora channel
-    if (agoraClientRef.current) {
+    // Leave TRTC room
+    if (trtcRef.current) {
       try {
-        await agoraClientRef.current.leave()
+        const { exitRoom: trtcExit, destroyTRTC } = await import('@/lib/trtc-client')
+        await trtcExit(trtcRef.current)
+        await destroyTRTC(trtcRef.current)
       } catch (e) {}
-      agoraClientRef.current = null
+      trtcRef.current = null
     }
+    remoteUsersRef.current.clear()
     if (currentStreamIdRef.current) {
       fetch(`/api/video-streams/${currentStreamIdRef.current}/join?viewerId=${viewerIdRef.current}`, { method: 'DELETE' }).catch(() => {})
     }
@@ -377,57 +374,44 @@ function VideoStreamPageInner() {
       // Register as viewer in our backend
       await fetch(`/api/video-streams/${streamId}/join`, { method: 'POST' })
 
-      // Create Agora client as audience
-      const client = await createAgoraClient('audience')
-      agoraClientRef.current = client
+      // Create TRTC instance as audience
+      const { createTRTCInstance, fetchTRTCCredentials, enterRoom: trtcEnter, startRemoteVideo: playRemote } = await import('@/lib/trtc-client')
+      const TRTCModule = (await import('trtc-sdk-v5')).default
+      const trtc = await createTRTCInstance()
+      trtcRef.current = trtc
 
       // Handle remote user events (broadcaster + co-broadcasters)
-      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+      trtc.on(TRTCModule.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
         if (isUnmountedRef.current) return
-        await client.subscribe(user, mediaType)
+        remoteUsersRef.current.add(event.userId)
         
-        // Track remote user
-        remoteUsersRef.current.set(String(user.uid), user)
-        
-        if (mediaType === 'video') {
-          // Check if there's a guest video ref for this UID
-          const guestEl = guestVideoRefs.current.get(String(user.uid))
-          if (guestEl) {
-            try { user.videoTrack?.play(guestEl) } catch {}
-          } else {
-            // Default: play in main remoteVideoRef (host video)
-            const container = remoteVideoRef.current
-            if (container) {
-              user.videoTrack?.play(container)
-            }
-          }
-          setConnectionStatus('connected')
+        // Play video in appropriate container
+        const guestEl = guestVideoRefs.current.get(event.userId)
+        const container = guestEl || remoteVideoRef.current
+        if (container) {
+          playRemote(trtc, event.userId, container).catch(() => {})
         }
-        if (mediaType === 'audio') {
-          user.audioTrack?.play()
-        }
+        setConnectionStatus('connected')
       })
 
-      client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-        if (mediaType === 'video') {
-          user.videoTrack?.stop()
-        }
+      trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, () => {
+        // TRTC auto-plays remote audio
       })
 
-      client.on('user-left', (user: IAgoraRTCRemoteUser) => {
-        remoteUsersRef.current.delete(String(user.uid))
-        // Check if any remote users remain (if none, broadcaster left)
+      trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
+        remoteUsersRef.current.delete(event.userId)
         if (remoteUsersRef.current.size === 0) {
           setConnectionStatus('failed')
         }
       })
 
-      // Join Agora channel as audience
-      const channelName = `stream_${streamId}`
-      const { token, uid, appId } = await fetchAgoraToken(channelName, 'audience')
-      await client.join(appId, channelName, token, uid)
+      // Join TRTC room as audience
+      const roomId = `stream_${streamId}`
+      const userId = session?.user?.id || `viewer_${Date.now()}`
+      const credentials = await fetchTRTCCredentials(userId, roomId)
+      await trtcEnter(trtc, credentials, roomId, 'audience', 'live')
       
-      console.log('🎬 Agora: Joined channel as audience, uid:', uid)
+      console.log('🎬 TRTC: Joined room as audience, userId:', userId)
 
       // Start polling for other data (gifts, comments, stats, etc.)
       const pollFn = () => {
@@ -1254,9 +1238,13 @@ function VideoStreamPageInner() {
                 const prev = remoteVideoRef.current
                 if (prev !== el) {
                   (remoteVideoRef as any).current = el
-                  const remoteUsers = Array.from(remoteUsersRef.current.values())
-                  if (remoteUsers.length > 0 && remoteUsers[0].videoTrack) {
-                    try { remoteUsers[0].videoTrack.play(el) } catch {}
+                  const remoteUserIds = Array.from(remoteUsersRef.current)
+                  if (remoteUserIds.length > 0 && trtcRef.current) {
+                    try {
+                      import('@/lib/trtc-client').then(({ startRemoteVideo }) => {
+                        if (trtcRef.current) startRemoteVideo(trtcRef.current, remoteUserIds[0], el)
+                      })
+                    } catch {}
                   }
                 }
               }}
@@ -1275,18 +1263,26 @@ function VideoStreamPageInner() {
                       const hostContainer = remoteVideoRef.current
                       if (hostContainer !== el) {
                         (remoteVideoRef as any).current = el
-                        const remoteUsers = Array.from(remoteUsersRef.current.values())
-                        if (remoteUsers.length > 0 && remoteUsers[0].videoTrack) {
-                          try { remoteUsers[0].videoTrack.play(el) } catch {}
+                        const remoteUserIds = Array.from(remoteUsersRef.current)
+                        if (remoteUserIds.length > 0 && trtcRef.current) {
+                          try {
+                            import('@/lib/trtc-client').then(({ startRemoteVideo }) => {
+                              if (trtcRef.current) startRemoteVideo(trtcRef.current, remoteUserIds[0], el)
+                            })
+                          } catch {}
                         }
                       }
                     } else {
                       guestVideoRefs.current.set(userId, el)
-                      const remoteUsers = Array.from(remoteUsersRef.current.values())
+                      const remoteUserIds = Array.from(remoteUsersRef.current)
                       const guestIndex = activeCoBroadcasters.findIndex(g => g.userId === userId)
-                      const remoteUser = guestIndex >= 0 ? remoteUsers[guestIndex + 1] : undefined
-                      if (remoteUser?.videoTrack) {
-                        try { remoteUser.videoTrack.play(el) } catch {}
+                      const remoteUserId = guestIndex >= 0 ? remoteUserIds[guestIndex + 1] : undefined
+                      if (remoteUserId && trtcRef.current) {
+                        try {
+                          import('@/lib/trtc-client').then(({ startRemoteVideo }) => {
+                            if (trtcRef.current) startRemoteVideo(trtcRef.current, remoteUserId, el)
+                          })
+                        } catch {}
                       }
                     }
                   }}
@@ -1715,12 +1711,13 @@ function VideoStreamPageInner() {
                 e.stopPropagation(); 
                 const newMuted = !isMuted;
                 setIsMuted(newMuted);
-                // Mute/unmute all remote audio tracks in Agora
-                if (agoraClientRef.current) {
-                  agoraClientRef.current.remoteUsers.forEach(user => {
-                    if (user.audioTrack) {
-                      user.audioTrack.setVolume(newMuted ? 0 : 100);
-                    }
+                // Mute/unmute all remote audio tracks in TRTC
+                if (trtcRef.current) {
+                  const trtcInstance = trtcRef.current;
+                  Array.from(remoteUsersRef.current).forEach(userId => {
+                    import('@/lib/trtc-client').then(({ muteRemoteAudio }) => {
+                      muteRemoteAudio(trtcInstance, userId, newMuted);
+                    });
                   });
                 }
               }}

@@ -5,8 +5,8 @@ import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// Deterministic hash of a user ID → stable numeric Agora UID
-function userIdToAgoraUid(uid: string): number {
+// Deterministic hash of a user ID → stable numeric UID (legacy, kept for DB compat)
+function userIdToNumericUid(uid: string): number {
   let hash = 0
   for (let i = 0; i < uid.length; i++) {
     hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const userName = user?.name || 'Anonymous'
-    const agoraUid = userIdToAgoraUid(session.user.id)
+    const numericUid = userIdToNumericUid(session.user.id)
 
     if (type === 'join') {
       await prisma.voiceSession.upsert({
@@ -107,19 +107,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           roomId,
           userId: session.user.id,
           userName,
-          agoraUid,
+          agoraUid: numericUid, // Legacy field, kept for DB compat
           isActive: true
         },
         update: {
           userName,
-          agoraUid,
+          agoraUid: numericUid,
           isActive: true,
           lastPing: new Date(),
           joinedAt: new Date()
         }
       })
 
-      return NextResponse.json({ success: true, agoraUid, timestamp: Date.now() })
+      return NextResponse.json({ success: true, timestamp: Date.now() })
     } else if (type === 'leave') {
       await prisma.voiceSession.updateMany({
         where: { roomId, userId: session.user.id },

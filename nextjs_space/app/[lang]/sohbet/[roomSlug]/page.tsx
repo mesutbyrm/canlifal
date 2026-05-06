@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
-import type { IAgoraRTCClient, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
+import type { TRTC } from '@/lib/trtc-client'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
@@ -159,7 +159,7 @@ export default function ChatRoomPage() {
   const [adminBgImages, setAdminBgImages] = useState<Array<{id: string, name: string, imageUrl: string}>>([])
   const [savingBg, setSavingBg] = useState(false)
   
-  // Voice Chat with Agora
+  // Voice Chat with TRTC
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [isListening, setIsListening] = useState(false) // For listen-only mode (audience)
   const [isSpeaking, setIsSpeaking] = useState(false)
@@ -181,9 +181,7 @@ export default function ChatRoomPage() {
   const isLeavingPageRef = useRef(false) // Distinguish intentional leave from effect cleanup
   const roomIdRef = useRef<string | null>(null) // For cleanup on unmount
   const [voiceUsers, setVoiceUsers] = useState<Array<{id: string, name: string}>>([])
-  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
-  const agoraAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
-  const agoraUidMapRef = useRef<Map<number, string>>(new Map()) // Agora UID -> userId
+  const trtcRef = useRef<TRTC | null>(null)
   
   // Gift system
   const [showGiftModal, setShowGiftModal] = useState(false)
@@ -546,12 +544,7 @@ export default function ChatRoomPage() {
       if (res.ok) {
         const { voiceUsers: users } = await res.json()
         setVoiceUsers(users || [])
-        // Update Agora UID → userId mapping for speaking detection
-        for (const u of (users || [])) {
-          if (u.agoraUid) {
-            agoraUidMapRef.current.set(u.agoraUid, u.id)
-          }
-        }
+        // TRTC uses string userIds directly - no UID mapping needed
       }
     } catch (error) {
       console.error('Error fetching voice users:', error)
@@ -754,27 +747,16 @@ export default function ChatRoomPage() {
     return () => { cancelled = true; clearInterval(interval) }
   }, [room?.id, session?.user])
 
-  // Auto-mute all Agora voice when music is playing, unmute when stopped
+  // Auto-mute own mic when music is playing, unmute when stopped
   useEffect(() => {
-    if (!agoraClientRef.current) return
-    const client = agoraClientRef.current
+    if (!trtcRef.current || !voiceEnabled) return
     const isMusicPlaying = !!currentMusicVideoId
     try {
-      client.remoteUsers?.forEach((ru: any) => {
-        if (ru.audioTrack) {
-          if (isMusicPlaying) {
-            ru.audioTrack.setVolume(0)
-          } else {
-            ru.audioTrack.setVolume(100)
-          }
-        }
-      })
-      // Also mute own mic if music playing
-      if (agoraAudioTrackRef.current && voiceEnabled) {
-        if (isMusicPlaying && !isMicMuted) {
-          agoraAudioTrackRef.current.setEnabled(false)
-          setIsMicMuted(true)
-        }
+      if (isMusicPlaying && !isMicMuted) {
+        import('@/lib/trtc-client').then(({ muteLocalAudio }) => {
+          if (trtcRef.current) muteLocalAudio(trtcRef.current, true)
+        })
+        setIsMicMuted(true)
       }
     } catch (e) {
       console.error('Music auto-mute error:', e)
@@ -1005,15 +987,7 @@ export default function ChatRoomPage() {
     }
   }, [messages])
 
-  // ─── Agora Voice Chat ──────────────────────────────────────────
-  // Helper: generate a stable numeric UID from user ID string
-  const userIdToAgoraUid = useCallback((uid: string): number => {
-    let hash = 0
-    for (let i = 0; i < uid.length; i++) {
-      hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0
-    }
-    return Math.abs(hash) % 1000000000 // Keep within safe range
-  }, [])
+  // ─── TRTC Voice Chat ──────────────────────────────────────────
 
   // Start voice chat as HOST (can speak)
   const startVoiceChat = async (silent = false) => {
@@ -1037,133 +1011,66 @@ export default function ChatRoomPage() {
         throw new Error('Failed to join voice')
       }
 
-      const joinData = await joinRes.json()
-      const agoraUid = joinData.agoraUid as number
+      // 2. Lazy-import TRTC helpers
+      const { createTRTCInstance, fetchTRTCCredentials, enterRoom, startLocalAudio, enableAudioVolumeEvaluation, getTRTCEvent } = await import('@/lib/trtc-client')
 
-      // 2. Lazy-import Agora helpers
-      const { createAgoraClient, fetchAgoraToken, createLocalAudioTrack } = await import('@/lib/agora-client')
+      // 3. Create TRTC instance
+      const trtc = await createTRTCInstance()
+      trtcRef.current = trtc
 
-      // 3. Create Agora client in host mode
-      const client = await createAgoraClient('host')
-      agoraClientRef.current = client
+      // 4. Get TRTC events and register listeners BEFORE joining
+      const EVENT = await getTRTCEvent()
 
-      // 4. Register ALL event listeners BEFORE joining (critical for catching remote users)
-      client.enableAudioVolumeIndicator()
-      client.on('volume-indicator', (volumes) => {
+      // Volume indicator for speaking detection
+      enableAudioVolumeEvaluation(trtc, 500)
+      trtc.on(EVENT.AUDIO_VOLUME as any, (event: any) => {
         const newSpeaking = new Set<string>()
-        for (const vol of volumes) {
-          if (vol.level > 5) {
-            const mappedUserId = agoraUidMapRef.current.get(vol.uid as number)
-            if (mappedUserId) newSpeaking.add(mappedUserId)
+        for (const { userId, volume } of event.result) {
+          if (volume > 5) {
+            if (userId === '') {
+              // Empty string = local user
+              if (session?.user?.id) newSpeaking.add(session.user.id)
+            } else {
+              newSpeaking.add(userId)
+            }
           }
         }
         setSpeakingUsers(newSpeaking)
         if (session?.user?.id) {
-          const amISpeaking = newSpeaking.has(session.user.id)
-          setIsSpeaking(amISpeaking)
+          setIsSpeaking(newSpeaking.has(session.user.id))
         }
       })
 
-      client.on('user-published', async (remoteUser, mediaType) => {
-        await client.subscribe(remoteUser, mediaType)
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack?.play()
-        }
-      })
-      client.on('user-unpublished', (remoteUser, mediaType) => {
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack?.stop()
-        }
-      })
+      // TRTC auto-plays remote audio, no manual subscribe needed
+      // Remote audio available event (TRTC handles playback automatically)
 
-      // Token refresh before expiry (fires ~30s before expiration)
-      client.on('token-privilege-will-expire', async () => {
-        console.log('Agora token expiring soon, refreshing...')
-        try {
-          const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
-          const ch = `voice_room_${room.id}`
-          const { token: newToken } = await reFetch(ch, 'host', agoraUid)
-          await client.renewToken(newToken)
-          console.log('Agora token refreshed successfully')
-        } catch (e) { console.error('Agora token refresh failed:', e) }
-      })
+      // 5. Get credentials and enter room as anchor
+      const userId = session?.user?.id || `anon_${Date.now()}`
+      const roomId = `voice_room_${room.id}`
+      const credentials = await fetchTRTCCredentials(userId, roomId)
+      await enterRoom(trtc, credentials, roomId, 'host', 'rtc')
 
-      // Robust auto-reconnect on connection drop with retry
-      client.on('connection-state-change', (curState, prevState) => {
-        console.log(`Agora host connection: ${prevState} → ${curState}`)
-        
-        // Clear any pending reconnect timer
-        if (voiceReconnectTimerRef.current) {
-          clearTimeout(voiceReconnectTimerRef.current)
-          voiceReconnectTimerRef.current = null
-        }
-        
-        if (curState === 'DISCONNECTED' && prevState !== 'DISCONNECTING') {
-          console.warn('Agora host disconnected, will retry reconnect...')
-          let retryCount = 0
-          const maxRetries = 5
-          
-          const attemptReconnect = async () => {
-            if (!agoraClientRef.current || agoraClientRef.current.connectionState !== 'DISCONNECTED') return
-            retryCount++
-            console.log(`Agora reconnect attempt ${retryCount}/${maxRetries}`)
-            try {
-              const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
-              const ch = `voice_room_${room.id}`
-              const { token: newToken, appId: newAppId } = await reFetch(ch, 'host', agoraUid)
-              await agoraClientRef.current!.join(newAppId, ch, newToken, agoraUid)
-              if (agoraAudioTrackRef.current) {
-                await agoraClientRef.current!.publish([agoraAudioTrackRef.current])
-              }
-              console.log('Agora host reconnected successfully')
-            } catch (e) {
-              console.error(`Agora reconnect attempt ${retryCount} failed:`, e)
-              if (retryCount < maxRetries) {
-                const delay = Math.min(3000 * Math.pow(1.5, retryCount), 15000) // Exponential backoff, max 15s
-                voiceReconnectTimerRef.current = setTimeout(attemptReconnect, delay)
-              } else {
-                console.error('Agora reconnect: max retries exceeded')
-              }
-            }
-          }
-          
-          voiceReconnectTimerRef.current = setTimeout(attemptReconnect, 2000)
-        }
-      })
-
-      // 5. Map own UID
-      if (session?.user?.id) {
-        agoraUidMapRef.current.set(agoraUid, session.user.id)
-      }
-
-      // 6. Get token and join channel
-      const channelName = `voice_room_${room.id}`
-      const { token, appId } = await fetchAgoraToken(channelName, 'host', agoraUid)
-      await client.join(appId, channelName, token, agoraUid)
-
-      // 7. Create and publish mic audio track
-      const audioTrack = await createLocalAudioTrack()
-      agoraAudioTrackRef.current = audioTrack
-      await client.publish([audioTrack])
+      // 6. Start local audio (mic)
+      await startLocalAudio(trtc)
 
       setVoiceEnabled(true)
       setVoiceConnecting(false)
-      console.log('Agora voice chat started as host')
+      console.log('TRTC voice chat started as host')
 
-      // 8. Refresh voice users list
+      // 7. Refresh voice users list
       fetchVoiceUsers()
 
     } catch (error: unknown) {
-      console.error('Error starting Agora voice chat:', error)
+      console.error('Error starting TRTC voice chat:', error)
       setVoiceConnecting(false)
       // Cleanup on failure
-      if (agoraAudioTrackRef.current) {
-        agoraAudioTrackRef.current.close()
-        agoraAudioTrackRef.current = null
-      }
-      if (agoraClientRef.current) {
-        try { await agoraClientRef.current.leave() } catch {}
-        agoraClientRef.current = null
+      if (trtcRef.current) {
+        try {
+          const { exitRoom, destroyTRTC } = await import('@/lib/trtc-client')
+          await exitRoom(trtcRef.current)
+          await destroyTRTC(trtcRef.current)
+        } catch {}
+        trtcRef.current = null
       }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (!silent) {
@@ -1178,16 +1085,15 @@ export default function ChatRoomPage() {
 
   // Toggle mic mute/unmute (stays connected, can still hear others)
   const toggleMicMute = useCallback(async () => {
-    if (!agoraAudioTrackRef.current || !voiceEnabled) return
+    if (!trtcRef.current || !voiceEnabled) return
     try {
+      const { muteLocalAudio } = await import('@/lib/trtc-client')
       if (isMicMuted) {
-        // Unmute: re-enable the audio track
-        await agoraAudioTrackRef.current.setEnabled(true)
+        await muteLocalAudio(trtcRef.current, false)
         setIsMicMuted(false)
         console.log('Mic unmuted')
       } else {
-        // Mute: disable the audio track but stay connected
-        await agoraAudioTrackRef.current.setEnabled(false)
+        await muteLocalAudio(trtcRef.current, true)
         setIsMicMuted(true)
         setIsSpeaking(false)
         console.log('Mic muted (still listening)')
@@ -1214,22 +1120,17 @@ export default function ChatRoomPage() {
       }).catch(() => {})
     }
 
-    // Close Agora audio track
-    if (agoraAudioTrackRef.current) {
-      agoraAudioTrackRef.current.close()
-      agoraAudioTrackRef.current = null
-    }
-
-    // Leave Agora channel
-    if (agoraClientRef.current) {
+    // Leave TRTC room and cleanup
+    if (trtcRef.current) {
       try {
-        agoraClientRef.current.removeAllListeners()
-        await agoraClientRef.current.leave()
+        const { stopLocalAudio, exitRoom, destroyTRTC } = await import('@/lib/trtc-client')
+        await stopLocalAudio(trtcRef.current)
+        await exitRoom(trtcRef.current)
+        await destroyTRTC(trtcRef.current)
       } catch {}
-      agoraClientRef.current = null
+      trtcRef.current = null
     }
 
-    agoraUidMapRef.current.clear()
     autoVoiceJoinedRef.current = false
     setVoiceEnabled(false)
     setIsListening(false)
@@ -1244,94 +1145,35 @@ export default function ChatRoomPage() {
     if (!room || isListening || voiceEnabled) return
 
     try {
-      const { createAgoraClient, fetchAgoraToken } = await import('@/lib/agora-client')
+      const { createTRTCInstance, fetchTRTCCredentials, enterRoom, enableAudioVolumeEvaluation, getTRTCEvent } = await import('@/lib/trtc-client')
 
-      const client = await createAgoraClient('audience')
-      agoraClientRef.current = client
+      const trtc = await createTRTCInstance()
+      trtcRef.current = trtc
 
-      const uid = session?.user?.id ? userIdToAgoraUid(session.user.id) : 0
+      const EVENT = await getTRTCEvent()
 
-      // Register ALL event listeners BEFORE joining
-      client.enableAudioVolumeIndicator()
-      client.on('volume-indicator', (volumes) => {
+      // Volume indicator for speaking detection
+      enableAudioVolumeEvaluation(trtc, 500)
+      trtc.on(EVENT.AUDIO_VOLUME as any, (event: any) => {
         const newSpeaking = new Set<string>()
-        for (const vol of volumes) {
-          if (vol.level > 5) {
-            const mappedUserId = agoraUidMapRef.current.get(vol.uid as number)
-            if (mappedUserId) newSpeaking.add(mappedUserId)
+        for (const { userId, volume } of event.result) {
+          if (volume > 5 && userId !== '') {
+            newSpeaking.add(userId)
           }
         }
         setSpeakingUsers(newSpeaking)
       })
 
-      client.on('user-published', async (remoteUser, mediaType) => {
-        await client.subscribe(remoteUser, mediaType)
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack?.play()
-        }
-      })
-      client.on('user-unpublished', (remoteUser, mediaType) => {
-        if (mediaType === 'audio') {
-          remoteUser.audioTrack?.stop()
-        }
-      })
+      // TRTC auto-plays remote audio for audience
 
-      // Token refresh before expiry
-      client.on('token-privilege-will-expire', async () => {
-        console.log('Agora listener token expiring, refreshing...')
-        try {
-          const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
-          const ch = `voice_room_${room.id}`
-          const { token: newToken } = await reFetch(ch, 'audience', uid)
-          await client.renewToken(newToken)
-          console.log('Agora listener token refreshed')
-        } catch (e) { console.error('Agora listener token refresh failed:', e) }
-      })
-
-      // Auto-reconnect for listener mode with retry
-      client.on('connection-state-change', (curState, prevState) => {
-        console.log(`Agora listener connection: ${prevState} → ${curState}`)
-        
-        if (voiceReconnectTimerRef.current) {
-          clearTimeout(voiceReconnectTimerRef.current)
-          voiceReconnectTimerRef.current = null
-        }
-        
-        if (curState === 'DISCONNECTED' && prevState !== 'DISCONNECTING') {
-          console.warn('Agora listener disconnected, will retry reconnect...')
-          let retryCount = 0
-          const maxRetries = 5
-          
-          const attemptReconnect = async () => {
-            if (!agoraClientRef.current || agoraClientRef.current.connectionState !== 'DISCONNECTED') return
-            retryCount++
-            console.log(`Agora listener reconnect attempt ${retryCount}/${maxRetries}`)
-            try {
-              const { fetchAgoraToken: reFetch } = await import('@/lib/agora-client')
-              const ch = `voice_room_${room.id}`
-              const { token: newToken, appId: newAppId } = await reFetch(ch, 'audience', uid)
-              await agoraClientRef.current!.join(newAppId, ch, newToken, uid)
-              console.log('Agora listener reconnected successfully')
-            } catch (e) {
-              console.error(`Agora listener reconnect attempt ${retryCount} failed:`, e)
-              if (retryCount < maxRetries) {
-                const delay = Math.min(3000 * Math.pow(1.5, retryCount), 15000)
-                voiceReconnectTimerRef.current = setTimeout(attemptReconnect, delay)
-              }
-            }
-          }
-          
-          voiceReconnectTimerRef.current = setTimeout(attemptReconnect, 2000)
-        }
-      })
-
-      // Join the channel
-      const channelName = `voice_room_${room.id}`
-      const { token, appId } = await fetchAgoraToken(channelName, 'audience', uid)
-      await client.join(appId, channelName, token, uid)
+      // Join the room as audience
+      const userId = session?.user?.id || `listener_${Date.now()}`
+      const roomId = `voice_room_${room.id}`
+      const credentials = await fetchTRTCCredentials(userId, roomId)
+      await enterRoom(trtc, credentials, roomId, 'audience', 'rtc')
 
       setIsListening(true)
-      console.log('Agora voice listen mode started')
+      console.log('TRTC voice listen mode started')
     } catch (error) {
       console.error('Error starting listen mode:', error)
     }
@@ -1343,14 +1185,14 @@ export default function ChatRoomPage() {
       clearTimeout(voiceReconnectTimerRef.current)
       voiceReconnectTimerRef.current = null
     }
-    if (agoraClientRef.current) {
+    if (trtcRef.current) {
       try {
-        agoraClientRef.current.removeAllListeners()
-        await agoraClientRef.current.leave()
+        const { exitRoom, destroyTRTC } = await import('@/lib/trtc-client')
+        await exitRoom(trtcRef.current)
+        await destroyTRTC(trtcRef.current)
       } catch {}
-      agoraClientRef.current = null
+      trtcRef.current = null
     }
-    agoraUidMapRef.current.clear()
     autoListenJoinedRef.current = false
     setIsListening(false)
     setSpeakingUsers(new Set())
@@ -1363,12 +1205,12 @@ export default function ChatRoomPage() {
       if (voiceReconnectTimerRef.current) {
         clearTimeout(voiceReconnectTimerRef.current)
       }
-      if (agoraAudioTrackRef.current) {
-        agoraAudioTrackRef.current.close()
-      }
-      if (agoraClientRef.current) {
-        agoraClientRef.current.removeAllListeners()
-        agoraClientRef.current.leave().catch(() => {})
+      if (trtcRef.current) {
+        const trtcInstance = trtcRef.current
+        import('@/lib/trtc-client').then(({ exitRoom, destroyTRTC }) => {
+          exitRoom(trtcInstance).catch(() => {})
+          destroyTRTC(trtcInstance).catch(() => {})
+        })
       }
     }
   }, [])
@@ -1397,7 +1239,7 @@ export default function ChatRoomPage() {
   // Auto-mute admin when alone in room, auto-unmute when someone joins
   const prevActiveCountRef = useRef(0)
   useEffect(() => {
-    if (!room || !session?.user?.id || !voiceEnabled || !agoraAudioTrackRef.current) return
+    if (!room || !session?.user?.id || !voiceEnabled || !trtcRef.current) return
     const isAdminOrOwner = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
       (session.user as any).role === 'admin' || (session.user as any).role === 'yonetici'
     if (!isAdminOrOwner) return
@@ -1408,12 +1250,16 @@ export default function ChatRoomPage() {
     
     if (otherUsers.length === 0 && !isMicMuted) {
       // Admin alone - auto mute
-      agoraAudioTrackRef.current.setEnabled(false)
+      import('@/lib/trtc-client').then(({ muteLocalAudio }) => {
+        if (trtcRef.current) muteLocalAudio(trtcRef.current, true)
+      })
       setIsMicMuted(true)
       console.log('Admin alone - auto-muted')
     } else if (otherUsers.length > 0 && prevCount === 0 && isMicMuted) {
       // Someone joined - auto unmute
-      agoraAudioTrackRef.current.setEnabled(true)
+      import('@/lib/trtc-client').then(({ muteLocalAudio }) => {
+        if (trtcRef.current) muteLocalAudio(trtcRef.current, false)
+      })
       setIsMicMuted(false)
       console.log('User joined - admin auto-unmuted')
     }

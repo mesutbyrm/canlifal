@@ -8,21 +8,40 @@ import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
-  createAgoraClient,
-  createLocalTracks,
-  fetchAgoraToken,
-  leaveChannel,
-  getCameras,
-  applyBeautyEffect,
-  BEAUTY_PRESETS,
-  DEFAULT_BEAUTY_SETTINGS,
-  type AgoraBeautySettings,
-  type IAgoraRTCClient,
-  type ICameraVideoTrack,
-  type IMicrophoneAudioTrack,
-  type IAgoraRTCRemoteUser,
-  type UID,
-} from '@/lib/agora-client'
+  createTRTCInstance,
+  fetchTRTCCredentials,
+  enterRoom,
+  startLocalVideo,
+  startLocalAudio,
+  stopLocalVideo,
+  stopLocalAudio,
+  startRemoteVideo,
+  exitRoom,
+  destroyTRTC,
+  getCameraList,
+  updateLocalVideo,
+  type TRTC,
+} from '@/lib/trtc-client'
+
+// Beauty presets (TRTC does not have built-in beauty; keep UI structure)
+interface BeautySettings {
+  enabled: boolean
+  smoothnessLevel: number
+  lighteningLevel: number
+  rednessLevel: number
+  lighteningContrastLevel: 0 | 1 | 2
+}
+const DEFAULT_BEAUTY_SETTINGS: BeautySettings = {
+  enabled: false, smoothnessLevel: 0.5, lighteningLevel: 0.3, rednessLevel: 0.1, lighteningContrastLevel: 1,
+}
+const BEAUTY_PRESETS = [
+  { name: 'Doğal', nameEn: 'Natural', icon: '✨', settings: { smoothnessLevel: 0, lighteningLevel: 0, rednessLevel: 0, lighteningContrastLevel: 1 as const } },
+  { name: 'Yumuşak', nameEn: 'Soft', icon: '🌸', settings: { smoothnessLevel: 0.4, lighteningLevel: 0.3, rednessLevel: 0.1, lighteningContrastLevel: 1 as const } },
+  { name: 'Glamour', nameEn: 'Glamour', icon: '💎', settings: { smoothnessLevel: 0.6, lighteningLevel: 0.5, rednessLevel: 0.2, lighteningContrastLevel: 2 as const } },
+  { name: 'Parlak', nameEn: 'Bright', icon: '☀️', settings: { smoothnessLevel: 0.3, lighteningLevel: 0.7, rednessLevel: 0.05, lighteningContrastLevel: 2 as const } },
+  { name: 'Romantik', nameEn: 'Romantic', icon: '💕', settings: { smoothnessLevel: 0.5, lighteningLevel: 0.4, rednessLevel: 0.4, lighteningContrastLevel: 1 as const } },
+  { name: 'Serin', nameEn: 'Cool', icon: '❄️', settings: { smoothnessLevel: 0.3, lighteningLevel: 0.6, rednessLevel: 0.0, lighteningContrastLevel: 0 as const } },
+]
 import {
   Heart,
   MessageCircle,
@@ -231,7 +250,7 @@ export default function BroadcastPage() {
   const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null)
   const autoCloseCheckRef = useRef<NodeJS.Timeout | null>(null)
   // Beauty effects state
-  const [beautySettings, setBeautySettings] = useState<AgoraBeautySettings>(() => {
+  const [beautySettings, setBeautySettings] = useState<BeautySettings>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('agoraBeautySettings')
@@ -252,11 +271,9 @@ export default function BroadcastPage() {
   const guestVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const broadcasterVideoRef = useRef<HTMLDivElement>(null) // For co-host to see broadcaster
   const shownNotificationIdsRef = useRef<Set<string>>(new Set())
-  // Agora refs
-  const agoraClientRef = useRef<IAgoraRTCClient | null>(null)
-  const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null)
-  const localVideoTrackRef = useRef<ICameraVideoTrack | null>(null)
-  const remoteUsersRef = useRef<Map<string, IAgoraRTCRemoteUser>>(new Map())
+  // TRTC refs
+  const trtcRef = useRef<TRTC | null>(null)
+  const remoteUsersRef = useRef<Set<string>>(new Set())
   const processedGuestsRef = useRef<Set<string>>(new Set())
   const heartIdRef = useRef(0)
   const lastGiftIdRef = useRef<string>('')
@@ -337,61 +354,44 @@ export default function BroadcastPage() {
 
   const startBroadcast = async () => {
     try {
-      // Create Agora client as host
-      const client = await createAgoraClient('host')
-      agoraClientRef.current = client
+      // Create TRTC instance
+      const trtc = await createTRTCInstance()
+      trtcRef.current = trtc
 
       // Set up remote user event handlers (for co-broadcasters)
-      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-        await client.subscribe(user, mediaType)
-        remoteUsersRef.current.set(String(user.uid), user)
-        
-        if (mediaType === 'video') {
-          const container = guestVideoRefs.current.get(String(user.uid)) || broadcasterVideoRef.current
-          if (container) {
-            user.videoTrack?.play(container)
-          }
-        }
-        if (mediaType === 'audio') {
-          user.audioTrack?.play()
-          setRemoteAudioEnabled(true)
+      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
+        remoteUsersRef.current.add(event.userId)
+        const container = guestVideoRefs.current.get(event.userId) || broadcasterVideoRef.current
+        if (container) {
+          startRemoteVideo(trtc, event.userId, container).catch(console.error)
         }
       })
 
-      client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-        if (mediaType === 'video') {
-          user.videoTrack?.stop()
-        }
+      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_AUDIO_AVAILABLE, () => {
+        setRemoteAudioEnabled(true)
       })
 
-      client.on('user-left', (user: IAgoraRTCRemoteUser) => {
-        remoteUsersRef.current.delete(String(user.uid))
+      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
+        remoteUsersRef.current.delete(event.userId)
       })
 
-      // Create local tracks
-      const [audioTrack, videoTrack] = await createLocalTracks(facingMode)
-      localAudioTrackRef.current = audioTrack
-      localVideoTrackRef.current = videoTrack
+      // Use streamId as room name for TRTC
+      const roomId = `stream_${streamId}`
+      const userId = session?.user?.id || 'host'
+      const credentials = await fetchTRTCCredentials(userId, roomId)
 
-      // Play local video in container
+      // Enter room as host/anchor in live mode
+      await enterRoom(trtc, credentials, roomId, 'host', 'live')
+
+      // Start local video and audio
       if (localVideoRef.current) {
-        videoTrack.play(localVideoRef.current)
+        await startLocalVideo(trtc, localVideoRef.current, facingMode)
       }
+      await startLocalAudio(trtc)
 
-      // Use streamId as channel name for Agora
-      const channelName = `stream_${streamId}`
-      const { token, uid, appId } = await fetchAgoraToken(channelName, 'host')
-      await client.join(appId, channelName, token, uid)
-      await client.publish([audioTrack, videoTrack])
-
-      // Apply saved beauty effects
-      if (beautySettings.enabled) {
-        await applyBeautyEffect(videoTrack, beautySettings)
-      }
-
-      console.log('🎬 Agora: Joined channel as host, uid:', uid)
+      console.log('🎬 TRTC: Joined room as host, userId:', userId)
     } catch (error) {
-      console.error('Agora broadcast error:', error)
+      console.error('TRTC broadcast error:', error)
       alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
       router.back()
     }
@@ -677,24 +677,29 @@ export default function BroadcastPage() {
   }
 
   const toggleVideo = async () => {
-    if (localVideoTrackRef.current) {
-      await localVideoTrackRef.current.setEnabled(!isVideoOn)
+    if (trtcRef.current) {
+      if (isVideoOn) {
+        await stopLocalVideo(trtcRef.current)
+      } else if (localVideoRef.current) {
+        await startLocalVideo(trtcRef.current, localVideoRef.current, facingMode)
+      }
       setIsVideoOn(!isVideoOn)
     }
   }
 
   const toggleAudio = async () => {
-    if (localAudioTrackRef.current) {
-      await localAudioTrackRef.current.setEnabled(!isAudioOn)
+    if (trtcRef.current) {
+      if (isAudioOn) {
+        await stopLocalAudio(trtcRef.current)
+      } else {
+        await startLocalAudio(trtcRef.current)
+      }
       setIsAudioOn(!isAudioOn)
     }
   }
 
   // Enable remote audio on user interaction (for browser autoplay policy)
   const enableRemoteAudio = () => {
-    remoteUsersRef.current.forEach(user => {
-      user.audioTrack?.play()
-    })
     setRemoteAudioEnabled(true)
   }
 
@@ -702,29 +707,25 @@ export default function BroadcastPage() {
     const newFacing = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newFacing)
     try {
-      const devices = await getCameras()
-      if (devices.length > 1 && localVideoTrackRef.current) {
-        const targetIndex = newFacing === 'user' ? 0 : devices.length - 1
-        await localVideoTrackRef.current.setDevice(devices[targetIndex].deviceId)
+      if (trtcRef.current) {
+        await updateLocalVideo(trtcRef.current, { facingMode: newFacing })
       }
     } catch (e) {
       console.error('Switch camera error:', e)
     }
   }
 
-  // Beauty effect handlers
-  const updateBeautySettings = async (newSettings: AgoraBeautySettings) => {
+  // Beauty effect handlers (placeholder - TRTC beauty requires separate plugin)
+  const updateBeautySettings = async (newSettings: BeautySettings) => {
     setBeautySettings(newSettings)
     localStorage.setItem('agoraBeautySettings', JSON.stringify(newSettings))
-    if (localVideoTrackRef.current) {
-      await applyBeautyEffect(localVideoTrackRef.current, newSettings)
-    }
+    // Note: TRTC beauty effects require TRTCBeautyPlugin - kept as UI-only for now
   }
 
   const applyBeautyPreset = async (presetIndex: number) => {
     const preset = BEAUTY_PRESETS[presetIndex]
     if (!preset) return
-    const newSettings: AgoraBeautySettings = {
+    const newSettings: BeautySettings = {
       enabled: presetIndex > 0, // index 0 = "Natural" = off
       ...preset.settings,
     }
@@ -1090,21 +1091,16 @@ export default function BroadcastPage() {
   }
 
   const cleanup = async () => {
-    // Leave Agora channel and cleanup tracks
-    if (agoraClientRef.current) {
+    // Leave TRTC room and cleanup
+    if (trtcRef.current) {
       try {
-        await leaveChannel(
-          agoraClientRef.current,
-          localAudioTrackRef.current,
-          localVideoTrackRef.current
-        )
+        await exitRoom(trtcRef.current)
+        await destroyTRTC(trtcRef.current)
       } catch (e) {
-        console.error('Agora cleanup error:', e)
+        console.error('TRTC cleanup error:', e)
       }
-      agoraClientRef.current = null
+      trtcRef.current = null
     }
-    localAudioTrackRef.current = null
-    localVideoTrackRef.current = null
     remoteUsersRef.current.clear()
     processedGuestsRef.current.clear()
     
@@ -1229,16 +1225,13 @@ export default function BroadcastPage() {
                 if (userId === 'host') {
                   if (localVideoRef.current !== el) {
                     (localVideoRef as any).current = el
-                    const videoTrack = localVideoTrackRef.current
-                    if (videoTrack) {
-                      try { videoTrack.play(el) } catch {}
-                    }
+                    // TRTC auto-plays local video in the view element
                   }
                 } else {
                   guestVideoRefs.current.set(userId, el)
-                  const remoteUser = remoteUsersRef.current.get(userId)
-                  if (remoteUser?.videoTrack) {
-                    try { remoteUser.videoTrack.play(el) } catch {}
+                  // Play remote user's video in this container
+                  if (trtcRef.current && remoteUsersRef.current.has(userId)) {
+                    try { startRemoteVideo(trtcRef.current, userId, el).catch(() => {}) } catch {}
                   }
                 }
               }}
