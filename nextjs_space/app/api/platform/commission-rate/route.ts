@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const setting = await prisma.platformSettings.findUnique({
-      where: { key: 'commission_rate' }
-    });
-    const commissionRate = setting ? parseInt(setting.value) : 20;
+    const val = await getCachedPlatformSetting('commission_rate', '20');
+    const commissionRate = parseInt(val);
     return NextResponse.json({ commissionRate });
   } catch (error: any) {
     console.error('Commission rate fetch error:', error);

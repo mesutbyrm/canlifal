@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { invalidateCachePrefix } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
         description: 'Homepage action buttons display order',
       },
     });
+    invalidateCachePrefix('platform:');
 
     return NextResponse.json({ success: true, order });
   } catch (error) {

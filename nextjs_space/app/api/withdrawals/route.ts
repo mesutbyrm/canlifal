@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,9 +67,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Maksimum çekim limiti: ${user.withdrawalLimit} jeton` }, { status: 400 });
     }
 
-    // Check minimum withdrawal from settings
-    const minSetting = await prisma.platformSettings.findUnique({ where: { key: 'min_withdrawal' } });
-    const minWithdrawal = minSetting ? parseInt(minSetting.value) : 100;
+    // Check minimum withdrawal from settings (cached)
+    const minStr = await getCachedPlatformSetting('min_withdrawal', '100');
+    const minWithdrawal = parseInt(minStr);
     if (amount < minWithdrawal) {
       return NextResponse.json({ error: `Minimum çekim: ${minWithdrawal} jeton` }, { status: 400 });
     }
@@ -81,9 +82,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Zaten bekleyen bir çekim talebiniz var' }, { status: 400 });
     }
 
-    // Get TL rate
-    const rateSetting = await prisma.platformSettings.findUnique({ where: { key: 'jeton_tl_rate' } });
-    const jetonTlRate = rateSetting ? parseFloat(rateSetting.value) : 0.5;
+    // Get TL rate (cached)
+    const rateStr = await getCachedPlatformSetting('jeton_tl_rate', '0.5');
+    const jetonTlRate = parseFloat(rateStr);
     const amountTL = parseFloat((amount * jetonTlRate).toFixed(2));
 
     // Check if user belongs to an agency

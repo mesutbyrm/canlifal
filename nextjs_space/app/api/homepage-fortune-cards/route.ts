@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,42 +23,41 @@ export async function GET() {
       select: { id: true, name: true, icon: true, image: true, href: true, isActive: true, sortOrder: true },
     })
 
-    const allSettings = await prisma.platformSettings.findMany({
-      where: {
-        key: {
-          in: [
-            'homepage_hero_visible', 'homepage_hero_icon', 'homepage_hero_title', 'homepage_hero_subtitle', 'homepage_hero_link',
-            'homepage_hero_items',
-            'ticker_button_text', 'ticker_button_icon', 'ticker_button_link', 'ticker_button_visible',
-            'ticker_scroll_direction', 'ticker_scroll_speed', 'ticker_bg_color', 'ticker_bg_gradient',
-            'ticker_custom_texts', 'ticker_online_display', 'ticker_text_effect',
-          ]
-        }
-      }
-    })
+    // Use cached platform settings instead of bulk DB query
+    const gs = async (key: string, def: string) => getCachedPlatformSetting(key, def)
+    const gjs = async (key: string, def: any) => {
+      const raw = await getCachedPlatformSetting(key, '')
+      if (!raw) return def
+      try { return JSON.parse(raw) } catch { return def }
+    }
+
+    const [heroVisible, heroIcon, heroTitle, heroSubtitle, heroLink, heroItems,
+      tickerBtnText, tickerBtnIcon, tickerBtnLink, tickerBtnVisible,
+      tickerDir, tickerSpeed, tickerBg, tickerGrad, tickerTexts, tickerOnline, tickerEffect
+    ] = await Promise.all([
+      gs('homepage_hero_visible', 'false'), gs('homepage_hero_icon', '🔮'),
+      gs('homepage_hero_title', ''), gs('homepage_hero_subtitle', ''),
+      gs('homepage_hero_link', '/online-fal'), gjs('homepage_hero_items', []),
+      gs('ticker_button_text', 'Canlı Falcı'), gs('ticker_button_icon', '✨'),
+      gs('ticker_button_link', '/canli-falcilar'), gs('ticker_button_visible', 'true'),
+      gs('ticker_scroll_direction', 'rtl'), gs('ticker_scroll_speed', '20'),
+      gs('ticker_bg_color', ''), gs('ticker_bg_gradient', ''),
+      gjs('ticker_custom_texts', []), gs('ticker_online_display', 'single'),
+      gs('ticker_text_effect', 'none'),
+    ])
 
     return NextResponse.json({
       cards,
       hero: {
-        visible: getSetting(allSettings, 'homepage_hero_visible', 'false') === 'true',
-        icon: getSetting(allSettings, 'homepage_hero_icon', '🔮'),
-        title: getSetting(allSettings, 'homepage_hero_title', ''),
-        subtitle: getSetting(allSettings, 'homepage_hero_subtitle', ''),
-        link: getSetting(allSettings, 'homepage_hero_link', '/online-fal'),
-        items: getJsonSetting(allSettings, 'homepage_hero_items', []),
+        visible: heroVisible === 'true', icon: heroIcon, title: heroTitle,
+        subtitle: heroSubtitle, link: heroLink, items: heroItems,
       },
       ticker: {
-        buttonText: getSetting(allSettings, 'ticker_button_text', 'Canlı Falcı'),
-        buttonIcon: getSetting(allSettings, 'ticker_button_icon', '✨'),
-        buttonLink: getSetting(allSettings, 'ticker_button_link', '/canli-falcilar'),
-        buttonVisible: getSetting(allSettings, 'ticker_button_visible', 'true'),
-        scrollDirection: getSetting(allSettings, 'ticker_scroll_direction', 'rtl'),
-        scrollSpeed: getSetting(allSettings, 'ticker_scroll_speed', '20'),
-        bgColor: getSetting(allSettings, 'ticker_bg_color', ''),
-        bgGradient: getSetting(allSettings, 'ticker_bg_gradient', ''),
-        customTexts: getJsonSetting(allSettings, 'ticker_custom_texts', []),
-        onlineDisplay: getSetting(allSettings, 'ticker_online_display', 'single'),
-        textEffect: getSetting(allSettings, 'ticker_text_effect', 'none'),
+        buttonText: tickerBtnText, buttonIcon: tickerBtnIcon,
+        buttonLink: tickerBtnLink, buttonVisible: tickerBtnVisible,
+        scrollDirection: tickerDir, scrollSpeed: tickerSpeed,
+        bgColor: tickerBg, bgGradient: tickerGrad,
+        customTexts: tickerTexts, onlineDisplay: tickerOnline, textEffect: tickerEffect,
       },
     })
   } catch (error) {

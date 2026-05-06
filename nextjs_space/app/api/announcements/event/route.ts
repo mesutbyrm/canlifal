@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,18 +32,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    // Load event templates from platform settings
-    const templatesSetting = await prisma.platformSettings.findUnique({
-      where: { key: 'event_announcement_templates' }
-    })
+    // Load event templates from platform settings (cached)
+    const templatesRaw = await getCachedPlatformSetting('event_announcement_templates', '')
 
-    if (!templatesSetting) {
+    if (!templatesRaw) {
       return NextResponse.json({ ok: true, announced: false, reason: 'no_templates' })
     }
 
     let templates: Record<string, any>
     try {
-      templates = JSON.parse(templatesSetting.value)
+      templates = JSON.parse(templatesRaw)
     } catch {
       return NextResponse.json({ ok: true, announced: false, reason: 'invalid_templates' })
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,13 +130,11 @@ export async function POST(request: NextRequest) {
     // Check category settings (approved, section visibility, maxPasses)
     let maxPasses = 1
     if (userCategory) {
-      const categorySettings = await prisma.platformSettings.findUnique({
-        where: { key: 'announcement_category_sections' }
-      })
+      const categorySettingsRaw = await getCachedPlatformSetting('announcement_category_sections', '')
       
-      if (categorySettings) {
+      if (categorySettingsRaw) {
         try {
-          const settings = JSON.parse(categorySettings.value)
+          const settings = JSON.parse(categorySettingsRaw)
           const categoryConfig = settings[userCategory]
           
           if (categoryConfig) {

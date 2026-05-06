@@ -702,6 +702,7 @@ export async function POST(request: Request) {
         update: { value: String(numVal) },
         create: { key, value: String(numVal), description: descMap[key] || key },
       })
+      invalidateCachePrefix('platform:')
 
       // Sync commission rate to all tellers when platform commission changes
       if (key === 'commission_rate') {
@@ -747,6 +748,7 @@ export async function POST(request: Request) {
         })
       }
 
+      invalidateCachePrefix('platform:')
       return NextResponse.json({ success: true, newTotal: newVal })
     }
 
@@ -812,6 +814,7 @@ export async function POST(request: Request) {
         },
         create: { key: 'manual_profit_adjustment', value: String(newAdjVal), description: adjNote },
       })
+      invalidateCachePrefix('platform:')
     }
 
     return NextResponse.json({ success: true, user })

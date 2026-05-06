@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { invalidateCachePrefix } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -136,6 +137,7 @@ export async function PATCH(req: NextRequest) {
         create: { key, value: strVal, description: `Homepage setting: ${key}` },
       })
     }
+    invalidateCachePrefix('platform:')
 
     return NextResponse.json({ success: true })
   } catch (error) {
