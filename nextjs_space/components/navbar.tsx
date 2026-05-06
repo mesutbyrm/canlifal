@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
-import NavSearch from '@/components/nav-search'
+import dynamic from 'next/dynamic'
 import { 
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
@@ -16,12 +16,14 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import CfcCoin from './cfc-coin'
-import NotificationBell from './notification-bell'
-import IncomingCallModal from './incoming-call-modal'
 import FramedAvatar from './framed-avatar'
 import MembershipBadge from './membership-badge'
-import TellerIncomingRequest from './teller-incoming-request'
 import UserLevelBadge from './user-level-badge'
+
+const NavSearch = dynamic(() => import('@/components/nav-search'), { ssr: false })
+const NotificationBell = dynamic(() => import('./notification-bell'), { ssr: false })
+const IncomingCallModal = dynamic(() => import('./incoming-call-modal'), { ssr: false })
+const TellerIncomingRequest = dynamic(() => import('./teller-incoming-request'), { ssr: false })
 // ThemeToggle removed - color mode is now controlled from admin panel
 
 export default function Navbar() {

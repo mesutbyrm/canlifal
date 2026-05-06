@@ -1,15 +1,18 @@
+import dynamic from 'next/dynamic'
 import Navbar from '@/components/navbar'
 import MobileFooter from '@/components/mobile-footer'
 import StarBackground from '@/components/star-background'
-import CoBroadcastInviteModal from '@/components/co-broadcast-invite-modal'
-import PresenceTracker from '@/components/presence-tracker'
-import OnboardingTour from '@/components/onboarding-tour'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import LoginAnnouncementBanner from '@/components/login-announcement-banner'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
-import DeviceGuard from '@/components/device-guard'
-import OneSignalInitializer from '@/components/onesignal-initializer'
-import DailyLoginReward from '@/components/daily-login-reward'
+
+// Non-critical components loaded dynamically (not visible on initial render)
+const CoBroadcastInviteModal = dynamic(() => import('@/components/co-broadcast-invite-modal'), { ssr: false })
+const PresenceTracker = dynamic(() => import('@/components/presence-tracker'), { ssr: false })
+const OnboardingTour = dynamic(() => import('@/components/onboarding-tour'), { ssr: false })
+const DeviceGuard = dynamic(() => import('@/components/device-guard'), { ssr: false })
+const OneSignalInitializer = dynamic(() => import('@/components/onesignal-initializer'), { ssr: false })
+const DailyLoginReward = dynamic(() => import('@/components/daily-login-reward'), { ssr: false })
 
 export default function LangLayout({
   children,

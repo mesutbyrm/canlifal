@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
-import GiftNotificationBanner from '@/components/gift-notification-banner'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -57,13 +57,17 @@ import {
   Palette
 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import PKBattleOverlay from '@/components/pk-battle-overlay'
-import HostControlPanel from '@/components/host-control-panel'
 import type { GuestInfo } from '@/components/host-control-panel'
-import StreamVideoGrid from '@/components/stream-video-grid'
 import type { GridParticipant } from '@/components/stream-video-grid'
-import StreamProfilePopup from '@/components/stream-profile-popup'
-import StreamJoinToast, { useJoinToasts } from '@/components/stream-join-toast'
+import { useJoinToasts } from '@/components/stream-join-toast'
+
+// Dynamic imports for heavy components (loaded on demand)
+const GiftNotificationBanner = dynamic(() => import('@/components/gift-notification-banner'), { ssr: false })
+const PKBattleOverlay = dynamic(() => import('@/components/pk-battle-overlay'), { ssr: false })
+const HostControlPanel = dynamic(() => import('@/components/host-control-panel'), { ssr: false })
+const StreamVideoGrid = dynamic(() => import('@/components/stream-video-grid'), { ssr: false })
+const StreamProfilePopup = dynamic(() => import('@/components/stream-profile-popup'), { ssr: false })
+const StreamJoinToast = dynamic(() => import('@/components/stream-join-toast'), { ssr: false })
 
 interface Comment {
   id: string

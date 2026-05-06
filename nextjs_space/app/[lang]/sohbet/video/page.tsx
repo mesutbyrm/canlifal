@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, TouchEvent, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
-import GiftNotificationBanner from '@/components/gift-notification-banner'
-import CfcJetonInfoPopup from '@/components/cfc-jeton-info-popup'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -41,11 +40,16 @@ import {
   Swords,
   Grid
 } from 'lucide-react'
-import PKBattleOverlay from '@/components/pk-battle-overlay'
-import PKBattleView from '@/components/pk-battle-view'
-import StreamVideoGrid, { GridParticipant } from '@/components/stream-video-grid'
-import StreamProfilePopup from '@/components/stream-profile-popup'
-import StreamJoinToast, { useJoinToasts } from '@/components/stream-join-toast'
+import type { GridParticipant } from '@/components/stream-video-grid'
+import { useJoinToasts } from '@/components/stream-join-toast'
+
+const GiftNotificationBanner = dynamic(() => import('@/components/gift-notification-banner'), { ssr: false })
+const CfcJetonInfoPopup = dynamic(() => import('@/components/cfc-jeton-info-popup'), { ssr: false })
+const PKBattleOverlay = dynamic(() => import('@/components/pk-battle-overlay'), { ssr: false })
+const PKBattleView = dynamic(() => import('@/components/pk-battle-view'), { ssr: false })
+const StreamVideoGrid = dynamic(() => import('@/components/stream-video-grid'), { ssr: false })
+const StreamProfilePopup = dynamic(() => import('@/components/stream-profile-popup'), { ssr: false })
+const StreamJoinToast = dynamic(() => import('@/components/stream-join-toast'), { ssr: false })
 
 interface VideoStream {
   id: string
