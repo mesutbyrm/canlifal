@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { invalidateCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    invalidateCache('payments:packages')
     return NextResponse.json(newPackage, { status: 201 });
   } catch (error) {
     console.error('Create package error:', error);

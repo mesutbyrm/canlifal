@@ -275,11 +275,25 @@ function VideoStreamPageInner() {
     // Poll for co-broadcast invitations (for both guests and logged-in users)
     const inviteInterval = setInterval(checkCoBroadcastInvite, 10000)
     const streamInterval = setInterval(fetchStreams, 15000)
+
+    // Pause polling when tab is hidden to save resources
+    const handleVisibility = () => {
+      if (document.hidden) {
+        clearInterval(inviteInterval)
+        clearInterval(streamInterval)
+      } else {
+        // Resume on tab focus
+        checkCoBroadcastInvite()
+        fetchStreams()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
     
     return () => {
       isUnmountedRef.current = true
       clearInterval(inviteInterval)
       clearInterval(streamInterval)
+      document.removeEventListener('visibilitychange', handleVisibility)
       cleanup()
     }
   }, [session?.user])
@@ -344,6 +358,11 @@ function VideoStreamPageInner() {
 
   const cleanup = async () => {
     if (pollIntervalRef.current) {
+      // Clean up visibility handler
+      if ((pollIntervalRef as any)._visHandler) {
+        document.removeEventListener('visibilitychange', (pollIntervalRef as any)._visHandler)
+        ;(pollIntervalRef as any)._visHandler = null
+      }
       clearInterval(pollIntervalRef.current)
       pollIntervalRef.current = null
     }
@@ -414,8 +433,9 @@ function VideoStreamPageInner() {
       console.log('🎬 TRTC: Joined room as audience, userId:', userId)
 
       // Start polling for other data (gifts, comments, stats, etc.)
+      // Pause when tab is hidden to dramatically reduce server load
       const pollFn = () => {
-        if (!isUnmountedRef.current) {
+        if (!isUnmountedRef.current && !document.hidden) {
           fetchStreamStats(streamId)
           pollGifts(streamId)
           fetchViewers(streamId)
@@ -428,6 +448,16 @@ function VideoStreamPageInner() {
 
       pollFn()
       pollIntervalRef.current = setInterval(pollFn, 5000)
+
+      // Resume immediately when tab becomes visible
+      const handleStreamVisibility = () => {
+        if (!document.hidden && !isUnmountedRef.current) {
+          pollFn()
+        }
+      }
+      document.addEventListener('visibilitychange', handleStreamVisibility)
+      // Store ref for cleanup
+      ;(pollIntervalRef as any)._visHandler = handleStreamVisibility
 
     } catch (error) {
       console.error('Join stream error:', error)

@@ -12,7 +12,7 @@ const createPrismaClient = () => {
   
   // Remove any existing connection parameters and add our strict ones
   const cleanUrl = baseUrl.split('?')[0]
-  const pooledUrl = `${cleanUrl}?connection_limit=2&pool_timeout=5&connect_timeout=5&statement_timeout=5000`
+  const pooledUrl = `${cleanUrl}?connection_limit=5&pool_timeout=10&connect_timeout=5&statement_timeout=5000`
   
   return new PrismaClient({
     datasources: {

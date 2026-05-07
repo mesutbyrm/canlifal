@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { invalidateCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export async function PATCH(
       data: updateData
     });
 
+    invalidateCache('payments:packages')
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Update package error:', error);
@@ -56,6 +58,7 @@ export async function DELETE(
       where: { id: params.packageId }
     });
 
+    invalidateCache('payments:packages')
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete package error:', error);

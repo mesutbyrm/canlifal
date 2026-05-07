@@ -304,7 +304,7 @@ export default function BroadcastPage() {
     }, 1000)
     
     pollIntervalRef.current = setInterval(() => {
-      if (!isUnmountedRef.current) {
+      if (!isUnmountedRef.current && !document.hidden) {
         fetchStats()
         fetchComments()
         fetchGifts()
@@ -317,10 +317,22 @@ export default function BroadcastPage() {
       }
     }, 5000)
 
+    // Resume polling immediately when broadcaster tab becomes visible
+    const handleBroadcastVis = () => {
+      if (!document.hidden && !isUnmountedRef.current) {
+        fetchStats()
+        fetchComments()
+        fetchGifts()
+        fetchViewers()
+      }
+    }
+    document.addEventListener('visibilitychange', handleBroadcastVis)
+
     return () => {
       isUnmountedRef.current = true
       clearInterval(durationInterval)
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      document.removeEventListener('visibilitychange', handleBroadcastVis)
       cleanup()
     }
   }, [session])
@@ -385,7 +397,7 @@ export default function BroadcastPage() {
 
       // Start local video and audio
       if (localVideoRef.current) {
-        await startLocalVideo(trtc, localVideoRef.current, facingMode)
+        await startLocalVideo(trtc, localVideoRef.current, facingMode === 'user')
       }
       await startLocalAudio(trtc)
 
@@ -681,7 +693,7 @@ export default function BroadcastPage() {
       if (isVideoOn) {
         await stopLocalVideo(trtcRef.current)
       } else if (localVideoRef.current) {
-        await startLocalVideo(trtcRef.current, localVideoRef.current, facingMode)
+        await startLocalVideo(trtcRef.current, localVideoRef.current, facingMode === 'user')
       }
       setIsVideoOn(!isVideoOn)
     }
@@ -708,7 +720,7 @@ export default function BroadcastPage() {
     setFacingMode(newFacing)
     try {
       if (trtcRef.current) {
-        await updateLocalVideo(trtcRef.current, { facingMode: newFacing })
+        await updateLocalVideo(trtcRef.current, { useFrontCamera: newFacing === 'user' })
       }
     } catch (e) {
       console.error('Switch camera error:', e)

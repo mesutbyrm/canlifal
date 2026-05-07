@@ -9,7 +9,8 @@ import type { TRTC } from '@/lib/trtc-client'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
-import YouTubeMusicModal from '@/components/youtube-music-modal'
+import dynamic from 'next/dynamic'
+const YouTubeMusicModal = dynamic(() => import('@/components/youtube-music-modal'), { ssr: false })
 
 interface Message {
   id: string

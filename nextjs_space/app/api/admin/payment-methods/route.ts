@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { invalidateCache } from '@/lib/cache'
 
 export async function GET() {
   try {
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    invalidateCache('payments:methods')
     return NextResponse.json(method)
   } catch (error) {
     console.error('Error saving payment method:', error)
