@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Generate TRTC UserSig on the server side.
  * SDKSecretKey never leaves the server.
+ * 
+ * Allows both authenticated users and guest viewers.
+ * Guest viewers use a temporary viewer_xxx userId.
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { userId, roomId } = await request.json()
 
     if (!userId || !roomId) {
