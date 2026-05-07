@@ -44,6 +44,7 @@ const PKBattleView = dynamic(() => import('@/components/pk-battle-view'), { ssr:
 const StreamVideoGrid = dynamic(() => import('@/components/stream-video-grid'), { ssr: false })
 const StreamProfilePopup = dynamic(() => import('@/components/stream-profile-popup'), { ssr: false })
 const StreamJoinToast = dynamic(() => import('@/components/stream-join-toast'), { ssr: false })
+const GiftAnimationOverlay = dynamic(() => import('@/components/gift-animation-overlay'), { ssr: false })
 
 interface VideoStream {
   id: string
@@ -154,6 +155,7 @@ function VideoStreamPageInner() {
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
   const [flyingCoins, setFlyingCoins] = useState<FlyingCoin[]>([])
   const [showCoffeeAnim, setShowCoffeeAnim] = useState(false)
+  const giftAnimTriggerRef = useRef<((gift: any) => void) | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [coBroadcastInvite, setCoBroadcastInvite] = useState<CoBroadcastInvite | null>(null)
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false)
@@ -928,64 +930,25 @@ function VideoStreamPageInner() {
     }
   }
 
-  // Hediye animasyonu tetikleyici
+  // Hediye animasyonu tetikleyici - yeni overlay sistemi
   const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number }, senderName: string, senderImage?: string | null) => {
-    const anim = gift.animation || ''
+    const anim = gift.animation || 'sparkle_burst'
     
-    if (anim === 'coffee_pour') {
-      // Kahve animasyonu
-      setShowCoffeeAnim(true)
-      setTimeout(() => setShowCoffeeAnim(false), 5000)
-    } else if (anim.startsWith('coin_spread') || anim === 'coin_single') {
-      // Para animasyonu
-      const coinCount = anim === 'coin_single' ? 1 : anim === 'coin_spread_5' ? 5 : 10
-      const newCoins: FlyingCoin[] = Array.from({ length: coinCount }, (_, i) => ({
-        id: Date.now() + i,
-        x: 30 + Math.random() * 40,
-        y: 20 + Math.random() * 30,
-        delay: i * 0.12,
-        rotation: Math.random() * 360,
-      }))
-      setFlyingCoins(newCoins)
-      setTimeout(() => setFlyingCoins([]), 3500)
-    } else if (anim === 'heart_rain') {
-      // Kalp yağmuru - flying hearts
-      const heartCount = 8
-      const newCoins: FlyingCoin[] = Array.from({ length: heartCount }, (_, i) => ({
-        id: Date.now() + i,
-        x: 10 + Math.random() * 80,
-        y: 10 + Math.random() * 40,
-        delay: i * 0.15,
-        rotation: Math.random() * 60 - 30,
-      }))
-      setFlyingCoins(newCoins)
-      setTimeout(() => setFlyingCoins([]), 4000)
-    } else if (anim === 'star_burst') {
-      // Yıldız patlaması
-      const starCount = 12
-      const newCoins: FlyingCoin[] = Array.from({ length: starCount }, (_, i) => ({
-        id: Date.now() + i,
-        x: 20 + Math.random() * 60,
-        y: 15 + Math.random() * 40,
-        delay: i * 0.08,
-        rotation: Math.random() * 360,
-      }))
-      setFlyingCoins(newCoins)
-      setTimeout(() => setFlyingCoins([]), 3500)
-    } else if (anim === 'sparkle_burst') {
-      // Genel parlama efekti - for rose, crown, diamond, crystal
-      const sparkleCount = 6
-      const newCoins: FlyingCoin[] = Array.from({ length: sparkleCount }, (_, i) => ({
-        id: Date.now() + i,
-        x: 25 + Math.random() * 50,
-        y: 20 + Math.random() * 30,
-        delay: i * 0.1,
-        rotation: Math.random() * 360,
-      }))
-      setFlyingCoins(newCoins)
-      setTimeout(() => setFlyingCoins([]), 3500)
+    // Trigger new gift animation overlay
+    if (giftAnimTriggerRef.current) {
+      giftAnimTriggerRef.current({
+        id: Date.now().toString(),
+        senderName,
+        senderImage,
+        giftIcon: gift.icon,
+        giftName: gift.name,
+        giftPrice: gift.price || 0,
+        animation: anim,
+        quantity: 1,
+      })
     }
     
+    // Keep legacy center gift for backward compat (old gift notifications from polling)
     setCenterGift({
       id: Date.now().toString(),
       senderName,
@@ -1402,119 +1365,8 @@ function VideoStreamPageInner() {
             </div>
           )}
 
-          {/* Center Gift Animation */}
-          <AnimatePresence>
-            {centerGift && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
-              >
-                <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="text-center">
-                  {/* Gift icon - image or emoji */}
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], rotate: [0, 5, -5, 0] }}
-                    transition={{ repeat: 3, duration: 0.4 }}
-                    className="mb-4 drop-shadow-2xl flex justify-center"
-                  >
-                    {centerGift.icon.startsWith('/') ? (
-                      <Image src={centerGift.icon} alt={centerGift.giftName} width={120} height={120} className="w-28 h-28 object-contain drop-shadow-[0_0_20px_rgba(139,0,0,0.6)]" />
-                    ) : (
-                      <span className="text-8xl">{centerGift.icon}</span>
-                    )}
-                  </motion.div>
-                  <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-purple-900/90 to-pink-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-pink-500/30">
-                    {centerGift.senderImage ? (
-                      <Image src={centerGift.senderImage} alt="" width={44} height={44} className="w-11 h-11 rounded-full object-cover border-2 border-pink-400" />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-pink-400">
-                        <span className="text-white font-bold text-lg">{centerGift.senderName?.[0] || '?'}</span>
-                      </div>
-                    )}
-                    <div className="text-left">
-                      <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                      <p className="text-pink-300 text-sm">{centerGift.giftName} gönderdi ✨</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Flying Coins Animation */}
-          <AnimatePresence>
-            {flyingCoins.map(coin => (
-              <motion.div
-                key={coin.id}
-                initial={{ opacity: 0, y: '110%', x: `${coin.x}%`, scale: 0.3, rotate: 0 }}
-                animate={{ 
-                  opacity: [0, 1, 1, 0.8, 0],
-                  y: [`110%`, `${coin.y}%`, `${coin.y - 15}%`, `${coin.y + 5}%`],
-                  x: [`${coin.x}%`, `${coin.x + (Math.random() - 0.5) * 30}%`],
-                  scale: [0.3, 1.1, 0.9, 0.7],
-                  rotate: [0, coin.rotation, coin.rotation + 180, coin.rotation + 360],
-                }}
-                exit={{ opacity: 0, scale: 0 }}
-                transition={{ duration: 2.5, delay: coin.delay, ease: 'easeOut' }}
-                className="absolute z-40 pointer-events-none"
-                style={{ left: 0, top: 0 }}
-              >
-                <div className="relative">
-                  <Image src="/gifts/cfc-coin.webp" alt="CFC" width={60} height={60} className="w-14 h-14 object-contain drop-shadow-[0_0_12px_rgba(139,0,0,0.8)]" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[8px] font-black text-yellow-300 drop-shadow-md" style={{ textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>CFC</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {/* Coffee Pour Animation */}
-          <AnimatePresence>
-            {showCoffeeAnim && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center"
-              >
-                <div className="relative">
-                  {/* Cezve pouring */}
-                  <motion.div
-                    initial={{ rotate: 0, y: -80 }}
-                    animate={{ rotate: [0, -25, -25, 0], y: [-80, -40, -40, -80] }}
-                    transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
-                  >
-                    <Image src="/gifts/kahve.webp" alt="Kahve" width={180} height={180} className="w-44 h-44 object-contain drop-shadow-[0_0_30px_rgba(139,69,19,0.7)]" />
-                  </motion.div>
-                  {/* Steam particles */}
-                  {[...Array(8)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 0, x: 0, scale: 0.5 }}
-                      animate={{ 
-                        opacity: [0, 0.7, 0.4, 0], 
-                        y: [-20, -60 - i * 15], 
-                        x: [(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 60],
-                        scale: [0.5, 1.2, 0.8]
-                      }}
-                      transition={{ duration: 2.5, delay: 0.8 + i * 0.2, repeat: 1 }}
-                      className="absolute top-10 left-1/2 -translate-x-1/2 text-2xl"
-                    >
-                      ☕
-                    </motion.div>
-                  ))}
-                  {/* Glow effect */}
-                  <motion.div
-                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: 2 }}
-                    className="absolute inset-0 bg-gradient-radial from-amber-500/20 to-transparent rounded-full blur-xl"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* ── New Gift Animation Overlay ── */}
+          <GiftAnimationOverlay onTrigger={(handler) => { giftAnimTriggerRef.current = handler }} />
 
           {/* ============== NEW DESIGN: TOP SECTION ============== */}
           
@@ -1826,28 +1678,7 @@ function VideoStreamPageInner() {
             </motion.div>
           </div>
 
-          {/* Coffee gift - bottom right mini banner */}
-          <AnimatePresence>
-            {centerGift && centerGift.animation === 'coffee_pour' && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0, x: 50 }}
-                animate={{ scale: 1, opacity: 1, x: 0 }}
-                exit={{ scale: 0, opacity: 0, x: 50 }}
-                className="absolute bottom-24 right-4 z-35 pointer-events-none"
-              >
-                <div className="bg-gradient-to-br from-amber-900/90 to-orange-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-500/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-4xl">☕</span>
-                    <div>
-                      <div className="text-amber-300 text-sm font-bold">☕ KAHVE İKRAMI</div>
-                      <div className="text-white text-xs">{centerGift.senderName}</div>
-                      <div className="text-amber-400 text-[10px]">1000 Jeton 🔥</div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Coffee gift banner removed - now handled by GiftAnimationOverlay */}
 
           {/* PK Battle Score Overlay (only for non-PK-view modes, e.g. when grid is active during PK) */}
           {pkBattle && (pkBattle.status === 'active' || pkBattle.status === 'completed') && currentStream && hasActiveGuests && (
@@ -1915,46 +1746,100 @@ function VideoStreamPageInner() {
         </>
       )}
 
-      {/* Gifts Panel - Slides up from bottom */}
+      {/* Gifts Panel - Tencent Live Style */}
       <AnimatePresence>
         {showGifts && (
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/95 to-black/90 z-30 rounded-t-3xl">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-bold">{'Hediye Gönder'}</span>
-                  <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded-full">
-                    <Coins className="w-3 h-3 text-yellow-400" />
-                      <span className="text-yellow-400 text-xs font-semibold">{userJetons} Jeton</span>
-                  </div>
-                  <button onClick={() => setShowCfcPopup(true)} className="text-white/50 hover:text-white text-xs underline">?</button>
-                </div>
-                <button onClick={() => setShowGifts(false)}><X className="w-6 h-6 text-white" /></button>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="absolute bottom-0 inset-x-0 z-30 rounded-t-3xl overflow-hidden"
+          >
+            {/* Glass background */}
+            <div className="bg-gradient-to-t from-black/98 via-gray-900/95 to-gray-900/90 backdrop-blur-xl border-t border-white/10">
+              {/* Handle bar */}
+              <div className="flex justify-center pt-2 pb-1">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {giftTypes.map(gift => (
-                  <button key={gift.id} onClick={() => handleSendGift(gift)} disabled={sendingGift === gift.id || userJetons < gift.price}
-                    className={`flex flex-col items-center p-3 rounded-xl transition-all ${userJetons >= gift.price ? 'bg-white/10 hover:bg-white/20 hover:scale-105' : 'bg-white/5 opacity-50'} ${sendingGift === gift.id ? 'animate-pulse' : ''}`}>
-                    {gift.icon.startsWith('/') ? (
-                      <div className="relative w-12 h-12 mb-1">
-                        <Image src={gift.icon} alt={gift.name} width={48} height={48} className="w-12 h-12 object-contain" />
-                        {/* CFC label overlay for coin gifts */}
-                        {gift.animation?.startsWith('coin') && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-600 to-yellow-500 rounded-full px-1.5 py-0.5 border border-yellow-300/50">
-                            <span className="text-[8px] font-black text-white">{gift.price === 1 ? '1' : gift.price} CFC</span>
+              
+              <div className="px-4 pb-4">
+                {/* Header with balance */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-pink-400" />
+                    <span className="text-white font-bold text-base">Hediye Gönder</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-600/30 to-amber-600/30 border border-yellow-500/30 px-3 py-1.5 rounded-full">
+                      <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                      <span className="text-yellow-400 text-sm font-bold">{userJetons.toLocaleString()}</span>
+                      <button onClick={() => setShowCfcPopup(true)} className="text-yellow-300/60 hover:text-yellow-300 text-xs ml-0.5">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <button onClick={() => setShowGifts(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+                      <X className="w-4 h-4 text-white/70" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Gift grid - 4 columns with improved cards */}
+                <div className="grid grid-cols-4 gap-2.5 max-h-[260px] overflow-y-auto pb-1 scrollbar-hide">
+                  {giftTypes.map(gift => {
+                    const canAfford = userJetons >= gift.price
+                    const isSending = sendingGift === gift.id
+                    const isExpensive = gift.price >= 500
+                    const isMid = gift.price >= 100
+                    
+                    return (
+                      <motion.button
+                        key={gift.id}
+                        onClick={() => handleSendGift(gift)}
+                        disabled={isSending || !canAfford}
+                        whileTap={canAfford ? { scale: 0.9 } : undefined}
+                        className={`relative flex flex-col items-center p-2.5 rounded-2xl transition-all border ${
+                          isSending ? 'border-pink-500/50 bg-pink-500/20 animate-pulse' :
+                          !canAfford ? 'border-white/5 bg-white/3 opacity-40' :
+                          isExpensive ? 'border-pink-500/30 bg-gradient-to-b from-pink-500/15 to-purple-500/10 hover:from-pink-500/25 hover:to-purple-500/20 hover:border-pink-400/50' :
+                          isMid ? 'border-yellow-500/20 bg-gradient-to-b from-yellow-500/10 to-amber-500/5 hover:from-yellow-500/20 hover:to-amber-500/15 hover:border-yellow-400/40' :
+                          'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {/* Luxury badge */}
+                        {isExpensive && canAfford && (
+                          <div className="absolute -top-1 -right-1 z-10">
+                            <span className="text-[10px] bg-gradient-to-r from-pink-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full font-bold shadow-lg">
+                              💎
+                            </span>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <span className="text-3xl mb-1">{gift.icon}</span>
-                    )}
-                    <span className="text-white text-xs font-medium">{gift.name}</span>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Coins className="w-3 h-3 text-yellow-400" />
-                      <span className="text-yellow-400 text-xs font-bold">{gift.price}</span>
-                    </div>
-                  </button>
-                ))}
+                        
+                        {/* Gift icon */}
+                        {gift.icon.startsWith('/') ? (
+                          <div className="relative w-12 h-12 mb-1.5">
+                            <Image src={gift.icon} alt={gift.name} width={48} height={48} className="w-12 h-12 object-contain drop-shadow-md" />
+                          </div>
+                        ) : (
+                          <span className="text-3xl mb-1.5">{gift.icon}</span>
+                        )}
+                        
+                        {/* Name */}
+                        <span className="text-white text-[11px] font-medium leading-tight mb-1">{gift.name}</span>
+                        
+                        {/* Price */}
+                        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${
+                          isExpensive ? 'bg-pink-500/20' : isMid ? 'bg-yellow-500/15' : 'bg-white/8'
+                        }`}>
+                          <Coins className={`w-2.5 h-2.5 ${isExpensive ? 'text-pink-400' : 'text-yellow-400'}`} />
+                          <span className={`text-[10px] font-bold ${isExpensive ? 'text-pink-300' : 'text-yellow-400'}`}>
+                            {gift.price.toLocaleString()}
+                          </span>
+                        </div>
+                      </motion.button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </motion.div>

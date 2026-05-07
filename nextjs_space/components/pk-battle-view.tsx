@@ -3,13 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { Swords, Timer, Crown, X } from 'lucide-react'
-import {
-  fetchAgoraToken,
-  createAgoraClient,
-  type IAgoraRTCClient,
-  type IAgoraRTCRemoteUser,
-} from '@/lib/agora-client'
+import { Swords, Timer, Crown, Flame, Trophy, Zap } from 'lucide-react'
 
 interface PKUser {
   id: string
@@ -37,7 +31,6 @@ export interface PKBattleData {
 interface PKBattleViewProps {
   battle: PKBattleData
   currentStreamId: string
-  /** Called with the div element for the current stream's video */
   onMyVideoRef: (el: HTMLDivElement | null) => void
 }
 
@@ -48,13 +41,12 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
   const [prevScore2, setPrevScore2] = useState(battle.score2)
   const [flashSide, setFlashSide] = useState<'left' | 'right' | null>(null)
   const [opponentConnected, setOpponentConnected] = useState(false)
+  const [scorePopup, setScorePopup] = useState<{ side: 'left' | 'right'; amount: number } | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const opponentClientRef = useRef<IAgoraRTCClient | null>(null)
+  const opponentTrtcRef = useRef<any>(null)
   const opponentVideoRef = useRef<HTMLDivElement>(null)
   const mountedRef = useRef(true)
-  const myVideoCallbackRef = useRef<((el: HTMLDivElement | null) => void) | null>(null)
 
-  // Determine sides
   const isStream1 = currentStreamId === battle.stream1Id
   const myUser = isStream1 ? battle.user1 : battle.user2
   const opponentUser = isStream1 ? battle.user2 : battle.user1
@@ -75,55 +67,66 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [battle.startedAt, battle.duration, battle.status])
 
-  // Flash animation on score change
+  // Score change flash + popup
   useEffect(() => {
-    if (battle.score1 > prevScore1) {
-      setFlashSide(isStream1 ? 'left' : 'right')
-      setTimeout(() => setFlashSide(null), 600)
+    const s1diff = battle.score1 - prevScore1
+    const s2diff = battle.score2 - prevScore2
+    
+    if (s1diff > 0) {
+      const side = isStream1 ? 'left' : 'right'
+      setFlashSide(side)
+      setScorePopup({ side, amount: s1diff })
+      setTimeout(() => { setFlashSide(null); setScorePopup(null) }, 1200)
     }
-    if (battle.score2 > prevScore2) {
-      setFlashSide(isStream1 ? 'right' : 'left')
-      setTimeout(() => setFlashSide(null), 600)
+    if (s2diff > 0) {
+      const side = isStream1 ? 'right' : 'left'
+      setFlashSide(side)
+      setScorePopup({ side, amount: s2diff })
+      setTimeout(() => { setFlashSide(null); setScorePopup(null) }, 1200)
     }
     setPrevScore1(battle.score1)
     setPrevScore2(battle.score2)
   }, [battle.score1, battle.score2, prevScore1, prevScore2, isStream1])
 
-  // Show result on completion
+  // Show result
   useEffect(() => {
     if (battle.status === 'completed') setShowResult(true)
   }, [battle.status])
 
-  // Join the opponent's Agora channel
+  // Join opponent stream via TRTC
   useEffect(() => {
     if (!opponentStreamId || battle.status === 'completed') return
     mountedRef.current = true
-    let client: IAgoraRTCClient | null = null
+    let trtcInstance: any = null
 
     const joinOpponent = async () => {
       try {
-        client = await createAgoraClient('audience')
-        opponentClientRef.current = client
+        const { createTRTCInstance, fetchTRTCCredentials, enterRoom, startRemoteVideo, getTRTCEvent } = await import('@/lib/trtc-client')
+        const TRTCModule = (await import('trtc-sdk-v5')).default
+        
+        trtcInstance = await createTRTCInstance()
+        opponentTrtcRef.current = trtcInstance
 
-        client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-          await client!.subscribe(user, mediaType)
-          if (mediaType === 'video' && opponentVideoRef.current) {
-            user.videoTrack?.play(opponentVideoRef.current)
+        const EVENT = await getTRTCEvent()
+
+        trtcInstance.on(EVENT.REMOTE_VIDEO_AVAILABLE, async ({ userId }: { userId: string }) => {
+          if (opponentVideoRef.current && mountedRef.current) {
+            await startRemoteVideo(trtcInstance, userId, opponentVideoRef.current)
             if (mountedRef.current) setOpponentConnected(true)
           }
-          if (mediaType === 'audio') {
-            user.audioTrack?.play()
-          }
         })
 
-        client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-          if (mediaType === 'video') user.videoTrack?.stop()
+        trtcInstance.on(EVENT.REMOTE_AUDIO_AVAILABLE, async ({ userId }: { userId: string }) => {
+          try {
+            await trtcInstance.startRemoteAudio({ userId })
+          } catch {}
         })
 
-        const channelName = `stream_${opponentStreamId}`
-        const { token, uid, appId } = await fetchAgoraToken(channelName, 'audience')
-        await client.join(appId, channelName, token, uid)
-        console.log('🎮 PK: Joined opponent channel:', channelName)
+        const roomId = `stream_${opponentStreamId}`
+        const viewerId = `pk_viewer_${Date.now()}`
+        const credentials = await fetchTRTCCredentials(viewerId, roomId)
+        await enterRoom(trtcInstance, credentials, roomId, 'audience', 'live')
+        console.log('🎮 PK: Joined opponent TRTC channel:', roomId)
       } catch (err) {
         console.error('PK: Failed to join opponent:', err)
       }
@@ -133,9 +136,11 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
 
     return () => {
       mountedRef.current = false
-      if (client) {
-        client.leave().catch(() => {})
-        opponentClientRef.current = null
+      if (trtcInstance) {
+        import('@/lib/trtc-client').then(({ exitRoom }) => {
+          exitRoom(trtcInstance).catch(() => {})
+        })
+        opponentTrtcRef.current = null
       }
     }
   }, [opponentStreamId, battle.status])
@@ -151,6 +156,7 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
   }
 
   const isUrgent = timeLeft <= 30 && timeLeft > 0
+  const isCritical = timeLeft <= 10 && timeLeft > 0
 
   const winner = battle.winnerId === battle.user1Id
     ? (isStream1 ? 'left' : 'right')
@@ -158,211 +164,341 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
       ? (isStream1 ? 'right' : 'left')
       : null
 
-  // WIN multiplier
-  const winMultiplier = (() => {
-    if (totalScore === 0) return null
-    const ratio = Math.max(myScore, opponentScore) / Math.max(1, Math.min(myScore, opponentScore))
-    return Math.min(Math.floor(ratio), 99)
-  })()
-
-  // Ref callback for my video container
   const myVideoRefCallback = useCallback((el: HTMLDivElement | null) => {
     onMyVideoRef(el)
   }, [onMyVideoRef])
 
   return (
     <div className="absolute inset-0 flex flex-col bg-black z-[2]">
-      {/* ===== PK SCORE BAR at top ===== */}
-      <div className="relative flex-shrink-0">
-        {/* Colored progress bar */}
-        <div className="flex h-1.5">
-          <motion.div
-            className="bg-gradient-to-r from-cyan-500 to-cyan-400"
-            animate={{ width: `${myPercent}%` }}
-            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-          />
-          <motion.div
-            className="bg-gradient-to-r from-pink-400 to-pink-500"
-            animate={{ width: `${opponentPercent}%` }}
-            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-          />
+      {/* ═════ PK SCORE BAR - Enhanced ═════ */}
+      <div className="relative flex-shrink-0 bg-black">
+        {/* User info row */}
+        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+          {/* My side */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-cyan-400 shrink-0">
+              {myUser?.image ? (
+                <Image src={myUser.image} alt="" width={28} height={28} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-cyan-600 flex items-center justify-center text-white text-[10px] font-bold">
+                  {(myUser?.name || '?')[0]}
+                </div>
+              )}
+            </div>
+            <span className="text-white/80 text-xs font-medium truncate max-w-[60px]">{myUser?.name || '...'}</span>
+          </div>
+
+          {/* VS / Timer center */}
+          <div className="flex flex-col items-center">
+            <motion.div
+              animate={battle.status === 'active' ? { scale: [1, 1.15, 1] } : {}}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="flex items-center gap-1"
+            >
+              <Swords className="w-4 h-4 text-red-500" />
+              <span className="text-red-400 text-xs font-black">PK</span>
+            </motion.div>
+            {battle.status === 'active' && (
+              <motion.div
+                animate={isCritical ? { scale: [1, 1.2, 1], color: ['#ef4444', '#ffffff', '#ef4444'] } : isUrgent ? { scale: [1, 1.08, 1] } : {}}
+                transition={{ repeat: Infinity, duration: isCritical ? 0.4 : 0.8 }}
+                className={`flex items-center gap-0.5 text-[11px] font-bold mt-0.5 px-2 py-0.5 rounded-full ${
+                  isCritical ? 'bg-red-600/80 text-white' :
+                  isUrgent ? 'bg-red-600/40 text-red-300' :
+                  'bg-white/10 text-white/70'
+                }`}
+              >
+                <Timer className="w-3 h-3" />
+                {formatTime(timeLeft)}
+              </motion.div>
+            )}
+          </div>
+
+          {/* Opponent side */}
+          <div className="flex items-center gap-2">
+            <span className="text-white/80 text-xs font-medium truncate max-w-[60px]">{opponentUser?.name || '...'}</span>
+            <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-pink-400 shrink-0">
+              {opponentUser?.image ? (
+                <Image src={opponentUser.image} alt="" width={28} height={28} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-pink-600 flex items-center justify-center text-white text-[10px] font-bold">
+                  {(opponentUser?.name || '?')[0]}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Score numbers + timer */}
-        <div className="flex items-center justify-between px-3 py-1 bg-black/80">
+        {/* Score numbers */}
+        <div className="flex items-center justify-between px-4 pb-1">
           <div className="flex items-center gap-1.5">
-            <span className={`text-lg font-black ${myScore >= opponentScore ? 'text-cyan-400' : 'text-cyan-400/50'}`}>
-              {myScore}
-            </span>
-            {myScore > opponentScore && winMultiplier && winMultiplier > 1 && (
-              <span className="text-[10px] font-bold text-yellow-400 bg-yellow-400/20 px-1 rounded">
-                WIN x{winMultiplier}
-              </span>
-            )}
-          </div>
-
-          {battle.status === 'active' && (
-            <motion.div
-              animate={isUrgent ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ repeat: Infinity, duration: 0.5 }}
-              className={`flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                isUrgent ? 'bg-red-600 text-white' : 'bg-white/10 text-white/80'
-              }`}
+            <motion.span
+              key={myScore}
+              initial={{ scale: 1.5, color: '#06b6d4' }}
+              animate={{ scale: 1, color: myScore >= opponentScore ? '#06b6d4' : '#06b6d488' }}
+              className="text-xl font-black"
             >
-              <span className="text-pink-400">💎</span>
-              {formatTime(timeLeft)}
-            </motion.div>
-          )}
-
-          <div className="flex items-center gap-1.5">
-            {opponentScore > myScore && winMultiplier && winMultiplier > 1 && (
-              <span className="text-[10px] font-bold text-yellow-400 bg-yellow-400/20 px-1 rounded">
-                WIN x{winMultiplier}
-              </span>
+              {myScore.toLocaleString()}
+            </motion.span>
+            {myScore > opponentScore && (
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="flex items-center gap-0.5 bg-cyan-500/20 rounded-full px-1.5 py-0.5"
+              >
+                <Flame className="w-3 h-3 text-cyan-400" />
+                <span className="text-[9px] font-bold text-cyan-400">LEAD</span>
+              </motion.div>
             )}
-            <span className={`text-lg font-black ${opponentScore >= myScore ? 'text-pink-400' : 'text-pink-400/50'}`}>
-              {opponentScore}
-            </span>
           </div>
+          <div className="flex items-center gap-1.5">
+            {opponentScore > myScore && (
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="flex items-center gap-0.5 bg-pink-500/20 rounded-full px-1.5 py-0.5"
+              >
+                <span className="text-[9px] font-bold text-pink-400">LEAD</span>
+                <Flame className="w-3 h-3 text-pink-400" />
+              </motion.div>
+            )}
+            <motion.span
+              key={opponentScore}
+              initial={{ scale: 1.5, color: '#ec4899' }}
+              animate={{ scale: 1, color: opponentScore >= myScore ? '#ec4899' : '#ec489988' }}
+              className="text-xl font-black"
+            >
+              {opponentScore.toLocaleString()}
+            </motion.span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex h-2 mx-2 mb-1 rounded-full overflow-hidden bg-gray-800/80">
+          <motion.div
+            className="bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-300 relative"
+            animate={{ width: `${myPercent}%` }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+          >
+            {myPercent > opponentPercent && (
+              <motion.div
+                className="absolute right-0 top-0 bottom-0 w-2 bg-white/50 blur-sm"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ repeat: Infinity, duration: 0.8 }}
+              />
+            )}
+          </motion.div>
+          <motion.div
+            className="bg-gradient-to-r from-pink-300 via-pink-400 to-pink-600 relative"
+            animate={{ width: `${opponentPercent}%` }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+          >
+            {opponentPercent > myPercent && (
+              <motion.div
+                className="absolute left-0 top-0 bottom-0 w-2 bg-white/50 blur-sm"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ repeat: Infinity, duration: 0.8 }}
+              />
+            )}
+          </motion.div>
         </div>
       </div>
 
-      {/* ===== SIDE BY SIDE VIDEOS ===== */}
+      {/* ═════ SPLIT SCREEN VIDEOS ═════ */}
       <div className="flex-1 flex relative min-h-0">
-        {/* Left - Current stream host */}
-        <div className={`flex-1 relative bg-gray-900 overflow-hidden border-r border-white/10 ${
-          flashSide === 'left' ? 'ring-2 ring-cyan-400 ring-inset' : ''
+        {/* Left - My stream */}
+        <div className={`flex-1 relative bg-gray-900 overflow-hidden border-r border-white/5 ${
+          flashSide === 'left' ? 'ring-2 ring-cyan-400/80 ring-inset' : ''
         }`}>
           <div
             ref={myVideoRefCallback}
             className="absolute inset-0 [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
           />
-
-          {/* Name badge */}
-          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5">
-            {myUser?.image && (
-              <div className="w-5 h-5 rounded-full overflow-hidden border border-cyan-400">
-                <Image src={myUser.image} alt="" width={20} height={20} className="w-full h-full object-cover" />
-              </div>
+          {/* Score popup */}
+          <AnimatePresence>
+            {scorePopup?.side === 'left' && (
+              <motion.div
+                initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                animate={{ opacity: [0, 1, 1, 0], y: -60, scale: [0.5, 1.3, 1] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute top-1/3 left-1/2 -translate-x-1/2 z-20 text-cyan-400 text-2xl font-black"
+              >
+                +{scorePopup.amount}
+              </motion.div>
             )}
-            <span className="text-white text-[10px] font-medium truncate max-w-[60px]">
-              {myUser?.name || '...'}
-            </span>
-          </div>
+          </AnimatePresence>
         </div>
+
+        {/* Center VS Badge */}
+        {battle.status === 'active' && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <motion.div
+              animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/50 border-2 border-white/20"
+            >
+              <Swords className="w-5 h-5 text-white" />
+            </motion.div>
+          </div>
+        )}
 
         {/* Right - Opponent stream */}
         <div className={`flex-1 relative bg-gray-900 overflow-hidden ${
-          flashSide === 'right' ? 'ring-2 ring-pink-400 ring-inset' : ''
+          flashSide === 'right' ? 'ring-2 ring-pink-400/80 ring-inset' : ''
         }`}>
           <div
             ref={opponentVideoRef}
             className="absolute inset-0 [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
           />
 
-          {/* Loading state */}
           {!opponentConnected && battle.status === 'active' && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
-              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-pink-500 mb-2">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-pink-500 mb-3">
                 {opponentUser?.image ? (
-                  <Image src={opponentUser.image} alt={opponentUser.name || ''} width={56} height={56} className="w-full h-full object-cover" />
+                  <Image src={opponentUser.image} alt={opponentUser.name || ''} width={64} height={64} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-pink-600 flex items-center justify-center text-white text-lg font-bold">
+                  <div className="w-full h-full bg-pink-600 flex items-center justify-center text-white text-xl font-bold">
                     {(opponentUser?.name || '?')[0]}
                   </div>
                 )}
               </div>
               <p className="text-white/60 text-xs">Bağlanıyor...</p>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                className="mt-2 w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full"
+              />
             </div>
           )}
 
-          {/* Name badge */}
-          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5">
-            <span className="text-white text-[10px] font-medium truncate max-w-[60px]">
-              {opponentUser?.name || '...'}
-            </span>
-            {opponentUser?.image && (
-              <div className="w-5 h-5 rounded-full overflow-hidden border border-pink-400">
-                <Image src={opponentUser.image} alt="" width={20} height={20} className="w-full h-full object-cover" />
-              </div>
+          {/* Score popup */}
+          <AnimatePresence>
+            {scorePopup?.side === 'right' && (
+              <motion.div
+                initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                animate={{ opacity: [0, 1, 1, 0], y: -60, scale: [0.5, 1.3, 1] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute top-1/3 left-1/2 -translate-x-1/2 z-20 text-pink-400 text-2xl font-black"
+              >
+                +{scorePopup.amount}
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
-
-        {/* Center VS badge */}
-        {battle.status === 'active' && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <motion.div
-              animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 3 }}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/40"
-            >
-              <Swords className="w-4 h-4 text-white" />
-            </motion.div>
-          </div>
-        )}
       </div>
 
-      {/* ===== PK RESULT OVERLAY ===== */}
+      {/* ═════ PK RESULT OVERLAY ═════ */}
       <AnimatePresence>
         {showResult && battle.status === 'completed' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md"
             onClick={() => setShowResult(false)}
           >
             <motion.div
-              initial={{ scale: 0.5, y: 30 }}
+              initial={{ scale: 0.3, y: 50 }}
               animate={{ scale: 1, y: 0 }}
-              className="text-center px-6"
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              className="text-center px-8"
               onClick={e => e.stopPropagation()}
             >
               {winner ? (
                 <>
-                  <motion.div
-                    animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="mb-4"
-                  >
-                    <Crown className="w-16 h-16 text-yellow-400 mx-auto" />
+                  {/* Crown with sparkle effects */}
+                  <motion.div className="relative mb-4">
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    >
+                      <Crown className="w-20 h-20 text-yellow-400 mx-auto drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]" />
+                    </motion.div>
+                    {/* Sparkle particles */}
+                    {[...Array(6)].map((_, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0], x: [0, (Math.random() - 0.5) * 100], y: [0, (Math.random() - 0.5) * 80] }}
+                        transition={{ repeat: Infinity, duration: 2, delay: i * 0.3 }}
+                        className="absolute top-1/2 left-1/2 text-xl"
+                      >
+                        ✨
+                      </motion.span>
+                    ))}
                   </motion.div>
-                  <h2 className="text-3xl font-black text-white mb-2">PK KAZANANI!</h2>
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <div className="relative w-16 h-16 rounded-full overflow-hidden border-4 border-yellow-500">
-                      {(winner === 'left' ? myUser : opponentUser)?.image ? (
-                        <Image src={(winner === 'left' ? myUser : opponentUser)!.image!} alt="Winner" fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-yellow-600 flex items-center justify-center text-white text-xl font-bold">
-                          {((winner === 'left' ? myUser : opponentUser)?.name || '?')[0]}
-                        </div>
-                      )}
+
+                  <motion.h2
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 mb-4"
+                  >
+                    PK KAZANANI!
+                  </motion.h2>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center justify-center gap-4 mb-4"
+                  >
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-yellow-500 shadow-[0_0_30px_rgba(250,204,21,0.4)]">
+                        {(winner === 'left' ? myUser : opponentUser)?.image ? (
+                          <Image src={(winner === 'left' ? myUser : opponentUser)!.image!} alt="Winner" fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-yellow-600 flex items-center justify-center text-white text-2xl font-bold">
+                            {((winner === 'left' ? myUser : opponentUser)?.name || '?')[0]}
+                          </div>
+                        )}
+                      </div>
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1 }}
+                        className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-1"
+                      >
+                        <Trophy className="w-4 h-4 text-white" />
+                      </motion.div>
                     </div>
                     <div>
-                      <p className="text-xl font-bold text-yellow-400">
+                      <p className="text-2xl font-bold text-yellow-400">
                         {(winner === 'left' ? myUser : opponentUser)?.name}
                       </p>
-                      <p className="text-lg text-white">
-                        {winner === 'left' ? myScore : opponentScore} puan
+                      <p className="text-xl text-white font-semibold">
+                        {(winner === 'left' ? myScore : opponentScore).toLocaleString()} puan
                       </p>
                     </div>
-                  </div>
-                  <div className="text-gray-400 text-sm">
-                    {myScore} - {opponentScore}
+                  </motion.div>
+
+                  <div className="flex items-center justify-center gap-3 text-gray-400 text-base">
+                    <span className="text-cyan-400 font-bold">{myScore.toLocaleString()}</span>
+                    <span className="text-white/30">vs</span>
+                    <span className="text-pink-400 font-bold">{opponentScore.toLocaleString()}</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <Swords className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h2 className="text-3xl font-black text-white mb-2">BERABERE!</h2>
-                  <p className="text-gray-400">{myScore} - {opponentScore}</p>
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                  >
+                    <Swords className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                  </motion.div>
+                  <h2 className="text-3xl font-black text-white mb-3">BERABERE!</h2>
+                  <div className="flex items-center justify-center gap-3 text-lg">
+                    <span className="text-cyan-400 font-bold">{myScore.toLocaleString()}</span>
+                    <span className="text-white/30">-</span>
+                    <span className="text-pink-400 font-bold">{opponentScore.toLocaleString()}</span>
+                  </div>
                 </>
               )}
 
               <button
                 onClick={() => setShowResult(false)}
-                className="mt-6 px-6 py-2 bg-white/10 rounded-full text-white text-sm hover:bg-white/20 transition"
+                className="mt-6 px-8 py-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white text-sm font-medium transition border border-white/10"
               >
                 Kapat
               </button>

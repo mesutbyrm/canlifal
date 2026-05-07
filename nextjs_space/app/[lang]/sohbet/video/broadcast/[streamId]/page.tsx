@@ -23,6 +23,8 @@ import {
   type TRTC,
 } from '@/lib/trtc-client'
 
+const GiftAnimationOverlay = dynamic(() => import('@/components/gift-animation-overlay'), { ssr: false })
+
 // Beauty presets (TRTC does not have built-in beauty; keep UI structure)
 interface BeautySettings {
   enabled: boolean
@@ -184,6 +186,7 @@ export default function BroadcastPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [connectedViewers, setConnectedViewers] = useState(0)
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
+  const giftAnimTriggerRef = useRef<((gift: { icon: string; name: string; senderName: string; senderImage?: string | null; price: number }) => void) | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [newComment, setNewComment] = useState('')
   const [showViewers, setShowViewers] = useState(false)
@@ -666,15 +669,16 @@ export default function BroadcastPage() {
           const newGift = gifts[0]
           lastGiftIdRef.current = newGift.id
           
-          setCenterGift({
-            id: newGift.id,
-            senderName: newGift.sender.name,
-            senderImage: newGift.sender.image,
-            icon: newGift.giftType.icon,
-            giftName: newGift.giftType.name
-          })
-          
-          setTimeout(() => setCenterGift(null), 3000)
+          // Trigger new spectacular gift animation overlay
+          if (giftAnimTriggerRef.current) {
+            giftAnimTriggerRef.current({
+              icon: newGift.giftType.icon,
+              name: newGift.giftType.name,
+              senderName: newGift.sender.name,
+              senderImage: newGift.sender.image,
+              price: newGift.giftType.price
+            })
+          }
           
           for (let i = 0; i < 5; i++) setTimeout(() => addFloatingHeart(), i * 100)
         }
@@ -1339,38 +1343,8 @@ export default function BroadcastPage() {
         </AnimatePresence>
       </div>
 
-      {/* Center Gift Animation */}
-      <AnimatePresence>
-        {centerGift && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
-          >
-            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="text-center">
-              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: 2, duration: 0.5 }} className="text-8xl mb-4 flex items-center justify-center">
-                {centerGift.icon?.startsWith('/') ? (
-                  <img src={centerGift.icon} alt={centerGift.giftName} className="w-24 h-24 object-contain drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]" />
-                ) : centerGift.icon}
-              </motion.div>
-              <div className="flex items-center justify-center gap-3 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full">
-                {centerGift.senderImage ? (
-                  <Image src={centerGift.senderImage} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-white font-bold">{centerGift.senderName[0]}</span>
-                  </div>
-                )}
-                <div className="text-left">
-                  <p className="text-white font-bold text-lg">{centerGift.senderName}</p>
-                  <p className="text-yellow-400 text-sm">{centerGift.giftName} {'gönderdi'}</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Spectacular Gift Animation Overlay */}
+      <GiftAnimationOverlay onTrigger={(fn: any) => { giftAnimTriggerRef.current = fn }} />
 
       {/* Top bar - Broadcaster Profile */}
       {!isCohost && (
