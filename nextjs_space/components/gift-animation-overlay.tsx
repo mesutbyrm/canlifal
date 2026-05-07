@@ -265,17 +265,17 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
                   </motion.div>
                 )}
 
-                {activeGift.giftIcon.startsWith('/') ? (
+                {(activeGift.giftIcon || '🎁').startsWith('/') ? (
                   <Image
                     src={activeGift.giftIcon}
-                    alt={activeGift.giftName}
+                    alt={activeGift.giftName || 'Hediye'}
                     width={isLuxuryGift ? 160 : 120}
                     height={isLuxuryGift ? 160 : 120}
                     className={`${isLuxuryGift ? 'w-40 h-40' : 'w-28 h-28'} object-contain relative z-10 drop-shadow-[0_0_30px_rgba(255,200,0,0.6)]`}
                   />
                 ) : (
                   <span className={`relative z-10 ${isLuxuryGift ? 'text-[120px]' : 'text-[80px]'}`}>
-                    {activeGift.giftIcon}
+                    {activeGift.giftIcon || '🎁'}
                   </span>
                 )}
               </motion.div>
@@ -334,10 +334,10 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
             className="absolute left-3 bottom-44 z-[47] pointer-events-none"
           >
             <div className="flex items-center gap-2 bg-black/70 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10">
-              {combo.giftIcon.startsWith('/') ? (
+              {(combo.giftIcon || '🎁').startsWith('/') ? (
                 <Image src={combo.giftIcon} alt="" width={32} height={32} className="w-8 h-8 object-contain" />
               ) : (
-                <span className="text-2xl">{combo.giftIcon}</span>
+                <span className="text-2xl">{combo.giftIcon || '🎁'}</span>
               )}
               <div>
                 <p className="text-white text-xs font-medium leading-tight">{combo.senderName}</p>
@@ -378,10 +378,10 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
               )}
               <span className="text-white text-xs font-medium">{activeGift.senderName}</span>
               <span className="text-white/60 text-xs">gönderdi</span>
-              {activeGift.giftIcon.startsWith('/') ? (
+              {(activeGift.giftIcon || '🎁').startsWith('/') ? (
                 <Image src={activeGift.giftIcon} alt="" width={24} height={24} className="w-6 h-6 object-contain" />
               ) : (
-                <span className="text-lg">{activeGift.giftIcon}</span>
+                <span className="text-lg">{activeGift.giftIcon || '🎁'}</span>
               )}
             </div>
           </motion.div>

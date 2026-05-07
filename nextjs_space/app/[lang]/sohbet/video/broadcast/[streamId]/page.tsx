@@ -186,7 +186,7 @@ export default function BroadcastPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [connectedViewers, setConnectedViewers] = useState(0)
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
-  const giftAnimTriggerRef = useRef<((gift: { icon: string; name: string; senderName: string; senderImage?: string | null; price: number }) => void) | null>(null)
+  const giftAnimTriggerRef = useRef<((gift: { id: string; senderName: string; senderImage?: string | null; giftIcon: string; giftName: string; giftPrice: number; animation: string; quantity?: number }) => void) | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [newComment, setNewComment] = useState('')
   const [showViewers, setShowViewers] = useState(false)
@@ -672,11 +672,14 @@ export default function BroadcastPage() {
           // Trigger new spectacular gift animation overlay
           if (giftAnimTriggerRef.current) {
             giftAnimTriggerRef.current({
-              icon: newGift.giftType.icon,
-              name: newGift.giftType.name,
+              id: newGift.id,
               senderName: newGift.sender.name,
               senderImage: newGift.sender.image,
-              price: newGift.giftType.price
+              giftIcon: newGift.giftType.icon,
+              giftName: newGift.giftType.name,
+              giftPrice: newGift.giftType.price,
+              animation: newGift.giftType.animation || 'sparkle_burst',
+              quantity: newGift.quantity || 1,
             })
           }
           
