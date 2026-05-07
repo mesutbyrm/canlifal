@@ -381,7 +381,7 @@ export default function BroadcastPage() {
       })
 
       trtc.on(TRTCModule.EVENT.CONNECTION_STATE_CHANGED, (event: any) => {
-        console.log('🔗 TRTC connection state:', event?.state, event?.prevState, event)
+        console.log('🔗 TRTC connection state:', JSON.stringify(event))
       })
 
       trtc.on(TRTCModule.EVENT.AUTOPLAY_FAILED, () => {
@@ -414,89 +414,75 @@ export default function BroadcastPage() {
       await enterRoom(trtc, credentials, roomId, 'host', 'live')
       console.log('🎬 TRTC: Entered room as host, userId:', userId, 'roomId:', roomId)
 
-      // Start local audio first (less likely to fail)
+      // ── Start local video FIRST (before audio) ──
+      // Wait for DOM element to be ready
+      const waitForVideoEl = async (): Promise<HTMLElement | null> => {
+        for (let i = 0; i < 30; i++) {
+          if (isUnmountedRef.current) return null
+          const el = document.getElementById('trtc-local-video') || localVideoRef.current
+          if (el) {
+            const rect = el.getBoundingClientRect()
+            if (rect.width > 0 && rect.height > 0) {
+              console.log('🎬 TRTC: Video container ready:', el.id || 'ref', rect.width, 'x', rect.height)
+              return el
+            }
+          }
+          await new Promise(r => setTimeout(r, 200))
+        }
+        return null
+      }
+
+      const videoContainer = await waitForVideoEl()
+      let videoStarted = false
+
+      if (videoContainer) {
+        // Strategy 1: Pass DOM element directly (most compatible with mobile browsers)
+        const videoAttempts = [
+          { label: '480p-element', config: { view: videoContainer, publish: true, option: { profile: '480p' } } },
+          { label: '360p-element', config: { view: videoContainer, publish: true, option: { profile: '360p' } } },
+          { label: 'default-element', config: { view: videoContainer, publish: true } },
+          // Strategy 2: Use string ID
+          { label: '480p-id', config: { view: 'trtc-local-video', publish: true, option: { profile: '480p' } } },
+          { label: 'default-id', config: { view: 'trtc-local-video', publish: true } },
+          // Strategy 3: No view (capture only, render separately)
+          { label: 'no-view', config: { publish: true } },
+        ]
+
+        for (const attempt of videoAttempts) {
+          if (videoStarted) break
+          try {
+            console.log('🎬 TRTC: Trying startLocalVideo:', attempt.label)
+            await trtc.startLocalVideo(attempt.config as any)
+            console.log('✅ TRTC: startLocalVideo SUCCESS:', attempt.label)
+            videoStarted = true
+          } catch (err: any) {
+            console.warn('⚠️ TRTC: startLocalVideo FAILED (' + attempt.label + '):', err?.code, err?.message || String(err))
+          }
+        }
+      } else {
+        console.error('🔴 TRTC: Video container never appeared in DOM')
+        // Try without view as last resort
+        try {
+          console.log('🎬 TRTC: Attempting startLocalVideo with no view (container missing)')
+          await trtc.startLocalVideo({ publish: true } as any)
+          videoStarted = true
+          console.log('✅ TRTC: startLocalVideo SUCCESS (no view)')
+        } catch (err: any) {
+          console.error('❌ TRTC: startLocalVideo failed even without view:', err?.code, err?.message || String(err))
+        }
+      }
+
+      // Start local audio
       try {
         await startLocalAudio(trtc)
         console.log('🎬 TRTC: Local audio started')
-      } catch (audioErr) {
-        console.error('🔴 TRTC: startLocalAudio failed:', audioErr)
+      } catch (audioErr: any) {
+        console.error('🔴 TRTC: startLocalAudio failed:', audioErr?.code, audioErr?.message || String(audioErr))
       }
 
-      // ── Start local video ──
-      // Use string element ID for reliability (TRTC docs recommend this)
-      const VIDEO_ELEMENT_ID = 'trtc-local-video'
-
-      const startVideoWithRetry = async (attempt = 0): Promise<boolean> => {
-        if (isUnmountedRef.current || !trtcRef.current) {
-          console.warn('🎬 TRTC: Aborted – unmounted or no trtc ref')
-          return false
-        }
-
-        // Check that the DOM element exists and has dimensions
-        const el = document.getElementById(VIDEO_ELEMENT_ID)
-        if (!el) {
-          console.warn('🎬 TRTC: #' + VIDEO_ELEMENT_ID + ' not in DOM, attempt', attempt)
-          if (attempt < 20) {
-            await new Promise(r => setTimeout(r, 300))
-            return startVideoWithRetry(attempt + 1)
-          }
-          console.error('🎬 TRTC: Video element never appeared in DOM')
-          return false
-        }
-
-        const rect = el.getBoundingClientRect()
-        console.log('🎬 TRTC: Video element rect:', rect.width, 'x', rect.height, 'visible:', rect.width > 0 && rect.height > 0)
-
-        // If element has zero dimensions, wait for layout
-        if (rect.width === 0 || rect.height === 0) {
-          if (attempt < 20) {
-            await new Promise(r => setTimeout(r, 300))
-            return startVideoWithRetry(attempt + 1)
-          }
-        }
-
-        // Try with explicit publish:true and simple profile
-        const profiles = ['720p', '480p', '360p'] as const
-        for (const profile of profiles) {
-          try {
-            console.log('🎬 TRTC: startLocalVideo profile:', profile)
-            await trtc.startLocalVideo({
-              view: VIDEO_ELEMENT_ID,
-              publish: true,
-              option: {
-                profile,
-                useFrontCamera: facingMode === 'user',
-              },
-            } as any)
-            console.log('✅ TRTC: Local video started + published, profile:', profile)
-            return true
-          } catch (err: any) {
-            console.warn('⚠️ TRTC: startLocalVideo failed (' + profile + '):', err?.message || err)
-          }
-        }
-
-        // Last resort: minimal call with no profile options
-        try {
-          console.log('🎬 TRTC: Trying startLocalVideo with minimal options')
-          await trtc.startLocalVideo({
-            view: VIDEO_ELEMENT_ID,
-            publish: true,
-          } as any)
-          console.log('✅ TRTC: Local video started with minimal options')
-          return true
-        } catch (finalErr: any) {
-          console.error('❌ TRTC: All startLocalVideo attempts failed:', finalErr?.message || finalErr)
-          return false
-        }
-      }
-
-      const videoStarted = await startVideoWithRetry()
-      if (!videoStarted) {
-        console.error('🔴 TRTC: Video could not be started. Audio-only broadcast.')
-      }
-      console.log('🎬 TRTC: Broadcast started, video:', videoStarted, ', userId:', userId)
-    } catch (error) {
-      console.error('TRTC broadcast error:', error)
+      console.log('🎬 TRTC: Broadcast started — video:', videoStarted, ', userId:', userId, ', roomId:', roomId)
+    } catch (error: any) {
+      console.error('TRTC broadcast error:', error?.code, error?.message || String(error))
       alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
       router.back()
     }

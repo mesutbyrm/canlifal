@@ -450,10 +450,15 @@ function VideoStreamPageInner() {
         // TRTC auto-plays remote audio in live mode
         // Track this user as present in the room
         remoteUsersRef.current.add(event.userId)
+        // Audio is available = broadcaster is connected, remove overlay
+        // even if video hasn't arrived yet
+        setConnectionStatus('connected')
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_ENTER, (event: { userId: string }) => {
         console.log('👤 TRTC: REMOTE_USER_ENTER', event.userId)
+        // Broadcaster entered the room - connection is established
+        setConnectionStatus('connected')
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
