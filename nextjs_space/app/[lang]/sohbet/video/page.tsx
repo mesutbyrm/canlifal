@@ -448,6 +448,12 @@ function VideoStreamPageInner() {
       trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, (event: { userId: string }) => {
         console.log('🔊 TRTC: REMOTE_AUDIO_AVAILABLE from', event.userId)
         // TRTC auto-plays remote audio in live mode
+        // Track this user as present in the room
+        remoteUsersRef.current.add(event.userId)
+      })
+
+      trtc.on(TRTCModule.EVENT.REMOTE_USER_ENTER, (event: { userId: string }) => {
+        console.log('👤 TRTC: REMOTE_USER_ENTER', event.userId)
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
@@ -466,6 +472,17 @@ function VideoStreamPageInner() {
       await trtcEnter(trtc, credentials, roomId, 'audience', 'live')
       
       console.log('🎬 TRTC: Joined room as audience, userId:', userId)
+
+      // Diagnostic: Check remote users after a delay 
+      // If video doesn't fire within 5s, log the state for debugging
+      setTimeout(() => {
+        if (isUnmountedRef.current || !trtcRef.current) return
+        const hasRemoteVideo = remoteUsersRef.current.size > 0
+        console.log('🔍 TRTC: Diagnostic after 5s - remote users:', Array.from(remoteUsersRef.current), 'has video container:', !!remoteVideoRef.current)
+        if (!hasRemoteVideo) {
+          console.warn('⚠️ TRTC: No REMOTE_VIDEO_AVAILABLE received after 5s. Broadcaster may not be publishing video.')
+        }
+      }, 5000)
 
       // Start polling for other data (gifts, comments, stats, etc.)
       // Pause when tab is hidden to dramatically reduce server load

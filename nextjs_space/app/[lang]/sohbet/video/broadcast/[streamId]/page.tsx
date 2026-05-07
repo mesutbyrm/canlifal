@@ -373,8 +373,10 @@ export default function BroadcastPage() {
       const trtc = await createTRTCInstance()
       trtcRef.current = trtc
 
+      const TRTCModule = (await import('trtc-sdk-v5')).default
+
       // Set up remote user event handlers (for co-broadcasters)
-      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
+      trtc.on(TRTCModule.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
         remoteUsersRef.current.add(event.userId)
         const container = guestVideoRefs.current.get(event.userId) || broadcasterVideoRef.current
         if (container) {
@@ -382,11 +384,11 @@ export default function BroadcastPage() {
         }
       })
 
-      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_AUDIO_AVAILABLE, () => {
+      trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, () => {
         setRemoteAudioEnabled(true)
       })
 
-      trtc.on((await import('trtc-sdk-v5')).default.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
+      trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
         remoteUsersRef.current.delete(event.userId)
       })
 
@@ -397,14 +399,63 @@ export default function BroadcastPage() {
 
       // Enter room as host/anchor in live mode
       await enterRoom(trtc, credentials, roomId, 'host', 'live')
+      console.log('🎬 TRTC: Entered room as host, userId:', userId)
 
-      // Start local video and audio
-      if (localVideoRef.current) {
-        await startLocalVideo(trtc, localVideoRef.current, facingMode === 'user')
-      }
+      // Start local audio first (less likely to fail)
       await startLocalAudio(trtc)
+      console.log('🎬 TRTC: Local audio started')
 
-      console.log('🎬 TRTC: Joined room as host, userId:', userId)
+      // Start local video with retry mechanism - wait for ref if needed
+      const startVideoWithRetry = async (attempt = 0): Promise<void> => {
+        if (isUnmountedRef.current || !trtcRef.current) return
+        
+        const videoEl = localVideoRef.current
+        if (!videoEl) {
+          console.warn('🎬 TRTC: localVideoRef not ready, attempt', attempt)
+          if (attempt < 15) {
+            await new Promise(r => setTimeout(r, 300))
+            return startVideoWithRetry(attempt + 1)
+          }
+          console.error('🎬 TRTC: localVideoRef never became ready')
+          return
+        }
+
+        // Try profiles in order of quality - fallback if device can't handle higher
+        const profiles = ['1080p', '720p', '480p'] as const
+        for (const profile of profiles) {
+          try {
+            console.log('🎬 TRTC: Starting local video with profile:', profile, 'element:', videoEl.tagName, videoEl.className?.slice(0, 50))
+            await trtc.startLocalVideo({
+              view: videoEl,
+              option: {
+                profile,
+                useFrontCamera: facingMode === 'user',
+              },
+            })
+            console.log('✅ TRTC: Local video started with profile:', profile)
+            return // Success
+          } catch (err) {
+            console.warn('⚠️ TRTC: startLocalVideo failed with profile', profile, ':', err)
+            if (profile === '480p') {
+              // Last resort: try without any profile
+              try {
+                console.log('🎬 TRTC: Trying startLocalVideo with no profile')
+                await trtc.startLocalVideo({
+                  view: videoEl,
+                })
+                console.log('✅ TRTC: Local video started with default profile')
+                return
+              } catch (finalErr) {
+                console.error('❌ TRTC: All video profiles failed:', finalErr)
+                throw finalErr
+              }
+            }
+          }
+        }
+      }
+
+      await startVideoWithRetry()
+      console.log('🎬 TRTC: Broadcast fully started, userId:', userId)
     } catch (error) {
       console.error('TRTC broadcast error:', error)
       alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
