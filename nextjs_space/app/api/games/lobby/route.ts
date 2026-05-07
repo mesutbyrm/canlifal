@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCached } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,90 +12,90 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url)
     const section = url.searchParams.get('section')
 
-    // ===== LOBBY STATS =====
+    // ===== LOBBY STATS (cached 10s - 14 DB queries) =====
     if (section === 'stats') {
-      // Use strict threshold: only rooms with activity in last 2 minutes
-      const activeThreshold = new Date(Date.now() - 2 * 60 * 1000)
-      // Player "online" threshold: polled in last 30 seconds
-      const onlineThreshold = new Date(Date.now() - 30 * 1000)
+      const stats = await getCached('games:lobby_stats', 10, async () => {
+        const activeThreshold = new Date(Date.now() - 2 * 60 * 1000)
+        const onlineThreshold = new Date(Date.now() - 30 * 1000)
 
-      const [activePvP, activeAI, waitingRooms, totalCompleted,
-             sosPvP, sosAI, sosWaiting, sosCompleted] = await Promise.all([
-        prisma.gameRoom.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: activeThreshold } } }),
-        prisma.gameRoom.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: activeThreshold } } }),
-        prisma.gameRoom.count({ where: { status: 'waiting', isAI: false } }),
-        prisma.gameRoom.count({ where: { status: 'completed' } }),
-        prisma.sosGame.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: activeThreshold } } }),
-        prisma.sosGame.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: activeThreshold } } }),
-        prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
-        prisma.sosGame.count({ where: { status: 'completed' } }),
-      ])
+        const [activePvP, activeAI, waitingRooms, totalCompleted,
+               sosPvP, sosAI, sosWaiting, sosCompleted] = await Promise.all([
+          prisma.gameRoom.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: activeThreshold } } }),
+          prisma.gameRoom.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: activeThreshold } } }),
+          prisma.gameRoom.count({ where: { status: 'waiting', isAI: false } }),
+          prisma.gameRoom.count({ where: { status: 'completed' } }),
+          prisma.sosGame.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: activeThreshold } } }),
+          prisma.sosGame.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: activeThreshold } } }),
+          prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
+          prisma.sosGame.count({ where: { status: 'completed' } }),
+        ])
 
-      // Count truly online players (polled recently)
-      const [grOnlineP1, grOnlineP2, sosOnlineP1, sosOnlineP2] = await Promise.all([
-        prisma.gameRoom.count({ where: { status: 'active', player1LastSeen: { gte: onlineThreshold } } }),
-        prisma.gameRoom.count({ where: { status: 'active', player2Id: { notIn: ['AI'] }, player2LastSeen: { gte: onlineThreshold } } }),
-        prisma.sosGame.count({ where: { status: 'active', player1LastSeen: { gte: onlineThreshold } } }),
-        prisma.sosGame.count({ where: { status: 'active', player2Id: { notIn: ['AI'] }, player2LastSeen: { gte: onlineThreshold } } }),
-      ])
-      const onlinePlaying = grOnlineP1 + grOnlineP2 + sosOnlineP1 + sosOnlineP2
+        const [grOnlineP1, grOnlineP2, sosOnlineP1, sosOnlineP2] = await Promise.all([
+          prisma.gameRoom.count({ where: { status: 'active', player1LastSeen: { gte: onlineThreshold } } }),
+          prisma.gameRoom.count({ where: { status: 'active', player2Id: { notIn: ['AI'] }, player2LastSeen: { gte: onlineThreshold } } }),
+          prisma.sosGame.count({ where: { status: 'active', player1LastSeen: { gte: onlineThreshold } } }),
+          prisma.sosGame.count({ where: { status: 'active', player2Id: { notIn: ['AI'] }, player2LastSeen: { gte: onlineThreshold } } }),
+        ])
+        const onlinePlaying = grOnlineP1 + grOnlineP2 + sosOnlineP1 + sosOnlineP2
 
-      const totalPvP = activePvP + sosPvP
-      const totalAI = activeAI + sosAI
-      const totalWaiting = waitingRooms + sosWaiting
-      const playingNow = (totalPvP * 2) + totalAI
-      const onlinePlayers = onlinePlaying + totalWaiting
+        const totalPvP = activePvP + sosPvP
+        const totalAI = activeAI + sosAI
+        const totalWaiting = waitingRooms + sosWaiting
+        const playingNow = (totalPvP * 2) + totalAI
+        const onlinePlayers = onlinePlaying + totalWaiting
 
-      // Count active viewers (joined recently — viewers are cleaned up on leave)
-      const viewerThreshold = new Date(Date.now() - 5 * 60 * 1000)
-      const [grViewers, sosViewers] = await Promise.all([
-        prisma.gameRoomViewer.count({ where: { joinedAt: { gte: viewerThreshold } } }),
-        prisma.sosGameViewer.count({ where: { joinedAt: { gte: viewerThreshold } } }),
-      ])
-      const totalViewers = grViewers + sosViewers
+        const viewerThreshold = new Date(Date.now() - 5 * 60 * 1000)
+        const [grViewers, sosViewers] = await Promise.all([
+          prisma.gameRoomViewer.count({ where: { joinedAt: { gte: viewerThreshold } } }),
+          prisma.sosGameViewer.count({ where: { joinedAt: { gte: viewerThreshold } } }),
+        ])
+        const totalViewers = grViewers + sosViewers
 
-      return NextResponse.json({
-        onlinePlayers,
-        playingNow,
-        watching: totalViewers,
-        openTables: totalPvP + totalAI + totalWaiting,
-        waitingTables: totalWaiting,
-        totalGamesPlayed: totalCompleted + sosCompleted,
+        return {
+          onlinePlayers,
+          playingNow,
+          watching: totalViewers,
+          openTables: totalPvP + totalAI + totalWaiting,
+          waitingTables: totalWaiting,
+          totalGamesPlayed: totalCompleted + sosCompleted,
+        }
       })
+      return NextResponse.json(stats)
     }
 
-    // ===== TOP GAMES (most played) =====
+    // ===== TOP GAMES (cached 15s - 80+ DB queries!) =====
     if (section === 'top_games') {
-      const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas', 'gomoku', 'amiral_batti', 'kelime_duellosu', 'quiz_1v1', 'kart_eslestirme_pvp']
-      const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
-      const staleThreshold = new Date(Date.now() - 2 * 60 * 1000)
-      
-      const stats = await Promise.all(
-        gameTypes.map(async (gt) => {
-          if (gt === 'sos') {
+      const data = await getCached('games:top_games', 15, async () => {
+        const gameTypes = ['xox', 'sos', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', 'okey', 'okey101', 'yuzbirokey', 'connect4', 'reversi', 'dama', 'mangala', 'tas_kagit_makas', 'gomoku', 'amiral_batti', 'kelime_duellosu', 'quiz_1v1', 'kart_eslestirme_pvp']
+        const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
+        const staleThreshold = new Date(Date.now() - 2 * 60 * 1000)
+        
+        const stats = await Promise.all(
+          gameTypes.map(async (gt) => {
+            if (gt === 'sos') {
+              const [pvp, ai, waiting, todayPlayed] = await Promise.all([
+                prisma.sosGame.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: staleThreshold } } }),
+                prisma.sosGame.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: staleThreshold } } }),
+                prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
+                prisma.sosGame.count({ where: { status: 'completed', updatedAt: { gte: todayStart } } }),
+              ])
+              const activePlayers = (pvp * 2) + ai
+              return { gameType: gt, activePlayers, activeTables: pvp + ai, waitingTables: waiting, todayPlayed }
+            }
             const [pvp, ai, waiting, todayPlayed] = await Promise.all([
-              prisma.sosGame.count({ where: { status: 'active', isAI: false, lastMoveAt: { gte: staleThreshold } } }),
-              prisma.sosGame.count({ where: { status: 'active', isAI: true, lastMoveAt: { gte: staleThreshold } } }),
-              prisma.sosGame.count({ where: { status: 'waiting', isAI: false } }),
-              prisma.sosGame.count({ where: { status: 'completed', updatedAt: { gte: todayStart } } }),
+              prisma.gameRoom.count({ where: { gameType: gt, status: 'active', isAI: false, lastMoveAt: { gte: staleThreshold } } }),
+              prisma.gameRoom.count({ where: { gameType: gt, status: 'active', isAI: true, lastMoveAt: { gte: staleThreshold } } }),
+              prisma.gameRoom.count({ where: { gameType: gt, status: 'waiting', isAI: false } }),
+              prisma.gameRoom.count({ where: { gameType: gt, status: 'completed', updatedAt: { gte: todayStart } } }),
             ])
             const activePlayers = (pvp * 2) + ai
             return { gameType: gt, activePlayers, activeTables: pvp + ai, waitingTables: waiting, todayPlayed }
-          }
-          const [pvp, ai, waiting, todayPlayed] = await Promise.all([
-            prisma.gameRoom.count({ where: { gameType: gt, status: 'active', isAI: false, lastMoveAt: { gte: staleThreshold } } }),
-            prisma.gameRoom.count({ where: { gameType: gt, status: 'active', isAI: true, lastMoveAt: { gte: staleThreshold } } }),
-            prisma.gameRoom.count({ where: { gameType: gt, status: 'waiting', isAI: false } }),
-            prisma.gameRoom.count({ where: { gameType: gt, status: 'completed', updatedAt: { gte: todayStart } } }),
-          ])
-          const activePlayers = (pvp * 2) + ai
-          return { gameType: gt, activePlayers, activeTables: pvp + ai, waitingTables: waiting, todayPlayed }
-        })
-      )
-
-      // Sort by activity
-      stats.sort((a, b) => (b.activePlayers + b.todayPlayed) - (a.activePlayers + a.todayPlayed))
-      return NextResponse.json(stats)
+          })
+        )
+        stats.sort((a, b) => (b.activePlayers + b.todayPlayed) - (a.activePlayers + a.todayPlayed))
+        return stats
+      })
+      return NextResponse.json(data)
     }
 
     // ===== LIVE TABLES =====

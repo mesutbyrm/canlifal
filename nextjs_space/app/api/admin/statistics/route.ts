@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCached } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
+    // Cache admin stats for 30 seconds - 32 DB queries saved per cache hit
+    const statsData = await getCached('admin:statistics', 30, async () => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -110,7 +113,7 @@ export async function GET() {
       fortunesByTypeFormatted[stat.fortuneType] = stat._count.fortuneType
     })
 
-    return NextResponse.json({
+    return {
       // Basic stats (original)
       totalUsers,
       totalFortunes,
@@ -178,7 +181,9 @@ export async function GET() {
         creditsInCirculation: totalCfcInCirculation._sum.credits || 0,
         creditsSpent: 0,
       },
-    })
+    }
+    }) // end getCached
+    return NextResponse.json(statsData)
   } catch (error) {
     console.error('Statistics error:', error)
     return NextResponse.json({ 

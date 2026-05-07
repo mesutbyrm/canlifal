@@ -191,7 +191,7 @@ function InGameChat({ roomId }: { roomId: string }) {
         }
       } catch {}
     }
-    poll(); const iv = setInterval(poll, 5000); return () => clearInterval(iv)
+    poll(); const iv = setInterval(() => { if (!document.hidden) poll() }, 5000); return () => clearInterval(iv)
   }, [roomId, open])
 
   useEffect(() => { if (open) { setUnread(0); setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) } }, [open, msgs.length])

@@ -606,7 +606,7 @@ function FindTableModal({
       if (!cancelled) setLoadingTables(false)
     }
     fetchFresh()
-    const iv = setInterval(fetchFresh, 8000)
+    const iv = setInterval(() => { if (!document.hidden) fetchFresh() }, 8000)
     return () => { cancelled = true; clearInterval(iv) }
   }, [isOpen])
 
@@ -1028,10 +1028,11 @@ export default function GameLobbyPage() {
     fetchTournaments()
     fetchLobbyExtras()
     const iv = setInterval(() => {
+      if (document.hidden) return
       fetchLobbyData()
       if (activeTab === 'spectator') fetchSpectatorGames()
       if (activeTab === 'tournaments') fetchTournaments()
-    }, 5000)
+    }, 8000)
     return () => clearInterval(iv)
   }, [fetchLobbyData, fetchProfileData, fetchLeaderboard, fetchSpectatorGames, fetchTournaments, fetchLobbyExtras, activeTab])
 
