@@ -375,6 +375,19 @@ export default function BroadcastPage() {
 
       const TRTCModule = (await import('trtc-sdk-v5')).default
 
+      // ── Global error & connection listeners ──
+      trtc.on(TRTCModule.EVENT.ERROR, (error: any) => {
+        console.error('🔴 TRTC ERROR event:', error)
+      })
+
+      trtc.on(TRTCModule.EVENT.CONNECTION_STATE_CHANGED, (event: any) => {
+        console.log('🔗 TRTC connection state:', event?.state, event?.prevState, event)
+      })
+
+      trtc.on(TRTCModule.EVENT.AUTOPLAY_FAILED, () => {
+        console.warn('🔇 TRTC AUTOPLAY_FAILED – user interaction required')
+      })
+
       // Set up remote user event handlers (for co-broadcasters)
       trtc.on(TRTCModule.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
         remoteUsersRef.current.add(event.userId)
@@ -399,63 +412,89 @@ export default function BroadcastPage() {
 
       // Enter room as host/anchor in live mode
       await enterRoom(trtc, credentials, roomId, 'host', 'live')
-      console.log('🎬 TRTC: Entered room as host, userId:', userId)
+      console.log('🎬 TRTC: Entered room as host, userId:', userId, 'roomId:', roomId)
 
       // Start local audio first (less likely to fail)
-      await startLocalAudio(trtc)
-      console.log('🎬 TRTC: Local audio started')
+      try {
+        await startLocalAudio(trtc)
+        console.log('🎬 TRTC: Local audio started')
+      } catch (audioErr) {
+        console.error('🔴 TRTC: startLocalAudio failed:', audioErr)
+      }
 
-      // Start local video with retry mechanism - wait for ref if needed
-      const startVideoWithRetry = async (attempt = 0): Promise<void> => {
-        if (isUnmountedRef.current || !trtcRef.current) return
-        
-        const videoEl = localVideoRef.current
-        if (!videoEl) {
-          console.warn('🎬 TRTC: localVideoRef not ready, attempt', attempt)
-          if (attempt < 15) {
+      // ── Start local video ──
+      // Use string element ID for reliability (TRTC docs recommend this)
+      const VIDEO_ELEMENT_ID = 'trtc-local-video'
+
+      const startVideoWithRetry = async (attempt = 0): Promise<boolean> => {
+        if (isUnmountedRef.current || !trtcRef.current) {
+          console.warn('🎬 TRTC: Aborted – unmounted or no trtc ref')
+          return false
+        }
+
+        // Check that the DOM element exists and has dimensions
+        const el = document.getElementById(VIDEO_ELEMENT_ID)
+        if (!el) {
+          console.warn('🎬 TRTC: #' + VIDEO_ELEMENT_ID + ' not in DOM, attempt', attempt)
+          if (attempt < 20) {
             await new Promise(r => setTimeout(r, 300))
             return startVideoWithRetry(attempt + 1)
           }
-          console.error('🎬 TRTC: localVideoRef never became ready')
-          return
+          console.error('🎬 TRTC: Video element never appeared in DOM')
+          return false
         }
 
-        // Try profiles in order of quality - fallback if device can't handle higher
-        const profiles = ['1080p', '720p', '480p'] as const
+        const rect = el.getBoundingClientRect()
+        console.log('🎬 TRTC: Video element rect:', rect.width, 'x', rect.height, 'visible:', rect.width > 0 && rect.height > 0)
+
+        // If element has zero dimensions, wait for layout
+        if (rect.width === 0 || rect.height === 0) {
+          if (attempt < 20) {
+            await new Promise(r => setTimeout(r, 300))
+            return startVideoWithRetry(attempt + 1)
+          }
+        }
+
+        // Try with explicit publish:true and simple profile
+        const profiles = ['720p', '480p', '360p'] as const
         for (const profile of profiles) {
           try {
-            console.log('🎬 TRTC: Starting local video with profile:', profile, 'element:', videoEl.tagName, videoEl.className?.slice(0, 50))
+            console.log('🎬 TRTC: startLocalVideo profile:', profile)
             await trtc.startLocalVideo({
-              view: videoEl,
+              view: VIDEO_ELEMENT_ID,
+              publish: true,
               option: {
                 profile,
                 useFrontCamera: facingMode === 'user',
               },
-            })
-            console.log('✅ TRTC: Local video started with profile:', profile)
-            return // Success
-          } catch (err) {
-            console.warn('⚠️ TRTC: startLocalVideo failed with profile', profile, ':', err)
-            if (profile === '480p') {
-              // Last resort: try without any profile
-              try {
-                console.log('🎬 TRTC: Trying startLocalVideo with no profile')
-                await trtc.startLocalVideo({
-                  view: videoEl,
-                })
-                console.log('✅ TRTC: Local video started with default profile')
-                return
-              } catch (finalErr) {
-                console.error('❌ TRTC: All video profiles failed:', finalErr)
-                throw finalErr
-              }
-            }
+            } as any)
+            console.log('✅ TRTC: Local video started + published, profile:', profile)
+            return true
+          } catch (err: any) {
+            console.warn('⚠️ TRTC: startLocalVideo failed (' + profile + '):', err?.message || err)
           }
+        }
+
+        // Last resort: minimal call with no profile options
+        try {
+          console.log('🎬 TRTC: Trying startLocalVideo with minimal options')
+          await trtc.startLocalVideo({
+            view: VIDEO_ELEMENT_ID,
+            publish: true,
+          } as any)
+          console.log('✅ TRTC: Local video started with minimal options')
+          return true
+        } catch (finalErr: any) {
+          console.error('❌ TRTC: All startLocalVideo attempts failed:', finalErr?.message || finalErr)
+          return false
         }
       }
 
-      await startVideoWithRetry()
-      console.log('🎬 TRTC: Broadcast fully started, userId:', userId)
+      const videoStarted = await startVideoWithRetry()
+      if (!videoStarted) {
+        console.error('🔴 TRTC: Video could not be started. Audio-only broadcast.')
+      }
+      console.log('🎬 TRTC: Broadcast started, video:', videoStarted, ', userId:', userId)
     } catch (error) {
       console.error('TRTC broadcast error:', error)
       alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
@@ -748,12 +787,21 @@ export default function BroadcastPage() {
 
   const toggleVideo = async () => {
     if (trtcRef.current) {
-      if (isVideoOn) {
-        await stopLocalVideo(trtcRef.current)
-      } else if (localVideoRef.current) {
-        await startLocalVideo(trtcRef.current, localVideoRef.current, facingMode === 'user')
+      try {
+        if (isVideoOn) {
+          await stopLocalVideo(trtcRef.current)
+        } else {
+          // Use string element ID for consistency with startBroadcast
+          await trtcRef.current.startLocalVideo({
+            view: 'trtc-local-video',
+            publish: true,
+            option: { useFrontCamera: facingMode === 'user' },
+          } as any)
+        }
+        setIsVideoOn(!isVideoOn)
+      } catch (err) {
+        console.error('toggleVideo error:', err)
       }
-      setIsVideoOn(!isVideoOn)
     }
   }
 
@@ -1260,6 +1308,7 @@ export default function BroadcastPage() {
             className="absolute top-20 right-3 w-28 h-40 sm:w-32 sm:h-44 bg-gray-900 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-2xl z-20"
           >
             <div
+              id="trtc-local-video"
               ref={localVideoRef}
               className="w-full h-full bg-black [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
@@ -1295,7 +1344,7 @@ export default function BroadcastPage() {
                 if (userId === 'host') {
                   if (localVideoRef.current !== el) {
                     (localVideoRef as any).current = el
-                    // TRTC auto-plays local video in the view element
+                    el.id = 'trtc-local-video' // Keep ID in sync for TRTC
                   }
                 } else {
                   guestVideoRefs.current.set(userId, el)
@@ -1328,6 +1377,7 @@ export default function BroadcastPage() {
           )}
           {/* SOLO MODE: Broadcaster video fullscreen */}
           <div
+            id="trtc-local-video"
             ref={localVideoRef}
             className={`absolute inset-0 w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain ${backgroundUrl ? 'z-[1]' : 'bg-black'}`}
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
