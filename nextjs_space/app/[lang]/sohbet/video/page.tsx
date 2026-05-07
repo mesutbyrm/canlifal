@@ -219,6 +219,8 @@ function VideoStreamPageInner() {
   const remoteVideoRef = useRef<HTMLDivElement>(null)
   const coBroadcasterVideoRef = useRef<HTMLDivElement>(null)
   const remoteUsersRef = useRef<Set<string>>(new Set())
+  const pendingRemoteUserRef = useRef<string | null>(null) // For retry when container not ready
+  const videoRetryTimerRef = useRef<NodeJS.Timeout | null>(null)
   const guestVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const heartIdRef = useRef(0)
   const trtcRef = useRef<import('@/lib/trtc-client').TRTC | null>(null)
@@ -372,6 +374,12 @@ function VideoStreamPageInner() {
       clearInterval(streamDurationRef.current)
       streamDurationRef.current = null
     }
+    // Clear video retry timer
+    if (videoRetryTimerRef.current) {
+      clearTimeout(videoRetryTimerRef.current)
+      videoRetryTimerRef.current = null
+    }
+    pendingRemoteUserRef.current = null
     // Leave TRTC room
     if (trtcRef.current) {
       try {
@@ -401,26 +409,51 @@ function VideoStreamPageInner() {
       const trtc = await createTRTCInstance()
       trtcRef.current = trtc
 
+      // Helper: try to play remote video with retry
+      const tryPlayRemoteVideo = (userId: string, attempt = 0) => {
+        if (isUnmountedRef.current || !trtcRef.current) return
+        const guestEl = guestVideoRefs.current.get(userId)
+        const container = guestEl || remoteVideoRef.current
+        if (container) {
+          console.log('🎬 TRTC: Playing remote video for', userId, 'in container', container.tagName)
+          playRemote(trtc, userId, container).then(() => {
+            console.log('✅ TRTC: Remote video started for', userId)
+            setConnectionStatus('connected')
+            pendingRemoteUserRef.current = null
+          }).catch((err) => {
+            console.warn('⚠️ TRTC: startRemoteVideo failed:', err, '- retry', attempt)
+            if (attempt < 5) {
+              setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), 1000)
+            }
+          })
+        } else {
+          console.log('⏳ TRTC: Container not ready, scheduling retry for', userId, 'attempt', attempt)
+          pendingRemoteUserRef.current = userId
+          if (attempt < 10) {
+            if (videoRetryTimerRef.current) clearTimeout(videoRetryTimerRef.current)
+            videoRetryTimerRef.current = setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), 500)
+          }
+        }
+      }
+
       // Handle remote user events (broadcaster + co-broadcasters)
       trtc.on(TRTCModule.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
         if (isUnmountedRef.current) return
+        console.log('🎬 TRTC: REMOTE_VIDEO_AVAILABLE from', event.userId)
         remoteUsersRef.current.add(event.userId)
-        
-        // Play video in appropriate container
-        const guestEl = guestVideoRefs.current.get(event.userId)
-        const container = guestEl || remoteVideoRef.current
-        if (container) {
-          playRemote(trtc, event.userId, container).catch(() => {})
-        }
         setConnectionStatus('connected')
+        tryPlayRemoteVideo(event.userId)
       })
 
-      trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, () => {
-        // TRTC auto-plays remote audio
+      trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, (event: { userId: string }) => {
+        console.log('🔊 TRTC: REMOTE_AUDIO_AVAILABLE from', event.userId)
+        // TRTC auto-plays remote audio in live mode
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
+        console.log('👋 TRTC: REMOTE_USER_EXIT', event.userId)
         remoteUsersRef.current.delete(event.userId)
+        pendingRemoteUserRef.current = null
         if (remoteUsersRef.current.size === 0) {
           setConnectionStatus('failed')
         }
@@ -1305,7 +1338,35 @@ function VideoStreamPageInner() {
                 </div>
               )}
               <div 
-                ref={remoteVideoRef} 
+                ref={(el) => {
+                  (remoteVideoRef as any).current = el
+                  // When container mounts and there's a pending remote user, play their video
+                  if (el && pendingRemoteUserRef.current && trtcRef.current) {
+                    const userId = pendingRemoteUserRef.current
+                    console.log('🎬 TRTC: Container mounted, playing pending video for', userId)
+                    import('@/lib/trtc-client').then(({ startRemoteVideo }) => {
+                      if (trtcRef.current && el) {
+                        startRemoteVideo(trtcRef.current, userId, el).then(() => {
+                          console.log('✅ TRTC: Pending remote video started for', userId)
+                          pendingRemoteUserRef.current = null
+                          setConnectionStatus('connected')
+                        }).catch(err => console.warn('⚠️ TRTC: Pending play failed:', err))
+                      }
+                    })
+                  }
+                  // Also check if we have remote users but video is not playing yet
+                  if (el && remoteUsersRef.current.size > 0 && trtcRef.current) {
+                    const firstUserId = Array.from(remoteUsersRef.current)[0]
+                    if (el.childElementCount === 0) {
+                      console.log('🎬 TRTC: Container mounted with no children, playing remote for', firstUserId)
+                      import('@/lib/trtc-client').then(({ startRemoteVideo }) => {
+                        if (trtcRef.current && el) {
+                          startRemoteVideo(trtcRef.current, firstUserId, el).catch(() => {})
+                        }
+                      })
+                    }
+                  }
+                }}
                 className={`w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain ${currentStream?.backgroundUrl ? 'z-[1]' : 'bg-black'}`}
                 style={{ aspectRatio: '9/16' }}
               />
