@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
       const now = Date.now()
       const p1LastSeen = game.player1LastSeen ? new Date(game.player1LastSeen).getTime() : now
       const p2LastSeen = game.player2LastSeen ? new Date(game.player2LastSeen).getTime() : now
-      const DISCONNECT_THRESHOLD = 12
+      const DISCONNECT_THRESHOLD = 30
 
       if ((now - p1LastSeen) / 1000 > DISCONNECT_THRESHOLD && game.player1Id) {
         const updated = await prisma.sosGame.update({
@@ -81,8 +81,9 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
         const p1Elapsed = p1Last > 0 ? (now - p1Last) / 1000 : 999
         shouldClose = p1Elapsed > 8
       } else {
+        // AI-takeover: allow 120s for disconnected player to return
         const latestSeen = Math.max(p1Last, p2Last)
-        shouldClose = latestSeen > 0 ? (now - latestSeen) / 1000 > 8 : true
+        shouldClose = latestSeen > 0 ? (now - latestSeen) / 1000 > 120 : true
       }
       if (shouldClose) {
         if (game.betAmount > 0) {

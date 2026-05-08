@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       const p2LastSeen = room.player2LastSeen ? new Date(room.player2LastSeen).getTime() : now
       const p1Elapsed = (now - p1LastSeen) / 1000
       const p2Elapsed = (now - p2LastSeen) / 1000
-      const DISCONNECT_THRESHOLD = 12 // seconds without polling = disconnected
+      const DISCONNECT_THRESHOLD = 30 // seconds without polling = disconnected (AI takes over)
 
       // Check if a player has disconnected (not polled for 12+ seconds)
       if (p1Elapsed > DISCONNECT_THRESHOLD && room.player1Id) {
@@ -111,10 +111,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
         const p1Elapsed = p1LastSeen > 0 ? (now - p1LastSeen) / 1000 : 999
         shouldClose = p1Elapsed > 8
       } else {
-        // AI-takeover: check if the remaining real player stopped polling
+        // AI-takeover: remaining real player keeps game alive; allow 120s for disconnected player to return
         const latestSeen = Math.max(p1LastSeen, p2LastSeen)
         const bothElapsed = latestSeen > 0 ? (now - latestSeen) / 1000 : 999
-        shouldClose = bothElapsed > 8
+        shouldClose = bothElapsed > 120
       }
 
       if (shouldClose) {
