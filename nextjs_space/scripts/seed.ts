@@ -883,7 +883,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   const homepageButtons = [
     { key: 'games', label: 'Oyunlar', icon: '🎮', href: '/oyunlar', sortOrder: 0 },
     { key: 'gifts', label: 'Hediyeler', icon: '🎁', href: '/hediyeler', sortOrder: 1 },
-    { key: 'teller', label: 'Falcı Ol', icon: '📹', href: '/falci-ol', sortOrder: 2, specialBehavior: 'teller' },
+    { key: 'teller', label: 'Yayıncı Ol', icon: '📹', href: '/yayinci-ol', sortOrder: 2, specialBehavior: 'teller' },
     { key: 'social', label: 'Sosyal', icon: '👥', href: '/sosyal', sortOrder: 3 },
     { key: 'chat', label: 'Sesli Sohbet', icon: '🎙️', href: '/sohbet', sortOrder: 4 },
     { key: 'blog', label: 'Blog', icon: '📖', href: '/blog', sortOrder: 5 },
