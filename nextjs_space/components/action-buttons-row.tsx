@@ -52,7 +52,8 @@ function getBadgeCount(key: string, counts: Record<string, number>, isTeller: bo
 function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean, hasAgency: boolean): string {
   if (btn.specialBehavior === 'teller') {
     if (!session?.user) return '/giris'
-    return isTeller ? '/profil' : btn.href
+    // If already a teller → go to dashboard; otherwise go to the custom registration URL
+    return isTeller ? '/canli-falcilar/dashboard' : btn.href
   }
   if (btn.specialBehavior === 'ajans') {
     if (!session?.user) return btn.href
@@ -62,10 +63,18 @@ function getEffectiveHref(btn: HomepageButton, session: any, isTeller: boolean, 
   return btn.href
 }
 
-// Dynamic label for special buttons
+// Dynamic label for special buttons — derive panel name from the label
+// e.g., "Yayıncı Ol" → "Yayıncı Paneli", "Falcı Ol" → "Falcı Paneli"
 function getEffectiveLabel(btn: HomepageButton, isTeller: boolean, hasAgency: boolean): string {
-  if (btn.specialBehavior === 'teller' && isTeller) return 'Falcı Paneli'
-  if (btn.specialBehavior === 'ajans' && hasAgency) return 'Ajans Paneli'
+  if (btn.specialBehavior === 'teller' && isTeller) {
+    // Strip "Ol" suffix and add "Paneli"
+    const baseName = btn.label.replace(/\s*ol\s*$/i, '').trim()
+    return baseName ? `${baseName} Paneli` : 'Falcı Paneli'
+  }
+  if (btn.specialBehavior === 'ajans' && hasAgency) {
+    const baseName = btn.label.replace(/\s*ol\s*$/i, '').trim()
+    return baseName ? `${baseName} Paneli` : 'Ajans Paneli'
+  }
   return btn.label
 }
 

@@ -30,8 +30,24 @@ const POPULAR_ICONS = [
 const SPECIAL_BEHAVIORS = [
   { value: '', label: 'Normal (Yönlendirme)' },
   { value: 'bana-ozel', label: 'Bana Özel Popup' },
-  { value: 'teller', label: 'Falcı (Rol Tabanlı)' },
+  { value: 'teller', label: 'Falcı/Yayıncı (Rol Tabanlı)' },
+  { value: 'ajans', label: 'Ajans (Rol Tabanlı)' },
 ]
+
+// Convert Turkish label to URL-friendly slug
+function labelToSlug(label: string): string {
+  const map: Record<string, string> = {
+    'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+    'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U',
+  }
+  return '/' + label
+    .toLowerCase()
+    .replace(/[çğıöşüÇĞİÖŞÜ]/g, (c) => map[c] || c)
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
 
 export default function AdminHomepageButtonsPage() {
   const params = useParams()
@@ -400,10 +416,24 @@ export default function AdminHomepageButtonsPage() {
                 <input
                   type="text"
                   value={modalForm.label}
-                  onChange={(e) => setModalForm((f) => ({ ...f, label: e.target.value }))}
-                  placeholder="Örn: Oyun Merkezi"
+                  onChange={(e) => {
+                    const newLabel = e.target.value
+                    const autoSlug = (modalForm.specialBehavior === 'teller' || modalForm.specialBehavior === 'ajans')
+                    setModalForm((f) => ({
+                      ...f,
+                      label: newLabel,
+                      ...(autoSlug && newLabel.trim() ? { href: labelToSlug(newLabel) } : {}),
+                    }))
+                  }}
+                  placeholder="Örn: Yayıncı Ol"
                   className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
                 />
+                {(modalForm.specialBehavior === 'teller' || modalForm.specialBehavior === 'ajans') && modalForm.label.trim() && (
+                  <p className="text-fuchsia-400/70 text-[10px] mt-1">
+                    🔗 Otomatik URL: <span className="font-mono text-fuchsia-300">{labelToSlug(modalForm.label)}</span>
+                    {' · '}Panel adı: <span className="font-mono text-emerald-300">{modalForm.label.replace(/\s*ol\s*$/i, '').trim()} Paneli</span>
+                  </p>
+                )}
               </div>
 
               {/* Href */}
@@ -415,8 +445,13 @@ export default function AdminHomepageButtonsPage() {
                   onChange={(e) => setModalForm((f) => ({ ...f, href: e.target.value }))}
                   placeholder="Örn: /oyunlar veya /blog"
                   className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
+                  readOnly={(modalForm.specialBehavior === 'teller' || modalForm.specialBehavior === 'ajans') && !!modalForm.label.trim()}
                 />
-                <p className="text-gray-600 text-[10px] mt-1">Site içi yol (/oyunlar) veya dış URL (https://...) kullanabilirsiniz</p>
+                {(modalForm.specialBehavior === 'teller' || modalForm.specialBehavior === 'ajans') ? (
+                  <p className="text-amber-400/70 text-[10px] mt-1">⚡ Buton adından otomatik oluşturulur</p>
+                ) : (
+                  <p className="text-gray-600 text-[10px] mt-1">Site içi yol (/oyunlar) veya dış URL (https://...) kullanabilirsiniz</p>
+                )}
               </div>
 
               {/* Special behavior */}
@@ -424,7 +459,15 @@ export default function AdminHomepageButtonsPage() {
                 <label className="text-gray-400 text-xs font-medium mb-1.5 block">Özel Davranış</label>
                 <select
                   value={modalForm.specialBehavior}
-                  onChange={(e) => setModalForm((f) => ({ ...f, specialBehavior: e.target.value }))}
+                  onChange={(e) => {
+                    const newBehavior = e.target.value
+                    const autoSlug = (newBehavior === 'teller' || newBehavior === 'ajans')
+                    setModalForm((f) => ({
+                      ...f,
+                      specialBehavior: newBehavior,
+                      ...(autoSlug && f.label.trim() ? { href: labelToSlug(f.label) } : {}),
+                    }))
+                  }}
                   className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-fuchsia-500/50 transition-colors"
                 >
                   {SPECIAL_BEHAVIORS.map((sb) => (
@@ -434,7 +477,7 @@ export default function AdminHomepageButtonsPage() {
                   ))}
                 </select>
                 <p className="text-gray-600 text-[10px] mt-1">
-                  "Bana Özel Popup" seçerseniz buton tıklandığında popup açılır. "Falcı" seçerseniz kullanıcının rolüne göre farklı davranır.
+                  "Falcı/Yayıncı" veya "Ajans" seçerseniz: buton adı otomatik URL olur, kullanıcı zaten bu roldeyse buton adı panele dönüşür.
                 </p>
               </div>
 
