@@ -529,6 +529,7 @@ export default function SOSGamePage() {
   const [flashCells, setFlashCells] = useState<Set<string>>(new Set())
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const waitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [isJoining, setIsJoining] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Spectator state
@@ -581,6 +582,9 @@ export default function SOSGamePage() {
     }
 
     if (joinId) {
+      // Immediately hide menu while joining
+      setIsJoining(true)
+      setGameId(joinId)
       const doJoin = async () => {
         try {
           const res = await fetch(`/api/games/sos/${joinId}`, { method: 'POST' })
@@ -615,6 +619,8 @@ export default function SOSGamePage() {
           }
         } catch {
           alert('Bağlantı hatası')
+        } finally {
+          setIsJoining(false)
         }
       }
       doJoin()
@@ -1652,10 +1658,17 @@ export default function SOSGamePage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
+              {isJoining ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin" />
+                  <p className="text-white font-medium">Masaya oturuluyor...</p>
+                </div>
+              ) : (<>
               {phase === 'menu' && renderMenu()}
               {phase === 'lobby' && renderLobby()}
               {(phase === 'playing' || phase === 'spectating') && renderGame()}
               {phase === 'result' && renderResult()}
+              </>)}
             </motion.div>
           </AnimatePresence>
         </div>

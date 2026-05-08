@@ -358,6 +358,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [showWinPopup, setShowWinPopup] = useState(false)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const waitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [isJoining, setIsJoining] = useState(false)
   const [recentWinners, setRecentWinners] = useState<any[]>([])
   // Chat popup messages
   const [popupMessages, setPopupMessages] = useState<Array<{ id: string; userName: string; message: string; ts: number }>>([])
@@ -415,7 +416,9 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     }
 
     if (joinId) {
-      // Join an existing waiting room
+      // Join an existing waiting room - immediately hide menu
+      setIsJoining(true)
+      setRoomId(joinId)
       const doJoin = async () => {
         try {
           const r = await fetch(`/api/games/room/${joinId}`, { method: 'POST' })
@@ -446,6 +449,8 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           }
         } catch {
           alert('Bağlantı hatası')
+        } finally {
+          setIsJoining(false)
         }
       }
       doJoin()
@@ -854,10 +859,17 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       <div className="max-w-2xl mx-auto">
         <AnimatePresence mode="wait">
           <motion.div key={phase} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+            {isJoining ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin" />
+                <p className="text-white font-medium">Masaya oturuluyor...</p>
+              </div>
+            ) : (<>
             {phase === 'menu' && renderMenu()}
             {phase === 'lobby' && renderLobby()}
             {(phase === 'playing' || phase === 'spectating') && renderGame()}
             {phase === 'result' && renderResult()}
+            </>)}
           </motion.div>
         </AnimatePresence>
       </div>
