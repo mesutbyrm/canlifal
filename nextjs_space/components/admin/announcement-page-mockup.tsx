@@ -45,7 +45,7 @@ export default function AnnouncementPageMockup({ pageType, position, effect, sel
     switch (position) {
       case 'top': return { top: '14%', left: 0, right: 0 }
       case 'over-streams': return { top: '32%', left: 0, right: 0 }
-      case 'middle': return { top: '24%', left: 0, right: 0 }
+      case 'middle': return { top: '16%', left: 0, right: 0 }
       case 'below-announcement': return { top: '24%', left: 0, right: 0 }
       case 'above-input': return { bottom: '14%', left: 0, right: 0 }
       case 'over-video': return { top: '30%', left: 0, right: 0, opacity: 0.85 }
@@ -235,7 +235,7 @@ export const PAGE_PLACEMENTS = {
     options: [
       { key: 'top', label: 'Navbar Altı', desc: 'Üstte, navbar altında' },
       { key: 'over-streams', label: 'Canlı Yayınlar Üzerinde', desc: 'Yayın listesinin üzerinden geçer' },
-      { key: 'middle', label: 'Aksiyon Butonları Altı', desc: 'Buton sırasının altında' },
+      { key: 'middle', label: 'Aksiyon Butonları Üstü', desc: 'Oyunlar, Hediyeler vb. butonların üstünde' },
     ]
   },
   voice: {

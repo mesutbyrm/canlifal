@@ -31,7 +31,7 @@ function getPositionStyle(pageType: BannerPageType, position: string): React.CSS
   // Non-top positions overlay over content via fixed positioning
   if (pageType === 'home') {
     if (position === 'over-streams') return { ...fixedBase, top: '32vh' }
-    if (position === 'middle') return { ...fixedBase, top: '52vh' }
+    if (position === 'middle') return { ...fixedBase, top: '22vh' }
   }
   if (pageType === 'voice') {
     if (position === 'below-announcement') return { ...fixedBase, top: '120px' }
