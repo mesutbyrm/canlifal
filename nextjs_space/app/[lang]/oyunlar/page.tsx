@@ -33,6 +33,30 @@ const GameColorSort = dynamic(() => import('@/components/mini-games/game-color-s
 const GameLogoQuiz = dynamic(() => import('@/components/mini-games/game-logo-quiz'), { ssr: false })
 const GameWordHunt = dynamic(() => import('@/components/mini-games/game-word-hunt'), { ssr: false })
 
+// ========== COST BADGE ==========
+function CostBadge({ betAmount, betCurrency }: { betAmount: number; betCurrency: string }) {
+  if (!betAmount || betAmount === 0 || betCurrency === 'FREE') {
+    return (
+      <span className="text-green-400 text-[10px] font-bold px-2 py-0.5 bg-green-500/15 border border-green-500/30 rounded-full">
+        🆓 Ücretsiz
+      </span>
+    )
+  }
+  if (betCurrency === 'CFC') {
+    return (
+      <span className="text-yellow-400 text-[10px] font-bold px-2 py-0.5 bg-yellow-500/15 border border-yellow-500/30 rounded-full">
+        💰 {betAmount} CFC
+      </span>
+    )
+  }
+  // JETON
+  return (
+    <span className="text-blue-400 text-[10px] font-bold px-2 py-0.5 bg-blue-500/15 border border-blue-500/30 rounded-full">
+      🎫 {betAmount} Jeton
+    </span>
+  )
+}
+
 // ========== TYPES ==========
 interface LobbyStats {
   onlinePlayers: number
@@ -440,7 +464,7 @@ function LiveTablesList({
   tables: LiveTable[]
   lang: string
   userId?: string
-  onJoinTable: (roomId: string, gameType: string) => void
+  onJoinTable: (roomId: string, gameType: string, playerName: string, betAmount: number, betCurrency: string) => void
   filter: string
   setFilter: (f: string) => void
 }) {
@@ -509,11 +533,9 @@ function LiveTablesList({
                         {t.player1Name} — Katılımcı bekleniyor...
                       </p>
                     </div>
-                    {t.betAmount > 0 && (
-                      <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
-                    )}
+                    <CostBadge betAmount={t.betAmount} betCurrency={t.betCurrency} />
                     <button
-                      onClick={() => onJoinTable(t.id, t.gameType)}
+                      onClick={() => onJoinTable(t.id, t.gameType, t.player1Name, t.betAmount, t.betCurrency)}
                       className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20"
                     >
                       🪑 Otur
@@ -547,9 +569,7 @@ function LiveTablesList({
                           {t.player1Score > 0 || t.player2Score > 0 ? ` (${t.player1Score}-${t.player2Score})` : ''}
                         </p>
                       </div>
-                      {t.betAmount > 0 && (
-                        <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
-                      )}
+                      <CostBadge betAmount={t.betAmount} betCurrency={t.betCurrency} />
                       <div className="flex items-center gap-2">
                         {t.viewerCount > 0 && (
                           <span className="text-fuchsia-400/50 text-[10px] flex items-center gap-0.5">👁 {t.viewerCount}</span>
@@ -585,7 +605,7 @@ function FindTableModal({
   tables: LiveTable[]
   lang: string
   userId?: string
-  onJoinTable: (roomId: string, gameType: string) => void
+  onJoinTable: (roomId: string, gameType: string, playerName: string, betAmount: number, betCurrency: string) => void
   onReplaceAI: (roomId: string, gameType: string) => void
 }) {
   const [freshTables, setFreshTables] = useState<LiveTable[]>([])
@@ -672,11 +692,9 @@ function FindTableModal({
                         {t.player1Name} — Rakip bekleniyor...
                       </p>
                     </div>
-                    {t.betAmount > 0 && (
-                      <span className="text-yellow-400/80 text-[10px] font-medium">{t.betAmount} {t.betCurrency}</span>
-                    )}
+                    <CostBadge betAmount={t.betAmount} betCurrency={t.betCurrency} />
                     <button
-                      onClick={() => { onJoinTable(t.id, t.gameType); onClose() }}
+                      onClick={() => { onJoinTable(t.id, t.gameType, t.player1Name, t.betAmount, t.betCurrency); onClose() }}
                       className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20"
                     >
                       🪑 Otur
@@ -1123,6 +1141,23 @@ export default function GameLobbyPage() {
   const handleFindTable = () => {
     if (!session?.user) { router.push(`/${lang}/giris`); return }
     setShowFindTableModal(true)
+  }
+
+  // Confirmation dialog state for joining a table
+  const [joinConfirm, setJoinConfirm] = useState<{
+    roomId: string; gameType: string; playerName: string; betAmount: number; betCurrency: string
+  } | null>(null)
+
+  const promptJoinTable = (roomId: string, gameType: string, playerName: string, betAmount: number, betCurrency: string) => {
+    if (!session?.user) { router.push(`/${lang}/giris`); return }
+    setJoinConfirm({ roomId, gameType, playerName, betAmount, betCurrency })
+  }
+
+  const confirmJoinTable = () => {
+    if (!joinConfirm) return
+    const slug = gameSlug(joinConfirm.gameType)
+    router.push(`/${lang}/oyunlar/${slug}?join=${joinConfirm.roomId}`)
+    setJoinConfirm(null)
   }
 
   const handleJoinTable = (roomId: string, gameType: string) => {
@@ -1663,7 +1698,7 @@ export default function GameLobbyPage() {
                   tables={liveTables}
                   lang={lang}
                   userId={session?.user?.id}
-                  onJoinTable={handleJoinTable}
+                  onJoinTable={promptJoinTable}
                   filter={tableFilter}
                   setFilter={setTableFilter}
                 />
@@ -1690,16 +1725,14 @@ export default function GameLobbyPage() {
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/20 hover:border-green-400/50 transition-all cursor-pointer"
-                              onClick={() => handleJoinTable(room.id, room.gameType)}
+                              onClick={() => promptJoinTable(room.id, room.gameType, room.player1Name, room.betAmount, room.betCurrency)}
                             >
                               <span className="text-xl">{info.emoji}</span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-white text-xs font-bold truncate">{info.name}</p>
                                 <p className="text-green-300/60 text-[10px] truncate">{room.player1Name}</p>
                               </div>
-                              {room.betAmount > 0 && (
-                                <span className="text-yellow-400/80 text-[10px]">{room.betAmount} {room.betCurrency}</span>
-                              )}
+                              <CostBadge betAmount={room.betAmount} betCurrency={room.betCurrency} />
                               <span className="px-2 py-1 bg-green-600/70 text-white text-[9px] rounded-full font-bold">Katıl</span>
                             </motion.div>
                           )
@@ -2130,9 +2163,7 @@ export default function GameLobbyPage() {
                               <span className="text-fuchsia-300/50 flex items-center gap-1">
                                 <Clock className="w-3 h-3" /> {elapsed} dk
                               </span>
-                              {game.betAmount > 0 && (
-                                <span className="text-yellow-400/80 font-medium">{game.betAmount} {game.betCurrency}</span>
-                              )}
+                              <CostBadge betAmount={game.betAmount} betCurrency={game.betCurrency} />
                               <span className="text-cyan-400 font-bold group-hover:text-cyan-300 flex items-center gap-0.5">
                                 <Eye className="w-3 h-3" /> İzle
                               </span>
@@ -2483,6 +2514,77 @@ export default function GameLobbyPage() {
         </div>
       </div>
 
+      {/* Join Table Confirmation Dialog */}
+      <AnimatePresence>
+        {joinConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setJoinConfirm(null) }}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 30 }}
+              className="bg-[#1a0a2e] border border-fuchsia-500/40 rounded-2xl p-6 w-full max-w-sm shadow-2xl shadow-fuchsia-500/10"
+            >
+              {/* Header */}
+              <div className="text-center mb-5">
+                <span className="text-4xl block mb-2">{gameInfo(joinConfirm.gameType).emoji}</span>
+                <h3 className="text-white font-bold text-lg">{gameInfo(joinConfirm.gameType).name}</h3>
+                <p className="text-fuchsia-300/60 text-sm mt-1">
+                  <span className="text-white font-medium">{joinConfirm.playerName}</span> masasına oturmak istiyor musunuz?
+                </p>
+              </div>
+
+              {/* Cost info */}
+              <div className="rounded-xl p-4 mb-5" style={{ background: 'linear-gradient(135deg, rgba(120, 20, 120, 0.15), rgba(40, 10, 60, 0.3))' }}>
+                <p className="text-fuchsia-300/80 text-xs text-center mb-2">Masa Ücreti</p>
+                <div className="flex justify-center">
+                  {(!joinConfirm.betAmount || joinConfirm.betAmount === 0 || joinConfirm.betCurrency === 'FREE') ? (
+                    <div className="text-center">
+                      <span className="text-3xl block mb-1">🆓</span>
+                      <span className="text-green-400 font-bold text-lg">Ücretsiz</span>
+                      <p className="text-green-300/60 text-[11px] mt-1">Bu masa ücretsiz, bakiye kesilmez</p>
+                    </div>
+                  ) : joinConfirm.betCurrency === 'CFC' ? (
+                    <div className="text-center">
+                      <span className="text-3xl block mb-1">💰</span>
+                      <span className="text-yellow-400 font-bold text-lg">{joinConfirm.betAmount} CFC</span>
+                      <p className="text-yellow-300/60 text-[11px] mt-1">CFC bakiyenizden düşülecektir</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <span className="text-3xl block mb-1">🎫</span>
+                      <span className="text-blue-400 font-bold text-lg">{joinConfirm.betAmount} Jeton</span>
+                      <p className="text-blue-300/60 text-[11px] mt-1">Jeton bakiyenizden düşülecektir</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setJoinConfirm(null)}
+                  className="px-4 py-3 rounded-xl bg-purple-900/40 border border-fuchsia-500/20 text-fuchsia-300 font-bold text-sm hover:bg-purple-800/50 transition-all"
+                >
+                  ❌ Vazgeç
+                </button>
+                <button
+                  onClick={confirmJoinTable}
+                  className="px-4 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-sm hover:from-green-500 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
+                >
+                  ✅ Masaya Otur
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Find Table Modal (Masaya Otur) */}
       <AnimatePresence>
         <FindTableModal
@@ -2491,7 +2593,7 @@ export default function GameLobbyPage() {
           tables={liveTables}
           lang={lang}
           userId={session?.user?.id}
-          onJoinTable={handleJoinTable}
+          onJoinTable={promptJoinTable}
           onReplaceAI={handleReplaceAI}
         />
       </AnimatePresence>
