@@ -455,10 +455,9 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       }
       doJoin()
     } else if (waitRoomId) {
-      // Created a room, wait for opponent to join
+      // Created a room, wait for opponent to join (stay in menu with waiting state)
       setRoomId(waitRoomId)
       setMyWaiting(waitRoomId)
-      setPhase('lobby')
       const check = setInterval(async () => {
         try {
           const rr = await fetch(`/api/games/room/${waitRoomId}`)
@@ -606,7 +605,8 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         const gr = await fetch(`/api/games/room/${d.roomId}`); const g = await gr.json()
         setRoom(g); setChatEnabled(g.chatEnabled); setPhase('playing')
       } else {
-        setMyWaiting(d.roomId); setPhase('lobby')
+        // Stay in menu with waiting indicator (no separate lobby phase)
+        setMyWaiting(d.roomId)
         const check = setInterval(async () => {
           try { const rr = await fetch(`/api/games/room/${d.roomId}`); const g = await rr.json(); if (g.status === 'active' && g.player2Id) { clearInterval(check); if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }; setRoom(g); setChatEnabled(g.chatEnabled); setPhase('playing'); setMyWaiting(null) } } catch {}
         }, 3000)
@@ -737,7 +737,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         {gameMode === 'ai' ? (
           <button onClick={() => createGame(true)} className="w-full py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base">{gameEmoji} Oyunu Başlat ({aiDifficulty === 'easy' ? '😊 Kolay' : '🔥 Zor'} - Ücretsiz)</button>
         ) : (
-          <button onClick={() => createGame(false)} className="w-full py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> Oda Aç ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button>
+          <button onClick={() => createGame(false)} className="w-full py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base flex items-center justify-center gap-2"><Gamepad2 className="w-5 h-5" /> Oyunu Başlat ({betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`})</button>
         )}
       </div>}
 
@@ -808,7 +808,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-6 text-center">
           <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin mx-auto mb-4" />
           <p className="text-white font-medium text-lg">Rakip bekleniyor...</p>
-          <p className="text-fuchsia-400/60 text-sm mt-1">Birisi odana katıldığında oyun başlayacak</p>
+          <p className="text-fuchsia-400/60 text-sm mt-1">Birisi masana oturduğunda oyun başlayacak</p>
           <button onClick={cancelWaiting} className="mt-5 px-5 py-2.5 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition"><X className="w-4 h-4 inline mr-1" /> İptal Et</button>
         </div>
       ) : (

@@ -105,6 +105,7 @@ export async function GET(req: NextRequest) {
       const [rooms, sosRooms] = await Promise.all([
         prisma.gameRoom.findMany({
           where: {
+            isAI: false,
             OR: [
               { status: 'active', lastMoveAt: { gte: staleThreshold } },
               { status: 'waiting', createdAt: { gte: waitingStaleThreshold } },
@@ -116,6 +117,7 @@ export async function GET(req: NextRequest) {
         }),
         prisma.sosGame.findMany({
           where: {
+            isAI: false,
             OR: [
               { status: 'active', lastMoveAt: { gte: staleThreshold } },
               { status: 'waiting', createdAt: { gte: waitingStaleThreshold } },
@@ -132,14 +134,14 @@ export async function GET(req: NextRequest) {
         player1Id: r.player1Id, player2Id: r.player2Id, status: r.status, isAI: r.isAI,
         betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
         currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
-        turnTimer: r.turnTimer, createdAt: r.createdAt,
+        turnTimer: r.turnTimer, gridSize: r.gridSize || 0, createdAt: r.createdAt,
       }))
       const sosTables = sosRooms.map((r: any) => ({
         id: r.id, gameType: 'sos', player1Name: r.player1Name, player2Name: r.player2Name,
         player1Id: r.player1Id, player2Id: r.player2Id, status: r.status, isAI: r.isAI,
         betAmount: r.betAmount, betCurrency: r.betCurrency, viewerCount: r._count.viewers,
         currentTurn: r.currentTurn, player1Score: r.player1Score, player2Score: r.player2Score,
-        turnTimer: r.turnTimer, createdAt: r.createdAt,
+        turnTimer: r.turnTimer, gridSize: r.gridSize || 0, createdAt: r.createdAt,
       }))
 
       const allTables = [...gameRoomTables, ...sosTables].sort((a, b) => 

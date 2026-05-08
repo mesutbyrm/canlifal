@@ -90,6 +90,7 @@ interface LiveTable {
   player1Score: number
   player2Score: number
   turnTimer: number
+  gridSize?: number
   createdAt: string
   isAI?: boolean
 }
@@ -598,18 +599,17 @@ function FindTableModal({
   lang,
   userId,
   onJoinTable,
-  onReplaceAI,
 }: {
   isOpen: boolean
   onClose: () => void
   tables: LiveTable[]
   lang: string
   userId?: string
-  onJoinTable: (roomId: string, gameType: string, playerName: string, betAmount: number, betCurrency: string) => void
-  onReplaceAI: (roomId: string, gameType: string) => void
+  onJoinTable: (roomId: string, gameType: string) => void
 }) {
   const [freshTables, setFreshTables] = useState<LiveTable[]>([])
   const [loadingTables, setLoadingTables] = useState(false)
+  const [selectedTable, setSelectedTable] = useState<LiveTable | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -627,39 +627,50 @@ function FindTableModal({
     }
     fetchFresh()
     const iv = setInterval(() => { if (!document.hidden) fetchFresh() }, 8000)
-    return () => { cancelled = true; clearInterval(iv) }
+    return () => { cancelled = true; clearInterval(iv); setSelectedTable(null) }
   }, [isOpen])
 
   if (!isOpen) return null
 
   const allTables = freshTables.length > 0 ? freshTables : tables
-  // Waiting rooms with a real player (not the current user)
   const waitingRooms = allTables.filter(t => t.status === 'waiting' && !t.isAI && t.player1Id !== userId)
-  // Active AI games (real player vs AI) where current user is not already playing
-  const aiGames = allTables.filter(t => t.status === 'active' && t.isAI && t.player1Id !== userId)
+  const activeGamesNonAI = allTables.filter(t => t.status === 'active' && !t.isAI)
+
+  // Selected table detail view
+  if (selectedTable) {
+    const info = gameInfo(selectedTable.gameType)
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { setSelectedTable(null) } }}>
+        <motion.div initial={{ scale: 0.85, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 30 }} className="bg-[#1a0a2e] border border-fuchsia-500/40 rounded-2xl p-6 w-full max-w-sm shadow-2xl shadow-fuchsia-500/10">
+          <div className="text-center mb-5">
+            <span className="text-4xl block mb-2">{info.emoji}</span>
+            <h3 className="text-white font-bold text-lg">{info.name}</h3>
+            <p className="text-fuchsia-300/60 text-sm mt-1"><span className="text-white font-medium">{selectedTable.player1Name}</span> masasına oturmak istiyor musunuz?</p>
+          </div>
+          {/* Details */}
+          <div className="rounded-xl p-4 mb-4 space-y-2" style={{ background: 'linear-gradient(135deg, rgba(120, 20, 120, 0.15), rgba(40, 10, 60, 0.3))' }}>
+            {selectedTable.gridSize && selectedTable.gridSize > 0 && (
+              <div className="flex items-center justify-between text-xs"><span className="text-fuchsia-300/70">📐 Oyun Alanı</span><span className="text-white font-bold">{selectedTable.gridSize}x{selectedTable.gridSize}</span></div>
+            )}
+            <div className="flex items-center justify-between text-xs"><span className="text-fuchsia-300/70">⏱️ Süre Limiti</span><span className="text-white font-bold">{selectedTable.turnTimer > 0 ? `${selectedTable.turnTimer}s` : 'Yok'}</span></div>
+            <div className="flex items-center justify-between text-xs"><span className="text-fuchsia-300/70">💰 Bahis</span><span className="text-white font-bold">{(!selectedTable.betAmount || selectedTable.betCurrency === 'FREE') ? '🆓 Ücretsiz' : `${selectedTable.betAmount} ${selectedTable.betCurrency}`}</span></div>
+          </div>
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setSelectedTable(null)} className="px-4 py-3 rounded-xl bg-purple-900/40 border border-fuchsia-500/20 text-fuchsia-300 font-bold text-sm hover:bg-purple-800/50 transition-all">❌ Vazgeç</button>
+            <button onClick={() => { onJoinTable(selectedTable.id, selectedTable.gameType); setSelectedTable(null); onClose() }} className="px-4 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-sm hover:from-green-500 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20">✅ Masaya Otur</button>
+          </div>
+        </motion.div>
+      </motion.div>
+    )
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto"
-      >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-[#1a0a2e] border border-fuchsia-500/30 rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-bold flex items-center gap-2">
-            <DoorOpen className="w-5 h-5 text-amber-400" />
-            Masaya Otur
-          </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-fuchsia-900/50 rounded-full transition">
-            <X className="w-5 h-5 text-fuchsia-400" />
-          </button>
+          <h3 className="text-white font-bold flex items-center gap-2"><DoorOpen className="w-5 h-5 text-amber-400" /> Masaya Otur</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-fuchsia-900/50 rounded-full transition"><X className="w-5 h-5 text-fuchsia-400" /></button>
         </div>
 
         {loadingTables && freshTables.length === 0 && (
@@ -672,33 +683,21 @@ function FindTableModal({
         {/* Waiting rooms - real players */}
         {waitingRooms.length > 0 && (
           <div className="mb-4">
-            <p className="text-green-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2">
-              <Clock className="w-3 h-3" /> Rakip Bekleyen Masalar ({waitingRooms.length})
-            </p>
+            <p className="text-green-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2"><Clock className="w-3 h-3" /> Rakip Bekleyen Masalar ({waitingRooms.length})</p>
             <div className="space-y-1.5">
               {waitingRooms.map((t) => {
                 const info = gameInfo(t.gameType)
                 return (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 hover:border-green-400/60 transition-all"
-                  >
+                  <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 hover:border-green-400/60 transition-all">
                     <span className="text-xl">{info.emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-xs font-bold">{info.name}</p>
                       <p className="text-green-300/60 text-[10px] truncate">
-                        {t.player1Name} — Rakip bekleniyor...
+                        {t.player1Name} {t.gridSize && t.gridSize > 0 ? `• ${t.gridSize}x${t.gridSize}` : ''} {t.turnTimer > 0 ? `• ⏱️${t.turnTimer}s` : ''}
                       </p>
                     </div>
                     <CostBadge betAmount={t.betAmount} betCurrency={t.betCurrency} />
-                    <button
-                      onClick={() => { onJoinTable(t.id, t.gameType, t.player1Name, t.betAmount, t.betCurrency); onClose() }}
-                      className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20"
-                    >
-                      🪑 Otur
-                    </button>
+                    <button onClick={() => setSelectedTable(t)} className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-green-500/20">🪑 Otur</button>
                   </motion.div>
                 )
               })}
@@ -706,35 +705,21 @@ function FindTableModal({
           </div>
         )}
 
-        {/* AI games - can replace AI */}
-        {aiGames.length > 0 && (
+        {/* Active PvP games to spectate */}
+        {activeGamesNonAI.length > 0 && (
           <div className="mb-4">
-            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2">
-              <Bot className="w-3 h-3" /> Yapay Zeka ile Oynuyor ({aiGames.length})
-            </p>
+            <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mb-2"><Eye className="w-3 h-3" /> Aktif Oyunlar ({activeGamesNonAI.length})</p>
             <div className="space-y-1.5">
-              {aiGames.map((t) => {
+              {activeGamesNonAI.slice(0, 10).map((t) => {
                 const info = gameInfo(t.gameType)
                 return (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
-                  >
-                    <span className="text-xl">{info.emoji}</span>
+                  <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/20 transition-all">
+                    <span className="text-lg">{info.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-xs font-bold">{info.name}</p>
-                      <p className="text-cyan-300/60 text-[10px] truncate">
-                        {t.player1Name} vs 🤖 Yapay Zeka
-                      </p>
+                      <p className="text-white text-xs font-bold">{t.player1Name} vs {t.player2Name}</p>
+                      <p className="text-cyan-300/60 text-[10px]">{t.player1Score}-{t.player2Score}{t.betAmount > 0 && ` • ${t.betAmount} ${t.betCurrency}`}</p>
                     </div>
-                    <button
-                      onClick={() => { onReplaceAI(t.id, t.gameType); onClose() }}
-                      className="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] rounded-full font-bold hover:scale-105 transition shadow-lg shadow-cyan-500/20"
-                    >
-                      🎮 AI Yerine Otur
-                    </button>
+                    <span className="text-cyan-400/60 text-[10px]">👀 {t.viewerCount}</span>
                   </motion.div>
                 )
               })}
@@ -742,11 +727,11 @@ function FindTableModal({
           </div>
         )}
 
-        {!loadingTables && waitingRooms.length === 0 && aiGames.length === 0 && (
+        {!loadingTables && waitingRooms.length === 0 && activeGamesNonAI.length === 0 && (
           <div className="text-center py-8 text-fuchsia-300/40 text-sm">
             <Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p>Şu an rakip bekleyen masa yok</p>
-            <p className="text-xs mt-1">Kendin bir oda aç ve rakip bekle!</p>
+            <p className="text-xs mt-1">Bir oyun seçip masa aç ve rakip bekle!</p>
           </div>
         )}
       </motion.div>
@@ -1166,23 +1151,11 @@ export default function GameLobbyPage() {
     router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
   }
 
-  const handleReplaceAI = async (roomId: string, gameType: string) => {
+  // Direct join used by FindTableModal detail view – skips the second confirmation dialog
+  const directJoinTable = (roomId: string, gameType: string) => {
     if (!session?.user) { router.push(`/${lang}/giris`); return }
-    setMatchLoading(true)
-    try {
-      const res = await fetch(`/api/games/room/${roomId}/replace-ai`, { method: 'POST' })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        const slug = gameSlug(gameType)
-        router.push(`/${lang}/oyunlar/${slug}?join=${roomId}`)
-      } else {
-        alert(data.error || 'AI değiştirilemedi')
-      }
-    } catch {
-      alert('Bağlantı hatası')
-    } finally {
-      setMatchLoading(false)
-    }
+    const slug = gameSlug(gameType)
+    window.location.href = `/${lang}/oyunlar/${slug}?join=${roomId}`
   }
 
   // ===== MINI GAME HANDLERS (preserved) =====
@@ -2593,8 +2566,7 @@ export default function GameLobbyPage() {
           tables={liveTables}
           lang={lang}
           userId={session?.user?.id}
-          onJoinTable={promptJoinTable}
-          onReplaceAI={handleReplaceAI}
+          onJoinTable={directJoinTable}
         />
       </AnimatePresence>
 

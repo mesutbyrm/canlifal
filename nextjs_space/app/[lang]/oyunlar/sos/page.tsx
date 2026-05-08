@@ -627,7 +627,7 @@ export default function SOSGamePage() {
     } else if (waitRoomId) {
       setGameId(waitRoomId)
       setMyWaitingGame(waitRoomId)
-      setPhase('lobby')
+      // Stay in menu phase - waiting indicator shown there
       const check = setInterval(async () => {
         try {
           const rr = await fetch(`/api/games/sos/${waitRoomId}`)
@@ -785,7 +785,7 @@ export default function SOSGamePage() {
         setPhase('playing')
       } else {
         setMyWaitingGame(data.gameId)
-        setPhase('lobby')
+        // Stay in menu phase - waiting indicator shown there
         const checkJoin = setInterval(async () => {
           try {
             const r = await fetch(`/api/games/sos/${data.gameId}`)
@@ -1219,12 +1219,26 @@ export default function SOSGamePage() {
         <p className="text-fuchsia-400/60 text-sm">Oynamak için giriş yapın</p>
       ) : (
         <div className="w-full space-y-2">
-          <button
-            onClick={() => { if (gameMode === 'ai') createGame(true); else setPhase('lobby') }}
-            className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base sm:text-lg"
-          >
-            {gameMode === 'ai' ? '🤖 Oyunu Başlat' : '👥 Lobi\'ye Gir'}
-          </button>
+          {myWaitingGame ? (
+            <div className="w-full bg-purple-900/40 border border-fuchsia-500/30 rounded-2xl p-4 sm:p-6 text-center">
+              <Loader2 className="w-8 h-8 text-fuchsia-400 animate-spin mx-auto mb-3" />
+              <p className="text-white font-medium">Birisi masana oturduğunda oyun başlayacak...</p>
+              <p className="text-fuchsia-300/60 text-sm mt-1">
+                {gridSize}x{gridSize} • {betType === 'FREE' ? 'Ücretsiz' : `${betAmount} ${betType}`}
+                {turnTimer > 0 && ` • ${turnTimer}s süre`}
+              </p>
+              <button onClick={cancelWaiting} className="mt-4 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-xl text-sm hover:bg-red-600/30 transition">
+                <X className="w-4 h-4 inline mr-1" /> İptal Et
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { if (gameMode === 'ai') createGame(true); else createGame(false) }}
+              className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white font-bold rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-purple-500/30 text-base sm:text-lg"
+            >
+              {gameMode === 'ai' ? '🤖 Oyunu Başlat' : '🎮 Oyunu Başlat'}
+            </button>
+          )}
           {/* Spectate button */}
           <button
             onClick={() => {
