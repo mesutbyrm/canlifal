@@ -50,7 +50,11 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
     const isStreaming = streamingUserIds.has(teller.userId);
     const activeSessions = teller.sessions.filter((s: { status: string }) => s.status === 'active');
     const pendingSessions = teller.sessions.filter((s: { status: string }) => s.status === 'pending');
-    const { sessions, ...tellerData } = teller;
+    const { sessions, user, ...tellerData } = teller;
+    // Fall back to user.image if teller has no custom avatar
+    if (!tellerData.avatar && user?.image) {
+      tellerData.avatar = user.image;
+    }
     const isNewTeller = tellerData.approvedAt
       ? (Date.now() - new Date(tellerData.approvedAt).getTime()) < 7 * 24 * 60 * 60 * 1000
       : (Date.now() - new Date(tellerData.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
