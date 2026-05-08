@@ -106,15 +106,14 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       const isPureAI = !room.disconnectedPlayerId
       let shouldClose = false
 
+      // No real player polling for 30s → auto-close
       if (isPureAI) {
-        // Pure AI game: only player1 is real, check if they stopped polling
         const p1Elapsed = p1LastSeen > 0 ? (now - p1LastSeen) / 1000 : 999
-        shouldClose = p1Elapsed > 8
+        shouldClose = p1Elapsed > 30
       } else {
-        // AI-takeover: remaining real player keeps game alive; allow 120s for disconnected player to return
         const latestSeen = Math.max(p1LastSeen, p2LastSeen)
         const bothElapsed = latestSeen > 0 ? (now - latestSeen) / 1000 : 999
-        shouldClose = bothElapsed > 120
+        shouldClose = bothElapsed > 30
       }
 
       if (shouldClose) {

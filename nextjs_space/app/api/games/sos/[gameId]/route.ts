@@ -77,13 +77,13 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
       const p2Last = game.player2LastSeen ? new Date(game.player2LastSeen).getTime() : 0
       const isPureAI = !game.disconnectedPlayerId
       let shouldClose = false
+      // No real player polling for 30s → auto-close
       if (isPureAI) {
         const p1Elapsed = p1Last > 0 ? (now - p1Last) / 1000 : 999
-        shouldClose = p1Elapsed > 8
+        shouldClose = p1Elapsed > 30
       } else {
-        // AI-takeover: allow 120s for disconnected player to return
         const latestSeen = Math.max(p1Last, p2Last)
-        shouldClose = latestSeen > 0 ? (now - latestSeen) / 1000 > 120 : true
+        shouldClose = latestSeen > 0 ? (now - latestSeen) / 1000 > 30 : true
       }
       if (shouldClose) {
         if (game.betAmount > 0) {
