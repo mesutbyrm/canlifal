@@ -1,7 +1,52 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import BanaOzelPopup from '@/components/bana-ozel-popup'
+
+// Page-type detection from pathname (strips /tr|/en prefix)
+type BannerPageType = 'home' | 'voice' | 'live' | 'default'
+function detectPageType(pathname: string | null): BannerPageType {
+  if (!pathname) return 'default'
+  const p = pathname.replace(/^\/(tr|en)(?=\/|$)/, '') || '/'
+  if (p === '/' || p === '') return 'home'
+  if (p.startsWith('/sohbet/video')) return 'live'
+  if (p.startsWith('/sohbet')) return 'voice'
+  return 'default'
+}
+
+// Per-position wrapper styles
+function getPositionStyle(pageType: BannerPageType, position: string): React.CSSProperties {
+  // 'top' = inline within sticky wrapper (default behavior)
+  if (position === 'top') return {}
+
+  const fixedBase: React.CSSProperties = {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    zIndex: 45,
+    pointerEvents: 'none',
+  }
+
+  // Non-top positions overlay over content via fixed positioning
+  if (pageType === 'home') {
+    if (position === 'over-streams') return { ...fixedBase, top: '32vh' }
+    if (position === 'middle') return { ...fixedBase, top: '52vh' }
+  }
+  if (pageType === 'voice') {
+    if (position === 'below-announcement') return { ...fixedBase, top: '120px' }
+    if (position === 'above-input') return { ...fixedBase, bottom: '70px', top: 'auto' }
+  }
+  if (pageType === 'live') {
+    if (position === 'over-video') return { ...fixedBase, top: '180px' }
+    if (position === 'above-comments') return { ...fixedBase, top: '46vh' }
+  }
+  if (pageType === 'default') {
+    if (position === 'page-top') return { ...fixedBase, top: '120px' }
+    if (position === 'page-bottom') return { ...fixedBase, bottom: '20px', top: 'auto' }
+  }
+  return {}
+}
 
 interface Announcement {
   id: string
@@ -232,6 +277,12 @@ export default function LoginAnnouncementBanner() {
   const [announcementStyle, setAnnouncementStyle] = useState<string>('fade')
   const [displayMode, setDisplayMode] = useState<string>('fullwidth') // fullwidth or box
   const [boxPadding, setBoxPadding] = useState(25) // px from left/right
+  const [pagePlacements, setPagePlacements] = useState<Record<string, { position: string; effect: string }>>({})
+  const pathname = usePathname()
+  const pageType = detectPageType(pathname)
+  const placement = pagePlacements[pageType]
+  const activePosition = placement?.position || 'top'
+  const wrapperStyle = getPositionStyle(pageType, activePosition)
 
   // Load seen IDs from sessionStorage on mount
   useEffect(() => {
@@ -263,6 +314,12 @@ export default function LoginAnnouncementBanner() {
           }
           if (data.entry_announcement_box_padding) {
             setBoxPadding(parseInt(data.entry_announcement_box_padding) || 25)
+          }
+          if (data.announcement_page_placements) {
+            try {
+              const pp = JSON.parse(data.announcement_page_placements)
+              setPagePlacements(pp || {})
+            } catch {}
           }
         }
       } catch {}
@@ -361,25 +418,31 @@ export default function LoginAnnouncementBanner() {
     }
   }
 
+  const effectiveStyle = placement?.effect || announcementStyle
   const animName = `loginBanner${
-    announcementStyle === 'slide' ? 'Slide' : 
-    announcementStyle === 'slideLeft' ? 'SlideLeft' : 
-    announcementStyle === 'slideRight' ? 'SlideRight' : 
-    announcementStyle === 'flash' ? 'FlashBright' : 
-    announcementStyle === 'zoom' ? 'Zoom' : 
-    announcementStyle === 'bounce' ? 'Bounce' : 
-    announcementStyle === 'typewriter' ? 'Typewriter' : 
-    announcementStyle === 'glow' ? 'Glow' : 
-    announcementStyle === 'shake' ? 'Shake' : 
-    announcementStyle === 'wave' ? 'Wave' : 
-    announcementStyle === 'flipX' ? 'FlipX' : 
-    announcementStyle === 'elastic' ? 'Elastic' : 
+    effectiveStyle === 'slide' ? 'Slide' : 
+    effectiveStyle === 'slideLeft' ? 'SlideLeft' : 
+    effectiveStyle === 'slideRight' ? 'SlideRight' : 
+    effectiveStyle === 'flash' ? 'FlashBright' : 
+    effectiveStyle === 'zoom' ? 'Zoom' : 
+    effectiveStyle === 'bounce' ? 'Bounce' : 
+    effectiveStyle === 'typewriter' ? 'Typewriter' : 
+    effectiveStyle === 'glow' ? 'Glow' : 
+    effectiveStyle === 'shake' ? 'Shake' : 
+    effectiveStyle === 'wave' ? 'Wave' : 
+    effectiveStyle === 'flipX' ? 'FlipX' : 
+    effectiveStyle === 'elastic' ? 'Elastic' : 
     'Flash'}`
+
+  // Over-video semi-transparent
+  const isOverVideo = pageType === 'live' && activePosition === 'over-video'
+  const wrapperOpacityStyle: React.CSSProperties = isOverVideo ? { opacity: 0.85 } : {}
 
   // BOX MODE - centered floating card
   if (useBoxMode) {
     return (
       <>
+      <div style={{ ...wrapperStyle, ...wrapperOpacityStyle }}>
       <div
         className="w-full flex justify-center pointer-events-none"
         style={{ padding: `4px ${boxPadding}px` }}
@@ -424,6 +487,7 @@ export default function LoginAnnouncementBanner() {
           />
         </div>
       </div>
+      </div>
       <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
       </>
     )
@@ -432,8 +496,9 @@ export default function LoginAnnouncementBanner() {
   // FULL WIDTH MODE (default)
   return (
     <>
+    <div style={{ ...wrapperStyle, ...wrapperOpacityStyle }}>
     <div
-      className={`w-full overflow-hidden relative ${isBanaOzelAnnouncement ? 'cursor-pointer' : ''}`}
+      className={`w-full overflow-hidden relative pointer-events-auto ${isBanaOzelAnnouncement ? 'cursor-pointer' : ''}`}
       onClick={handleBannerClick}
       style={{
         height: '24px',
@@ -598,6 +663,7 @@ export default function LoginAnnouncementBanner() {
           100% { background-position: 200% 0; }
         }
       `}</style>
+    </div>
     </div>
     <BanaOzelPopup isOpen={showBanaOzel} onClose={() => setShowBanaOzel(false)} />
     </>

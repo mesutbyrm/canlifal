@@ -16,6 +16,16 @@ import {
   Upload, ImageIcon, X
 } from 'lucide-react'
 import Image from 'next/image'
+import AnnouncementPageMockup, { PAGE_PLACEMENTS, PageType } from '@/components/admin/announcement-page-mockup'
+
+// ── Sayfa Bazlı Konum Varsayılanları ──
+type PagePlacementValue = { position: string; effect: string }
+const DEFAULT_PAGE_PLACEMENTS: Record<PageType, PagePlacementValue> = {
+  home: { position: 'over-streams', effect: 'fade' },
+  voice: { position: 'below-announcement', effect: 'fade' },
+  live: { position: 'over-video', effect: 'fade' },
+  default: { position: 'top', effect: 'slide' },
+}
 
 // ── Geçiş Efekti Tanımları ──
 const TRANSITION_EFFECTS = [
@@ -166,6 +176,11 @@ export default function AnnouncementSettingsPage() {
   const [savingMarquee, setSavingMarquee] = useState(false)
   const [savedMarquee, setSavedMarquee] = useState(false)
 
+  // Page-specific placement settings
+  const [pagePlacements, setPagePlacements] = useState<Record<PageType, PagePlacementValue>>(DEFAULT_PAGE_PLACEMENTS)
+  const [savingPagePlacements, setSavingPagePlacements] = useState(false)
+  const [savedPagePlacements, setSavedPagePlacements] = useState(false)
+
   // Announcement images (location & appearance)
   const [announcementBgImage, setAnnouncementBgImage] = useState('')
   const [announcementIconImage, setAnnouncementIconImage] = useState('')
@@ -236,6 +251,12 @@ export default function AnnouncementSettingsPage() {
           if (psData.chat_marquee_repeat) setMarqueeRepeat(psData.chat_marquee_repeat)
           if (psData.announcement_bg_image) setAnnouncementBgImage(psData.announcement_bg_image)
           if (psData.announcement_icon_image) setAnnouncementIconImage(psData.announcement_icon_image)
+          if (psData.announcement_page_placements) {
+            try {
+              const pp = JSON.parse(psData.announcement_page_placements)
+              setPagePlacements(prev => ({ ...prev, ...pp }))
+            } catch {}
+          }
           if (psData.event_announcement_templates) {
             try {
               const et = JSON.parse(psData.event_announcement_templates)
@@ -434,6 +455,20 @@ export default function AnnouncementSettingsPage() {
       console.error('Upload error:', error)
     } finally {
       setUploading(false)
+    }
+  }
+
+  // Save page-specific placement settings
+  const handleSavePagePlacements = async () => {
+    setSavingPagePlacements(true)
+    try {
+      await saveGeneralSetting('announcement_page_placements', JSON.stringify(pagePlacements))
+      setSavedPagePlacements(true)
+      setTimeout(() => setSavedPagePlacements(false), 3000)
+    } catch (error) {
+      console.error('Failed to save page placements:', error)
+    } finally {
+      setSavingPagePlacements(false)
     }
   }
 
@@ -720,6 +755,68 @@ export default function AnnouncementSettingsPage() {
                   </div>
                 </motion.div>
               )}
+            </div>
+          </motion.div>
+
+          {/* ── Sayfa Bazlı Banner Konumları ── */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="rounded-xl border border-amber-500/30 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(120, 80, 20, 0.2) 0%, rgba(60, 40, 10, 0.4) 100%)' }}>
+            <div className="p-5">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
+                <MapPin className="w-5 h-5 text-amber-400" /> Sayfa Bazlı Banner Konumu
+              </h3>
+              <p className="text-xs text-amber-300/80 mb-5">Her sayfa türü için duyuru bandının nerede görüneceğini ve hangi efektle geleceğini görsel olarak seçin</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {(Object.keys(PAGE_PLACEMENTS) as PageType[]).map((pageType) => {
+                  const cfg = PAGE_PLACEMENTS[pageType]
+                  const current = pagePlacements[pageType] || DEFAULT_PAGE_PLACEMENTS[pageType]
+                  return (
+                    <div key={pageType} className="rounded-xl border border-amber-500/20 bg-black/20 p-4">
+                      <div className="mb-3">
+                        <p className="text-base font-bold text-white">{cfg.label}</p>
+                        <p className="text-[11px] text-amber-300/70">{cfg.desc}</p>
+                      </div>
+
+                      {/* Mockup buttons */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {cfg.options.map((opt) => (
+                          <AnnouncementPageMockup
+                            key={opt.key}
+                            pageType={pageType}
+                            position={opt.key}
+                            effect={current.effect}
+                            selected={current.position === opt.key}
+                            onClick={() => setPagePlacements(prev => ({ ...prev, [pageType]: { ...prev[pageType], position: opt.key } }))}
+                            label={opt.label}
+                            desc={opt.desc}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Effect selector */}
+                      <div>
+                        <label className="text-xs text-amber-200 block mb-1.5">✨ Geçiş Efekti</label>
+                        <select
+                          value={current.effect}
+                          onChange={(e) => setPagePlacements(prev => ({ ...prev, [pageType]: { ...prev[pageType], effect: e.target.value } }))}
+                          className="w-full px-3 py-2 rounded-lg bg-black/40 border border-amber-500/30 text-white text-xs focus:outline-none focus:border-amber-400"
+                        >
+                          {TRANSITION_EFFECTS.map(eff => (
+                            <option key={eff.key} value={eff.key} className="bg-purple-950">{eff.label} — {eff.desc}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Save Page Placements */}
+            <div className="border-t border-amber-500/20 p-4">
+              <motion.button whileTap={{ scale: 0.95 }} onClick={handleSavePagePlacements} disabled={savingPagePlacements} className={`w-full px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${savedPagePlacements ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white'}`}>
+                {savingPagePlacements ? <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</> : savedPagePlacements ? <><CheckCircle className="w-4 h-4" /> Kaydedildi!</> : <><Save className="w-4 h-4" /> Sayfa Konumlarını Kaydet</>}
+              </motion.button>
             </div>
           </motion.div>
 
