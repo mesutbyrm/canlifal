@@ -1156,8 +1156,8 @@ export default function GameLobbyPage() {
   const confirmJoinTable = () => {
     if (!joinConfirm) return
     const slug = gameSlug(joinConfirm.gameType)
-    router.push(`/${lang}/oyunlar/${slug}?join=${joinConfirm.roomId}`)
     setJoinConfirm(null)
+    window.location.href = `/${lang}/oyunlar/${slug}?join=${joinConfirm.roomId}`
   }
 
   const handleJoinTable = (roomId: string, gameType: string) => {

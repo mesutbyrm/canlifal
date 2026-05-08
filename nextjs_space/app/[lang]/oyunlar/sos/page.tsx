@@ -528,6 +528,7 @@ export default function SOSGamePage() {
   const [prevBoard, setPrevBoard] = useState<string[][]>([])
   const [flashCells, setFlashCells] = useState<Set<string>>(new Set())
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const waitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Spectator state
@@ -627,6 +628,7 @@ export default function SOSGamePage() {
           const g = await rr.json()
           if (g.status === 'active' && g.player2Id) {
             clearInterval(check)
+            if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
             setGame(g)
             setBoard(JSON.parse(g.board))
             setLines(JSON.parse(g.lines))
@@ -637,6 +639,16 @@ export default function SOSGamePage() {
         } catch {}
       }, 3000)
       pollRef.current = check
+      // Auto-cancel after 2 minutes if no opponent joins
+      waitTimeoutRef.current = setTimeout(async () => {
+        clearInterval(check)
+        try { await fetch(`/api/games/sos/${waitRoomId}`, { method: 'DELETE' }) } catch {}
+        setMyWaitingGame(null)
+        setPhase('menu')
+        setGameId(null)
+        alert('2 dakika içinde rakip bulunamadı, masa kapatıldı.')
+        window.location.href = `/${lang}/oyunlar`
+      }, 120000)
     }
   }, [searchParams, session?.user?.id])
 
@@ -774,6 +786,7 @@ export default function SOSGamePage() {
             const g: SosGame = await r.json()
             if (g.status === 'active' && g.player2Id) {
               clearInterval(checkJoin)
+              if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
               setGame(g)
               setBoard(JSON.parse(g.board))
               setLines(JSON.parse(g.lines))
@@ -785,6 +798,14 @@ export default function SOSGamePage() {
           } catch {}
         }, 3000)
         pollRef.current = checkJoin
+        // Auto-cancel after 2 minutes if no opponent joins
+        waitTimeoutRef.current = setTimeout(async () => {
+          clearInterval(checkJoin)
+          try { await fetch(`/api/games/sos/${data.gameId}`, { method: 'DELETE' }) } catch {}
+          setMyWaitingGame(null); setPhase('menu'); setGameId(null)
+          alert('2 dakika içinde rakip bulunamadı, masa kapatıldı.')
+          window.location.href = `/${lang}/oyunlar`
+        }, 120000)
       }
     } catch { alert('Bağlantı hatası') }
   }
@@ -845,6 +866,7 @@ export default function SOSGamePage() {
     try { await fetch(`/api/games/sos/${myWaitingGame}`, { method: 'DELETE' }) } catch {}
     setMyWaitingGame(null)
     if (pollRef.current) clearInterval(pollRef.current)
+    if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
     setPhase('menu')
   }
 
@@ -1009,6 +1031,7 @@ export default function SOSGamePage() {
     setIsSpectator(false)
     setChatEnabled(true)
     if (pollRef.current) clearInterval(pollRef.current)
+    if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
     if (session?.user) {
       fetch('/api/user/profile').then(r => r.json()).then(d => {
         if (d.credits !== undefined) setUserBalance({ credits: d.credits, jetonBalance: d.jetonBalance || 0 })

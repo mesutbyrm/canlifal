@@ -357,6 +357,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const [chatEnabled, setChatEnabled] = useState(true)
   const [showWinPopup, setShowWinPopup] = useState(false)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const waitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [recentWinners, setRecentWinners] = useState<any[]>([])
   // Chat popup messages
   const [popupMessages, setPopupMessages] = useState<Array<{ id: string; userName: string; message: string; ts: number }>>([])
@@ -459,6 +460,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
           const g = await rr.json()
           if (g.status === 'active' && g.player2Id) {
             clearInterval(check)
+            if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
             setRoom(g)
             setChatEnabled(g.chatEnabled)
             setPhase('playing')
@@ -467,6 +469,16 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
         } catch {}
       }, 3000)
       pollRef.current = check
+      // Auto-cancel after 2 minutes if no opponent joins
+      waitTimeoutRef.current = setTimeout(async () => {
+        clearInterval(check)
+        try { await fetch(`/api/games/room/${waitRoomId}`, { method: 'DELETE' }) } catch {}
+        setMyWaiting(null)
+        setPhase('menu')
+        setRoomId(null)
+        alert('2 dakika içinde rakip bulunamadı, masa kapatıldı.')
+        window.location.href = `/${lang}/oyunlar`
+      }, 120000)
     }
   }, [searchParams, session?.user?.id])
 
@@ -591,9 +603,17 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
       } else {
         setMyWaiting(d.roomId); setPhase('lobby')
         const check = setInterval(async () => {
-          try { const rr = await fetch(`/api/games/room/${d.roomId}`); const g = await rr.json(); if (g.status === 'active' && g.player2Id) { clearInterval(check); setRoom(g); setChatEnabled(g.chatEnabled); setPhase('playing'); setMyWaiting(null) } } catch {}
+          try { const rr = await fetch(`/api/games/room/${d.roomId}`); const g = await rr.json(); if (g.status === 'active' && g.player2Id) { clearInterval(check); if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }; setRoom(g); setChatEnabled(g.chatEnabled); setPhase('playing'); setMyWaiting(null) } } catch {}
         }, 3000)
         pollRef.current = check
+        // Auto-cancel after 2 minutes if no opponent joins
+        waitTimeoutRef.current = setTimeout(async () => {
+          clearInterval(check)
+          try { await fetch(`/api/games/room/${d.roomId}`, { method: 'DELETE' }) } catch {}
+          setMyWaiting(null); setPhase('menu'); setRoomId(null)
+          alert('2 dakika içinde rakip bulunamadı, masa kapatıldı.')
+          window.location.href = `/${lang}/oyunlar`
+        }, 120000)
       }
     } catch { alert('Bağlantı hatası') }
   }
@@ -620,7 +640,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
   const cancelWaiting = async () => {
     if (!myWaiting) return
     try { await fetch(`/api/games/room/${myWaiting}`, { method: 'DELETE' }) } catch {}
-    setMyWaiting(null); if (pollRef.current) clearInterval(pollRef.current); setPhase('menu')
+    setMyWaiting(null); if (pollRef.current) clearInterval(pollRef.current); if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }; setPhase('menu')
   }
 
   const leaveGame = async () => {
@@ -640,6 +660,7 @@ export default function GameShell({ gameType, gameName, gameEmoji, gameDesc, sup
     setPhase('menu'); setRoom(null); setRoomId(null); setMyWaiting(null); setIsSpectator(false); setChatEnabled(true); setShowWinPopup(false)
     setPopupMessages([]); lastChatRef.current = null; setActiveGift(null)
     if (pollRef.current) clearInterval(pollRef.current)
+    if (waitTimeoutRef.current) { clearTimeout(waitTimeoutRef.current); waitTimeoutRef.current = null }
     if (session?.user) fetch('/api/user/profile').then(r => r.json()).then(d => { if (d.credits !== undefined) setUserBalance({ credits: d.credits, jetonBalance: d.jetonBalance || 0 }) }).catch(() => {})
     fetchStats()
   }
