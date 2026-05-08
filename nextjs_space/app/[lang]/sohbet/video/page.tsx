@@ -425,6 +425,40 @@ function VideoStreamPageInner() {
         console.log('🔗 TRTC Viewer connection:', JSON.stringify(event))
       })
 
+      // Ensure playsinline on any video elements created by SDK
+      const ensurePlaysinline = (container: HTMLElement) => {
+        const videos = container.querySelectorAll('video')
+        videos.forEach(v => {
+          if (!v.hasAttribute('playsinline')) {
+            v.setAttribute('playsinline', '')
+            v.setAttribute('webkit-playsinline', '')
+            v.playsInline = true
+            v.muted = false // remote video should not be muted
+          }
+        })
+      }
+
+      // MutationObserver to add playsinline to any new video elements
+      const videoObserver = new MutationObserver((mutations) => {
+        mutations.forEach(m => {
+          m.addedNodes.forEach(node => {
+            if (node instanceof HTMLVideoElement) {
+              node.setAttribute('playsinline', '')
+              node.setAttribute('webkit-playsinline', '')
+              node.playsInline = true
+            } else if (node instanceof HTMLElement) {
+              ensurePlaysinline(node)
+            }
+          })
+        })
+      })
+      // Observe the trtc-remote-video container when it's available
+      const observeContainer = () => {
+        const el = document.getElementById('trtc-remote-video')
+        if (el) videoObserver.observe(el, { childList: true, subtree: true })
+      }
+      observeContainer()
+
       // Helper: try to play remote video with retry
       const tryPlayRemoteVideo = (userId: string, attempt = 0) => {
         if (isUnmountedRef.current || !trtcRef.current) return
@@ -437,8 +471,10 @@ function VideoStreamPageInner() {
           // Strategy 1: Try with DOM element
           playRemote(trtc, userId, container).then(() => {
             console.log('✅ TRTC: Remote video started for', userId)
+            videoPlaying = true
             setConnectionStatus('connected')
             pendingRemoteUserRef.current = null
+            ensurePlaysinline(container as HTMLElement)
           }).catch((err: any) => {
             console.warn('⚠️ TRTC: startRemoteVideo with element failed:', err?.code, err?.message || err)
             // Strategy 2: Try with string ID (works better on some mobile browsers)
@@ -446,8 +482,10 @@ function VideoStreamPageInner() {
               console.log('🔄 TRTC: Retrying with string ID "trtc-remote-video"')
               trtcRef.current!.startRemoteVideo({ userId, view: 'trtc-remote-video' } as any).then(() => {
                 console.log('✅ TRTC: Remote video started via string ID for', userId)
+                videoPlaying = true
                 setConnectionStatus('connected')
                 pendingRemoteUserRef.current = null
+                observeContainer()
               }).catch((err2: any) => {
                 console.warn('⚠️ TRTC: String ID also failed:', err2?.code, err2?.message || err2)
                 if (attempt < 10) {
@@ -470,6 +508,9 @@ function VideoStreamPageInner() {
         }
       }
 
+      // Track if video is actually playing
+      let videoPlaying = false
+
       // Handle remote user events (broadcaster + co-broadcasters)
       trtc.on(TRTCModule.EVENT.REMOTE_VIDEO_AVAILABLE, (event: { userId: string }) => {
         if (isUnmountedRef.current) return
@@ -482,19 +523,38 @@ function VideoStreamPageInner() {
       trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, (event: { userId: string }) => {
         console.log('🔊 TRTC: REMOTE_AUDIO_AVAILABLE from', event.userId)
         remoteUsersRef.current.add(event.userId)
-        // Audio is available = broadcaster is connected, remove overlay
         setConnectionStatus('connected')
+        // Proactively try video too — REMOTE_VIDEO_AVAILABLE may not fire on some devices
+        if (!videoPlaying) {
+          setTimeout(() => {
+            if (!isUnmountedRef.current && !videoPlaying) {
+              console.log('🔄 TRTC: Audio available, proactively trying video for', event.userId)
+              tryPlayRemoteVideo(event.userId)
+            }
+          }, 1000)
+        }
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_ENTER, (event: { userId: string }) => {
         console.log('👤 TRTC: REMOTE_USER_ENTER', event.userId)
+        remoteUsersRef.current.add(event.userId)
         setConnectionStatus('connected')
+        // Also try video when user enters
+        if (!videoPlaying) {
+          setTimeout(() => {
+            if (!isUnmountedRef.current && !videoPlaying) {
+              console.log('🔄 TRTC: User entered, proactively trying video for', event.userId)
+              tryPlayRemoteVideo(event.userId)
+            }
+          }, 2000)
+        }
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_EXIT, (event: { userId: string }) => {
         console.log('👋 TRTC: REMOTE_USER_EXIT', event.userId)
         remoteUsersRef.current.delete(event.userId)
         pendingRemoteUserRef.current = null
+        videoPlaying = false
         if (remoteUsersRef.current.size === 0) {
           setConnectionStatus('failed')
         }
@@ -511,17 +571,52 @@ function VideoStreamPageInner() {
       
       console.log('🎬 TRTC: Joined room as audience, userId:', userId, 'roomId:', roomId)
 
-      // Diagnostic: if no events within 8s, try to manually subscribe
+      // Diagnostic: if no video within 5s, try to subscribe; 8s remove overlay
+      setTimeout(() => {
+        if (isUnmountedRef.current || !trtcRef.current) return
+        const remoteUserIds = Array.from(remoteUsersRef.current)
+        console.log('🔍 TRTC 5s check — videoPlaying:', videoPlaying, ', remote users:', remoteUserIds)
+        if (!videoPlaying && remoteUserIds.length > 0) {
+          console.log('🔄 TRTC: 5s — video not playing, retrying for all remote users')
+          remoteUserIds.forEach(uid => tryPlayRemoteVideo(uid))
+        }
+      }, 5000)
+
       setTimeout(() => {
         if (isUnmountedRef.current || !trtcRef.current) return
         const hasRemote = remoteUsersRef.current.size > 0
-        console.log('🔍 TRTC Diagnostic 8s — remote users:', Array.from(remoteUsersRef.current), ', container:', !!remoteVideoRef.current)
+        console.log('🔍 TRTC 8s check — remote users:', Array.from(remoteUsersRef.current), ', videoPlaying:', videoPlaying)
         if (!hasRemote) {
           console.warn('⚠️ TRTC: No remote events after 8s. Broadcaster may not be publishing.')
-          // Set connected anyway to remove overlay (audio might be playing silently)
-          setConnectionStatus('connected')
+        }
+        // Always remove overlay after 8s
+        setConnectionStatus('connected')
+        // One more video retry
+        if (!videoPlaying) {
+          const uids = Array.from(remoteUsersRef.current)
+          uids.forEach(uid => tryPlayRemoteVideo(uid))
         }
       }, 8000)
+
+      // Periodic video retry: every 5s check if video container has content
+      const videoRetryInterval = setInterval(() => {
+        if (isUnmountedRef.current || !trtcRef.current || videoPlaying) {
+          clearInterval(videoRetryInterval)
+          return
+        }
+        const container = document.getElementById('trtc-remote-video')
+        const hasVideoChild = container && container.querySelector('video')
+        if (hasVideoChild) {
+          videoPlaying = true
+          clearInterval(videoRetryInterval)
+          return
+        }
+        const uids = Array.from(remoteUsersRef.current)
+        if (uids.length > 0 && container) {
+          console.log('🔄 TRTC: Periodic retry — trying video for', uids[0])
+          tryPlayRemoteVideo(uids[0])
+        }
+      }, 5000)
 
       // Start polling for other data (gifts, comments, stats, etc.)
       // Pause when tab is hidden to dramatically reduce server load
@@ -1424,8 +1519,7 @@ function VideoStreamPageInner() {
                     }
                   }
                 }}
-                className={`w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain ${currentStream?.backgroundUrl ? 'z-[1]' : 'bg-black'}`}
-                style={{ aspectRatio: '9/16' }}
+                className={`absolute inset-0 w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain [&_video]:!inline-block ${currentStream?.backgroundUrl ? 'z-[1]' : 'bg-black'}`}
               />
             </div>
           )}

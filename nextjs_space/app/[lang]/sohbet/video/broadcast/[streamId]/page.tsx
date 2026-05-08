@@ -436,16 +436,16 @@ export default function BroadcastPage() {
       let videoStarted = false
 
       if (videoContainer) {
-        // Strategy 1: Pass DOM element directly (most compatible with mobile browsers)
+        // Strategy 1: Start with lower resolution for maximum mobile compatibility
         const videoAttempts = [
-          { label: '480p-element', config: { view: videoContainer, publish: true, option: { profile: '480p' } } },
-          { label: '360p-element', config: { view: videoContainer, publish: true, option: { profile: '360p' } } },
-          { label: 'default-element', config: { view: videoContainer, publish: true } },
-          // Strategy 2: Use string ID
-          { label: '480p-id', config: { view: 'trtc-local-video', publish: true, option: { profile: '480p' } } },
-          { label: 'default-id', config: { view: 'trtc-local-video', publish: true } },
-          // Strategy 3: No view (capture only, render separately)
-          { label: 'no-view', config: { publish: true } },
+          { label: '360p-element', config: { view: videoContainer, publish: true, option: { profile: '360p', useFrontCamera: true } } },
+          { label: '480p-element', config: { view: videoContainer, publish: true, option: { profile: '480p', useFrontCamera: true } } },
+          { label: 'default-element', config: { view: videoContainer, publish: true, option: { useFrontCamera: true } } },
+          // Strategy 2: Use string ID (some mobile browsers prefer this)
+          { label: '360p-id', config: { view: 'trtc-local-video', publish: true, option: { profile: '360p', useFrontCamera: true } } },
+          { label: 'default-id', config: { view: 'trtc-local-video', publish: true, option: { useFrontCamera: true } } },
+          // Strategy 3: No view (capture only)
+          { label: 'no-view', config: { publish: true, option: { useFrontCamera: true } } },
         ]
 
         for (const attempt of videoAttempts) {
@@ -481,6 +481,14 @@ export default function BroadcastPage() {
       }
 
       console.log('🎬 TRTC: Broadcast started — video:', videoStarted, ', userId:', userId, ', roomId:', roomId)
+      
+      if (!videoStarted) {
+        console.error('❌ TRTC: All video strategies failed! Audio-only broadcast.')
+        // Alert user that video didn't start
+        setTimeout(() => {
+          alert('⚠️ Kamera başlatılamadı. Lütfen tarayıcı ayarlarından kamera iznini kontrol edin ve sayfayı yenileyin.')
+        }, 1000)
+      }
     } catch (error: any) {
       console.error('TRTC broadcast error:', error?.code, error?.message || String(error))
       alert('Yayın başlatılamadı. Kamera/mikrofon erişimini kontrol edin.')
