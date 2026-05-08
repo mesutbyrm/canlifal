@@ -501,9 +501,11 @@ function VideoStreamPageInner() {
       })
 
       // Join TRTC room as audience
-      // enterRoom now passes autoReceiveVideo:true + enableAutoPlayDialog:true
+      // CRITICAL: Viewer userId MUST be different from broadcaster userId
+      // Otherwise TRTC kicks the broadcaster when viewer joins with same userId
       const roomId = `stream_${streamId}`
-      const userId = session?.user?.id || `viewer_${Date.now()}`
+      const baseId = session?.user?.id || 'anon'
+      const userId = `${baseId}_v${Date.now()}`
       const credentials = await fetchTRTCCredentials(userId, roomId)
       await trtcEnter(trtc, credentials, roomId, 'audience', 'live')
       
