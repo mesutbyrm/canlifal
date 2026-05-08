@@ -409,27 +409,61 @@ function VideoStreamPageInner() {
       const trtc = await createTRTCInstance()
       trtcRef.current = trtc
 
+      // ── Error & connection event listeners ──
+      trtc.on(TRTCModule.EVENT.ERROR, (error: any) => {
+        console.error('🔴 TRTC Viewer ERROR:', error?.code, error?.message || error)
+      })
+
+      trtc.on(TRTCModule.EVENT.AUTOPLAY_FAILED, (event: any) => {
+        console.warn('🔇 TRTC AUTOPLAY_FAILED — user must tap page. event:', event)
+        // The SDK's built-in dialog (enableAutoPlayDialog:true) will guide the user
+        // But also set connection status to connected since data IS flowing
+        setConnectionStatus('connected')
+      })
+
+      trtc.on(TRTCModule.EVENT.CONNECTION_STATE_CHANGED, (event: any) => {
+        console.log('🔗 TRTC Viewer connection:', JSON.stringify(event))
+      })
+
       // Helper: try to play remote video with retry
       const tryPlayRemoteVideo = (userId: string, attempt = 0) => {
         if (isUnmountedRef.current || !trtcRef.current) return
         const guestEl = guestVideoRefs.current.get(userId)
-        const container = guestEl || remoteVideoRef.current
+        const container = guestEl || remoteVideoRef.current || document.getElementById('trtc-remote-video')
         if (container) {
-          console.log('🎬 TRTC: Playing remote video for', userId, 'in container', container.tagName)
+          const rect = container.getBoundingClientRect()
+          console.log('🎬 TRTC: Playing remote video for', userId, 'in', container.tagName, rect.width + 'x' + rect.height, 'attempt', attempt)
+          
+          // Strategy 1: Try with DOM element
           playRemote(trtc, userId, container).then(() => {
             console.log('✅ TRTC: Remote video started for', userId)
             setConnectionStatus('connected')
             pendingRemoteUserRef.current = null
-          }).catch((err) => {
-            console.warn('⚠️ TRTC: startRemoteVideo failed:', err, '- retry', attempt)
-            if (attempt < 5) {
-              setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), 1000)
+          }).catch((err: any) => {
+            console.warn('⚠️ TRTC: startRemoteVideo with element failed:', err?.code, err?.message || err)
+            // Strategy 2: Try with string ID (works better on some mobile browsers)
+            if (document.getElementById('trtc-remote-video')) {
+              console.log('🔄 TRTC: Retrying with string ID "trtc-remote-video"')
+              trtcRef.current!.startRemoteVideo({ userId, view: 'trtc-remote-video' } as any).then(() => {
+                console.log('✅ TRTC: Remote video started via string ID for', userId)
+                setConnectionStatus('connected')
+                pendingRemoteUserRef.current = null
+              }).catch((err2: any) => {
+                console.warn('⚠️ TRTC: String ID also failed:', err2?.code, err2?.message || err2)
+                if (attempt < 10) {
+                  const delay = Math.min(500 + attempt * 500, 3000)
+                  setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), delay)
+                }
+              })
+            } else if (attempt < 10) {
+              const delay = Math.min(500 + attempt * 500, 3000)
+              setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), delay)
             }
           })
         } else {
           console.log('⏳ TRTC: Container not ready, scheduling retry for', userId, 'attempt', attempt)
           pendingRemoteUserRef.current = userId
-          if (attempt < 10) {
+          if (attempt < 15) {
             if (videoRetryTimerRef.current) clearTimeout(videoRetryTimerRef.current)
             videoRetryTimerRef.current = setTimeout(() => tryPlayRemoteVideo(userId, attempt + 1), 500)
           }
@@ -447,17 +481,13 @@ function VideoStreamPageInner() {
 
       trtc.on(TRTCModule.EVENT.REMOTE_AUDIO_AVAILABLE, (event: { userId: string }) => {
         console.log('🔊 TRTC: REMOTE_AUDIO_AVAILABLE from', event.userId)
-        // TRTC auto-plays remote audio in live mode
-        // Track this user as present in the room
         remoteUsersRef.current.add(event.userId)
         // Audio is available = broadcaster is connected, remove overlay
-        // even if video hasn't arrived yet
         setConnectionStatus('connected')
       })
 
       trtc.on(TRTCModule.EVENT.REMOTE_USER_ENTER, (event: { userId: string }) => {
         console.log('👤 TRTC: REMOTE_USER_ENTER', event.userId)
-        // Broadcaster entered the room - connection is established
         setConnectionStatus('connected')
       })
 
@@ -471,23 +501,25 @@ function VideoStreamPageInner() {
       })
 
       // Join TRTC room as audience
+      // enterRoom now passes autoReceiveVideo:true + enableAutoPlayDialog:true
       const roomId = `stream_${streamId}`
       const userId = session?.user?.id || `viewer_${Date.now()}`
       const credentials = await fetchTRTCCredentials(userId, roomId)
       await trtcEnter(trtc, credentials, roomId, 'audience', 'live')
       
-      console.log('🎬 TRTC: Joined room as audience, userId:', userId)
+      console.log('🎬 TRTC: Joined room as audience, userId:', userId, 'roomId:', roomId)
 
-      // Diagnostic: Check remote users after a delay 
-      // If video doesn't fire within 5s, log the state for debugging
+      // Diagnostic: if no events within 8s, try to manually subscribe
       setTimeout(() => {
         if (isUnmountedRef.current || !trtcRef.current) return
-        const hasRemoteVideo = remoteUsersRef.current.size > 0
-        console.log('🔍 TRTC: Diagnostic after 5s - remote users:', Array.from(remoteUsersRef.current), 'has video container:', !!remoteVideoRef.current)
-        if (!hasRemoteVideo) {
-          console.warn('⚠️ TRTC: No REMOTE_VIDEO_AVAILABLE received after 5s. Broadcaster may not be publishing video.')
+        const hasRemote = remoteUsersRef.current.size > 0
+        console.log('🔍 TRTC Diagnostic 8s — remote users:', Array.from(remoteUsersRef.current), ', container:', !!remoteVideoRef.current)
+        if (!hasRemote) {
+          console.warn('⚠️ TRTC: No remote events after 8s. Broadcaster may not be publishing.')
+          // Set connected anyway to remove overlay (audio might be playing silently)
+          setConnectionStatus('connected')
         }
-      }, 5000)
+      }, 8000)
 
       // Start polling for other data (gifts, comments, stats, etc.)
       // Pause when tab is hidden to dramatically reduce server load
@@ -1360,6 +1392,7 @@ function VideoStreamPageInner() {
                 </div>
               )}
               <div 
+                id="trtc-remote-video"
                 ref={(el) => {
                   (remoteVideoRef as any).current = el
                   // When container mounts and there's a pending remote user, play their video

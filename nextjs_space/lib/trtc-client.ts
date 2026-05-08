@@ -69,7 +69,11 @@ export async function enterRoom(
     strRoomId: roomId,
     scene: scene as any,
     role: (role === 'host' ? 'anchor' : 'audience') as any,
-  })
+    // For audience: pre-receive video for faster playback & enable autoplay dialog
+    autoReceiveVideo: role === 'audience',
+    autoReceiveAudio: true,
+    enableAutoPlayDialog: true,
+  } as any)
 }
 
 /**
