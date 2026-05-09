@@ -1,0 +1,2557 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/fortune_telling_platform/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String               @id @default(cuid())
+  email                 String               @unique
+  emailVerified         DateTime?
+  password              String?
+  name                  String
+  username              String?              @unique
+  phone                 String?
+  image                 String?
+  preferredLanguage     String               @default("tr")
+  credits               Int                  @default(50)
+  role                  String               @default("user")
+  membership            String               @default("basic") // basic, premium, gold
+  membershipExpiresAt   DateTime?
+  createdAt             DateTime             @default(now())
+  referralCode          String?              @unique
+  referralCreditsEarned Int                  @default(0)
+  referredById          String?
+  // Profile fields
+  bio                   String?              // User bio/about text
+  birthDate             DateTime?
+  birthTime             String?              // HH:mm format for rising sign calculation
+  zodiacSign            String?
+  risingSign            String?
+  favoriteTeam          String?
+  lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
+  // Privacy settings
+  messagePrivacy        String               @default("everyone") // everyone, followers, nobody
+  hideProfileViews      Boolean              @default(false) // hide from profile view tracking
+  // Theme preference
+  theme                 String               @default("mystical") // mystical, facebook
+  // Jeton (token) balance for Bana Özel
+  jetonBalance          Int                  @default(0)
+  // Profile customization
+  specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
+  profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)
+  profileFrameId        String?              // Selected profile frame ID
+  profileFrame          ProfileFrame?        @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
+  adminAssignedFrameId  String?              // Admin-assigned profile frame (overrides user selection)
+  adminAssignedFrame    ProfileFrame?        @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
+  // Withdrawal settings (admin-controlled)
+  withdrawalLimit       Int                  @default(0) // 0 means cannot withdraw
+  // Statistics
+  totalTimeSpentMinutes Int                  @default(0)
+  lastActiveAt          DateTime?
+  activeDeviceToken     String?
+  accounts              Account[]
+  bannedOthers          ChatBan[]            @relation("Banner")
+  bannedIn              ChatBan[]            @relation("BannedUser")
+  chatMessages          ChatMessage[]
+  mutedOthers           ChatMute[]           @relation("Muter")
+  mutedIn               ChatMute[]           @relation("MutedUser")
+  chatPresences         ChatPresence[]
+  chatRoles             ChatUserRole[]
+  ownedChatRooms        ChatRoom[]           @relation("RoomOwner")
+  beneficiaryRooms      ChatRoom[]           @relation("RoomGiftBeneficiary")
+  fortunes              Fortune[]
+  fortuneTellerProfile  LiveFortuneTeller?
+  liveSessions          LiveSession[]        @relation("SessionUser")
+  notifications         Notification[]
+  passwordResets        PasswordResetToken[]
+  referredHistory       Referral[]           @relation("Referred")
+  referralHistory       Referral[]           @relation("Referrer")
+  sessions              Session[]
+  socialComments        SocialComment[]
+  socialLikes           SocialLike[]
+  socialPosts           SocialPost[]
+  payments              Payment[]
+  referredBy            User?                @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals             User[]               @relation("UserReferrals")
+  videoStreams          VideoStream[]
+  videoStreamComments   VideoStreamComment[]
+  videoStreamLikes      VideoStreamLike[]
+  streamGifts           StreamGift[]
+  sentChatRoomGifts     ChatRoomGift[]       @relation("ChatGiftSender")
+  receivedChatRoomGifts ChatRoomGift[]       @relation("ChatGiftRecipient")
+  followers             Follow[]             @relation("Following")
+  following             Follow[]             @relation("Follower")
+  sentMessages          DirectMessage[]      @relation("SentMessages")
+  receivedMessages      DirectMessage[]      @relation("ReceivedMessages")
+  conversationsAsUser1  Conversation[]       @relation("ConversationUser1")
+  conversationsAsUser2  Conversation[]       @relation("ConversationUser2")
+  sentRequests          MessageRequest[]     @relation("SentRequests")
+  receivedRequests      MessageRequest[]     @relation("ReceivedRequests")
+  dreamComments         DreamComment[]
+  dreamFavorites        DreamFavorite[]
+  dreamViews            DreamView[]
+  dreamDiaryEntries     DreamDiaryEntry[]
+  dailyLoginRewards     DailyLoginReward[]
+  dreamContestEntries   DreamContestEntry[]
+  dreamContestVotes     DreamContestVote[]
+  weeklyDreamReports    WeeklyDreamReport[]
+  liveActivities        LiveActivity[]       @relation("userActivities")
+  // XP & Level system
+  xp                    Int                  @default(0)
+  level                 Int                  @default(1)
+  loginStreak           Int                  @default(0)
+  lastLoginRewardDate   DateTime?            @db.Date
+  // Agency system
+  agencyMembership      AgencyUser?
+  agencyLeaveRequests   AgencyLeaveRequest[]
+  // Bot system
+  isBot                 Boolean              @default(false)
+  botProfile            BotProfile?
+
+  @@index([referralCode])
+  @@index([isBot])
+  @@index([referredById])
+  @@index([username])
+  @@map("users")
+}
+
+// Follow relationship between users
+model BotProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personality     String   // shy, aggressive, funny, flirty, serious
+  age             Int
+  city            String
+  interests       String?  @db.Text // JSON array
+  activityLevel   String   @default("medium") // low, medium, high
+  activeHoursStart Int     @default(9)  // 0-23
+  activeHoursEnd  Int      @default(23) // 0-23
+  isActive        Boolean  @default(true) // admin can enable/disable
+  lastActionAt    DateTime?
+  totalActions    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([isActive])
+  @@index([personality])
+  @@map("bot_profiles")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // The user who is following
+  followingId String   // The user being followed
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredId     String
+  creditsAwarded Int      @default(50)
+  createdAt      DateTime @default(now())
+  referred       User     @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  referrer       User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredId])
+  @@index([referrerId])
+  @@index([createdAt])
+  @@map("referrals")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model LiveFortuneTeller {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  displayName       String
+  bio               String?
+  specialties       String[]
+  pricePerSession   Int                @default(100)
+  rating            Float              @default(5.0)
+  totalSessions     Int                @default(0)
+  totalReviews      Int                @default(0)
+  isOnline          Boolean            @default(false)
+  isVerified        Boolean            @default(false)
+  isActive          Boolean            @default(true)
+  avatar            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  applicationNote   String?
+  applicationStatus String             @default("pending")
+  approvedAt        DateTime?
+  banReason         String?
+  bannedAt          DateTime?
+  bonusCredits      Int                @default(0)
+  freezeReason      String?
+  frozenAt          DateTime?
+  isBanned          Boolean            @default(false)
+  isFrozen          Boolean            @default(false)
+  rejectedAt        DateTime?
+  totalEarnings     Int                @default(0)
+  // Level system: bronze, silver, gold, diamond
+  tellerLevel       String             @default("bronze") // bronze, silver, gold, diamond
+  levelPoints       Int                @default(0) // Accumulated points for level calculation
+  levelUpdatedAt    DateTime?
+  // Teller permissions (admin controlled)
+  canGoOnline       Boolean            @default(true)
+  canChat           Boolean            @default(true)
+  canStartSession   Boolean            @default(true)
+  canSetPrice       Boolean            @default(false)
+  canEditProfile    Boolean            @default(true)
+  canViewEarnings   Boolean            @default(true)
+  canWithdraw       Boolean            @default(false)
+  // Kimlik doğrulama
+  verificationDocUrl String?
+  verificationStatus String             @default("none") // none, pending, approved, rejected
+  verificationNote   String?
+  maxSessionsPerDay Int                @default(10)
+  commissionRate    Int                @default(20)
+  adminNotes        String?
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions          LiveSession[]
+  reviews           LiveTellerReview[]
+  warnings          TellerWarning[]
+
+  @@index([isOnline])
+  @@index([isVerified])
+  @@index([rating])
+  @@index([applicationStatus])
+  @@index([isBanned])
+  @@map("live_fortune_tellers")
+}
+
+model TellerWarning {
+  id        String            @id @default(cuid())
+  tellerId  String
+  reason    String
+  issuedBy  String
+  createdAt DateTime          @default(now())
+  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+
+  @@index([tellerId])
+  @@map("teller_warnings")
+}
+
+model LiveSession {
+  id               String               @id @default(cuid())
+  tellerId         String
+  userId           String
+  fortuneType      String
+  status           String               @default("pending")
+  creditsCharged   Int
+  startedAt        DateTime?
+  endedAt          DateTime?
+  notes            String?
+  createdAt        DateTime             @default(now())
+  // Room and duration tracking
+  roomId           String?              @unique
+  maxMinutes       Int                  @default(5)
+  minutesUsed      Int                  @default(0)
+  creditsPerMinute Int                  @default(0)
+  lastPingAt       DateTime?
+  timerStarted     Boolean              @default(false)
+  timerStartedAt   DateTime?
+  messages         LiveSessionMessage[]
+  teller           LiveFortuneTeller    @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+  user             User                 @relation("SessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  review           LiveTellerReview?
+  chatSession      TellerChatSession?
+  roomSignals      RoomSignal[]
+
+  @@index([tellerId])
+  @@index([userId])
+  @@index([status])
+  @@index([roomId])
+  @@map("live_sessions")
+}
+
+// WebRTC Signaling for real-time communication
+model RoomSignal {
+  id          String      @id @default(cuid())
+  sessionId   String
+  senderId    String
+  receiverId  String
+  signalType  String      // offer, answer, ice-candidate
+  signalData  String      // JSON string of WebRTC signal data
+  processed   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([receiverId, processed])
+  @@map("room_signals")
+}
+
+model LiveSessionMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  senderId  String
+  message   String
+  createdAt DateTime    @default(now())
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("live_session_messages")
+}
+
+model LiveTellerReview {
+  id        String            @id @default(cuid())
+  tellerId  String
+  sessionId String            @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime          @default(now())
+  session   LiveSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  teller    LiveFortuneTeller @relation(fields: [tellerId], references: [id], onDelete: Cascade)
+
+  @@index([tellerId])
+  @@map("live_teller_reviews")
+}
+
+model Fortune {
+  id          String       @id @default(cuid())
+  userId      String
+  fortuneType String
+  inputData   String
+  aiResponse  String
+  language    String
+  viewCount   Int          @default(0)
+  isSaved     Boolean      @default(false)
+  isPinned    Boolean      @default(false)
+  pinnedAt    DateTime?
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialPosts SocialPost[]
+
+  @@index([userId])
+  @@index([fortuneType])
+  @@index([createdAt])
+  @@index([isPinned])
+  @@map("fortunes")
+}
+
+model Translation {
+  id               String @id @default(cuid())
+  languageCode     String
+  translationKey   String
+  translationValue String
+
+  @@unique([languageCode, translationKey])
+  @@index([languageCode])
+  @@map("translations")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model ChatRoom {
+  id                    String         @id @default(cuid())
+  slug                  String         @unique
+  nameEn                String
+  nameTr                String
+  descEn                String
+  descTr                String
+  icon                  String
+  isActive              Boolean        @default(true)
+  isMuted               Boolean        @default(false)
+  ownerId               String?        // User who purchased/owns this room
+  owner                 User?          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  giftCommissionPercent Int            @default(0) // 0-100, percentage of gift value going to beneficiary
+  giftBeneficiaryId     String?        // Who receives the commission (null = room owner)
+  giftBeneficiary       User?          @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
+  backgroundImage       String?        // Background image URL for room
+  bannedWords           String?        @db.Text // JSON array of custom banned words set by room owner
+  currentMusicVideoId   String?        // Currently playing YouTube video ID
+  currentMusicTitle     String?        // Currently playing music title
+  currentMusicStartedAt DateTime?      // When the music started playing
+  currentMusicDuration  String?        // Duration string from YouTube (e.g. "3:45")
+  djUserIds             String?        @db.Text // JSON array of user IDs who can DJ (max 5)
+  activeDjId            String?        // Currently active DJ user ID (who has permission to play right now)
+  whitelistedWords      String?        @db.Text // JSON array of words marked as safe (not profanity)
+  createdAt             DateTime       @default(now())
+  bans                  ChatBan[]
+  messages              ChatMessage[]
+  mutes                 ChatMute[]
+  presences             ChatPresence[]
+  userRoles             ChatUserRole[]
+  chatGifts             ChatRoomGift[]
+
+  @@map("chat_rooms")
+}
+
+// Gifts sent in chat rooms
+model ChatRoomGift {
+  id               String   @id @default(cuid())
+  roomId           String
+  senderId         String
+  recipientId      String
+  giftTypeId       String
+  quantity         Int      @default(1)
+  totalPrice       Int      // total cost
+  currencyType     String   @default("jeton") // "jeton" or "cfc"
+  commissionAmount Int      @default(0) // amount taken as commission
+  beneficiaryId    String?  // who received commission (null if no commission)
+  createdAt        DateTime @default(now())
+  room             ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender           User     @relation("ChatGiftSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient        User     @relation("ChatGiftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  giftType         GiftType @relation(fields: [giftTypeId], references: [id])
+
+  @@index([roomId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([roomId, senderId])
+  @@map("chat_room_gifts")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([userId])
+  @@map("chat_messages")
+}
+
+model ChatPresence {
+  id         String    @id @default(cuid())
+  roomId     String
+  userId     String
+  nickname   String?
+  isTyping   Boolean   @default(false)
+  lastTyping DateTime?
+  lastSeen   DateTime  @default(now())
+  seatIndex  Int       @default(-1) // -1 = no seat, 0-14 = seat position
+  room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_presences")
+}
+
+model ChatUserRole {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  role      String
+  grantedBy String?
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_user_roles")
+}
+
+model ChatMute {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  mutedBy   String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  muter     User      @relation("Muter", fields: [mutedBy], references: [id], onDelete: Cascade)
+  room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User      @relation("MutedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_mutes")
+}
+
+model ChatBan {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  bannedBy  String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  banner    User      @relation("Banner", fields: [bannedBy], references: [id], onDelete: Cascade)
+  room      ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User      @relation("BannedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_bans")
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model SocialPost {
+  id          String          @id @default(cuid())
+  userId      String
+  fortuneId   String?
+  content     String
+  postType    String
+  fortuneType String?
+  isPublic    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  imageUrl    String?
+  isAuto      Boolean         @default(false)
+  audioUrl    String?
+  youtubeUrl  String?
+  comments    SocialComment[]
+  likes       SocialLike[]
+  fortune     Fortune?        @relation(fields: [fortuneId], references: [id])
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([postType])
+  @@map("social_posts")
+}
+
+model SocialComment {
+  id        String     @id @default(cuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime   @default(now())
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("social_comments")
+}
+
+model SocialLike {
+  id        String     @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime   @default(now())
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@map("social_likes")
+}
+
+model AnonymousUser {
+  id                String             @id @default(cuid())
+  username          String             @unique
+  deviceId          String             @unique
+  credits           Int                @default(0)
+  adsWatched        Int                @default(0)
+  adsWatchedToday   Int                @default(0)
+  lastAdDate        DateTime?
+  fortunesUsed      Int                @default(0)
+  createdAt         DateTime           @default(now())
+  anonymousFortunes AnonymousFortune[]
+
+  @@map("anonymous_users")
+}
+
+model AnonymousFortune {
+  id              String        @id @default(cuid())
+  anonymousUserId String
+  fortuneType     String
+  inputData       String
+  aiResponse      String
+  language        String
+  createdAt       DateTime      @default(now())
+  anonymousUser   AnonymousUser @relation(fields: [anonymousUserId], references: [id], onDelete: Cascade)
+
+  @@index([anonymousUserId])
+  @@map("anonymous_fortunes")
+}
+
+model SitePresence {
+  id         String   @id @default(cuid())
+  visitorId  String   @unique
+  userId     String?
+  lastSeen   DateTime @default(now())
+  userAgent  String?
+  path       String?
+  deviceType String?  // mobile, tablet, desktop
+  isBot      Boolean  @default(false)
+  botName    String?
+
+  @@index([lastSeen])
+  @@map("site_presences")
+}
+
+model SiteVisit {
+  id         String   @id @default(cuid())
+  visitorId  String
+  userId     String?
+  visitedAt  DateTime @default(now())
+  path       String?
+  userAgent  String?
+  country    String?
+  city       String?
+  ipHash     String?
+  deviceType String?
+  isBot      Boolean  @default(false)
+  botName    String?
+
+  @@index([visitedAt])
+  @@index([visitorId])
+  @@index([country])
+  @@map("site_visits")
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  title        String?
+  message      String
+  data         String?
+  postId       String?
+  fromUserId   String?
+  fromUserName String?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// Credit Package for purchasing credits
+model CreditPackage {
+  id           String    @id @default(cuid())
+  name         String
+  nameEn       String?
+  credits      Int
+  price        Float
+  currency     String    @default("TRY")
+  stripePriceId String?
+  isActive     Boolean   @default(true)
+  isFeatured   Boolean   @default(false)
+  bonusCredits Int       @default(0)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  payments     Payment[]
+
+  @@map("credit_packages")
+}
+
+// Payment/Purchase tracking
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String
+  packageId         String?
+  stripeSessionId   String?       @unique
+  stripePaymentIntentId String?   @unique
+  amount            Float
+  currency          String        @default("TRY")
+  creditsAwarded    Int
+  status            String        @default("pending") // pending, completed, failed, refunded
+  paymentMethod     String?
+  createdAt         DateTime      @default(now())
+  completedAt       DateTime?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package           CreditPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeSessionId])
+  @@map("payments")
+}
+
+// Payment Methods Configuration
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  type        String   @unique // credit_card, bitcoin, bank_transfer
+  name        String
+  nameEn      String?
+  description String?
+  descriptionEn String?
+  isActive    Boolean  @default(true)
+  config      String?  // JSON string for configuration (bank details, wallet address, etc.)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payment_methods")
+}
+
+// Platform settings for admin
+model PlatformSettings {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  value                 String
+  description           String?
+  updatedAt             DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// Live Chat Session between user and fortune teller
+model TellerChatSession {
+  id              String              @id @default(cuid())
+  liveSessionId   String              @unique
+  userId          String
+  tellerId        String
+  status          String              @default("active") // active, closed
+  createdAt       DateTime            @default(now())
+  closedAt        DateTime?
+  liveSession     LiveSession         @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  messages        TellerChatMessage[]
+
+  @@index([userId])
+  @@index([tellerId])
+  @@index([status])
+  @@map("teller_chat_sessions")
+}
+
+// Messages in the live chat
+model TellerChatMessage {
+  id            String            @id @default(cuid())
+  chatSessionId String
+  senderId      String
+  senderType    String            // "user" or "teller"
+  content       String
+  messageType   String            @default("text") // text, image
+  imageUrl      String?
+  isRead        Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  chatSession   TellerChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  @@index([chatSessionId])
+  @@index([createdAt])
+  @@map("teller_chat_messages")
+}
+
+// TikTok-style Video Stream
+model VideoStream {
+  id              String              @id @default(cuid())
+  userId          String
+  title           String?
+  description     String?
+  status          String              @default("live") // live, ended
+  viewerCount     Int                 @default(0)
+  likeCount       Int                 @default(0)
+  roomId          String              @unique @default(cuid())
+  category        String?             // fortune, chat, general
+  thumbnailUrl    String?
+  broadcastImage  String?             // Image URL for image-only broadcast mode
+  isImageMode     Boolean             @default(false) // Whether broadcasting with image instead of video
+  backgroundUrl   String?             // Background image URL for the broadcast
+  lastGiftAt      DateTime?           // Last gift received timestamp (for auto-close)
+  autoClosedAt    DateTime?           // When stream was auto-closed due to no gifts
+  startedAt       DateTime            @default(now())
+  endedAt         DateTime?
+  createdAt       DateTime            @default(now())
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments        VideoStreamComment[]
+  likes           VideoStreamLike[]
+  viewers         VideoStreamViewer[]
+  gifts           StreamGift[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("video_streams")
+}
+
+// Comments on video streams
+model VideoStreamComment {
+  id          String      @id @default(cuid())
+  streamId    String
+  userId      String
+  content     String
+  nickname    String?     // Optional custom nickname for the comment
+  isHidden    Boolean     @default(false) // Whether viewer is hidden in this stream
+  createdAt   DateTime    @default(now())
+  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([streamId])
+  @@index([createdAt])
+  @@map("video_stream_comments")
+}
+
+// Likes on video streams
+model VideoStreamLike {
+  id        String      @id @default(cuid())
+  streamId  String
+  userId    String
+  createdAt DateTime    @default(now())
+  stream    VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@map("video_stream_likes")
+}
+
+// Track viewers in video streams
+model VideoStreamViewer {
+  id         String      @id @default(cuid())
+  streamId   String
+  viewerId   String
+  viewerName String?
+  nickname   String?     // Custom nickname for this stream
+  isHidden   Boolean     @default(false) // Whether viewer wants to be hidden
+  joinedAt   DateTime    @default(now())
+  leftAt     DateTime?
+  stream     VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@unique([streamId, viewerId])
+  @@index([streamId])
+  @@map("video_stream_viewers")
+}
+
+// Gift types available for purchase
+model GiftType {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn      String
+  icon        String   // emoji or icon name
+  animation   String?  // animation type
+  price       Int      // price in credits
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  gifts          StreamGift[]
+  chatRoomGifts  ChatRoomGift[]
+
+  @@map("gift_types")
+}
+
+// Gifts sent during streams
+model StreamGift {
+  id          String      @id @default(cuid())
+  streamId    String
+  senderId    String
+  giftTypeId  String
+  quantity    Int         @default(1)
+  totalPrice  Int         // total credits spent
+  createdAt   DateTime    @default(now())
+  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  giftType    GiftType    @relation(fields: [giftTypeId], references: [id])
+
+  @@index([streamId])
+  @@index([senderId])
+  @@map("stream_gifts")
+}
+
+// WebRTC signaling for video streams
+model VideoStreamSignal {
+  id          String   @id @default(cuid())
+  streamId    String
+  senderId    String
+  receiverId  String?
+  signalType  String   // offer, answer, ice-candidate, join
+  signalData  String   @db.Text
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([streamId])
+  @@index([receiverId, processed])
+  @@map("video_stream_signals")
+}
+
+// Co-broadcasters in video streams
+model StreamCoBroadcaster {
+  id          String      @id @default(cuid())
+  streamId    String
+  userId      String
+  status      String      @default("invited") // invited, active, ended
+  isMuted     Boolean     @default(false)
+  isVideoOff  Boolean     @default(false)
+  invitedAt   DateTime    @default(now())
+  joinedAt    DateTime?
+  leftAt      DateTime?
+
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@index([userId])
+  @@map("stream_co_broadcasters")
+}
+
+// Banned users from streams
+model StreamBan {
+  id            String   @id @default(cuid())
+  streamId      String
+  bannedUserId  String
+  reason        String?
+  bannedAt      DateTime @default(now())
+
+  @@unique([streamId, bannedUserId])
+  @@index([streamId])
+  @@map("stream_bans")
+}
+
+// Stream moderators (max 10 per stream, can mute users)
+model StreamModerator {
+  id         String   @id @default(cuid())
+  streamId   String
+  userId     String
+  addedAt    DateTime @default(now())
+  
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@index([userId])
+  @@map("stream_moderators")
+}
+
+// PK Battle between two streamers (TikTok-style)
+model PKBattle {
+  id              String   @id @default(cuid())
+  stream1Id       String   // Challenger stream
+  stream2Id       String   // Opponent stream
+  user1Id         String   // Challenger user
+  user2Id         String   // Opponent user
+  score1          Int      @default(0) // Gift points for stream1
+  score2          Int      @default(0) // Gift points for stream2
+  status          String   @default("pending") // pending, active, completed, cancelled, rejected
+  duration        Int      @default(180) // Duration in seconds (default 3 min)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  winnerId        String?  // Winner user ID
+  createdAt       DateTime @default(now())
+
+  @@index([stream1Id])
+  @@index([stream2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([status])
+  @@map("pk_battles")
+}
+
+// Fortune request types (admin configurable)
+model FortuneRequestType {
+  id          String   @id @default(cuid())
+  name        String   // Turkish name
+  nameEn      String   // English name
+  icon        String   @default("☕") // Emoji icon
+  jetonCost   Int      // Required jetons
+  description String?  // Description
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  fortuneRequests StreamFortuneRequest[]
+  
+  @@map("fortune_request_types")
+}
+
+// Fortune requests in video streams (sorted by jeton amount)
+model StreamFortuneRequest {
+  id               String    @id @default(cuid())
+  streamId         String
+  userId           String
+  typeId           String?   // Fortune request type
+  nickname         String?   // Optional nickname to show instead of real name
+  isHidden         Boolean   @default(false) // Whether user wants to be hidden
+  question         String?   @db.Text // User's custom question
+  jetonAmount      Int       @default(0) // Jetons spent for this request
+  status           String    @default("pending") // pending, selected, completed, refunded
+  refundedAt       DateTime? // When tokens were refunded (if applicable)
+  createdAt        DateTime  @default(now())
+  selectedAt       DateTime?
+  completedAt      DateTime?
+  
+  type             FortuneRequestType? @relation(fields: [typeId], references: [id])
+  
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@index([userId])
+  @@index([jetonAmount])
+  @@index([status])
+  @@map("stream_fortune_requests")
+}
+
+// Muted viewers in streams (by broadcaster or moderator)
+model StreamMutedViewer {
+  id         String    @id @default(cuid())
+  streamId   String
+  viewerId   String
+  mutedBy    String    // userId of who muted them
+  reason     String?
+  mutedAt    DateTime  @default(now())
+  expiresAt  DateTime? // null = permanent
+  
+  @@unique([streamId, viewerId])
+  @@index([streamId])
+  @@map("stream_muted_viewers")
+}
+
+// Direct Messages between users
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String   @db.Text
+  imageUrl    String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("direct_messages")
+}
+
+// Conversation threads for DMs
+model Conversation {
+  id              String   @id @default(cuid())
+  user1Id         String
+  user2Id         String
+  lastMessageAt   DateTime @default(now())
+  lastMessageText String?
+  createdAt       DateTime @default(now())
+  user1           User     @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2           User     @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+// Message request (for users with restricted messaging)
+model MessageRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      String   @default("pending") // pending, accepted, rejected
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sender      User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("message_requests")
+}
+
+// User Activity Statistics - tracks login sessions
+model UserLoginSession {
+  id          String   @id @default(cuid())
+  userId      String
+  loginAt     DateTime @default(now())
+  logoutAt    DateTime?
+  duration    Int      @default(0) // in minutes
+  deviceType  String?  // mobile, desktop, tablet
+  browser     String?
+
+  @@index([userId])
+  @@index([loginAt])
+  @@map("user_login_sessions")
+}
+
+// Daily activity tracking
+model UserDailyActivity {
+  id              String   @id @default(cuid())
+  userId          String
+  date            DateTime @db.Date
+  minutesSpent    Int      @default(0)
+  fortunesViewed  Int      @default(0)
+  postsCreated    Int      @default(0)
+  messagesCount   Int      @default(0)
+  streamsWatched  Int      @default(0)
+  creditsSpent    Int      @default(0)
+  creditsEarned   Int      @default(0)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("user_daily_activity")
+}
+
+// Hourly activity pattern tracking
+model UserHourlyActivity {
+  id          String @id @default(cuid())
+  userId      String
+  hour        Int    // 0-23
+  totalMinutes Int   @default(0)
+  loginCount   Int   @default(0)
+
+  @@unique([userId, hour])
+  @@index([userId])
+  @@map("user_hourly_activity")
+}
+
+// Coin/Credit transactions log
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int      // positive for earned, negative for spent
+  type        String   // purchase, gift_sent, gift_received, fortune, stream, reward, referral
+  description String?
+  relatedId   String?  // related fortune/stream/gift id
+  balance     Int      // balance after transaction
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+// Fortune satisfaction/accuracy ratings
+model FortuneRating {
+  id            String   @id @default(cuid())
+  fortuneId     String   @unique
+  userId        String
+  satisfaction  Int?     // 1-5 rating
+  accuracy      Int?     // 1-5 rating (can be updated later)
+  feedback      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([fortuneId])
+  @@map("fortune_ratings")
+}
+
+// User Achievements/Badges
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  progress      Int      @default(0)
+  isCompleted   Boolean  @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+// Achievement definitions
+model Achievement {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  nameTr       String
+  nameEn       String
+  descriptionTr String
+  descriptionEn String
+  icon         String
+  category     String   // fortune, social, stream, coin, activity
+  targetValue  Int      // target to complete
+  rewardCredits Int     @default(0)
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("achievements")
+}
+
+// Bana Özel - Personalized Fortune Content Items
+model BanaOzelItem {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nameTr       String
+  nameEn       String
+  descTr       String?
+  descEn       String?
+  icon         String   // emoji icon
+  jetonCost    Int      @default(5)
+  category     String   @default("fortune") // fortune, tarot, astrology, spiritual
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  contentPool  String?  @db.Text // JSON array of possible content/prompts
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("bana_ozel_items")
+}
+
+// User jeton (token) balance and transactions
+model JetonTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int      // positive for earned, negative for spent
+  type        String   // spend, daily_bonus, streak_bonus, task, purchase, welcome
+  description String?
+  itemSlug    String?  // related BanaOzelItem slug
+  balanceBefore Int
+  balanceAfter  Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("jeton_transactions")
+}
+
+// Daily fortune streak tracking
+model UserFortuneStreak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastFortuneDate DateTime?
+  totalFortunes Int      @default(0)
+
+  @@index([userId])
+  @@map("user_fortune_streaks")
+}
+
+// Daily task completion tracking
+model DailyTask {
+  id          String   @id @default(cuid())
+  userId      String
+  taskType    String   // login, open_fortune, share, watch_stream, profile_complete
+  completedAt DateTime @default(now())
+  jetonEarned Int      @default(0)
+  date        DateTime @db.Date
+
+  @@unique([userId, taskType, date])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_tasks")
+}
+
+// Bana Özel content history (what user opened)
+model BanaOzelHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  itemSlug   String
+  content    String   @db.Text // Generated content
+  jetonSpent Int
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemSlug])
+  @@index([createdAt])
+  @@map("bana_ozel_history")
+}
+
+// Profile views tracking
+model ProfileView {
+  id          String   @id @default(cuid())
+  viewedUserId String
+  viewerId     String?
+  viewedAt     DateTime @default(now())
+
+  @@index([viewedUserId])
+  @@index([viewedAt])
+  @@map("profile_views")
+}
+
+// Gold Membership Plans
+model MembershipPlan {
+  id              String   @id @default(cuid())
+  name            String   // Plan name (e.g., "Gold 1 Aylık")
+  nameEn          String?  // English name
+  description     String?  @db.Text
+  descriptionEn   String?  @db.Text
+  tier            String   // basic, premium, gold, diamond
+  durationDays    Int      // Duration in days
+  priceType       String   // jeton, money
+  price           Int      // Price in jetons or currency minor units (kuruş)
+  currency        String   @default("TRY") // For money payments
+  features        String?  @db.Text // JSON array of features
+  bonusJetons     Int      @default(0) // Bonus jetons on purchase
+  discountPercent Int      @default(0) // Discount on fortune readings
+  prioritySupport Boolean  @default(false)
+  exclusiveBadge  String?  // Badge icon/text
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchases       MembershipPurchase[]
+  
+  @@index([tier])
+  @@index([priceType])
+  @@index([isActive])
+  @@map("membership_plans")
+}
+
+// Membership Purchase History
+model MembershipPurchase {
+  id              String   @id @default(cuid())
+  userId          String
+  planId          String?
+  plan            MembershipPlan? @relation(fields: [planId], references: [id])
+  priceType       String   // jeton, money
+  pricePaid       Int      // Amount paid
+  currency        String   @default("TRY")
+  startsAt        DateTime @default(now())
+  expiresAt       DateTime
+  status          String   @default("active") // active, expired, cancelled
+  createdAt       DateTime @default(now())
+  grantedBy       String?  // Admin who granted the membership (for free grants)
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("membership_purchases")
+}
+
+// Payment Notifications (user notifies admin about payment)
+model PaymentNotification {
+  id              String   @id @default(cuid())
+  userId          String
+  username        String   // User's username at time of submission
+  paymentMethod   String   // papara, bank_transfer, etc.
+  amount          Float    // Amount paid in TRY
+  transactionId   String?  // Transaction/Reference ID
+  senderName      String?  // Name of sender (for bank transfers)
+  notes           String?  @db.Text // Additional notes
+  status          String   @default("pending") // pending, approved, rejected
+  jetonLoaded     Int?     // Jeton amount loaded by admin
+  processedBy     String?  // Admin who processed
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_notifications")
+}
+
+// Voice Chat Session - tracks who's in voice chat
+model VoiceSession {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  userName  String
+  agoraUid  Int      @default(0)
+  joinedAt  DateTime @default(now())
+  lastPing  DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([isActive])
+  @@index([lastPing])
+  @@map("voice_sessions")
+}
+
+// Voice Signals - WebRTC signaling data
+model VoiceSignal {
+  id          String   @id @default(cuid())
+  roomId      String
+  fromUserId  String
+  fromUserName String
+  toUserId    String?  // null means broadcast
+  type        String   // offer, answer, ice-candidate, join, leave
+  data        String?  @db.Text
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([roomId])
+  @@index([toUserId])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("voice_signals")
+}
+
+
+// Ticker Messages - Admin-defined scrolling messages on homepage
+model TickerMessage {
+  id        String   @id @default(cuid())
+  text      String
+  icon      String   @default("✨")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("ticker_messages")
+}
+
+// Homepage Fortune Cards - admin-editable fortune type cards on homepage
+model HomepageFortuneCard {
+  id        String   @id @default(cuid())
+  name      String   // Display name e.g. "Kahve Falı"
+  icon      String   @default("🔮") // Emoji icon
+  image     String   @default("") // Image URL for card
+  href      String   @default("/fallar") // Link destination
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("homepage_fortune_cards")
+}
+
+// Withdrawal Requests - users/tellers request money withdrawal
+model WithdrawalRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  amount          Int       // Amount in jetons to withdraw
+  amountTL        Float     // Equivalent TL amount
+  method          String    // bank_transfer, papara, etc.
+  accountDetails  String?   @db.Text // JSON: IBAN, name, etc.
+  // 3-stage approval: pending → agency_approved → approved/rejected
+  status          String    @default("pending") // pending, agency_approved, approved, rejected, processing, completed
+  // Agency approval stage
+  agencyId        String?   // Agency of the teller (if any)
+  agencyApprovedBy String?  // Agency owner/manager who approved
+  agencyApprovedAt DateTime?
+  agencyNote      String?
+  // Admin approval stage
+  adminNote       String?
+  processedBy     String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([agencyId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("withdrawal_requests")
+}
+
+// Teller Awards - medium of the day/week/month
+model TellerAward {
+  id          String   @id @default(cuid())
+  tellerId    String
+  awardType   String   // medium_of_day, medium_of_week, medium_of_month
+  title       String?
+  awardedBy   String?  // admin who awarded
+  startDate   DateTime @default(now())
+  endDate     DateTime // When the award expires
+  createdAt   DateTime @default(now())
+
+  @@index([tellerId])
+  @@index([awardType])
+  @@index([endDate])
+  @@map("teller_awards")
+}
+
+// Teller Gifts - gifts sent specifically to tellers (not stream gifts)
+model TellerGift {
+  id          String   @id @default(cuid())
+  tellerId    String
+  senderId    String
+  giftTypeId  String
+  quantity    Int      @default(1)
+  totalPrice  Int      // total jetons spent
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@index([tellerId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("teller_gifts")
+}
+model SiteAnnouncement {
+  id        String   @id @default(cuid())
+  type      String   // login, custom
+  message   String
+  color     String   @default("red") // red, gold, etc.
+  userId    String?
+  userName  String?
+  maxPasses Int      @default(1) // how many times banner scrolls across screen
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("site_announcements")
+}
+
+// ==========================================
+// MINI GAME CENTER MODELS
+// ==========================================
+
+// Game configurations managed by admin
+model MiniGame {
+  id          String   @id @default(cuid())
+  slug        String   @unique // fal-carki, tarot-sec, memory, quiz, sans-kutusu, sayi-tahmin
+  title       String
+  description String?
+  icon        String   @default("🎮")
+  isActive    Boolean  @default(true)
+  entryFee    Int      @default(0) // jeton cost to play
+  minReward   Int      @default(5)
+  maxReward   Int      @default(50)
+  sortOrder   Int      @default(0)
+  config      String?  // JSON config for game-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plays       GamePlay[]
+  @@index([slug])
+  @@index([isActive])
+  @@map("mini_games")
+}
+
+// Individual game play records
+model GamePlay {
+  id         String   @id @default(cuid())
+  userId     String
+  gameId     String
+  reward     Int      @default(0) // jetons earned
+  score      Int?     // optional score
+  result     String?  // JSON result data
+  playedAt   DateTime @default(now())
+
+  game       MiniGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([playedAt])
+  @@index([userId, gameId])
+  @@map("game_plays")
+}
+
+// SOS Game - multiplayer with betting
+model SosGame {
+  id            String   @id @default(cuid())
+  gridSize      Int      @default(6)           // 6, 8, 10
+  player1Id     String
+  player2Id     String?                         // null = waiting or AI
+  isAI          Boolean  @default(false)
+  betAmount     Int      @default(0)            // 0 = free
+  betCurrency   String   @default("FREE")       // FREE, CFC, JETON
+  board         String   @default("[]")         // JSON: grid state
+  lines         String   @default("[]")         // JSON: scored SOS lines
+  currentTurn   Int      @default(1)            // 1 or 2
+  player1Score  Int      @default(0)
+  player2Score  Int      @default(0)
+  status        String   @default("waiting")    // waiting, active, completed, cancelled
+  winnerId      String?
+  player1Name   String   @default("Oyuncu 1")
+  player2Name   String   @default("Oyuncu 2")
+  turnTimer     Int      @default(0)            // 0=no timer, 10/15/20 seconds
+  chatEnabled   Boolean  @default(true)
+  lastMoveAt    DateTime?                       // for timer enforcement
+  disconnectedPlayerId String?                  // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen DateTime?                     // Last poll time for player 1
+  player2LastSeen DateTime?                     // Last poll time for player 2
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  chatMessages  SosGameChat[]
+  viewers       SosGameViewer[]
+
+  @@index([status])
+  @@index([player1Id])
+  @@index([player2Id])
+  @@index([createdAt])
+  @@map("sos_games")
+}
+
+model SosGameChat {
+  id        String   @id @default(cuid())
+  gameId    String
+  userId    String
+  userName  String
+  message   String
+  createdAt DateTime @default(now())
+
+  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, createdAt])
+  @@map("sos_game_chats")
+}
+
+model SosGameViewer {
+  id        String   @id @default(cuid())
+  gameId    String
+  userId    String
+  userName  String
+  joinedAt  DateTime @default(now())
+
+  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@map("sos_game_viewers")
+}
+
+// Generic multiplayer game room (XOX, Tombala, Tavla, Pişti, Sayı Tahmin, Zar)
+model GameRoom {
+  id            String   @id @default(cuid())
+  gameType      String                            // xox, tombala, tavla, pisti, sayi_tahmin, zar
+  player1Id     String
+  player2Id     String?
+  isAI          Boolean  @default(false)
+  betAmount     Int      @default(0)
+  betCurrency   String   @default("FREE")
+  state         String   @default("{}")           // JSON game state
+  currentTurn   Int      @default(1)
+  player1Score  Int      @default(0)
+  player2Score  Int      @default(0)
+  status        String   @default("waiting")
+  winnerId      String?
+  player1Name   String   @default("Oyuncu 1")
+  player2Name   String   @default("Oyuncu 2")
+  turnTimer     Int      @default(0)
+  chatEnabled   Boolean  @default(true)
+  lastMoveAt    DateTime?
+  disconnectedPlayerId String?                    // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen DateTime?                       // Last poll time for player 1
+  player2LastSeen DateTime?                       // Last poll time for player 2
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  chatMessages  GameRoomChat[]
+  viewers       GameRoomViewer[]
+
+  @@index([gameType, status])
+  @@index([status])
+  @@index([player1Id])
+  @@index([createdAt])
+  @@map("game_rooms")
+}
+
+model GameRoomChat {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  userName  String
+  message   String
+  createdAt DateTime @default(now())
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@index([roomId, createdAt])
+  @@map("game_room_chats")
+}
+
+model GameRoomViewer {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  userName  String
+  joinedAt  DateTime @default(now())
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("game_room_viewers")
+}
+
+// Daily login rewards & streak tracking
+model DailyReward {
+  id            String   @id @default(cuid())
+  userId        String
+  rewardDate    DateTime @db.Date
+  streak        Int      @default(1)
+  jetonReward   Int      @default(5)
+  claimedAt     DateTime @default(now())
+
+  @@unique([userId, rewardDate])
+  @@index([userId])
+  @@map("daily_rewards")
+}
+
+// Daily quests tracking
+model DailyQuest {
+  id          String   @id @default(cuid())
+  userId      String
+  questDate   DateTime @db.Date
+  questType   String   // daily_login, play_3_games, buy_fortune
+  progress    Int      @default(0)
+  target      Int      @default(1)
+  reward      Int      @default(10)
+  claimed     Boolean  @default(false)
+  claimedAt   DateTime?
+
+  @@unique([userId, questDate, questType])
+  @@index([userId])
+  @@index([questDate])
+  @@map("daily_quests")
+}
+
+// Blog posts managed by admin
+model BlogCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameTr      String
+  nameEn      String   @default("")
+  descTr      String   @default("")
+  descEn      String   @default("")
+  icon        String   @default("BookOpen")
+  color       String   @default("#8B5CF6")
+  coverImage  String   @default("")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  titleTr         String
+  titleEn         String    @default("")
+  descTr          String
+  descEn          String    @default("")
+  contentTr       String    @db.Text
+  contentEn       String    @default("") @db.Text
+  category        String    @default("genel")
+  keywords        String[]  @default([])
+  metaDescription String    @default("")
+  coverImage      String    @default("")
+  readTime        Int       @default(5)
+  views           Int       @default(0)
+  likes           Int       @default(0)
+  isPublished     Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  isTrending      Boolean   @default(false)
+  isEditorPick    Boolean   @default(false)
+  isAiGenerated   Boolean   @default(false)
+  isPremium       Boolean   @default(false)
+  zodiacSign      String    @default("")
+  authorId        String?
+  authorName      String    @default("Canlifal Editör")
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+  @@index([slug])
+  @@index([isFeatured])
+  @@index([isTrending])
+  @@index([views])
+  @@index([publishedAt])
+  @@index([isPremium])
+  @@index([zodiacSign])
+  @@map("blog_posts")
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  userName  String   @default("Anonim")
+  userAvatar String  @default("")
+  content   String   @db.Text
+  isApproved Boolean @default(true)
+  likes     Int      @default(0)
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@map("blog_likes")
+}
+
+model BlogFavorite {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("blog_favorites")
+}
+
+// User game level & XP tracking
+model UserGameProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  totalJetons    Int      @default(0) // lifetime jetons earned from games
+  totalGames     Int      @default(0)
+  level          Int      @default(1)
+  levelTitle     String   @default("Yeni Üye")
+  dailySpinsUsed Int      @default(0) // daily free spin count
+  lastSpinDate   DateTime? @db.Date
+  referralCode   String?  @unique
+  referralCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([totalJetons])
+  @@map("user_game_profiles")
+}
+
+// Admin-uploaded images for broadcasters to use as screen capture
+model BroadcastImage {
+  id          String   @id @default(cuid())
+  name        String   // Display name for the image
+  imageUrl    String   // URL to the image
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("broadcast_images")
+}
+
+// Custom Badges - admin can create badges and assign to tiers or users
+model CustomBadge {
+  id          String   @id @default(cuid())
+  name        String   // Badge display name
+  icon        String   // Emoji or icon identifier
+  color       String   @default("#fbbf24") // Badge color (hex)
+  bgColor     String   @default("#78350f") // Background color (hex)
+  description String?  // Description of badge
+  tier        String?  // If set, auto-assigned to this membership tier (basic, premium, gold, diamond)
+  userId      String?  // If set, assigned to specific user
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier])
+  @@index([userId])
+  @@index([isActive])
+  @@map("custom_badges")
+}
+
+// Site Pages - admin managed pages (About, Privacy, etc.)
+model SitePage {
+  id          String   @id @default(cuid())
+  title       String   // Page title
+  titleEn     String?  // English title
+  slug        String   @unique // URL slug
+  content     String   @db.Text // HTML content
+  contentEn   String?  @db.Text // English content
+  isPublished Boolean  @default(true)
+  showInFooter Boolean @default(true)
+  showInHeader Boolean @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@map("site_pages")
+}
+
+// Push Notification Log - tracks all notifications sent via admin panel
+model PushNotificationLog {
+  id              String   @id @default(cuid())
+  onesignalId     String?  // OneSignal notification ID for tracking
+  title           String
+  message         String   @db.Text
+  url             String?
+  imageUrl        String?
+  targetType      String   // all, segment, tag, player_id, quick_action
+  targetValue     String?  // segment name, tag filter, player_id, etc.
+  scheduledAt     DateTime? // null = sent immediately
+  status          String   @default("sent") // sent, scheduled, failed, cancelled
+  recipientCount  Int      @default(0)
+  deliveredCount  Int      @default(0)
+  clickedCount    Int      @default(0)
+  errorMessage    String?
+  createdBy       String   // admin user id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([targetType])
+  @@map("push_notification_logs")
+}
+
+model DreamInterpretation {
+  id              String           @id @default(cuid())
+  title           String
+  slug            String           @unique
+  content         String           @db.Text
+  summary         String?          @db.Text
+  keywords        String[]         @default([])
+  metaDescription String?
+  category        String           @default("genel")
+  views           Int              @default(0)
+  isPublished     Boolean          @default(true)
+  isAiGenerated   Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  comments        DreamComment[]
+  favorites       DreamFavorite[]
+  dreamViews      DreamView[]
+
+  @@index([slug])
+  @@index([views])
+  @@index([createdAt])
+  @@index([isPublished])
+  @@index([category])
+  @@map("dream_interpretations")
+}
+
+model DreamComment {
+  id             String              @id @default(cuid())
+  content        String              @db.Text
+  userId         String
+  dreamId        String
+  experienceType String              @default("yorum") // yorum | deneyim
+  didComeTrue    Boolean?            // null = belirtilmedi, true = gerçekleşti, false = gerçekleşmedi
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream          DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@index([dreamId, createdAt])
+  @@index([userId])
+  @@index([experienceType])
+  @@map("dream_comments")
+}
+
+model DreamFavorite {
+  id        String              @id @default(cuid())
+  userId    String
+  dreamId   String
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dreamId])
+  @@index([userId])
+  @@index([dreamId])
+  @@map("dream_favorites")
+}
+
+model DreamView {
+  id        String              @id @default(cuid())
+  userId    String
+  dreamId   String
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dream     DreamInterpretation @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([dreamId])
+  @@map("dream_views")
+}
+
+// Dream Symbol Dictionary (A-Z)
+model DreamSymbol {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  slug            String   @unique
+  letter          String   // First letter for A-Z grouping
+  meaning         String   @db.Text
+  detailedMeaning String?  @db.Text
+  relatedSymbols  String[] @default([])
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([letter])
+  @@index([slug])
+  @@index([isPublished])
+  @@map("dream_symbols")
+}
+
+// Dream Diary - Personal Dream Journal
+model DreamDiaryEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  dreamDate   DateTime @db.Date
+  title       String
+  content     String   @db.Text
+  symbols     String[] @default([])
+  mood        String?  // happy, sad, scared, confused, neutral
+  lucidity    Int?     // 1-5 lucidity scale
+  aiAnalysis  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dreamDate])
+  @@index([userId, dreamDate])
+  @@index([createdAt])
+  @@map("dream_diary_entries")
+}
+
+// Daily Login Reward
+model DailyLoginReward {
+  id          String   @id @default(cuid())
+  userId      String
+  rewardDate  DateTime @db.Date
+  streak      Int      @default(1)
+  xpEarned    Int      @default(10)
+  jetonEarned Int      @default(0)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rewardDate])
+  @@index([userId])
+  @@map("daily_login_rewards")
+}
+
+// Dream Interpretation Contest
+model DreamContest {
+  id          String              @id @default(cuid())
+  title       String
+  description String              @db.Text
+  dreamPrompt String              @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  entries     DreamContestEntry[]
+
+  @@index([isActive])
+  @@index([endDate])
+  @@map("dream_contests")
+}
+
+model DreamContestEntry {
+  id            String            @id @default(cuid())
+  contestId     String
+  userId        String
+  interpretation String           @db.Text
+  voteCount     Int               @default(0)
+  createdAt     DateTime          @default(now())
+  contest       DreamContest      @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes         DreamContestVote[]
+
+  @@unique([contestId, userId])
+  @@index([contestId, voteCount])
+  @@index([userId])
+  @@map("dream_contest_entries")
+}
+
+model DreamContestVote {
+  id        String            @id @default(cuid())
+  entryId   String
+  userId    String
+  createdAt DateTime          @default(now())
+  entry     DreamContestEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, userId])
+  @@index([entryId])
+  @@index([userId])
+  @@map("dream_contest_votes")
+}
+
+// Weekly Dream Report (AI-generated)
+model WeeklyDreamReport {
+  id          String   @id @default(cuid())
+  userId      String
+  weekStart   DateTime @db.Date
+  weekEnd     DateTime @db.Date
+  reportContent String @db.Text
+  dreamCount  Int      @default(0)
+  topSymbols  String[] @default([])
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@map("weekly_dream_reports")
+}
+
+// ==========================================
+// Online Fal Page - Sections & Buttons
+// ==========================================
+
+// Sections that appear on the online-fal page (fallar, bana-ozel, custom_buttons)
+model OnlineFalSection {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g. "fortune_types", "bana_ozel", "custom_buttons"
+  title       String   // Display title
+  icon        String   @default("✨") // Emoji icon
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("online_fal_sections")
+}
+
+// Custom buttons on the online-fal page (game center, send gift, blog, etc.)
+model OnlineFalButton {
+  id          String   @id @default(cuid())
+  label       String   // Button label
+  icon        String   @default("🔗") // Emoji icon
+  href        String   // Destination URL/path
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  bgColor     String   @default("from-purple-600/30 to-fuchsia-600/30") // Gradient classes
+  borderColor String   @default("border-purple-400/50") // Border class
+  textColor   String   @default("text-purple-200") // Text color class
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("online_fal_buttons")
+}
+
+// ==========================================
+// Homepage Buttons (fully admin-managed)
+// ==========================================
+model HomepageButton {
+  id          String   @id @default(cuid())
+  key         String   @unique // unique identifier e.g. "games", "gifts", "custom_1"
+  label       String   // Display label
+  icon        String   @default("🔗") // Emoji icon
+  href        String   // Destination URL/path (relative)
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  specialBehavior String? // null for normal link, "bana-ozel" for popup, "teller" for role-based
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("homepage_buttons")
+}
+
+model AdminPopup {
+  id              String   @id @default(cuid())
+  title           String   // Popup title/heading
+  message         String   // Main message text
+  buttons         String   @default("[]") // JSON array: [{label, href, color?}]
+  isActive        Boolean  @default(true)
+  showTo          String   @default("all") // all, logged_in, guests
+  popupType       String   @default("custom") // custom, live_streams, chat_rooms
+  priority        Int      @default(0) // higher = shown first
+  maxShowCount    Int      @default(1) // 0 = unlimited, otherwise max times per user
+  showOnRefresh   Boolean  @default(false) // false = show only once per session (tab)
+  showDelaySeconds Int     @default(1) // seconds to wait before showing popup
+  lastSentAt      DateTime @default(now()) // Updated when admin re-sends popup
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, priority])
+  @@index([isActive, lastSentAt])
+  @@map("admin_popups")
+}
+
+
+// Profile Frames for user avatars
+model ProfileFrame {
+  id          String   @id @default(cuid())
+  name        String   // Frame display name
+  imageUrl    String   // URL to frame image (PNG with transparency)
+  tier        String   @default("gold") // free, gold, admin_only
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  usersSelected User[] @relation("UserProfileFrame")
+  usersAssigned User[] @relation("UserAdminFrame")
+
+  @@index([tier, isActive])
+  @@map("profile_frames")
+}
+
+
+// Membership badge images - admin uploads banners per tier, text is overlaid
+model MembershipBadge {
+  id          String   @id @default(cuid())
+  name        String   // Display name (e.g., "Gold Şerit", "Premium Rozet")
+  tier        String   // basic, premium, gold, diamond, admin
+  imageUrl    String   // URL to banner/ribbon image
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("membership_badges")
+}
+
+// IP-based fortune usage tracking for unregistered users
+model IpFortuneUsage {
+  id        String   @id @default(cuid())
+  ipAddress String
+  date      DateTime @db.Date // Date only (no time)
+  count     Int      @default(1) // Number of fortunes used today
+  adWatched Boolean  @default(false) // Whether ad was watched for 2nd fortune
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ipAddress, date])
+  @@index([ipAddress])
+  @@index([date])
+  @@map("ip_fortune_usage")
+}
+
+// Admin-configurable ad networks
+model AdNetwork {
+  id          String   @id @default(cuid())
+  name        String   // Display name (Google AdSense, Unity Ads, etc.)
+  provider    String   @unique // google_adsense, google_admob, unity_ads, facebook_audience, applovin, ironsource, vungle, chartboost, adcolony, tapjoy, mintegral, inmobi, startio
+  adCode      String?  @db.Text // Ad code/script from the provider
+  adUnitId    String?  // Ad unit/slot ID
+  appId       String?  // App ID (for SDK-based networks)
+  isActive    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("ad_networks")
+}
+
+// Currency usage configuration (which currency is used where)
+model CurrencyConfig {
+  id           String   @id @default(cuid())
+  area         String   @unique // fortune_tarot, fortune_coffee, live_session, live_gift, chat_gift, stream_gift, bana_ozel etc.
+  areaName     String   // Display name in Turkish
+  currencyType String   @default("cfc") // cfc, jeton, free
+  cost         Int      @default(0) // Cost in the specified currency
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([currencyType])
+  @@map("currency_config")
+}
+
+model LiveActivity {
+  id          String   @id @default(cuid())
+  userId      String?  // null for anonymous users
+  userName    String   // display name (can be anonymous)
+  userAvatar  String?  // avatar URL
+  activityType String  // fortune_read, chat_join, dream_shared, stream_started, gift_sent, signup, blog_read, etc.
+  detail      String?  // e.g. "Tarot Falı baktırdı", "Sohbete katıldı"
+  targetUrl   String?  // link to related page
+  createdAt   DateTime @default(now())
+
+  user User? @relation("userActivities", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([activityType])
+  @@map("live_activities")
+}
+
+model ActivityFeedConfig {
+  id              String   @id @default(cuid())
+  isEnabled       Boolean  @default(true)
+  maxItems        Int      @default(20) // max items to show
+  // Visibility - which groups can see
+  visibleToGuests     Boolean @default(true)  // kayıtsız kullanıcılar
+  visibleToBasic      Boolean @default(true)  // basic üyeler
+  visibleToPremium    Boolean @default(true)  // premium üyeler
+  visibleToGold       Boolean @default(true)  // gold üyeler
+  visibleToDiamond    Boolean @default(true)  // diamond üyeler
+  visibleToModerator  Boolean @default(true)  // moderatörler
+  visibleToAdmin      Boolean @default(true)  // adminler
+  // Specific user IDs (comma-separated) - if set, ONLY these users see it
+  specificUserIds     String? // comma-separated user IDs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("activity_feed_config")
+}
+
+// ========== AGENCY SYSTEM ==========
+
+model Agency {
+  id                  String          @id @default(cuid())
+  name                String          @unique
+  description         String?
+  ownerId             String          // User who applied
+  ownerName           String
+  status              String          @default("pending") // pending, approved, rejected, suspended
+  commissionRate      Float           @default(5.0)  // Agency commission % on member earnings
+  contactEmail        String?
+  contactPhone        String?
+  logoUrl             String?
+  // Performance
+  totalEarnings       Float           @default(0)
+  totalMembers        Int             @default(0)
+  activeMembers       Int             @default(0)
+  performanceScore    Float           @default(0) // APS: 0-100
+  // Penalty tracking
+  penaltyLevel        Int             @default(0) // 0=clean, 1=warning, 2=invites_disabled, 3=commission_reduced, 4=suspended
+  penaltyNote         String?
+  invitesDisabled     Boolean         @default(false)
+  // Metadata
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectedReason      String?
+  suspendedAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  // Relations
+  members             AgencyUser[]
+  earnings            AgencyEarning[]
+  inviteCodes         InviteCode[]
+  tasks               AgencyTask[]
+  penalties           AgencyPenalty[]
+  leaveRequests       AgencyLeaveRequest[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("agencies")
+}
+
+model AgencyUser {
+  id              String    @id @default(cuid())
+  agencyId        String
+  userId          String    @unique // One user can only be in one agency
+  role            String    @default("member") // owner, manager, member
+  joinedVia       String?   // invite_code, referral_link, direct
+  inviteCodeId    String?
+  totalEarnings   Float     @default(0) // Total earnings contributed to agency
+  isActive        Boolean   @default(true)
+  joinedAt        DateTime  @default(now())
+  leftAt          DateTime?
+  // Fraud tracking
+  joinIp          String?
+  joinDeviceId    String?
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteCode      InviteCode? @relation(fields: [inviteCodeId], references: [id])
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("agency_users")
+}
+
+model AgencyEarning {
+  id              String   @id @default(cuid())
+  agencyId        String
+  userId          String   // The member who generated the earning
+  amount          Float    // Commission amount earned by agency
+  sourceType      String   // chat_gift, stream_gift, direct_gift, tip, bonus
+  sourceId        String?  // Gift/transaction ID
+  originalAmount  Float    // Original gift amount before commission
+  commissionRate  Float    // Rate applied at the time
+  createdAt       DateTime @default(now())
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([sourceType])
+  @@map("agency_earnings")
+}
+
+model InviteCode {
+  id              String       @id @default(cuid())
+  agencyId        String
+  code            String       @unique
+  createdById     String       // User who created the code
+  maxUses         Int          @default(0) // 0 = unlimited
+  usedCount       Int          @default(0)
+  isActive        Boolean      @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+  agency          Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  usedBy          AgencyUser[]
+
+  @@index([agencyId])
+  @@index([code])
+  @@map("invite_codes")
+}
+
+model AgencyTask {
+  id              String   @id @default(cuid())
+  agencyId        String
+  weekStart       DateTime // Monday of the task week
+  weekEnd         DateTime // Sunday of the task week
+  // Dynamic targets
+  earningsTarget  Float    @default(0)
+  newUsersTarget  Int      @default(0)
+  activeUsersTarget Int    @default(0)
+  // Actual values
+  earningsActual  Float    @default(0)
+  newUsersActual  Int      @default(0)
+  activeUsersActual Int    @default(0)
+  // Scoring
+  completionPercent Float  @default(0)
+  bonusAwarded    Float    @default(0)
+  status          String   @default("active") // active, completed, failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, weekStart])
+  @@index([agencyId])
+  @@index([weekStart])
+  @@index([status])
+  @@map("agency_tasks")
+}
+
+model AgencyPenalty {
+  id              String   @id @default(cuid())
+  agencyId        String
+  level           Int      // 1=warning, 2=disable_invites, 3=reduce_commission, 4=suspend
+  reason          String
+  appliedBy       String?  // Admin userId or 'system'
+  isActive        Boolean  @default(true)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolvedNote    String?
+  createdAt       DateTime @default(now())
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([isActive])
+  @@map("agency_penalties")
+}
+
+// Ajanstan Çıkma Talepleri
+model AgencyLeaveRequest {
+  id              String    @id @default(cuid())
+  agencyId        String
+  userId          String
+  reason          String?
+  status          String    @default("pending") // pending, approved, rejected
+  reviewedBy      String?   // Agency owner/manager who reviewed
+  reviewNote      String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([status])
+  @@map("agency_leave_requests")
+}
+
+// Haftalık Turnuva Sistemi
+model WeeklyTournament {
+  id          String   @id @default(cuid())
+  weekStart   DateTime
+  weekEnd     DateTime
+  type        String   @default("jeton_spend") // jeton_spend, session_count, gift_sent, fortune_count
+  title       String
+  description String?
+  status      String   @default("active") // active, completed
+  rewards     String?  // JSON: [{ rank: 1, prize: 500 }, ...]
+  createdAt   DateTime @default(now())
+
+  entries     WeeklyTournamentEntry[]
+
+  @@unique([weekStart, type])
+  @@index([status])
+  @@map("weekly_tournaments")
+}
+
+model WeeklyTournamentEntry {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  score        Int      @default(0)
+  rank         Int?
+  rewarded     Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  tournament   WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+  @@index([userId])
+  @@map("weekly_tournament_entries")
+}
+
+// Favori Falcılar
+model FavoriteTeller {
+  id        String   @id @default(cuid())
+  userId    String
+  tellerId  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tellerId])
+  @@index([userId])
+  @@index([tellerId])
+  @@map("favorite_tellers")
+}
+
