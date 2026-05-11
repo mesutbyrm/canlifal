@@ -1253,10 +1253,10 @@ html, body {
 }
 
 [data-theme="canlidark"] body {
-  background: radial-gradient(ellipse at 0% 10%, rgba(192, 38, 211, 0.35) 0%, transparent 45%),
-              radial-gradient(ellipse at 100% 90%, rgba(59, 130, 246, 0.30) 0%, transparent 45%),
-              radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
-              linear-gradient(180deg, #050015 0%, #0a0420 50%, #050015 100%);
+  background: radial-gradient(ellipse at 0% 10%, rgba(192, 38, 211, 0.25) 0%, transparent 45%),
+              radial-gradient(ellipse at 100% 90%, rgba(59, 130, 246, 0.20) 0%, transparent 45%),
+              radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.10) 0%, transparent 60%),
+              linear-gradient(180deg, rgba(5, 0, 21, 0.92) 0%, rgba(10, 4, 32, 0.90) 50%, rgba(5, 0, 21, 0.92) 100%);
   background-attachment: fixed;
   color: var(--cd-text);
 }
@@ -1274,11 +1274,9 @@ html, body {
 
 @layer utilities {
   .canlidark-bg {
-    background: radial-gradient(ellipse at 0% 10%, rgba(192, 38, 211, 0.35) 0%, transparent 45%),
-                radial-gradient(ellipse at 100% 90%, rgba(59, 130, 246, 0.30) 0%, transparent 45%),
-                radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
-                linear-gradient(180deg, #050015 0%, #0a0420 50%, #050015 100%);
+    background: transparent;
     min-height: 100vh;
+    position: relative;
   }
 
   .canlidark-glass {
@@ -1501,7 +1499,7 @@ html, body {
   }
 }
 
-/* CanliDark theme: hide global layout chrome (navbar, mobile footer, star bg, banners) */
+/* CanliDark theme: hide global layout chrome (navbar, mobile footer) but KEEP star bg */
 html[data-theme="canlidark"] nav.fixed,
 html[data-theme="canlidark"] header.fixed,
 html[data-theme="canlidark"] [data-component="navbar"],
@@ -1512,7 +1510,35 @@ html[data-theme="canlidark"] main {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
-html[data-theme="canlidark"] .star-background,
-html[data-theme="canlidark"] [data-component="star-background"] {
-  display: none !important;
+
+/* CanlıDark Messages page styles */
+.canlidark-msg-avatar-ring {
+  background: linear-gradient(135deg, #a855f7, #ec4899, #6366f1);
+  padding: 2px;
+  border-radius: 50%;
+}
+.canlidark-msg-avatar-ring > * {
+  border-radius: 50%;
+  border: 2px solid #0d0428;
+}
+.canlidark-msg-tab-active {
+  border-bottom: 2px solid #a855f7;
+  color: #e9d5ff;
+}
+.canlidark-msg-tab-inactive {
+  border-bottom: 2px solid transparent;
+  color: rgba(168, 132, 252, 0.5);
+}
+.canlidark-msg-unread-badge {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
 }

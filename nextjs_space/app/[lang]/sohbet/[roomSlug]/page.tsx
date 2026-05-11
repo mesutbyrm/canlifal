@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
+import { useSiteTheme } from '@/lib/theme-context'
 import type { TRTC } from '@/lib/trtc-client'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
@@ -110,6 +111,8 @@ export default function ChatRoomPage() {
   const roomSlug = params.roomSlug as string
   const { data: session } = useSession() || {}
   const { language, t } = useLanguage()
+  const { theme } = useSiteTheme()
+  const isCanlidark = theme === 'canlidark'
   
   const [room, setRoom] = useState<ChatRoom | null>(null)
   const [allRooms, setAllRooms] = useState<ChatRoom[]>([])
@@ -2683,17 +2686,17 @@ export default function ChatRoomPage() {
             className="w-full h-full object-cover"
             key={room.backgroundImage || 'default'}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70" />
+          <div className={`absolute inset-0 ${isCanlidark ? 'bg-gradient-to-b from-[#050015]/80 via-[#0d0428]/40 to-[#050015]/85' : 'bg-gradient-to-b from-black/60 via-black/30 to-black/70'}`} />
         </div>
 
         {/* ── Top Header Overlay ── */}
-        <div className="relative z-10 flex-shrink-0 flex items-center justify-between px-3 py-2 bg-black/40 backdrop-blur-sm">
+        <div className={`relative z-10 flex-shrink-0 flex items-center justify-between px-3 py-2 backdrop-blur-sm ${isCanlidark ? 'bg-[#0d0428]/60 border-b border-purple-500/15' : 'bg-black/40'}`}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Room Owner Avatar */}
             {room.owner && (
               <button 
                 onClick={() => openUserProfile({ id: room.owner!.id, name: room.owner!.name, image: room.owner!.image })}
-                className="w-8 h-8 rounded-full bg-purple-800 border-2 border-gold-500/60 overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-gold-400 transition-all"
+                className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 transition-all ${isCanlidark ? 'bg-purple-700 border-2 border-purple-400/60 hover:ring-purple-400' : 'bg-purple-800 border-2 border-gold-500/60 hover:ring-gold-400'}`}
               >
                 {room.owner.image ? (
                   <img src={room.owner.image} alt={room.owner.name || ''} className="w-full h-full object-cover" />
@@ -2712,9 +2715,9 @@ export default function ChatRoomPage() {
           
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Active Users Count */}
-            <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-sm rounded-full px-2 py-0.5 border border-green-500/30">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-green-300 text-[11px] font-bold">{activeUsers.length}</span>
+            <div className={`flex items-center gap-1 backdrop-blur-sm rounded-full px-2 py-0.5 border ${isCanlidark ? 'bg-purple-500/20 border-purple-500/30' : 'bg-green-500/20 border-green-500/30'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isCanlidark ? 'bg-purple-400' : 'bg-green-400'}`} />
+              <span className={`text-[11px] font-bold ${isCanlidark ? 'text-purple-300' : 'text-green-300'}`}>{activeUsers.length}</span>
             </div>
 
             {/* Background Image */}
@@ -2882,7 +2885,7 @@ export default function ChatRoomPage() {
                         <div 
                           className={`relative overflow-hidden cursor-pointer transition-all
                             ${isThrone ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-yellow-400/80 shadow-lg shadow-yellow-500/30' : 'w-12 h-12 sm:w-14 sm:h-14 rounded-full'}
-                            ${!isThrone && (isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : 'ring-1 ring-white/20')}
+                            ${!isThrone && (isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : isCanlidark ? 'ring-2 ring-purple-500/50' : 'ring-1 ring-white/20')}
                           `}
                           onClick={() => {
                             if (isMe) {
@@ -2951,7 +2954,7 @@ export default function ChatRoomPage() {
                         className={`flex items-center justify-center backdrop-blur-sm transition-all cursor-pointer group
                           ${isThrone 
                             ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-2 border-dashed border-yellow-500/30 hover:border-yellow-400/60 hover:bg-yellow-900/30 shadow-inner' 
-                            : 'w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/5 border border-dashed border-white/20 hover:bg-white/15 hover:border-white/40'
+                            : `w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-dashed ${isCanlidark ? 'bg-purple-900/15 border-purple-500/25 hover:bg-purple-800/25 hover:border-purple-400/50' : 'bg-white/5 border-white/20 hover:bg-white/15 hover:border-white/40'}`
                           }`}
                         title={isThrone ? 'Taht Koltuğu — Oturmak için tıkla' : `Koltuk ${idx + 1} — Oturmak için tıkla`}
                       >
@@ -3051,7 +3054,7 @@ export default function ChatRoomPage() {
           </div>
         ) : room.descTr && showAnnouncement ? (
           <div className="relative z-10 mx-3 mb-2">
-            <div className="bg-black/50 backdrop-blur-md rounded-lg border border-white/10 p-3 max-h-32 overflow-y-auto relative overflow-hidden">
+            <div className={`backdrop-blur-md rounded-lg p-3 max-h-32 overflow-y-auto relative overflow-hidden ${isCanlidark ? 'bg-[#0d0428]/60 border border-purple-500/20' : 'bg-black/50 border border-white/10'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-yellow-400 text-xs font-bold mb-1">📢 Duyuru:</p>
@@ -3093,14 +3096,14 @@ export default function ChatRoomPage() {
           <div className="relative z-10 mx-3 mb-2 flex items-center gap-2">
             <button
               onClick={() => setShowMusicModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-purple-300 text-xs hover:from-purple-600/50 hover:to-pink-600/50 transition-all"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all border ${isCanlidark ? 'bg-gradient-to-r from-purple-600/40 to-fuchsia-600/40 border-purple-400/30 text-purple-200 hover:from-purple-600/60 hover:to-fuchsia-600/60' : 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-purple-500/30 text-purple-300 hover:from-purple-600/50 hover:to-pink-600/50'}`}
             >
               <span className="text-base">🎵</span> Müzik Aç
             </button>
             {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin) && (
               <button
                 onClick={() => setShowDjPanel(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-500/30 rounded-full text-cyan-300 text-xs hover:from-cyan-600/50 hover:to-blue-600/50 transition-all"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-all border ${isCanlidark ? 'bg-gradient-to-r from-fuchsia-600/40 to-pink-600/40 border-fuchsia-400/30 text-fuchsia-200 hover:from-fuchsia-600/60 hover:to-pink-600/60' : 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-500/30 text-cyan-300 hover:from-cyan-600/50 hover:to-blue-600/50'}`}
                 title="DJ Yönetimi"
               >
                 🎧 DJ ({djUsers.length}/5)
@@ -3507,7 +3510,7 @@ export default function ChatRoomPage() {
             )}
 
             {/* Main input row */}
-            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md rounded-full px-2 py-1.5 border border-white/10">
+            <div className={`flex items-center gap-1.5 backdrop-blur-md rounded-full px-2 py-1.5 border ${isCanlidark ? 'bg-[#0d0428]/70 border-purple-500/20' : 'bg-black/40 border-white/10'}`}>
               {/* Speaker / Listen toggle for non-voice users */}
               {!canUseVoice() && (isListening || voiceUsers.length > 0) && (
                 <button
@@ -3590,7 +3593,7 @@ export default function ChatRoomPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white flex items-center justify-center disabled:opacity-30 hover:from-purple-400 hover:to-fuchsia-500 flex-shrink-0 transition-all shadow-lg shadow-purple-500/30 active:scale-95"
+                  className={`w-14 h-14 rounded-full text-white flex items-center justify-center disabled:opacity-30 flex-shrink-0 transition-all active:scale-95 ${isCanlidark ? 'bg-gradient-to-br from-purple-600 to-fuchsia-600 shadow-lg shadow-purple-600/40 hover:from-purple-500 hover:to-fuchsia-500' : 'bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-lg shadow-purple-500/30 hover:from-purple-400 hover:to-fuchsia-500'}`}
                 >
                   <Send className="w-7 h-7" />
                 </button>
@@ -3613,8 +3616,8 @@ export default function ChatRoomPage() {
             </div>
 
             {/* Jeton Loading Area */}
-            <div className="flex items-center justify-between mt-1.5 px-1">
-              <span className="text-[10px] text-yellow-400/70 flex items-center gap-0.5">💎 {userJetonBalance.toLocaleString()} Jeton</span>
+            <div className={`flex items-center justify-between mt-1.5 px-1 ${isCanlidark ? 'py-1 bg-[#0d0428]/50 rounded-xl border border-purple-500/10' : ''}`}>
+              <span className={`text-[10px] flex items-center gap-0.5 ${isCanlidark ? 'text-purple-300/80 font-semibold' : 'text-yellow-400/70'}`}>💎 {userJetonBalance.toLocaleString()} Jeton</span>
               <button type="button" onClick={() => window.location.reload()} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-purple-300/70 hover:text-white transition-all active:scale-90" title="Sayfayı Yenile">
                 <RefreshCw className="w-3 h-3" />
                 <span className="text-[9px] font-medium">Yenile</span>
@@ -3642,7 +3645,7 @@ export default function ChatRoomPage() {
               <button
                 type="button"
                 onClick={() => window.open(`/${language}/jeton`, '_blank')}
-                className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border border-yellow-500/40 rounded-full text-yellow-300 text-[10px] font-bold hover:from-yellow-500/50 hover:to-amber-500/50 transition-all"
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${isCanlidark ? 'bg-gradient-to-r from-purple-600/40 to-fuchsia-600/40 border border-purple-500/40 text-purple-200 hover:from-purple-600/60 hover:to-fuchsia-600/60' : 'bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border border-yellow-500/40 text-yellow-300 hover:from-yellow-500/50 hover:to-amber-500/50'}`}
               >
                 <Coins className="w-3 h-3" /> Jeton Yükle
               </button>
@@ -3652,7 +3655,7 @@ export default function ChatRoomPage() {
           <div className="relative z-10 flex-shrink-0 px-3 pb-3 pt-1">
             <Link
               href="/giris"
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600/80 backdrop-blur-sm text-white font-medium text-sm rounded-full hover:bg-purple-500/80 w-full border border-purple-500/40"
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 backdrop-blur-sm text-white font-medium text-sm rounded-full w-full border ${isCanlidark ? 'bg-purple-600/70 hover:bg-purple-500/70 border-purple-400/40' : 'bg-purple-600/80 hover:bg-purple-500/80 border-purple-500/40'}`}
             >
               <LogIn className="w-4 h-4" />
               {t('chat.login_required')}

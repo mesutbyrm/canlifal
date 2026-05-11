@@ -15,7 +15,8 @@ import {
   Mail,
   Check,
   X,
-  UserPlus
+  UserPlus,
+  Users
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -55,6 +56,7 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [processingRequest, setProcessingRequest] = useState<string | null>(null)
 
+  const isCanlidark = theme === 'canlidark'
   const isFalclub = theme === 'falclub'
   const isFalci = theme === 'falci'
   const isCosmic = theme === 'cosmic'
@@ -129,11 +131,221 @@ export default function MessagesPage() {
   if (loading || status === 'loading') {
     return (
       <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
-        <Loader2 className={`w-8 h-8 ${accentColor} animate-spin`} />
+        <Loader2 className={`w-8 h-8 ${isCanlidark ? 'text-purple-400' : accentColor} animate-spin`} />
       </div>
     )
   }
 
+  // ─── CanlıDark themed Messages UI ───
+  if (isCanlidark) {
+    return (
+      <div className="min-h-screen pt-2 pb-24">
+        {/* Search bar + icons */}
+        <div className="max-w-lg mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400/60" />
+              <input
+                type="text"
+                placeholder="Ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-purple-500/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-purple-500/50 backdrop-blur-sm"
+              />
+            </div>
+            <button className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/20 flex items-center justify-center text-purple-300/60 hover:bg-white/10 transition-colors">
+              <MessageCircle className="w-4 h-4" />
+            </button>
+            <button className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/20 flex items-center justify-center text-purple-300/60 hover:bg-white/10 transition-colors">
+              <UserPlus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs: Sohbetler / Arkadaşlar */}
+        <div className="max-w-lg mx-auto px-4">
+          <div className="flex border-b border-purple-500/15">
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`flex-1 py-2.5 text-center text-sm font-semibold transition-colors ${
+                activeTab === 'messages' ? 'canlidark-msg-tab-active' : 'canlidark-msg-tab-inactive'
+              }`}
+            >
+              Sohbetler
+            </button>
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`flex-1 py-2.5 text-center text-sm font-semibold transition-colors relative ${
+                activeTab === 'requests' ? 'canlidark-msg-tab-active' : 'canlidark-msg-tab-inactive'
+              }`}
+            >
+              Arkadaşlar
+              {requests.length > 0 && (
+                <span className="absolute top-1 ml-1 canlidark-msg-unread-badge inline-flex" style={{ position: 'relative', top: '-2px', marginLeft: '4px' }}>
+                  {requests.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-lg mx-auto">
+          {activeTab === 'messages' ? (
+            <div className="divide-y divide-purple-500/10">
+              {filteredConversations.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-purple-400/60" />
+                  </div>
+                  <p className="text-white text-base font-medium">Henüz mesaj yok</p>
+                  <p className="text-purple-300/50 text-sm mt-1">Birini takip edip mesaj gönderebilirsiniz</p>
+                </div>
+              ) : (
+                filteredConversations.map((conv) => (
+                  <Link
+                    key={conv.id}
+                    href={`/mesajlar/${conv.user.id}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-purple-500/5 transition-colors"
+                  >
+                    {/* Avatar with gradient ring */}
+                    <div className="relative flex-shrink-0">
+                      <div className="canlidark-msg-avatar-ring">
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          {conv.user.image ? (
+                            <Image
+                              src={conv.user.image}
+                              alt={conv.user.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-gradient-to-br from-purple-700 to-fuchsia-700">
+                              {conv.user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Name + last message */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <p className={`font-semibold text-sm ${conv.unreadCount > 0 ? 'text-white' : 'text-white/80'}`}>
+                            {conv.user.name}
+                          </p>
+                          {/* Verified badge placeholder */}
+                          {conv.user.username && (
+                            <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-purple-300/40">
+                          {formatTime(conv.lastMessageAt)}
+                        </span>
+                      </div>
+                      <p className={`text-xs mt-0.5 truncate ${conv.unreadCount > 0 ? 'text-white/80 font-medium' : 'text-purple-300/40'}`}>
+                        {conv.lastMessage || 'Mesaj başlat'}
+                      </p>
+                    </div>
+
+                    {/* Unread badge */}
+                    {conv.unreadCount > 0 && (
+                      <div className="canlidark-msg-unread-badge flex-shrink-0">
+                        {conv.unreadCount}
+                      </div>
+                    )}
+                  </Link>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-purple-500/10">
+              {requests.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Users className="w-8 h-8 text-purple-400/60" />
+                  </div>
+                  <p className="text-white text-base font-medium">Mesaj isteği yok</p>
+                </div>
+              ) : (
+                requests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="flex items-center gap-3 px-4 py-3"
+                  >
+                    <Link
+                      href={`/profil/${req.sender.username || req.sender.id}`}
+                      className="flex-shrink-0"
+                    >
+                      <div className="canlidark-msg-avatar-ring">
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          {req.sender.image ? (
+                            <Image
+                              src={req.sender.image}
+                              alt={req.sender.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-gradient-to-br from-purple-700 to-fuchsia-700">
+                              {req.sender.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white text-sm">
+                        {req.sender.name}
+                      </p>
+                      <p className="text-xs text-purple-300/40">
+                        @{req.sender.username || 'user'}
+                      </p>
+                      {req.message && (
+                        <p className="text-xs text-white/60 mt-1 line-clamp-2">
+                          &quot;{req.message}&quot;
+                        </p>
+                      )}
+                      <p className="text-[10px] text-purple-300/30 mt-1">
+                        {formatTime(req.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRequestAction(req.id, 'accept')}
+                        disabled={processingRequest === req.id}
+                        className="w-9 h-9 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-full text-green-400 flex items-center justify-center transition-colors"
+                      >
+                        {processingRequest === req.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleRequestAction(req.id, 'reject')}
+                        disabled={processingRequest === req.id}
+                        className="w-9 h-9 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-full text-red-400 flex items-center justify-center transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Default (non-CanlıDark) Messages UI ───
   return (
     <div className={`min-h-screen ${bgColor} pt-[60px]`}>
       {/* Search - compact */}
