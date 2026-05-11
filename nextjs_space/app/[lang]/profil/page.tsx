@@ -600,6 +600,18 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">Profili Düzenle</span>
                 </Link>
 
+                {/* Falcı Paneli - only for tellers */}
+                {isTeller && (
+                  <Link
+                    href="/canli-falcilar/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Sparkles className={`w-5 h-5 ${accentColor}`} />
+                    <span className="text-sm font-medium">Falcı Paneli</span>
+                  </Link>
+                )}
+
                 {/* Divider */}
                 <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
 
