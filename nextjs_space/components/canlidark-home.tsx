@@ -13,7 +13,6 @@ import {
 import dynamic from 'next/dynamic'
 
 const NotificationBell = dynamic(() => import('./notification-bell'), { ssr: false })
-const LiveVisitorCountComponent = dynamic(() => import('./live-visitor-count').then(m => ({ default: m.LiveVisitorCount })), { ssr: false })
 const LiveTicker = dynamic(() => import('./live-ticker'), { ssr: false })
 
 interface LiveStream {
@@ -126,11 +125,6 @@ export default function CanliDarkHome() {
   const popularTellers = tellers.slice(0, 8)
 
   return (
-    <>
-      {/* Full-width Live Ticker (scrolling text + online counter) */}
-      <div className="-mt-2 mb-2">
-        <LiveTicker />
-      </div>
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
       {/* Floating decorative orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
@@ -190,6 +184,11 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
+      {/* ═══ LIVE TICKER — kayan şerit, üst barın altında ═══ */}
+      <div className="-mx-3 sm:-mx-4 mb-4">
+        <LiveTicker />
+      </div>
+
       {/* ═══ HERO TITLE ═══ */}
       <h1 className="canlidark-hero-title mb-4">
         {heroText.split('\n').map((line, i, arr) => (
@@ -201,16 +200,6 @@ export default function CanliDarkHome() {
         {' '}<span className="inline-block text-pink-400">♥</span>
       </h1>
 
-      {/* ═══ CANLI SAYACI ═══ */}
-      <div className="flex justify-center mb-4">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-900/40 border border-purple-500/30 backdrop-blur-md">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
-          </span>
-          <LiveVisitorCountComponent showIcon={false} showLabel={true} className="text-xs text-purple-200/90 font-medium" />
-        </div>
-      </div>
 
       {/* ═══ CANLI YAYINLAR ═══ */}
       <div className="mb-6">
@@ -477,6 +466,5 @@ export default function CanliDarkHome() {
         </div>
       </nav>
     </div>
-    </>
   )
 }
