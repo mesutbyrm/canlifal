@@ -15,7 +15,8 @@ import {
   Star, BadgeCheck, Video, Check, Clock, Calendar,
   Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
   AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send,
-  ChevronLeft, Menu, LogOut, BarChart3
+  ChevronLeft, Menu, LogOut, BarChart3, Shield, Crown, DollarSign,
+  Users, Coins, MessageSquareWarning, Layers
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -559,7 +560,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.2 }}
               className={`absolute right-4 top-14 z-50 w-64 rounded-2xl ${isCanlidark ? 'bg-[#1a0a2e]/95 border border-purple-500/30' : isFacebook ? 'bg-white border border-gray-200 shadow-lg' : isCosmic ? 'bg-[#0d1f3c]/95 border border-blue-500/30' : 'bg-[#1a0a2e]/95 border border-fuchsia-500/30'} backdrop-blur-xl overflow-hidden`}
             >
-              <div className="py-2">
+              <div className="py-2 max-h-[80vh] overflow-y-auto">
                 {/* İstatistikler */}
                 <Link
                   href="/panel"
@@ -570,8 +571,8 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">İstatistikler</span>
                 </Link>
 
-                {/* Para Çekimi - only for tellers */}
-                {isTeller && (
+                {/* Para Çekimi - tellers + admins */}
+                {(isTeller || (session.user as any).role === 'admin') && (
                   <button
                     onClick={() => { 
                       setShowWithdrawalSection(true)
@@ -618,6 +619,100 @@ export default function ProfilePage() {
                     <Sparkles className={`w-5 h-5 ${accentColor}`} />
                     <span className="text-sm font-medium">Falcı Paneli</span>
                   </Link>
+                )}
+
+                {/* Jeton Yükleme - for all users */}
+                <Link
+                  href="/jeton"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                >
+                  <Coins className={`w-5 h-5 text-amber-400`} />
+                  <span className="text-sm font-medium">Jeton Yükle</span>
+                </Link>
+
+                {/* ═══ ADMIN ŞORTKUT BÖLÜMÜ ═══ */}
+                {(session.user as any).role === 'admin' && (
+                  <>
+                    <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
+                    <div className={`px-4 py-2 text-[10px] uppercase tracking-wider font-bold ${isFacebook ? 'text-gray-500' : 'text-fuchsia-300/70'}`}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Shield className="w-3 h-3" /> Yönetici Paneli
+                      </span>
+                    </div>
+                    <Link
+                      href="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Layers className="w-5 h-5 text-fuchsia-400" />
+                      <span className="text-sm font-medium">Admin Paneli</span>
+                    </Link>
+                    <Link
+                      href="/admin/users"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Users className="w-5 h-5 text-blue-400" />
+                      <span className="text-sm font-medium">Kullanıcılar</span>
+                    </Link>
+                    <Link
+                      href="/admin/credits"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Coins className="w-5 h-5 text-amber-400" />
+                      <span className="text-sm font-medium">Jeton/Kredi Yönetimi</span>
+                    </Link>
+                    <Link
+                      href="/admin/memberships"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Crown className="w-5 h-5 text-yellow-400" />
+                      <span className="text-sm font-medium">Gold/Premium Üyelik</span>
+                    </Link>
+                    <Link
+                      href="/admin/withdrawals"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <DollarSign className="w-5 h-5 text-green-400" />
+                      <span className="text-sm font-medium">Para Çekme Talepleri</span>
+                    </Link>
+                    <Link
+                      href="/admin/moderation"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <MessageSquareWarning className="w-5 h-5 text-red-400" />
+                      <span className="text-sm font-medium">Şikayet & Öneriler</span>
+                    </Link>
+                    <Link
+                      href="/admin/finance"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <BarChart3 className="w-5 h-5 text-emerald-400" />
+                      <span className="text-sm font-medium">Finans Raporları</span>
+                    </Link>
+                    <Link
+                      href="/admin/live-tellers"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Star className="w-5 h-5 text-pink-400" />
+                      <span className="text-sm font-medium">Falcı Yönetimi</span>
+                    </Link>
+                    <Link
+                      href="/admin/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                    >
+                      <Settings className="w-5 h-5 text-purple-400" />
+                      <span className="text-sm font-medium">Site Ayarları</span>
+                    </Link>
+                  </>
                 )}
 
                 {/* Divider */}

@@ -14,6 +14,7 @@ import dynamic from 'next/dynamic'
 
 const NotificationBell = dynamic(() => import('./notification-bell'), { ssr: false })
 const LiveVisitorCountComponent = dynamic(() => import('./live-visitor-count').then(m => ({ default: m.LiveVisitorCount })), { ssr: false })
+const LiveTicker = dynamic(() => import('./live-ticker'), { ssr: false })
 
 interface LiveStream {
   id: string
@@ -125,6 +126,11 @@ export default function CanliDarkHome() {
   const popularTellers = tellers.slice(0, 8)
 
   return (
+    <>
+      {/* Full-width Live Ticker (scrolling text + online counter) */}
+      <div className="-mt-2 mb-2">
+        <LiveTicker />
+      </div>
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
       {/* Floating decorative orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
@@ -471,5 +477,6 @@ export default function CanliDarkHome() {
         </div>
       </nav>
     </div>
+    </>
   )
 }
