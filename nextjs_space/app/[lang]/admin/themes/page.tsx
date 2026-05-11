@@ -128,6 +128,23 @@ const THEMES: ThemeConfig[] = [
       text: '#ffffff',
       accent: '#f0abfc'
     }
+  },
+  {
+    id: 'canlidark',
+    name: 'CanliDark',
+    nameTr: 'CanlıDark',
+    description: 'Futuristic OLED dark theme with neon glassmorphism',
+    descriptionTr: 'Fütüristik OLED karanlık tema, neon glassmorphism efektleri',
+    enabled: true,
+    isDefault: false,
+    icon: <Sparkles className="w-6 h-6" />,
+    previewColors: {
+      primary: '#c026d3',
+      secondary: '#7c3aed',
+      background: '#0a0420',
+      text: '#ffffff',
+      accent: '#ec4899'
+    }
   }
 ]
 
@@ -141,7 +158,7 @@ export default function AdminThemesPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [defaultTheme, setDefaultTheme] = useState('mystical')
-  const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci', 'falclub'])
+  const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci', 'falclub', 'canlidark'])
   const [colorMode, setColorMode] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {

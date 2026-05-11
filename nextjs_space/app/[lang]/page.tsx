@@ -19,6 +19,7 @@ const LiveTicker = dynamic(() => import('@/components/live-ticker'), { ssr: fals
 // BanaOzelSection moved to /bana-ozel page
 // GuestLanding removed - normal homepage shown for all users
 const LiveActivityFeed = dynamic(() => import('@/components/live-activity-feed'), { ssr: false })
+const CanliDarkHome = dynamic(() => import('@/components/canlidark-home'), { ssr: false })
 
 interface LiveTeller {
   id: string
@@ -171,6 +172,7 @@ export default function HomePage() {
   // Theme detection
   const isFalci = theme === 'falci'
   const isFalclub = theme === 'falclub'
+  const isCanlidark = theme === 'canlidark'
   const isCosmic = theme === 'cosmic'
   
   // Theme-based colors with improved readability
@@ -309,6 +311,11 @@ export default function HomePage() {
   // Non-logged-in users see the normal homepage (no separate guest landing)
 
   // FalClub Theme - Premium Neon Pink Design (exact match to provided image)
+  // CanliDark Theme - Futuristic OLED Neon Design
+  if (isCanlidark) {
+    return <CanliDarkHome />
+  }
+
   if (isFalclub) {
     const sectionVariants = {
       hidden: { opacity: 0, y: 30 },

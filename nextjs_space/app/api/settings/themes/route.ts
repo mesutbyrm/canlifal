@@ -8,11 +8,11 @@ export async function GET() {
   try {
     const [defaultTheme, enabledThemesRaw, colorMode] = await Promise.all([
       getCachedPlatformSetting('default_theme', 'falclub'),
-      getCachedPlatformSetting('enabled_themes', JSON.stringify(['mystical', 'cosmic', 'facebook', 'falci', 'falclub'])),
+      getCachedPlatformSetting('enabled_themes', JSON.stringify(['mystical', 'cosmic', 'facebook', 'falci', 'falclub', 'canlidark'])),
       getCachedPlatformSetting('color_mode', 'dark'),
     ]);
 
-    let enabled_themes = ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'];
+    let enabled_themes = ['mystical', 'cosmic', 'facebook', 'falci', 'falclub', 'canlidark'];
     try {
       const parsed = JSON.parse(enabledThemesRaw);
       if (Array.isArray(parsed)) enabled_themes = parsed;
@@ -26,7 +26,7 @@ export async function GET() {
   } catch (error) {
     console.error('Fetch theme settings error:', error);
     return NextResponse.json(
-      { default_theme: 'falclub', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub'], color_mode: 'dark' }
+      { default_theme: 'falclub', enabled_themes: ['mystical', 'cosmic', 'facebook', 'falci', 'falclub', 'canlidark'], color_mode: 'dark' }
     );
   }
 }

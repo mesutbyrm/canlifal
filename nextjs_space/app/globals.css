@@ -1202,3 +1202,301 @@ html, body {
   color: #fca5a5;
   animation: effect-live-pulse 1.5s ease-in-out infinite;
 }
+
+
+/* ============================================ */
+/* CANLIDARK THEME - Futuristic Neon OLED       */
+/* ============================================ */
+[data-theme="canlidark"] {
+  --background: 265 80% 4%;
+  --foreground: 0 0% 98%;
+  --card: 265 50% 10%;
+  --card-foreground: 0 0% 98%;
+  --popover: 265 50% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 290 90% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 265 45% 14%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 265 35% 18%;
+  --muted-foreground: 280 25% 75%;
+  --accent: 330 85% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 290 70% 50%;
+  --input: 265 45% 14%;
+  --ring: 290 90% 60%;
+  --radius: 1rem;
+
+  --theme-bg: #050015;
+  --theme-scrollbar-track: #0a0420;
+  --theme-scrollbar-thumb: #a855f7;
+  --theme-scrollbar-thumb-hover: #c084fc;
+
+  --cd-bg-deep: #050015;
+  --cd-bg-mid: #0d0428;
+  --cd-bg-card: rgba(15, 8, 40, 0.65);
+  --cd-bg-glass: rgba(30, 15, 70, 0.45);
+  --cd-border: rgba(168, 85, 247, 0.35);
+  --cd-border-strong: rgba(217, 70, 239, 0.55);
+  --cd-text: #ffffff;
+  --cd-text-secondary: #d8c5ff;
+  --cd-text-muted: #9d8bc7;
+  --cd-pink: #ec4899;
+  --cd-purple: #a855f7;
+  --cd-blue: #3b82f6;
+  --cd-cyan: #06b6d4;
+  --cd-orange: #f97316;
+  --cd-amber: #fbbf24;
+  --cd-emerald: #10b981;
+}
+
+[data-theme="canlidark"] body {
+  background: radial-gradient(ellipse at 0% 10%, rgba(192, 38, 211, 0.35) 0%, transparent 45%),
+              radial-gradient(ellipse at 100% 90%, rgba(59, 130, 246, 0.30) 0%, transparent 45%),
+              radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
+              linear-gradient(180deg, #050015 0%, #0a0420 50%, #050015 100%);
+  background-attachment: fixed;
+  color: var(--cd-text);
+}
+
+[data-theme="canlidark"] h1,
+[data-theme="canlidark"] h2,
+[data-theme="canlidark"] h3,
+[data-theme="canlidark"] h4,
+[data-theme="canlidark"] h5,
+[data-theme="canlidark"] h6 {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@layer utilities {
+  .canlidark-bg {
+    background: radial-gradient(ellipse at 0% 10%, rgba(192, 38, 211, 0.35) 0%, transparent 45%),
+                radial-gradient(ellipse at 100% 90%, rgba(59, 130, 246, 0.30) 0%, transparent 45%),
+                radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
+                linear-gradient(180deg, #050015 0%, #0a0420 50%, #050015 100%);
+    min-height: 100vh;
+  }
+
+  .canlidark-glass {
+    background: var(--cd-bg-card);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--cd-border);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .canlidark-card {
+    background: linear-gradient(135deg, rgba(40, 20, 90, 0.55) 0%, rgba(20, 10, 50, 0.55) 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--cd-border);
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .canlidark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(168, 85, 247, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: var(--cd-border-strong);
+  }
+
+  .canlidark-hero-title {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+
+  .canlidark-hero-title-accent {
+    background: linear-gradient(90deg, #ec4899 0%, #c026d3 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .canlidark-action-btn {
+    @apply relative flex flex-col items-center justify-center rounded-2xl p-3 text-white font-semibold;
+    aspect-ratio: 1 / 1.15;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+  }
+
+  .canlidark-action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .canlidark-action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .canlidark-action-btn--pink {
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+  }
+  .canlidark-action-btn--purple {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  }
+  .canlidark-action-btn--orange {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  }
+  .canlidark-action-btn--blue {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  }
+  .canlidark-action-btn--emerald {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  }
+
+  .canlidark-room-sphere {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.55),
+                inset 0 0 20px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+  }
+  .canlidark-room-sphere--pink {
+    background: radial-gradient(circle at 30% 30%, #f472b6 0%, #ec4899 40%, #9d174d 100%);
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.6), inset 0 0 25px rgba(0,0,0,0.45);
+  }
+  .canlidark-room-sphere--blue {
+    background: radial-gradient(circle at 30% 30%, #60a5fa 0%, #2563eb 40%, #1e3a8a 100%);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.6), inset 0 0 25px rgba(0,0,0,0.45);
+  }
+  .canlidark-room-sphere--purple {
+    background: radial-gradient(circle at 30% 30%, #c084fc 0%, #a855f7 40%, #581c87 100%);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), inset 0 0 25px rgba(0,0,0,0.45);
+  }
+  .canlidark-room-sphere--amber {
+    background: radial-gradient(circle at 30% 30%, #fcd34d 0%, #f59e0b 40%, #78350f 100%);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 25px rgba(0,0,0,0.45);
+  }
+
+  .canlidark-online-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    border: 2px solid #050015;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+  }
+
+  .canlidark-live-badge {
+    background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+    letter-spacing: 0.05em;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.55);
+  }
+
+  .canlidark-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    padding: 0.5rem max(env(safe-area-inset-left), 0.75rem) max(env(safe-area-inset-bottom), 0.75rem);
+    background: linear-gradient(180deg, rgba(10, 4, 32, 0) 0%, rgba(10, 4, 32, 0.85) 50%, rgba(5, 0, 21, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .canlidark-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 600px;
+    margin: 0 auto;
+    background: rgba(15, 8, 40, 0.75);
+    border: 1px solid var(--cd-border);
+    border-radius: 1.75rem;
+    padding: 0.6rem 1rem;
+    box-shadow: 0 -4px 30px rgba(168, 85, 247, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .canlidark-nav-item {
+    @apply flex flex-col items-center gap-0.5 text-xs font-medium;
+    color: #a78bfa;
+    transition: color 0.2s ease, transform 0.2s ease;
+    min-width: 56px;
+  }
+  .canlidark-nav-item:hover,
+  .canlidark-nav-item.active {
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .canlidark-nav-fab {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.55),
+                0 0 30px rgba(168, 85, 247, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    margin-top: -28px;
+    transform: translateY(-4px);
+    transition: transform 0.2s ease;
+  }
+  .canlidark-nav-fab:hover {
+    transform: translateY(-8px);
+  }
+
+  .canlidark-stream-card {
+    position: relative;
+    width: 130px;
+    height: 170px;
+    border-radius: 1rem;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid rgba(236, 72, 153, 0.45);
+    box-shadow: 0 6px 24px rgba(236, 72, 153, 0.35);
+  }
+
+  .canlidark-stream-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%);
+  }
+
+  .canlidark-section-title {
+    @apply text-base font-bold text-white tracking-tight;
+  }
+  .canlidark-section-link {
+    @apply text-xs font-medium;
+    color: #c084fc;
+  }
+}
