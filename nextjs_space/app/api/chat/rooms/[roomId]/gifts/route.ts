@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -174,27 +175,25 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     })
 
     // Send notification to recipient
-    await prisma.notification.create({
-      data: {
-        userId: recipient.id,
-        type: 'gift_received',
-        title: 'Sohbet Hediyesi! 🎁',
-        message: `size ${giftType.name} hediye gönderdi!`,
-        fromUserId: sender.id,
-        fromUserName: sender.name,
-        data: JSON.stringify({
-          type: 'chat_room_gift',
-          giftTypeId: giftType.id,
-          giftName: giftType.name,
-          giftIcon: giftType.icon,
-          roomId,
-          roomName: room.nameTr,
-          senderId: sender.id,
-          senderName: sender.name,
-          currencyType: paymentType,
-          amount: price
-        })
-      }
+    await createNotificationWithPush({
+      userId: recipient.id,
+      type: 'gift_received',
+      title: 'Sohbet Hediyesi! 🎁',
+      message: `size ${giftType.name} hediye gönderdi!`,
+      fromUserId: sender.id,
+      fromUserName: sender.name || undefined,
+      data: JSON.stringify({
+        type: 'chat_room_gift',
+        giftTypeId: giftType.id,
+        giftName: giftType.name,
+        giftIcon: giftType.icon,
+        roomId,
+        roomName: room.nameTr,
+        senderId: sender.id,
+        senderName: sender.name,
+        currencyType: paymentType,
+        amount: price
+      })
     })
 
     // Trigger gift sent event announcement

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 import { getPlatformSetting } from '@/lib/agency-commission'
 
 // GET - Check if stream should be auto-closed (called by broadcaster polling)
@@ -91,14 +92,12 @@ export async function POST(
 
     // Create notification for broadcaster
     try {
-      await prisma.notification.create({
-        data: {
-          userId: stream.userId,
-          type: 'stream_auto_closed',
-          title: 'Yayın Otomatik Kapatıldı',
-          message: 'Uzun süredir hediye gelmediği için yayınınız otomatik olarak kapatıldı.',
-          data: JSON.stringify({ streamId: params.streamId })
-        }
+      await createNotificationWithPush({
+        userId: stream.userId,
+        type: 'stream_auto_closed',
+        title: 'Yayın Otomatik Kapatıldı',
+        message: 'Uzun süredir hediye gelmediği için yayınınız otomatik olarak kapatıldı.',
+        data: JSON.stringify({ streamId: params.streamId })
       })
     } catch {}
 

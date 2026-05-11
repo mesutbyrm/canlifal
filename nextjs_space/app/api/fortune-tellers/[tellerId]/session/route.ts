@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
@@ -94,20 +95,20 @@ export async function POST(
 
     const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames['general'];
     
-    await prisma.notification.create({
-      data: {
-        userId: teller.userId,
-        type: 'session_request',
-        title: 'Yeni Randevu Talebi',
-        message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName} için ${duration} dakikalık randevu talep etti.`,
-        data: JSON.stringify({
-          sessionId: liveSession.id,
-          fortuneType: fortuneType || 'general',
-          userName: fullUser?.name,
-          creditsCharged: totalCost,
-          duration: duration
-        })
-      }
+    await createNotificationWithPush({
+      userId: teller.userId,
+      type: 'session_request',
+      title: 'Yeni Randevu Talebi',
+      message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName} için ${duration} dakikalık randevu talep etti.`,
+      fromUserId: session.user.id,
+      fromUserName: fullUser?.name || undefined,
+      data: JSON.stringify({
+        sessionId: liveSession.id,
+        fortuneType: fortuneType || 'general',
+        userName: fullUser?.name,
+        creditsCharged: totalCost,
+        duration: duration
+      })
     });
 
     return NextResponse.json({ 

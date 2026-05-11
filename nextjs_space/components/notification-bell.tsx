@@ -89,7 +89,6 @@ export default function NotificationBell() {
   }, [fetchNotifications])
 
   const markAllAsRead = useCallback(async () => {
-    if (unreadCount === 0) return
     try {
       await fetch('/api/notifications', {
         method: 'POST',
@@ -101,13 +100,17 @@ export default function NotificationBell() {
     } catch (error) {
       console.error('Failed to mark notifications:', error)
     }
-  }, [unreadCount])
+  }, [])
 
+  // When notification panel opens, immediately clear badge and mark all as read
+  const prevIsOpenRef = useRef(false)
   useEffect(() => {
-    if (isOpen && unreadCount > 0) {
-      markAllAsRead()
+    if (isOpen && !prevIsOpenRef.current && unreadCount > 0) {
+      setUnreadCount(0) // Instantly remove badge
+      markAllAsRead()   // Persist to server
     }
-  }, [isOpen])
+    prevIsOpenRef.current = isOpen
+  }, [isOpen, unreadCount, markAllAsRead])
 
   // Lock body scroll when modal is open
   useEffect(() => {

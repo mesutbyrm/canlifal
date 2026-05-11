@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // Get all payment notifications (admin only)
 export async function GET(req: NextRequest) {
@@ -133,13 +134,11 @@ export async function PATCH(req: NextRequest) {
       })
 
       // Notify user
-      await prisma.notification.create({
-        data: {
-          userId: paymentNotification.userId,
-          type: 'payment_approved',
-          title: 'Ödeme Onaylandı! ✅',
-          message: `${paymentNotification.amount} TL ödemeniz onaylandı. ${jetonAmount} jeton hesabınıza eklendi.`
-        }
+      await createNotificationWithPush({
+        userId: paymentNotification.userId,
+        type: 'payment_approved',
+        title: 'Ödeme Onaylandı! ✅',
+        message: `${paymentNotification.amount} TL ödemeniz onaylandı. ${jetonAmount} jeton hesabınıza eklendi.`
       })
 
       return NextResponse.json({ 
@@ -160,13 +159,11 @@ export async function PATCH(req: NextRequest) {
       })
 
       // Notify user
-      await prisma.notification.create({
-        data: {
-          userId: paymentNotification.userId,
-          type: 'payment_rejected',
-          title: 'Ödeme Reddedildi ❌',
-          message: `${paymentNotification.amount} TL ödeme bildiriminiz reddedildi. Lütfen destek ile iletişime geçin.`
-        }
+      await createNotificationWithPush({
+        userId: paymentNotification.userId,
+        type: 'payment_rejected',
+        title: 'Ödeme Reddedildi ❌',
+        message: `${paymentNotification.amount} TL ödeme bildiriminiz reddedildi. Lütfen destek ile iletişime geçin.`
       })
 
       return NextResponse.json({ success: true, message: 'Ödeme reddedildi.' })
@@ -235,13 +232,11 @@ export async function POST(req: NextRequest) {
     })
 
     // Notify user
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: 'jeton_added',
-        title: 'Jeton Eklendi! 🪙',
-        message: `Hesabınıza ${jetonAmount} jeton eklendi.`
-      }
+    await createNotificationWithPush({
+      userId,
+      type: 'jeton_added',
+      title: 'Jeton Eklendi! 🪙',
+      message: `Hesabınıza ${jetonAmount} jeton eklendi.`
     })
 
     return NextResponse.json({ 

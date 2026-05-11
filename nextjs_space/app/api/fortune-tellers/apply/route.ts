@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 import { sendNotificationEmail } from '@/lib/email-service'
 import { getCachedPlatformSetting } from '@/lib/cache'
 
@@ -71,14 +72,12 @@ export async function POST(request: NextRequest) {
     })
 
     for (const admin of admins) {
-      await prisma.notification.create({
-        data: {
-          userId: admin.id,
-          type: 'teller_application',
-          title: 'Yeni Falcı Başvurusu',
-          message: `${displayName} falcı olmak için başvurdu.`,
-          data: JSON.stringify({ tellerId: teller.id })
-        }
+      await createNotificationWithPush({
+        userId: admin.id,
+        type: 'teller_application',
+        title: 'Yeni Falcı Başvurusu',
+        message: `${displayName} falcı olmak için başvurdu.`,
+        data: JSON.stringify({ tellerId: teller.id })
       })
     }
 

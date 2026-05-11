@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 import { sendNotificationEmail } from '@/lib/email-service'
 
 // User submits payment notification
@@ -49,20 +50,20 @@ export async function POST(req: NextRequest) {
     })
 
     for (const admin of admins) {
-      await prisma.notification.create({
-        data: {
-          userId: admin.id,
-          type: 'payment_notification',
-          title: 'Yeni Ödeme Bildirimi 💰',
-          message: `${user.username || user.name} kullanıcısı ${amount} TL ödeme bildirimi gönderdi.`,
-          data: JSON.stringify({
-            paymentNotificationId: notification.id,
-            userId: session.user.id,
-            username: user.username || user.name,
-            amount,
-            paymentMethod
-          })
-        }
+      await createNotificationWithPush({
+        userId: admin.id,
+        type: 'payment_notification',
+        title: 'Yeni Ödeme Bildirimi 💰',
+        message: `${user.username || user.name} kullanıcısı ${amount} TL ödeme bildirimi gönderdi.`,
+        fromUserId: session.user.id,
+        fromUserName: user.username || user.name || undefined,
+        data: JSON.stringify({
+          paymentNotificationId: notification.id,
+          userId: session.user.id,
+          username: user.username || user.name,
+          amount,
+          paymentMethod
+        })
       })
     }
 

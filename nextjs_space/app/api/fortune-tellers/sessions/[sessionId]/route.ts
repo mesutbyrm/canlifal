@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { createNotificationWithPush } from '@/lib/notify';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
@@ -154,23 +155,21 @@ export async function PATCH(
     });
 
     // Send notification to the user
-    await prisma.notification.create({
-      data: {
-        userId: liveSession.userId,
-        type: 'session_update',
-        title: action === 'accept' ? 'Randevu Kabul Edildi' 
-             : action === 'complete' ? 'Seans Tamamlandı'
-             : action === 'reject' ? 'Randevu Reddedildi'
-             : 'Randevu İptal Edildi',
-        message: notificationMessage,
-        fromUserId: session.user.id,
-        fromUserName: liveSession.teller.displayName,
-        data: JSON.stringify({
-          sessionId: liveSession.id,
-          tellerId: liveSession.tellerId,
-          action
-        })
-      }
+    await createNotificationWithPush({
+      userId: liveSession.userId,
+      type: 'session_update',
+      title: action === 'accept' ? 'Randevu Kabul Edildi' 
+           : action === 'complete' ? 'Seans Tamamlandı'
+           : action === 'reject' ? 'Randevu Reddedildi'
+           : 'Randevu İptal Edildi',
+      message: notificationMessage,
+      fromUserId: session.user.id,
+      fromUserName: liveSession.teller.displayName,
+      data: JSON.stringify({
+        sessionId: liveSession.id,
+        tellerId: liveSession.tellerId,
+        action
+      })
     });
 
     return NextResponse.json(updatedSession);

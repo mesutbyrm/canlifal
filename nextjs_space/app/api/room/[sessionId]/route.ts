@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
@@ -326,23 +327,19 @@ export async function PATCH(
             ? `Görüşme ${actualMinutesUsed} dakika sürdü. ${refundAmount} jeton hesabınıza iade edildi.`
             : `Görüşme ${actualMinutesUsed} dakika sürdü. Toplam ${actualCost} jeton kullanıldı.`;
           
-          await prisma.notification.create({
-            data: {
-              userId: liveSession.userId,
-              type: 'session_ended',
-              title: refundAmount > 0 ? '💰 Seans Sona Erdi - Jeton İadesi' : 'Seans Sona Erdi',
-              message: refundMsg
-            }
+          await createNotificationWithPush({
+            userId: liveSession.userId,
+            type: 'session_ended',
+            title: refundAmount > 0 ? '💰 Seans Sona Erdi - Jeton İadesi' : 'Seans Sona Erdi',
+            message: refundMsg
           });
         } else {
           // User ended: notify teller
-          await prisma.notification.create({
-            data: {
-              userId: liveSession.teller.userId,
-              type: 'session_ended',
-              title: 'Seans Sona Erdi',
-              message: `Canlı fal seansı tamamlandı. ${actualMinutesUsed} dakika sürdü.`
-            }
+          await createNotificationWithPush({
+            userId: liveSession.teller.userId,
+            type: 'session_ended',
+            title: 'Seans Sona Erdi',
+            message: `Canlı fal seansı tamamlandı. ${actualMinutesUsed} dakika sürdü.`
           });
         }
 

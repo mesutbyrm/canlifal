@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 const MAX_GUESTS = 8 // Maximum simultaneous co-broadcasters allowed
 
@@ -81,19 +82,19 @@ export async function POST(
       })
 
       // Notify broadcaster
-      await prisma.notification.create({
-        data: {
-          userId: stream.userId,
-          type: 'co_broadcast_request',
-          title: 'Ortak Yayın Talebi',
-          message: `${session.user.name || 'Kullanıcı'} sizinle ortak yayın yapmak istiyor!`,
-          data: JSON.stringify({ 
-            streamId: params.streamId, 
-            requesterId: session.user.id,
-            requesterName: session.user.name,
-            requesterImage: session.user.image
-          })
-        }
+      await createNotificationWithPush({
+        userId: stream.userId,
+        type: 'co_broadcast_request',
+        title: 'Ortak Yayın Talebi',
+        message: `${session.user.name || 'Kullanıcı'} sizinle ortak yayın yapmak istiyor!`,
+        fromUserId: session.user.id,
+        fromUserName: session.user.name || undefined,
+        data: JSON.stringify({ 
+          streamId: params.streamId, 
+          requesterId: session.user.id,
+          requesterName: session.user.name,
+          requesterImage: session.user.image
+        })
       })
 
       return NextResponse.json(request)
@@ -149,14 +150,12 @@ export async function POST(
         data: { status: 'active', joinedAt: new Date(), isMuted: false, isVideoOff: false }
       })
       // Notify the user that their request was approved
-      await prisma.notification.create({
-        data: {
+      await createNotificationWithPush({
           userId,
           type: 'co_broadcast_accepted',
           title: 'Yayına Katılma Onaylandı',
           message: `Canlı yayına katılma isteğiniz onaylandı! Şimdi katılabilirsiniz.`,
           data: JSON.stringify({ streamId: params.streamId, action: 'approved' })
-        }
       })
       return NextResponse.json(coBroadcaster)
     }
@@ -255,8 +254,7 @@ export async function PATCH(
       })
       
       if (stream) {
-        await prisma.notification.create({
-          data: {
+        await createNotificationWithPush({
             userId: stream.userId,
             type: 'co_broadcast_accepted',
             title: 'Ortak Yayın Kabul Edildi',
@@ -266,7 +264,6 @@ export async function PATCH(
               userName: session.user.name,
               userImage: session.user.image
             })
-          }
         })
       }
       
@@ -286,8 +283,7 @@ export async function PATCH(
       })
       
       if (stream) {
-        await prisma.notification.create({
-          data: {
+        await createNotificationWithPush({
             userId: stream.userId,
             type: 'co_broadcast_rejected',
             title: 'Ortak Yayın Reddedildi',
@@ -298,7 +294,6 @@ export async function PATCH(
               userImage: session.user.image,
               action: action
             })
-          }
         })
       }
       

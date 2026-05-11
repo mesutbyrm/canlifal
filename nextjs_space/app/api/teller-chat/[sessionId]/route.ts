@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { createNotificationWithPush } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,14 +126,12 @@ export async function POST(
 
     // Create notification for the other party
     const recipientId = isUser ? chatSession.liveSession.teller.userId : chatSession.userId;
-    await prisma.notification.create({
-      data: {
-        userId: recipientId,
-        type: 'chat_message',
-        title: 'Yeni Mesaj',
-        message: content ? (content.length > 50 ? content.substring(0, 50) + '...' : content) : '📷 Resim gönderildi',
-        data: JSON.stringify({ chatSessionId: params.sessionId })
-      }
+    await createNotificationWithPush({
+      userId: recipientId,
+      type: 'chat_message',
+      title: 'Yeni Mesaj',
+      message: content ? (content.length > 50 ? content.substring(0, 50) + '...' : content) : '📷 Resim gönderildi',
+      data: JSON.stringify({ chatSessionId: params.sessionId })
     });
 
     return NextResponse.json(message, { status: 201 });

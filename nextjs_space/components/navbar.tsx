@@ -360,38 +360,42 @@ export default function Navbar() {
     return null
   }
 
-  // Theme colors for navbar - Facebook for light, FalClub for dark
+  // Theme colors for navbar - matching footer style
   const navBg = isLight 
     ? 'bg-white border-[#E4E6EB]'
-    : 'bg-[#0f0520]/95 border-fuchsia-900/30'
-  const navTextColor = isLight
-    ? 'text-[#65676B] hover:text-[#1877F2]'
-    : 'text-fuchsia-300 hover:text-fuchsia-200'
-  const navHoverBg = isLight
-    ? 'hover:bg-[#F0F2F5]'
-    : 'hover:bg-fuchsia-900/30'
+    : 'bg-gradient-to-b from-[#0f0520] via-[#1a0a2e] to-[#0f0520] border-fuchsia-400/40'
+  const iconBgInactive = isLight ? 'bg-transparent' : 'bg-fuchsia-900/60'
+  const iconBgActive = isLight ? 'bg-[#1877F2]/10' : 'bg-fuchsia-500/40'
   const accentColor = isLight ? 'text-[#1877F2]' : 'text-fuchsia-300'
+  
+  // Check active page
+  const isStatsActive = pathname?.includes('/panel')
+  const isSearchActive = false // search is modal-based
   
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 ${navBg} backdrop-blur-md border-b ${hideOnMobile ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Main Navigation - 4 items */}
-            <div className="flex-1 flex justify-around items-center">
+            {/* Main Navigation - 4 items, matching footer grid style */}
+            <nav className="flex-1 h-full grid grid-cols-4 items-center">
               {/* İstatistikler (Statistics) */}
               <Link
                 href={`/panel`}
-                className={`flex flex-col items-center gap-1 ${navTextColor} transition-colors px-3 py-1 rounded-lg ${navHoverBg}`}
+                className="flex flex-col items-center justify-center py-1.5 group"
               >
-                <Sparkles className="w-6 h-6" />
-                <span className="text-[10px] font-medium">{'İstatistikler'}</span>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isStatsActive ? iconBgActive : iconBgInactive}`}>
+                  <Sparkles className={`w-5 h-5 ${isStatsActive ? accentColor : (isLight ? 'text-[#65676B]' : 'text-fuchsia-300')}`} />
+                </div>
+                <span className={`text-[9px] font-medium mt-0.5 ${isStatsActive ? accentColor : (isLight ? 'text-[#65676B]' : 'text-fuchsia-300')}`}>İstatistikler</span>
               </Link>
               
               {/* Bildirimler (Notifications) */}
-              <div className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg ${navHoverBg}`}>
-                <NotificationBell />
-                <span className={`text-[10px] font-medium ${navTextColor.split(' ')[0]}`}>{'Bildirim'}</span>
+              <div className="flex flex-col items-center justify-center py-1.5">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBgInactive}`}>
+                  <NotificationBell />
+                </div>
+                <span className={`text-[9px] font-medium mt-0.5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>Bildirim</span>
               </div>
 
               {/* Search */}
@@ -399,17 +403,17 @@ export default function Navbar() {
 
               {/* Profile */}
               {session?.user ? (
-                <div className="relative">
+                <div className="relative flex flex-col items-center justify-center">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg ${isLight ? 'hover:bg-[#F0F2F5]' : 'hover:bg-purple-900/30'}`}
+                    className="flex flex-col items-center justify-center py-1.5 group"
                   >
                     {/* Profile avatar with frame */}
                     <div className="relative">
                       <FramedAvatar
                         src={profileImage || session.user.image}
                         alt={session.user.name || 'Profil'}
-                        size={session.user.role === 'admin' ? 40 : 36}
+                        size={session.user.role === 'admin' ? 36 : 32}
                         frameUrl={profileFrameUrl}
                         fallbackInitial={session.user.name?.charAt(0) || 'U'}
                         borderColor={session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}
@@ -561,13 +565,15 @@ export default function Navbar() {
               ) : (
                 <Link
                   href={`/giris`}
-                  className={`flex flex-col items-center gap-1 transition-colors px-3 py-1 rounded-lg ${isLight ? 'text-[#65676B] hover:text-[#1877F2] hover:bg-[#F0F2F5]' : 'text-purple-300 hover:text-gold-400 hover:bg-purple-900/30'}`}
+                  className="flex flex-col items-center justify-center py-1.5 group"
                 >
-                  <User className="w-6 h-6" />
-                  <span className="text-[11px] font-medium">{'Giriş'}</span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBgInactive}`}>
+                    <User className={`w-5 h-5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`} />
+                  </div>
+                  <span className={`text-[9px] font-medium mt-0.5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>Giriş</span>
                 </Link>
               )}
-            </div>
+            </nav>
           </div>
         </div>
       </nav>
