@@ -253,6 +253,9 @@ export default function ProfilePage() {
   const [showWithdrawalSection, setShowWithdrawalSection] = useState(false)
   const [showChatGifts, setShowChatGifts] = useState(false)
   const [showTellerPanel, setShowTellerPanel] = useState(true)
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioText, setBioText] = useState('')
+  const [savingBio, setSavingBio] = useState(false)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -294,6 +297,23 @@ export default function ProfilePage() {
       const res = await fetch('/api/user/profile')
       if (res.ok) setProfile(await res.json())
     } catch (e) { console.error('Profile fetch error:', e) } finally { setIsLoading(false) }
+  }
+
+  const saveBio = async () => {
+    setSavingBio(true)
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: bioText.trim() })
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setProfile((prev: any) => prev ? { ...prev, bio: updated.bio } : prev)
+        setEditingBio(false)
+      }
+    } catch (e) { console.error('Bio save error:', e) }
+    finally { setSavingBio(false) }
   }
 
   const fetchPosts = async () => {
@@ -580,17 +600,6 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">Profili Düzenle</span>
                 </Link>
 
-                {/* Falcı Paneli - only for tellers */}
-                {isTeller && (
-                  <button
-                    onClick={() => { setShowTellerPanel(!showTellerPanel); setMenuOpen(false) }}
-                    className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                  >
-                    <Sparkles className={`w-5 h-5 ${accentColor}`} />
-                    <span className="text-sm font-medium">Falcı Paneli</span>
-                  </button>
-                )}
-
                 {/* Divider */}
                 <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
 
@@ -639,13 +648,47 @@ export default function ProfilePage() {
         </div>
 
         {/* Bio */}
-        <div className="text-center mt-2">
-          {profile?.bio ? (
-            <p className={`${textSecondary} text-sm px-8`}>{profile.bio}</p>
+        <div className="text-center mt-2 px-6">
+          {editingBio ? (
+            <div className="flex flex-col items-center gap-2">
+              <textarea
+                value={bioText}
+                onChange={(e) => setBioText(e.target.value)}
+                maxLength={200}
+                rows={3}
+                placeholder="Kendiniz hakkında bir şeyler yazın..."
+                className={`w-full max-w-xs text-sm rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 ${
+                  isCanlidark || !isFacebook
+                    ? 'bg-white/5 border border-purple-500/20 text-white placeholder-purple-300/40 focus:ring-purple-500/50'
+                    : 'bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500/50'
+                }`}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={saveBio}
+                  disabled={savingBio}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${btnBg}`}
+                >
+                  {savingBio ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Kaydet'}
+                </button>
+                <button
+                  onClick={() => setEditingBio(false)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${btnOutline}`}
+                >
+                  İptal
+                </button>
+              </div>
+              <span className={`text-xs ${textSecondary}`}>{bioText.length}/200</span>
+            </div>
+          ) : profile?.bio ? (
+            <button onClick={() => { setBioText(profile.bio || ''); setEditingBio(true) }} className="cursor-pointer">
+              <p className={`${textSecondary} text-sm hover:opacity-70 transition-opacity`}>{profile.bio}</p>
+            </button>
           ) : (
-            <Link href={`/ayarlar`} className={`${accentColor} text-sm italic`}>
-              + {'Bio ekle'}
-            </Link>
+            <button onClick={() => { setBioText(''); setEditingBio(true) }} className={`${accentColor} text-sm italic hover:opacity-70 transition-opacity`}>
+              + Bio ekle
+            </button>
           )}
         </div>
 
@@ -674,328 +717,7 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* ===== FALCI PANELİ ===== */}
-      {isTeller && tellerProfile && showTellerPanel && (
-        <div className="px-4 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`rounded-2xl border overflow-hidden ${
-              isFacebook
-                ? 'bg-white border-blue-200 shadow-lg'
-                : isCosmic
-                  ? 'bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/30'
-                  : 'bg-gradient-to-br from-purple-900/50 to-fuchsia-900/30 border-fuchsia-500/30'
-            }`}
-          >
-            {/* Panel Header */}
-            <button
-              onClick={() => setTellerPanelOpen(!tellerPanelOpen)}
-              className={`w-full flex items-center justify-between p-4 ${
-                isFacebook ? 'hover:bg-blue-50' : isCosmic ? 'hover:bg-blue-900/30' : 'hover:bg-purple-900/30'
-              } transition-colors`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isFacebook ? 'bg-blue-100' : isCosmic ? 'bg-blue-600/30' : 'bg-gradient-to-br from-fuchsia-600/50 to-purple-600/50'
-                }`}>
-                  <Sparkles className={`w-5 h-5 ${isFacebook ? 'text-blue-600' : isCosmic ? 'text-blue-400' : 'text-fuchsia-400'}`} />
-                </div>
-                <div className="text-left">
-                  <h3 className={`font-bold text-base ${textPrimary}`}>
-                    {'🔮 Falcı Paneli'}
-                  </h3>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`w-2 h-2 rounded-full ${
-                      tellerActiveCount > 0 ? 'bg-red-500 animate-pulse' : tellerProfile.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                    }`} />
-                    <span className={`text-xs font-medium ${
-                      tellerActiveCount > 0
-                        ? (isFacebook ? 'text-red-600' : 'text-red-400')
-                        : tellerProfile.isOnline
-                          ? (isFacebook ? 'text-green-600' : 'text-green-400')
-                          : textSecondary
-                    }`}>
-                      {tellerActiveCount > 0
-                        ? ('🔴 Seansta')
-                        : tellerProfile.isOnline
-                          ? ('🟢 Canlıda')
-                          : ('Çevrimdışı')}
-                    </span>
-                    {tellerProfile.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
-                    {tellerAwards.length > 0 && tellerAwards.map(aw => (
-                      <span key={aw.id} className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center gap-0.5">
-                        <Trophy className="w-2.5 h-2.5" />
-                        {aw.title}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {tellerPendingCount > 0 && (
-                  <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-bold animate-pulse">
-                    {tellerPendingCount}
-                  </span>
-                )}
-                {tellerPanelOpen ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
-              </div>
-            </button>
 
-            {/* Panel Content */}
-            <AnimatePresence>
-              {tellerPanelOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className={`px-4 pb-4 border-t ${isFacebook ? 'border-gray-100' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
-                    {/* Application Status Warning */}
-                    {tellerProfile.applicationStatus !== 'approved' && (
-                      <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl">
-                        <p className="text-yellow-300 text-sm flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                          {tellerProfile.applicationStatus === 'pending'
-                            ? ('Başvurunuz inceleniyor...')
-                            : ('Başvurunuz reddedildi.')}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Online Toggle + Stats Row */}
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      {/* Online Toggle */}
-                      <button
-                        onClick={toggleTellerOnline}
-                        disabled={tellerOnlineToggling || tellerProfile.applicationStatus !== 'approved' || tellerProfile.canGoOnline === false}
-                        className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
-                          tellerProfile.isOnline
-                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
-                            : isFacebook
-                              ? 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200'
-                              : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        {tellerOnlineToggling ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Power className="w-4 h-4" />
-                            {tellerProfile.isOnline
-                              ? ('Çevrimiçi')
-                              : ('Çevrimdışı')}
-                          </>
-                        )}
-                      </button>
-
-                      {/* Go to full dashboard */}
-                      <Link
-                        href={`/canli-falcilar/dashboard`}
-                        className={`py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm ${
-                          isFacebook
-                            ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
-                            : isCosmic
-                              ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
-                              : 'bg-fuchsia-600/20 text-fuchsia-400 hover:bg-fuchsia-600/30 border border-fuchsia-500/30'
-                        }`}
-                      >
-                        <Video className="w-4 h-4" />
-                        {'Tam Panel'}
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="mt-3 grid grid-cols-4 gap-2">
-                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
-                        <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.totalSessions}</p>
-                        <p className={`text-[10px] ${textSecondary}`}>{'Seans'}</p>
-                      </div>
-                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
-                        <div className="flex items-center justify-center gap-0.5">
-                          <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                          <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.rating.toFixed(1)}</p>
-                        </div>
-                        <p className={`text-[10px] ${textSecondary}`}>{'Puan'}</p>
-                      </div>
-                      {tellerProfile.canViewEarnings !== false && (
-                        <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
-                          <p className={`text-lg font-bold ${isFacebook ? 'text-green-600' : 'text-green-400'}`}>{tellerProfile.totalEarnings}</p>
-                          <p className={`text-[10px] ${textSecondary}`}>Jeton</p>
-                        </div>
-                      )}
-                      <div className={`rounded-xl p-2.5 text-center ${isFacebook ? 'bg-blue-50' : isCosmic ? 'bg-blue-900/20' : 'bg-purple-900/30'}`}>
-                        <p className={`text-lg font-bold ${textPrimary}`}>{tellerProfile.pricePerSession}</p>
-                        <p className={`text-[10px] ${textSecondary}`}>{'Ücret'}</p>
-                      </div>
-                    </div>
-
-                    {/* Teller Level Badge */}
-                    {tellerLevel && (
-                      <div className={`mt-3 rounded-xl p-3 ${isFacebook ? 'bg-blue-50 border border-blue-200' : isCosmic ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-purple-900/30 border border-purple-500/20'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{tellerLevel.emoji}</span>
-                            <div>
-                              <span className="font-bold text-sm" style={{ color: tellerLevel.color }}>{tellerLevel.levelLabel}</span>
-                              <span className={`text-[10px] ml-1.5 ${textSecondary}`}>{tellerLevel.points} puan</span>
-                            </div>
-                          </div>
-                          {tellerLevel.nextLevel && (
-                            <span className={`text-[10px] ${textSecondary}`}>
-                              {tellerLevel.nextLevel.emoji} {tellerLevel.nextLevel.label}&apos;e {tellerLevel.nextLevel.pointsNeeded} puan
-                            </span>
-                          )}
-                        </div>
-                        <div className={`w-full h-2 rounded-full ${isFacebook ? 'bg-gray-200' : 'bg-black/30'}`}>
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${tellerLevel.progress}%`, backgroundColor: tellerLevel.color }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Session Tabs */}
-                    <div className={`mt-3 flex rounded-xl overflow-hidden border ${isFacebook ? 'border-gray-200' : isCosmic ? 'border-blue-800/30' : 'border-purple-800/30'}`}>
-                      {(['pending', 'active', 'history'] as const).map(tab => (
-                        <button
-                          key={tab}
-                          onClick={() => setTellerTab(tab)}
-                          className={`flex-1 py-2 text-xs font-medium transition-colors relative ${
-                            tellerTab === tab
-                              ? isFacebook
-                                ? 'bg-blue-500 text-white'
-                                : isCosmic
-                                  ? 'bg-blue-600/40 text-blue-300'
-                                  : 'bg-fuchsia-600/40 text-fuchsia-300'
-                              : isFacebook
-                                ? 'text-gray-500 hover:bg-gray-50'
-                                : 'text-gray-500 hover:bg-white/5'
-                          }`}
-                        >
-                          {tab === 'pending'
-                            ? ('Bekleyen')
-                            : tab === 'active'
-                              ? ('Aktif')
-                              : ('Geçmiş')}
-                          {tab === 'pending' && tellerPendingCount > 0 && (
-                            <span className="ml-1 px-1.5 py-0.5 bg-yellow-500 text-black text-[9px] rounded-full font-bold">
-                              {tellerPendingCount}
-                            </span>
-                          )}
-                          {tab === 'active' && tellerActiveCount > 0 && (
-                            <span className="ml-1 px-1.5 py-0.5 bg-green-500 text-black text-[9px] rounded-full font-bold">
-                              {tellerActiveCount}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Sessions List */}
-                    <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
-                      {tellerFilteredSessions.length === 0 ? (
-                        <div className={`text-center py-6 ${textSecondary}`}>
-                          <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                          <p className="text-xs">
-                            {tellerTab === 'pending'
-                              ? ('Bekleyen talep yok')
-                              : tellerTab === 'active'
-                                ? ('Aktif seans yok')
-                                : ('Geçmiş seans yok')}
-                          </p>
-                        </div>
-                      ) : (
-                        tellerFilteredSessions.map(sess => (
-                          <div
-                            key={sess.id}
-                            className={`rounded-xl p-3 border ${
-                              isFacebook
-                                ? 'bg-gray-50 border-gray-200'
-                                : isCosmic
-                                  ? 'bg-blue-900/20 border-blue-800/20'
-                                  : 'bg-purple-900/20 border-purple-800/20'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden ${
-                                  isFacebook ? 'bg-blue-100' : 'bg-gradient-to-br from-purple-600 to-pink-600'
-                                }`}>
-                                  {sess.user.image ? (
-                                    <img loading="lazy" src={sess.user.image} alt="" className="w-full h-full object-cover rounded-full" />
-                                  ) : (
-                                    <User className="w-4 h-4 text-white/70" />
-                                  )}
-                                </div>
-                                <div>
-                                  <p className={`text-sm font-medium ${textPrimary}`}>
-                                    {sess.user.name || ('Anonim')}
-                                  </p>
-                                  <p className={`text-[10px] ${textSecondary}`}>
-                                    {FORTUNE_TYPE_NAMES[sess.fortuneType]?.[language as 'tr' | 'en'] || sess.fortuneType} • {sess.creditsCharged} jeton
-                                  </p>
-                                </div>
-                              </div>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${SESSION_STATUS[sess.status]?.color || 'bg-gray-500/20 text-gray-400'}`}>
-                                {SESSION_STATUS[sess.status]?.[language as 'tr' | 'en'] || sess.status}
-                              </span>
-                            </div>
-
-                            {/* Session Actions */}
-                            {sess.status === 'pending' && (
-                              <div className="flex gap-2 mt-2">
-                                <button
-                                  onClick={() => handleTellerSessionAction(sess.id, 'accept')}
-                                  disabled={tellerSessionAction === sess.id}
-                                  className="flex-1 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
-                                >
-                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {'Kabul'}</>}
-                                </button>
-                                <button
-                                  onClick={() => handleTellerSessionAction(sess.id, 'cancel')}
-                                  disabled={tellerSessionAction === sess.id}
-                                  className="flex-1 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
-                                >
-                                  <X className="w-3 h-3" /> {'Reddet'}
-                                </button>
-                              </div>
-                            )}
-
-                            {sess.status === 'active' && (
-                              <div className="flex gap-2 mt-2">
-                                <Link
-                                  href={`/canli-oda/${sess.id}`}
-                                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 ${
-                                    isFacebook ? 'bg-blue-500 text-white' : 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white'
-                                  }`}
-                                >
-                                  <Video className="w-3 h-3" /> {'Odaya Gir'}
-                                </Link>
-                                <button
-                                  onClick={() => handleTellerSessionAction(sess.id, 'complete')}
-                                  disabled={tellerSessionAction === sess.id}
-                                  className="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50"
-                                >
-                                  {tellerSessionAction === sess.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3" /> {'Bitir'}</>}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-      )}
 
       {/* ===== HEDİYE VERENLer + ÇEKIM ===== */}
       {isTeller && tellerProfile && showWithdrawalSection && (

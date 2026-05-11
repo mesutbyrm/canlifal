@@ -133,8 +133,8 @@ export function LiveVisitorCount({
         {isLoading ? '...' : count}
       </span>
       {showLabel && (
-        <span className="text-green-400/70 text-xs hidden sm:inline">
-          online
+        <span className="text-green-400/70 text-xs">
+          {language === 'tr' ? 'çevrimiçi' : 'online'}
         </span>
       )}
     </div>

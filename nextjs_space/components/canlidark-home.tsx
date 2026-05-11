@@ -13,6 +13,7 @@ import {
 import dynamic from 'next/dynamic'
 
 const NotificationBell = dynamic(() => import('./notification-bell'), { ssr: false })
+const LiveVisitorCountComponent = dynamic(() => import('./live-visitor-count').then(m => ({ default: m.LiveVisitorCount })), { ssr: false })
 
 interface LiveStream {
   id: string
@@ -193,6 +194,17 @@ export default function CanliDarkHome() {
         ))}
         {' '}<span className="inline-block text-pink-400">♥</span>
       </h1>
+
+      {/* ═══ CANLI SAYACI ═══ */}
+      <div className="flex justify-center mb-4">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-900/40 border border-purple-500/30 backdrop-blur-md">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
+          </span>
+          <LiveVisitorCountComponent showIcon={false} showLabel={true} className="text-xs text-purple-200/90 font-medium" />
+        </div>
+      </div>
 
       {/* ═══ CANLI YAYINLAR ═══ */}
       <div className="mb-6">

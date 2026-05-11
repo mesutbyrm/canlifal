@@ -8,6 +8,8 @@ import {
 } from '@/components/theme-aware-chrome'
 import { ProfilePopupProvider } from '@/components/user-profile-popup'
 
+const GlobalBackButton = dynamic(() => import('@/components/global-back-button'), { ssr: false })
+
 // Non-critical components loaded dynamically (not visible on initial render)
 const CoBroadcastInviteModal = dynamic(() => import('@/components/co-broadcast-invite-modal'), { ssr: false })
 const PresenceTracker = dynamic(() => import('@/components/presence-tracker'), { ssr: false })
@@ -28,6 +30,7 @@ export default function LangLayout({
         <PresenceTracker />
         <OnboardingTour />
         <ThemeAwareNavbar />
+        <GlobalBackButton />
 
         <ThemeAwareMainPadding>
           <ThemeAwareBanners />
