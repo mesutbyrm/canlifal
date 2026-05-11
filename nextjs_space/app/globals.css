@@ -1500,3 +1500,19 @@ html, body {
     color: #c084fc;
   }
 }
+
+/* CanliDark theme: hide global layout chrome (navbar, mobile footer, star bg, banners) */
+html[data-theme="canlidark"] nav.fixed,
+html[data-theme="canlidark"] header.fixed,
+html[data-theme="canlidark"] [data-component="navbar"],
+html[data-theme="canlidark"] [data-component="mobile-footer"] {
+  display: none !important;
+}
+html[data-theme="canlidark"] main {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+html[data-theme="canlidark"] .star-background,
+html[data-theme="canlidark"] [data-component="star-background"] {
+  display: none !important;
+}
