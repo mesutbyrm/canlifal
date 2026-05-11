@@ -16,7 +16,8 @@ import {
   Check,
   X,
   UserPlus,
-  Users
+  Users,
+  ChevronLeft
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -140,6 +141,19 @@ export default function MessagesPage() {
   if (isCanlidark) {
     return (
       <div className="min-h-screen pt-2 pb-24">
+        {/* Header with back button */}
+        <div className="max-w-lg mx-auto px-4 pt-2 pb-1">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/20 flex items-center justify-center text-purple-300 hover:bg-white/10 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-bold text-white flex-1">Mesajlar</h1>
+          </div>
+        </div>
+
         {/* Search bar + icons */}
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
@@ -348,6 +362,19 @@ export default function MessagesPage() {
   // ─── Default (non-CanlıDark) Messages UI ───
   return (
     <div className={`min-h-screen ${bgColor} pt-[60px]`}>
+      {/* Back button header */}
+      <div className="max-w-lg mx-auto px-3 py-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className={`w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ${accentColor} hover:bg-white/20 transition-colors`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-base font-bold text-white">Mesajlar</h1>
+        </div>
+      </div>
+
       {/* Search - compact */}
       <div className="max-w-lg mx-auto px-3 py-2">
         <div className="relative">

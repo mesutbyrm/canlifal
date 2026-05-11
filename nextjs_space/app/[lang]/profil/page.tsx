@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
@@ -14,7 +14,8 @@ import {
   Pin, PinOff, BookmarkPlus, BookmarkMinus, Loader2,
   Star, BadgeCheck, Video, Check, Clock, Calendar,
   Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
-  AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send
+  AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send,
+  ChevronLeft, Menu, LogOut, BarChart3
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -248,11 +249,16 @@ export default function ProfilePage() {
   const [jetonTlRate, setJetonTlRate] = useState(0.5)
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [showWithdrawalSection, setShowWithdrawalSection] = useState(false)
+  const [showChatGifts, setShowChatGifts] = useState(false)
+  const [showTellerPanel, setShowTellerPanel] = useState(true)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
   const isCosmic = theme === 'cosmic'
   const isFacebook = theme === 'facebook'
+  const isCanlidark = theme === 'canlidark'
 
   const bgColor = isFacebook ? 'bg-[#f0f2f5]' : isCosmic ? '' : ''
   const textPrimary = isFacebook ? 'text-gray-900' : 'text-white'
@@ -499,7 +505,109 @@ export default function ProfilePage() {
   )
 
   return (
-    <div className={`min-h-screen ${bgColor} pb-32 pt-6`}>
+    <div className={`min-h-screen ${bgColor} pb-32 pt-2`}>
+      {/* Top Header Bar */}
+      <div className="max-w-lg mx-auto px-4 py-2 relative">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className={`w-9 h-9 rounded-full ${isCanlidark ? 'bg-white/5 border border-purple-500/20 text-purple-300' : isFacebook ? 'bg-gray-100 text-gray-700' : isCosmic ? 'bg-white/5 border border-blue-500/20 text-blue-300' : 'bg-white/5 border border-fuchsia-500/20 text-purple-300'} flex items-center justify-center hover:bg-white/10 transition-colors`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className={`text-lg font-bold ${textPrimary}`}>Profil</h1>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className={`w-9 h-9 rounded-full ${isCanlidark ? 'bg-white/5 border border-purple-500/20 text-purple-300' : isFacebook ? 'bg-gray-100 text-gray-700' : isCosmic ? 'bg-white/5 border border-blue-500/20 text-blue-300' : 'bg-white/5 border border-fuchsia-500/20 text-purple-300'} flex items-center justify-center hover:bg-white/10 transition-colors`}
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {/* Menu overlay to close on outside click */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+        )}
+
+        {/* Hamburger Dropdown Menu */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className={`absolute right-4 top-14 z-50 w-64 rounded-2xl ${isCanlidark ? 'bg-[#1a0a2e]/95 border border-purple-500/30' : isFacebook ? 'bg-white border border-gray-200 shadow-lg' : isCosmic ? 'bg-[#0d1f3c]/95 border border-blue-500/30' : 'bg-[#1a0a2e]/95 border border-fuchsia-500/30'} backdrop-blur-xl overflow-hidden`}
+            >
+              <div className="py-2">
+                {/* İstatistikler */}
+                <Link
+                  href="/panel"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                >
+                  <BarChart3 className={`w-5 h-5 ${accentColor}`} />
+                  <span className="text-sm font-medium">İstatistikler</span>
+                </Link>
+
+                {/* Para Çekimi - only for tellers */}
+                {isTeller && (
+                  <button
+                    onClick={() => { setShowWithdrawalSection(!showWithdrawalSection); setMenuOpen(false) }}
+                    className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Wallet className={`w-5 h-5 ${accentColor}`} />
+                    <span className="text-sm font-medium">Para Çekimi</span>
+                  </button>
+                )}
+
+                {/* Sohbet Odası Hediyeleri */}
+                <button
+                  onClick={() => { setShowChatGifts(!showChatGifts); setMenuOpen(false) }}
+                  className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                >
+                  <Gift className={`w-5 h-5 ${accentColor}`} />
+                  <span className="text-sm font-medium">Sohbet Odası Hediyeleri</span>
+                </button>
+
+                {/* Profili Düzenle */}
+                <Link
+                  href="/ayarlar"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                >
+                  <Settings className={`w-5 h-5 ${accentColor}`} />
+                  <span className="text-sm font-medium">Profili Düzenle</span>
+                </Link>
+
+                {/* Falcı Paneli - only for tellers */}
+                {isTeller && (
+                  <button
+                    onClick={() => { setShowTellerPanel(!showTellerPanel); setMenuOpen(false) }}
+                    className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Sparkles className={`w-5 h-5 ${accentColor}`} />
+                    <span className="text-sm font-medium">Falcı Paneli</span>
+                  </button>
+                )}
+
+                {/* Divider */}
+                <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
+
+                {/* Çıkış Yap */}
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-red-50 text-red-600' : 'hover:bg-red-500/10 text-red-400'} transition-colors`}
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-sm font-medium">Çıkış Yap</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* Profile Info */}
       <div className="px-4">
         {/* Avatar */}
@@ -564,50 +672,10 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Para Çekimi & Sohbet Odası Hediyeleri Buttons */}
-        {isTeller && tellerProfile && (
-          <div className="flex gap-2 mt-6 px-2">
-            {tellerProfile.canWithdraw && (
-              <button
-                onClick={() => {
-                  setShowWithdrawalForm(!showWithdrawalForm)
-                  setTimeout(() => {
-                    document.getElementById('withdrawal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }, 100)
-                }}
-                className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
-                <Wallet className="w-4 h-4" />
-                <span className="leading-tight">{'Para Çekimi'}</span>
-              </button>
-            )}
-            <button
-              onClick={() => {
-                document.getElementById('chat-gifts-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              }}
-              className={`flex-1 ${btnOutline} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
-              <Gift className="w-4 h-4" />
-              <span className="leading-tight">{'Sohbet Odası Hediyeleri'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-3 px-2">
-          <Link href={`/panel`}
-            className={`flex-1 ${btnBg} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
-            <Sparkles className="w-4 h-4" />
-            <span className="leading-tight">{'İstatistikler'}</span>
-          </Link>
-          <Link href={`/ayarlar`}
-            className={`flex-1 ${btnOutline} font-semibold py-3 rounded-lg text-center text-sm transition-colors flex items-center justify-center gap-2`}>
-            <Settings className="w-4 h-4" />
-            <span>{'Profili Düzenle'}</span>
-          </Link>
-        </div>
       </div>
 
       {/* ===== FALCI PANELİ ===== */}
-      {isTeller && tellerProfile && (
+      {isTeller && tellerProfile && showTellerPanel && (
         <div className="px-4 mt-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -930,7 +998,7 @@ export default function ProfilePage() {
       )}
 
       {/* ===== HEDİYE VERENLer + ÇEKIM ===== */}
-      {isTeller && tellerProfile && (
+      {isTeller && tellerProfile && showWithdrawalSection && (
         <div className="px-4 mt-3 space-y-3">
           {/* Gift Givers Section */}
           {tellerGiftSenders.length > 0 && (
@@ -1083,9 +1151,11 @@ export default function ProfilePage() {
       )}
 
       {/* Chat Room Received Gifts */}
-      <div id="chat-gifts-section" className="px-4 mt-3">
-        <ChatRoomReceivedGifts language={language} isFacebook={isFacebook} isCosmic={isCosmic} textPrimary={textPrimary} textSecondary={textSecondary} />
-      </div>
+      {showChatGifts && (
+        <div id="chat-gifts-section" className="px-4 mt-3">
+          <ChatRoomReceivedGifts language={language} isFacebook={isFacebook} isCosmic={isCosmic} textPrimary={textPrimary} textSecondary={textSecondary} />
+        </div>
+      )}
 
       {/* Pinned Fortunes */}
       {pinnedFortunes.length > 0 && (
