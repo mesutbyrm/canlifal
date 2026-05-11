@@ -6,10 +6,9 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import {
-  Bell, Diamond, Eye, Plus, Video, Users, Calendar, Gift,
-  MessageCircle, Mic, Compass, Crown, User as UserIcon, Sparkles, Star, Globe
+  Bell, Diamond, Eye, Plus, Video, Users, Compass, Crown,
+  MessageCircle, Mic, Sparkles, Star, Globe, Flame
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 interface LiveStream {
   id: string
@@ -21,53 +20,49 @@ interface LiveStream {
 
 interface ChatRoom {
   id: string
-  name: string
+  slug: string
+  nameTr: string
+  nameEn: string
+  icon: string
+  backgroundImage: string | null
   onlineCount?: number
-  participants?: any[]
+}
+
+interface FortuneTeller {
+  id: string
+  displayName: string
+  avatar: string | null
+  rating: number
+  totalReviews: number
+  isOnline: boolean
+  specialties: string[]
+  user?: { name?: string | null; image?: string | null }
 }
 
 const FORTUNE_CARDS = [
-  {
-    id: 'tarot',
-    name: 'Günlük Tarot',
-    sub: 'Bugünkü enerjini keşfet',
-    href: '/fallar/tarot-fali',
-    image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png',
-    glow: 'rgba(192, 38, 211, 0.45)',
-  },
-  {
-    id: 'love',
-    name: 'Aşk Falı',
-    sub: 'Kalbinin söylediklerini dinle',
-    href: '/fallar/ask-uyumu',
-    image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png',
-    glow: 'rgba(236, 72, 153, 0.45)',
-  },
-  {
-    id: 'coffee',
-    name: 'Kahve Falı',
-    sub: 'Fincandaki gizemi çöz',
-    href: '/fallar/kahve-fali',
-    image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png',
-    glow: 'rgba(251, 191, 36, 0.45)',
-  },
-  {
-    id: 'horoscope',
-    name: 'Burç Yorumu',
-    sub: 'Yolunu yıldızlardan oku',
-    href: '/fallar/burc-yorumu',
-    image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png',
-    glow: 'rgba(168, 85, 247, 0.45)',
-  },
+  { id: 'coffee', name: 'Kahve Falı', sub: 'Fincandaki gizem', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali', glow: 'rgba(251,191,36,0.35)' },
+  { id: 'tarot', name: 'Tarot Falı', sub: 'Kartların sırrı', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fallar/tarot-fali', glow: 'rgba(192,38,211,0.45)' },
+  { id: 'palm', name: 'El Falı', sub: 'Avucunun çizgileri', image: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png', href: '/fallar/el-fali', glow: 'rgba(236,72,153,0.35)' },
+  { id: 'dream', name: 'Rüya Tabiri', sub: 'Gördüğün rüyanın anlamı', image: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png', href: '/fallar/ruya-yorumu', glow: 'rgba(99,102,241,0.4)' },
+  { id: 'love', name: 'Aşk Uyumu', sub: 'Kalbinin sesi', image: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png', href: '/fallar/ask-uyumu', glow: 'rgba(236,72,153,0.45)' },
+  { id: 'horoscope', name: 'Günlük Burç', sub: 'Bugün yıldızlar ne diyor', image: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', href: '/fallar/burc-yorumu', glow: 'rgba(168,85,247,0.45)' },
+  { id: 'numerology', name: 'Numeroloji', sub: 'Sayıların gizemi', image: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', href: '/fallar/numeroloji', glow: 'rgba(59,130,246,0.4)' },
+  { id: 'angel', name: 'Melek Kartları', sub: 'İlahi mesajlar', image: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', href: '/fallar/melek-kartlari', glow: 'rgba(250,204,21,0.4)' },
+  { id: 'aura', name: 'Aura Okuma', sub: 'Enerjini gör', image: '/fortunes/aura.jpg', href: '/fallar/aura-analizi', glow: 'rgba(34,211,238,0.4)' },
+  { id: 'birthchart', name: 'Doğum Haritası', sub: 'Yıldız haritan', image: '/fortunes/birthchart.jpg', href: '/fallar/dogum-haritasi', glow: 'rgba(192,38,211,0.4)' },
+  { id: 'katina', name: 'Katina Falı', sub: 'Mistik kartlar', image: '/fortunes/katina.jpg', href: '/fallar/katina', glow: 'rgba(217,70,239,0.4)' },
+  { id: 'yesno', name: 'Evet / Hayır', sub: 'Hızlı cevap', image: '/fortunes/yesno.jpg', href: '/fallar/evet-hayir', glow: 'rgba(34,197,94,0.4)' },
+  { id: 'kursun', name: 'Kurşun Dökme', sub: 'Geleneksel ritüel', image: '/fortunes/dream.jpg', href: '/fallar/kursundokme', glow: 'rgba(148,163,184,0.4)' },
+  { id: 'istihare', name: 'İstihare', sub: 'Manevi rehberlik', image: '/fortunes/angel.jpg', href: '/fallar/istihare', glow: 'rgba(250,204,21,0.4)' },
 ]
 
 const ROOM_COLORS = ['pink', 'blue', 'purple', 'amber'] as const
 
 export default function CanliDarkHome() {
   const { data: session } = useSession() || {}
-  const router = useRouter()
   const [streams, setStreams] = useState<LiveStream[]>([])
   const [rooms, setRooms] = useState<ChatRoom[]>([])
+  const [tellers, setTellers] = useState<FortuneTeller[]>([])
   const [credits, setCredits] = useState<number>(0)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -77,12 +72,14 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r] = await Promise.all([
+        const [s, r, t] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
+          fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
+        setTellers((t?.tellers || []).slice(0, 12))
       } catch {}
       if (session) {
         try {
@@ -99,6 +96,7 @@ export default function CanliDarkHome() {
   }, [session])
 
   const heroStream = streams[0]
+  const popularTellers = tellers.slice(0, 8)
 
   return (
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
@@ -194,78 +192,71 @@ export default function CanliDarkHome() {
         </div>
       )}
 
-      {/* Hızlı İşlemler */}
+      {/* Hızlı İşlemler — + Yayın Başlat + live stream square cards */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Hızlı İşlemler</h2>
-          <span className="canlidark-section-link">Tümünü gör</span>
+          <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
         <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {/* Yayın Başlat — kept as the round + button per request */}
-          <Link
-            href={session ? '/sohbet/video/setup' : '/giris'}
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 w-[72px]"
-          >
-            <div
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50"
-              style={{ boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)' }}
-            >
+          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 w-[72px]">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50" style={{ boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)' }}>
               <Plus className="w-8 h-8 text-white" />
             </div>
             <span className="text-[10px] text-white font-semibold text-center leading-tight">Yayın Başlat</span>
           </Link>
 
-          {/* Live streams as square cards */}
-          {streams.length > 0 ? (
-            streams.slice(0, 6).map((s) => (
-              <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px]">
-                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-fuchsia-400/50 shadow-lg shadow-fuchsia-500/30">
-                  {s.user.image ? (
-                    <Image src={s.user.image} alt={s.user.name} fill className="object-cover" sizes="64px" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                      {s.user.name?.[0]}
-                    </div>
-                  )}
-                  <div className="absolute top-1 left-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded">LIVE</div>
-                  <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm">
-                    <Eye className="w-2.5 h-2.5 text-white" />
-                    <span className="text-[9px] text-white font-bold">{s.viewerCount || 0}</span>
+          {streams.slice(0, 8).map((s) => (
+            <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px]">
+              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-fuchsia-400/50 shadow-lg shadow-fuchsia-500/30">
+                {s.user.image ? (
+                  <Image src={s.user.image} alt={s.user.name} fill className="object-cover" sizes="64px" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                    {s.user.name?.[0]}
                   </div>
+                )}
+                <div className="absolute top-1 left-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded">LIVE</div>
+                <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm">
+                  <Eye className="w-2.5 h-2.5 text-white" />
+                  <span className="text-[9px] text-white font-bold">{s.viewerCount || 0}</span>
                 </div>
-                <span className="text-[10px] text-white font-semibold text-center leading-tight truncate w-full">{s.user.name}</span>
-              </Link>
-            ))
-          ) : (
-            <>
-              <QuickAction href="/davet" icon={<Users className="w-6 h-6" />} label="Arkadaş Davet" color="purple" />
-              <QuickAction href="/etkinlikler" icon={<Calendar className="w-6 h-6" />} label="Etkinlikler" color="orange" />
-              <QuickAction href="/hediye-gonder" icon={<Gift className="w-6 h-6" />} label="Hediye Gönder" color="blue" />
-              <QuickAction href="/mesajlar" icon={<MessageCircle className="w-6 h-6" />} label="Mesajlar" color="emerald" />
-            </>
-          )}
+              </div>
+              <span className="text-[10px] text-white font-semibold text-center leading-tight truncate w-full">{s.user.name}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Sesli Sohbet Odaları */}
+      {/* Sohbet Odaları — real rooms with backgroundImage */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="canlidark-section-title">Sohbet Odaları</h2>
+          <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
           <Link href="/sesli-sohbet" className="canlidark-section-link">Tüm Odalar</Link>
         </div>
-        <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide pb-2">
-          {rooms.length > 0 ? rooms.slice(0, 6).map((room, i) => (
-            <Link key={room.id} href={`/sesli-sohbet/${room.id}`} className="flex-shrink-0 flex flex-col items-center gap-2 w-[88px]">
-              <div className={`canlidark-room-sphere canlidark-room-sphere--${ROOM_COLORS[i % ROOM_COLORS.length]}`}>
-                <Mic className="w-6 h-6 text-white drop-shadow-md" />
-                {(room.onlineCount || 0) > 0 && <span className="canlidark-online-dot" />}
-                <span className="absolute -bottom-1 right-0 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold rounded-full w-6 h-6 flex items-center justify-center border border-white/15">
-                  {room.onlineCount || 0}
-                </span>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-semibold text-white leading-tight truncate w-[88px]">{room.name}</p>
-                <p className="text-[10px] text-fuchsia-200/70 leading-tight">{room.onlineCount || 0} kişi</p>
+        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+          {rooms.length > 0 ? rooms.slice(0, 10).map((room) => (
+            <Link key={room.id} href={`/sesli-sohbet/${room.slug || room.id}`} className="flex-shrink-0 w-32">
+              <div className="canlidark-card overflow-hidden">
+                <div className="relative w-full h-20 bg-gradient-to-br from-fuchsia-600/40 to-purple-700/40">
+                  {room.backgroundImage ? (
+                    <Image src={room.backgroundImage} alt={room.nameTr} fill className="object-cover" sizes="128px" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-3xl">{room.icon || '🎙️'}</div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  {(room.onlineCount || 0) > 0 && (
+                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span className="text-[9px] text-white font-bold">{room.onlineCount}</span>
+                    </div>
+                  )}
+                  <Mic className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 text-white drop-shadow" />
+                </div>
+                <div className="p-2">
+                  <p className="text-xs font-bold text-white leading-tight truncate">{room.nameTr}</p>
+                  <p className="text-[10px] text-fuchsia-200/70 leading-tight">{room.onlineCount || 0} kişi</p>
+                </div>
               </div>
             </Link>
           )) : (
@@ -274,25 +265,65 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* Fal & Tarot */}
+      {/* Popüler Falcılar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="canlidark-section-title flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-400" /> Popüler Falcılar</h2>
+          <Link href="/canli-falcilar" className="canlidark-section-link">Tümünü gör</Link>
+        </div>
+        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+          {popularTellers.length > 0 ? popularTellers.map((t) => {
+            const avatar = t.avatar || t.user?.image
+            return (
+              <Link key={t.id} href={`/canli-falcilar/${t.id}`} className="flex-shrink-0 w-32">
+                <div className="canlidark-card overflow-hidden">
+                  <div className="relative w-full h-40">
+                    {avatar ? (
+                      <Image src={avatar} alt={t.displayName} fill className="object-cover" sizes="128px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                        {t.displayName?.[0]}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    {t.isOnline && (
+                      <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/90 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        <span className="text-[9px] text-white font-bold">Çevrimiçi</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                      <p className="text-xs font-bold text-white leading-tight truncate drop-shadow">{t.displayName}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
+                        <span className="text-[10px] text-white font-semibold">{t.rating?.toFixed(1) || '0.0'}</span>
+                        <span className="text-[9px] text-fuchsia-200/70">({t.totalReviews || 0})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )
+          }) : (
+            <p className="text-fuchsia-200/60 text-sm py-4 px-2">Yakında öne çıkan falcılar görünecek</p>
+          )}
+        </div>
+      </div>
+
+      {/* Fal & Tarot — ALL fortunes */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Fal & Tarot</h2>
-          <Link href="/falcilar" className="canlidark-section-link">Tüm Falcılar</Link>
+          <Link href="/fallar" className="canlidark-section-link">Tüm Fallar</Link>
         </div>
-        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {FORTUNE_CARDS.map((fc) => (
-            <Link
-              key={fc.id}
-              href={fc.href}
-              className="flex-shrink-0 w-36 canlidark-card overflow-hidden"
-              style={{ boxShadow: `0 4px 24px ${fc.glow}` }}
-            >
-              <div className="relative w-full h-32 bg-black/30">
-                <Image src={fc.image} alt={fc.name} fill className="object-cover" sizes="144px" />
+            <Link key={fc.id} href={fc.href} className="canlidark-card overflow-hidden block" style={{ boxShadow: `0 4px 20px ${fc.glow}` }}>
+              <div className="relative w-full h-28 bg-black/30">
+                <Image src={fc.image} alt={fc.name} fill className="object-cover" sizes="180px" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               </div>
-              <div className="p-3">
+              <div className="p-2.5">
                 <p className="text-sm font-bold text-white leading-tight">{fc.name}</p>
                 <p className="text-[10px] text-fuchsia-200/70 mt-0.5 leading-snug">{fc.sub}</p>
               </div>
@@ -327,16 +358,5 @@ export default function CanliDarkHome() {
         </div>
       </nav>
     </div>
-  )
-}
-
-function QuickAction({ href, icon, label, color }: { href: string; icon: React.ReactNode; label: string; color: 'pink'|'purple'|'orange'|'blue'|'emerald' }) {
-  return (
-    <Link href={href} className={`flex-shrink-0 w-[72px] canlidark-action-btn canlidark-action-btn--${color}`}>
-      <div className="relative z-10 flex flex-col items-center justify-center gap-1.5">
-        {icon}
-        <span className="text-[10px] font-bold leading-tight text-center px-1">{label}</span>
-      </div>
-    </Link>
   )
 }
