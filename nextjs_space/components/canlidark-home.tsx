@@ -65,9 +65,15 @@ export default function CanliDarkHome() {
   const [tellers, setTellers] = useState<FortuneTeller[]>([])
   const [credits, setCredits] = useState<number>(0)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [heroText, setHeroText] = useState('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
+
+  useEffect(() => {
+    // Fetch hero text once
+    fetch('/api/settings/canlidark-hero').then(r => r.ok ? r.json() : null).then(d => { if (d?.text) setHeroText(d.text) }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -95,7 +101,6 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
-  const heroStream = streams[0]
   const popularTellers = tellers.slice(0, 8)
 
   return (
@@ -153,78 +158,70 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* Hero Title */}
+      {/* Hero Title — admin-editable */}
       <h1 className="canlidark-hero-title mb-4">
-        Canlı yayınlara <br />
-        <span className="canlidark-hero-title-accent">katıl, eğlenceye</span> ortak ol! <span className="inline-block text-pink-400">♥</span>
+        {heroText.split('\n').map((line, i, arr) => (
+          <span key={i}>
+            {i === 1 ? <span className="canlidark-hero-title-accent">{line}</span> : line}
+            {i < arr.length - 1 && <br />}
+          </span>
+        ))}
+        {' '}<span className="inline-block text-pink-400">♥</span>
       </h1>
 
-      {/* Hero Live Stream Card */}
-      {heroStream ? (
-        <Link href={`/sohbet/video?watch=${heroStream.id}`} className="block mb-6">
-          <div className="canlidark-card relative overflow-hidden h-56">
-            {heroStream.user.image ? (
-              <Image src={heroStream.user.image} alt={heroStream.user.name} fill className="object-cover" sizes="600px" />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-700 to-pink-600" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-            <div className="absolute top-3 left-3">
-              <span className="canlidark-live-badge">LIVE</span>
-            </div>
-            <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/50 backdrop-blur-sm border border-white/10">
-              <Eye className="w-3.5 h-3.5 text-white" />
-              <span className="text-xs font-bold text-white">{heroStream.viewerCount?.toLocaleString('tr-TR') || 0}</span>
-            </div>
-            <div className="absolute bottom-3 left-3 right-3">
-              <h3 className="text-2xl font-extrabold text-white drop-shadow-lg">{heroStream.user.name}</h3>
-              <p className="text-xs text-fuchsia-200/90 font-medium">{heroStream.category || 'Müzik • Sohbet'}</p>
-            </div>
-          </div>
-        </Link>
-      ) : (
-        <div className="canlidark-card h-56 mb-6 flex flex-col items-center justify-center gap-3">
-          <Video className="w-12 h-12 text-fuchsia-400/70" />
-          <p className="text-fuchsia-200/70 text-sm">Şu an canlı yayın yok, ilk olan sen ol!</p>
-          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="px-4 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white text-sm font-bold shadow-lg shadow-fuchsia-500/30">
-            Yayın Başlat
-          </Link>
-        </div>
-      )}
-
-      {/* Hızlı İşlemler — + Yayın Başlat + live stream square cards */}
+      {/* Canlı Yayınlar — + Yayın Başlat at start, then 3 visible stream cards, scrollable */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="canlidark-section-title">Hızlı İşlemler</h2>
+          <h2 className="canlidark-section-title">Canlı Yayınlar</h2>
           <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
-        <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-1">
-          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5 w-[72px]">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50" style={{ boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)' }}>
-              <Plus className="w-8 h-8 text-white" />
+        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+          {/* + Yayın Başlat card */}
+          <Link
+            href={session ? '/sohbet/video/setup' : '/giris'}
+            className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36"
+          >
+            <div
+              className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50"
+              style={{ boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)' }}
+            >
+              <Plus className="w-7 h-7 text-white" />
             </div>
-            <span className="text-[10px] text-white font-semibold text-center leading-tight">Yayın Başlat</span>
+            <span className="text-xs text-white font-bold text-center leading-tight">Yayın Başlat</span>
           </Link>
 
-          {streams.slice(0, 8).map((s) => (
-            <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px]">
-              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-fuchsia-400/50 shadow-lg shadow-fuchsia-500/30">
-                {s.user.image ? (
-                  <Image src={s.user.image} alt={s.user.name} fill className="object-cover" sizes="64px" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                    {s.user.name?.[0]}
+          {/* Live stream cards — show broadcast image / user image */}
+          {streams.length > 0 ? (
+            streams.map((s) => (
+              <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px]">
+                <div className="canlidark-card relative overflow-hidden h-36">
+                  {(s as any).broadcastImage || s.user.image ? (
+                    <Image src={(s as any).broadcastImage || s.user.image!} alt={s.user.name} fill className="object-cover" sizes="180px" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-700 to-pink-600" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute top-2 left-2">
+                    <span className="canlidark-live-badge text-[9px] px-1.5 py-0.5">LIVE</span>
                   </div>
-                )}
-                <div className="absolute top-1 left-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded">LIVE</div>
-                <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm">
-                  <Eye className="w-2.5 h-2.5 text-white" />
-                  <span className="text-[9px] text-white font-bold">{s.viewerCount || 0}</span>
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm border border-white/10">
+                    <Eye className="w-3 h-3 text-white" />
+                    <span className="text-[10px] font-bold text-white">{s.viewerCount || 0}</span>
+                  </div>
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <p className="text-xs font-bold text-white truncate drop-shadow-lg">{s.user.name}</p>
+                    <p className="text-[9px] text-fuchsia-200/80 truncate">{s.category || (s as any).title || 'Canlı Yayın'}</p>
+                  </div>
                 </div>
-              </div>
-              <span className="text-[10px] text-white font-semibold text-center leading-tight truncate w-full">{s.user.name}</span>
-            </Link>
-          ))}
+              </Link>
+            ))
+          ) : (
+            /* Empty state placeholder cards */
+            <div className="flex-shrink-0 w-[calc(66.66%-4px)] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36">
+              <Video className="w-10 h-10 text-fuchsia-400/50" />
+              <p className="text-fuchsia-200/60 text-xs text-center px-2">Şu an canlı yayın yok<br />İlk olan sen ol!</p>
+            </div>
+          )}
         </div>
       </div>
 

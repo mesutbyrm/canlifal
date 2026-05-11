@@ -160,6 +160,9 @@ export default function AdminThemesPage() {
   const [defaultTheme, setDefaultTheme] = useState('mystical')
   const [enabledThemes, setEnabledThemes] = useState<string[]>(['mystical', 'cosmic', 'facebook', 'falci', 'falclub', 'canlidark'])
   const [colorMode, setColorMode] = useState<'dark' | 'light'>('dark')
+  const [heroText, setHeroText] = useState('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
+  const [heroSaving, setHeroSaving] = useState(false)
+  const [heroSaved, setHeroSaved] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -191,11 +194,31 @@ export default function AdminThemesPage() {
         if (data.color_mode === 'light' || data.color_mode === 'dark') {
           setColorMode(data.color_mode)
         }
+        if (data.canlidark_hero_text) {
+          setHeroText(data.canlidark_hero_text)
+        }
       }
     } catch (err) {
       console.error('Fetch theme settings error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveHeroText = async () => {
+    setHeroSaving(true)
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'canlidark_hero_text', value: heroText })
+      })
+      setHeroSaved(true)
+      setTimeout(() => setHeroSaved(false), 2000)
+    } catch (err) {
+      console.error('Hero text save error:', err)
+    } finally {
+      setHeroSaving(false)
     }
   }
 
@@ -374,6 +397,48 @@ export default function AdminThemesPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* CanlıDark Hero Text Editor */}
+        {defaultTheme === 'canlidark' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-fuchsia-900/40 to-purple-950/50 rounded-xl border border-fuchsia-500/30 p-6 mb-8"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-fuchsia-500/20 flex items-center justify-center">
+                <span className="text-lg">✨</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">CanlıDark Ana Sayfa Başlığı</h3>
+                <p className="text-fuchsia-400 text-sm">Ana sayfanın hero bölümündeki başlık metnini düzenleyin</p>
+              </div>
+            </div>
+            <textarea
+              value={heroText}
+              onChange={(e) => setHeroText(e.target.value)}
+              rows={3}
+              className="w-full bg-black/40 border border-fuchsia-500/30 rounded-lg px-4 py-3 text-white placeholder-fuchsia-300/50 focus:outline-none focus:border-fuchsia-400 resize-none"
+              placeholder="Canlı yayınlara&#10;katıl, eğlenceye ortak ol!"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-fuchsia-300/60 text-xs">Satır sonu için Enter tuşunu kullanın</p>
+              <button
+                onClick={saveHeroText}
+                disabled={heroSaving}
+                className="px-5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-fuchsia-600/50 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+              >
+                {heroSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : heroSaved ? (
+                  <Check className="w-4 h-4" />
+                ) : null}
+                {heroSaved ? 'Kaydedildi' : 'Başlığı Kaydet'}
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Theme Grid */}
         <div className="grid md:grid-cols-2 gap-6">
