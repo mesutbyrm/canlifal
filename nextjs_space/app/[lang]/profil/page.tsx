@@ -573,7 +573,11 @@ export default function ProfilePage() {
                 {/* Para Çekimi - only for tellers */}
                 {isTeller && (
                   <button
-                    onClick={() => { setShowWithdrawalSection(!showWithdrawalSection); setMenuOpen(false) }}
+                    onClick={() => { 
+                      setShowWithdrawalSection(true)
+                      setMenuOpen(false)
+                      setTimeout(() => document.getElementById('withdrawal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200)
+                    }}
                     className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
                   >
                     <Wallet className={`w-5 h-5 ${accentColor}`} />
@@ -583,7 +587,11 @@ export default function ProfilePage() {
 
                 {/* Sohbet Odası Hediyeleri */}
                 <button
-                  onClick={() => { setShowChatGifts(!showChatGifts); setMenuOpen(false) }}
+                  onClick={() => { 
+                    setShowChatGifts(true)
+                    setMenuOpen(false)
+                    setTimeout(() => document.getElementById('chat-gifts-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200)
+                  }}
                   className={`flex items-center gap-3 px-4 py-3 w-full text-left ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
                 >
                   <Gift className={`w-5 h-5 ${accentColor}`} />

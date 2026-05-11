@@ -33,7 +33,10 @@ import {
   MessageCircle,
   Video,
   Eye,
-  EyeOff
+  EyeOff,
+  FileText,
+  Bell,
+  BellOff
 } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
@@ -75,6 +78,7 @@ export default function SettingsPage() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [bio, setBio] = useState('')
   const [image, setImage] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthTime, setBirthTime] = useState('')
@@ -164,6 +168,7 @@ export default function SettingsPage() {
         setUsername(data.username || '')
         setEmail(data.email || '')
         setPhone(data.phone || '')
+        setBio(data.bio || '')
         setImage(data.image || '')
         setBirthDate(data.birthDate ? data.birthDate.split('T')[0] : '')
         setBirthTime(data.birthTime || '')
@@ -273,6 +278,7 @@ export default function SettingsPage() {
           username: username || null,
           email,
           phone: phone || null,
+          bio: bio || null,
           image,
           birthDate: birthDate || null,
           birthTime: birthTime || null,
@@ -362,16 +368,16 @@ export default function SettingsPage() {
   const currentZodiac = ZODIAC_SIGNS.find(z => z.id === zodiacSign)
 
   return (
-    <div className={`min-h-screen ${bgColor} pt-16 pb-28 px-4`} onClick={handleBackgroundClick}>
+    <div className={`min-h-screen ${bgColor} pt-16 pb-28 px-4`} style={{ overflowAnchor: 'none' }} onClick={handleBackgroundClick}>
       <div className="max-w-2xl mx-auto" ref={containerRef}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
             <User className={`w-8 h-8 ${accentIcon}`} />
             {'Profil Ayarları'}
           </h1>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
           className={`rounded-2xl border p-6 space-y-6 ${cardBg}`}>
           
           {/* Profile Picture */}
@@ -488,6 +494,22 @@ export default function SettingsPage() {
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               placeholder="+90 5XX XXX XX XX"
               className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none ${inputBg}`} />
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className={`block text-sm ${labelColor} mb-2 flex items-center gap-2`}>
+              <FileText className="w-4 h-4" />
+              {'Hakkımda'}
+            </label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 200))}
+              placeholder="Kendinizi kısaca tanıtın..."
+              rows={3}
+              className={`w-full text-white rounded-lg px-4 py-3 border focus:outline-none resize-none ${inputBg}`}
+            />
+            <p className={`${labelColor} opacity-60 text-xs mt-1 text-right`}>{bio.length}/200</p>
           </div>
 
           <div className="border-t pt-6 border-fuchsia-500/20">

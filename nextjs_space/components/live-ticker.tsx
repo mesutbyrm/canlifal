@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
-import { Circle, Coins } from 'lucide-react'
+import { Circle, Coins, X, Users, Search } from 'lucide-react'
 
 interface TickerBadge {
   name: string
@@ -89,6 +90,8 @@ export default function LiveTicker() {
     recentPurchasers: [],
   })
   const [settings, setSettings] = useState<TickerSettings>(defaultSettings)
+  const [showOnlineModal, setShowOnlineModal] = useState(false)
+  const [onlineSearch, setOnlineSearch] = useState('')
   const tickerRef = useRef<HTMLDivElement>(null)
 
   const secondaryText = 'text-white'
@@ -304,11 +307,15 @@ export default function LiveTicker() {
             )}
           </Link>
         )}
-        <div className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-full bg-green-900/40">
+        <button
+          onClick={() => { setShowOnlineModal(true); setOnlineSearch('') }}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-full bg-green-900/40 hover:bg-green-900/60 transition-colors cursor-pointer"
+          title="Çevrimiçi kullanıcıları gör"
+        >
           <Circle className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-green-400 fill-green-400 animate-pulse" />
           <span className="text-green-400 text-xs sm:text-sm font-bold">{data.onlineCount}</span>
           <span className="text-green-300 text-[10px] sm:text-xs hidden sm:inline">kişi</span>
-        </div>
+        </button>
         {/* Scrolling ticker */}
         <div className="flex-1 overflow-hidden h-full flex items-center" ref={tickerRef}>
           <div className="live-ticker-scroll inline-flex" style={{ animationName, animationDuration, animationTimingFunction: 'linear', animationIterationCount: 'infinite' }}>
@@ -320,6 +327,141 @@ export default function LiveTicker() {
           </div>
         </div>
       </div>
+      {/* Online Users Modal */}
+      {showOnlineModal && (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center" onClick={() => setShowOnlineModal(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full sm:w-[420px] max-h-[80vh] bg-gradient-to-b from-[#1a0a2e] to-[#0d0520] border border-fuchsia-800/50 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-purple-900/40 flex flex-col animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-fuchsia-800/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-base">Çevrimiçi Kullanıcılar</h3>
+                  <p className="text-green-400 text-xs font-medium">{data.onlineCount} kişi aktif</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowOnlineModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+            {/* Search */}
+            <div className="px-4 py-3 border-b border-fuchsia-800/20">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fuchsia-400/60" />
+                <input
+                  type="text"
+                  placeholder="Kullanıcı ara..."
+                  value={onlineSearch}
+                  onChange={(e) => setOnlineSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-fuchsia-800/30 rounded-xl text-white text-sm placeholder:text-fuchsia-400/40 focus:outline-none focus:border-fuchsia-600/50 focus:ring-1 focus:ring-fuchsia-600/30"
+                />
+              </div>
+            </div>
+            {/* User List */}
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 min-h-[200px] max-h-[50vh] scrollbar-thin scrollbar-thumb-fuchsia-800/40">
+              {(() => {
+                const filtered = data.onlineUsers.filter((u) => {
+                  if (!onlineSearch.trim()) return true
+                  const q = onlineSearch.toLowerCase()
+                  return (u.name?.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.botName?.toLowerCase().includes(q))
+                })
+                if (filtered.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10 text-fuchsia-400/50">
+                      <Users className="w-10 h-10 mb-3 opacity-40" />
+                      <p className="text-sm">{onlineSearch ? 'Kullanıcı bulunamadı' : 'Henüz çevrimiçi kullanıcı yok'}</p>
+                    </div>
+                  )
+                }
+                return filtered.map((user, idx) => {
+                  const isGuest = user.isGuest
+                  const isBot = user.isBot
+                  const displayName = isBot ? (user.botName || user.name) : (user.username || user.name || 'Kullanıcı')
+                  const membershipDisplay = !isGuest && !isBot ? getMembershipDisplay(user.membership) : null
+                  const profileHref = !isGuest && !isBot && user.username ? `/${language}/profil/${user.username}` : null
+                  const deviceIcon = getDeviceEmoji(user.deviceType)
+
+                  const content = (
+                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${profileHref ? 'hover:bg-white/5 cursor-pointer' : ''} transition-colors group`}>
+                      {/* Avatar */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-fuchsia-600/30 to-purple-600/30 flex items-center justify-center">
+                          {user.image ? (
+                            <Image src={user.image} alt={displayName} width={40} height={40} className="w-full h-full object-cover" />
+                          ) : isBot ? (
+                            <span className="text-lg">🤖</span>
+                          ) : isGuest ? (
+                            <span className="text-lg">👤</span>
+                          ) : (
+                            <span className="text-white font-bold text-sm">{(displayName || '?')[0].toUpperCase()}</span>
+                          )}
+                        </div>
+                        {/* Online dot */}
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#1a0a2e] ${isBot ? 'bg-orange-400' : isGuest ? 'bg-fuchsia-400' : 'bg-green-400'}`} />
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-semibold truncate ${isBot ? 'text-orange-300' : isGuest ? 'text-fuchsia-200' : 'text-white'}`}>
+                            {displayName}
+                          </span>
+                          {membershipDisplay && (
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${membershipDisplay.bgClass} ${membershipDisplay.color}`}>
+                              {membershipDisplay.emoji} {membershipDisplay.label}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] text-fuchsia-400/60">{deviceIcon}</span>
+                          <span className="text-[11px] text-fuchsia-400/60">
+                            {isBot ? 'Bot' : isGuest ? 'Misafir' : 'Üye'}
+                          </span>
+                          {user.customBadges && user.customBadges.length > 0 && user.customBadges.map((badge, bi) => (
+                            <span
+                              key={`modal-badge-${bi}`}
+                              className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-bold"
+                              style={{ color: badge.color, backgroundColor: badge.bgColor + '33' }}
+                              title={badge.name}
+                            >
+                              {badge.icon && (badge.icon.startsWith('/') || badge.icon.startsWith('http')) ? (
+                                <img src={badge.icon} alt={badge.name} className="w-3 h-3 object-contain" />
+                              ) : (
+                                <span>{badge.icon}</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Arrow for profile */}
+                      {profileHref && (
+                        <span className="text-fuchsia-400/30 group-hover:text-fuchsia-400/60 transition-colors text-sm">›</span>
+                      )}
+                    </div>
+                  )
+
+                  return profileHref ? (
+                    <Link key={`modal-user-${user.id}-${idx}`} href={profileHref} onClick={() => setShowOnlineModal(false)}>
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={`modal-user-${user.id}-${idx}`}>{content}</div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @keyframes live-ticker-rtl {
           0% { transform: translateX(100%); }
