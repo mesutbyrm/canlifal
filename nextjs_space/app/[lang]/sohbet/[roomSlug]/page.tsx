@@ -2692,6 +2692,14 @@ export default function ChatRoomPage() {
         {/* ── Top Header Overlay ── */}
         <div className={`relative z-10 flex-shrink-0 flex items-center justify-between px-3 py-2 backdrop-blur-sm ${isCanlidark ? 'bg-[#0d0428]/60 border-b border-purple-500/15' : 'bg-black/40'}`}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Back Button */}
+            <Link
+              href="/sohbet"
+              className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors flex-shrink-0"
+              title="Geri"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
             {/* Room Owner Avatar */}
             {room.owner && (
               <button 
