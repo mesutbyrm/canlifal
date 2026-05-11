@@ -16,7 +16,7 @@ import {
   Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
   AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send,
   ChevronLeft, Menu, LogOut, BarChart3, Shield, Crown, DollarSign,
-  Users, Coins, MessageSquareWarning, Layers
+  Users, Coins, MessageSquareWarning, Layers, Building2, UserPlus
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr, enUS } from 'date-fns/locale'
@@ -257,6 +257,16 @@ export default function ProfilePage() {
   const [editingBio, setEditingBio] = useState(false)
   const [bioText, setBioText] = useState('')
   const [savingBio, setSavingBio] = useState(false)
+  const [myAgency, setMyAgency] = useState<{ id: string; status: string; role?: string } | null>(null)
+  const [pendingCounts, setPendingCounts] = useState<{
+    jetonRequests: number
+    withdrawalRequests: number
+    tellerApplications: number
+    agencyApplications: number
+    newMembers: number
+    pendingVerifications: number
+    complaints: number
+  } | null>(null)
 
   // Theme
   const isFalclub = theme === 'falclub' || theme === 'falci'
@@ -290,6 +300,16 @@ export default function ProfilePage() {
       fetchPosts()
       fetchFortunes()
       fetchTellerProfile()
+      // Agency membership
+      fetch('/api/agency/my').then(r => r.ok ? r.json() : null).then(d => {
+        if (d && d.agency) setMyAgency({ id: d.agency.id, status: d.agency.status, role: d.role })
+      }).catch(() => {})
+      // Admin pending counts
+      if (['admin', 'yonetici', 'moderator', 'finans'].includes((session.user as any).role)) {
+        fetch('/api/admin/pending-counts').then(r => r.ok ? r.json() : null).then(d => {
+          if (d && !d.error) setPendingCounts(d)
+        }).catch(() => {})
+      }
     }
   }, [session, status, language])
 
@@ -609,7 +629,7 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">Profili Düzenle</span>
                 </Link>
 
-                {/* Falcı Paneli - only for tellers */}
+                {/* Falcı Paneli - only for approved tellers */}
                 {isTeller && (
                   <Link
                     href="/canli-falcilar/dashboard"
@@ -618,6 +638,42 @@ export default function ProfilePage() {
                   >
                     <Sparkles className={`w-5 h-5 ${accentColor}`} />
                     <span className="text-sm font-medium">Falcı Paneli</span>
+                  </Link>
+                )}
+
+                {/* Falcı Ol - only for non-tellers */}
+                {!isTeller && (
+                  <Link
+                    href="/falci-ol"
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Sparkles className={`w-5 h-5 text-pink-400`} />
+                    <span className="text-sm font-medium">Falcı Ol</span>
+                  </Link>
+                )}
+
+                {/* Ajans Paneli - only for agency owner/manager */}
+                {myAgency && myAgency.status === 'approved' && (
+                  <Link
+                    href="/ajans-paneli"
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Building2 className={`w-5 h-5 text-cyan-400`} />
+                    <span className="text-sm font-medium">Ajans Paneli</span>
+                  </Link>
+                )}
+
+                {/* Ajans Ol / Katıl - if not in approved agency */}
+                {(!myAgency || myAgency.status !== 'approved') && (
+                  <Link
+                    href="/ajans"
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
+                  >
+                    <Building2 className={`w-5 h-5 text-cyan-400`} />
+                    <span className="text-sm font-medium">{myAgency?.status === 'pending' ? 'Ajans Başvurum' : 'Ajans Ol / Katıl'}</span>
                   </Link>
                 )}
 
@@ -632,88 +688,46 @@ export default function ProfilePage() {
                 </Link>
 
                 {/* ═══ ADMIN ŞORTKUT BÖLÜMÜ ═══ */}
-                {(session.user as any).role === 'admin' && (
-                  <>
-                    <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
-                    <div className={`px-4 py-2 text-[10px] uppercase tracking-wider font-bold ${isFacebook ? 'text-gray-500' : 'text-fuchsia-300/70'}`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Shield className="w-3 h-3" /> Yönetici Paneli
+                {['admin', 'yonetici', 'moderator', 'finans'].includes((session.user as any).role) && (() => {
+                  const Badge = ({ count }: { count?: number }) => (
+                    count && count > 0 ? (
+                      <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {count > 99 ? '99+' : count}
                       </span>
-                    </div>
+                    ) : null
+                  )
+                  const adminItem = (href: string, icon: React.ReactNode, label: string, count?: number) => (
                     <Link
-                      href="/admin"
+                      href={href}
                       onClick={() => setMenuOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
                     >
-                      <Layers className="w-5 h-5 text-fuchsia-400" />
-                      <span className="text-sm font-medium">Admin Paneli</span>
+                      {icon}
+                      <span className="text-sm font-medium">{label}</span>
+                      <Badge count={count} />
                     </Link>
-                    <Link
-                      href="/admin/users"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <Users className="w-5 h-5 text-blue-400" />
-                      <span className="text-sm font-medium">Kullanıcılar</span>
-                    </Link>
-                    <Link
-                      href="/admin/credits"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <Coins className="w-5 h-5 text-amber-400" />
-                      <span className="text-sm font-medium">Jeton/Kredi Yönetimi</span>
-                    </Link>
-                    <Link
-                      href="/admin/memberships"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <Crown className="w-5 h-5 text-yellow-400" />
-                      <span className="text-sm font-medium">Gold/Premium Üyelik</span>
-                    </Link>
-                    <Link
-                      href="/admin/withdrawals"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <DollarSign className="w-5 h-5 text-green-400" />
-                      <span className="text-sm font-medium">Para Çekme Talepleri</span>
-                    </Link>
-                    <Link
-                      href="/admin/moderation"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <MessageSquareWarning className="w-5 h-5 text-red-400" />
-                      <span className="text-sm font-medium">Şikayet & Öneriler</span>
-                    </Link>
-                    <Link
-                      href="/admin/finance"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <BarChart3 className="w-5 h-5 text-emerald-400" />
-                      <span className="text-sm font-medium">Finans Raporları</span>
-                    </Link>
-                    <Link
-                      href="/admin/live-tellers"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <Star className="w-5 h-5 text-pink-400" />
-                      <span className="text-sm font-medium">Falcı Yönetimi</span>
-                    </Link>
-                    <Link
-                      href="/admin/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 ${isFacebook ? 'hover:bg-gray-50 text-gray-700' : 'hover:bg-white/5 text-white/90'} transition-colors`}
-                    >
-                      <Settings className="w-5 h-5 text-purple-400" />
-                      <span className="text-sm font-medium">Site Ayarları</span>
-                    </Link>
-                  </>
-                )}
+                  )
+                  return (
+                    <>
+                      <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />
+                      <div className={`px-4 py-2 text-[10px] uppercase tracking-wider font-bold ${isFacebook ? 'text-gray-500' : 'text-fuchsia-300/70'}`}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Shield className="w-3 h-3" /> Yönetici Paneli
+                        </span>
+                      </div>
+                      {adminItem('/admin', <Layers className="w-5 h-5 text-fuchsia-400" />, 'Admin Paneli')}
+                      {adminItem('/admin/users', <UserPlus className="w-5 h-5 text-blue-400" />, 'Yeni Üyeler', pendingCounts?.newMembers)}
+                      {adminItem('/admin/credits', <Coins className="w-5 h-5 text-amber-400" />, 'Jeton Talepleri', pendingCounts?.jetonRequests)}
+                      {adminItem('/admin/memberships', <Crown className="w-5 h-5 text-yellow-400" />, 'Gold/Premium Üyelik')}
+                      {adminItem('/admin/withdrawals', <DollarSign className="w-5 h-5 text-green-400" />, 'Para Çekme Talepleri', pendingCounts?.withdrawalRequests)}
+                      {adminItem('/admin/moderation', <MessageSquareWarning className="w-5 h-5 text-red-400" />, 'Şikayet & Öneriler', pendingCounts?.complaints)}
+                      {adminItem('/admin/live-tellers', <Sparkles className="w-5 h-5 text-pink-400" />, 'Falcı Başvuruları', pendingCounts?.tellerApplications)}
+                      {adminItem('/admin/ajanslar', <Building2 className="w-5 h-5 text-cyan-400" />, 'Ajans Başvuruları', pendingCounts?.agencyApplications)}
+                      {adminItem('/admin/finance', <BarChart3 className="w-5 h-5 text-emerald-400" />, 'Finans Raporları')}
+                      {adminItem('/admin/settings', <Settings className="w-5 h-5 text-purple-400" />, 'Site Ayarları')}
+                    </>
+                  )
+                })()}
 
                 {/* Divider */}
                 <div className={`my-1 mx-3 border-t ${isFacebook ? 'border-gray-200' : isCanlidark ? 'border-purple-500/20' : isCosmic ? 'border-blue-500/20' : 'border-fuchsia-500/20'}`} />

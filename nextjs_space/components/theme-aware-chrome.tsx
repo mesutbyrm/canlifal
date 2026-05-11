@@ -7,7 +7,7 @@ import MobileFooter from '@/components/mobile-footer'
 import StarBackground from '@/components/star-background'
 import GiftNotificationBanner from '@/components/gift-notification-banner'
 import LoginAnnouncementBanner from '@/components/login-announcement-banner'
-// useSiteTheme import retained for ThemeAwareNavbar/MobileFooter/MainPadding
+
 
 export function ThemeAwareNavbar() {
   const { theme } = useSiteTheme()
@@ -26,8 +26,13 @@ export function ThemeAwareStarBackground() {
 }
 
 export function ThemeAwareBanners() {
+  const { theme } = useSiteTheme()
+  const isCanlidark = theme === 'canlidark'
   return (
-    <div className="sticky top-14 md:top-16 left-0 right-0" style={{ zIndex: 50 }}>
+    <div
+      className={isCanlidark ? 'sticky top-0 left-0 right-0' : 'sticky top-14 md:top-16 left-0 right-0'}
+      style={{ zIndex: 50 }}
+    >
       <GiftNotificationBanner />
       <LoginAnnouncementBanner />
     </div>

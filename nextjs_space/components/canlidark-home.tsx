@@ -157,9 +157,8 @@ export default function CanliDarkHome() {
             <Sparkles className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-fuchsia-300 drop-shadow-[0_0_4px_rgba(192,38,211,0.9)]" />
           </div>
           <div>
-            <p className="text-[11px] text-fuchsia-200/70 leading-tight">Hoş geldin</p>
             <p className="text-sm font-bold text-white leading-tight flex items-center gap-1">
-              {userName}
+              Merhaba, {userName}
               <Sparkles className="w-3 h-3 text-fuchsia-300" />
             </p>
           </div>
