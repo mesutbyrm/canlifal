@@ -114,6 +114,10 @@ model User {
   agencyLeaveRequests   AgencyLeaveRequest[]
   // Celebrity follows
   celebrityFollows      CelebrityFollow[]
+  // Fan clubs
+  fanClubMemberships    FanClubMember[]
+  fanClubPosts          FanClubPost[]
+  fanClubPostLikes      FanClubPostLike[]
   // Bot system
   isBot                 Boolean              @default(false)
   botProfile            BotProfile?
@@ -2580,6 +2584,7 @@ model Celebrity {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   followers       CelebrityFollow[]
+  fanClub         FanClub?
 
   @@index([category])
   @@index([isActive])
@@ -2601,4 +2606,74 @@ model CelebrityFollow {
   @@index([userId])
   @@index([celebrityId])
   @@map("celebrity_follows")
+}
+
+// Fan club for a celebrity
+model FanClub {
+  id            String          @id @default(cuid())
+  celebrityId   String          @unique
+  celebrity     Celebrity       @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
+  description   String?         @db.Text
+  rules         String?         @db.Text // JSON array of rules
+  coverImage    String?
+  memberCount   Int             @default(0)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  members       FanClubMember[]
+  posts         FanClubPost[]
+
+  @@index([isActive])
+  @@map("fan_clubs")
+}
+
+// Fan club membership
+model FanClubMember {
+  id        String   @id @default(cuid())
+  fanClubId String
+  userId    String
+  role      String   @default("member") // member, moderator
+  createdAt DateTime @default(now())
+  fanClub   FanClub  @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fanClubId, userId])
+  @@index([fanClubId])
+  @@index([userId])
+  @@map("fan_club_members")
+}
+
+// Fan club wall post
+model FanClubPost {
+  id        String            @id @default(cuid())
+  fanClubId String
+  userId    String
+  content   String            @db.Text
+  image     String?
+  likeCount Int               @default(0)
+  isPinned  Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  fanClub   FanClub           @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes     FanClubPostLike[]
+
+  @@index([fanClubId, createdAt])
+  @@index([userId])
+  @@map("fan_club_posts")
+}
+
+// Like on fan club post
+model FanClubPostLike {
+  id     String      @id @default(cuid())
+  postId String
+  userId String
+  createdAt DateTime @default(now())
+  post   FanClubPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("fan_club_post_likes")
 }

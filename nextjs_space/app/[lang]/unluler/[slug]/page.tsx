@@ -342,6 +342,35 @@ export default function CelebrityProfilePage() {
           </motion.div>
         )}
 
+        {/* Fan Club CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+          className="mt-4"
+        >
+          <Link
+            href={`/unluler/${celebrity.slug}/fan-kulubu`}
+            className="block p-5 rounded-2xl bg-gradient-to-r from-fuchsia-600/20 via-purple-600/15 to-pink-600/20 border border-fuchsia-500/20 backdrop-blur-sm hover:border-fuchsia-500/40 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-fuchsia-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    Fan Kulübü
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-fuchsia-500/30 text-fuchsia-300">YENİ</span>
+                  </h3>
+                  <p className="text-purple-300/60 text-sm">Tartışmalara katıl, duvarına yaz</p>
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-fuchsia-400/50 group-hover:text-fuchsia-400 transition-colors" />
+            </div>
+          </Link>
+        </motion.div>
+
         {/* Social Links */}
         {celebrity.socialLinks && Object.keys(celebrity.socialLinks).length > 0 && (
           <motion.div
