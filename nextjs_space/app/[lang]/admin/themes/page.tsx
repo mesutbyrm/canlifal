@@ -423,19 +423,27 @@ export default function AdminThemesPage() {
               placeholder="Canlı yayınlara&#10;katıl, eğlenceye ortak ol!"
             />
             <div className="flex items-center justify-between mt-3">
-              <p className="text-fuchsia-300/60 text-xs">Satır sonu için Enter tuşunu kullanın</p>
-              <button
-                onClick={saveHeroText}
-                disabled={heroSaving}
-                className="px-5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-fuchsia-600/50 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-              >
-                {heroSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : heroSaved ? (
-                  <Check className="w-4 h-4" />
-                ) : null}
-                {heroSaved ? 'Kaydedildi' : 'Başlığı Kaydet'}
-              </button>
+              <p className="text-fuchsia-300/60 text-xs">Satır sonu için Enter tuşunu kullanın. Metni silmek için temizleyip kaydedin.</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setHeroText(''); }}
+                  className="px-4 py-2 bg-red-600/30 hover:bg-red-600/50 border border-red-500/30 text-red-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Temizle
+                </button>
+                <button
+                  onClick={saveHeroText}
+                  disabled={heroSaving}
+                  className="px-5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-fuchsia-600/50 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                >
+                  {heroSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : heroSaved ? (
+                    <Check className="w-4 h-4" />
+                  ) : null}
+                  {heroSaved ? 'Kaydedildi' : 'Başlığı Kaydet'}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

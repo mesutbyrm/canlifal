@@ -83,13 +83,18 @@ export default function CanliDarkHome() {
   const [credits, setCredits] = useState<number>(0)
   const [jetonBalance, setJetonBalance] = useState<number>(0)
   const [unreadCount, setUnreadCount] = useState(0)
-  // heroText removed per user request
+  const [heroText, setHeroText] = useState<string>('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
 
-  // hero text fetch removed
+  useEffect(() => {
+    fetch('/api/settings/canlidark-hero')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && typeof d.text === 'string') setHeroText(d.text) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -185,6 +190,15 @@ export default function CanliDarkHome() {
       <div className="-mx-3 sm:-mx-4 mb-4">
         <LiveTicker />
       </div>
+
+      {/* ═══ HERO TITLE ═══ */}
+      {heroText && (
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight whitespace-pre-line drop-shadow-lg">
+            {heroText}
+          </h1>
+        </div>
+      )}
 
       {/* ═══ CANLI YAYINLAR ═══ */}
       <div className="mb-6">
