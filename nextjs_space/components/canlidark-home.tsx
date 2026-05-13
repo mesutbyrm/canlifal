@@ -176,18 +176,30 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
-  // Auto-scroll latest posts
+  // Auto-scroll latest posts using requestAnimationFrame for smooth motion
+  const scrollPausedRef = useRef(false)
   useEffect(() => {
     if (latestPosts.length < 2) return
     const el = postsScrollRef.current
     if (!el) return
-    let scrollPos = 0
-    const interval = setInterval(() => {
-      scrollPos += 1
-      if (scrollPos >= el.scrollWidth - el.clientWidth) scrollPos = 0
-      el.scrollTo({ left: scrollPos, behavior: 'smooth' })
-    }, 50)
-    return () => clearInterval(interval)
+    let animId: number
+    let lastTime = 0
+    const speed = 0.5 // pixels per frame (~30px/sec at 60fps)
+    const tick = (time: number) => {
+      if (!scrollPausedRef.current && lastTime) {
+        const delta = time - lastTime
+        const px = speed * (delta / 16.67) // normalize to 60fps
+        el.scrollLeft += px
+        // Loop back when reaching end
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
+          el.scrollLeft = 0
+        }
+      }
+      lastTime = time
+      animId = requestAnimationFrame(tick)
+    }
+    animId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(animId)
   }, [latestPosts])
 
   const popularTellers = tellers.slice(0, 8)
@@ -393,14 +405,10 @@ export default function CanliDarkHome() {
           <div
             ref={postsScrollRef}
             className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2"
-            onMouseEnter={() => {
-              const el = postsScrollRef.current
-              if (el) el.style.scrollBehavior = 'auto'
-            }}
-            onMouseLeave={() => {
-              const el = postsScrollRef.current
-              if (el) el.style.scrollBehavior = 'smooth'
-            }}
+            onMouseEnter={() => { scrollPausedRef.current = true }}
+            onMouseLeave={() => { scrollPausedRef.current = false }}
+            onTouchStart={() => { scrollPausedRef.current = true }}
+            onTouchEnd={() => { scrollPausedRef.current = false }}
           >
             {latestPosts.map((post) => (
               <Link
