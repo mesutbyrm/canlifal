@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import {
   Bell, Diamond, Eye, Plus, Video, Compass, Crown,
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
-  Gamepad2, Gift, UserPlus, Zap, Coins
+  Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -83,15 +83,13 @@ export default function CanliDarkHome() {
   const [credits, setCredits] = useState<number>(0)
   const [jetonBalance, setJetonBalance] = useState<number>(0)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [heroText, setHeroText] = useState('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
+  // heroText removed per user request
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
 
-  useEffect(() => {
-    fetch('/api/settings/canlidark-hero').then(r => r.ok ? r.json() : null).then(d => { if (d?.text) setHeroText(d.text) }).catch(() => {})
-  }, [])
+  // hero text fetch removed
 
   useEffect(() => {
     const load = async () => {
@@ -158,7 +156,7 @@ export default function CanliDarkHome() {
           </div>
           <div>
             <p className="text-sm font-bold text-white leading-tight flex items-center gap-1">
-              Merhaba, {userName}
+              {userName}
               <Sparkles className="w-3 h-3 text-fuchsia-300" />
             </p>
           </div>
@@ -187,18 +185,6 @@ export default function CanliDarkHome() {
       <div className="-mx-3 sm:-mx-4 mb-4">
         <LiveTicker />
       </div>
-
-      {/* ═══ HERO TITLE ═══ */}
-      <h1 className="canlidark-hero-title mb-4">
-        {heroText.split('\n').map((line, i, arr) => (
-          <span key={i}>
-            {i === 1 ? <span className="canlidark-hero-title-accent">{line}</span> : line}
-            {i < arr.length - 1 && <br />}
-          </span>
-        ))}
-        {' '}<span className="inline-block text-pink-400">♥</span>
-      </h1>
-
 
       {/* ═══ CANLI YAYINLAR ═══ */}
       <div className="mb-6">
@@ -290,7 +276,25 @@ export default function CanliDarkHome() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Crown className="w-5 h-5 text-white" />
             </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Abonelik</span>
+            <span className="text-[9px] text-white font-semibold text-center leading-tight">Premium</span>
+          </Link>
+          <Link href="/unluler" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Star className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[9px] text-white font-semibold text-center leading-tight">Ünlüler</span>
+          </Link>
+          <Link href="/trendler" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[9px] text-white font-semibold text-center leading-tight">Trendler</span>
+          </Link>
+          <Link href="/kesfet" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <Compass className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[9px] text-white font-semibold text-center leading-tight">Keşfet</span>
           </Link>
         </div>
       </div>
