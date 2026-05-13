@@ -2677,3 +2677,31 @@ model FanClubPostLike {
   @@index([userId])
   @@map("fan_club_post_likes")
 }
+
+
+// Trending topics / platform trends
+model TrendingTopic {
+  id          String   @id @default(cuid())
+  title       String   // Topic title
+  slug        String   @unique
+  category    String   // burc, fal, unlu, genel, oyun, etkinlik
+  description String?  @db.Text
+  image       String?  // Cover image URL
+  icon        String?  // Emoji or icon
+  trendScore  Int      @default(0) // Calculated popularity score
+  viewCount   Int      @default(0)
+  likeCount   Int      @default(0)
+  isActive    Boolean  @default(true)
+  isPinned    Boolean  @default(false) // Admin pinned
+  relatedUrl  String?  // Link to related page
+  tags        String?  @db.Text // JSON array of tags
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive, trendScore])
+  @@index([isPinned])
+  @@map("trending_topics")
+}

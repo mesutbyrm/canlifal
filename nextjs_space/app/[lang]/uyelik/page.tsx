@@ -158,20 +158,65 @@ export default function MembershipsPage() {
   }
 
   return (
-    <div className={`min-h-screen ${bgColor} pt-16 pb-24 px-4`}>
+    <div className={`min-h-screen ${bgColor} pb-24 px-4`}>
+      {/* Premium Hero Section */}
+      <div className="relative overflow-hidden pt-8 pb-10 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 via-fuchsia-600/10 to-purple-600/10" />
+        <div className="absolute inset-0">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-amber-400 rounded-full"
+              style={{ left: `${20 + i * 15}%`, top: `${30 + (i % 3) * 20}%` }}
+              animate={{ opacity: [0.2, 1, 0.2], scale: [0.5, 1.5, 0.5] }}
+              transition={{ duration: 2 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+        <div className="relative max-w-lg mx-auto text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring' }}>
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-amber-500/30 rotate-3">
+              <Crown className="w-10 h-10 text-black" />
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <h1 className={`text-3xl sm:text-4xl font-bold ${textPrimary} mb-2`}>
+              Premium Üyelik
+            </h1>
+            <p className={`${textSecondary} max-w-sm mx-auto`}>
+              Sınırsız erişim, özel ayrıcalıklar ve VIP deneyim
+            </p>
+          </motion.div>
+          {/* Feature highlights */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap justify-center gap-3 mt-5"
+          >
+            {[
+              { icon: '✨', text: 'Bonus Jeton' },
+              { icon: '💎', text: 'Özel Rozet' },
+              { icon: '🎯', text: 'Öncelikli Destek' },
+              { icon: '🔮', text: 'İndirimli Fal' },
+            ].map((feat, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                  isFacebook
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                }`}
+              >
+                <span>{feat.icon}</span>
+                {feat.text}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+
       <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
-          <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-3`}>
-            <Crown className="w-8 h-8 text-black" />
-          </div>
-          <h1 className={`text-2xl font-bold ${textPrimary} mb-2`}>
-            {'Üyelikler'}
-          </h1>
-          <p className={textSecondary}>
-            {'Ayrıcalıklı özellikler için üyelik seçin'}
-          </p>
-        </motion.div>
 
         {/* Current Membership Status */}
         {userMembership && userMembership.membership !== 'basic' && (

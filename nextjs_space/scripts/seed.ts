@@ -1295,6 +1295,130 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Ünlüler homepage button seeded!')
 
+  // Add Trendler homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'trendler' },
+    update: {},
+    create: {
+      key: 'trendler',
+      label: 'Trendler',
+      icon: '🔥',
+      href: '/trendler',
+      isVisible: true,
+      sortOrder: 13,
+    },
+  })
+  console.log('Trendler homepage button seeded!')
+
+  // Add Premium Üyelik homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'premium' },
+    update: {},
+    create: {
+      key: 'premium',
+      label: 'Premium',
+      icon: '👑',
+      href: '/uyelik',
+      isVisible: true,
+      sortOrder: 14,
+    },
+  })
+  console.log('Premium homepage button seeded!')
+
+  // Seed trending topics
+  const trendingTopics = [
+    {
+      title: 'Mayıs Ayı Burç Yorumları',
+      slug: 'mayis-ayi-burc-yorumlari',
+      category: 'burc',
+      icon: '⭐',
+      description: 'Mayıs ayında burçları neler bekliyor? Aşk, kariyer ve sağlık yorumlarınız burada.',
+      trendScore: 950,
+      isPinned: true,
+      relatedUrl: '/fallar/burc-yorumu',
+      tags: JSON.stringify(['burç', 'astroloji', 'mayıs']),
+    },
+    {
+      title: 'Tarot Kartları ile Geleceğinizi Keşfedin',
+      slug: 'tarot-kartlari-gelecek',
+      category: 'fal',
+      icon: '🃏',
+      description: 'AI destekli tarot falı ile geleceğinize dair ipuçları alın.',
+      trendScore: 880,
+      isPinned: true,
+      relatedUrl: '/fallar/tarot-fali',
+      tags: JSON.stringify(['tarot', 'fal', 'gelecek']),
+    },
+    {
+      title: 'En Çok Takip Edilen Ünlüler',
+      slug: 'en-cok-takip-edilen-unluler',
+      category: 'unlu',
+      icon: '🌟',
+      description: 'CanlıFal platformunda en çok takip edilen ünlü profilleri.',
+      trendScore: 820,
+      relatedUrl: '/unluler',
+      tags: JSON.stringify(['ünlüler', 'takip', 'fan']),
+    },
+    {
+      title: 'Kahve Falı Haftanın Trendi',
+      slug: 'kahve-fali-haftanin-trendi',
+      category: 'fal',
+      icon: '☕',
+      description: 'Bu hafta en çok bakılan fal türü: Türk kahvesi falı! Siz de deneyin.',
+      trendScore: 750,
+      relatedUrl: '/fallar/kahve-fali',
+      tags: JSON.stringify(['kahve falı', 'türk kahvesi', 'fal']),
+    },
+    {
+      title: 'Rüya Tabiri Rehberi',
+      slug: 'ruya-tabiri-rehberi',
+      category: 'genel',
+      icon: '🌙',
+      description: 'Rüyanızı anlatın, yapay zeka destekli rüya yorumu alın.',
+      trendScore: 700,
+      relatedUrl: '/fallar/ruya-yorumu',
+      tags: JSON.stringify(['rüya', 'tabir', 'yorum']),
+    },
+    {
+      title: 'Canlı Yayın Etkinlikleri',
+      slug: 'canli-yayin-etkinlikleri',
+      category: 'etkinlik',
+      icon: '🎬',
+      description: 'Haftalık canlı fal seansları ve özel etkinlikler.',
+      trendScore: 650,
+      tags: JSON.stringify(['canlı', 'etkinlik', 'yayın']),
+    },
+    {
+      title: 'Numeroloji ile Şanslı Sayılarınız',
+      slug: 'numeroloji-sansli-sayilar',
+      category: 'fal',
+      icon: '🔢',
+      description: 'Doğum tarihinize göre şanslı sayılarınızı öğrenin.',
+      trendScore: 600,
+      relatedUrl: '/fallar/numeroloji',
+      tags: JSON.stringify(['numeroloji', 'sayı', 'şans']),
+    },
+    {
+      title: 'Oyun Turnuvaları Başlıyor',
+      slug: 'oyun-turnuvalari-basliyor',
+      category: 'oyun',
+      icon: '🎮',
+      description: 'Haftalık oyun turnuvalarında jeton ödülleri kazanın!',
+      trendScore: 550,
+      relatedUrl: '/oyunlar',
+      tags: JSON.stringify(['oyun', 'turnuva', 'ödül']),
+    },
+  ]
+
+  for (const topic of trendingTopics) {
+    await prisma.trendingTopic.upsert({
+      where: { slug: topic.slug },
+      update: {},
+      create: topic,
+    })
+  }
+  console.log('Trending topics seeded!')
+
   console.log('Seed completed successfully!')
 }
 
