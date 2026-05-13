@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -8,9 +8,36 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, BadgeCheck, Calendar, Heart, MapPin, Star, Users,
   Instagram, Youtube, Music, Globe, ExternalLink, Trophy,
-  UserCheck, Loader2, Share2, Film, Tv
+  UserCheck, Loader2, Share2, Film, Tv, MessageCircle, Play, Twitter
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+
+interface CelebPost {
+  id: string
+  platform: string
+  postType: string
+  content: string | null
+  mediaUrl: string | null
+  likeCount: number
+  commentCount: number
+  isLiked: boolean
+  createdAt: string
+}
+
+const PLATFORM_TABS = [
+  { value: 'all', label: 'Tümü', icon: Globe },
+  { value: 'instagram', label: 'Instagram', icon: Instagram },
+  { value: 'x', label: 'X', icon: Twitter },
+  { value: 'youtube', label: 'YouTube', icon: Youtube },
+  { value: 'tiktok', label: 'TikTok', icon: Play },
+]
+
+const PLATFORM_COLORS: Record<string, string> = {
+  instagram: 'from-pink-500 to-purple-600',
+  x: 'from-gray-600 to-gray-800',
+  youtube: 'from-red-500 to-red-700',
+  tiktok: 'from-cyan-400 to-pink-500',
+}
 
 interface Celebrity {
   id: string
@@ -83,6 +110,9 @@ export default function CelebrityProfilePage() {
   const [following, setFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [followLoading, setFollowLoading] = useState(false)
+  const [posts, setPosts] = useState<CelebPost[]>([])
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [platformFilter, setPlatformFilter] = useState('all')
 
   useEffect(() => {
     if (!params?.slug) return
@@ -98,6 +128,40 @@ export default function CelebrityProfilePage() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [params?.slug])
+
+  const loadPosts = useCallback(async () => {
+    if (!params?.slug) return
+    setPostsLoading(true)
+    try {
+      const url = platformFilter === 'all'
+        ? `/api/celebrities/${params.slug}/posts?limit=20`
+        : `/api/celebrities/${params.slug}/posts?platform=${platformFilter}&limit=20`
+      const res = await fetch(url)
+      const data = await res.json()
+      setPosts(data.posts || [])
+    } catch { setPosts([]) }
+    setPostsLoading(false)
+  }, [params?.slug, platformFilter])
+
+  useEffect(() => { loadPosts() }, [loadPosts])
+
+  const handleLikePost = async (postId: string) => {
+    if (!session?.user) { router.push('/giris'); return }
+    if (!params?.slug) return
+    try {
+      const res = await fetch(`/api/celebrities/${params.slug}/posts/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      })
+      const data = await res.json()
+      setPosts(prev => prev.map(p => p.id === postId ? {
+        ...p,
+        isLiked: data.liked,
+        likeCount: data.liked ? p.likeCount + 1 : p.likeCount - 1,
+      } : p))
+    } catch {}
+  }
 
   const handleFollow = async () => {
     if (!session?.user) {
@@ -369,6 +433,96 @@ export default function CelebrityProfilePage() {
               <ExternalLink className="w-5 h-5 text-fuchsia-400/50 group-hover:text-fuchsia-400 transition-colors" />
             </div>
           </Link>
+        </motion.div>
+
+        {/* Social Posts Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 p-5 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
+        >
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Instagram className="w-5 h-5 text-fuchsia-400" />
+            Sosyal Medya Paylaşımları
+          </h2>
+
+          {/* Platform Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-3 mb-4">
+            {PLATFORM_TABS.map((tab) => {
+              const TabIcon = tab.icon
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setPlatformFilter(tab.value)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    platformFilter === tab.value
+                      ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/30'
+                      : 'bg-white/5 text-purple-300/70 border border-purple-500/10 hover:bg-white/10'
+                  }`}
+                >
+                  <TabIcon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Posts Grid */}
+          {postsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {posts.map((post) => (
+                <div key={post.id} className="rounded-xl overflow-hidden bg-white/5 border border-purple-500/10 hover:border-fuchsia-500/20 transition-all">
+                  {post.mediaUrl && (
+                    <div className="relative w-full h-40">
+                      <Image src={post.mediaUrl} alt={post.content || 'Paylaşım'} fill className="object-cover" sizes="300px" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-gradient-to-br ${PLATFORM_COLORS[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center shadow-lg`}>
+                        {post.platform === 'instagram' && <Instagram className="w-3.5 h-3.5 text-white" />}
+                        {post.platform === 'x' && <Twitter className="w-3.5 h-3.5 text-white" />}
+                        {post.platform === 'youtube' && <Youtube className="w-3.5 h-3.5 text-white" />}
+                        {post.platform === 'tiktok' && <Play className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-3">
+                    {post.content && (
+                      <p className="text-sm text-purple-200/80 line-clamp-3 mb-2">{post.content}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleLikePost(post.id)}
+                          className={`flex items-center gap-1 text-xs transition-colors ${
+                            post.isLiked ? 'text-pink-400' : 'text-purple-400/50 hover:text-pink-400'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-pink-400' : ''}`} />
+                          {post.likeCount > 0 && <span>{post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}</span>}
+                        </button>
+                        <span className="flex items-center gap-1 text-xs text-purple-400/50">
+                          <MessageCircle className="w-4 h-4" />
+                          {post.commentCount > 0 && post.commentCount}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-purple-400/40">
+                        {new Date(post.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Instagram className="w-10 h-10 text-purple-500/30 mx-auto mb-2" />
+              <p className="text-purple-300/50 text-sm">Bu platformda henüz paylaşım yok</p>
+            </div>
+          )}
         </motion.div>
 
         {/* Social Links */}

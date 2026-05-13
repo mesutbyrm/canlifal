@@ -1419,6 +1419,43 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Trending topics seeded!')
 
+  // ═══ CELEBRITY POSTS (Social Media) ═══
+  const celebrityPostsData = [
+    { celebritySlug: 'tarkan', platform: 'instagram', postType: 'photo', content: 'Yeni albümün hazırlıkları devam ediyor 🎶 Yakında sizlerle buluşacağız!', mediaUrl: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', likeCount: 12500 },
+    { celebritySlug: 'tarkan', platform: 'youtube', postType: 'video', content: 'Konser backstage görüntüleri 🎤', mediaUrl: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', likeCount: 8400 },
+    { celebritySlug: 'tarkan', platform: 'x', postType: 'tweet', content: 'Müzik ruhumun sesi. Her notada sizleri hissediyorum ❤️', likeCount: 5200 },
+    { celebritySlug: 'hande-ercel', platform: 'instagram', postType: 'photo', content: 'Yeni dizi çekimleri başladı! 🎬 Çok heyecanlıyım', mediaUrl: 'https://cdn.abacus.ai/images/b4f2cb29-d97d-45c0-bac0-a1b0defc320b.png', likeCount: 45000 },
+    { celebritySlug: 'hande-ercel', platform: 'instagram', postType: 'reel', content: 'Makyaj rutini 💄 #makeuptutorial', mediaUrl: 'https://cdn.abacus.ai/images/63500b4d-2875-46e7-b3ab-720016070d0c.png', likeCount: 32000 },
+    { celebritySlug: 'hande-ercel', platform: 'tiktok', postType: 'video', content: 'Dans challenge! 💃', mediaUrl: 'https://cdn.abacus.ai/images/fc019303-9170-4a35-a30a-9dafbe6cd0bb.png', likeCount: 67000 },
+    { celebritySlug: 'arda-guler', platform: 'instagram', postType: 'photo', content: 'Antrenman sonrası 💪⚽ #HalaMadrid', mediaUrl: 'https://cdn.abacus.ai/images/f16750b2-d611-45af-a2ec-bb912ea71c80.png', likeCount: 89000 },
+    { celebritySlug: 'arda-guler', platform: 'x', postType: 'tweet', content: 'Maça hazırız! 🔥 Bugün tribünlerde buluşalım!', likeCount: 15000 },
+    { celebritySlug: 'kemal-sunal', platform: 'instagram', postType: 'photo', content: 'Hababam Sınıfı\'ndan unutulmaz kareler 📸 Efsane hiç eskimez!', mediaUrl: 'https://cdn.abacus.ai/images/2983a121-7c1b-4d68-9d58-753b8bec3f5c.png', likeCount: 9800 },
+    { celebritySlug: 'kemal-sunal', platform: 'youtube', postType: 'video', content: 'En komik Şaban sahneleri derleme 😂', mediaUrl: 'https://cdn.abacus.ai/images/087f00ec-3e0e-4330-be79-a7d11efdf65b.png', likeCount: 22000 },
+  ]
+
+  for (const postData of celebrityPostsData) {
+    const celebrity = await prisma.celebrity.findUnique({ where: { slug: postData.celebritySlug } })
+    if (celebrity) {
+      // Use upsert-like behavior: check if post with same content exists
+      const existing = await prisma.celebrityPost.findFirst({
+        where: { celebrityId: celebrity.id, content: postData.content },
+      })
+      if (!existing) {
+        await prisma.celebrityPost.create({
+          data: {
+            celebrityId: celebrity.id,
+            platform: postData.platform,
+            postType: postData.postType,
+            content: postData.content,
+            mediaUrl: postData.mediaUrl || null,
+            likeCount: postData.likeCount || 0,
+          },
+        })
+      }
+    }
+  }
+  console.log('Celebrity posts seeded!')
+
   console.log('Seed completed successfully!')
 }
 

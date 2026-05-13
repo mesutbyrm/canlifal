@@ -1,0 +1,360 @@
+'use client'
+
+import AdminBackButton from '@/components/admin-back-button'
+import { useState, useEffect, useCallback } from 'react'
+import { useSiteTheme } from '@/lib/theme-context'
+import {
+  Plus, Trash2, Save, Loader2, Search, Instagram, Youtube, Globe,
+  Twitter, Play, X, Image as ImageIcon, Edit, Eye, EyeOff, Pin
+} from 'lucide-react'
+import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+
+interface Celebrity {
+  id: string
+  name: string
+  slug: string
+  profileImage: string | null
+}
+
+interface CelebPost {
+  id: string
+  celebrityId: string
+  platform: string
+  postType: string
+  content: string | null
+  mediaUrl: string | null
+  externalUrl: string | null
+  likeCount: number
+  commentCount: number
+  isActive: boolean
+  isPinned: boolean
+  createdAt: string
+  celebrity: { name: string; slug: string; profileImage: string | null }
+}
+
+const PLATFORMS = [
+  { value: 'instagram', label: 'Instagram', icon: Instagram, color: 'from-pink-500 to-purple-600' },
+  { value: 'x', label: 'X (Twitter)', icon: Twitter, color: 'from-gray-600 to-gray-800' },
+  { value: 'youtube', label: 'YouTube', icon: Youtube, color: 'from-red-500 to-red-700' },
+  { value: 'tiktok', label: 'TikTok', icon: Play, color: 'from-cyan-400 to-pink-500' },
+]
+
+const POST_TYPES = [
+  { value: 'photo', label: 'Fotoğraf' },
+  { value: 'video', label: 'Video' },
+  { value: 'reel', label: 'Reel' },
+  { value: 'story', label: 'Hikâye' },
+  { value: 'tweet', label: 'Tweet' },
+  { value: 'short', label: 'Short' },
+]
+
+export default function AdminCelebrityPostsPage() {
+  const { theme } = useSiteTheme()
+  const isLight = theme === 'facebook'
+
+  const [celebrities, setCelebrities] = useState<Celebrity[]>([])
+  const [posts, setPosts] = useState<CelebPost[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [selectedCelebrity, setSelectedCelebrity] = useState('')
+  const [platformFilter, setPlatformFilter] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    celebrityId: '', platform: 'instagram', postType: 'photo',
+    content: '', mediaUrl: '', externalUrl: '', isPinned: false,
+  })
+
+  const loadCelebrities = useCallback(async () => {
+    try {
+      const res = await fetch('/api/celebrities?limit=50')
+      const data = await res.json()
+      setCelebrities(data.celebrities || [])
+    } catch {}
+  }, [])
+
+  const loadPosts = useCallback(async () => {
+    setLoading(true)
+    try {
+      let url = '/api/admin/celebrity-posts?limit=50'
+      if (selectedCelebrity) url += `&celebrityId=${selectedCelebrity}`
+      if (platformFilter) url += `&platform=${platformFilter}`
+      const res = await fetch(url)
+      const data = await res.json()
+      setPosts(data.posts || [])
+    } catch {}
+    setLoading(false)
+  }, [selectedCelebrity, platformFilter])
+
+  useEffect(() => { loadCelebrities() }, [loadCelebrities])
+  useEffect(() => { loadPosts() }, [loadPosts])
+
+  const handleSave = async () => {
+    if (!form.celebrityId || !form.platform) return
+    setSaving(true)
+    try {
+      if (editingId) {
+        await fetch('/api/admin/celebrity-posts', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingId, ...form }),
+        })
+      } else {
+        await fetch('/api/admin/celebrity-posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+      }
+      setShowForm(false)
+      setEditingId(null)
+      setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false })
+      loadPosts()
+    } catch {}
+    setSaving(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bu paylaşımı silmek istediğinize emin misiniz?')) return
+    try {
+      await fetch(`/api/admin/celebrity-posts?id=${id}`, { method: 'DELETE' })
+      loadPosts()
+    } catch {}
+  }
+
+  const handleEdit = (post: CelebPost) => {
+    setEditingId(post.id)
+    setForm({
+      celebrityId: post.celebrityId,
+      platform: post.platform,
+      postType: post.postType,
+      content: post.content || '',
+      mediaUrl: post.mediaUrl || '',
+      externalUrl: post.externalUrl || '',
+      isPinned: post.isPinned,
+    })
+    setShowForm(true)
+  }
+
+  const handleToggleActive = async (post: CelebPost) => {
+    try {
+      await fetch('/api/admin/celebrity-posts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: post.id, isActive: !post.isActive }),
+      })
+      loadPosts()
+    } catch {}
+  }
+
+  const inputClass = isLight
+    ? 'w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm'
+    : 'w-full px-3 py-2 rounded-lg border border-purple-500/20 bg-purple-900/20 text-white text-sm placeholder-purple-300/40'
+  const cardClass = isLight
+    ? 'bg-white border border-gray-200 rounded-xl shadow-sm'
+    : 'bg-purple-900/20 border border-purple-500/10 rounded-xl backdrop-blur-sm'
+  const labelClass = isLight ? 'text-sm font-medium text-gray-700 mb-1' : 'text-sm font-medium text-purple-300/80 mb-1'
+
+  return (
+    <div className={`min-h-screen pb-20 ${isLight ? 'bg-gray-50' : 'bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a]'}`}>
+      <div className="max-w-4xl mx-auto px-4 pt-20">
+        <AdminBackButton />
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className={`text-2xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>
+              Ünlü Paylaşımları Yönetimi
+            </h1>
+            <p className={`text-sm mt-1 ${isLight ? 'text-gray-500' : 'text-purple-300/60'}`}>
+              Ünlülerin sosyal medya paylaşımlarını ekleyin ve yönetin
+            </p>
+          </div>
+          <button
+            onClick={() => { setEditingId(null); setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false }); setShowForm(true) }}
+            className="px-4 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Yeni Paylaşım
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          <select
+            value={selectedCelebrity}
+            onChange={(e) => setSelectedCelebrity(e.target.value)}
+            className={inputClass + ' max-w-xs'}
+          >
+            <option value="">Tüm Ünlüler</option>
+            {celebrities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select
+            value={platformFilter}
+            onChange={(e) => setPlatformFilter(e.target.value)}
+            className={inputClass + ' max-w-xs'}
+          >
+            <option value="">Tüm Platformlar</option>
+            {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+        </div>
+
+        {/* Form Modal */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowForm(false)}
+            >
+              <motion.div
+                className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 ${isLight ? 'bg-white' : 'bg-[#1a0030] border border-purple-500/20'}`}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className={`text-lg font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>
+                    {editingId ? 'Paylaşım Düzenle' : 'Yeni Paylaşım Ekle'}
+                  </h2>
+                  <button onClick={() => setShowForm(false)} className="p-1.5 rounded-full hover:bg-white/10">
+                    <X className={`w-5 h-5 ${isLight ? 'text-gray-500' : 'text-purple-300'}`} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Ünlü *</label>
+                    <select value={form.celebrityId} onChange={e => setForm(f => ({ ...f, celebrityId: e.target.value }))} className={inputClass}>
+                      <option value="">Ünlü seçin</option>
+                      {celebrities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Platform *</label>
+                      <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className={inputClass}>
+                        {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Tür</label>
+                      <select value={form.postType} onChange={e => setForm(f => ({ ...f, postType: e.target.value }))} className={inputClass}>
+                        {POST_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>İçerik</label>
+                    <textarea
+                      value={form.content}
+                      onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                      className={inputClass + ' h-24 resize-none'}
+                      placeholder="Paylaşım içeriği..."
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Medya URL (Resim/Video)</label>
+                    <input
+                      type="text"
+                      value={form.mediaUrl}
+                      onChange={e => setForm(f => ({ ...f, mediaUrl: e.target.value }))}
+                      className={inputClass}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Orijinal Post Linki</label>
+                    <input
+                      type="text"
+                      value={form.externalUrl}
+                      onChange={e => setForm(f => ({ ...f, externalUrl: e.target.value }))}
+                      className={inputClass}
+                      placeholder="https://instagram.com/p/..."
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.isPinned}
+                      onChange={e => setForm(f => ({ ...f, isPinned: e.target.checked }))}
+                      className="w-4 h-4 rounded border-purple-500/20"
+                    />
+                    <span className={`text-sm ${isLight ? 'text-gray-700' : 'text-purple-200/80'}`}>Sabitlenmiş (öne çıkar)</span>
+                  </label>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !form.celebrityId}
+                    className="w-full py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {editingId ? 'Güncelle' : 'Ekle'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Posts List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-fuchsia-400" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className={`text-center py-12 ${cardClass} p-8`}>
+            <ImageIcon className="w-12 h-12 mx-auto mb-3 text-purple-500/30" />
+            <p className={isLight ? 'text-gray-500' : 'text-purple-300/50'}>Henüz paylaşım eklenmemiş</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((post) => {
+              const platInfo = PLATFORMS.find(p => p.value === post.platform)
+              const PlatIcon = platInfo?.icon || Globe
+              return (
+                <div key={post.id} className={`${cardClass} p-4 flex items-start gap-4 ${!post.isActive ? 'opacity-50' : ''}`}>
+                  {post.mediaUrl ? (
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image src={post.mediaUrl} alt="" fill className="object-cover" sizes="80px" />
+                    </div>
+                  ) : (
+                    <div className={`w-20 h-20 rounded-lg flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${platInfo?.color || 'from-gray-500 to-gray-700'}`}>
+                      <PlatIcon className="w-8 h-8 text-white/50" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-sm font-semibold ${isLight ? 'text-gray-900' : 'text-white'}`}>{post.celebrity.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium bg-gradient-to-r ${platInfo?.color || 'from-gray-500 to-gray-700'} text-white`}>
+                        {platInfo?.label || post.platform}
+                      </span>
+                      {post.isPinned && <Pin className="w-3 h-3 text-amber-400" />}
+                    </div>
+                    {post.content && (
+                      <p className={`text-sm line-clamp-2 ${isLight ? 'text-gray-600' : 'text-purple-200/70'}`}>{post.content}</p>
+                    )}
+                    <div className={`text-xs mt-1 ${isLight ? 'text-gray-400' : 'text-purple-400/50'}`}>
+                      {new Date(post.createdAt).toLocaleDateString('tr-TR')} • {post.likeCount} beğeni • {post.commentCount} yorum
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => handleToggleActive(post)} className="p-1.5 rounded-lg hover:bg-white/10" title={post.isActive ? 'Gizle' : 'Göster'}>
+                      {post.isActive ? <Eye className="w-4 h-4 text-green-400" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
+                    </button>
+                    <button onClick={() => handleEdit(post)} className="p-1.5 rounded-lg hover:bg-white/10" title="Düzenle">
+                      <Edit className="w-4 h-4 text-blue-400" />
+                    </button>
+                    <button onClick={() => handleDelete(post.id)} className="p-1.5 rounded-lg hover:bg-white/10" title="Sil">
+                      <Trash2 className="w-4 h-4 text-red-400" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

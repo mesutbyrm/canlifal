@@ -1,14 +1,16 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import {
   Bell, Diamond, Eye, Plus, Video, Compass, Crown,
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
-  Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp
+  Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
+  X, Heart, Play, Instagram, Twitter, Youtube,
+  Users, ChevronRight, Menu
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -56,6 +58,27 @@ interface MembershipPlan {
   color?: string
 }
 
+interface CelebrityStory {
+  id: string
+  name: string
+  slug: string
+  profileImage: string | null
+  category: string
+  hasNewPost: boolean
+}
+
+interface CelebrityPost {
+  id: string
+  platform: string
+  postType: string
+  content: string | null
+  mediaUrl: string | null
+  likeCount: number
+  commentCount: number
+  createdAt: string
+  celebrity: { name: string; slug: string; profileImage: string | null; category?: string }
+}
+
 const FORTUNE_CARDS = [
   { id: 'coffee', name: 'Kahve Falı', sub: 'Fincandaki gizem', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali', glow: 'rgba(251,191,36,0.35)' },
   { id: 'tarot', name: 'Tarot Falı', sub: 'Kartların sırrı', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fallar/tarot-fali', glow: 'rgba(192,38,211,0.45)' },
@@ -75,6 +98,20 @@ const FORTUNE_CARDS = [
 
 const ROOM_COLORS = ['from-pink-500 to-rose-500', 'from-blue-500 to-cyan-500', 'from-purple-500 to-fuchsia-500', 'from-amber-500 to-orange-500'] as const
 
+const PLATFORM_ICON: Record<string, React.ReactNode> = {
+  instagram: <Instagram className="w-3 h-3" />,
+  x: <Twitter className="w-3 h-3" />,
+  youtube: <Youtube className="w-3 h-3" />,
+  tiktok: <Play className="w-3 h-3" />,
+}
+
+const PLATFORM_COLOR: Record<string, string> = {
+  instagram: 'from-pink-500 to-purple-600',
+  x: 'from-gray-700 to-gray-900',
+  youtube: 'from-red-500 to-red-700',
+  tiktok: 'from-cyan-400 to-pink-500',
+}
+
 export default function CanliDarkHome() {
   const { data: session } = useSession() || {}
   const [streams, setStreams] = useState<LiveStream[]>([])
@@ -85,6 +122,10 @@ export default function CanliDarkHome() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [heroText, setHeroText] = useState<string>('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
+  const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
+  const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const postsScrollRef = useRef<HTMLDivElement>(null)
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -99,16 +140,26 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m] = await Promise.all([
+        const [s, r, t, m, celeb, posts] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
           fetch('/api/memberships').then(x => x.ok ? x.json() : []),
+          fetch('/api/celebrities?limit=15').then(x => x.ok ? x.json() : { celebrities: [] }),
+          fetch('/api/celebrities/posts/latest?limit=12').then(x => x.ok ? x.json() : { posts: [] }),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
         setTellers((t?.tellers || []).slice(0, 12))
-        if (Array.isArray(m)) setMembershipPlans(m.slice(0, 3))
+        if (Array.isArray(m)) setMembershipPlans(m.slice(0, 4))
+        if (celeb?.celebrities) {
+          setCelebrities(celeb.celebrities.map((c: any) => ({
+            id: c.id, name: c.name, slug: c.slug,
+            profileImage: c.profileImage, category: c.category,
+            hasNewPost: true,
+          })))
+        }
+        if (posts?.posts) setLatestPosts(posts.posts)
       } catch {}
       if (session) {
         try {
@@ -125,7 +176,22 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
+  // Auto-scroll latest posts
+  useEffect(() => {
+    if (latestPosts.length < 2) return
+    const el = postsScrollRef.current
+    if (!el) return
+    let scrollPos = 0
+    const interval = setInterval(() => {
+      scrollPos += 1
+      if (scrollPos >= el.scrollWidth - el.clientWidth) scrollPos = 0
+      el.scrollTo({ left: scrollPos, behavior: 'smooth' })
+    }, 50)
+    return () => clearInterval(interval)
+  }, [latestPosts])
+
   const popularTellers = tellers.slice(0, 8)
+  const visibleFortunes = FORTUNE_CARDS.slice(0, 8)
 
   return (
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
@@ -164,60 +230,119 @@ export default function CanliDarkHome() {
               {userName}
               <Sparkles className="w-3 h-3 text-fuchsia-300" />
             </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-fuchsia-200/80 flex items-center gap-0.5">
+                <Coins className="w-3 h-3 text-amber-400" />
+                {jetonBalance} Jeton
+              </span>
+              <span className="text-[10px] text-fuchsia-200/60">•</span>
+              <span className="text-[10px] text-fuchsia-200/80 flex items-center gap-0.5">
+                <Diamond className="w-3 h-3 text-cyan-400" />
+                {credits} CFC
+              </span>
+            </div>
           </div>
         </Link>
-        <div className="flex items-center gap-1.5">
-          {/* CFC */}
-          <Link href="/jeton" className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-900/50 border border-purple-500/40 backdrop-blur-md">
-            <Diamond className="w-3.5 h-3.5 text-cyan-300" />
-            <span className="text-xs font-bold text-white">{credits}</span>
-            <span className="text-[9px] text-cyan-300/70">CFC</span>
-          </Link>
-          {/* Jeton */}
-          <Link href="/jeton" className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-900/50 border border-amber-500/40 backdrop-blur-md">
-            <Coins className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs font-bold text-white">{jetonBalance}</span>
-            <span className="text-[9px] text-amber-400/70">J</span>
-          </Link>
-          {/* Bildirim çanı */}
-          <div className="relative">
-            <NotificationBell />
-          </div>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
         </div>
       </div>
 
-      {/* ═══ LIVE TICKER — kayan şerit, üst barın altında ═══ */}
-      <div className="-mx-3 sm:-mx-4 mb-4">
-        <LiveTicker />
-      </div>
-
-      {/* ═══ HERO TITLE ═══ */}
-      {heroText && (
-        <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight whitespace-pre-line drop-shadow-lg">
-            {heroText}
-          </h1>
+      {/* ═══ LIVE TICKER ═══ */}
+      {streams.length > 0 && (
+        <div className="mb-4">
+          <LiveTicker />
         </div>
       )}
 
-      {/* ═══ CANLI YAYINLAR ═══ */}
+      {/* ═══ HERO TITLE ═══ */}
+      <div className="mb-5">
+        <h1 className="text-xl font-extrabold text-white leading-snug whitespace-pre-line">
+          {heroText}
+        </h1>
+      </div>
+
+      {/* ═══ 1. HİKÂYELER (Instagram-style stories) ═══ */}
+      {celebrities.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="canlidark-section-title">Hikâyeler</h2>
+            <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
+          </div>
+          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {celebrities.map((celeb) => (
+              <Link key={celeb.id} href={`/unluler/${celeb.slug}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
+                <div className="relative">
+                  <div className={`w-16 h-16 rounded-full p-[2.5px] ${celeb.hasNewPost ? 'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600' : 'bg-gray-600/50'}`}
+                    style={celeb.hasNewPost ? { boxShadow: '0 0 12px rgba(236,72,153,0.5)' } : {}}
+                  >
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
+                      {celeb.profileImage ? (
+                        <Image src={celeb.profileImage} alt={celeb.name} fill className="object-cover" sizes="60px" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
+                          {celeb.name[0]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {celeb.hasNewPost && (
+                    <div className="absolute -bottom-0.5 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#0a0118]" />
+                  )}
+                </div>
+                <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">{celeb.name.split(' ')[0]}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 2. CANLI YAYINLAR (with animated Yayın Başlat) ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Canlı Yayınlar</h2>
           <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
         <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+          {/* Animated Yayın Başlat */}
           <Link
             href={session ? '/sohbet/video/setup' : '/giris'}
-            className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36"
+            className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36 relative"
           >
-            <div
-              className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50"
-              style={{ boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)' }}
+            <div className="absolute inset-0 overflow-hidden">
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-fuchsia-500/10 to-purple-600/20"
+                animate={{ opacity: [0.3, 0.7, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </div>
+            <motion.div
+              className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50 relative z-10"
+              animate={{
+                scale: [1, 1.15, 1],
+                boxShadow: [
+                  '0 0 15px rgba(236,72,153,0.4)',
+                  '0 0 35px rgba(236,72,153,0.8), 0 0 60px rgba(192,38,211,0.4)',
+                  '0 0 15px rgba(236,72,153,0.4)',
+                ],
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
               <Plus className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-xs text-white font-bold text-center leading-tight">Yayın Başlat</span>
+            </motion.div>
+            <motion.span
+              className="text-xs text-white font-bold text-center leading-tight relative z-10"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              Yayın Başlat
+            </motion.span>
+            {/* Pulsing ring */}
+            <motion.div
+              className="absolute w-20 h-20 rounded-full border-2 border-pink-400/40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[-10px]"
+              animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+            />
           </Link>
 
           {streams.length > 0 ? (
@@ -256,64 +381,75 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ HIZLI İŞLEMLER ═══ */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="canlidark-section-title">Hızlı İşlemler</h2>
+      {/* ═══ 3. SON PAYLAŞIMLAR (auto-scrolling celebrity posts) ═══ */}
+      {latestPosts.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="canlidark-section-title flex items-center gap-1.5">
+              <Heart className="w-4 h-4 text-pink-400" /> Son Paylaşımlar
+            </h2>
+            <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
+          </div>
+          <div
+            ref={postsScrollRef}
+            className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2"
+            onMouseEnter={() => {
+              const el = postsScrollRef.current
+              if (el) el.style.scrollBehavior = 'auto'
+            }}
+            onMouseLeave={() => {
+              const el = postsScrollRef.current
+              if (el) el.style.scrollBehavior = 'smooth'
+            }}
+          >
+            {latestPosts.map((post) => (
+              <Link
+                key={post.id}
+                href={`/unluler/${post.celebrity.slug}`}
+                className="flex-shrink-0 w-44"
+              >
+                <div className="canlidark-card overflow-hidden h-full">
+                  {post.mediaUrl ? (
+                    <div className="relative w-full h-28">
+                      <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="176px" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
+                        {PLATFORM_ICON[post.platform] || <Globe className="w-3 h-3" />}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`relative w-full h-28 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
+                      <div className="text-white/30 text-3xl">{PLATFORM_ICON[post.platform]}</div>
+                    </div>
+                  )}
+                  <div className="p-2.5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-full overflow-hidden relative flex-shrink-0">
+                        {post.celebrity.profileImage ? (
+                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="20px" />
+                        ) : (
+                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[8px] text-white font-bold">{post.celebrity.name[0]}</div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold text-white truncate">{post.celebrity.name}</span>
+                    </div>
+                    {post.content && (
+                      <p className="text-[9px] text-fuchsia-200/70 line-clamp-2 leading-tight">{post.content}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[9px] text-fuchsia-200/50 flex items-center gap-0.5">
+                        <Heart className="w-2.5 h-2.5" /> {post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-5 gap-2">
-          <Link href="/oyunlar" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <Gamepad2 className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Oyunlar</span>
-          </Link>
-          <Link href="/davet" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <UserPlus className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Davet Et</span>
-          </Link>
-          <Link href="/hediyeler" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/20">
-              <Gift className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Hediye</span>
-          </Link>
-          <Link href="/bana-ozel" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Bana Özel</span>
-          </Link>
-          <Link href="/uyelik" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Crown className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Premium</span>
-          </Link>
-          <Link href="/unluler" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Star className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Ünlüler</span>
-          </Link>
-          <Link href="/trendler" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Trendler</span>
-          </Link>
-          <Link href="/kesfet" className="canlidark-glass rounded-2xl p-2.5 flex flex-col items-center gap-1.5 border border-purple-500/20">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Compass className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] text-white font-semibold text-center leading-tight">Keşfet</span>
-          </Link>
-        </div>
-      </div>
+      )}
 
-      {/* ═══ SESLİ SOHBET ODALARI — yuvarlak ═══ */}
+      {/* ═══ 4. SESLİ SOHBET ODALARI — yuvarlak ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
@@ -354,14 +490,14 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ FAL & TAROT — 4 sütun grid ═══ */}
+      {/* ═══ 5. FAL & TAROT — 4 sütun, 8 görünür, kaydırılabilir ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Fal & Tarot</h2>
           <Link href="/fallar" className="canlidark-section-link">Tüm Fallar</Link>
         </div>
         <div className="grid grid-cols-4 gap-2">
-          {FORTUNE_CARDS.map((fc) => (
+          {visibleFortunes.map((fc) => (
             <Link key={fc.id} href={fc.href} className="flex flex-col items-center gap-1.5">
               <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-purple-500/20" style={{ boxShadow: `0 4px 16px ${fc.glow}` }}>
                 <Image src={fc.image} alt={fc.name} fill className="object-cover" sizes="100px" />
@@ -371,9 +507,14 @@ export default function CanliDarkHome() {
             </Link>
           ))}
         </div>
+        {FORTUNE_CARDS.length > 8 && (
+          <Link href="/fallar" className="mt-2 flex items-center justify-center gap-1 text-xs text-fuchsia-300/80 hover:text-fuchsia-200 transition-colors">
+            +{FORTUNE_CARDS.length - 8} daha fazla fal <ChevronRight className="w-3 h-3" />
+          </Link>
+        )}
       </div>
 
-      {/* ═══ POPÜLER FALCILAR ═══ */}
+      {/* ═══ 6. POPÜLER FALCILAR ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-400" /> Popüler Falcılar</h2>
@@ -418,7 +559,7 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ GOLD ÜYELİKLER ═══ */}
+      {/* ═══ 7. GOLD ÜYELİKLER (4 plan) ═══ */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Crown className="w-4 h-4 text-amber-400" /> Gold Üyelikler</h2>
@@ -456,6 +597,76 @@ export default function CanliDarkHome() {
           </Link>
         )}
       </div>
+
+      {/* ═══ FLOATING HIZLI İŞLEMLER BUTTON ═══ */}
+      <motion.button
+        onClick={() => setDrawerOpen(true)}
+        className="fixed right-3 bottom-24 z-40 w-12 h-12 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg border border-fuchsia-400/30"
+        style={{ boxShadow: '0 4px 20px rgba(192,38,211,0.5)' }}
+        whileTap={{ scale: 0.9 }}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        aria-label="Hızlı İşlemler"
+      >
+        <Menu className="w-5 h-5 text-white" />
+      </motion.button>
+
+      {/* ═══ SLIDE-OUT DRAWER ═══ */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDrawerOpen(false)}
+            />
+            {/* Drawer */}
+            <motion.div
+              className="fixed top-0 right-0 h-full w-72 bg-[#0f0524]/95 backdrop-blur-xl border-l border-purple-500/20 z-50 overflow-y-auto"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-bold text-white">Hızlı İşlemler</h2>
+                  <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { href: '/oyunlar', icon: Gamepad2, label: 'Oyunlar', gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/20' },
+                    { href: '/davet', icon: UserPlus, label: 'Davet Et', gradient: 'from-blue-500 to-indigo-600', glow: 'shadow-blue-500/20' },
+                    { href: '/hediyeler', icon: Gift, label: 'Hediye', gradient: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/20' },
+                    { href: '/bana-ozel', icon: Zap, label: 'Bana Özel', gradient: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/20' },
+                    { href: '/uyelik', icon: Crown, label: 'Premium', gradient: 'from-yellow-400 to-amber-500', glow: 'shadow-amber-500/20' },
+                    { href: '/unluler', icon: Star, label: 'Ünlüler', gradient: 'from-violet-500 to-purple-600', glow: 'shadow-violet-500/20' },
+                    { href: '/trendler', icon: TrendingUp, label: 'Trendler', gradient: 'from-orange-500 to-red-600', glow: 'shadow-orange-500/20' },
+                    { href: '/unluler', icon: Users, label: 'FanClub', gradient: 'from-rose-500 to-pink-600', glow: 'shadow-rose-500/20' },
+                  ].map((item) => (
+                    <Link
+                      key={item.href + item.label}
+                      href={item.href}
+                      onClick={() => setDrawerOpen(false)}
+                      className="canlidark-glass rounded-2xl p-3 flex flex-col items-center gap-2 border border-purple-500/20 hover:border-purple-400/40 transition-colors"
+                    >
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg ${item.glow}`}>
+                        <item.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-[10px] text-white font-semibold text-center leading-tight">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ═══ BOTTOM NAV ═══ */}
       <nav className="canlidark-bottom-nav">

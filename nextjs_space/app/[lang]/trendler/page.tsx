@@ -29,11 +29,11 @@ interface Trend {
 const CATEGORIES = [
   { value: 'hepsi', label: 'Hepsi', icon: '🔥' },
   { value: 'burc', label: 'Burçlar', icon: '♈' },
-  { value: 'fal', label: 'Fallar', icon: '🔮' },
   { value: 'unlu', label: 'Ünlüler', icon: '⭐' },
   { value: 'genel', label: 'Genel', icon: '📢' },
   { value: 'oyun', label: 'Oyunlar', icon: '🎮' },
   { value: 'etkinlik', label: 'Etkinlikler', icon: '🎉' },
+  { value: 'fal', label: 'Fallar', icon: '🔮' },
 ]
 
 function getCategoryColor(cat: string) {

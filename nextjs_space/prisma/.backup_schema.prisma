@@ -118,6 +118,9 @@ model User {
   fanClubMemberships    FanClubMember[]
   fanClubPosts          FanClubPost[]
   fanClubPostLikes      FanClubPostLike[]
+  // Celebrity posts
+  celebrityPostLikes    CelebrityPostLike[]
+  celebrityPostComments CelebrityPostComment[]
   // Bot system
   isBot                 Boolean              @default(false)
   botProfile            BotProfile?
@@ -2585,6 +2588,7 @@ model Celebrity {
   updatedAt       DateTime          @updatedAt
   followers       CelebrityFollow[]
   fanClub         FanClub?
+  posts           CelebrityPost[]
 
   @@index([category])
   @@index([isActive])
@@ -2704,4 +2708,61 @@ model TrendingTopic {
   @@index([isActive, trendScore])
   @@index([isPinned])
   @@map("trending_topics")
+}
+
+
+// Celebrity social media posts (admin-managed)
+model CelebrityPost {
+  id            String                 @id @default(cuid())
+  celebrityId   String
+  celebrity     Celebrity              @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
+  platform      String                 // instagram, x, youtube, tiktok
+  postType      String                 @default("photo") // photo, video, reel, story, tweet, short
+  content       String?                @db.Text
+  mediaUrl      String?                // Image or video thumbnail URL
+  externalUrl   String?                // Link to original post
+  likeCount     Int                    @default(0)
+  commentCount  Int                    @default(0)
+  isActive      Boolean                @default(true)
+  isPinned      Boolean                @default(false)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  likes         CelebrityPostLike[]
+  comments      CelebrityPostComment[]
+
+  @@index([celebrityId, createdAt])
+  @@index([platform])
+  @@index([isActive])
+  @@index([isPinned])
+  @@map("celebrity_posts")
+}
+
+// Like on celebrity post
+model CelebrityPostLike {
+  id        String        @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime      @default(now())
+  post      CelebrityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("celebrity_post_likes")
+}
+
+// Comment on celebrity post
+model CelebrityPostComment {
+  id        String        @id @default(cuid())
+  postId    String
+  userId    String
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+  post      CelebrityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@map("celebrity_post_comments")
 }
