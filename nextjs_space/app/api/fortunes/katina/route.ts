@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const systemPrompt = `Sen deneyimli bir Katina falcısısın. Kullanıcının sorusu: "${question}". 32 Katina kartından rastgele 5 kart seç ve her kartın anlamını açıkla. Kartların kombinasyonunu yorumla ve kullanıcının sorusuna mistik bir cevap ver. Cevabın 300-400 kelime arasında, gizemli ve aydınlatıcı olmalı. Her kart için ismini ve anlamını belirt. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen deneyimli bir Katina falcısın. Kullanıcının sorusu: "${question}". 32 Katina kartından rastgele 5 kart seç ve her kartın anlamını açıkla. Kartların kombinasyonunu yorumla ve kullanıcının sorusuna mistik bir cevap ver. Cevabın 300-400 kelime arasında, gizemli ve aydınlatıcı olmalı. Her kart için ismini ve anlamını belirt. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

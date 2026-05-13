@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const palmImageUrl = await getFileUrl(palmImagePath, false)
     const handText = hand === 'left' ? ('sol el') : ('sağ el')
 
-    const systemPrompt = `Sen deneyimli bir el falcısısın (palmist). Kullanıcının ${handText} görselini analiz et. Yaşam çizgisi, kalp çizgisi, kader çizgisi, akıl çizgisi ve diğer önemli çizgileri yorumla. Kişilik, aşk hayatı, kariyer, sağlık ve gelecek hakkında detaylı bilgi ver. Cevabın 350-450 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
+    const systemPrompt = `Sen deneyimli bir el falcısın (palmist). Kullanıcının ${handText} görselini analiz et. Yaşam çizgisi, kalp çizgisi, kader çizgisi, akıl çizgisi ve diğer önemli çizgileri yorumla. Kişilik, aşk hayatı, kariyer, sağlık ve gelecek hakkında detaylı bilgi ver. Cevabın 350-450 kelime arasında, mistik ve aydınlatıcı olmalı. Tamamen Türkçe cevap ver.`
 
     const messages = [
       { role: 'system', content: systemPrompt },

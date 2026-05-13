@@ -254,7 +254,7 @@ export default function AdminSettingsPage() {
     },
     {
       key: 'welcome_credits',
-      label: 'Hoşgeldin CFC',
+      label: 'Hoş Geldin CFC',
       description: 'Yeni üyelere verilecek başlangıç CFC',
       icon: CreditCard,
       min: 0,

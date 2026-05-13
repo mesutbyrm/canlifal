@@ -617,7 +617,7 @@ function OverviewSection({ data, formatNumber, formatCurrency, onAdjustProfit, d
   }
   const incomeLabels: Record<string, string> = {
     purchase: 'Satın Alma', daily_bonus: 'Günlük Bonus', streak_bonus: 'Seri Bonusu',
-    task: 'Görev Bonusu', welcome: 'Hoşgeldin', referral: 'Referans', gift_received: 'Hediye Alındı',
+    task: 'Görev Bonusu', welcome: 'Hoş Geldin', referral: 'Referans', gift_received: 'Hediye Alındı',
     admin: 'Admin Ekleme', admin_add: 'Admin Ekleme', refund: 'İade',
     bonus: 'Bonus', reward: 'Ödül', promo: 'Promosyon', signup_bonus: 'Kayıt Bonusu',
     earning: 'Kazanç', commission: 'Komisyon',

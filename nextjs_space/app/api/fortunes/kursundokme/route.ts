@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       ? shapes 
       : shapeTypes.sort(() => Math.random() - 0.5).slice(0, 4 + Math.floor(Math.random() * 3)).join(', ')
 
-    const systemPrompt = `Sen deneyimli bir kurşun dökme falcısısın. Geleneksel Türk kurşun dökme ritüelini çok iyi biliyorsun.
+    const systemPrompt = `Sen deneyimli bir kurşun dökme falcısın. Geleneksel Türk kurşun dökme ritüelini çok iyi biliyorsun.
 
 Kurşun dökme falı, erimiş kurşunun soğuk suya dökülerek oluşan şekillerin yorumlanmasıyla yapılır. Bu şekiller kişinin geleceği, kaderi ve hayatındaki önemli olaylar hakkında mesajlar taşır.
 

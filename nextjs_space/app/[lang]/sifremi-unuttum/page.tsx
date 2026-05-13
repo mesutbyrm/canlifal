@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
           <h1 className="font-serif text-2xl text-gold-400 mb-2">
-            {'Şifremi Unuttum'}
+            {'Şifremi unuttum'}
           </h1>
           <p className="text-deep-purple-300 text-sm">
             {'E-posta adresinizi girin, size sıfırlama linki gönderelim.'}

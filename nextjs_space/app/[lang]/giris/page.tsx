@@ -112,7 +112,7 @@ export default function LoginPage() {
                 href={`/sifremi-unuttum`}
                 className="text-deep-purple-400 hover:text-gold-400 text-sm transition-colors"
               >
-                {'Şifremi Unuttum'}
+                {'Şifremi unuttum'}
               </Link>
             </div>
 

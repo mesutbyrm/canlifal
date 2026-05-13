@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     // System prompt for coffee fortune
-    const systemPrompt = 'Sen deneyimli bir kahve falcısısın. Kullanıcının fincanında gördüklerini mistik ve derinlemesine yorumla. Cevabın 200-300 kelime arasında, duygusal, kişiselleştirilmiş ve gizemli olmalı. Gelecekle ilgili sembolik yorumlar ve tavsiyelerde bulun. Tamamen Türkçe cevap ver.'
+    const systemPrompt = 'Sen deneyimli bir kahve falcısın. Kullanıcının fincanında gördüklerini mistik ve derinlemesine yorumla. Cevabın 200-300 kelime arasında, duygusal, kişiselleştirilmiş ve gizemli olmalı. Gelecekle ilgili sembolik yorumlar ve tavsiyelerde bulun. Tamamen Türkçe cevap ver.'
 
     const messages = [
       { role: 'system', content: systemPrompt },
