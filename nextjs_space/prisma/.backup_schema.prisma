@@ -112,6 +112,8 @@ model User {
   // Agency system
   agencyMembership      AgencyUser?
   agencyLeaveRequests   AgencyLeaveRequest[]
+  // Celebrity follows
+  celebrityFollows      CelebrityFollow[]
   // Bot system
   isBot                 Boolean              @default(false)
   botProfile            BotProfile?
@@ -2557,3 +2559,46 @@ model FavoriteTeller {
   @@map("favorite_tellers")
 }
 
+
+// Celebrity profiles for famous people
+model Celebrity {
+  id              String            @id @default(cuid())
+  name            String
+  slug            String            @unique
+  category        String            // oyuncu, sarkici, futbolcu, youtuber, influencer, yonetmen, diger
+  bio             String?           @db.Text
+  profileImage    String?
+  coverImage      String?
+  isVerified      Boolean           @default(true)
+  isActive        Boolean           @default(true)
+  followerCount   Int               @default(0)
+  birthDate       DateTime?
+  birthPlace      String?
+  zodiacSign      String?
+  socialLinks     String?           @db.Text // JSON: {instagram, twitter, youtube, tiktok, website}
+  achievements    String?           @db.Text // JSON array of notable achievements
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  followers       CelebrityFollow[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([followerCount])
+  @@index([slug])
+  @@map("celebrities")
+}
+
+// User follows on celebrities
+model CelebrityFollow {
+  id          String   @id @default(cuid())
+  userId      String
+  celebrityId String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  celebrity   Celebrity @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, celebrityId])
+  @@index([userId])
+  @@index([celebrityId])
+  @@map("celebrity_follows")
+}

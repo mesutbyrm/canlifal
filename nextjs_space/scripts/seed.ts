@@ -1127,6 +1127,164 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Stream & announcement settings seeded!')
 
+  // ========== CELEBRITIES ==========
+  const celebrities = [
+    {
+      name: 'Kemal Sunal',
+      slug: 'kemal-sunal',
+      category: 'oyuncu',
+      bio: 'Türk sinemasının efsane komedyeni. Hababam Sınıfı, Şaban serisi ve sayısız unutulmaz filmle Türk halkının gönlünde taht kurmuştur.',
+      zodiacSign: 'Kasım - Akrep',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1944-11-11'),
+      isVerified: true,
+      followerCount: 15000,
+      socialLinks: JSON.stringify({}),
+      achievements: JSON.stringify(['Altın Portakal Ödülü', 'En İyi Erkek Oyuncu', '80+ Film']),
+    },
+    {
+      name: 'Tarkan',
+      slug: 'tarkan',
+      category: 'sarkici',
+      bio: 'Megastar Tarkan, Türk pop müziğinin en büyük isimlerinden biri. Şımarık, Dudu, Kuzu Kuzu gibi hit şarkılarıyla dünya çapında tanınmaktadır.',
+      zodiacSign: 'Ekim - Terazi',
+      birthPlace: 'Alzey, Almanya',
+      birthDate: new Date('1972-10-17'),
+      isVerified: true,
+      followerCount: 25000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/taraborhani', youtube: 'https://youtube.com/tarkan' }),
+      achievements: JSON.stringify(['World Music Award', 'Altın Kelebek', 'Megastar Unvanı']),
+    },
+    {
+      name: 'Hande Erçel',
+      slug: 'hande-ercel',
+      category: 'oyuncu',
+      bio: 'Türk televizyon dizilerinin başarılı oyuncusu. Sen Çal Kapımı dizisiyle uluslararası üne kavuşmuştur.',
+      zodiacSign: 'Kasım - Akrep',
+      birthPlace: 'Bandırma',
+      birthDate: new Date('1993-11-24'),
+      isVerified: true,
+      followerCount: 30000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/handemiyy' }),
+      achievements: JSON.stringify(['En İyi Dizi Oyuncusu', '75M+ Instagram Takipçi']),
+    },
+    {
+      name: 'Arda Güler',
+      slug: 'arda-guler',
+      category: 'futbolcu',
+      bio: 'Real Madrid\'in genç yıldızı. Fenerbahçe altyapısından yetişen Arda Güler, La Liga\'da forma giyen en genç Türk futbolcu olarak tarihe geçmiştir.',
+      zodiacSign: 'Şubat - Balık',
+      birthPlace: 'Altındağ, Ankara',
+      birthDate: new Date('2005-02-25'),
+      isVerified: true,
+      followerCount: 20000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/ardaguler' }),
+      achievements: JSON.stringify(['Real Madrid Transferi', 'A Milli Takım', 'La Liga Gol Kralı Adayı']),
+    },
+    {
+      name: 'Enes Batur',
+      slug: 'enes-batur',
+      category: 'youtuber',
+      bio: 'Türkiye\'nin en çok abone olunan YouTuber\'ı. Eğlence, challenge ve vlog içerikleriyle milyonlarca takipçiye ulaşmıştır.',
+      zodiacSign: 'Haziran - İkizler',
+      birthPlace: 'Karabük',
+      birthDate: new Date('1998-06-29'),
+      isVerified: true,
+      followerCount: 18000,
+      socialLinks: JSON.stringify({ youtube: 'https://youtube.com/enesbatur', instagram: 'https://instagram.com/enesbatur' }),
+      achievements: JSON.stringify(['Türkiye #1 YouTuber', '30M+ Abone', 'Sinema Filmi']),
+    },
+    {
+      name: 'Danla Bilic',
+      slug: 'danla-bilic',
+      category: 'influencer',
+      bio: 'Türkiye\'nin en tanınan influencer\'larından biri. Güzellik, makyaj ve yaşam tarzı içerikleriyle milyonlarca kişiye ilham vermektedir.',
+      zodiacSign: 'Mart - Balık',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1994-03-01'),
+      isVerified: true,
+      followerCount: 12000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/danlabilic', youtube: 'https://youtube.com/danlabilic' }),
+      achievements: JSON.stringify(['Influencer of the Year', '10M+ Takipçi']),
+    },
+    {
+      name: 'Nuri Bilge Ceylan',
+      slug: 'nuri-bilge-ceylan',
+      category: 'yonetmen',
+      bio: 'Cannes Film Festivali Altın Palmiye ödüllü Türk yönetmen. Kış Uykusu, Bir Zamanlar Anadolu\'da gibi başyapıtlarıyla dünya sinemasında Türkiye\'yi temsil etmektedir.',
+      zodiacSign: 'Ocak - Oğlak',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1959-01-26'),
+      isVerified: true,
+      followerCount: 8000,
+      socialLinks: JSON.stringify({}),
+      achievements: JSON.stringify(['Cannes Altın Palmiye', 'Grand Prix', 'En İyi Yönetmen']),
+    },
+    {
+      name: 'Burak Özçivit',
+      slug: 'burak-ozcivit',
+      category: 'oyuncu',
+      bio: 'Kuruluş Osman dizisinin başrol oyuncusu. Türk dizilerinin dünya çapında tanınmasında önemli rol oynayan başarılı bir oyuncudur.',
+      zodiacSign: 'Aralık - Yay',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1984-12-24'),
+      isVerified: true,
+      followerCount: 22000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/baborzcivit' }),
+      achievements: JSON.stringify(['Altın Kelebek', 'Uluslararası Tanınırlık', '40M+ Instagram']),
+    },
+    {
+      name: 'Ebru Gündeş',
+      slug: 'ebru-gundes',
+      category: 'sarkici',
+      bio: 'Türk pop müziğinin divalarından biri. Onlarca hit şarkı ve albümle müzik kariyerine devam etmektedir.',
+      zodiacSign: 'Ekim - Terazi',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1974-10-12'),
+      isVerified: true,
+      followerCount: 10000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/ebrugundes' }),
+      achievements: JSON.stringify(['Altın Kelebek', 'Platin Albüm', '30+ Yıllık Kariyer']),
+    },
+    {
+      name: 'Çağatay Ulusoy',
+      slug: 'cagatay-ulusoy',
+      category: 'oyuncu',
+      bio: 'Türk televizyon ve sinemasının yıldız isimlerinden biri. Hakan: Muhafız (The Protector) dizisiyle Netflix\'te uluslararası üne kavuşmuştur.',
+      zodiacSign: 'Eylül - Başak',
+      birthPlace: 'İstanbul',
+      birthDate: new Date('1990-09-23'),
+      isVerified: true,
+      followerCount: 16000,
+      socialLinks: JSON.stringify({ instagram: 'https://instagram.com/cagatayulusoy' }),
+      achievements: JSON.stringify(['Netflix Orijinal Dizi', 'Best Model of Turkey', 'Altın Kelebek']),
+    },
+  ]
+
+  for (const celeb of celebrities) {
+    await prisma.celebrity.upsert({
+      where: { slug: celeb.slug },
+      update: {},
+      create: celeb,
+    })
+  }
+  console.log('Celebrities seeded!')
+
+  // Add Ünlüler homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'unluler' },
+    update: {},
+    create: {
+      key: 'unluler',
+      label: 'Ünlüler',
+      icon: '⭐',
+      href: '/unluler',
+      isVisible: true,
+      sortOrder: 12,
+    },
+  })
+  console.log('Ünlüler homepage button seeded!')
+
   console.log('Seed completed successfully!')
 }
 

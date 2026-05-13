@@ -159,6 +159,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/site-pages`, icon: FileText, trLabel: 'Sayfa Yönetimi', enLabel: 'Page Management', emoji: '📄', desc: 'Statik sayfaları düzenle' },
       { href: `/admin/bana-ozel`, icon: Sparkles, trLabel: 'Bana Özel Yönetimi', enLabel: 'Personalized Content', emoji: '✨', desc: 'Kişiselleştirilmiş içerik' },
       { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page', emoji: '🔮', desc: 'Online fal ayarları' },
+      { href: `/admin/unluler`, icon: Star, trLabel: 'Ünlü Yönetimi', enLabel: 'Celebrity Management', emoji: '⭐', desc: 'Ünlü profilleri yönet' },
     ],
   },
   {
