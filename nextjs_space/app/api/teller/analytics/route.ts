@@ -100,19 +100,19 @@ export async function GET() {
     const tips: string[] = []
     if (bestHours.length > 0 && bestHours[0].count > 0) {
       const topHour = bestHours[0].hour
-      tips.push(`En yo\u011fun saatiniz: ${topHour}:00-${topHour + 1}:00. Bu saatlerde online olman\u0131z \u00f6nerilir.`)
+      tips.push(`En yoğun saatiniz: ${topHour}:00-${topHour + 1}:00. Bu saatlerde online olmanız önerilir.`)
     }
     if (earningsChange < 0) {
-      tips.push('Ge\u00e7en haftaya g\u00f6re kazan\u00e7lar\u0131n\u0131z d\u00fc\u015ft\u00fc. Daha fazla online kal\u0131n.')
+      tips.push('Geçen haftaya göre kazançlarınız düştü. Daha fazla online kalın.')
     }
     if (avgDuration < 5 && sessionsWithDuration.length > 3) {
-      tips.push('Ortalama seans s\u00fcreniz k\u0131sa. Daha uzun seanslar daha fazla kazan\u00e7 sa\u011flar.')
+      tips.push('Ortalama seans süreniz kısa. Daha uzun seanslar daha fazla kazanç sağlar.')
     }
     if (teller.totalReviews < 5) {
-      tips.push('Daha fazla yorum almak i\u00e7in kullan\u0131c\u0131lardan yorum istemelerine te\u015fvik edin.')
+      tips.push('Daha fazla yorum almak için kullanıcılardan yorum istemelerine teşvik edin.')
     }
     if (avgRecentRating < 4.0 && recentReviews.length >= 3) {
-      tips.push('Son d\u00f6nem puan\u0131n\u0131z d\u00fc\u015fme e\u011filiminde. Hizmet kalitenizi art\u0131rmay\u0131 d\u00fc\u015f\u00fcn\u00fcn.')
+      tips.push('Son dönem puanınız düşme eğiliminde. Hizmet kalitenizi artırmayı düşünün.')
     }
     if (tips.length === 0) {
       tips.push('Harika gidiyorsunuz! Aktif kalmaya devam edin. \u2728')
@@ -135,6 +135,6 @@ export async function GET() {
     })
   } catch (error: any) {
     console.error('[TellerAnalytics] Error:', error)
-    return NextResponse.json({ error: 'Analitikler al\u0131namad\u0131' }, { status: 500 })
+    return NextResponse.json({ error: 'Analitikler alınamadı' }, { status: 500 })
   }
 }

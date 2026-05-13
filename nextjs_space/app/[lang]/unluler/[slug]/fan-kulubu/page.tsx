@@ -59,10 +59,10 @@ function timeAgo(dateStr: string): string {
   const now = Date.now()
   const then = new Date(dateStr).getTime()
   const diff = Math.floor((now - then) / 1000)
-  if (diff < 60) return 'az \u00f6nce'
+  if (diff < 60) return 'az önce'
   if (diff < 3600) return `${Math.floor(diff / 60)} dk`
   if (diff < 86400) return `${Math.floor(diff / 3600)} sa`
-  if (diff < 604800) return `${Math.floor(diff / 86400)} g\u00fcn`
+  if (diff < 604800) return `${Math.floor(diff / 86400)} gün`
   return new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
 }
 
@@ -187,7 +187,7 @@ export default function FanClubPage() {
   }
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('Bu g\u00f6nderiyi silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu gönderiyi silmek istediğinize emin misiniz?')) return
     try {
       await fetch(`/api/celebrities/${slug}/fan-club/posts?postId=${postId}`, { method: 'DELETE' })
       setPosts(prev => prev.filter(p => p.id !== postId))
@@ -209,7 +209,7 @@ export default function FanClubPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a] flex items-center justify-center">
         <div className="text-center">
           <Users className="w-16 h-16 text-purple-500/30 mx-auto mb-4" />
-          <p className="text-purple-300/50 text-lg">Fan kul\u00fcb\u00fc bulunamad\u0131</p>
+          <p className="text-purple-300/50 text-lg">Fan kulübü bulunamadı</p>
         </div>
       </div>
     )
@@ -263,8 +263,8 @@ export default function FanClubPage() {
               </div>
               <div className="flex items-center gap-1 text-fuchsia-400 text-sm">
                 <Crown className="w-4 h-4" />
-                <span className="font-medium">Fan Kul\u00fcb\u00fc</span>
-                <span className="text-purple-400/50 ml-2">\u2022 {fanClub.memberCount} \u00fcye</span>
+                <span className="font-medium">Fan Kulübü</span>
+                <span className="text-purple-400/50 ml-2">• {fanClub.memberCount} üye</span>
               </div>
             </div>
             {/* Join/Leave button */}
@@ -280,9 +280,9 @@ export default function FanClubPage() {
               {joining ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : fanClub.isMember ? (
-                <><UserMinus className="w-4 h-4" /> Ayr\u0131l</>
+                <><UserMinus className="w-4 h-4" /> Ayrıl</>
               ) : (
-                <><UserPlus className="w-4 h-4" /> Kat\u0131l</>
+                <><UserPlus className="w-4 h-4" /> Katıl</>
               )}
             </button>
           </motion.div>
@@ -301,7 +301,7 @@ export default function FanClubPage() {
         <div className="flex border-b border-purple-500/10">
           {[
             { key: 'wall' as const, label: 'Duvar', icon: MessageCircle },
-            { key: 'members' as const, label: '\u00dcyeler', icon: Users },
+            { key: 'members' as const, label: 'Üyeler', icon: Users },
             { key: 'rules' as const, label: 'Kurallar', icon: Shield },
           ].map(t => (
             <button
@@ -345,7 +345,7 @@ export default function FanClubPage() {
                     <textarea
                       value={newPost}
                       onChange={e => setNewPost(e.target.value)}
-                      placeholder="Fan duvar\u0131na bir \u015fey yaz..."
+                      placeholder="Fan duvarına bir şey yaz..."
                       rows={2}
                       className="w-full bg-transparent text-white placeholder-purple-400/40 text-sm resize-none focus:outline-none"
                     />
@@ -356,7 +356,7 @@ export default function FanClubPage() {
                         className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-fuchsia-600 text-white text-sm font-medium hover:bg-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                        Payla\u015f
+                        Paylaş
                       </button>
                     </div>
                   </div>
@@ -367,7 +367,7 @@ export default function FanClubPage() {
             {!fanClub.isMember && (
               <div className="mb-6 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm text-center">
                 <Sparkles className="w-5 h-5 inline mr-2" />
-                G\u00f6nderi payla\u015fmak i\u00e7in fan kul\u00fcb\u00fcne kat\u0131l\u0131n
+                Gönderi paylaşmak için fan kulübüne katılın
               </div>
             )}
 
@@ -379,7 +379,7 @@ export default function FanClubPage() {
             ) : posts.length === 0 ? (
               <div className="text-center py-10">
                 <MessageCircle className="w-12 h-12 text-purple-500/20 mx-auto mb-3" />
-                <p className="text-purple-300/40 text-sm">Hen\u00fcz g\u00f6nderi yok</p>
+                <p className="text-purple-300/40 text-sm">Henüz gönderi yok</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -397,7 +397,7 @@ export default function FanClubPage() {
                   >
                     {post.isPinned && (
                       <div className="flex items-center gap-1 text-fuchsia-400 text-xs mb-2">
-                        <Pin className="w-3 h-3" /> Sabitlenmi\u015f
+                        <Pin className="w-3 h-3" /> Sabitlenmiş
                       </div>
                     )}
                     <div className="flex gap-3">
@@ -462,7 +462,7 @@ export default function FanClubPage() {
                     className="w-full py-3 text-sm text-fuchsia-400 hover:text-fuchsia-300 transition-colors flex items-center justify-center gap-2"
                   >
                     {loadingPosts ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
-                    Daha fazla g\u00f6ster
+                    Daha fazla göster
                   </button>
                 )}
               </div>
@@ -476,7 +476,7 @@ export default function FanClubPage() {
             {members.length === 0 ? (
               <div className="text-center py-10">
                 <Users className="w-12 h-12 text-purple-500/20 mx-auto mb-3" />
-                <p className="text-purple-300/40 text-sm">Hen\u00fcz \u00fcye yok</p>
+                <p className="text-purple-300/40 text-sm">Henüz üye yok</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -524,7 +524,7 @@ export default function FanClubPage() {
             {fanClub.rules.length === 0 ? (
               <div className="text-center py-10">
                 <Shield className="w-12 h-12 text-purple-500/20 mx-auto mb-3" />
-                <p className="text-purple-300/40 text-sm">Hen\u00fcz kural belirlenmemi\u015f</p>
+                <p className="text-purple-300/40 text-sm">Henüz kural belirlenmemiş</p>
               </div>
             ) : (
               <div className="space-y-3">

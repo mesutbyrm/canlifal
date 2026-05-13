@@ -89,10 +89,10 @@ export default function TellerAnalyticsPage() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Seans', value: summary.totalSessions30d, icon: '\ud83d\udcca', sub: '30 g\u00fcn' },
-          { label: 'Kazan\u00e7', value: `${summary.totalEarnings30d} J`, icon: '\ud83d\udcb0', sub: '30 g\u00fcn' },
-          { label: 'Ort. S\u00fcre', value: `${summary.avgDuration} dk`, icon: '\u23f1\ufe0f', sub: 'seans ba\u015f\u0131' },
-          { label: 'Puan', value: summary.avgRating.toFixed(1), icon: '\u2b50', sub: 'son d\u00f6nem' },
+          { label: 'Seans', value: summary.totalSessions30d, icon: '\ud83d\udcca', sub: '30 gün' },
+          { label: 'Kazanç', value: `${summary.totalEarnings30d} J`, icon: '\ud83d\udcb0', sub: '30 gün' },
+          { label: 'Ort. Süre', value: `${summary.avgDuration} dk`, icon: '\u23f1\ufe0f', sub: 'seans başı' },
+          { label: 'Puan', value: summary.avgRating.toFixed(1), icon: '\u2b50', sub: 'son dönem' },
         ].map((s, i) => (
           <div key={i} className={`${cardBg} rounded-xl p-3 text-center`}>
             <div className="text-xl mb-1">{s.icon}</div>
@@ -104,7 +104,7 @@ export default function TellerAnalyticsPage() {
 
       {/* Weekly Comparison */}
       <div className={`${cardBg} rounded-xl p-4 mb-4`}>
-        <h3 className={`font-bold ${textPrimary} text-sm mb-3`}>Bu Hafta vs Ge\u00e7en Hafta</h3>
+        <h3 className={`font-bold ${textPrimary} text-sm mb-3`}>Bu Hafta vs Geçen Hafta</h3>
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <div className={`text-2xl font-bold ${textPrimary}`}>{summary.thisWeekEarnings} J</div>
@@ -123,7 +123,7 @@ export default function TellerAnalyticsPage() {
       <div className={`${cardBg} rounded-xl p-4 mb-4`}>
         <h3 className={`font-bold ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
           <BarChart3 className={`w-4 h-4 ${accentColor}`} />
-          Son 7 G\u00fcn Seans
+          Son 7 Gün Seans
         </h3>
         <div className="flex items-end gap-1" style={{ height: '100px' }}>
           {dailySessions.map((d, i) => {
@@ -208,7 +208,7 @@ export default function TellerAnalyticsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs ${textPrimary} ${!r.comment ? 'italic opacity-50' : ''}`}>
-                    {r.comment || 'Yorum yaz\u0131lmam\u0131\u015f'}
+                    {r.comment || 'Yorum yazılmamış'}
                   </p>
                   <p className={`text-[9px] ${textSecondary}`}>{new Date(r.createdAt).toLocaleDateString('tr-TR')}</p>
                 </div>

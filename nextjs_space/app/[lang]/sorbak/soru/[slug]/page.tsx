@@ -313,10 +313,10 @@ export default function QuestionDetailPage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                 <h3 className="text-sm font-bold text-white mb-2">\ud83d\udee1\ufe0f Topluluk Kuralları</h3>
                 <ul className="space-y-1.5 text-[11px] text-white/40">
-                  <li>\u2022 Saygılı ve yapıcı olun</li>
-                  <li>\u2022 Kişisel bilgi paylaşmayın</li>
-                  <li>\u2022 Spam ve reklam yasaktır</li>
-                  <li>\u2022 Nefret söylemi yasaktır</li>
+                  <li>• Saygılı ve yapıcı olun</li>
+                  <li>• Kişisel bilgi paylaşmayın</li>
+                  <li>• Spam ve reklam yasaktır</li>
+                  <li>• Nefret söylemi yasaktır</li>
                 </ul>
               </div>
             </div>

@@ -64,20 +64,20 @@ export default function DailyMissionsPage() {
       })
       const d = await res.json()
       if (res.ok) {
-        setClaimMsg(`+${d.creditsEarned} kredi kazan\u0131ld\u0131! \u2728`)
+        setClaimMsg(`+${d.creditsEarned} kredi kazanıldı! \u2728`)
         fetchMissions()
       } else {
-        setClaimMsg(d.error || 'Hata olu\u015ftu')
+        setClaimMsg(d.error || 'Hata oluştu')
       }
-    } catch { setClaimMsg('Hata olu\u015ftu') } finally { setClaiming(null) }
+    } catch { setClaimMsg('Hata oluştu') } finally { setClaiming(null) }
   }
 
   if (!session?.user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className={`${cardBg} rounded-2xl p-8 text-center max-w-md`}>
-          <p className={textSecondary}>G\u00f6revleri g\u00f6rmek i\u00e7in giri\u015f yap\u0131n</p>
-          <Link href="/giris" className={`mt-4 inline-block px-6 py-3 rounded-xl ${btnPrimary} font-medium`}>Giri\u015f Yap</Link>
+          <p className={textSecondary}>Görevleri görmek için giriş yapın</p>
+          <Link href="/giris" className={`mt-4 inline-block px-6 py-3 rounded-xl ${btnPrimary} font-medium`}>Giriş Yap</Link>
         </div>
       </div>
     )
@@ -95,9 +95,9 @@ export default function DailyMissionsPage() {
         </Link>
         <div className="flex-1">
           <h1 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
-            \ud83c\udfaf G\u00fcnl\u00fck G\u00f6revler
+            \ud83c\udfaf Günlük Görevler
           </h1>
-          <p className={`${textSecondary} text-xs`}>Her g\u00fcn g\u00f6revleri tamamla, \u00f6d\u00fcl kazan!</p>
+          <p className={`${textSecondary} text-xs`}>Her gün görevleri tamamla, ödül kazan!</p>
         </div>
       </div>
 
@@ -106,19 +106,19 @@ export default function DailyMissionsPage() {
         <div className={`${cardBg} rounded-xl p-4 text-center`}>
           <Flame className="w-6 h-6 text-orange-500 mx-auto mb-1" />
           <div className={`text-2xl font-bold ${textPrimary}`}>{streak.currentStreak}</div>
-          <div className={`text-[10px] ${textSecondary}`}>G\u00fcn Serisi</div>
+          <div className={`text-[10px] ${textSecondary}`}>Gün Serisi</div>
         </div>
         <div className={`${cardBg} rounded-xl p-4 text-center`}>
           <Star className="w-6 h-6 text-yellow-500 mx-auto mb-1" />
           <div className={`text-2xl font-bold ${textPrimary}`}>{totalReward}</div>
-          <div className={`text-[10px] ${textSecondary}`}>Bug\u00fcn Kazan\u0131lan</div>
+          <div className={`text-[10px] ${textSecondary}`}>Bugün Kazanılan</div>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className={`${cardBg} rounded-xl p-4 mb-6`}>
         <div className="flex items-center justify-between mb-2">
-          <span className={`text-sm font-medium ${textPrimary}`}>{completedCount}/{missions.length} G\u00f6rev</span>
+          <span className={`text-sm font-medium ${textPrimary}`}>{completedCount}/{missions.length} Görev</span>
           <span className={`text-xs ${accentColor}`}>{Math.round(progressPct)}%</span>
         </div>
         <div className="w-full h-3 rounded-full bg-black/20 overflow-hidden">
@@ -189,8 +189,8 @@ export default function DailyMissionsPage() {
               className={`${cardBg} rounded-xl p-4 text-center ring-2 ${isFacebook ? 'ring-blue-500' : isCosmic ? 'ring-blue-400' : 'ring-fuchsia-500'}`}
             >
               <Gift className={`w-8 h-8 ${accentColor} mx-auto mb-2`} />
-              <h3 className={`font-bold ${textPrimary} mb-1`}>T\u00fcm G\u00f6revler Tamamland\u0131! \ud83c\udf89</h3>
-              <p className={`text-xs ${textSecondary} mb-3`}>Ekstra 25 kredi bonus\u0131nu al</p>
+              <h3 className={`font-bold ${textPrimary} mb-1`}>Tüm Görevler Tamamlandı! \ud83c\udf89</h3>
+              <p className={`text-xs ${textSecondary} mb-3`}>Ekstra 25 kredi bonusınu al</p>
               <button
                 onClick={() => claimMission('all_complete_bonus')}
                 disabled={claiming === 'all_complete_bonus'}
@@ -203,8 +203,8 @@ export default function DailyMissionsPage() {
 
           {allBonusClaimed && (
             <div className={`${cardBg} rounded-xl p-4 text-center`}>
-              <p className={`text-sm ${accentColor} font-bold`}>\u2728 Bug\u00fcnk\u00fc t\u00fcm g\u00f6revler ve bonus tamamland\u0131!</p>
-              <p className={`text-xs ${textSecondary} mt-1`}>Yar\u0131n yeni g\u00f6revler seni bekliyor</p>
+              <p className={`text-sm ${accentColor} font-bold`}>\u2728 Bugünkü tüm görevler ve bonus tamamlandı!</p>
+              <p className={`text-xs ${textSecondary} mt-1`}>Yarın yeni görevler seni bekliyor</p>
             </div>
           )}
         </div>

@@ -32,17 +32,17 @@ interface Celebrity {
 
 const CATEGORIES = [
   { value: 'oyuncu', label: 'Oyuncu', icon: Film },
-  { value: 'sarkici', label: '\u015eark\u0131c\u0131', icon: Music },
+  { value: 'sarkici', label: 'Şarkıcı', icon: Music },
   { value: 'futbolcu', label: 'Futbolcu', icon: Trophy },
   { value: 'youtuber', label: 'YouTuber', icon: Youtube },
   { value: 'influencer', label: 'Influencer', icon: Instagram },
-  { value: 'yonetmen', label: 'Y\u00f6netmen', icon: Tv },
-  { value: 'diger', label: 'Di\u011fer', icon: Star },
+  { value: 'yonetmen', label: 'Yönetmen', icon: Tv },
+  { value: 'diger', label: 'Diğer', icon: Star },
 ]
 
 const ZODIAC_SIGNS = [
-  'Ko\u00e7', 'Bo\u011fa', '\u0130kizler', 'Yenge\u00e7', 'Aslan', 'Ba\u015fak',
-  'Terazi', 'Akrep', 'Yay', 'O\u011flak', 'Kova', 'Bal\u0131k'
+  'Koç', 'Boğa', 'İkizler', 'Yengeç', 'Aslan', 'Başak',
+  'Terazi', 'Akrep', 'Yay', 'Oğlak', 'Kova', 'Balık'
 ]
 
 const emptyForm = {
@@ -117,7 +117,7 @@ export default function AdminCelebritiesPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      showMessage('\u0130sim zorunludur', 'error')
+      showMessage('İsim zorunludur', 'error')
       return
     }
     setSaving(true)
@@ -142,15 +142,15 @@ export default function AdminCelebritiesPage() {
       if (editId) {
         body.id = editId
         await fetch('/api/admin/celebrities', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        showMessage('\u00dcnl\u00fc g\u00fcncellendi', 'success')
+        showMessage('Ünlü güncellendi', 'success')
       } else {
         await fetch('/api/admin/celebrities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        showMessage('\u00dcnl\u00fc eklendi', 'success')
+        showMessage('Ünlü eklendi', 'success')
       }
       setShowForm(false)
       fetchCelebrities()
     } catch (err) {
-      showMessage('Hata olu\u015ftu', 'error')
+      showMessage('Hata oluştu', 'error')
     } finally {
       setSaving(false)
     }
@@ -170,13 +170,13 @@ export default function AdminCelebritiesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu \u00fcnl\u00fcy\u00fc silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu ünlüyü silmek istediğinize emin misiniz?')) return
     try {
       await fetch(`/api/admin/celebrities?id=${id}`, { method: 'DELETE' })
-      showMessage('\u00dcnl\u00fc silindi', 'success')
+      showMessage('Ünlü silindi', 'success')
       fetchCelebrities()
     } catch (err) {
-      showMessage('Silme hatas\u0131', 'error')
+      showMessage('Silme hatası', 'error')
     }
   }
 
@@ -195,14 +195,14 @@ export default function AdminCelebritiesPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className={`text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
             <Star className="w-6 h-6 text-fuchsia-400" />
-            \u00dcnl\u00fc Y\u00f6netimi
+            Ünlü Yönetimi
           </h1>
           <button
             onClick={handleNew}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-fuchsia-600 text-white hover:bg-fuchsia-500 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Yeni \u00dcnl\u00fc
+            Yeni Ünlü
           </button>
         </div>
 
@@ -228,7 +228,7 @@ export default function AdminCelebritiesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400/50" />
             <input
               type="text"
-              placeholder="\u00dcnl\u00fc ara..."
+              placeholder="Ünlü ara..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className={`w-full pl-10 pr-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
@@ -239,7 +239,7 @@ export default function AdminCelebritiesPage() {
             onChange={e => setFilterCategory(e.target.value)}
             className={`px-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
           >
-            <option value="all">T\u00fcm Kategoriler</option>
+            <option value="all">Tüm Kategoriler</option>
             {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
@@ -263,7 +263,7 @@ export default function AdminCelebritiesPage() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h2 className={`text-lg font-semibold ${textPrimary}`}>
-                    {editId ? '\u00dcnl\u00fc D\u00fczenle' : 'Yeni \u00dcnl\u00fc Ekle'}
+                    {editId ? 'Ünlü Düzenle' : 'Yeni Ünlü Ekle'}
                   </h2>
                   <button onClick={() => setShowForm(false)} className={textSecondary}>
                     <X className="w-5 h-5" />
@@ -274,12 +274,12 @@ export default function AdminCelebritiesPage() {
                   {/* Name & Category */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>\u0130sim *</label>
+                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>İsim *</label>
                       <input
                         value={form.name}
                         onChange={e => setForm({ ...form, name: e.target.value })}
                         className={`w-full px-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
-                        placeholder="\u00dcnl\u00fcn\u00fcn ad\u0131"
+                        placeholder="Ünlünün adı"
                       />
                     </div>
                     <div>
@@ -302,7 +302,7 @@ export default function AdminCelebritiesPage() {
                       onChange={e => setForm({ ...form, bio: e.target.value })}
                       rows={3}
                       className={`w-full px-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
-                      placeholder="\u00dcnl\u00fc hakk\u0131nda bilgi..."
+                      placeholder="Ünlü hakkında bilgi..."
                     />
                   </div>
 
@@ -331,7 +331,7 @@ export default function AdminCelebritiesPage() {
                   {/* Birth info */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Do\u011fum Tarihi</label>
+                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Doğum Tarihi</label>
                       <input
                         type="date"
                         value={form.birthDate}
@@ -340,22 +340,22 @@ export default function AdminCelebritiesPage() {
                       />
                     </div>
                     <div>
-                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Do\u011fum Yeri</label>
+                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Doğum Yeri</label>
                       <input
                         value={form.birthPlace}
                         onChange={e => setForm({ ...form, birthPlace: e.target.value })}
                         className={`w-full px-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
-                        placeholder="\u0130stanbul"
+                        placeholder="İstanbul"
                       />
                     </div>
                     <div>
-                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Bur\u00e7</label>
+                      <label className={`text-sm font-medium ${textSecondary} mb-1 block`}>Burç</label>
                       <select
                         value={form.zodiacSign}
                         onChange={e => setForm({ ...form, zodiacSign: e.target.value })}
                         className={`w-full px-4 py-2 rounded-xl border ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
                       >
-                        <option value="">Se\u00e7iniz</option>
+                        <option value="">Seçiniz</option>
                         {ZODIAC_SIGNS.map(z => <option key={z} value={z}>{z}</option>)}
                       </select>
                     </div>
@@ -381,7 +381,7 @@ export default function AdminCelebritiesPage() {
 
                   {/* Achievements */}
                   <div>
-                    <label className={`text-sm font-medium ${textSecondary} mb-2 block`}>Ba\u015far\u0131lar</label>
+                    <label className={`text-sm font-medium ${textSecondary} mb-2 block`}>Başarılar</label>
                     {form.achievements.map((ach: string, i: number) => (
                       <div key={i} className="flex gap-2 mb-2">
                         <input
@@ -392,7 +392,7 @@ export default function AdminCelebritiesPage() {
                             setForm({ ...form, achievements: newAch })
                           }}
                           className={`flex-1 px-3 py-1.5 rounded-lg border text-sm ${inputCls} focus:outline-none focus:border-fuchsia-500/50`}
-                          placeholder="\u00d6rn: Alt\u0131n K\u00fcre \u00d6d\u00fcl\u00fc"
+                          placeholder="Örn: Altın Küre Ödülü"
                         />
                         {form.achievements.length > 1 && (
                           <button
@@ -408,7 +408,7 @@ export default function AdminCelebritiesPage() {
                       onClick={() => setForm({ ...form, achievements: [...form.achievements, ''] })}
                       className="text-fuchsia-400 hover:text-fuchsia-300 text-sm flex items-center gap-1"
                     >
-                      <Plus className="w-3 h-3" /> Ba\u015far\u0131 Ekle
+                      <Plus className="w-3 h-3" /> Başarı Ekle
                     </button>
                   </div>
 
@@ -420,13 +420,13 @@ export default function AdminCelebritiesPage() {
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-fuchsia-600 text-white hover:bg-fuchsia-500 disabled:opacity-50 transition-colors"
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      {editId ? 'G\u00fcncelle' : 'Kaydet'}
+                      {editId ? 'Güncelle' : 'Kaydet'}
                     </button>
                     <button
                       onClick={() => setShowForm(false)}
                       className={`px-4 py-2.5 rounded-xl border ${bgCard} ${textSecondary} hover:opacity-80 transition-colors`}
                     >
-                      \u0130ptal
+                      İptal
                     </button>
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export default function AdminCelebritiesPage() {
         ) : celebrities.length === 0 ? (
           <div className="text-center py-20">
             <Users className="w-16 h-16 text-purple-500/30 mx-auto mb-4" />
-            <p className={`${textSecondary} text-lg`}>Hen\u00fcz \u00fcnl\u00fc eklenmemi\u015f</p>
+            <p className={`${textSecondary} text-lg`}>Henüz ünlü eklenmemiş</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -479,9 +479,9 @@ export default function AdminCelebritiesPage() {
                     </span>
                   </div>
                   <div className={`text-xs ${textSecondary} flex items-center gap-3 mt-0.5`}>
-                    <span>{celeb._count?.followers || celeb.followerCount} takip\u00e7i</span>
-                    {celeb.zodiacSign && <span>\u2022 {celeb.zodiacSign}</span>}
-                    <span>\u2022 {celeb.slug}</span>
+                    <span>{celeb._count?.followers || celeb.followerCount} takipçi</span>
+                    {celeb.zodiacSign && <span>• {celeb.zodiacSign}</span>}
+                    <span>• {celeb.slug}</span>
                   </div>
                 </div>
 
