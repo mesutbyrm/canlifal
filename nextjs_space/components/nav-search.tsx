@@ -108,14 +108,19 @@ export default function NavSearch() {
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Search Toggle Button */}
+      {/* Search Toggle Button - center raised style matching footer camera button */}
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg bg-fuchsia-900/60 hover:bg-fuchsia-800/60 text-fuchsia-300 transition-colors"
+          className="flex flex-col items-center group"
         >
-          <Search className="w-6 h-6" />
-          <span className="text-[10px] font-medium">{'Ara'}</span>
+          <div 
+            className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-xl ring-4 ring-[#0f0520] group-hover:scale-105 transition-transform"
+            style={{ boxShadow: '0 0 24px rgba(217, 70, 239, 0.4)' }}
+          >
+            <Search className="w-7 h-7 text-white" />
+          </div>
+          <span className="text-[9px] font-medium text-fuchsia-300 mt-0.5">Ara</span>
         </button>
       ) : (
         <div className="flex items-center">

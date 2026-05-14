@@ -360,75 +360,93 @@ export default function Navbar() {
     return null
   }
 
-  // Theme colors for navbar - matching footer style
+  // Theme colors for navbar - matching footer style exactly
   const navBg = isLight 
     ? 'bg-white border-[#E4E6EB]'
-    : 'bg-gradient-to-b from-[#0f0520] via-[#1a0a2e] to-[#0f0520] border-fuchsia-400/40'
+    : 'bg-gradient-to-t from-[#0f0520] via-[#1a0a2e] to-[#0f0520] border-fuchsia-400/40'
   const iconBgInactive = isLight ? 'bg-transparent' : 'bg-fuchsia-900/60'
   const iconBgActive = isLight ? 'bg-[#1877F2]/10' : 'bg-fuchsia-500/40'
   const accentColor = isLight ? 'text-[#1877F2]' : 'text-fuchsia-300'
+  const iconColor = isLight ? 'text-[#65676B]' : 'text-fuchsia-300'
+  const centerBtnGradient = isLight
+    ? 'bg-[#1877F2] shadow-[#1877F2]/20'
+    : 'bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-fuchsia-500/40'
+  const ringColor = isLight ? 'ring-white' : 'ring-[#0f0520]'
   
   // Check active page
+  const isHomeActive = pathname === '/' || pathname === `/${language}`
   const isStatsActive = pathname?.includes('/panel')
-  const isSearchActive = false // search is modal-based
   
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 ${navBg} backdrop-blur-md border-b ${hideOnMobile ? 'hidden md:block' : ''}`}>
-        <div className="max-w-7xl mx-auto px-2 sm:px-4">
-          <div className="flex justify-between items-center h-14">
-            {/* Main Navigation - 4 items, matching footer grid style */}
-            <nav className="flex-1 h-full grid grid-cols-4 items-center">
-              {/* İstatistikler (Statistics) */}
-              <Link
-                href={`/panel`}
-                className="flex flex-col items-center justify-center py-1.5 group"
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isStatsActive ? iconBgActive : iconBgInactive}`}>
-                  <Sparkles className={`w-5 h-5 ${isStatsActive ? accentColor : (isLight ? 'text-[#65676B]' : 'text-fuchsia-300')}`} />
-                </div>
-                <span className={`text-[9px] font-medium mt-0.5 ${isStatsActive ? accentColor : (isLight ? 'text-[#65676B]' : 'text-fuchsia-300')}`}>İstatistikler</span>
-              </Link>
-              
-              {/* Bildirimler (Notifications) */}
-              <div className="flex flex-col items-center justify-center py-1.5">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBgInactive}`}>
-                  <NotificationBell />
-                </div>
-                <span className={`text-[9px] font-medium mt-0.5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>Bildirim</span>
+        <div className="relative h-16 overflow-visible">
+          {/* Main Navigation - 5 items matching footer grid */}
+          <nav className="relative h-full grid grid-cols-5 items-center px-2 max-w-7xl mx-auto">
+            {/* Ana Sayfa (Home) */}
+            <Link
+              href={`/`}
+              className="flex flex-col items-center justify-center py-1.5 group"
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isHomeActive ? iconBgActive : iconBgInactive}`}>
+                <Home className={`w-[18px] h-[18px] ${isHomeActive ? accentColor : iconColor}`} />
               </div>
+              <span className={`text-[9px] font-medium mt-0.5 ${isHomeActive ? accentColor : iconColor}`}>Ana Sayfa</span>
+            </Link>
+              
+            {/* Bildirimler (Notifications) */}
+            <div className="flex flex-col items-center justify-center py-1.5">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBgInactive}`}>
+                <NotificationBell />
+              </div>
+              <span className={`text-[9px] font-medium mt-0.5 ${iconColor}`}>Bildirim</span>
+            </div>
 
-              {/* Search */}
-              <NavSearch />
+            {/* Center - Search (raised like camera button in footer) */}
+            <div className="flex flex-col items-center justify-center relative">
+              <div className="absolute -bottom-1">
+                <NavSearch />
+              </div>
+            </div>
 
-              {/* Profile */}
-              {session?.user ? (
-                <div className="relative flex flex-col items-center justify-center">
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex flex-col items-center justify-center py-1.5 group"
-                  >
-                    {/* Profile avatar with frame */}
-                    <div className="relative">
-                      <FramedAvatar
-                        src={profileImage || session.user.image}
-                        alt={session.user.name || 'Profil'}
-                        size={session.user.role === 'admin' ? 36 : 32}
-                        frameUrl={profileFrameUrl}
-                        fallbackInitial={session.user.name?.charAt(0) || 'U'}
-                        borderColor={session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}
-                      />
-                      {/* Admin badge overlay */}
-                      {session.user.role === 'admin' && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[7px] font-bold text-black px-1.5 rounded z-20">
-                          ADMIN
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                  
-                  {/* Profile dropdown */}
-                  {showProfileMenu && (
+            {/* İstatistikler (Statistics) */}
+            <Link
+              href={`/panel`}
+              className="flex flex-col items-center justify-center py-1.5 group"
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isStatsActive ? iconBgActive : iconBgInactive}`}>
+                <Sparkles className={`w-[18px] h-[18px] ${isStatsActive ? accentColor : iconColor}`} />
+              </div>
+              <span className={`text-[9px] font-medium mt-0.5 ${isStatsActive ? accentColor : iconColor}`}>Panelim</span>
+            </Link>
+
+            {/* Profile */}
+            {session?.user ? (
+              <div className="relative flex flex-col items-center justify-center">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex flex-col items-center justify-center py-1.5 group"
+                >
+                  <div className="relative w-8 h-8 flex items-center justify-center">
+                    <FramedAvatar
+                      src={profileImage || session.user.image}
+                      alt={session.user.name || 'Profil'}
+                      size={session.user.role === 'admin' ? 32 : 28}
+                      frameUrl={profileFrameUrl}
+                      fallbackInitial={session.user.name?.charAt(0) || 'U'}
+                      borderColor={session.user.role === 'admin' ? 'border-gold-500' : 'border-purple-500'}
+                    />
+                    {session.user.role === 'admin' && (
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gold-500 text-[6px] font-bold text-black px-1 rounded z-20">
+                        ADM
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-[9px] font-medium mt-0.5 ${iconColor}`}>Profil</span>
+                </button>
+                
+                {/* Profile dropdown */}
+                {showProfileMenu && (
                     <div className={`absolute right-0 top-full mt-2 w-64 rounded-xl shadow-xl py-2 z-50 ${isLight ? 'bg-white border border-[#E4E6EB]' : 'bg-[#1a0a2e] border border-fuchsia-700/50'}`}>
                       <div className={`px-4 py-3 border-b ${isLight ? 'border-[#E4E6EB]' : 'border-fuchsia-700/40'}`}>
                         <div className="flex items-center gap-3">
@@ -568,13 +586,12 @@ export default function Navbar() {
                   className="flex flex-col items-center justify-center py-1.5 group"
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBgInactive}`}>
-                    <User className={`w-5 h-5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`} />
+                    <User className={`w-[18px] h-[18px] ${iconColor}`} />
                   </div>
-                  <span className={`text-[9px] font-medium mt-0.5 ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>Giriş</span>
+                  <span className={`text-[9px] font-medium mt-0.5 ${iconColor}`}>Giriş</span>
                 </Link>
               )}
-            </nav>
-          </div>
+          </nav>
         </div>
       </nav>
 

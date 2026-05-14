@@ -102,9 +102,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ results: data?.results || [], totalPages: data?.total_pages || 0 })
     }
 
-    return NextResponse.json({ error: 'Ge\u00e7ersiz aksiyon' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz aksiyon' }, { status: 400 })
   } catch (error) {
     console.error('TMDB API error:', error)
-    return NextResponse.json({ error: 'Sunucu hatas\u0131' }, { status: 500 })
+    return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
   }
 }
