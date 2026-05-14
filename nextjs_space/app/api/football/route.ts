@@ -5,6 +5,22 @@ export const dynamic = 'force-dynamic'
 const API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
 const BASE_URL = 'https://api.football-data.org/v4'
 
+// All available competitions in free tier
+const ALL_COMPETITIONS: Record<string, { name: string; country: string; flag: string }> = {
+  PL:  { name: 'Premier League', country: 'İngiltere', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  PD:  { name: 'La Liga', country: 'İspanya', flag: '🇪🇸' },
+  SA:  { name: 'Serie A', country: 'İtalya', flag: '🇮🇹' },
+  BL1: { name: 'Bundesliga', country: 'Almanya', flag: '🇩🇪' },
+  FL1: { name: 'Ligue 1', country: 'Fransa', flag: '🇫🇷' },
+  CL:  { name: 'Şampiyonlar Ligi', country: 'Avrupa', flag: '🇪🇺' },
+  EC:  { name: 'Avrupa Şampiyonası', country: 'Avrupa', flag: '🇪🇺' },
+  WC:  { name: 'Dünya Kupası', country: 'Dünya', flag: '🌍' },
+  BSA: { name: 'Brasileirão', country: 'Brezilya', flag: '🇧🇷' },
+  PPL: { name: 'Primeira Liga', country: 'Portekiz', flag: '🇵🇹' },
+  DED: { name: 'Eredivisie', country: 'Hollanda', flag: '🇳🇱' },
+  ELC: { name: 'Championship', country: 'İngiltere', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+}
+
 async function fetchFootball(endpoint: string) {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     headers: { 'X-Auth-Token': API_KEY },
@@ -23,15 +39,25 @@ export async function GET(req: NextRequest) {
 
   try {
     if (action === 'matches') {
-      // Get today's matches or by date
       const dateFrom = searchParams.get('dateFrom') || new Date().toISOString().split('T')[0]
       const dateTo = searchParams.get('dateTo') || dateFrom
-      const data = await fetchFootball(`/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
-      return NextResponse.json({ matches: data?.matches || [] })
+      const competitions = searchParams.get('competitions') || ''
+      let endpoint = `/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
+      if (competitions) endpoint += `&competitions=${competitions}`
+      const data = await fetchFootball(endpoint)
+      const matches = (data?.matches || []).map((m: any) => ({
+        ...m,
+        competition: {
+          ...m.competition,
+          flag: ALL_COMPETITIONS[m.competition?.code]?.flag || '⚽',
+          localName: ALL_COMPETITIONS[m.competition?.code]?.name || m.competition?.name,
+          country: ALL_COMPETITIONS[m.competition?.code]?.country || '',
+        }
+      }))
+      return NextResponse.json({ matches })
     }
 
     if (action === 'standings') {
-      // Get league standings - default to Turkish Super Lig (BSA=2002 for Bundesliga, PL=2021, etc)
       const competition = searchParams.get('competition') || 'BSA'
       const data = await fetchFootball(`/competitions/${competition}/standings`)
       return NextResponse.json({
@@ -68,15 +94,19 @@ export async function GET(req: NextRequest) {
 
     if (action === 'competitions') {
       const data = await fetchFootball('/competitions')
-      // Filter to popular competitions
-      const popular = ['PL', 'PD', 'SA', 'BL1', 'FL1', 'CL', 'BSA', 'PPL', 'DED', 'ELC']
-      const filtered = (data?.competitions || []).filter((c: any) => popular.includes(c.code))
+      const allCodes = Object.keys(ALL_COMPETITIONS)
+      const filtered = (data?.competitions || []).filter((c: any) => allCodes.includes(c.code)).map((c: any) => ({
+        ...c,
+        flag: ALL_COMPETITIONS[c.code]?.flag || '⚽',
+        localName: ALL_COMPETITIONS[c.code]?.name || c.name,
+        country: ALL_COMPETITIONS[c.code]?.country || '',
+      }))
       return NextResponse.json({ competitions: filtered })
     }
 
-    return NextResponse.json({ error: 'Ge\u00e7ersiz aksiyon' }, { status: 400 })
+    return NextResponse.json({ error: 'Geçersiz aksiyon' }, { status: 400 })
   } catch (error) {
     console.error('Football API error:', error)
-    return NextResponse.json({ error: 'Sunucu hatas\u0131' }, { status: 500 })
+    return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
   }
 }

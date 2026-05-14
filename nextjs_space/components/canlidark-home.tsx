@@ -16,6 +16,7 @@ import dynamic from 'next/dynamic'
 
 const NotificationBell = dynamic(() => import('./notification-bell'), { ssr: false })
 const LiveTicker = dynamic(() => import('./live-ticker'), { ssr: false })
+const LiveMatchTicker = dynamic(() => import('./live-match-ticker'), { ssr: false })
 
 interface LiveStream {
   id: string
@@ -79,15 +80,7 @@ interface CelebrityPost {
   celebrity: { name: string; slug: string; profileImage: string | null; category?: string }
 }
 
-interface FootballMatch {
-  id: number
-  homeTeam: { name: string; crest: string; shortName: string }
-  awayTeam: { name: string; crest: string; shortName: string }
-  score: { fullTime: { home: number | null; away: number | null } }
-  status: string
-  utcDate: string
-  competition?: { name: string }
-}
+/* FootballMatch is now handled by LiveMatchTicker component */
 
 const FORTUNE_CARDS = [
   { id: 'coffee', name: 'Kahve Falı', sub: 'Fincandaki gizem', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali', glow: 'rgba(251,191,36,0.35)' },
@@ -147,9 +140,7 @@ export default function CanliDarkHome() {
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [footballMatches, setFootballMatches] = useState<FootballMatch[]>([])
   const postsScrollRef = useRef<HTMLDivElement>(null)
-  const matchScrollRef = useRef<HTMLDivElement>(null)
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -184,11 +175,6 @@ export default function CanliDarkHome() {
           })))
         }
         if (posts?.posts) setLatestPosts(posts.posts)
-      } catch {}
-      // Fetch football matches
-      try {
-        const fm = await fetch('/api/football?action=matches').then(x => x.ok ? x.json() : { matches: [] })
-        setFootballMatches(fm.matches || [])
       } catch {}
       if (session) {
         try {
@@ -230,30 +216,7 @@ export default function CanliDarkHome() {
     return () => cancelAnimationFrame(animId)
   }, [latestPosts])
 
-  // Auto-scroll football matches
-  const matchScrollPausedRef = useRef(false)
-  useEffect(() => {
-    if (footballMatches.length < 2) return
-    const el = matchScrollRef.current
-    if (!el) return
-    let animId: number
-    let lastTime = 0
-    const speed = 0.4
-    const tick = (time: number) => {
-      if (!matchScrollPausedRef.current && lastTime) {
-        const delta = time - lastTime
-        const px = speed * (delta / 16.67)
-        el.scrollLeft += px
-        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
-          el.scrollLeft = 0
-        }
-      }
-      lastTime = time
-      animId = requestAnimationFrame(tick)
-    }
-    animId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(animId)
-  }, [footballMatches])
+  /* Football match auto-scroll is now handled by LiveMatchTicker */
 
   const popularTellers = tellers.slice(0, 8)
   const visibleFortunes = FORTUNE_CARDS.slice(0, 8)
@@ -442,68 +405,8 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ 3. CANLI MAÇLAR — scrolling ticker ═══ */}
-      {footballMatches.length > 0 && (
-        <div className="mb-1">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="canlidark-section-title flex items-center gap-1.5"><Trophy className="w-4 h-4 text-emerald-400" /> Canlı Maçlar</h2>
-            <Link href="/futbol" className="canlidark-section-link">Tümünü gör</Link>
-          </div>
-          <div
-            ref={matchScrollRef}
-            className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-1"
-            onMouseEnter={() => { matchScrollPausedRef.current = true }}
-            onMouseLeave={() => { matchScrollPausedRef.current = false }}
-            onTouchStart={() => { matchScrollPausedRef.current = true }}
-            onTouchEnd={() => { matchScrollPausedRef.current = false }}
-          >
-            {footballMatches.slice(0, 10).map((match) => {
-              const isLive = ['LIVE', 'IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status)
-              const isFinished = match.status === 'FINISHED'
-              const time = new Date(match.utcDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-              return (
-                <Link key={match.id} href="/futbol" className="flex-shrink-0 w-[200px]">
-                  <div className={`p-3 rounded-xl border backdrop-blur-sm h-full ${
-                    isLive ? 'bg-red-500/10 border-red-500/30' : 'bg-white/5 border-emerald-500/15'
-                  }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] text-purple-400/50 truncate">{match.competition?.name || 'Maç'}</span>
-                      {isLive ? (
-                        <span className="px-1.5 py-0.5 rounded-full text-[8px] font-bold text-red-400 bg-red-500/20 animate-pulse">● CANLI</span>
-                      ) : isFinished ? (
-                        <span className="text-[8px] text-green-400/60">Bitti</span>
-                      ) : (
-                        <span className="text-[8px] text-emerald-400">{time}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        {match.homeTeam.crest && (
-                          <div className="w-5 h-5 flex-shrink-0">
-                            <Image src={match.homeTeam.crest} alt={match.homeTeam.shortName} width={20} height={20} className="object-contain" />
-                          </div>
-                        )}
-                        <span className="text-[10px] text-white font-medium truncate">{match.homeTeam.shortName || match.homeTeam.name}</span>
-                      </div>
-                      <span className={`text-sm font-bold mx-1 ${isLive ? 'text-red-400' : 'text-white'}`}>
-                        {match.score.fullTime.home ?? '-'} : {match.score.fullTime.away ?? '-'}
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                        <span className="text-[10px] text-white font-medium truncate text-right">{match.awayTeam.shortName || match.awayTeam.name}</span>
-                        {match.awayTeam.crest && (
-                          <div className="w-5 h-5 flex-shrink-0">
-                            <Image src={match.awayTeam.crest} alt={match.awayTeam.shortName} width={20} height={20} className="object-contain" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {/* ═══ 3. CANLI MAÇLAR — LiveMatchTicker component ═══ */}
+      <LiveMatchTicker />
 
       {/* ═══ 4. SON PAYLAŞIMLAR — auto-scroll left — mb-0 gap ═══ */}
       {latestPosts.length > 0 && (
