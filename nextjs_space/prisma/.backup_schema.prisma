@@ -118,6 +118,8 @@ model User {
   fanClubMemberships    FanClubMember[]
   fanClubPosts          FanClubPost[]
   fanClubPostLikes      FanClubPostLike[]
+  fanClubPolls          FanClubPoll[]
+  fanClubPollVotes      FanClubPollVote[]
   // Celebrity posts
   celebrityPostLikes    CelebrityPostLike[]
   celebrityPostComments CelebrityPostComment[]
@@ -2626,6 +2628,7 @@ model FanClub {
   updatedAt     DateTime        @updatedAt
   members       FanClubMember[]
   posts         FanClubPost[]
+  polls         FanClubPoll[]
 
   @@index([isActive])
   @@map("fan_clubs")
@@ -2637,6 +2640,8 @@ model FanClubMember {
   fanClubId String
   userId    String
   role      String   @default("member") // member, moderator
+  xp        Int      @default(0)
+  level     String   @default("yeni_fan") // yeni_fan, aktif_fan, super_fan, vip_fan, efsane_fan
   createdAt DateTime @default(now())
   fanClub   FanClub  @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2645,6 +2650,40 @@ model FanClubMember {
   @@index([fanClubId])
   @@index([userId])
   @@map("fan_club_members")
+}
+
+// Fan club polls/surveys (Anket)
+model FanClubPoll {
+  id        String           @id @default(cuid())
+  fanClubId String
+  userId    String
+  question  String
+  options   Json             // Array of { text: string }
+  isActive  Boolean          @default(true)
+  endsAt    DateTime?
+  createdAt DateTime         @default(now())
+  fanClub   FanClub          @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes     FanClubPollVote[]
+
+  @@index([fanClubId, isActive])
+  @@index([userId])
+  @@map("fan_club_polls")
+}
+
+model FanClubPollVote {
+  id       String      @id @default(cuid())
+  pollId   String
+  userId   String
+  optionIndex Int
+  createdAt DateTime   @default(now())
+  poll     FanClubPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([userId])
+  @@map("fan_club_poll_votes")
 }
 
 // Fan club wall post

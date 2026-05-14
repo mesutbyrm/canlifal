@@ -127,6 +127,12 @@ export async function POST(
       },
     })
 
+    // Award XP for posting
+    await prisma.fanClubMember.updateMany({
+      where: { fanClubId: fanClub.id, userId: session.user.id },
+      data: { xp: { increment: 10 } },
+    })
+
     return NextResponse.json({ post: { ...post, isLiked: false, likeCount: 0 } }, { status: 201 })
   } catch (error) {
     console.error('Fan club post CREATE error:', error)

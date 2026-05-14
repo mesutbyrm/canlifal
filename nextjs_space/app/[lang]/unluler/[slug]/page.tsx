@@ -65,6 +65,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   youtuber: 'YouTuber',
   influencer: 'Influencer',
   yonetmen: 'Yönetmen',
+  futbol_kulubu: 'Futbol Kulübü',
+  dizi: 'Dizi',
+  film_yapim: 'Film',
+  streaming: 'Platform',
+  tiyatro: 'Tiyatro',
+  konser: 'Konser',
+  festival: 'Festival',
+  etkinlik: 'Etkinlik',
+  muzisyen: 'Müzisyen',
   diger: 'Diğer',
 }
 
@@ -75,6 +84,15 @@ const CATEGORY_ICONS: Record<string, any> = {
   youtuber: Youtube,
   influencer: Instagram,
   yonetmen: Tv,
+  futbol_kulubu: Trophy,
+  dizi: Tv,
+  film_yapim: Film,
+  streaming: Globe,
+  tiyatro: Star,
+  konser: Music,
+  festival: Star,
+  etkinlik: Star,
+  muzisyen: Music,
   diger: Star,
 }
 

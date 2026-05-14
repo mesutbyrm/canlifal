@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Users, Star, TrendingUp, Filter, Loader2,
   Music, Film, Trophy, Youtube, Instagram, Tv, UserCheck,
-  ChevronLeft, ChevronRight, BadgeCheck, Heart
+  ChevronLeft, ChevronRight, BadgeCheck, Heart, Globe
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -32,9 +32,18 @@ const CATEGORIES = [
   { value: 'oyuncu', label: 'Oyuncular', icon: Film },
   { value: 'sarkici', label: 'Şarkıcılar', icon: Music },
   { value: 'futbolcu', label: 'Futbolcular', icon: Trophy },
+  { value: 'futbol_kulubu', label: 'Kulüpler', icon: Trophy },
+  { value: 'dizi', label: 'Diziler', icon: Tv },
+  { value: 'film_yapim', label: 'Filmler', icon: Film },
+  { value: 'streaming', label: 'Platformlar', icon: Globe },
   { value: 'youtuber', label: 'YouTuberlar', icon: Youtube },
   { value: 'influencer', label: 'Influencerlar', icon: Instagram },
+  { value: 'muzisyen', label: 'Müzisyenler', icon: Music },
   { value: 'yonetmen', label: 'Yönetmenler', icon: Tv },
+  { value: 'tiyatro', label: 'Tiyatrolar', icon: Star },
+  { value: 'konser', label: 'Konserler', icon: Music },
+  { value: 'festival', label: 'Festivaller', icon: Star },
+  { value: 'etkinlik', label: 'Etkinlikler', icon: Star },
   { value: 'diger', label: 'Diğer', icon: Star },
 ]
 

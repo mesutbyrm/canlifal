@@ -31,6 +31,12 @@ export async function POST(
       where: { postId_userId: { postId, userId: session.user.id } },
     })
 
+    // Find fan club membership for XP
+    const fanClubPost = await prisma.fanClubPost.findUnique({
+      where: { id: postId },
+      include: { fanClub: { select: { id: true } } },
+    })
+
     if (existing) {
       await prisma.$transaction([
         prisma.fanClubPostLike.delete({ where: { id: existing.id } }),
@@ -38,10 +44,20 @@ export async function POST(
       ])
       return NextResponse.json({ liked: false, likeCount: Math.max(0, post.likeCount - 1) })
     } else {
-      await prisma.$transaction([
+      const txOps: any[] = [
         prisma.fanClubPostLike.create({ data: { postId, userId: session.user.id } }),
         prisma.fanClubPost.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } }),
-      ])
+      ]
+      // Award 2 XP to the liker if they are a member
+      if (fanClubPost?.fanClub?.id) {
+        txOps.push(
+          prisma.fanClubMember.updateMany({
+            where: { fanClubId: fanClubPost.fanClub.id, userId: session.user.id },
+            data: { xp: { increment: 2 } },
+          })
+        )
+      }
+      await prisma.$transaction(txOps)
       return NextResponse.json({ liked: true, likeCount: post.likeCount + 1 })
     }
   } catch (error) {

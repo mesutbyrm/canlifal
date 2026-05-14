@@ -6,7 +6,7 @@ import { useSiteTheme } from '@/lib/theme-context'
 import {
   Plus, Trash2, Save, Users, Star, Loader2, Search,
   BadgeCheck, Edit, Film, Music, Trophy, Youtube, Instagram, Tv,
-  ToggleLeft, ToggleRight, X, Eye, EyeOff
+  ToggleLeft, ToggleRight, X, Eye, EyeOff, Globe
 } from 'lucide-react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -34,9 +34,18 @@ const CATEGORIES = [
   { value: 'oyuncu', label: 'Oyuncu', icon: Film },
   { value: 'sarkici', label: 'Şarkıcı', icon: Music },
   { value: 'futbolcu', label: 'Futbolcu', icon: Trophy },
+  { value: 'futbol_kulubu', label: 'Futbol Kulübü', icon: Trophy },
+  { value: 'dizi', label: 'Dizi', icon: Tv },
+  { value: 'film_yapim', label: 'Film', icon: Film },
+  { value: 'streaming', label: 'Streaming Platform', icon: Globe },
   { value: 'youtuber', label: 'YouTuber', icon: Youtube },
   { value: 'influencer', label: 'Influencer', icon: Instagram },
+  { value: 'muzisyen', label: 'Müzisyen', icon: Music },
   { value: 'yonetmen', label: 'Yönetmen', icon: Tv },
+  { value: 'tiyatro', label: 'Tiyatro', icon: Star },
+  { value: 'konser', label: 'Konser', icon: Music },
+  { value: 'festival', label: 'Festival', icon: Star },
+  { value: 'etkinlik', label: 'Etkinlik', icon: Star },
   { value: 'diger', label: 'Diğer', icon: Star },
 ]
 

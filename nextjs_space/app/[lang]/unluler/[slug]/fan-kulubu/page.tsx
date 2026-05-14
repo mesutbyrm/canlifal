@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, BadgeCheck, Heart, Users, Send, Loader2,
   MessageCircle, Crown, Shield, Star, Trash2, Pin,
-  UserPlus, UserMinus, ChevronDown, Sparkles, Clock
+  UserPlus, UserMinus, ChevronDown, Sparkles, Clock,
+  BarChart3, Plus, Trophy, Zap
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
@@ -55,6 +56,38 @@ interface Member {
   user: PostUser
 }
 
+interface Poll {
+  id: string
+  question: string
+  options: string[]
+  isActive: boolean
+  endsAt: string | null
+  createdAt: string
+  totalVotes: number
+  userVote: number | null
+  results: { option: string; votes: number; percentage: number }[]
+  user: { name: string; image: string | null }
+}
+
+interface FanLevel {
+  level: string
+  levelLabel: string
+  levelEmoji: string
+  xp: number
+  nextLevel: string | null
+  nextLevelLabel: string | null
+  nextLevelXp: number | null
+  progress: number
+}
+
+const LEVEL_COLORS: Record<string, string> = {
+  yeni_fan: 'from-gray-500 to-gray-600',
+  aktif_fan: 'from-blue-500 to-blue-600',
+  super_fan: 'from-orange-500 to-red-500',
+  vip_fan: 'from-purple-500 to-fuchsia-500',
+  efsane_fan: 'from-yellow-400 to-amber-500',
+}
+
 function timeAgo(dateStr: string): string {
   const now = Date.now()
   const then = new Date(dateStr).getTime()
@@ -75,14 +108,22 @@ export default function FanClubPage() {
   const [fanClub, setFanClub] = useState<FanClubData | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [members, setMembers] = useState<Member[]>([])
+  const [polls, setPolls] = useState<Poll[]>([])
+  const [fanLevel, setFanLevel] = useState<FanLevel | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'wall' | 'members' | 'rules'>('wall')
+  const [tab, setTab] = useState<'wall' | 'members' | 'polls' | 'rules'>('wall')
   const [newPost, setNewPost] = useState('')
   const [posting, setPosting] = useState(false)
   const [joining, setJoining] = useState(false)
   const [loadingPosts, setLoadingPosts] = useState(false)
+  const [loadingPolls, setLoadingPolls] = useState(false)
   const [postsPage, setPostsPage] = useState(1)
   const [hasMorePosts, setHasMorePosts] = useState(false)
+  const [showPollForm, setShowPollForm] = useState(false)
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOptions, setPollOptions] = useState(['', ''])
+  const [creatingPoll, setCreatingPoll] = useState(false)
+  const [votingPollId, setVotingPollId] = useState<string | null>(null)
 
   const fetchFanClub = useCallback(async () => {
     try {
@@ -125,9 +166,34 @@ export default function FanClubPage() {
     }
   }, [slug])
 
+  const fetchPolls = useCallback(async () => {
+    setLoadingPolls(true)
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/fan-club/polls`)
+      const data = await res.json()
+      setPolls(data.polls || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingPolls(false)
+    }
+  }, [slug])
+
+  const fetchLevel = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/fan-club/level`)
+      const data = await res.json()
+      if (data.level) setFanLevel(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }, [slug])
+
   useEffect(() => { fetchFanClub() }, [fetchFanClub])
   useEffect(() => { if (tab === 'wall') fetchPosts() }, [tab, fetchPosts])
   useEffect(() => { if (tab === 'members') fetchMembers() }, [tab, fetchMembers])
+  useEffect(() => { if (tab === 'polls') fetchPolls() }, [tab, fetchPolls])
+  useEffect(() => { if (session?.user) fetchLevel() }, [session, fetchLevel])
 
   const handleJoin = async () => {
     if (!session?.user) { router.push('/giris'); return }
@@ -193,6 +259,52 @@ export default function FanClubPage() {
       setPosts(prev => prev.filter(p => p.id !== postId))
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const handleCreatePoll = async () => {
+    const validOptions = pollOptions.filter(o => o.trim())
+    if (!pollQuestion.trim() || validOptions.length < 2) return
+    setCreatingPoll(true)
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/fan-club/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', question: pollQuestion, options: validOptions }),
+      })
+      const data = await res.json()
+      if (data.poll) {
+        setPolls(prev => [data.poll, ...prev])
+        setPollQuestion('')
+        setPollOptions(['', ''])
+        setShowPollForm(false)
+        fetchLevel()
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setCreatingPoll(false)
+    }
+  }
+
+  const handleVote = async (pollId: string, optionIndex: number) => {
+    if (!session?.user) { router.push('/giris'); return }
+    setVotingPollId(pollId)
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/fan-club/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'vote', pollId, optionIndex }),
+      })
+      const data = await res.json()
+      if (data.poll) {
+        setPolls(prev => prev.map(p => p.id === pollId ? data.poll : p))
+        fetchLevel()
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setVotingPollId(null)
     }
   }
 
@@ -289,6 +401,42 @@ export default function FanClubPage() {
         </div>
       </div>
 
+      {/* Fan Level Badge */}
+      {fanClub.isMember && fanLevel && (
+        <div className="max-w-3xl mx-auto px-4 mt-3">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{fanLevel.levelEmoji}</span>
+                <span className={`text-sm font-bold bg-gradient-to-r ${LEVEL_COLORS[fanLevel.level] || 'from-gray-500 to-gray-600'} bg-clip-text text-transparent`}>
+                  {fanLevel.levelLabel}
+                </span>
+                <span className="text-xs text-purple-400/50 flex items-center gap-1">
+                  <Zap className="w-3 h-3" /> {fanLevel.xp} XP
+                </span>
+              </div>
+              {fanLevel.nextLevelLabel && (
+                <span className="text-xs text-purple-400/40">
+                  Sonraki: {fanLevel.nextLevelLabel} ({fanLevel.nextLevelXp} XP)
+                </span>
+              )}
+            </div>
+            <div className="w-full h-1.5 bg-purple-900/30 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${fanLevel.progress}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className={`h-full rounded-full bg-gradient-to-r ${LEVEL_COLORS[fanLevel.level] || 'from-gray-500 to-gray-600'}`}
+              />
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Description */}
       {fanClub.description && (
         <div className="max-w-3xl mx-auto px-4 mt-4">
@@ -301,6 +449,7 @@ export default function FanClubPage() {
         <div className="flex border-b border-purple-500/10">
           {[
             { key: 'wall' as const, label: 'Duvar', icon: MessageCircle },
+            { key: 'polls' as const, label: 'Anketler', icon: BarChart3 },
             { key: 'members' as const, label: 'Üyeler', icon: Users },
             { key: 'rules' as const, label: 'Kurallar', icon: Shield },
           ].map(t => (
@@ -465,6 +614,176 @@ export default function FanClubPage() {
                     Daha fazla göster
                   </button>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Polls Tab */}
+        {tab === 'polls' && (
+          <div>
+            {/* Create Poll Button */}
+            {fanClub.isMember && !showPollForm && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => setShowPollForm(true)}
+                className="w-full mb-4 p-3 rounded-xl bg-fuchsia-600/10 border border-fuchsia-500/20 text-fuchsia-400 text-sm font-medium flex items-center justify-center gap-2 hover:bg-fuchsia-600/20 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Yeni Anket Oluştur
+              </motion.button>
+            )}
+
+            {/* Poll Creation Form */}
+            <AnimatePresence>
+              {showPollForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 overflow-hidden"
+                >
+                  <div className="p-4 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm space-y-3">
+                    <input
+                      value={pollQuestion}
+                      onChange={e => setPollQuestion(e.target.value)}
+                      placeholder="Anket sorunuzu yazın..."
+                      className="w-full bg-transparent text-white placeholder-purple-400/40 text-sm focus:outline-none border-b border-purple-500/10 pb-2"
+                    />
+                    {pollOptions.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-purple-400/40 text-xs w-5">{i + 1}.</span>
+                        <input
+                          value={opt}
+                          onChange={e => {
+                            const newOpts = [...pollOptions]
+                            newOpts[i] = e.target.value
+                            setPollOptions(newOpts)
+                          }}
+                          placeholder={`Seçenek ${i + 1}`}
+                          className="flex-1 bg-transparent text-white placeholder-purple-400/30 text-sm focus:outline-none border-b border-purple-500/10 pb-1"
+                        />
+                      </div>
+                    ))}
+                    {pollOptions.length < 6 && (
+                      <button
+                        onClick={() => setPollOptions([...pollOptions, ''])}
+                        className="text-xs text-fuchsia-400/60 hover:text-fuchsia-400 transition-colors flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Seçenek ekle
+                      </button>
+                    )}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleCreatePoll}
+                        disabled={creatingPoll || !pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}
+                        className="flex-1 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-medium hover:bg-fuchsia-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {creatingPoll ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+                        Anket Oluştur
+                      </button>
+                      <button
+                        onClick={() => { setShowPollForm(false); setPollQuestion(''); setPollOptions(['', '']) }}
+                        className="px-4 py-2 rounded-xl bg-white/5 text-purple-300 text-sm hover:bg-white/10 transition-colors"
+                      >
+                        İptal
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Not a member notice */}
+            {!fanClub.isMember && (
+              <div className="mb-6 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm text-center">
+                <Sparkles className="w-5 h-5 inline mr-2" />
+                Anket oluşturmak ve oy kullanmak için fan kulübüne katılın
+              </div>
+            )}
+
+            {/* Poll List */}
+            {loadingPolls && polls.length === 0 ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
+              </div>
+            ) : polls.length === 0 ? (
+              <div className="text-center py-10">
+                <BarChart3 className="w-12 h-12 text-purple-500/20 mx-auto mb-3" />
+                <p className="text-purple-300/40 text-sm">Henüz anket yok</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {polls.map((poll, i) => {
+                  const hasVoted = poll.userVote !== null && poll.userVote !== undefined
+                  const isVoting = votingPollId === poll.id
+                  return (
+                    <motion.div
+                      key={poll.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="p-4 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-white text-sm font-medium">{poll.question}</p>
+                          <p className="text-purple-400/40 text-xs mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {timeAgo(poll.createdAt)}
+                            <span className="mx-1">•</span>
+                            {poll.totalVotes} oy
+                            {!poll.isActive && <span className="ml-2 text-red-400/60">Sona erdi</span>}
+                          </p>
+                        </div>
+                        {hasVoted && (
+                          <span className="text-xs text-green-400/60 flex items-center gap-1">
+                            <BadgeCheck className="w-3.5 h-3.5" /> Oy verildi
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        {poll.results.map((result, idx) => (
+                          <div key={idx}>
+                            {hasVoted || !poll.isActive || !fanClub.isMember ? (
+                              /* Show results */
+                              <div className="relative">
+                                <div className="w-full h-9 bg-purple-900/20 rounded-lg overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${result.percentage}%` }}
+                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                    className={`h-full rounded-lg ${
+                                      poll.userVote === idx
+                                        ? 'bg-fuchsia-600/40'
+                                        : 'bg-purple-600/20'
+                                    }`}
+                                  />
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-between px-3">
+                                  <span className={`text-xs font-medium ${poll.userVote === idx ? 'text-fuchsia-300' : 'text-purple-200/70'}`}>
+                                    {poll.userVote === idx && '✓ '}{result.option}
+                                  </span>
+                                  <span className="text-xs text-purple-400/50">{result.percentage}%</span>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Show vote buttons */
+                              <button
+                                onClick={() => handleVote(poll.id, idx)}
+                                disabled={isVoting}
+                                className="w-full h-9 rounded-lg bg-purple-900/20 border border-purple-500/10 text-purple-200/70 text-xs font-medium hover:bg-fuchsia-600/20 hover:border-fuchsia-500/20 hover:text-fuchsia-300 transition-all flex items-center justify-center gap-2"
+                              >
+                                {isVoting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                {result.option}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </div>
             )}
           </div>
