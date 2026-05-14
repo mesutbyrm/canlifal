@@ -25,19 +25,19 @@ interface MediaItem {
   genre_ids: number[]
 }
 
-const TMDB_IMG = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Tmdb.new.logo.svg/960px-Tmdb.new.logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail&_=20200406190906'
+const TMDB_IMG = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Tmdb.new.logo.svg/1280px-Tmdb.new.logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail'
 
 type SectionType = 'trending' | 'movies' | 'tv' | 'search'
 
 const GENRE_MAP: Record<number, string> = {
   28: 'Aksiyon', 12: 'Macera', 16: 'Animasyon', 35: 'Komedi',
-  80: 'Su\u00e7', 99: 'Belgesel', 18: 'Dram', 10751: 'Aile',
-  14: 'Fantastik', 36: 'Tarih', 27: 'Korku', 10402: 'M\u00fczik',
+  80: 'Suç', 99: 'Belgesel', 18: 'Dram', 10751: 'Aile',
+  14: 'Fantastik', 36: 'Tarih', 27: 'Korku', 10402: 'Müzik',
   9648: 'Gizem', 10749: 'Romantik', 878: 'Bilim Kurgu',
-  10770: 'TV Filmi', 53: 'Gerilim', 10752: 'Sava\u015f', 37: 'Western',
-  10759: 'Aksiyon & Macera', 10762: '\u00c7ocuk', 10763: 'Haber',
+  10770: 'TV Filmi', 53: 'Gerilim', 10752: 'Savaş', 37: 'Western',
+  10759: 'Aksiyon & Macera', 10762: 'Çocuk', 10763: 'Haber',
   10764: 'Reality', 10765: 'Bilim Kurgu & Fantastik', 10766: 'Pembe Dizi',
-  10767: 'Talk Show', 10768: 'Sava\u015f & Politik',
+  10767: 'Talk Show', 10768: 'Savaş & Politik',
 }
 
 export default function DiziFilmPage() {
@@ -237,7 +237,7 @@ export default function DiziFilmPage() {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">Dizi & Film</h1>
-                <p className="text-fuchsia-400/60 text-sm">Vizyondakiler, pop\u00fcler diziler ve daha fazlas\u0131</p>
+                <p className="text-fuchsia-400/60 text-sm">Vizyondakiler, popüler diziler ve daha fazlası</p>
               </div>
             </div>
           </motion.div>
@@ -293,7 +293,7 @@ export default function DiziFilmPage() {
           <div>
             <h2 className="text-lg font-bold text-white mb-4">
               <Search className="w-4 h-4 inline mr-2" />
-              "{searchQuery}" i\u00e7in sonu\u00e7lar
+              &ldquo;{searchQuery}&rdquo; için sonuçlar
             </h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
               {searchResults.filter(r => r.poster_path && (r.media_type === 'movie' || r.media_type === 'tv')).map((item, i) => renderCard(item, i))}
@@ -302,7 +302,7 @@ export default function DiziFilmPage() {
         ) : section === 'search' && !searching ? (
           <div className="text-center py-16">
             <Search className="w-14 h-14 text-purple-500/20 mx-auto mb-3" />
-            <p className="text-purple-300/40">Sonu\u00e7 bulunamad\u0131</p>
+            <p className="text-purple-300/40">Sonuç bulunamadı</p>
           </div>
         ) : null}
 
@@ -333,7 +333,7 @@ export default function DiziFilmPage() {
                       <div className="absolute bottom-0 left-0 p-6">
                         <div className="flex items-center gap-2 mb-2">
                           <Flame className="w-4 h-4 text-orange-400" />
-                          <span className="text-xs font-bold text-orange-400 uppercase">\u0131 Numaral\u0131 Trend</span>
+                          <span className="text-xs font-bold text-orange-400 uppercase">1 Numaralı Trend</span>
                         </div>
                         <h2 className="text-xl sm:text-2xl font-bold text-white">{items[0].title || items[0].name}</h2>
                         <p className="text-sm text-white/60 mt-1 line-clamp-2 max-w-lg">{items[0].overview}</p>
@@ -343,14 +343,14 @@ export default function DiziFilmPage() {
                 )}
 
                 {renderHorizontalRow('Vizyondakiler', <Calendar className="w-5 h-5 text-blue-400" />, nowPlaying)}
-                {renderHorizontalRow('Pop\u00fcler Filmler', <Film className="w-5 h-5 text-emerald-400" />, trendingMovies)}
-                {renderHorizontalRow('Pop\u00fcler Diziler', <Tv className="w-5 h-5 text-fuchsia-400" />, trendingTv)}
+                {renderHorizontalRow('Popüler Filmler', <Film className="w-5 h-5 text-emerald-400" />, trendingMovies)}
+                {renderHorizontalRow('Popüler Diziler', <Tv className="w-5 h-5 text-fuchsia-400" />, trendingTv)}
 
                 {/* Trending Grid */}
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-5 h-5 text-orange-400" />
-                    <h2 className="text-lg font-bold text-white">Bu Haftan\u0131n Trendleri</h2>
+                    <h2 className="text-lg font-bold text-white">Bu Haftanın Trendleri</h2>
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                     {items.slice(1, 19).map((item, i) => renderCard(item, i))}

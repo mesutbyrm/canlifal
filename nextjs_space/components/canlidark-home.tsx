@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu, Tv, Trophy, Film, Clapperboard
+  Users, ChevronRight, Menu, Search, Trophy
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -79,6 +79,16 @@ interface CelebrityPost {
   celebrity: { name: string; slug: string; profileImage: string | null; category?: string }
 }
 
+interface FootballMatch {
+  id: number
+  homeTeam: { name: string; crest: string; shortName: string }
+  awayTeam: { name: string; crest: string; shortName: string }
+  score: { fullTime: { home: number | null; away: number | null } }
+  status: string
+  utcDate: string
+  competition?: { name: string }
+}
+
 const FORTUNE_CARDS = [
   { id: 'coffee', name: 'Kahve Falı', sub: 'Fincandaki gizem', image: 'https://cdn.abacus.ai/images/21ba0a63-b56d-4d57-ba0b-de973fac37bc.png', href: '/fallar/kahve-fali', glow: 'rgba(251,191,36,0.35)' },
   { id: 'tarot', name: 'Tarot Falı', sub: 'Kartların sırrı', image: 'https://cdn.abacus.ai/images/ca544a3b-1bab-4e8d-b59b-74c1c45f1a5a.png', href: '/fallar/tarot-fali', glow: 'rgba(192,38,211,0.45)' },
@@ -112,7 +122,7 @@ const PLATFORM_COLOR: Record<string, string> = {
   tiktok: 'from-cyan-400 to-pink-500',
 }
 
-/* ═══ FEATURE GRID CARDS — new sections matching Fal & Tarot layout ═══ */
+/* ═══ FEATURE GRID CARDS ═══ */
 const FEATURE_CARDS = [
   { id: 'futbol', name: 'Canlı Futbol', icon: '⚽', href: '/futbol', gradient: 'from-green-500 to-emerald-700', glow: 'rgba(16,185,129,0.4)', borderColor: 'border-emerald-500/30' },
   { id: 'dizi-film', name: 'Dizi & Film', icon: '🎬', href: '/dizi-film', gradient: 'from-red-500 to-rose-700', glow: 'rgba(239,68,68,0.4)', borderColor: 'border-red-500/30' },
@@ -137,6 +147,9 @@ export default function CanliDarkHome() {
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [footballMatches, setFootballMatches] = useState<FootballMatch[]>([])
+  const postsScrollRef = useRef<HTMLDivElement>(null)
+  const matchScrollRef = useRef<HTMLDivElement>(null)
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -172,6 +185,11 @@ export default function CanliDarkHome() {
         }
         if (posts?.posts) setLatestPosts(posts.posts)
       } catch {}
+      // Fetch football matches
+      try {
+        const fm = await fetch('/api/football?action=matches').then(x => x.ok ? x.json() : { matches: [] })
+        setFootballMatches(fm.matches || [])
+      } catch {}
       if (session) {
         try {
           const c = await fetch('/api/user/credits').then(x => x.ok ? x.json() : null)
@@ -187,10 +205,59 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
+  // Auto-scroll latest posts
+  const postsScrollPausedRef = useRef(false)
+  useEffect(() => {
+    if (latestPosts.length < 2) return
+    const el = postsScrollRef.current
+    if (!el) return
+    let animId: number
+    let lastTime = 0
+    const speed = 0.5
+    const tick = (time: number) => {
+      if (!postsScrollPausedRef.current && lastTime) {
+        const delta = time - lastTime
+        const px = speed * (delta / 16.67)
+        el.scrollLeft += px
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
+          el.scrollLeft = 0
+        }
+      }
+      lastTime = time
+      animId = requestAnimationFrame(tick)
+    }
+    animId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(animId)
+  }, [latestPosts])
+
+  // Auto-scroll football matches
+  const matchScrollPausedRef = useRef(false)
+  useEffect(() => {
+    if (footballMatches.length < 2) return
+    const el = matchScrollRef.current
+    if (!el) return
+    let animId: number
+    let lastTime = 0
+    const speed = 0.4
+    const tick = (time: number) => {
+      if (!matchScrollPausedRef.current && lastTime) {
+        const delta = time - lastTime
+        const px = speed * (delta / 16.67)
+        el.scrollLeft += px
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
+          el.scrollLeft = 0
+        }
+      }
+      lastTime = time
+      animId = requestAnimationFrame(tick)
+    }
+    animId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(animId)
+  }, [footballMatches])
+
   const popularTellers = tellers.slice(0, 8)
   const visibleFortunes = FORTUNE_CARDS.slice(0, 8)
   const visibleStreams = streams.slice(0, 3)
-  const visiblePosts = latestPosts.slice(0, 4)
 
   return (
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
@@ -211,7 +278,7 @@ export default function CanliDarkHome() {
         ))}
       </div>
 
-      {/* ═══ TOP BAR — jeton + CFC + bildirim ═══ */}
+      {/* ═══ TOP BAR — avatar + jeton + CFC + mesajlar + arama + bildirim ═══ */}
       <div className="flex items-center justify-between mb-4">
         <Link href={session ? '/profil' : '/giris'} className="flex items-center gap-2.5">
           <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-fuchsia-400/60 shadow-[0_0_15px_rgba(192,38,211,0.5)]">
@@ -243,6 +310,13 @@ export default function CanliDarkHome() {
           </div>
         </Link>
         <div className="flex items-center gap-2">
+          <Link href="/mesajlar" className="relative w-9 h-9 rounded-full bg-white/5 border border-purple-500/15 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <MessageCircle className="w-4.5 h-4.5 text-fuchsia-300" />
+            {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-[0_0_6px_rgba(236,72,153,0.9)]">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          </Link>
+          <Link href="/kesfet" className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/15 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Search className="w-4.5 h-4.5 text-fuchsia-300" />
+          </Link>
           <NotificationBell />
         </div>
       </div>
@@ -255,20 +329,20 @@ export default function CanliDarkHome() {
       )}
 
       {/* ═══ HERO TITLE ═══ */}
-      <div className="mb-5">
+      <div className="mb-3">
         <h1 className="text-xl font-extrabold text-white leading-snug whitespace-pre-line">
           {heroText}
         </h1>
       </div>
 
-      {/* ═══ 1. HİKÂYELER (Instagram-style stories) ═══ */}
+      {/* ═══ 1. HİKÂYELER (Instagram-style stories) — mb-0 gap ═══ */}
       {celebrities.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mb-1">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="canlidark-section-title">Hikâyeler</h2>
             <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
           </div>
-          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-2">
+          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-1">
             {celebrities.map((celeb) => (
               <Link key={celeb.id} href={`/unluler/${celeb.slug}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
                 <div className="relative">
@@ -296,18 +370,15 @@ export default function CanliDarkHome() {
         </div>
       )}
 
-      {/* ═══ 2. CANLI YAYINLAR — 4-col grid ═══ */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
+      {/* ═══ 2. CANLI YAYINLAR — 4-col grid — mb-0 gap ═══ */}
+      <div className="mb-1">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="canlidark-section-title">Canlı Yayınlar</h2>
           <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {/* Yayın Başlat card */}
-          <Link
-            href={session ? '/sohbet/video/setup' : '/giris'}
-            className="flex flex-col items-center gap-1.5"
-          >
+          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="flex flex-col items-center gap-1.5">
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-pink-500/30" style={{ boxShadow: '0 4px 16px rgba(236,72,153,0.35)' }}>
               <div className="absolute inset-0 bg-gradient-to-br from-pink-600/40 via-fuchsia-600/30 to-purple-700/40" />
               <motion.div
@@ -329,7 +400,6 @@ export default function CanliDarkHome() {
             <p className="text-[10px] font-semibold text-white text-center">Canlı Yayın</p>
           </Link>
 
-          {/* Live streams or empty slots */}
           {visibleStreams.length > 0 ? (
             visibleStreams.map((s) => {
               const streamThumb = s.thumbnailUrl || s.broadcastImage || s.user.image
@@ -358,7 +428,6 @@ export default function CanliDarkHome() {
               )
             })
           ) : (
-            // 3 empty placeholder cards
             Array.from({ length: 3 }).map((_, idx) => (
               <Link key={`empty-stream-${idx}`} href="/sohbet/video" className="flex flex-col items-center gap-1.5">
                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-purple-500/10" style={{ boxShadow: '0 4px 16px rgba(192,38,211,0.1)' }}>
@@ -373,58 +442,130 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ 3. SON PAYLAŞIMLAR — 4-col grid ═══ */}
+      {/* ═══ 3. CANLI MAÇLAR — scrolling ticker ═══ */}
+      {footballMatches.length > 0 && (
+        <div className="mb-1">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="canlidark-section-title flex items-center gap-1.5"><Trophy className="w-4 h-4 text-emerald-400" /> Canlı Maçlar</h2>
+            <Link href="/futbol" className="canlidark-section-link">Tümünü gör</Link>
+          </div>
+          <div
+            ref={matchScrollRef}
+            className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-1"
+            onMouseEnter={() => { matchScrollPausedRef.current = true }}
+            onMouseLeave={() => { matchScrollPausedRef.current = false }}
+            onTouchStart={() => { matchScrollPausedRef.current = true }}
+            onTouchEnd={() => { matchScrollPausedRef.current = false }}
+          >
+            {footballMatches.slice(0, 10).map((match) => {
+              const isLive = ['LIVE', 'IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status)
+              const isFinished = match.status === 'FINISHED'
+              const time = new Date(match.utcDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+              return (
+                <Link key={match.id} href="/futbol" className="flex-shrink-0 w-[200px]">
+                  <div className={`p-3 rounded-xl border backdrop-blur-sm h-full ${
+                    isLive ? 'bg-red-500/10 border-red-500/30' : 'bg-white/5 border-emerald-500/15'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] text-purple-400/50 truncate">{match.competition?.name || 'Maç'}</span>
+                      {isLive ? (
+                        <span className="px-1.5 py-0.5 rounded-full text-[8px] font-bold text-red-400 bg-red-500/20 animate-pulse">● CANLI</span>
+                      ) : isFinished ? (
+                        <span className="text-[8px] text-green-400/60">Bitti</span>
+                      ) : (
+                        <span className="text-[8px] text-emerald-400">{time}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        {match.homeTeam.crest && (
+                          <div className="w-5 h-5 flex-shrink-0">
+                            <Image src={match.homeTeam.crest} alt={match.homeTeam.shortName} width={20} height={20} className="object-contain" />
+                          </div>
+                        )}
+                        <span className="text-[10px] text-white font-medium truncate">{match.homeTeam.shortName || match.homeTeam.name}</span>
+                      </div>
+                      <span className={`text-sm font-bold mx-1 ${isLive ? 'text-red-400' : 'text-white'}`}>
+                        {match.score.fullTime.home ?? '-'} : {match.score.fullTime.away ?? '-'}
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                        <span className="text-[10px] text-white font-medium truncate text-right">{match.awayTeam.shortName || match.awayTeam.name}</span>
+                        {match.awayTeam.crest && (
+                          <div className="w-5 h-5 flex-shrink-0">
+                            <Image src={match.awayTeam.crest} alt={match.awayTeam.shortName} width={20} height={20} className="object-contain" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 4. SON PAYLAŞIMLAR — auto-scroll left — mb-0 gap ═══ */}
       {latestPosts.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mb-1">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="canlidark-section-title flex items-center gap-1.5">
               <Heart className="w-4 h-4 text-pink-400" /> Son Paylaşımlar
             </h2>
             <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
           </div>
-          <div className="grid grid-cols-4 gap-2">
-            {visiblePosts.map((post) => (
-              <Link key={post.id} href={`/unluler/${post.celebrity.slug}`} className="flex flex-col items-center gap-1.5">
-                <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-pink-500/20" style={{ boxShadow: '0 4px 16px rgba(236,72,153,0.25)' }}>
+          <div
+            ref={postsScrollRef}
+            className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-1"
+            onMouseEnter={() => { postsScrollPausedRef.current = true }}
+            onMouseLeave={() => { postsScrollPausedRef.current = false }}
+            onTouchStart={() => { postsScrollPausedRef.current = true }}
+            onTouchEnd={() => { postsScrollPausedRef.current = false }}
+          >
+            {latestPosts.map((post) => (
+              <Link key={post.id} href={`/unluler/${post.celebrity.slug}`} className="flex-shrink-0 w-44">
+                <div className="canlidark-card overflow-hidden h-full">
                   {post.mediaUrl ? (
-                    <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="100px" />
+                    <div className="relative w-full h-28">
+                      <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="176px" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
+                        {PLATFORM_ICON[post.platform] || <Globe className="w-3 h-3" />}
+                      </div>
+                    </div>
                   ) : (
-                    <div className={`absolute inset-0 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
-                      <div className="text-white/40 text-2xl">{PLATFORM_ICON[post.platform]}</div>
+                    <div className={`relative w-full h-28 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
+                      <div className="text-white/30 text-3xl">{PLATFORM_ICON[post.platform]}</div>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  {/* Platform badge */}
-                  <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
-                    {PLATFORM_ICON[post.platform] || <Globe className="w-2.5 h-2.5" />}
-                  </div>
-                  {/* Celebrity info at bottom */}
-                  <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-4 rounded-full overflow-hidden relative flex-shrink-0">
+                  <div className="p-2.5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-full overflow-hidden relative flex-shrink-0">
                         {post.celebrity.profileImage ? (
-                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="16px" />
+                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="20px" />
                         ) : (
-                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[7px] text-white font-bold">{post.celebrity.name[0]}</div>
+                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[8px] text-white font-bold">{post.celebrity.name[0]}</div>
                         )}
                       </div>
-                      <span className="text-[8px] font-bold text-white truncate">{post.celebrity.name.split(' ')[0]}</span>
+                      <span className="text-[10px] font-bold text-white truncate">{post.celebrity.name}</span>
+                    </div>
+                    {post.content && (
+                      <p className="text-[9px] text-fuchsia-200/70 line-clamp-2 leading-tight">{post.content}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[9px] text-fuchsia-200/50 flex items-center gap-0.5">
+                        <Heart className="w-2.5 h-2.5" /> {post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <p className="text-[10px] font-semibold text-white text-center truncate w-full">{post.celebrity.name.split(' ')[0]}</p>
               </Link>
             ))}
           </div>
-          {latestPosts.length > 4 && (
-            <Link href="/unluler" className="mt-2 flex items-center justify-center gap-1 text-xs text-fuchsia-300/80 hover:text-fuchsia-200 transition-colors">
-              +{latestPosts.length - 4} daha fazla paylaşım <ChevronRight className="w-3 h-3" />
-            </Link>
-          )}
         </div>
       )}
 
-      {/* ═══ 4. SESLİ SOHBET ODALARI — yuvarlak (keep original) ═══ */}
+      {/* ═══ 5. SESLİ SOHBET ODALARI — yuvarlak ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
@@ -465,7 +606,7 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ 5. FAL & TAROT — 4 sütun ═══ */}
+      {/* ═══ 6. FAL & TAROT — 4 sütun ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Fal & Tarot</h2>
@@ -489,7 +630,7 @@ export default function CanliDarkHome() {
         )}
       </div>
 
-      {/* ═══ 6. POPÜLER FALCILAR — 4-col grid ═══ */}
+      {/* ═══ 7. POPÜLER FALCILAR — 4-col grid ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-400" /> Popüler Falcılar</h2>
@@ -546,7 +687,7 @@ export default function CanliDarkHome() {
         )}
       </div>
 
-      {/* ═══ 7. KEŞFET — Feature cards 4-col grid ═══ */}
+      {/* ═══ 8. KEŞFET — Feature cards 4-col grid ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Compass className="w-4 h-4 text-cyan-400" /> Keşfet</h2>
@@ -567,7 +708,7 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ 8. GOLD ÜYELİKLER — 4-col grid ═══ */}
+      {/* ═══ 9. GOLD ÜYELİKLER — 4-col grid ═══ */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Crown className="w-4 h-4 text-amber-400" /> Gold Üyelikler</h2>
@@ -629,7 +770,6 @@ export default function CanliDarkHome() {
       <AnimatePresence>
         {drawerOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
               initial={{ opacity: 0 }}
@@ -637,7 +777,6 @@ export default function CanliDarkHome() {
               exit={{ opacity: 0 }}
               onClick={() => setDrawerOpen(false)}
             />
-            {/* Drawer */}
             <motion.div
               className="fixed top-0 right-0 h-full w-72 bg-[#0f0524]/95 backdrop-blur-xl border-l border-purple-500/20 z-50 overflow-y-auto"
               initial={{ x: '100%' }}
@@ -655,7 +794,7 @@ export default function CanliDarkHome() {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { href: '/futbol', icon: Trophy, label: 'Futbol', gradient: 'from-green-500 to-emerald-600', glow: 'shadow-emerald-500/20' },
-                    { href: '/dizi-film', icon: Film, label: 'Dizi & Film', gradient: 'from-red-500 to-rose-600', glow: 'shadow-red-500/20' },
+                    { href: '/dizi-film', icon: Play, label: 'Dizi & Film', gradient: 'from-red-500 to-rose-600', glow: 'shadow-red-500/20' },
                     { href: '/oyunlar', icon: Gamepad2, label: 'Oyunlar', gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/20' },
                     { href: '/davet', icon: UserPlus, label: 'Davet Et', gradient: 'from-blue-500 to-indigo-600', glow: 'shadow-blue-500/20' },
                     { href: '/hediyeler', icon: Gift, label: 'Hediye', gradient: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/20' },
@@ -701,10 +840,9 @@ export default function CanliDarkHome() {
             <Coins className="w-5 h-5" />
             <span>Jeton Al</span>
           </Link>
-          <Link href="/mesajlar" className="canlidark-nav-item relative">
-            <MessageCircle className="w-5 h-5" />
-            <span>Mesajlar</span>
-            {unreadCount > 0 && <span className="absolute top-0 right-3 w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_6px_rgba(236,72,153,0.9)]" />}
+          <Link href="/unluler" className="canlidark-nav-item">
+            <Heart className="w-5 h-5" />
+            <span>Fan Club</span>
           </Link>
         </div>
       </nav>

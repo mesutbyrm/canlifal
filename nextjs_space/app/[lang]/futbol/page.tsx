@@ -42,13 +42,13 @@ interface Scorer {
 }
 
 const COMPETITIONS = [
-  { code: 'BSA', name: 'S\u00fcper Lig', flag: '\ud83c\uddf9\ud83c\uddf7' },
-  { code: 'PL', name: 'Premier Lig', flag: '\ud83c\uddec\ud83c\udde7' },
-  { code: 'PD', name: 'La Liga', flag: '\ud83c\uddea\ud83c\uddf8' },
-  { code: 'SA', name: 'Serie A', flag: '\ud83c\uddee\ud83c\uddf9' },
-  { code: 'BL1', name: 'Bundesliga', flag: '\ud83c\udde9\ud83c\uddea' },
-  { code: 'FL1', name: 'Ligue 1', flag: '\ud83c\uddeb\ud83c\uddf7' },
-  { code: 'CL', name: '\u015eampiyonlar Ligi', flag: '\u2b50' },
+  { code: 'BSA', name: 'Süper Lig', flag: '🇹🇷' },
+  { code: 'PL', name: 'Premier Lig', flag: '🇬🇧' },
+  { code: 'PD', name: 'La Liga', flag: '🇪🇸' },
+  { code: 'SA', name: 'Serie A', flag: '🇮🇹' },
+  { code: 'BL1', name: 'Bundesliga', flag: '🇩🇪' },
+  { code: 'FL1', name: 'Ligue 1', flag: '🇫🇷' },
+  { code: 'CL', name: 'Şampiyonlar Ligi', flag: '⭐' },
 ]
 
 type TabType = 'matches' | 'standings' | 'scorers'
@@ -68,9 +68,9 @@ function getStatusLabel(status: string): { label: string; color: string } {
     case 'LIVE': case 'IN_PLAY': case 'PAUSED': case 'HALFTIME':
       return { label: 'CANLI', color: 'text-red-400 bg-red-500/20' }
     case 'FINISHED': return { label: 'Bitti', color: 'text-green-400 bg-green-500/10' }
-    case 'TIMED': case 'SCHEDULED': return { label: 'Planland\u0131', color: 'text-blue-400 bg-blue-500/10' }
+    case 'TIMED': case 'SCHEDULED': return { label: 'Planlandı', color: 'text-blue-400 bg-blue-500/10' }
     case 'POSTPONED': return { label: 'Ertelendi', color: 'text-yellow-400 bg-yellow-500/10' }
-    case 'CANCELLED': return { label: '\u0130ptal', color: 'text-gray-400 bg-gray-500/10' }
+    case 'CANCELLED': return { label: 'İptal', color: 'text-gray-400 bg-gray-500/10' }
     default: return { label: status, color: 'text-purple-400 bg-purple-500/10' }
   }
 }
@@ -155,7 +155,7 @@ export default function FutbolPage() {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">Futbol</h1>
-                <p className="text-emerald-400/60 text-sm">Canl\u0131 skorlar, puan durumu ve istatistikler</p>
+                <p className="text-emerald-400/60 text-sm">Canlı skorlar, puan durumu ve istatistikler</p>
               </div>
             </div>
           </motion.div>
@@ -186,9 +186,9 @@ export default function FutbolPage() {
       <div className="max-w-5xl mx-auto px-4 mb-4">
         <div className="flex border-b border-purple-500/10">
           {[
-            { key: 'matches' as const, label: 'Ma\u00e7lar', icon: Calendar },
+            { key: 'matches' as const, label: 'Maçlar', icon: Calendar },
             { key: 'standings' as const, label: 'Puan Durumu', icon: ArrowUpDown },
-            { key: 'scorers' as const, label: 'Gol Krall\u0131\u011f\u0131', icon: Target },
+            { key: 'scorers' as const, label: 'Gol Krallığı', icon: Target },
           ].map(t => (
             <button
               key={t.key}
@@ -220,7 +220,7 @@ export default function FutbolPage() {
                 {sortedMatches.length === 0 ? (
                   <div className="text-center py-16">
                     <Calendar className="w-14 h-14 text-purple-500/20 mx-auto mb-3" />
-                    <p className="text-purple-300/40">Bu lig i\u00e7in ma\u00e7 bulunamad\u0131</p>
+                    <p className="text-purple-300/40">Bu lig için maç bulunamadı</p>
                   </div>
                 ) : (
                   sortedMatches.slice(0, 30).map((match, i) => {
@@ -242,12 +242,12 @@ export default function FutbolPage() {
                         {/* Date & Status */}
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xs text-purple-400/40">
-                            {formatMatchDate(match.utcDate)} \u2022 Hafta {match.matchday}
+                            {formatMatchDate(match.utcDate)} • Hafta {match.matchday}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${status.color} ${
                             isLive ? 'animate-pulse' : ''
                           }`}>
-                            {isLive && '\u25cf '}{status.label}
+                            {isLive && '● '}{status.label}
                           </span>
                         </div>
 
@@ -297,7 +297,7 @@ export default function FutbolPage() {
                         {(isLive || isFinished) && match.score.halfTime.home !== null && (
                           <div className="text-center mt-2">
                             <span className="text-[10px] text-purple-400/30">
-                              \u0130Y: {match.score.halfTime.home} - {match.score.halfTime.away}
+                              İY: {match.score.halfTime.home} - {match.score.halfTime.away}
                             </span>
                           </div>
                         )}
@@ -314,14 +314,14 @@ export default function FutbolPage() {
                 {standings.length === 0 ? (
                   <div className="text-center py-16">
                     <Trophy className="w-14 h-14 text-purple-500/20 mx-auto mb-3" />
-                    <p className="text-purple-300/40">Puan durumu bulunamad\u0131</p>
+                    <p className="text-purple-300/40">Puan durumu bulunamadı</p>
                   </div>
                 ) : (
                   <div className="rounded-2xl overflow-hidden border border-purple-500/10 bg-white/5 backdrop-blur-sm">
                     {/* Header */}
                     <div className="grid grid-cols-[40px_1fr_40px_40px_40px_40px_50px_50px_50px] gap-1 px-4 py-3 bg-white/5 text-[10px] text-purple-400/50 font-medium">
                       <span>#</span>
-                      <span>Tak\u0131m</span>
+                      <span>Takım</span>
                       <span className="text-center">O</span>
                       <span className="text-center">G</span>
                       <span className="text-center">B</span>
@@ -377,7 +377,7 @@ export default function FutbolPage() {
                 {scorers.length === 0 ? (
                   <div className="text-center py-16">
                     <Target className="w-14 h-14 text-purple-500/20 mx-auto mb-3" />
-                    <p className="text-purple-300/40">Gol krall\u0131\u011f\u0131 verileri bulunamad\u0131</p>
+                    <p className="text-purple-300/40">Gol krallığı verileri bulunamadı</p>
                   </div>
                 ) : (
                   scorers.map((scorer, i) => (
@@ -409,7 +409,7 @@ export default function FutbolPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-lg font-bold text-emerald-400">{scorer.goals}</div>
-                        <div className="text-[10px] text-purple-400/40">{scorer.playedMatches} ma\u00e7</div>
+                        <div className="text-[10px] text-purple-400/40">{scorer.playedMatches} maç</div>
                       </div>
                       {scorer.assists != null && (
                         <div className="text-right flex-shrink-0 pl-2 border-l border-purple-500/10">

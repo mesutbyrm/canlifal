@@ -9,7 +9,7 @@ import {
   Play, Users, Globe, Loader2, ExternalLink
 } from 'lucide-react'
 
-const TMDB_IMG = 'https://play-lh.googleusercontent.com/8oYvHLFp2-swlnr1RCOlaXH_H_In9PHdQz9KszyOHPq7o-Hya_qlqcZO6vG8Bm4xzjk=w240-h480-rw'
+const TMDB_IMG = 'https://play-lh.googleusercontent.com/XXqfqs9irPSjphsMPcC-c6Q4-FY5cd8klw4IdI2lof_Ie-yXaFirqbNDzK2kJ808WXJk'
 
 interface CastMember {
   id: number
@@ -68,7 +68,7 @@ export default function MediaDetailPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a] flex items-center justify-center">
         <div className="text-center">
           <Film className="w-16 h-16 text-purple-500/30 mx-auto mb-4" />
-          <p className="text-purple-300/50 text-lg">\u0130\u00e7erik bulunamad\u0131</p>
+          <p className="text-purple-300/50 text-lg">İçerik bulunamadı</p>
         </div>
       </div>
     )
@@ -182,7 +182,7 @@ export default function MediaDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-500 transition-colors"
               >
                 <Play className="w-4 h-4 fill-white" />
-                Fragman\u0131 \u0130zle
+                Fragmanı İzle
               </a>
             )}
           </div>
@@ -196,7 +196,7 @@ export default function MediaDetailPage() {
             transition={{ delay: 0.2 }}
             className="mt-6 p-4 rounded-2xl bg-white/5 border border-purple-500/10"
           >
-            <h3 className="text-sm font-bold text-white mb-2">\u00d6zet</h3>
+            <h3 className="text-sm font-bold text-white mb-2">Özet</h3>
             <p className="text-sm text-purple-200/70 leading-relaxed">{detail.overview}</p>
           </motion.div>
         )}
@@ -206,7 +206,7 @@ export default function MediaDetailPage() {
           {detail.status && (
             <div className="p-3 rounded-xl bg-white/5 border border-purple-500/10">
               <div className="text-[10px] text-purple-400/40 mb-1">Durum</div>
-              <div className="text-sm text-white font-medium">{detail.status === 'Released' ? 'Yay\u0131nland\u0131' : detail.status === 'Returning Series' ? 'Devam Ediyor' : detail.status}</div>
+              <div className="text-sm text-white font-medium">{detail.status === 'Released' ? 'Yayınlandı' : detail.status === 'Returning Series' ? 'Devam Ediyor' : detail.status}</div>
             </div>
           )}
           {detail.original_language && (
@@ -220,13 +220,13 @@ export default function MediaDetailPage() {
           )}
           {detail.budget > 0 && (
             <div className="p-3 rounded-xl bg-white/5 border border-purple-500/10">
-              <div className="text-[10px] text-purple-400/40 mb-1">B\u00fct\u00e7e</div>
+              <div className="text-[10px] text-purple-400/40 mb-1">Bütçe</div>
               <div className="text-sm text-white font-medium">${(detail.budget / 1_000_000).toFixed(0)}M</div>
             </div>
           )}
           {detail.revenue > 0 && (
             <div className="p-3 rounded-xl bg-white/5 border border-purple-500/10">
-              <div className="text-[10px] text-purple-400/40 mb-1">Has\u0131lat</div>
+              <div className="text-[10px] text-purple-400/40 mb-1">Hasılat</div>
               <div className="text-sm text-emerald-400 font-medium">${(detail.revenue / 1_000_000).toFixed(0)}M</div>
             </div>
           )}
@@ -247,7 +247,7 @@ export default function MediaDetailPage() {
                     )}
                   </div>
                   <p className="text-xs text-white font-medium mt-1 truncate">{season.name}</p>
-                  <p className="text-[10px] text-purple-400/40">{season.episode_count} b\u00f6l\u00fcm</p>
+                  <p className="text-[10px] text-purple-400/40">{season.episode_count} bölüm</p>
                 </div>
               ))}
             </div>
@@ -299,7 +299,7 @@ export default function MediaDetailPage() {
                 >
                   <div className="relative w-20 aspect-video rounded-lg overflow-hidden bg-purple-900/20 flex-shrink-0">
                     <Image
-                      src={'https://i.ytimg.com/vi/5eHEycn84Ro/sddefault.jpg?sqp=-oaymwEmCIAFEOAD8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGDAgVyhyMA8=&rs=AOn4CLDm5uu6gcwM1pJcDWYS3MlZhef7Cw' + video.key + '/mqdefault.jpg'}
+                      src={`https://i.ytimg.com/vi/${video.key}/mqdefault.jpg`}
                       alt={video.name}
                       fill
                       sizes="80px"
