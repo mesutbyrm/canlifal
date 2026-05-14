@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, BadgeCheck, Calendar, Heart, MapPin, Star, Users,
+  BadgeCheck, Calendar, Heart, MapPin, Star, Users,
   Instagram, Youtube, Music, Globe, ExternalLink, Trophy,
-  UserCheck, Loader2, Share2, Film, Tv, MessageCircle, Play, Twitter
+  UserCheck, Loader2, Share2, Film, Tv, MessageCircle, Play, Twitter,
+  ChevronDown, ChevronUp
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
@@ -93,14 +94,6 @@ function formatDate(dateStr: string | null): string {
   }
 }
 
-const SOCIAL_ICONS: Record<string, { icon: any; color: string; label: string }> = {
-  instagram: { icon: Instagram, color: 'from-pink-500 to-purple-600', label: 'Instagram' },
-  youtube: { icon: Youtube, color: 'from-red-500 to-red-700', label: 'YouTube' },
-  tiktok: { icon: Music, color: 'from-gray-800 to-black', label: 'TikTok' },
-  twitter: { icon: Globe, color: 'from-blue-400 to-blue-600', label: 'X (Twitter)' },
-  website: { icon: Globe, color: 'from-emerald-500 to-teal-600', label: 'Web Sitesi' },
-}
-
 export default function CelebrityProfilePage() {
   const params = useParams()
   const router = useRouter()
@@ -113,6 +106,8 @@ export default function CelebrityProfilePage() {
   const [posts, setPosts] = useState<CelebPost[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [platformFilter, setPlatformFilter] = useState('all')
+  const [aboutOpen, setAboutOpen] = useState(false)
+  const [totalLikes, setTotalLikes] = useState(0)
 
   useEffect(() => {
     if (!params?.slug) return
@@ -134,11 +129,15 @@ export default function CelebrityProfilePage() {
     setPostsLoading(true)
     try {
       const url = platformFilter === 'all'
-        ? `/api/celebrities/${params.slug}/posts?limit=20`
-        : `/api/celebrities/${params.slug}/posts?platform=${platformFilter}&limit=20`
+        ? `/api/celebrities/${params.slug}/posts?limit=50`
+        : `/api/celebrities/${params.slug}/posts?platform=${platformFilter}&limit=50`
       const res = await fetch(url)
       const data = await res.json()
-      setPosts(data.posts || [])
+      const loadedPosts = data.posts || []
+      setPosts(loadedPosts)
+      // Calculate total likes across all posts
+      const likes = loadedPosts.reduce((sum: number, p: CelebPost) => sum + p.likeCount, 0)
+      setTotalLikes(likes)
     } catch { setPosts([]) }
     setPostsLoading(false)
   }, [params?.slug, platformFilter])
@@ -160,6 +159,7 @@ export default function CelebrityProfilePage() {
         isLiked: data.liked,
         likeCount: data.liked ? p.likeCount + 1 : p.likeCount - 1,
       } : p))
+      setTotalLikes(prev => data.liked ? prev + 1 : prev - 1)
     } catch {}
   }
 
@@ -198,7 +198,7 @@ export default function CelebrityProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-10 h-10 animate-spin text-fuchsia-400" />
       </div>
     )
@@ -206,7 +206,7 @@ export default function CelebrityProfilePage() {
 
   if (!celebrity) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Users className="w-16 h-16 text-purple-500/30 mx-auto mb-4" />
           <p className="text-purple-300/50 text-lg mb-4">Ünlü bulunamadı</p>
@@ -220,107 +220,80 @@ export default function CelebrityProfilePage() {
 
   const CategoryIcon = CATEGORY_ICONS[celebrity.category] || Star
 
+  // Derive available platforms from posts and socialLinks
+  const postPlatforms = new Set(posts.map(p => p.platform))
+  const socialPlatforms = celebrity.socialLinks ? Object.keys(celebrity.socialLinks).filter(k => celebrity.socialLinks[k]) : []
+  const allPlatforms = new Set([...postPlatforms, ...socialPlatforms.map(p => p === 'twitter' ? 'x' : p)])
+
+  const availableTabs = PLATFORM_TABS.filter(
+    tab => tab.value === 'all' || allPlatforms.has(tab.value)
+  )
+
+  const hasAboutContent = celebrity.bio || celebrity.birthDate || celebrity.birthPlace || celebrity.zodiacSign || (celebrity.achievements && celebrity.achievements.length > 0)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0014] via-[#1a0030] to-[#0d001a] pb-24">
-      {/* Cover Image */}
-      <div className="relative h-48 sm:h-64 md:h-80">
-        {celebrity.coverImage ? (
-          <Image
-            src={celebrity.coverImage}
-            alt={`${celebrity.name} kapak`}
-            fill
-            className="object-cover"
-            priority
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-purple-900/60 via-fuchsia-900/40 to-pink-900/30" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0014] via-[#0a0014]/50 to-transparent" />
-        
-        {/* Back button */}
-        <div className="absolute top-16 left-4 z-10">
-          <button
-            onClick={() => router.push('/unluler')}
-            className="p-2 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 text-white hover:bg-black/60 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Share button */}
-        <div className="absolute top-16 right-4 z-10">
-          <button
-            onClick={handleShare}
-            className="p-2 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 text-white hover:bg-black/60 transition-colors"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Profile Section */}
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-center sm:items-end gap-4"
-        >
-          {/* Profile Image */}
-          <div className="relative flex-shrink-0">
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-[#0a0014] shadow-xl shadow-fuchsia-500/20">
+    <div className="min-h-screen pb-24">
+      {/* TikTok-style Profile Header */}
+      <div className="max-w-lg mx-auto px-4 pt-4">
+        {/* Avatar */}
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-fuchsia-500/50 shadow-lg shadow-fuchsia-500/20">
               {celebrity.profileImage ? (
                 <Image
                   src={celebrity.profileImage}
                   alt={celebrity.name}
-                  width={144}
-                  height={144}
+                  width={96}
+                  height={96}
                   className="object-cover w-full h-full"
                   priority
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-purple-700 flex items-center justify-center">
-                  <span className="text-4xl font-bold text-white">{celebrity.name.charAt(0)}</span>
+                  <span className="text-3xl font-bold text-white">{celebrity.name.charAt(0)}</span>
                 </div>
               )}
             </div>
             {celebrity.isVerified && (
-              <div className="absolute -bottom-1 -right-1 bg-[#0a0014] rounded-full p-1">
-                <BadgeCheck className="w-7 h-7 text-blue-400" />
+              <div className="absolute -bottom-1 -right-1 bg-[#0a0014] rounded-full p-0.5">
+                <BadgeCheck className="w-6 h-6 text-blue-400" />
               </div>
             )}
           </div>
 
-          {/* Name & Info */}
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{celebrity.name}</h1>
+          {/* Name + Category */}
+          <h1 className="text-xl font-bold text-white mt-3">{celebrity.name}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <CategoryIcon className="w-3.5 h-3.5 text-fuchsia-400" />
+            <span className="text-sm text-purple-300/70">{CATEGORY_LABELS[celebrity.category] || celebrity.category}</span>
+          </div>
+
+          {/* Stats Row - TikTok style */}
+          <div className="flex items-center justify-center gap-5 mt-5 w-full">
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-bold text-white">0</p>
+              <p className="text-[11px] text-purple-400">Takipte</p>
             </div>
-            <div className="flex items-center justify-center sm:justify-start gap-3 text-sm text-purple-300/70">
-              <span className="flex items-center gap-1">
-                <CategoryIcon className="w-4 h-4 text-fuchsia-400" />
-                {CATEGORY_LABELS[celebrity.category] || celebrity.category}
-              </span>
-              {celebrity.zodiacSign && (
-                <span className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400" />
-                  {celebrity.zodiacSign}
-                </span>
-              )}
+            <div className="w-px h-8 bg-purple-800/60" />
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-bold text-white">{formatCount(followerCount)}</p>
+              <p className="text-[11px] text-purple-400">Takipçi</p>
+            </div>
+            <div className="w-px h-8 bg-purple-800/60" />
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-bold text-white">{formatCount(totalLikes)}</p>
+              <p className="text-[11px] text-purple-400">Beğeni</p>
             </div>
           </div>
 
-          {/* Follow Button & Stats */}
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-white">{formatCount(followerCount)}</div>
-              <div className="text-xs text-purple-300/50">Takipçi</div>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-center gap-2 mt-4 w-full max-w-xs">
             <button
               onClick={handleFollow}
               disabled={followLoading}
-              className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                 following
-                  ? 'bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/30 hover:bg-red-600/20 hover:text-red-300 hover:border-red-500/30'
+                  ? 'bg-white/10 text-purple-200 border border-purple-500/30 hover:bg-red-600/20 hover:text-red-300 hover:border-red-500/30'
                   : 'bg-fuchsia-600 text-white hover:bg-fuchsia-500 shadow-lg shadow-fuchsia-600/30'
               }`}
             >
@@ -332,238 +305,217 @@ export default function CelebrityProfilePage() {
                 <><Heart className="w-4 h-4" /> Takip Et</>
               )}
             </button>
+            <button
+              onClick={handleShare}
+              className="w-11 h-11 rounded-lg bg-white/10 border border-purple-500/20 flex items-center justify-center text-purple-300 hover:bg-white/15 transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
           </div>
-        </motion.div>
 
-        {/* Bio Section */}
-        {celebrity.bio && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-8 p-5 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
-          >
-            <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-              <Users className="w-5 h-5 text-fuchsia-400" />
-              Hakkında
-            </h2>
-            <p className="text-purple-200/70 leading-relaxed whitespace-pre-line">{celebrity.bio}</p>
-          </motion.div>
-        )}
-
-        {/* Info Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3"
-        >
-          {celebrity.birthDate && (
-            <div className="p-4 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm">
-              <Calendar className="w-5 h-5 text-fuchsia-400 mb-2" />
-              <div className="text-xs text-purple-400/60">Doğum Tarihi</div>
-              <div className="text-sm text-white font-medium mt-0.5">{formatDate(celebrity.birthDate)}</div>
-            </div>
-          )}
-          {celebrity.birthPlace && (
-            <div className="p-4 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm">
-              <MapPin className="w-5 h-5 text-fuchsia-400 mb-2" />
-              <div className="text-xs text-purple-400/60">Doğum Yeri</div>
-              <div className="text-sm text-white font-medium mt-0.5">{celebrity.birthPlace}</div>
-            </div>
-          )}
-          {celebrity.zodiacSign && (
-            <div className="p-4 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm">
-              <Star className="w-5 h-5 text-yellow-400 mb-2" />
-              <div className="text-xs text-purple-400/60">Burç</div>
-              <div className="text-sm text-white font-medium mt-0.5">{celebrity.zodiacSign}</div>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Achievements */}
-        {celebrity.achievements && celebrity.achievements.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-4 p-5 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
-          >
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              Başarılar
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {celebrity.achievements.map((ach: string, i: number) => (
-                <span
-                  key={i}
-                  className="px-3 py-1.5 rounded-full text-sm bg-yellow-500/10 text-yellow-300 border border-yellow-500/20"
-                >
-                  ⭐ {ach}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Fan Club CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22 }}
-          className="mt-4"
-        >
+          {/* Fan Club CTA - compact */}
           <Link
             href={`/unluler/${celebrity.slug}/fan-kulubu`}
-            className="block p-5 rounded-2xl bg-gradient-to-r from-fuchsia-600/20 via-purple-600/15 to-pink-600/20 border border-fuchsia-500/20 backdrop-blur-sm hover:border-fuchsia-500/40 transition-all group"
+            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-fuchsia-600/20 to-purple-600/20 border border-fuchsia-500/20 hover:border-fuchsia-500/40 transition-all text-sm"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-fuchsia-600/30 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-fuchsia-400" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold flex items-center gap-2">
-                    Fan Kulübü
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-fuchsia-500/30 text-fuchsia-300">YENİ</span>
-                  </h3>
-                  <p className="text-purple-300/60 text-sm">Tartışmalara katıl, duvarına yaz</p>
-                </div>
-              </div>
-              <ExternalLink className="w-5 h-5 text-fuchsia-400/50 group-hover:text-fuchsia-400 transition-colors" />
-            </div>
+            <Users className="w-4 h-4 text-fuchsia-400" />
+            <span className="text-fuchsia-300 font-medium">Fan Kulübü</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-fuchsia-500/30 text-fuchsia-300">YENİ</span>
           </Link>
-        </motion.div>
 
-        {/* Social Posts Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-6 p-5 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
-        >
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Instagram className="w-5 h-5 text-fuchsia-400" />
-            Sosyal Medya Paylaşımları
-          </h2>
+          {/* Collapsible Hakkında Section */}
+          {hasAboutContent && (
+            <div className="w-full mt-4">
+              <button
+                onClick={() => setAboutOpen(!aboutOpen)}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-purple-500/10 hover:bg-white/8 transition-colors"
+              >
+                <span className="text-sm font-medium text-purple-200 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-fuchsia-400" />
+                  Hakkında
+                </span>
+                {aboutOpen ? (
+                  <ChevronUp className="w-4 h-4 text-purple-400" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-purple-400" />
+                )}
+              </button>
 
-          {/* Platform Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-3 mb-4">
-            {PLATFORM_TABS.map((tab) => {
-              const TabIcon = tab.icon
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setPlatformFilter(tab.value)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    platformFilter === tab.value
-                      ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/30'
-                      : 'bg-white/5 text-purple-300/70 border border-purple-500/10 hover:bg-white/10'
-                  }`}
-                >
-                  <TabIcon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              )
-            })}
-          </div>
+              <AnimatePresence>
+                {aboutOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 py-3 space-y-3">
+                      {/* Bio */}
+                      {celebrity.bio && (
+                        <p className="text-sm text-purple-200/70 leading-relaxed whitespace-pre-line">{celebrity.bio}</p>
+                      )}
 
-          {/* Posts Grid */}
-          {postsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
-            </div>
-          ) : posts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {posts.map((post) => (
-                <div key={post.id} className="rounded-xl overflow-hidden bg-white/5 border border-purple-500/10 hover:border-fuchsia-500/20 transition-all">
-                  {post.mediaUrl && (
-                    <div className="relative w-full h-40">
-                      <Image src={post.mediaUrl} alt={post.content || 'Paylaşım'} fill className="object-cover" sizes="300px" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-gradient-to-br ${PLATFORM_COLORS[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center shadow-lg`}>
-                        {post.platform === 'instagram' && <Instagram className="w-3.5 h-3.5 text-white" />}
-                        {post.platform === 'x' && <Twitter className="w-3.5 h-3.5 text-white" />}
-                        {post.platform === 'youtube' && <Youtube className="w-3.5 h-3.5 text-white" />}
-                        {post.platform === 'tiktok' && <Play className="w-3.5 h-3.5 text-white" />}
+                      {/* Info pills */}
+                      <div className="flex flex-wrap gap-2">
+                        {celebrity.birthDate && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-white/5 border border-purple-500/10 text-purple-200">
+                            <Calendar className="w-3.5 h-3.5 text-fuchsia-400" />
+                            {formatDate(celebrity.birthDate)}
+                          </span>
+                        )}
+                        {celebrity.birthPlace && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-white/5 border border-purple-500/10 text-purple-200">
+                            <MapPin className="w-3.5 h-3.5 text-fuchsia-400" />
+                            {celebrity.birthPlace}
+                          </span>
+                        )}
+                        {celebrity.zodiacSign && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-white/5 border border-purple-500/10 text-purple-200">
+                            <Star className="w-3.5 h-3.5 text-yellow-400" />
+                            {celebrity.zodiacSign}
+                          </span>
+                        )}
                       </div>
+
+                      {/* Achievements */}
+                      {celebrity.achievements && celebrity.achievements.length > 0 && (
+                        <div className="space-y-2">
+                          <h3 className="text-xs font-semibold text-purple-300/60 uppercase tracking-wider flex items-center gap-1.5">
+                            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+                            Başarılar
+                          </h3>
+                          <div className="flex flex-wrap gap-1.5">
+                            {celebrity.achievements.map((ach: string, i: number) => (
+                              <span
+                                key={i}
+                                className="px-2.5 py-1 rounded-full text-xs bg-yellow-500/10 text-yellow-300 border border-yellow-500/15"
+                              >
+                                ⭐ {ach}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Social Links */}
+                      {celebrity.socialLinks && Object.keys(celebrity.socialLinks).length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {Object.entries(celebrity.socialLinks).map(([platform, url]) => {
+                            if (!url) return null
+                            const icons: Record<string, any> = { instagram: Instagram, youtube: Youtube, tiktok: Music, twitter: Twitter, website: Globe }
+                            const colors: Record<string, string> = { instagram: 'text-pink-400', youtube: 'text-red-400', tiktok: 'text-cyan-400', twitter: 'text-blue-400', website: 'text-emerald-400' }
+                            const Icon = icons[platform] || Globe
+                            return (
+                              <a
+                                key={platform}
+                                href={url as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/10 flex items-center justify-center hover:bg-white/10 transition-colors"
+                              >
+                                <Icon className={`w-4 h-4 ${colors[platform] || 'text-purple-300'}`} />
+                              </a>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="p-3">
-                    {post.content && (
-                      <p className="text-sm text-purple-200/80 line-clamp-3 mb-2">{post.content}</p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleLikePost(post.id)}
-                          className={`flex items-center gap-1 text-xs transition-colors ${
-                            post.isLiked ? 'text-pink-400' : 'text-purple-400/50 hover:text-pink-400'
-                          }`}
-                        >
-                          <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-pink-400' : ''}`} />
-                          {post.likeCount > 0 && <span>{post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}</span>}
-                        </button>
-                        <span className="flex items-center gap-1 text-xs text-purple-400/50">
-                          <MessageCircle className="w-4 h-4" />
-                          {post.commentCount > 0 && post.commentCount}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-purple-400/40">
-                        {new Date(post.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Instagram className="w-10 h-10 text-purple-500/30 mx-auto mb-2" />
-              <p className="text-purple-300/50 text-sm">Bu platformda henüz paylaşım yok</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
-        </motion.div>
+        </div>
+      </div>
 
-        {/* Social Links */}
-        {celebrity.socialLinks && Object.keys(celebrity.socialLinks).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="mt-4 p-5 rounded-2xl bg-white/5 border border-purple-500/10 backdrop-blur-sm"
-          >
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <ExternalLink className="w-5 h-5 text-fuchsia-400" />
-              Sosyal Medya
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {Object.entries(celebrity.socialLinks).map(([platform, url]) => {
-                if (!url) return null
-                const social = SOCIAL_ICONS[platform]
-                if (!social) return null
-                const SocialIcon = social.icon
-                return (
-                  <a
-                    key={platform}
-                    href={url as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-purple-500/10 hover:border-fuchsia-500/30 hover:bg-white/10 transition-all group"
-                  >
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${social.color} flex items-center justify-center`}>
-                      <SocialIcon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">{social.label}</div>
-                      <div className="text-xs text-purple-400/50 truncate max-w-[180px]">{(url as string).replace(/https?:\/\/(www\.)?/, '')}</div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-purple-400/30 ml-auto group-hover:text-fuchsia-400 transition-colors" />
-                  </a>
-                )
-              })}
+      {/* Platform Tabs - TikTok style sticky */}
+      <div className="sticky top-12 z-30 backdrop-blur-md border-b border-purple-900/30 mt-4">
+        <div className="max-w-lg mx-auto flex items-center overflow-x-auto scrollbar-hide">
+          {availableTabs.map((tab) => {
+            const TabIcon = tab.icon
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setPlatformFilter(tab.value)}
+                className={`flex-1 min-w-0 py-3 flex items-center justify-center gap-1.5 border-b-2 transition-colors text-xs font-medium ${
+                  platformFilter === tab.value
+                    ? 'border-fuchsia-400 text-fuchsia-300'
+                    : 'border-transparent text-purple-500 hover:text-purple-300'
+                }`}
+              >
+                <TabIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Posts Grid - 4 columns TikTok style */}
+      <div className="max-w-lg mx-auto">
+        {postsLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
+          </div>
+        ) : posts.length > 0 ? (
+          <div className="grid grid-cols-4 gap-px bg-purple-900/20">
+            {posts.map((post) => (
+              <div key={post.id} className="relative aspect-[3/4] group cursor-pointer" onClick={() => handleLikePost(post.id)}>
+                {post.mediaUrl ? (
+                  <>
+                    <Image
+                      src={post.mediaUrl}
+                      alt={post.content || 'Paylaşım'}
+                      fill
+                      className="object-cover"
+                      sizes="25vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-900/60 via-fuchsia-900/40 to-pink-900/30 flex items-center justify-center p-2">
+                    <p className="text-[10px] text-purple-200/60 line-clamp-4 text-center leading-tight">{post.content}</p>
+                  </div>
+                )}
+
+                {/* Platform badge */}
+                <div className={`absolute top-1 right-1 w-5 h-5 rounded-full bg-gradient-to-br ${PLATFORM_COLORS[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center shadow-sm`}>
+                  {post.platform === 'instagram' && <Instagram className="w-2.5 h-2.5 text-white" />}
+                  {post.platform === 'x' && <Twitter className="w-2.5 h-2.5 text-white" />}
+                  {post.platform === 'youtube' && <Youtube className="w-2.5 h-2.5 text-white" />}
+                  {post.platform === 'tiktok' && <Play className="w-2.5 h-2.5 text-white" />}
+                </div>
+
+                {/* Like count at bottom */}
+                <div className="absolute bottom-1 left-1 flex items-center gap-0.5">
+                  <Heart className={`w-3 h-3 ${post.isLiked ? 'fill-pink-400 text-pink-400' : 'text-white/80'}`} />
+                  {post.likeCount > 0 && (
+                    <span className="text-[10px] text-white font-medium drop-shadow">{formatCount(post.likeCount)}</span>
+                  )}
+                </div>
+
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  <div className="flex items-center gap-1 text-white text-xs">
+                    <Heart className="w-4 h-4" fill="white" />
+                    <span className="font-semibold">{formatCount(post.likeCount)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white text-xs">
+                    <MessageCircle className="w-4 h-4" fill="white" />
+                    <span className="font-semibold">{formatCount(post.commentCount)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-900/30 flex items-center justify-center">
+              <Instagram className="w-8 h-8 text-purple-500/40" />
             </div>
-          </motion.div>
+            <p className="text-purple-300/50 text-sm">Bu platformda henüz paylaşım yok</p>
+          </div>
         )}
       </div>
     </div>

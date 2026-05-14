@@ -15,7 +15,7 @@ import {
   Star, BadgeCheck, Video, Check, Clock, Calendar,
   Bell, RefreshCw, User, Phone, ChevronRight, ChevronDown, ChevronUp,
   AlertCircle, CreditCard, Power, Gift, Trophy, Award, Wallet, Send,
-  ChevronLeft, Menu, LogOut, BarChart3, Shield, Crown, DollarSign,
+  Menu, LogOut, BarChart3, Shield, Crown, DollarSign,
   Users, Coins, MessageSquareWarning, Layers, Building2, UserPlus
 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -550,12 +550,7 @@ export default function ProfilePage() {
       {/* Top Header Bar */}
       <div className="max-w-lg mx-auto px-4 py-2 relative">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className={`w-9 h-9 rounded-full ${isCanlidark ? 'bg-white/5 border border-purple-500/20 text-purple-300' : isFacebook ? 'bg-gray-100 text-gray-700' : isCosmic ? 'bg-white/5 border border-blue-500/20 text-blue-300' : 'bg-white/5 border border-fuchsia-500/20 text-purple-300'} flex items-center justify-center hover:bg-white/10 transition-colors`}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          <div className="w-9" />
           <h1 className={`text-lg font-bold ${textPrimary}`}>Profil</h1>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -1053,7 +1048,7 @@ export default function ProfilePage() {
         {activeTab === 'posts' && (
           <>
             {posts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-0.5">
+              <div className="grid grid-cols-4 gap-0.5">
                 {posts.map((post) => (
                   <Link key={post.id} href={`/fal/${post.id}`}
                     className="relative aspect-[3/4] bg-[#1a1a1a] overflow-hidden group">

@@ -649,7 +649,7 @@ export default function ProfilePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-px bg-purple-900/30">
+          <div className="grid grid-cols-4 gap-px bg-purple-900/30">
             {posts.map((post, index) => {
               const thumbnail = getPostThumbnail(post)
               const fortuneIcon = post.fortuneType ? FORTUNE_ICONS[post.fortuneType] : null
