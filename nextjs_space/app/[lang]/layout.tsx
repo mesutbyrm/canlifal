@@ -17,6 +17,7 @@ const OnboardingTour = dynamic(() => import('@/components/onboarding-tour'), { s
 const DeviceGuard = dynamic(() => import('@/components/device-guard'), { ssr: false })
 const OneSignalInitializer = dynamic(() => import('@/components/onesignal-initializer'), { ssr: false })
 const DailyLoginReward = dynamic(() => import('@/components/daily-login-reward'), { ssr: false })
+const TellerIncomingRequest = dynamic(() => import('@/components/teller-incoming-request'), { ssr: false })
 
 export default function LangLayout({
   children,
@@ -38,6 +39,7 @@ export default function LangLayout({
         </ThemeAwareMainPadding>
         <ThemeAwareMobileFooter />
         <CoBroadcastInviteModal />
+        <TellerIncomingRequest />
         <DeviceGuard />
         <OneSignalInitializer />
         <DailyLoginReward />
