@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu
+  Users, ChevronRight, Menu, Tv, Trophy, Film, Clapperboard
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -112,6 +112,18 @@ const PLATFORM_COLOR: Record<string, string> = {
   tiktok: 'from-cyan-400 to-pink-500',
 }
 
+/* ═══ FEATURE GRID CARDS — new sections matching Fal & Tarot layout ═══ */
+const FEATURE_CARDS = [
+  { id: 'futbol', name: 'Canlı Futbol', icon: '⚽', href: '/futbol', gradient: 'from-green-500 to-emerald-700', glow: 'rgba(16,185,129,0.4)', borderColor: 'border-emerald-500/30' },
+  { id: 'dizi-film', name: 'Dizi & Film', icon: '🎬', href: '/dizi-film', gradient: 'from-red-500 to-rose-700', glow: 'rgba(239,68,68,0.4)', borderColor: 'border-red-500/30' },
+  { id: 'oyunlar', name: 'Oyunlar', icon: '🎮', href: '/oyunlar', gradient: 'from-emerald-500 to-teal-700', glow: 'rgba(20,184,166,0.35)', borderColor: 'border-teal-500/30' },
+  { id: 'trendler', name: 'Trendler', icon: '🔥', href: '/trendler', gradient: 'from-orange-500 to-red-600', glow: 'rgba(249,115,22,0.35)', borderColor: 'border-orange-500/30' },
+  { id: 'unluler', name: 'Ünlüler', icon: '⭐', href: '/unluler', gradient: 'from-violet-500 to-purple-700', glow: 'rgba(139,92,246,0.35)', borderColor: 'border-violet-500/30' },
+  { id: 'fanclub', name: 'Fan Club', icon: '💜', href: '/unluler', gradient: 'from-rose-500 to-pink-700', glow: 'rgba(244,63,94,0.35)', borderColor: 'border-rose-500/30' },
+  { id: 'davet', name: 'Davet Et', icon: '👥', href: '/davet', gradient: 'from-blue-500 to-indigo-700', glow: 'rgba(59,130,246,0.35)', borderColor: 'border-blue-500/30' },
+  { id: 'hediye', name: 'Hediyeler', icon: '🎁', href: '/hediyeler', gradient: 'from-pink-500 to-fuchsia-700', glow: 'rgba(236,72,153,0.35)', borderColor: 'border-pink-500/30' },
+]
+
 export default function CanliDarkHome() {
   const { data: session } = useSession() || {}
   const [streams, setStreams] = useState<LiveStream[]>([])
@@ -125,7 +137,6 @@ export default function CanliDarkHome() {
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const postsScrollRef = useRef<HTMLDivElement>(null)
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -176,34 +187,10 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
-  // Auto-scroll latest posts using requestAnimationFrame for smooth motion
-  const scrollPausedRef = useRef(false)
-  useEffect(() => {
-    if (latestPosts.length < 2) return
-    const el = postsScrollRef.current
-    if (!el) return
-    let animId: number
-    let lastTime = 0
-    const speed = 0.5 // pixels per frame (~30px/sec at 60fps)
-    const tick = (time: number) => {
-      if (!scrollPausedRef.current && lastTime) {
-        const delta = time - lastTime
-        const px = speed * (delta / 16.67) // normalize to 60fps
-        el.scrollLeft += px
-        // Loop back when reaching end
-        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
-          el.scrollLeft = 0
-        }
-      }
-      lastTime = time
-      animId = requestAnimationFrame(tick)
-    }
-    animId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(animId)
-  }, [latestPosts])
-
   const popularTellers = tellers.slice(0, 8)
   const visibleFortunes = FORTUNE_CARDS.slice(0, 8)
+  const visibleStreams = streams.slice(0, 3)
+  const visiblePosts = latestPosts.slice(0, 4)
 
   return (
     <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
@@ -309,91 +296,84 @@ export default function CanliDarkHome() {
         </div>
       )}
 
-      {/* ═══ 2. CANLI YAYINLAR (with animated Yayın Başlat) ═══ */}
+      {/* ═══ 2. CANLI YAYINLAR — 4-col grid ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Canlı Yayınlar</h2>
           <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
-        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
-          {/* Animated Yayın Başlat */}
+        <div className="grid grid-cols-4 gap-2">
+          {/* Yayın Başlat card */}
           <Link
             href={session ? '/sohbet/video/setup' : '/giris'}
-            className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36 relative"
+            className="flex flex-col items-center gap-1.5"
           >
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-pink-500/30" style={{ boxShadow: '0 4px 16px rgba(236,72,153,0.35)' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-600/40 via-fuchsia-600/30 to-purple-700/40" />
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-fuchsia-500/10 to-purple-600/20"
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 z-10">
+                <motion.div
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50"
+                  animate={{ scale: [1, 1.15, 1], boxShadow: ['0 0 10px rgba(236,72,153,0.4)', '0 0 25px rgba(236,72,153,0.8)', '0 0 10px rgba(236,72,153,0.4)'] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Plus className="w-5 h-5 text-white" />
+                </motion.div>
+                <span className="text-[9px] text-white font-bold">Yayın Başlat</span>
+              </div>
             </div>
-            <motion.div
-              className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50 relative z-10"
-              animate={{
-                scale: [1, 1.15, 1],
-                boxShadow: [
-                  '0 0 15px rgba(236,72,153,0.4)',
-                  '0 0 35px rgba(236,72,153,0.8), 0 0 60px rgba(192,38,211,0.4)',
-                  '0 0 15px rgba(236,72,153,0.4)',
-                ],
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <Plus className="w-7 h-7 text-white" />
-            </motion.div>
-            <motion.span
-              className="text-xs text-white font-bold text-center leading-tight relative z-10"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              Yayın Başlat
-            </motion.span>
-            {/* Pulsing ring */}
-            <motion.div
-              className="absolute w-20 h-20 rounded-full border-2 border-pink-400/40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[-10px]"
-              animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
-            />
+            <p className="text-[10px] font-semibold text-white text-center">Canlı Yayın</p>
           </Link>
 
-          {streams.length > 0 ? (
-            streams.map((s) => {
+          {/* Live streams or empty slots */}
+          {visibleStreams.length > 0 ? (
+            visibleStreams.map((s) => {
               const streamThumb = s.thumbnailUrl || s.broadcastImage || s.user.image
               return (
-                <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex-shrink-0 w-[calc(33.33%-8px)] min-w-[110px]">
-                  <div className="canlidark-card relative overflow-hidden h-36">
+                <Link key={s.id} href={`/sohbet/video?watch=${s.id}`} className="flex flex-col items-center gap-1.5">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-purple-500/20" style={{ boxShadow: '0 4px 16px rgba(192,38,211,0.3)' }}>
                     {streamThumb ? (
-                      <Image src={streamThumb} alt={s.user.name} fill className="object-cover" sizes="180px" />
+                      <Image src={streamThumb} alt={s.user.name} fill className="object-cover" sizes="100px" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-700 to-pink-600" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute top-2 left-2">
-                      <span className="canlidark-live-badge text-[9px] px-1.5 py-0.5">LIVE</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute top-1.5 left-1.5">
+                      <span className="canlidark-live-badge text-[8px] px-1 py-0.5">LIVE</span>
                     </div>
-                    <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm border border-white/10">
-                      <Eye className="w-3 h-3 text-white" />
-                      <span className="text-[10px] font-bold text-white">{s.viewerCount || 0}</span>
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/50 backdrop-blur-sm">
+                      <Eye className="w-2.5 h-2.5 text-white" />
+                      <span className="text-[8px] font-bold text-white">{s.viewerCount || 0}</span>
                     </div>
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <p className="text-xs font-bold text-white truncate drop-shadow-lg">{s.user.name}</p>
-                      <p className="text-[9px] text-fuchsia-200/80 truncate">{s.category || s.title || 'Canlı Yayın'}</p>
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                      <p className="text-[9px] font-bold text-white truncate drop-shadow-lg">{s.user.name}</p>
                     </div>
                   </div>
+                  <p className="text-[10px] font-semibold text-white text-center truncate w-full">{s.category || 'Canlı'}</p>
                 </Link>
               )
             })
           ) : (
-            <div className="flex-shrink-0 w-[calc(66.66%-4px)] canlidark-card overflow-hidden flex flex-col items-center justify-center gap-2 h-36">
-              <Video className="w-10 h-10 text-fuchsia-400/50" />
-              <p className="text-fuchsia-200/60 text-xs text-center px-2">Şu an canlı yayın yok<br />İlk olan sen ol!</p>
-            </div>
+            // 3 empty placeholder cards
+            Array.from({ length: 3 }).map((_, idx) => (
+              <Link key={`empty-stream-${idx}`} href="/sohbet/video" className="flex flex-col items-center gap-1.5">
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-purple-500/10" style={{ boxShadow: '0 4px 16px rgba(192,38,211,0.1)' }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-fuchsia-900/30 flex items-center justify-center">
+                    <Video className="w-6 h-6 text-fuchsia-400/30" />
+                  </div>
+                </div>
+                <p className="text-[10px] font-semibold text-fuchsia-200/40 text-center">Boş Slot</p>
+              </Link>
+            ))
           )}
         </div>
       </div>
 
-      {/* ═══ 3. SON PAYLAŞIMLAR (auto-scrolling celebrity posts) ═══ */}
+      {/* ═══ 3. SON PAYLAŞIMLAR — 4-col grid ═══ */}
       {latestPosts.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -402,62 +382,49 @@ export default function CanliDarkHome() {
             </h2>
             <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
           </div>
-          <div
-            ref={postsScrollRef}
-            className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2"
-            onMouseEnter={() => { scrollPausedRef.current = true }}
-            onMouseLeave={() => { scrollPausedRef.current = false }}
-            onTouchStart={() => { scrollPausedRef.current = true }}
-            onTouchEnd={() => { scrollPausedRef.current = false }}
-          >
-            {latestPosts.map((post) => (
-              <Link
-                key={post.id}
-                href={`/unluler/${post.celebrity.slug}`}
-                className="flex-shrink-0 w-44"
-              >
-                <div className="canlidark-card overflow-hidden h-full">
+          <div className="grid grid-cols-4 gap-2">
+            {visiblePosts.map((post) => (
+              <Link key={post.id} href={`/unluler/${post.celebrity.slug}`} className="flex flex-col items-center gap-1.5">
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-pink-500/20" style={{ boxShadow: '0 4px 16px rgba(236,72,153,0.25)' }}>
                   {post.mediaUrl ? (
-                    <div className="relative w-full h-28">
-                      <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="176px" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
-                        {PLATFORM_ICON[post.platform] || <Globe className="w-3 h-3" />}
-                      </div>
-                    </div>
+                    <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="100px" />
                   ) : (
-                    <div className={`relative w-full h-28 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
-                      <div className="text-white/30 text-3xl">{PLATFORM_ICON[post.platform]}</div>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
+                      <div className="text-white/40 text-2xl">{PLATFORM_ICON[post.platform]}</div>
                     </div>
                   )}
-                  <div className="p-2.5">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-5 h-5 rounded-full overflow-hidden relative flex-shrink-0">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  {/* Platform badge */}
+                  <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
+                    {PLATFORM_ICON[post.platform] || <Globe className="w-2.5 h-2.5" />}
+                  </div>
+                  {/* Celebrity info at bottom */}
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                    <div className="flex items-center gap-1">
+                      <div className="w-4 h-4 rounded-full overflow-hidden relative flex-shrink-0">
                         {post.celebrity.profileImage ? (
-                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="20px" />
+                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="16px" />
                         ) : (
-                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[8px] text-white font-bold">{post.celebrity.name[0]}</div>
+                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[7px] text-white font-bold">{post.celebrity.name[0]}</div>
                         )}
                       </div>
-                      <span className="text-[10px] font-bold text-white truncate">{post.celebrity.name}</span>
-                    </div>
-                    {post.content && (
-                      <p className="text-[9px] text-fuchsia-200/70 line-clamp-2 leading-tight">{post.content}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[9px] text-fuchsia-200/50 flex items-center gap-0.5">
-                        <Heart className="w-2.5 h-2.5" /> {post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}
-                      </span>
+                      <span className="text-[8px] font-bold text-white truncate">{post.celebrity.name.split(' ')[0]}</span>
                     </div>
                   </div>
                 </div>
+                <p className="text-[10px] font-semibold text-white text-center truncate w-full">{post.celebrity.name.split(' ')[0]}</p>
               </Link>
             ))}
           </div>
+          {latestPosts.length > 4 && (
+            <Link href="/unluler" className="mt-2 flex items-center justify-center gap-1 text-xs text-fuchsia-300/80 hover:text-fuchsia-200 transition-colors">
+              +{latestPosts.length - 4} daha fazla paylaşım <ChevronRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       )}
 
-      {/* ═══ 4. SESLİ SOHBET ODALARI — yuvarlak ═══ */}
+      {/* ═══ 4. SESLİ SOHBET ODALARI — yuvarlak (keep original) ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
@@ -498,7 +465,7 @@ export default function CanliDarkHome() {
         </div>
       </div>
 
-      {/* ═══ 5. FAL & TAROT — 4 sütun, 8 görünür, kaydırılabilir ═══ */}
+      {/* ═══ 5. FAL & TAROT — 4 sütun ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title">Fal & Tarot</h2>
@@ -522,85 +489,124 @@ export default function CanliDarkHome() {
         )}
       </div>
 
-      {/* ═══ 6. POPÜLER FALCILAR ═══ */}
+      {/* ═══ 6. POPÜLER FALCILAR — 4-col grid ═══ */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-400" /> Popüler Falcılar</h2>
           <Link href="/canli-falcilar" className="canlidark-section-link">Tümünü gör</Link>
         </div>
-        <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
-          {popularTellers.length > 0 ? popularTellers.map((t) => {
+        <div className="grid grid-cols-4 gap-2">
+          {popularTellers.length > 0 ? popularTellers.slice(0, 4).map((t) => {
             const avatar = t.avatar || t.user?.image
             return (
-              <Link key={t.id} href={`/canli-falcilar/${t.id}`} className="flex-shrink-0 w-32">
-                <div className="canlidark-card overflow-hidden">
-                  <div className="relative w-full h-40">
-                    {avatar ? (
-                      <Image src={avatar} alt={t.displayName} fill className="object-cover" sizes="128px" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                        {t.displayName?.[0]}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                    {t.isOnline && (
-                      <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/90 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        <span className="text-[9px] text-white font-bold">Çevrimiçi</span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                      <p className="text-xs font-bold text-white leading-tight truncate drop-shadow">{t.displayName}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
-                        <span className="text-[10px] text-white font-semibold">{t.rating?.toFixed(1) || '0.0'}</span>
-                        <span className="text-[9px] text-fuchsia-200/70">({t.totalReviews || 0})</span>
-                      </div>
+              <Link key={t.id} href={`/canli-falcilar/${t.id}`} className="flex flex-col items-center gap-1.5">
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-orange-500/20" style={{ boxShadow: '0 4px 16px rgba(249,115,22,0.25)' }}>
+                  {avatar ? (
+                    <Image src={avatar} alt={t.displayName} fill className="object-cover" sizes="100px" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                      {t.displayName?.[0]}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  {t.isOnline && (
+                    <div className="absolute top-1.5 left-1.5 px-1 py-0.5 rounded-full bg-emerald-500/90 flex items-center gap-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span className="text-[7px] text-white font-bold">Online</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                    <p className="text-[9px] font-bold text-white truncate drop-shadow">{t.displayName}</p>
+                    <div className="flex items-center gap-0.5">
+                      <Star className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
+                      <span className="text-[8px] text-white font-semibold">{t.rating?.toFixed(1) || '0.0'}</span>
                     </div>
                   </div>
                 </div>
+                <p className="text-[10px] font-semibold text-white text-center truncate w-full">{t.displayName.split(' ')[0]}</p>
               </Link>
             )
           }) : (
-            <p className="text-fuchsia-200/60 text-sm py-4 px-2">Yakında öne çıkan falcılar görünecek</p>
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={`empty-teller-${idx}`} className="flex flex-col items-center gap-1.5">
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-orange-500/10" style={{ boxShadow: '0 4px 16px rgba(249,115,22,0.1)' }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-orange-900/20 flex items-center justify-center">
+                    <Star className="w-6 h-6 text-orange-400/25" />
+                  </div>
+                </div>
+                <p className="text-[10px] font-semibold text-fuchsia-200/40 text-center">Yakında</p>
+              </div>
+            ))
           )}
+        </div>
+        {popularTellers.length > 4 && (
+          <Link href="/canli-falcilar" className="mt-2 flex items-center justify-center gap-1 text-xs text-fuchsia-300/80 hover:text-fuchsia-200 transition-colors">
+            +{popularTellers.length - 4} daha fazla falcı <ChevronRight className="w-3 h-3" />
+          </Link>
+        )}
+      </div>
+
+      {/* ═══ 7. KEŞFET — Feature cards 4-col grid ═══ */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="canlidark-section-title flex items-center gap-1.5"><Compass className="w-4 h-4 text-cyan-400" /> Keşfet</h2>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {FEATURE_CARDS.map((card) => (
+            <Link key={card.id} href={card.href} className="flex flex-col items-center gap-1.5">
+              <div className={`relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border ${card.borderColor}`} style={{ boxShadow: `0 4px 16px ${card.glow}` }}>
+                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-60`} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl drop-shadow-lg">{card.icon}</span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              </div>
+              <p className="text-[10px] font-semibold text-white text-center leading-tight truncate w-full">{card.name}</p>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* ═══ 7. GOLD ÜYELİKLER (4 plan) ═══ */}
+      {/* ═══ 8. GOLD ÜYELİKLER — 4-col grid ═══ */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="canlidark-section-title flex items-center gap-1.5"><Crown className="w-4 h-4 text-amber-400" /> Gold Üyelikler</h2>
           <Link href="/uyelik" className="canlidark-section-link">Tümünü gör</Link>
         </div>
         {membershipPlans.length > 0 ? (
-          <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {membershipPlans.map((plan) => (
-              <Link key={plan.id} href="/uyelik" className="flex-shrink-0 w-44">
-                <div className="canlidark-card overflow-hidden p-4 h-full border border-amber-500/30" style={{ boxShadow: '0 4px 20px rgba(251,191,36,0.15)' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Crown className="w-5 h-5 text-amber-400" />
-                    <h3 className="text-sm font-bold text-amber-300">{plan.name}</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {membershipPlans.slice(0, 4).map((plan, idx) => {
+              const planIcons = ['👑', '💎', '🌟', '🔮']
+              return (
+                <Link key={plan.id} href="/uyelik" className="flex flex-col items-center gap-1.5">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-amber-500/30" style={{ boxShadow: '0 4px 16px rgba(251,191,36,0.25)' }}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-600/50 via-yellow-600/30 to-orange-700/40" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                      <span className="text-2xl">{planIcons[idx] || '👑'}</span>
+                      <span className="text-[10px] font-extrabold text-white">{plan.price} TL</span>
+                      <span className="text-[8px] text-amber-200/80">{plan.duration} gün</span>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   </div>
-                  <p className="text-lg font-extrabold text-white mb-1">{plan.price} TL<span className="text-xs text-fuchsia-200/60 font-normal">/{plan.duration} gün</span></p>
-                  <ul className="space-y-1 mt-2">
-                    {(plan.features || []).slice(0, 3).map((f, i) => (
-                      <li key={i} className="text-[10px] text-fuchsia-200/80 flex items-start gap-1">
-                        <Star className="w-2.5 h-2.5 text-amber-400 mt-0.5 flex-shrink-0" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Link>
-            ))}
+                  <p className="text-[10px] font-semibold text-amber-200 text-center truncate w-full">{plan.name}</p>
+                </Link>
+              )
+            })}
           </div>
         ) : (
           <Link href="/uyelik" className="block">
-            <div className="canlidark-card p-5 border border-amber-500/30 text-center" style={{ boxShadow: '0 4px 20px rgba(251,191,36,0.15)' }}>
-              <Crown className="w-10 h-10 text-amber-400 mx-auto mb-2" />
-              <p className="text-sm font-bold text-amber-300 mb-1">Gold Üyelik ile Ayrıcalıkları Keşfet</p>
-              <p className="text-xs text-fuchsia-200/60">Özel rozetler, öncelikli destek ve daha fazlası</p>
+            <div className="grid grid-cols-4 gap-2">
+              {['👑 Gold', '💎 Premium', '🌟 VIP', '🔮 Elite'].map((label, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-1.5">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-amber-500/20" style={{ boxShadow: '0 4px 16px rgba(251,191,36,0.15)' }}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-700/40 via-yellow-700/20 to-orange-800/30" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl">{label.split(' ')[0]}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-semibold text-amber-200/60 text-center">{label.split(' ')[1]}</p>
+                </div>
+              ))}
             </div>
           </Link>
         )}
@@ -648,6 +654,8 @@ export default function CanliDarkHome() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[
+                    { href: '/futbol', icon: Trophy, label: 'Futbol', gradient: 'from-green-500 to-emerald-600', glow: 'shadow-emerald-500/20' },
+                    { href: '/dizi-film', icon: Film, label: 'Dizi & Film', gradient: 'from-red-500 to-rose-600', glow: 'shadow-red-500/20' },
                     { href: '/oyunlar', icon: Gamepad2, label: 'Oyunlar', gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/20' },
                     { href: '/davet', icon: UserPlus, label: 'Davet Et', gradient: 'from-blue-500 to-indigo-600', glow: 'shadow-blue-500/20' },
                     { href: '/hediyeler', icon: Gift, label: 'Hediye', gradient: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/20' },
@@ -655,7 +663,6 @@ export default function CanliDarkHome() {
                     { href: '/uyelik', icon: Crown, label: 'Premium', gradient: 'from-yellow-400 to-amber-500', glow: 'shadow-amber-500/20' },
                     { href: '/unluler', icon: Star, label: 'Ünlüler', gradient: 'from-violet-500 to-purple-600', glow: 'shadow-violet-500/20' },
                     { href: '/trendler', icon: TrendingUp, label: 'Trendler', gradient: 'from-orange-500 to-red-600', glow: 'shadow-orange-500/20' },
-                    { href: '/unluler', icon: Users, label: 'FanClub', gradient: 'from-rose-500 to-pink-600', glow: 'shadow-rose-500/20' },
                   ].map((item) => (
                     <Link
                       key={item.href + item.label}
