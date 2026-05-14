@@ -1325,6 +1325,34 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Premium homepage button seeded!')
 
+  // Add Futbol homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'futbol' },
+    update: {},
+    create: {
+      key: 'futbol',
+      label: 'Futbol',
+      icon: '\u26bd',
+      href: '/futbol',
+      sortOrder: 14,
+    },
+  })
+  console.log('Futbol homepage button seeded!')
+
+  // Add Dizi & Film homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'dizi-film' },
+    update: {},
+    create: {
+      key: 'dizi-film',
+      label: 'Dizi & Film',
+      icon: '\ud83c\udfac',
+      href: '/dizi-film',
+      sortOrder: 15,
+    },
+  })
+  console.log('Dizi & Film homepage button seeded!')
+
   // Seed trending topics
   const trendingTopics = [
     {
