@@ -23,15 +23,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validate file type for images - accept all image formats
-    const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'image/svg+xml', 'image/bmp', 'image/tiff', 'image/ico', 'image/x-icon',
-      'image/avif', 'image/heic', 'image/heif', 'image/apng'
-    ]
-    if (!contentType.startsWith('image/') && !allowedTypes.includes(contentType)) {
+    // Validate file type - accept images and videos
+    if (!contentType.startsWith('image/') && !contentType.startsWith('video/')) {
       return NextResponse.json(
-        { error: 'Sadece görsel dosyaları kabul edilir' },
+        { error: 'Sadece görsel ve video dosyaları kabul edilir' },
         { status: 400 }
       )
     }

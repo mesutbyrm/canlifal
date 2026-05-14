@@ -231,7 +231,7 @@ export default function NotificationBell() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 md:pt-24 px-4"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
             onClick={() => setIsOpen(false)}
           >
             <motion.div
@@ -240,14 +240,14 @@ export default function NotificationBell() {
               exit={{ opacity: 0, y: -30, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md max-h-[75vh] flex flex-col falclub-card overflow-hidden"
+              className="w-full max-w-sm max-h-[60vh] flex flex-col falclub-card overflow-hidden rounded-2xl"
               style={{ boxShadow: '0 0 40px rgba(217, 70, 239, 0.3)' }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-fuchsia-500/20 flex justify-between items-center flex-shrink-0 bg-[#1a0a2e]/95">
+              <div className="px-3 py-2.5 border-b border-fuchsia-500/20 flex justify-between items-center flex-shrink-0 bg-[#1a0a2e]/95">
                 <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-fuchsia-400" />
-                  <h3 className="text-fuchsia-200 font-bold text-lg">
+                  <Bell className="w-4 h-4 text-fuchsia-400" />
+                  <h3 className="text-fuchsia-200 font-bold text-sm">
                     {'Bildirimler'}
                   </h3>
                   {unreadCount > 0 && (
@@ -276,29 +276,20 @@ export default function NotificationBell() {
               </div>
               
               {/* Browser Notification Toggle */}
-              {isSupported && (
-                <div className="px-4 py-3 border-b border-fuchsia-500/20 bg-fuchsia-900/20">
-                  {permission === 'granted' ? (
-                    <div className="flex items-center gap-2 text-green-400">
-                      <BellRing className="w-4 h-4" />
-                      <span className="text-sm">
-                        {'🔔 Tarayıcı bildirimleri açık'}
-                      </span>
-                    </div>
-                  ) : permission === 'denied' ? (
+              {isSupported && permission !== 'granted' && (
+                <div className="px-3 py-2 border-b border-fuchsia-500/20 bg-fuchsia-900/20">
+                  {permission === 'denied' ? (
                     <div className="flex items-center gap-2 text-red-400">
-                      <BellOff className="w-4 h-4" />
-                      <span className="text-sm">
-                        {'🔕 Bildirimler tarayıcı ayarlarından kapatıldı'}
-                      </span>
+                      <BellOff className="w-3.5 h-3.5" />
+                      <span className="text-xs">Bildirimler kapalı</span>
                     </div>
                   ) : (
                     <button
                       onClick={handleEnableNotifications}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-sm font-medium transition-all"
+                      className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-xs font-medium transition-all"
                     >
-                      <BellRing className="w-4 h-4" />
-                      {'Tarayıcı Bildirimlerini Aç'}
+                      <BellRing className="w-3.5 h-3.5" />
+                      Bildirimleri Aç
                     </button>
                   )}
                 </div>
@@ -322,24 +313,24 @@ export default function NotificationBell() {
                       <div
                         key={notif.id}
                         onClick={() => handleNotificationClick(notif)}
-                        className={`p-4 hover:bg-fuchsia-500/10 transition-colors cursor-pointer ${
+                        className={`px-3 py-2.5 hover:bg-fuchsia-500/10 transition-colors cursor-pointer ${
                           !notif.isRead ? 'bg-fuchsia-500/5' : ''
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="shrink-0 p-2 bg-fuchsia-500/15 border border-fuchsia-500/20 rounded-full">
+                        <div className="flex items-center gap-2.5">
+                          <div className="shrink-0 p-1.5 bg-fuchsia-500/15 border border-fuchsia-500/20 rounded-full">
                             {getIcon(notif.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white/90 break-words leading-relaxed">
+                            <p className="text-xs text-white/90 break-words leading-snug line-clamp-2">
                               {getNotificationText(notif)}
                             </p>
-                            <p className="text-xs text-fuchsia-400/50 mt-1.5">
+                            <p className="text-[10px] text-fuchsia-400/50 mt-0.5">
                               {formatTime(notif.createdAt)}
                             </p>
                           </div>
                           {!notif.isRead && (
-                            <div className="shrink-0 w-2.5 h-2.5 bg-pink-400 rounded-full mt-1 shadow-lg shadow-pink-500/50" />
+                            <div className="shrink-0 w-2 h-2 bg-pink-400 rounded-full shadow-lg shadow-pink-500/50" />
                           )}
                         </div>
                       </div>

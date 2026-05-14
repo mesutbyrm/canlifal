@@ -1427,11 +1427,23 @@ html, body {
   }
   .canlidark-top-nav .canlidark-nav-fab {
     margin-top: 0;
-    margin-bottom: -28px;
+    margin-bottom: -20px;
     transform: translateY(4px);
   }
   .canlidark-top-nav .canlidark-nav-fab:hover {
     transform: translateY(8px);
+  }
+  .canlidark-nav-fab--sm {
+    width: 42px !important;
+    height: 42px !important;
+    margin-top: -21px;
+  }
+  .canlidark-top-nav .canlidark-nav-fab--sm {
+    margin-top: 0;
+    margin-bottom: -16px;
+  }
+  .canlidark-nav-profile {
+    min-width: 64px !important;
   }
 
   .canlidark-bottom-nav {

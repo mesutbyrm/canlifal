@@ -123,6 +123,7 @@ model User {
   // Celebrity posts
   celebrityPostLikes    CelebrityPostLike[]
   celebrityPostComments CelebrityPostComment[]
+  stories               UserStory[]
   // Bot system
   isBot                 Boolean              @default(false)
   botProfile            BotProfile?
@@ -2804,4 +2805,21 @@ model CelebrityPostComment {
   @@index([postId, createdAt])
   @@index([userId])
   @@map("celebrity_post_comments")
+}
+
+model UserStory {
+  id        String   @id @default(cuid())
+  userId    String
+  mediaUrl  String
+  mediaType String   @default("image") // image or video
+  caption   String?  @db.Text
+  viewCount Int      @default(0)
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive, expiresAt])
+  @@index([expiresAt])
+  @@map("user_stories")
 }

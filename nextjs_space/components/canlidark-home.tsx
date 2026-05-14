@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import {
-  Bell, Diamond, Eye, Plus, Video, Compass, Crown,
+  Bell, Camera, Diamond, Eye, Plus, Video, Compass, Crown,
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
@@ -141,6 +141,13 @@ export default function CanliDarkHome() {
   const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const postsScrollRef = useRef<HTMLDivElement>(null)
+  // Story states
+  const [storyGroups, setStoryGroups] = useState<{ user: any; stories: any[] }[]>([])
+  const [myStories, setMyStories] = useState<any[]>([])
+  const [storyViewer, setStoryViewer] = useState<{ group: any; index: number } | null>(null)
+  const [storyUploading, setStoryUploading] = useState(false)
+  const [showMyStories, setShowMyStories] = useState(false)
+  const storyFileRef = useRef<HTMLInputElement>(null)
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -155,13 +162,14 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts] = await Promise.all([
+        const [s, r, t, m, celeb, posts, storiesData] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
           fetch('/api/memberships').then(x => x.ok ? x.json() : []),
           fetch('/api/celebrities?limit=15').then(x => x.ok ? x.json() : { celebrities: [] }),
           fetch('/api/celebrities/posts/latest?limit=12').then(x => x.ok ? x.json() : { posts: [] }),
+          fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
@@ -175,6 +183,7 @@ export default function CanliDarkHome() {
           })))
         }
         if (posts?.posts) setLatestPosts(posts.posts)
+        if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
       } catch {}
       if (session) {
         try {
@@ -222,6 +231,57 @@ export default function CanliDarkHome() {
   const visibleFortunes = FORTUNE_CARDS.slice(0, 8)
   const visibleStreams = streams.slice(0, 3)
 
+  // Check if current user has stories
+  const myStoryGroup = storyGroups.find(g => g.user.id === (session?.user as any)?.id)
+  const otherStoryGroups = storyGroups.filter(g => g.user.id !== (session?.user as any)?.id)
+
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+    setStoryUploading(true)
+    try {
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'image'
+      const presignedRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true }),
+      })
+      if (!presignedRes.ok) throw new Error('Yükleme hatası')
+      const { uploadUrl, cloud_storage_path } = await presignedRes.json()
+      const headers: Record<string, string> = { 'Content-Type': file.type }
+      if (uploadUrl.includes('content-disposition')) headers['Content-Disposition'] = 'attachment'
+      await fetch(uploadUrl, { method: 'PUT', headers, body: file })
+      const urlRes = await fetch('/api/upload/get-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_storage_path, isPublic: true }),
+      })
+      const { url } = await urlRes.json()
+      await fetch('/api/stories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mediaUrl: url, mediaType }),
+      })
+      // Refresh stories
+      const fresh = await fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] })
+      setStoryGroups(fresh.storyGroups || [])
+    } catch (err) {
+      console.error('Story upload error:', err)
+    } finally {
+      setStoryUploading(false)
+      if (storyFileRef.current) storyFileRef.current.value = ''
+    }
+  }
+
+  const handleDeleteStory = async (storyId: string) => {
+    try {
+      await fetch(`/api/stories?id=${storyId}`, { method: 'DELETE' })
+      const fresh = await fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] })
+      setStoryGroups(fresh.storyGroups || [])
+      setShowMyStories(false)
+    } catch {}
+  }
+
   return (
     <div className="canlidark-bg pb-32 pt-24 px-3 sm:px-4 max-w-2xl mx-auto relative">
       {/* Floating decorative orbs */}
@@ -244,17 +304,15 @@ export default function CanliDarkHome() {
       {/* ═══ TOP BAR — alt navigasyon barı ile aynı stil ═══ */}
       <nav className="canlidark-top-nav">
         <div className="canlidark-nav-inner">
-          <Link href={session ? '/profil' : '/giris'} className="canlidark-nav-item">
-            <div className="relative">
-              <div className="w-7 h-7 rounded-full overflow-hidden border border-fuchsia-400/60">
-                {userAvatar ? (
-                  <Image src={userAvatar} alt={userName} fill className="object-cover" sizes="28px" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                    {userName[0]?.toUpperCase()}
-                  </div>
-                )}
-              </div>
+          <Link href={session ? '/profil' : '/giris'} className="canlidark-nav-item canlidark-nav-profile">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-fuchsia-400/60 shadow-lg shadow-fuchsia-500/30">
+              {userAvatar ? (
+                <Image src={userAvatar} alt={userName} fill className="object-cover" sizes="40px" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                  {userName[0]?.toUpperCase()}
+                </div>
+              )}
             </div>
             <span>Profil</span>
           </Link>
@@ -265,8 +323,8 @@ export default function CanliDarkHome() {
             </div>
             <span>Mesajlar</span>
           </Link>
-          <Link href="/kesfet" className="canlidark-nav-fab" aria-label="Keşfet">
-            <Search className="w-7 h-7" />
+          <Link href="/kesfet" className="canlidark-nav-fab canlidark-nav-fab--sm" aria-label="Keşfet">
+            <Search className="w-5 h-5" />
           </Link>
           <div className="canlidark-nav-item">
             <NotificationBell />
@@ -294,39 +352,93 @@ export default function CanliDarkHome() {
       </div>
 
       {/* ═══ 1. HİKÂYELER (Instagram-style stories) — mb-0 gap ═══ */}
-      {celebrities.length > 0 && (
-        <div className="mb-1">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="canlidark-section-title">Hikâyeler</h2>
-            <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
-          </div>
-          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-1">
-            {celebrities.map((celeb) => (
-              <Link key={celeb.id} href={`/unluler/${celeb.slug}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
-                <div className="relative">
-                  <div className={`w-16 h-16 rounded-full p-[2.5px] ${celeb.hasNewPost ? 'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600' : 'bg-gray-600/50'}`}
-                    style={celeb.hasNewPost ? { boxShadow: '0 0 12px rgba(236,72,153,0.5)' } : {}}
-                  >
-                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
-                      {celeb.profileImage ? (
-                        <Image src={celeb.profileImage} alt={celeb.name} fill className="object-cover" sizes="60px" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
-                          {celeb.name[0]}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {celeb.hasNewPost && (
-                    <div className="absolute -bottom-0.5 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#0a0118]" />
-                  )}
-                </div>
-                <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">{celeb.name.split(' ')[0]}</p>
-              </Link>
-            ))}
-          </div>
+      <div className="mb-1">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="canlidark-section-title">Hikâyeler</h2>
+          <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
         </div>
-      )}
+        <input ref={storyFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryUpload} />
+        <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-1">
+          {/* Add Story / My Story button */}
+          {session && (
+            <div className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
+              <div className="relative cursor-pointer" onClick={() => myStoryGroup ? setShowMyStories(true) : storyFileRef.current?.click()}>
+                <div className={`w-16 h-16 rounded-full p-[2.5px] ${myStoryGroup ? 'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600' : 'bg-gray-600/50'}`}
+                  style={myStoryGroup ? { boxShadow: '0 0 12px rgba(236,72,153,0.5)' } : {}}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
+                    {userAvatar ? (
+                      <Image src={userAvatar} alt={userName} fill className="object-cover" sizes="60px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
+                        {userName[0]?.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {!myStoryGroup && (
+                  <div className="absolute -bottom-0.5 right-0 w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-[#0a0118] flex items-center justify-center">
+                    <Plus className="w-3 h-3 text-white" />
+                  </div>
+                )}
+                {storyUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full border-2 border-transparent border-t-pink-500 animate-spin" />
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">
+                {myStoryGroup ? 'Hikâyem' : 'Hikâye Ekle'}
+              </p>
+            </div>
+          )}
+
+          {/* User stories */}
+          {otherStoryGroups.map((group) => (
+            <div key={group.user.id} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] cursor-pointer" onClick={() => setStoryViewer({ group, index: 0 })}>
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600" style={{ boxShadow: '0 0 12px rgba(236,72,153,0.5)' }}>
+                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
+                    {group.user.image ? (
+                      <Image src={group.user.image} alt={group.user.name || ''} fill className="object-cover" sizes="60px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
+                        {(group.user.name || '?')[0]}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">{(group.user.name || '').split(' ')[0]}</p>
+            </div>
+          ))}
+
+          {/* Celebrity stories */}
+          {celebrities.map((celeb) => (
+            <Link key={celeb.id} href={`/unluler/${celeb.slug}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
+              <div className="relative">
+                <div className={`w-16 h-16 rounded-full p-[2.5px] ${celeb.hasNewPost ? 'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600' : 'bg-gray-600/50'}`}
+                  style={celeb.hasNewPost ? { boxShadow: '0 0 12px rgba(236,72,153,0.5)' } : {}}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
+                    {celeb.profileImage ? (
+                      <Image src={celeb.profileImage} alt={celeb.name} fill className="object-cover" sizes="60px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
+                        {celeb.name[0]}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {celeb.hasNewPost && (
+                  <div className="absolute -bottom-0.5 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#0a0118]" />
+                )}
+              </div>
+              <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">{celeb.name.split(' ')[0]}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* ═══ 2. CANLI YAYINLAR — 4-col grid — mb-0 gap ═══ */}
       <div className="mb-1">
@@ -720,6 +832,148 @@ export default function CanliDarkHome() {
         )}
       </AnimatePresence>
 
+      {/* ═══ STORY VIEWER MODAL ═══ */}
+      <AnimatePresence>
+        {storyViewer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+            onClick={() => setStoryViewer(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md h-[80vh] max-h-[700px] rounded-2xl overflow-hidden bg-black"
+            >
+              {/* Progress bars */}
+              <div className="absolute top-2 left-2 right-2 z-20 flex gap-1">
+                {storyViewer.group.stories.map((_: any, i: number) => (
+                  <div key={i} className="flex-1 h-0.5 rounded-full bg-white/30 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${i <= storyViewer.index ? 'bg-white w-full' : 'w-0'}`} />
+                  </div>
+                ))}
+              </div>
+              {/* User info */}
+              <div className="absolute top-5 left-3 right-3 z-20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full overflow-hidden relative border border-white/30">
+                    {storyViewer.group.user.image ? (
+                      <Image src={storyViewer.group.user.image} alt={storyViewer.group.user.name || ''} fill className="object-cover" sizes="32px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white text-xs font-bold">
+                        {(storyViewer.group.user.name || '?')[0]}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-white text-sm font-semibold drop-shadow-lg">{storyViewer.group.user.name}</span>
+                </div>
+                <button onClick={() => setStoryViewer(null)} className="p-1 text-white/80 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              {/* Story content */}
+              {(() => {
+                const story = storyViewer.group.stories[storyViewer.index]
+                if (!story) return null
+                return story.mediaType === 'video' ? (
+                  <video src={story.mediaUrl} className="w-full h-full object-contain" autoPlay playsInline controls={false} />
+                ) : (
+                  <div className="w-full h-full relative">
+                    <Image src={story.mediaUrl} alt="Hikâye" fill className="object-contain" sizes="100vw" />
+                  </div>
+                )
+              })()}
+              {/* Caption */}
+              {storyViewer.group.stories[storyViewer.index]?.caption && (
+                <div className="absolute bottom-6 left-3 right-3 z-20">
+                  <p className="text-white text-sm bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2">
+                    {storyViewer.group.stories[storyViewer.index].caption}
+                  </p>
+                </div>
+              )}
+              {/* Navigation */}
+              <button
+                className="absolute left-0 top-0 bottom-0 w-1/3 z-10"
+                onClick={() => {
+                  if (storyViewer.index > 0) setStoryViewer({ ...storyViewer, index: storyViewer.index - 1 })
+                  else setStoryViewer(null)
+                }}
+              />
+              <button
+                className="absolute right-0 top-0 bottom-0 w-1/3 z-10"
+                onClick={() => {
+                  if (storyViewer.index < storyViewer.group.stories.length - 1) setStoryViewer({ ...storyViewer, index: storyViewer.index + 1 })
+                  else setStoryViewer(null)
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ MY STORIES MANAGEMENT MODAL ═══ */}
+      <AnimatePresence>
+        {showMyStories && myStoryGroup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center px-4"
+            onClick={() => setShowMyStories(false)}
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm falclub-card p-4 max-h-[70vh] overflow-y-auto"
+              style={{ boxShadow: '0 0 30px rgba(217,70,239,0.3)' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-fuchsia-200 font-bold text-lg">Hikâyelerim</h3>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setShowMyStories(false); storyFileRef.current?.click() }} className="text-xs bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white px-3 py-1.5 rounded-lg font-medium">
+                    + Yeni
+                  </button>
+                  <button onClick={() => setShowMyStories(false)} className="p-1 text-fuchsia-400/60 hover:text-fuchsia-300">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {myStoryGroup.stories.map((story: any) => (
+                  <div key={story.id} className="relative aspect-[9/16] rounded-xl overflow-hidden border border-fuchsia-500/20 group">
+                    {story.mediaType === 'video' ? (
+                      <video src={story.mediaUrl} className="w-full h-full object-cover" />
+                    ) : (
+                      <Image src={story.mediaUrl} alt="Hikâye" fill className="object-cover" sizes="120px" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between">
+                      <span className="text-[9px] text-white/70 flex items-center gap-0.5"><Eye className="w-2.5 h-2.5" />{story.viewCount}</span>
+                      <button
+                        onClick={() => handleDeleteStory(story.id)}
+                        className="p-1 bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                    <button
+                      className="absolute inset-0 z-10"
+                      onClick={() => { setShowMyStories(false); setStoryViewer({ group: myStoryGroup, index: myStoryGroup.stories.indexOf(story) }) }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ BOTTOM NAV ═══ */}
       <nav className="canlidark-bottom-nav">
         <div className="canlidark-nav-inner">
@@ -732,7 +986,7 @@ export default function CanliDarkHome() {
             <span>Sosyal</span>
           </Link>
           <Link href={session ? '/sohbet/video/setup' : '/giris'} className="canlidark-nav-fab" aria-label="Yayın Başlat">
-            <Sparkles className="w-7 h-7" />
+            <Camera className="w-7 h-7" />
           </Link>
           <Link href="/jeton" className="canlidark-nav-item">
             <Coins className="w-5 h-5" />
