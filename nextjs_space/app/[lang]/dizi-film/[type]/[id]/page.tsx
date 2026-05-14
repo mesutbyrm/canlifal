@@ -9,7 +9,7 @@ import {
   Play, Users, Globe, Loader2, ExternalLink
 } from 'lucide-react'
 
-const TMDB_IMG = 'https://play-lh.googleusercontent.com/XXqfqs9irPSjphsMPcC-c6Q4-FY5cd8klw4IdI2lof_Ie-yXaFirqbNDzK2kJ808WXJk'
+const TMDB_IMG = 'https://image.tmdb.org/t/p'
 
 interface CastMember {
   id: number

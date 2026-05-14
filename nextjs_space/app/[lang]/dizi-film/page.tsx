@@ -25,7 +25,7 @@ interface MediaItem {
   genre_ids: number[]
 }
 
-const TMDB_IMG = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Tmdb.new.logo.svg/1280px-Tmdb.new.logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail'
+const TMDB_IMG = 'https://image.tmdb.org/t/p'
 
 type SectionType = 'trending' | 'movies' | 'tv' | 'search'
 
