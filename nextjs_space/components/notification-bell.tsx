@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, X, Heart, MessageCircle, Share2, Video, CheckCircle, CreditCard, Coins, BellRing, BellOff, Eye } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
@@ -213,135 +214,138 @@ export default function NotificationBell() {
   return (
     <>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-fuchsia-300 hover:text-fuchsia-200 transition-colors"
+        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen) }}
+        className="relative text-current hover:text-white transition-colors"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-pink-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Full-screen Modal Popup */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
-            onClick={() => setIsOpen(false)}
-          >
+      {/* Full-screen Modal Popup — rendered via portal to escape stacking context */}
+      {typeof document !== 'undefined' && (createPortal(
+        (<AnimatePresence>
+          {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -30, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm max-h-[60vh] flex flex-col falclub-card overflow-hidden rounded-2xl"
-              style={{ boxShadow: '0 0 40px rgba(217, 70, 239, 0.3)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
+              onClick={() => setIsOpen(false)}
             >
-              {/* Header */}
-              <div className="px-3 py-2.5 border-b border-fuchsia-500/20 flex justify-between items-center flex-shrink-0 bg-[#1a0a2e]/95">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-fuchsia-400" />
-                  <h3 className="text-fuchsia-200 font-bold text-sm">
-                    {'Bildirimler'}
-                  </h3>
-                  {unreadCount > 0 && (
-                    <span className="bg-pink-500/20 text-pink-300 text-xs px-2 py-0.5 rounded-full font-medium">
-                      {unreadCount} {'yeni'}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-xs text-fuchsia-400/70 hover:text-fuchsia-300 transition-colors flex items-center gap-1"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {'Okundu'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-1.5 hover:bg-fuchsia-500/15 rounded-lg text-fuchsia-400/60 hover:text-fuchsia-300 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Browser Notification Toggle */}
-              {isSupported && permission !== 'granted' && (
-                <div className="px-3 py-2 border-b border-fuchsia-500/20 bg-fuchsia-900/20">
-                  {permission === 'denied' ? (
-                    <div className="flex items-center gap-2 text-red-400">
-                      <BellOff className="w-3.5 h-3.5" />
-                      <span className="text-xs">Bildirimler kapalı</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleEnableNotifications}
-                      className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-xs font-medium transition-all"
-                    >
-                      <BellRing className="w-3.5 h-3.5" />
-                      Bildirimleri Aç
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Notifications List */}
-              <div className="flex-1 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="p-10 text-center">
-                    <Bell className="w-10 h-10 text-fuchsia-500/30 mx-auto mb-3" />
-                    <p className="text-fuchsia-400/60">
-                      {'Bildirim yok'}
-                    </p>
-                    <p className="text-fuchsia-500/30 text-sm mt-1">
-                      {'Yeni bildirimler burada görünecek'}
-                    </p>
+              <motion.div
+                initial={{ opacity: 0, y: -30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm max-h-[60vh] flex flex-col overflow-hidden rounded-2xl"
+                style={{ background: 'rgba(26, 10, 46, 0.95)', border: '2px solid rgba(217, 70, 239, 0.4)', boxShadow: '0 0 40px rgba(217, 70, 239, 0.3)' }}
+              >
+                {/* Header */}
+                <div className="px-3 py-2.5 border-b border-fuchsia-500/20 flex justify-between items-center flex-shrink-0 bg-[#1a0a2e]/95">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-fuchsia-400" />
+                    <h3 className="text-fuchsia-200 font-bold text-sm">
+                      Bildirimler
+                    </h3>
+                    {unreadCount > 0 && (
+                      <span className="bg-pink-500/20 text-pink-300 text-xs px-2 py-0.5 rounded-full font-medium">
+                        {unreadCount} yeni
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="divide-y divide-fuchsia-500/10">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => handleNotificationClick(notif)}
-                        className={`px-3 py-2.5 hover:bg-fuchsia-500/10 transition-colors cursor-pointer ${
-                          !notif.isRead ? 'bg-fuchsia-500/5' : ''
-                        }`}
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-fuchsia-400/70 hover:text-fuchsia-300 transition-colors flex items-center gap-1"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div className="shrink-0 p-1.5 bg-fuchsia-500/15 border border-fuchsia-500/20 rounded-full">
-                            {getIcon(notif.type)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white/90 break-words leading-snug line-clamp-2">
-                              {getNotificationText(notif)}
-                            </p>
-                            <p className="text-[10px] text-fuchsia-400/50 mt-0.5">
-                              {formatTime(notif.createdAt)}
-                            </p>
-                          </div>
-                          {!notif.isRead && (
-                            <div className="shrink-0 w-2 h-2 bg-pink-400 rounded-full shadow-lg shadow-pink-500/50" />
-                          )}
-                        </div>
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Okundu
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-1.5 hover:bg-fuchsia-500/15 rounded-lg text-fuchsia-400/60 hover:text-fuchsia-300 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Browser Notification Toggle */}
+                {isSupported && permission !== 'granted' && (
+                  <div className="px-3 py-2 border-b border-fuchsia-500/20 bg-fuchsia-900/20">
+                    {permission === 'denied' ? (
+                      <div className="flex items-center gap-2 text-red-400">
+                        <BellOff className="w-3.5 h-3.5" />
+                        <span className="text-xs">Bildirimler kapalı</span>
                       </div>
-                    ))}
+                    ) : (
+                      <button
+                        onClick={handleEnableNotifications}
+                        className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 rounded-lg text-white text-xs font-medium transition-all"
+                      >
+                        <BellRing className="w-3.5 h-3.5" />
+                        Bildirimleri Aç
+                      </button>
+                    )}
                   </div>
                 )}
-              </div>
+
+                {/* Notifications List */}
+                <div className="flex-1 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Bell className="w-8 h-8 text-fuchsia-500/30 mx-auto mb-2" />
+                      <p className="text-fuchsia-400/60 text-sm">
+                        Bildirim yok
+                      </p>
+                      <p className="text-fuchsia-500/30 text-xs mt-1">
+                        Yeni bildirimler burada görünecek
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-fuchsia-500/10">
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={`px-3 py-2.5 hover:bg-fuchsia-500/10 transition-colors cursor-pointer ${
+                            !notif.isRead ? 'bg-fuchsia-500/5' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="shrink-0 p-1.5 bg-fuchsia-500/15 border border-fuchsia-500/20 rounded-full">
+                              {getIcon(notif.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-white/90 break-words leading-snug line-clamp-2">
+                                {getNotificationText(notif)}
+                              </p>
+                              <p className="text-[10px] text-fuchsia-400/50 mt-0.5">
+                                {formatTime(notif.createdAt)}
+                              </p>
+                            </div>
+                            {!notif.isRead && (
+                              <div className="shrink-0 w-2 h-2 bg-pink-400 rounded-full shadow-lg shadow-pink-500/50" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>) as any,
+        document.body
+      ) as any)}
     </>
   )
 }

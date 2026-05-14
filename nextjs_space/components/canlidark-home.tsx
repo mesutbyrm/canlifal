@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu, Search, Trophy
+  Users, ChevronRight, Menu, Search, Trophy, Type, Send
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -148,6 +148,11 @@ export default function CanliDarkHome() {
   const [storyUploading, setStoryUploading] = useState(false)
   const [showMyStories, setShowMyStories] = useState(false)
   const storyFileRef = useRef<HTMLInputElement>(null)
+  // Story editor states
+  const [storyEditorFile, setStoryEditorFile] = useState<File | null>(null)
+  const [storyEditorPreview, setStoryEditorPreview] = useState<string>('')
+  const [storyEditorCaption, setStoryEditorCaption] = useState('')
+  const [storyEditorMediaType, setStoryEditorMediaType] = useState<'image' | 'video'>('image')
 
   const userName = (session?.user as any)?.name?.split(' ')[0] || 'Misafir'
   const userAvatar = (session?.user as any)?.image
@@ -235,12 +240,24 @@ export default function CanliDarkHome() {
   const myStoryGroup = storyGroups.find(g => g.user.id === (session?.user as any)?.id)
   const otherStoryGroups = storyGroups.filter(g => g.user.id !== (session?.user as any)?.id)
 
-  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStoryFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !session) return
+    const mediaType = file.type.startsWith('video/') ? 'video' : 'image'
+    setStoryEditorFile(file)
+    setStoryEditorPreview(URL.createObjectURL(file))
+    setStoryEditorMediaType(mediaType)
+    setStoryEditorCaption('')
+    if (storyFileRef.current) storyFileRef.current.value = ''
+  }
+
+  const handleStoryPublish = async () => {
+    if (!storyEditorFile || !session) return
     setStoryUploading(true)
     try {
-      const mediaType = file.type.startsWith('video/') ? 'video' : 'image'
+      const file = storyEditorFile
+      const mediaType = storyEditorMediaType
+      const caption = storyEditorCaption.trim()
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,17 +277,26 @@ export default function CanliDarkHome() {
       await fetch('/api/stories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mediaUrl: url, mediaType }),
+        body: JSON.stringify({ mediaUrl: url, mediaType, caption: caption || undefined }),
       })
-      // Refresh stories
       const fresh = await fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] })
       setStoryGroups(fresh.storyGroups || [])
+      // Close editor
+      setStoryEditorFile(null)
+      setStoryEditorPreview('')
+      setStoryEditorCaption('')
     } catch (err) {
       console.error('Story upload error:', err)
     } finally {
       setStoryUploading(false)
-      if (storyFileRef.current) storyFileRef.current.value = ''
     }
+  }
+
+  const handleStoryEditorClose = () => {
+    if (storyEditorPreview) URL.revokeObjectURL(storyEditorPreview)
+    setStoryEditorFile(null)
+    setStoryEditorPreview('')
+    setStoryEditorCaption('')
   }
 
   const handleDeleteStory = async (storyId: string) => {
@@ -301,7 +327,7 @@ export default function CanliDarkHome() {
         ))}
       </div>
 
-      {/* ═══ TOP BAR — alt navigasyon barı ile aynı stil ═══ */}
+      {/* ═══ TOP BAR ═══ */}
       <nav className="canlidark-top-nav">
         <div className="canlidark-nav-inner">
           <Link href={session ? '/profil' : '/giris'} className="canlidark-nav-item canlidark-nav-profile">
@@ -322,9 +348,6 @@ export default function CanliDarkHome() {
               {unreadCount > 0 && <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-pink-500 rounded-full flex items-center justify-center text-[7px] text-white font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>}
             </div>
             <span>Mesajlar</span>
-          </Link>
-          <Link href="/kesfet" className="canlidark-nav-fab canlidark-nav-fab--sm" aria-label="Keşfet">
-            <Search className="w-5 h-5" />
           </Link>
           <div className="canlidark-nav-item">
             <NotificationBell />
@@ -357,7 +380,7 @@ export default function CanliDarkHome() {
           <h2 className="canlidark-section-title">Hikâyeler</h2>
           <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
         </div>
-        <input ref={storyFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryUpload} />
+        <input ref={storyFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryFileSelect} />
         <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-1">
           {/* Add Story / My Story button */}
           {session && (
@@ -970,6 +993,97 @@ export default function CanliDarkHome() {
                 ))}
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ STORY EDITOR MODAL ═══ */}
+      <AnimatePresence>
+        {storyEditorFile && storyEditorPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex flex-col"
+            style={{ background: 'rgba(10, 5, 20, 0.97)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-sm">
+              <button onClick={handleStoryEditorClose} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                <X className="w-6 h-6 text-white" />
+              </button>
+              <h3 className="text-white font-semibold text-lg">Hikâye Düzenle</h3>
+              <button
+                onClick={handleStoryPublish}
+                disabled={storyUploading}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm transition-all disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #d946ef, #ec4899)', color: 'white' }}
+              >
+                {storyUploading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Paylaş
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Preview area */}
+            <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+              {storyEditorMediaType === 'video' ? (
+                <video
+                  src={storyEditorPreview}
+                  className="max-w-full max-h-full object-contain"
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                />
+              ) : (
+                <img
+                  src={storyEditorPreview}
+                  alt="Hikâye önizleme"
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+
+              {/* Caption overlay on the image */}
+              {storyEditorCaption && (
+                <div className="absolute bottom-20 left-4 right-4 pointer-events-none">
+                  <p
+                    className="text-white text-center text-lg font-semibold px-4 py-2 rounded-xl"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.55)',
+                      backdropFilter: 'blur(8px)',
+                      textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {storyEditorCaption}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Caption input */}
+            <div className="px-4 py-3 bg-black/40 backdrop-blur-sm">
+              <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(217,70,239,0.3)' }}>
+                <Type className="w-5 h-5 text-fuchsia-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={storyEditorCaption}
+                  onChange={(e) => setStoryEditorCaption(e.target.value)}
+                  placeholder="Hikâyene bir yazı ekle..."
+                  maxLength={200}
+                  className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-sm"
+                />
+                {storyEditorCaption && (
+                  <span className="text-[11px] text-white/40 flex-shrink-0">{storyEditorCaption.length}/200</span>
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

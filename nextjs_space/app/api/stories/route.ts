@@ -5,10 +5,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
-// GET - fetch active stories (not expired) grouped by user
+// GET - fetch active stories (not expired) grouped by user, followed users first
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions)
     const now = new Date()
+
+    // Get followed user IDs if logged in
+    let followedIds: string[] = []
+    if (session?.user?.id) {
+      const follows = await prisma.follow.findMany({
+        where: { followerId: session.user.id },
+        select: { followingId: true },
+      })
+      followedIds = follows.map(f => f.followingId)
+    }
+
     const stories = await prisma.userStory.findMany({
       where: {
         isActive: true,
@@ -23,10 +35,14 @@ export async function GET() {
     })
 
     // Group by user
-    const grouped: Record<string, { user: any; stories: any[] }> = {}
+    const grouped: Record<string, { user: any; stories: any[]; isFollowed: boolean }> = {}
     for (const s of stories) {
       if (!grouped[s.userId]) {
-        grouped[s.userId] = { user: s.user, stories: [] }
+        grouped[s.userId] = {
+          user: s.user,
+          stories: [],
+          isFollowed: followedIds.includes(s.userId),
+        }
       }
       grouped[s.userId].stories.push({
         id: s.id,
@@ -39,7 +55,15 @@ export async function GET() {
       })
     }
 
-    return NextResponse.json({ storyGroups: Object.values(grouped) })
+    // Sort: followed users first, then others
+    const allGroups = Object.values(grouped)
+    allGroups.sort((a, b) => {
+      if (a.isFollowed && !b.isFollowed) return -1
+      if (!a.isFollowed && b.isFollowed) return 1
+      return 0
+    })
+
+    return NextResponse.json({ storyGroups: allGroups })
   } catch (error) {
     console.error('Stories fetch error:', error)
     return NextResponse.json({ storyGroups: [] })
