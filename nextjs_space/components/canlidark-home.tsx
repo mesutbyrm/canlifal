@@ -223,7 +223,7 @@ export default function CanliDarkHome() {
   const visibleStreams = streams.slice(0, 3)
 
   return (
-    <div className="canlidark-bg pb-32 pt-3 px-3 sm:px-4 max-w-2xl mx-auto relative">
+    <div className="canlidark-bg pb-32 pt-24 px-3 sm:px-4 max-w-2xl mx-auto relative">
       {/* Floating decorative orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         {[
@@ -241,48 +241,43 @@ export default function CanliDarkHome() {
         ))}
       </div>
 
-      {/* ═══ TOP BAR — avatar + jeton + CFC + mesajlar + arama + bildirim ═══ */}
-      <div className="flex items-center justify-between mb-4">
-        <Link href={session ? '/profil' : '/giris'} className="flex items-center gap-2.5">
-          <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-fuchsia-400/60 shadow-[0_0_15px_rgba(192,38,211,0.5)]">
-            {userAvatar ? (
-              <Image src={userAvatar} alt={userName} fill className="object-cover" sizes="44px" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                {userName[0]?.toUpperCase()}
+      {/* ═══ TOP BAR — alt navigasyon barı ile aynı stil ═══ */}
+      <nav className="canlidark-top-nav">
+        <div className="canlidark-nav-inner">
+          <Link href={session ? '/profil' : '/giris'} className="canlidark-nav-item">
+            <div className="relative">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-fuchsia-400/60">
+                {userAvatar ? (
+                  <Image src={userAvatar} alt={userName} fill className="object-cover" sizes="28px" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                    {userName[0]?.toUpperCase()}
+                  </div>
+                )}
               </div>
-            )}
-            <Sparkles className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-fuchsia-300 drop-shadow-[0_0_4px_rgba(192,38,211,0.9)]" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-white leading-tight flex items-center gap-1">
-              {userName}
-              <Sparkles className="w-3 h-3 text-fuchsia-300" />
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-fuchsia-200/80 flex items-center gap-0.5">
-                <Coins className="w-3 h-3 text-amber-400" />
-                {jetonBalance} Jeton
-              </span>
-              <span className="text-[10px] text-fuchsia-200/60">•</span>
-              <span className="text-[10px] text-fuchsia-200/80 flex items-center gap-0.5">
-                <Diamond className="w-3 h-3 text-cyan-400" />
-                {credits} CFC
-              </span>
             </div>
+            <span>Profil</span>
+          </Link>
+          <Link href="/mesajlar" className="canlidark-nav-item">
+            <div className="relative">
+              <MessageCircle className="w-5 h-5" />
+              {unreadCount > 0 && <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-pink-500 rounded-full flex items-center justify-center text-[7px] text-white font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            </div>
+            <span>Mesajlar</span>
+          </Link>
+          <Link href="/kesfet" className="canlidark-nav-fab" aria-label="Keşfet">
+            <Search className="w-7 h-7" />
+          </Link>
+          <div className="canlidark-nav-item">
+            <NotificationBell />
+            <span>Bildirim</span>
           </div>
-        </Link>
-        <div className="flex items-center gap-2">
-          <Link href="/mesajlar" className="relative w-9 h-9 rounded-full bg-white/5 border border-purple-500/15 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <MessageCircle className="w-4.5 h-4.5 text-fuchsia-300" />
-            {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-[0_0_6px_rgba(236,72,153,0.9)]">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          <Link href="/panel" className="canlidark-nav-item">
+            <Sparkles className="w-5 h-5" />
+            <span>Panelim</span>
           </Link>
-          <Link href="/kesfet" className="w-9 h-9 rounded-full bg-white/5 border border-purple-500/15 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <Search className="w-4.5 h-4.5 text-fuchsia-300" />
-          </Link>
-          <NotificationBell />
         </div>
-      </div>
+      </nav>
 
       {/* ═══ LIVE TICKER ═══ */}
       {streams.length > 0 && (
