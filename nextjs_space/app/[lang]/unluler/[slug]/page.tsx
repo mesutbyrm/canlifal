@@ -9,7 +9,7 @@ import {
   BadgeCheck, Calendar, Heart, MapPin, Star, Users,
   Instagram, Youtube, Music, Globe, ExternalLink, Trophy,
   UserCheck, Loader2, Share2, Film, Tv, MessageCircle, Play, Twitter,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Newspaper
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
@@ -38,6 +38,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   x: 'from-gray-600 to-gray-800',
   youtube: 'from-red-500 to-red-700',
   tiktok: 'from-cyan-400 to-pink-500',
+  haber: 'from-emerald-500 to-teal-600',
 }
 
 interface Celebrity {
@@ -503,6 +504,7 @@ export default function CelebrityProfilePage() {
                   {post.platform === 'x' && <Twitter className="w-2.5 h-2.5 text-white" />}
                   {post.platform === 'youtube' && <Youtube className="w-2.5 h-2.5 text-white" />}
                   {post.platform === 'tiktok' && <Play className="w-2.5 h-2.5 text-white" />}
+                  {post.platform === 'haber' && <Newspaper className="w-2.5 h-2.5 text-white" />}
                 </div>
 
                 {/* Like count at bottom */}

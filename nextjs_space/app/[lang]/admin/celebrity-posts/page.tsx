@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSiteTheme } from '@/lib/theme-context'
 import {
   Plus, Trash2, Save, Loader2, Search, Instagram, Youtube, Globe,
-  Twitter, Play, X, Image as ImageIcon, Edit, Eye, EyeOff, Pin
+  Twitter, Play, X, Image as ImageIcon, Edit, Eye, EyeOff, Pin,
+  Sparkles, Newspaper, Bot
 } from 'lucide-react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -38,6 +39,7 @@ const PLATFORMS = [
   { value: 'x', label: 'X (Twitter)', icon: Twitter, color: 'from-gray-600 to-gray-800' },
   { value: 'youtube', label: 'YouTube', icon: Youtube, color: 'from-red-500 to-red-700' },
   { value: 'tiktok', label: 'TikTok', icon: Play, color: 'from-cyan-400 to-pink-500' },
+  { value: 'haber', label: 'AI Haber', icon: Newspaper, color: 'from-emerald-500 to-teal-600' },
 ]
 
 const POST_TYPES = [
@@ -65,6 +67,39 @@ export default function AdminCelebrityPostsPage() {
     celebrityId: '', platform: 'instagram', postType: 'photo',
     content: '', mediaUrl: '', externalUrl: '', isPinned: false,
   })
+
+  // AI Generate state
+  const [showAiForm, setShowAiForm] = useState(false)
+  const [aiCelebrityId, setAiCelebrityId] = useState('')
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiResult, setAiResult] = useState<{ title: string; content: string; summary: string } | null>(null)
+  const [aiError, setAiError] = useState('')
+
+  const handleAiGenerate = async () => {
+    if (!aiCelebrityId) return
+    setAiGenerating(true)
+    setAiError('')
+    setAiResult(null)
+    try {
+      const res = await fetch('/api/admin/celebrity-posts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ celebrityId: aiCelebrityId, topic: aiTopic }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Oluşturma başarısız')
+      setAiResult(data.generated)
+      setShowAiForm(false)
+      setAiCelebrityId('')
+      setAiTopic('')
+      loadPosts()
+    } catch (err: any) {
+      setAiError(err.message || 'Bir hata oluştu')
+    } finally {
+      setAiGenerating(false)
+    }
+  }
 
   const loadCelebrities = useCallback(async () => {
     try {
@@ -169,13 +204,139 @@ export default function AdminCelebrityPostsPage() {
               Ünlülerin sosyal medya paylaşımlarını ekleyin ve yönetin
             </p>
           </div>
-          <button
-            onClick={() => { setEditingId(null); setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false }); setShowForm(true) }}
-            className="px-4 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Yeni Paylaşım
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setShowAiForm(true); setAiError(''); setAiResult(null) }}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-medium hover:from-emerald-500 hover:to-teal-500 flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" /> AI Haber Oluştur
+            </button>
+            <button
+              onClick={() => { setEditingId(null); setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false }); setShowForm(true) }}
+              className="px-4 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Manuel Ekle
+            </button>
+          </div>
         </div>
+
+        {/* AI Generate Modal */}
+        <AnimatePresence>
+          {showAiForm && (
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !aiGenerating && setShowAiForm(false)}
+            >
+              <motion.div
+                className={`w-full max-w-md rounded-2xl p-6 ${isLight ? 'bg-white' : 'bg-[#1a0030] border border-emerald-500/20'}`}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20">
+                      <Bot className={`w-5 h-5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                    </div>
+                    <h2 className={`text-lg font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>
+                      AI Haber Oluştur
+                    </h2>
+                  </div>
+                  <button onClick={() => !aiGenerating && setShowAiForm(false)} className="p-1.5 rounded-full hover:bg-white/10">
+                    <X className={`w-5 h-5 ${isLight ? 'text-gray-500' : 'text-purple-300'}`} />
+                  </button>
+                </div>
+
+                <p className={`text-sm mb-4 ${isLight ? 'text-gray-500' : 'text-purple-300/60'}`}>
+                  Yapay zeka seçtiğiniz ünlü hakkında güncel haber yazısı oluşturacak ve kendi yorumunu ekleyecek.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Ünlü Seçin *</label>
+                    <select value={aiCelebrityId} onChange={e => setAiCelebrityId(e.target.value)} className={inputClass}>
+                      <option value="">Ünlü seçin</option>
+                      {celebrities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Konu / Anahtar Kelime (Opsiyonel)</label>
+                    <input
+                      type="text"
+                      value={aiTopic}
+                      onChange={e => setAiTopic(e.target.value)}
+                      className={inputClass}
+                      placeholder="Örn: son dizisi, transfer haberleri, konser..."
+                    />
+                    <p className={`text-xs mt-1 ${isLight ? 'text-gray-400' : 'text-purple-400/40'}`}>
+                      Boş bırakırsanız genel güncel haberler oluşturulur
+                    </p>
+                  </div>
+
+                  {aiError && (
+                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
+                      {aiError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleAiGenerate}
+                    disabled={aiGenerating || !aiCelebrityId}
+                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-semibold hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  >
+                    {aiGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Haber oluşturuluyor...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Haber Oluştur & Paylaş
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Result Banner */}
+        <AnimatePresence>
+          {aiResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`mb-4 p-4 rounded-xl border ${isLight ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-500/10 border-emerald-500/20'}`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className={`font-semibold text-sm ${isLight ? 'text-emerald-800' : 'text-emerald-300'}`}>
+                      ✅ AI Haber başarıyla oluşturuldu!
+                    </p>
+                    <p className={`text-sm mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-200/70'}`}>
+                      <strong>{aiResult.title}</strong>
+                    </p>
+                    <p className={`text-xs mt-1 ${isLight ? 'text-emerald-600' : 'text-emerald-300/50'}`}>
+                      {aiResult.summary}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setAiResult(null)} className="p-1 rounded-full hover:bg-white/10 flex-shrink-0">
+                  <X className="w-4 h-4 text-emerald-400" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">

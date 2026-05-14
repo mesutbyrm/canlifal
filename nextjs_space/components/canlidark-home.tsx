@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu, Search, Trophy, Type, Send
+  Users, ChevronRight, Menu, Search, Trophy, Type, Send, Newspaper
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -106,6 +106,7 @@ const PLATFORM_ICON: Record<string, React.ReactNode> = {
   x: <Twitter className="w-3 h-3" />,
   youtube: <Youtube className="w-3 h-3" />,
   tiktok: <Play className="w-3 h-3" />,
+  haber: <Newspaper className="w-3 h-3" />,
 }
 
 const PLATFORM_COLOR: Record<string, string> = {
@@ -113,6 +114,7 @@ const PLATFORM_COLOR: Record<string, string> = {
   x: 'from-gray-700 to-gray-900',
   youtube: 'from-red-500 to-red-700',
   tiktok: 'from-cyan-400 to-pink-500',
+  haber: 'from-emerald-500 to-teal-600',
 }
 
 /* ═══ FEATURE GRID CARDS ═══ */
