@@ -64,8 +64,10 @@ export default function AdminCelebrityPostsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
-    celebrityId: '', platform: 'instagram', postType: 'photo',
+    celebrityIds: [] as string[], platforms: [] as string[], postType: 'photo',
     content: '', mediaUrl: '', externalUrl: '', isPinned: false,
+    // single select for edit mode
+    celebrityId: '', platform: 'instagram',
   })
 
   // AI Generate state
@@ -103,7 +105,7 @@ export default function AdminCelebrityPostsPage() {
 
   const loadCelebrities = useCallback(async () => {
     try {
-      const res = await fetch('/api/celebrities?limit=50')
+      const res = await fetch('/api/celebrities?limit=100')
       const data = await res.json()
       setCelebrities(data.celebrities || [])
     } catch {}
@@ -126,25 +128,29 @@ export default function AdminCelebrityPostsPage() {
   useEffect(() => { loadPosts() }, [loadPosts])
 
   const handleSave = async () => {
-    if (!form.celebrityId || !form.platform) return
+    if (editingId) {
+      if (!form.celebrityId || !form.platform) return
+    } else {
+      if (form.celebrityIds.length === 0 || form.platforms.length === 0) return
+    }
     setSaving(true)
     try {
       if (editingId) {
         await fetch('/api/admin/celebrity-posts', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, ...form }),
+          body: JSON.stringify({ id: editingId, celebrityId: form.celebrityId, platform: form.platform, postType: form.postType, content: form.content, mediaUrl: form.mediaUrl, externalUrl: form.externalUrl, isPinned: form.isPinned }),
         })
       } else {
         await fetch('/api/admin/celebrity-posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify({ celebrityIds: form.celebrityIds, platforms: form.platforms, postType: form.postType, content: form.content, mediaUrl: form.mediaUrl, externalUrl: form.externalUrl, isPinned: form.isPinned }),
         })
       }
       setShowForm(false)
       setEditingId(null)
-      setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false })
+      setForm({ celebrityIds: [], platforms: [], postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false, celebrityId: '', platform: 'instagram' })
       loadPosts()
     } catch {}
     setSaving(false)
@@ -163,6 +169,8 @@ export default function AdminCelebrityPostsPage() {
     setForm({
       celebrityId: post.celebrityId,
       platform: post.platform,
+      celebrityIds: [post.celebrityId],
+      platforms: [post.platform],
       postType: post.postType,
       content: post.content || '',
       mediaUrl: post.mediaUrl || '',
@@ -212,7 +220,7 @@ export default function AdminCelebrityPostsPage() {
               <Sparkles className="w-4 h-4" /> AI Haber Oluştur
             </button>
             <button
-              onClick={() => { setEditingId(null); setForm({ celebrityId: '', platform: 'instagram', postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false }); setShowForm(true) }}
+              onClick={() => { setEditingId(null); setForm({ celebrityIds: [], platforms: [], postType: 'photo', content: '', mediaUrl: '', externalUrl: '', isPinned: false, celebrityId: '', platform: 'instagram' }); setShowForm(true) }}
               className="px-4 py-2 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> Manuel Ekle
@@ -385,20 +393,61 @@ export default function AdminCelebrityPostsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Ünlü *</label>
-                    <select value={form.celebrityId} onChange={e => setForm(f => ({ ...f, celebrityId: e.target.value }))} className={inputClass}>
-                      <option value="">Ünlü seçin</option>
-                      {celebrities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  {editingId ? (
+                    /* Single select for editing */
                     <div>
-                      <label className={labelClass}>Platform *</label>
-                      <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className={inputClass}>
-                        {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      <label className={labelClass}>Ünlü *</label>
+                      <select value={form.celebrityId} onChange={e => setForm(f => ({ ...f, celebrityId: e.target.value }))} className={inputClass}>
+                        <option value="">Ünlü seçin</option>
+                        {celebrities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     </div>
+                  ) : (
+                    /* Multi-select for new posts */
+                    <div>
+                      <label className={labelClass}>Ünlüler * <span className={`text-xs font-normal ${isLight ? 'text-gray-400' : 'text-purple-400/50'}`}>({form.celebrityIds.length} seçili)</span></label>
+                      <div className={`max-h-40 overflow-y-auto rounded-lg border p-2 space-y-1 ${isLight ? 'border-gray-300 bg-white' : 'border-purple-500/20 bg-purple-900/20'}`}>
+                        <button type="button" onClick={() => setForm(f => ({ ...f, celebrityIds: f.celebrityIds.length === celebrities.length ? [] : celebrities.map(c => c.id) }))} className={`text-[10px] px-2 py-0.5 rounded-full mb-1 ${isLight ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'}`}>
+                          {form.celebrityIds.length === celebrities.length ? 'Hiçbirini Seçme' : 'Tümünü Seç'}
+                        </button>
+                        {celebrities.map(c => (
+                          <label key={c.id} className={`flex items-center gap-2 cursor-pointer px-2 py-1 rounded-lg transition-colors ${form.celebrityIds.includes(c.id) ? (isLight ? 'bg-fuchsia-50' : 'bg-fuchsia-500/10') : 'hover:bg-white/5'}`}>
+                            <input type="checkbox" checked={form.celebrityIds.includes(c.id)} onChange={e => {
+                              setForm(f => ({ ...f, celebrityIds: e.target.checked ? [...f.celebrityIds, c.id] : f.celebrityIds.filter(id => id !== c.id) }))
+                            }} className="w-3.5 h-3.5 rounded border-purple-500/30" />
+                            <span className={`text-sm ${isLight ? 'text-gray-700' : 'text-purple-200/80'}`}>{c.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {editingId ? (
+                      <div>
+                        <label className={labelClass}>Platform *</label>
+                        <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className={inputClass}>
+                          {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className={labelClass}>Platformlar * <span className={`text-xs font-normal ${isLight ? 'text-gray-400' : 'text-purple-400/50'}`}>({form.platforms.length})</span></label>
+                        <div className="space-y-1">
+                          {PLATFORMS.map(p => {
+                            const PIcon = p.icon
+                            return (
+                              <label key={p.value} className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-lg transition-colors ${form.platforms.includes(p.value) ? (isLight ? 'bg-fuchsia-50' : 'bg-fuchsia-500/10') : 'hover:bg-white/5'}`}>
+                                <input type="checkbox" checked={form.platforms.includes(p.value)} onChange={e => {
+                                  setForm(f => ({ ...f, platforms: e.target.checked ? [...f.platforms, p.value] : f.platforms.filter(v => v !== p.value) }))
+                                }} className="w-3.5 h-3.5 rounded border-purple-500/30" />
+                                <PIcon className="w-3.5 h-3.5" />
+                                <span className={`text-sm ${isLight ? 'text-gray-700' : 'text-purple-200/80'}`}>{p.label}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <label className={labelClass}>Tür</label>
                       <select value={form.postType} onChange={e => setForm(f => ({ ...f, postType: e.target.value }))} className={inputClass}>
@@ -446,11 +495,11 @@ export default function AdminCelebrityPostsPage() {
                   </label>
                   <button
                     onClick={handleSave}
-                    disabled={saving || !form.celebrityId}
+                    disabled={saving || (editingId ? !form.celebrityId : (form.celebrityIds.length === 0 || form.platforms.length === 0))}
                     className="w-full py-2.5 bg-fuchsia-600 text-white rounded-xl text-sm font-medium hover:bg-fuchsia-500 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {editingId ? 'Güncelle' : 'Ekle'}
+                    {editingId ? 'Güncelle' : `Ekle${!editingId && form.celebrityIds.length > 0 && form.platforms.length > 0 ? ` (${form.celebrityIds.length} × ${form.platforms.length} = ${form.celebrityIds.length * form.platforms.length} paylaşım)` : ''}`}
                   </button>
                 </div>
               </motion.div>

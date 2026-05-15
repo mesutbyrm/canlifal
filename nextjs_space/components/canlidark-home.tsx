@@ -68,6 +68,14 @@ interface CelebrityStory {
   hasNewPost: boolean
 }
 
+interface PopularFanClub {
+  id: string
+  memberCount: number
+  postCount: number
+  coverImage: string | null
+  celebrity: { name: string; slug: string; profileImage: string | null; category: string }
+}
+
 interface CelebrityPost {
   id: string
   platform: string
@@ -141,6 +149,7 @@ export default function CanliDarkHome() {
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
+  const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const postsScrollRef = useRef<HTMLDivElement>(null)
   // Story states
@@ -169,7 +178,7 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts, storiesData] = await Promise.all([
+        const [s, r, t, m, celeb, posts, storiesData, fanClubsData] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
@@ -177,20 +186,23 @@ export default function CanliDarkHome() {
           fetch('/api/celebrities?limit=15').then(x => x.ok ? x.json() : { celebrities: [] }),
           fetch('/api/celebrities/posts/latest?limit=12').then(x => x.ok ? x.json() : { posts: [] }),
           fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
+          fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
         setTellers((t?.tellers || []).slice(0, 12))
         if (Array.isArray(m)) setMembershipPlans(m.slice(0, 4))
         if (celeb?.celebrities) {
+          const postCelebIds = new Set((posts?.posts || []).map((p: any) => p.celebrity?.slug))
           setCelebrities(celeb.celebrities.map((c: any) => ({
             id: c.id, name: c.name, slug: c.slug,
             profileImage: c.profileImage, category: c.category,
-            hasNewPost: true,
+            hasNewPost: postCelebIds.has(c.slug),
           })))
         }
         if (posts?.posts) setLatestPosts(posts.posts)
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
+        if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
       } catch {}
       if (session) {
         try {
@@ -640,6 +652,42 @@ export default function CanliDarkHome() {
           )}
         </div>
       </div>
+
+      {/* ═══ 5.5 FAN CLUB — en aktif kulüpler ═══ */}
+      {popularFanClubs.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="canlidark-section-title flex items-center gap-1.5">💜 Fan Club</h2>
+            <Link href="/unluler" className="canlidark-section-link">Tüm Kulüpler</Link>
+          </div>
+          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {popularFanClubs.map((fc, idx) => {
+              const gradients = ['from-rose-500 to-pink-600', 'from-purple-500 to-fuchsia-600', 'from-blue-500 to-indigo-600', 'from-amber-500 to-orange-600', 'from-emerald-500 to-teal-600'] as const
+              return (
+                <Link key={fc.id} href={`/unluler/${fc.celebrity.slug}/fan-kulubu`} className="flex-shrink-0 w-[120px]">
+                  <div className={`relative rounded-2xl overflow-hidden canlidark-glass border border-purple-500/20 aspect-[3/4]`} style={{ boxShadow: '0 4px 16px rgba(192,38,211,0.25)' }}>
+                    {fc.celebrity.profileImage ? (
+                      <Image src={fc.celebrity.profileImage} alt={fc.celebrity.name} fill className="object-cover" sizes="120px" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${gradients[idx % gradients.length]} flex items-center justify-center text-3xl`}>
+                        {fc.celebrity.name[0]}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <p className="text-[11px] font-bold text-white leading-tight truncate">{fc.celebrity.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] text-fuchsia-200/80 flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />{fc.memberCount}</span>
+                        <span className="text-[9px] text-fuchsia-200/80 flex items-center gap-0.5"><MessageCircle className="w-2.5 h-2.5" />{fc.postCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ═══ 6. FAL & TAROT — 4 sütun ═══ */}
       <div className="mb-6">

@@ -134,7 +134,7 @@ export default function NavSearch() {
                 setSelectedIndex(-1)
               }}
               onKeyDown={handleKeyDown}
-              placeholder={'Ara...'}
+              placeholder={'Merak ettiğini ara'}
               className="w-36 sm:w-48 h-8 pl-8 pr-8 text-sm bg-fuchsia-900/40 border border-fuchsia-500/40 rounded-full text-white placeholder-fuchsia-300/60 focus:outline-none focus:border-fuchsia-400 transition-all"
             />
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fuchsia-400/60" />

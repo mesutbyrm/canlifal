@@ -53,28 +53,38 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { celebrityId, platform, postType, content, mediaUrl, externalUrl, isPinned } = body
+    const { celebrityId, celebrityIds, platform, platforms, postType, content, mediaUrl, externalUrl, isPinned } = body
 
-    if (!celebrityId || !platform) {
-      return NextResponse.json({ error: 'celebrityId ve platform gerekli' }, { status: 400 })
+    // Support both single and multi-select
+    const celebIds: string[] = celebrityIds?.length ? celebrityIds : celebrityId ? [celebrityId] : []
+    const platList: string[] = platforms?.length ? platforms : platform ? [platform] : []
+
+    if (celebIds.length === 0 || platList.length === 0) {
+      return NextResponse.json({ error: 'En az bir ünlü ve platform seçilmeli' }, { status: 400 })
     }
 
-    const post = await prisma.celebrityPost.create({
-      data: {
-        celebrityId,
-        platform,
-        postType: postType || 'photo',
-        content: content || null,
-        mediaUrl: mediaUrl || null,
-        externalUrl: externalUrl || null,
-        isPinned: isPinned || false,
-      },
-      include: {
-        celebrity: { select: { name: true, slug: true, profileImage: true } },
-      },
-    })
+    const posts = []
+    for (const cid of celebIds) {
+      for (const plat of platList) {
+        const post = await prisma.celebrityPost.create({
+          data: {
+            celebrityId: cid,
+            platform: plat,
+            postType: postType || 'photo',
+            content: content || null,
+            mediaUrl: mediaUrl || null,
+            externalUrl: externalUrl || null,
+            isPinned: isPinned || false,
+          },
+          include: {
+            celebrity: { select: { name: true, slug: true, profileImage: true } },
+          },
+        })
+        posts.push(post)
+      }
+    }
 
-    return NextResponse.json({ post })
+    return NextResponse.json({ post: posts[0], posts, count: posts.length })
   } catch (err) {
     console.error('Admin celebrity post CREATE error:', err)
     return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
