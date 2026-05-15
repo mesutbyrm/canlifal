@@ -1297,9 +1297,10 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   ]
 
   for (const celeb of celebrities) {
+    const { slug, ...rest } = celeb
     await prisma.celebrity.upsert({
-      where: { slug: celeb.slug },
-      update: {},
+      where: { slug },
+      update: rest,
       create: celeb,
     })
   }

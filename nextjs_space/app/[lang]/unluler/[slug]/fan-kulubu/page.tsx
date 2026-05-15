@@ -9,7 +9,7 @@ import {
   ArrowLeft, BadgeCheck, Heart, Users, Send, Loader2,
   MessageCircle, Crown, Shield, Star, Trash2, Pin,
   UserPlus, UserMinus, ChevronDown, Sparkles, Clock,
-  BarChart3, Plus, Trophy, Zap
+  BarChart3, Plus, Trophy, Zap, Share2
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
@@ -124,6 +124,13 @@ export default function FanClubPage() {
   const [pollOptions, setPollOptions] = useState(['', ''])
   const [creatingPoll, setCreatingPoll] = useState(false)
   const [votingPollId, setVotingPollId] = useState<string | null>(null)
+  // Celebrity posts + comments
+  const [celebPosts, setCelebPosts] = useState<any[]>([])
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({})
+  const [postComments, setPostComments] = useState<Record<string, any[]>>({})
+  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({})
+  const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({})
+  const [sendingComment, setSendingComment] = useState<Record<string, boolean>>({})
 
   const fetchFanClub = useCallback(async () => {
     try {
@@ -189,8 +196,79 @@ export default function FanClubPage() {
     }
   }, [slug])
 
+  const fetchCelebPosts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/posts?limit=20`)
+      const data = await res.json()
+      setCelebPosts((data.posts || []).map((p: any) => ({ ...p, _isCeleb: true })))
+    } catch { setCelebPosts([]) }
+  }, [slug])
+
+  const toggleComments = async (postId: string, isCeleb: boolean) => {
+    const isOpen = openComments[postId]
+    setOpenComments(prev => ({ ...prev, [postId]: !isOpen }))
+    if (!isOpen && !postComments[postId]) {
+      setCommentLoading(prev => ({ ...prev, [postId]: true }))
+      try {
+        const url = isCeleb
+          ? `/api/celebrities/${slug}/posts/comments?postId=${postId}`
+          : `/api/celebrities/${slug}/fan-club/posts?postId=${postId}` // fan posts don't have separate comments endpoint yet
+        if (isCeleb) {
+          const res = await fetch(url)
+          const data = await res.json()
+          setPostComments(prev => ({ ...prev, [postId]: data.comments || [] }))
+        } else {
+          setPostComments(prev => ({ ...prev, [postId]: [] }))
+        }
+      } catch {}
+      setCommentLoading(prev => ({ ...prev, [postId]: false }))
+    }
+  }
+
+  const handleSendCelebComment = async (postId: string) => {
+    const text = commentTexts[postId]?.trim()
+    if (!text || !session?.user) return
+    setSendingComment(prev => ({ ...prev, [postId]: true }))
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/posts/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, content: text }),
+      })
+      const data = await res.json()
+      if (data.comment) {
+        setPostComments(prev => ({ ...prev, [postId]: [data.comment, ...(prev[postId] || [])] }))
+        setCommentTexts(prev => ({ ...prev, [postId]: '' }))
+        setCelebPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p))
+      }
+    } catch {}
+    setSendingComment(prev => ({ ...prev, [postId]: false }))
+  }
+
+  const handleLikeCelebPost = async (postId: string) => {
+    if (!session?.user) { router.push('/giris'); return }
+    try {
+      const res = await fetch(`/api/celebrities/${slug}/posts/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      })
+      const data = await res.json()
+      setCelebPosts(prev => prev.map(p => p.id === postId ? { ...p, isLiked: data.liked, likeCount: data.liked ? p.likeCount + 1 : p.likeCount - 1 } : p))
+    } catch {}
+  }
+
+  const handleShareWallPost = async (content: string) => {
+    const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/unluler/${slug}/fan-kulubu`
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: fanClub?.celebrity?.name || '', text: content?.slice(0, 100) || '', url: shareUrl }) } catch {}
+    } else if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(shareUrl)
+    }
+  }
+
   useEffect(() => { fetchFanClub() }, [fetchFanClub])
-  useEffect(() => { if (tab === 'wall') fetchPosts() }, [tab, fetchPosts])
+  useEffect(() => { if (tab === 'wall') { fetchPosts(); fetchCelebPosts() } }, [tab, fetchPosts, fetchCelebPosts])
   useEffect(() => { if (tab === 'members') fetchMembers() }, [tab, fetchMembers])
   useEffect(() => { if (tab === 'polls') fetchPolls() }, [tab, fetchPolls])
   useEffect(() => { if (session?.user) fetchLevel() }, [session, fetchLevel])
@@ -520,17 +598,137 @@ export default function FanClubPage() {
               </div>
             )}
 
-            {/* Posts */}
+            {/* Celebrity Posts Section */}
+            {celebPosts.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-5 rounded-full bg-gradient-to-b from-fuchsia-500 to-pink-500" />
+                  <h3 className="text-sm font-semibold text-fuchsia-300">Ünlü Paylaşımları</h3>
+                </div>
+                <div className="space-y-3">
+                  {celebPosts.slice(0, 5).map((cp: any, i: number) => (
+                    <motion.div
+                      key={cp.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="rounded-2xl bg-gradient-to-br from-fuchsia-500/10 via-purple-500/5 to-pink-500/10 border border-fuchsia-500/20 backdrop-blur-sm overflow-hidden"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center gap-3 p-3">
+                        <Link href={`/unluler/${slug}`}>
+                          <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-fuchsia-500/40 flex-shrink-0">
+                            {fanClub.celebrity.profileImage ? (
+                              <Image src={fanClub.celebrity.profileImage} alt={fanClub.celebrity.name} width={36} height={36} className="object-cover w-full h-full" />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-purple-700 flex items-center justify-center text-white text-xs font-bold">{fanClub.celebrity.name.charAt(0)}</div>
+                            )}
+                          </div>
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold text-white truncate">{fanClub.celebrity.name}</span>
+                            <BadgeCheck className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                          </div>
+                          <span className="text-[10px] text-purple-400/50 flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{timeAgo(cp.createdAt)}</span>
+                        </div>
+                        {cp.platform && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/20">{cp.platform}</span>
+                        )}
+                      </div>
+
+                      {/* Media */}
+                      {cp.mediaUrl && (
+                        <div className="relative aspect-video bg-purple-900/20">
+                          <Image src={cp.mediaUrl} alt="" fill className="object-cover" sizes="600px" />
+                        </div>
+                      )}
+
+                      {/* Content */}
+                      {cp.content && (
+                        <div className="px-3 pt-2">
+                          <p className="text-sm text-purple-200/80 whitespace-pre-line break-words leading-relaxed">
+                            <span className="font-semibold text-white mr-1">{fanClub.celebrity.name}</span>
+                            {cp.content}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="px-3 pt-2 pb-1">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => handleLikeCelebPost(cp.id)} className={`flex items-center gap-1.5 text-xs transition-colors ${cp.isLiked ? 'text-pink-400' : 'text-purple-400/50 hover:text-pink-400'}`}>
+                            <Heart className={`w-4 h-4 ${cp.isLiked ? 'fill-current' : ''}`} />
+                            {cp.likeCount > 0 && cp.likeCount}
+                          </button>
+                          <button onClick={() => toggleComments(cp.id, true)} className="flex items-center gap-1.5 text-xs text-purple-400/50 hover:text-purple-300 transition-colors">
+                            <MessageCircle className="w-4 h-4" />
+                            {cp.commentCount > 0 && cp.commentCount}
+                          </button>
+                          <button onClick={() => handleShareWallPost(cp.content || '')} className="flex items-center gap-1.5 text-xs text-purple-400/50 hover:text-purple-300 transition-colors">
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Comments */}
+                      <AnimatePresence>
+                        {openComments[cp.id] && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                            <div className="px-3 pb-2 space-y-2 max-h-40 overflow-y-auto border-t border-fuchsia-500/10 pt-2">
+                              {commentLoading[cp.id] ? (
+                                <div className="flex justify-center py-2"><Loader2 className="w-4 h-4 animate-spin text-fuchsia-400" /></div>
+                              ) : (postComments[cp.id] || []).length === 0 ? (
+                                <p className="text-xs text-purple-400/40 py-1">Henüz yorum yok</p>
+                              ) : (
+                                (postComments[cp.id] || []).map((c: any) => (
+                                  <div key={c.id} className="flex gap-2">
+                                    <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-fuchsia-600 to-purple-700">
+                                      {c.user.image ? <Image src={c.user.image} alt="" width={20} height={20} className="object-cover w-full h-full" /> : <div className="w-full h-full flex items-center justify-center text-white text-[8px] font-bold">{c.user.name.charAt(0)}</div>}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs text-purple-200/80"><span className="font-semibold text-white mr-1">{c.user.name}</span>{c.content}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            {session?.user && (
+                              <div className="px-3 pb-2 flex items-center gap-2 border-t border-fuchsia-500/10 pt-2">
+                                <input type="text" value={commentTexts[cp.id] || ''} onChange={e => setCommentTexts(prev => ({ ...prev, [cp.id]: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSendCelebComment(cp.id) } }} placeholder="Yorum yaz..." className="flex-1 bg-transparent text-xs text-white placeholder-purple-400/40 focus:outline-none" />
+                                <button onClick={() => handleSendCelebComment(cp.id)} disabled={!commentTexts[cp.id]?.trim() || sendingComment[cp.id]} className="text-fuchsia-400 disabled:opacity-30">
+                                  {sendingComment[cp.id] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fan Duvarı Separator */}
+            {celebPosts.length > 0 && posts.length > 0 && (
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 rounded-full bg-gradient-to-b from-purple-500 to-blue-500" />
+                <h3 className="text-sm font-semibold text-purple-300">Fan Duvarı</h3>
+              </div>
+            )}
+
+            {/* Fan Posts */}
             {loadingPosts && posts.length === 0 ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
               </div>
-            ) : posts.length === 0 ? (
+            ) : posts.length === 0 && celebPosts.length === 0 ? (
               <div className="text-center py-10">
                 <MessageCircle className="w-12 h-12 text-purple-500/20 mx-auto mb-3" />
                 <p className="text-purple-300/40 text-sm">Henüz gönderi yok</p>
               </div>
-            ) : (
+            ) : posts.length > 0 ? (
               <div className="space-y-4">
                 {posts.map((post, i) => (
                   <motion.div
@@ -591,6 +789,9 @@ export default function FanClubPage() {
                             <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
                             {post.likeCount > 0 && post.likeCount}
                           </button>
+                          <button onClick={() => handleShareWallPost(post.content)} className="flex items-center gap-1.5 text-xs text-purple-400/50 hover:text-purple-300 transition-colors">
+                            <Share2 className="w-4 h-4" />
+                          </button>
                           {(post.user.id === session?.user?.id || ['admin', 'yonetici', 'moderator'].includes(session?.user?.role || '')) && (
                             <button
                               onClick={() => handleDeletePost(post.id)}
@@ -615,7 +816,7 @@ export default function FanClubPage() {
                   </button>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
