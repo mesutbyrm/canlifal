@@ -81,6 +81,9 @@ export const authOptions: NextAuthOptions = {
       if (trigger === 'update' && session) {
         token.credits = session?.credits
         token.preferredLanguage = session?.preferredLanguage
+        if (session?.deviceToken) {
+          token.deviceToken = session.deviceToken
+        }
       }
       
       return token
