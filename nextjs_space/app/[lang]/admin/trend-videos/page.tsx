@@ -160,9 +160,19 @@ export default function AdminTrendVideos() {
         setSearchError(data.error || 'Arama ba\u015far\u0131s\u0131z')
         return
       }
-      setSearchResults((data.results || []).map((r: any) => ({ ...r, selected: false })))
+      // Filter out already added videos
+      const existingYoutubeIds = new Set(
+        categories.flatMap(c => c.videos.map(v => v.youtubeId))
+      )
+      const filtered = (data.results || [])
+        .filter((r: any) => !existingYoutubeIds.has(r.youtubeId))
+        .map((r: any) => ({ ...r, selected: false }))
+      setSearchResults(filtered)
+      if (filtered.length === 0 && (data.results || []).length > 0) {
+        setSearchError('Tüm sonuçlar zaten eklenmiş')
+      }
     } catch (e) {
-      setSearchError('Bir hata olu\u015ftu')
+      setSearchError('Bir hata oluştu')
     } finally {
       setSearching(false)
     }

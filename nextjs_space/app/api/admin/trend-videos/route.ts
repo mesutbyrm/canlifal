@@ -81,6 +81,11 @@ export async function POST(req: NextRequest) {
       if (!categoryId || !title?.trim() || !youtubeId?.trim()) {
         return NextResponse.json({ error: 'Kategori, başlık ve YouTube ID gerekli' }, { status: 400 })
       }
+      // Check duplicate
+      const existing = await prisma.trendVideo.findFirst({ where: { youtubeId: youtubeId.trim() } })
+      if (existing) {
+        return NextResponse.json({ error: 'Bu video zaten eklenmiş' }, { status: 400 })
+      }
       const maxOrder = await prisma.trendVideo.aggregate({
         where: { categoryId },
         _max: { sortOrder: true }
@@ -110,9 +115,16 @@ export async function POST(req: NextRequest) {
         _max: { sortOrder: true }
       })
       let order = (maxOrder._max.sortOrder || 0) + 1
+      // Get all existing youtubeIds to prevent duplicates
+      const existingVideos = await prisma.trendVideo.findMany({
+        where: { youtubeId: { in: videos.map((v: any) => v.youtubeId?.trim()).filter(Boolean) } },
+        select: { youtubeId: true }
+      })
+      const existingIds = new Set(existingVideos.map((v: any) => v.youtubeId))
       const created = []
       for (const v of videos) {
         if (!v.title?.trim() || !v.youtubeId?.trim()) continue
+        if (existingIds.has(v.youtubeId.trim())) continue // Skip duplicates
         const video = await prisma.trendVideo.create({
           data: {
             categoryId,
