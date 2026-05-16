@@ -161,6 +161,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/online-fal`, icon: Sparkles, trLabel: 'Online Fal Sayfası', enLabel: 'Online Fortune Page', emoji: '🔮', desc: 'Online fal ayarları' },
       { href: `/admin/unluler`, icon: Star, trLabel: 'Ünlü Yönetimi', enLabel: 'Celebrity Management', emoji: '⭐', desc: 'Ünlü profilleri yönet' },
       { href: `/admin/celebrity-posts`, icon: Star, trLabel: 'Ünlü Paylaşımları', enLabel: 'Celebrity Posts', emoji: '📱', desc: 'Sosyal medya paylaşımlarını yönet' },
+      { href: `/admin/trend-videos`, icon: TrendingUp, trLabel: 'Trend Videolar', enLabel: 'Trend Videos', emoji: '🎬', desc: 'YouTube trend videolarını yönet' },
       { href: `/admin/trendler`, icon: TrendingUp, trLabel: 'Trend Yönetimi', enLabel: 'Trend Management', emoji: '🔥', desc: 'Platform trendlerini yönet' },
     ],
   },

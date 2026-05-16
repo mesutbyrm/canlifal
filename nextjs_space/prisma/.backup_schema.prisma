@@ -2823,3 +2823,41 @@ model UserStory {
   @@index([expiresAt])
   @@map("user_stories")
 }
+
+
+// Video categories for trend videos
+model TrendVideoCategory {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  description String?      @db.Text
+  sortOrder   Int          @default(0)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  videos      TrendVideo[]
+
+  @@index([isActive, sortOrder])
+  @@map("trend_video_categories")
+}
+
+// Individual trend videos (YouTube)
+model TrendVideo {
+  id           String             @id @default(cuid())
+  categoryId   String
+  category     TrendVideoCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title        String
+  youtubeId    String             // YouTube video ID
+  thumbnailUrl String?            // YouTube thumbnail
+  channelName  String?
+  duration     String?            // e.g. "12:34"
+  viewCount    Int                @default(0)
+  sortOrder    Int                @default(0)
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([categoryId, sortOrder])
+  @@index([isActive, createdAt])
+  @@map("trend_videos")
+}

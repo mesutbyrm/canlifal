@@ -1379,6 +1379,20 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('Dizi & Film homepage button seeded!')
 
+  // Add Videolar homepage button
+  await prisma.homepageButton.upsert({
+    where: { key: 'videolar' },
+    update: {},
+    create: {
+      key: 'videolar',
+      label: 'Videolar',
+      icon: '▶️',
+      href: '/videolar',
+      sortOrder: 16,
+    },
+  })
+  console.log('Videolar homepage button seeded!')
+
   // Seed trending topics
   const trendingTopics = [
     {

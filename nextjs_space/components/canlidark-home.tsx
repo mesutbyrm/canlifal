@@ -88,6 +88,16 @@ interface CelebrityPost {
   celebrity: { name: string; slug: string; profileImage: string | null; category?: string }
 }
 
+interface TrendVideoItem {
+  id: string
+  title: string
+  youtubeId: string
+  thumbnailUrl: string | null
+  channelName: string | null
+  duration: string | null
+  category: { title: string; slug: string }
+}
+
 /* FootballMatch is now handled by LiveMatchTicker component */
 
 const FORTUNE_CARDS = [
@@ -148,10 +158,10 @@ export default function CanliDarkHome() {
   const [heroText, setHeroText] = useState<string>('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
-  const [latestPosts, setLatestPosts] = useState<CelebrityPost[]>([])
+  const [trendVideos, setTrendVideos] = useState<TrendVideoItem[]>([])
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const postsScrollRef = useRef<HTMLDivElement>(null)
+  const videosScrollRef = useRef<HTMLDivElement>(null)
   // Story states
   const [storyGroups, setStoryGroups] = useState<{ user: any; stories: any[] }[]>([])
   const [myStories, setMyStories] = useState<any[]>([])
@@ -184,7 +194,7 @@ export default function CanliDarkHome() {
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
           fetch('/api/memberships').then(x => x.ok ? x.json() : []),
           fetch('/api/celebrities?limit=15').then(x => x.ok ? x.json() : { celebrities: [] }),
-          fetch('/api/celebrities/posts/latest?limit=12').then(x => x.ok ? x.json() : { posts: [] }),
+          fetch('/api/trend-videos?limit=12').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
           fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
         ])
@@ -193,14 +203,13 @@ export default function CanliDarkHome() {
         setTellers((t?.tellers || []).slice(0, 12))
         if (Array.isArray(m)) setMembershipPlans(m.slice(0, 4))
         if (celeb?.celebrities) {
-          const postCelebIds = new Set((posts?.posts || []).map((p: any) => p.celebrity?.slug))
           setCelebrities(celeb.celebrities.map((c: any) => ({
             id: c.id, name: c.name, slug: c.slug,
             profileImage: c.profileImage, category: c.category,
-            hasNewPost: postCelebIds.has(c.slug),
+            hasNewPost: false,
           })))
         }
-        if (posts?.posts) setLatestPosts(posts.posts)
+        if (posts?.videos) setTrendVideos(posts.videos)
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
         if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
       } catch {}
@@ -219,17 +228,17 @@ export default function CanliDarkHome() {
     return () => clearInterval(i)
   }, [session])
 
-  // Auto-scroll latest posts
-  const postsScrollPausedRef = useRef(false)
+  // Auto-scroll trend videos
+  const videosScrollPausedRef = useRef(false)
   useEffect(() => {
-    if (latestPosts.length < 2) return
-    const el = postsScrollRef.current
+    if (trendVideos.length < 2) return
+    const el = videosScrollRef.current
     if (!el) return
     let animId: number
     let lastTime = 0
-    const speed = 0.5
+    const speed = 0.4
     const tick = (time: number) => {
-      if (!postsScrollPausedRef.current && lastTime) {
+      if (!videosScrollPausedRef.current && lastTime) {
         const delta = time - lastTime
         const px = speed * (delta / 16.67)
         el.scrollLeft += px
@@ -242,7 +251,7 @@ export default function CanliDarkHome() {
     }
     animId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(animId)
-  }, [latestPosts])
+  }, [trendVideos])
 
   /* Football match auto-scroll is now handled by LiveMatchTicker */
 
@@ -552,61 +561,68 @@ export default function CanliDarkHome() {
       {/* ═══ 3. CANLI MAÇLAR — LiveMatchTicker component ═══ */}
       <LiveMatchTicker />
 
-      {/* ═══ 4. SON PAYLAŞIMLAR — auto-scroll left — mb-0 gap ═══ */}
-      {latestPosts.length > 0 && (
+      {/* ═══ 4. TREND VİDEOLAR — auto-scroll left ═══ */}
+      {trendVideos.length > 0 && (
         <div className="mb-1">
           <div className="flex items-center justify-between mb-2">
             <h2 className="canlidark-section-title flex items-center gap-1.5">
-              <Heart className="w-4 h-4 text-pink-400" /> Son Paylaşımlar
+              <Play className="w-4 h-4 text-red-400" /> Trend Videolar
             </h2>
-            <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
+            <Link href="/videolar" className="canlidark-section-link">Tümü</Link>
           </div>
           <div
-            ref={postsScrollRef}
+            ref={videosScrollRef}
             className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-1"
-            onMouseEnter={() => { postsScrollPausedRef.current = true }}
-            onMouseLeave={() => { postsScrollPausedRef.current = false }}
-            onTouchStart={() => { postsScrollPausedRef.current = true }}
-            onTouchEnd={() => { postsScrollPausedRef.current = false }}
+            onMouseEnter={() => { videosScrollPausedRef.current = true }}
+            onMouseLeave={() => { videosScrollPausedRef.current = false }}
+            onTouchStart={() => { videosScrollPausedRef.current = true }}
+            onTouchEnd={() => { videosScrollPausedRef.current = false }}
           >
-            {latestPosts.map((post) => (
-              <Link key={post.id} href={`/unluler/${post.celebrity.slug}`} className="flex-shrink-0 w-44">
+            {trendVideos.map((video) => (
+              <a
+                key={video.id}
+                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 w-48 group"
+              >
                 <div className="canlidark-card overflow-hidden h-full">
-                  {post.mediaUrl ? (
-                    <div className="relative w-full h-28">
-                      <Image src={post.mediaUrl} alt={post.celebrity.name} fill className="object-cover" sizes="176px" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-gray-500 to-gray-700'} flex items-center justify-center`}>
-                        {PLATFORM_ICON[post.platform] || <Globe className="w-3 h-3" />}
+                  <div className="relative w-full h-28">
+                    {video.thumbnailUrl ? (
+                      <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover" sizes="192px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-red-700 to-red-900 flex items-center justify-center">
+                        <Youtube className="w-8 h-8 text-white/30" />
                       </div>
-                    </div>
-                  ) : (
-                    <div className={`relative w-full h-28 bg-gradient-to-br ${PLATFORM_COLOR[post.platform] || 'from-purple-700 to-fuchsia-800'} flex items-center justify-center`}>
-                      <div className="text-white/30 text-3xl">{PLATFORM_ICON[post.platform]}</div>
-                    </div>
-                  )}
-                  <div className="p-2.5">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-5 h-5 rounded-full overflow-hidden relative flex-shrink-0">
-                        {post.celebrity.profileImage ? (
-                          <Image src={post.celebrity.profileImage} alt={post.celebrity.name} fill className="object-cover" sizes="20px" />
-                        ) : (
-                          <div className="w-full h-full bg-purple-600 flex items-center justify-center text-[8px] text-white font-bold">{post.celebrity.name[0]}</div>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold text-white truncate">{post.celebrity.name}</span>
-                    </div>
-                    {post.content && (
-                      <p className="text-[9px] text-fuchsia-200/70 line-clamp-2 leading-tight">{post.content}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[9px] text-fuchsia-200/50 flex items-center gap-0.5">
-                        <Heart className="w-2.5 h-2.5" /> {post.likeCount > 999 ? `${(post.likeCount / 1000).toFixed(1)}K` : post.likeCount}
-                      </span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    {/* Play button overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-10 h-10 rounded-full bg-red-600/90 flex items-center justify-center shadow-lg">
+                        <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                      </div>
                     </div>
+                    {/* Duration badge */}
+                    {video.duration && (
+                      <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                        {video.duration}
+                      </span>
+                    )}
+                    {/* Category badge */}
+                    <span className="absolute top-1.5 left-1.5 bg-red-600/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide">
+                      {video.category.title}
+                    </span>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-[11px] font-semibold text-white line-clamp-2 leading-tight">{video.title}</p>
+                    {video.channelName && (
+                      <p className="text-[9px] text-fuchsia-200/50 mt-1 flex items-center gap-1">
+                        <Youtube className="w-2.5 h-2.5 text-red-400" /> {video.channelName}
+                      </p>
+                    )}
                   </div>
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         </div>
