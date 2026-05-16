@@ -88,7 +88,7 @@ export default function VideoWatchPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen">
       {/* ═══ STICKY TOP: Video Player + Info ═══ */}
       <div className="sticky top-0 z-30 bg-[#0a0118]">
         {/* Back button */}
@@ -134,7 +134,7 @@ export default function VideoWatchPage() {
       </div>
 
       {/* ═══ SCROLLABLE: Related Videos ═══ */}
-      <div className="flex-1 overflow-y-auto pb-28">
+      <div className="pb-28">
         {related.length > 0 && (
           <div className="px-4 pt-4">
             <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
