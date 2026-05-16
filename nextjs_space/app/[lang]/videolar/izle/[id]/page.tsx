@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -35,6 +35,20 @@ export default function VideoWatchPage() {
   const [video, setVideo] = useState<VideoDetail | null>(null)
   const [related, setRelated] = useState<RelatedVideo[]>([])
   const [loading, setLoading] = useState(true)
+  const [playerHeight, setPlayerHeight] = useState(0)
+  const playerRef = useRef<HTMLDivElement>(null)
+
+  const measurePlayer = useCallback(() => {
+    if (playerRef.current) {
+      setPlayerHeight(playerRef.current.offsetHeight)
+    }
+  }, [])
+
+  useEffect(() => {
+    measurePlayer()
+    window.addEventListener('resize', measurePlayer)
+    return () => window.removeEventListener('resize', measurePlayer)
+  }, [measurePlayer, video])
 
   useEffect(() => {
     if (!videoId) return
@@ -89,8 +103,8 @@ export default function VideoWatchPage() {
 
   return (
     <div className="min-h-screen">
-      {/* ═══ STICKY TOP: Video Player + Info ═══ */}
-      <div className="sticky top-0 z-30 bg-[#0a0118]">
+      {/* ═══ FIXED TOP: Video Player + Info ═══ */}
+      <div ref={playerRef} className="fixed top-0 left-0 right-0 z-30 bg-[#0a0118]">
         {/* Back button */}
         <div className="px-4 pt-2 pb-1">
           <Link href="/videolar" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm">
@@ -133,8 +147,8 @@ export default function VideoWatchPage() {
         </div>
       </div>
 
-      {/* ═══ SCROLLABLE: Related Videos ═══ */}
-      <div className="pb-28">
+      {/* ═══ SCROLLABLE: Related Videos (pushed below fixed player) ═══ */}
+      <div className="pb-28" style={{ paddingTop: playerHeight || 300 }}>
         {related.length > 0 && (
           <div className="px-4 pt-4">
             <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
