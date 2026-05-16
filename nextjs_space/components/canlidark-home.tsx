@@ -579,11 +579,9 @@ export default function CanliDarkHome() {
             onTouchEnd={() => { videosScrollPausedRef.current = false }}
           >
             {trendVideos.map((video) => (
-              <a
+              <Link
                 key={video.id}
-                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/videolar/izle/${video.id}`}
                 className="flex-shrink-0 w-48 group"
               >
                 <div className="canlidark-card overflow-hidden h-full">
@@ -622,7 +620,7 @@ export default function CanliDarkHome() {
                     )}
                   </div>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

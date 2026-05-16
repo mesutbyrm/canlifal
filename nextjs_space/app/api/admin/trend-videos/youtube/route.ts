@@ -8,9 +8,7 @@ const ADMIN_ROLES = ['admin', 'yonetici', 'moderator']
 
 function extractYoutubeId(input: string): string | null {
   input = input.trim()
-  // Direct ID (11 chars)
   if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input
-  // URL patterns
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
     /[?&]v=([a-zA-Z0-9_-]{11})/,
@@ -32,7 +30,14 @@ function parseDuration(isoDuration: string): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-// POST - fetch YouTube video info by URL or ID
+function formatViewCount(count: number): string {
+  if (count >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
+  return String(count)
+}
+
+// POST - fetch YouTube video info by URL/ID OR search YouTube
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -40,14 +45,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 
-    const { urls } = await req.json() // array of URLs or IDs
+    const body = await req.json()
+    const { action } = body
+
+    const apiKey = process.env.YOUTUBE_API_KEY
+
+    // ---- SEARCH YouTube ----
+    if (action === 'search') {
+      const { query, maxResults = 20 } = body
+      if (!query?.trim()) {
+        return NextResponse.json({ error: 'Arama terimi gerekli' }, { status: 400 })
+      }
+
+      if (!apiKey) {
+        return NextResponse.json({ error: 'YouTube API anahtarı yapılandırılmamış. .env dosyasına YOUTUBE_API_KEY ekleyin.' }, { status: 400 })
+      }
+
+      // Step 1: Search for videos
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query.trim())}&type=video&order=viewCount&maxResults=${Math.min(maxResults, 50)}&key=${apiKey}`
+      const searchRes = await fetch(searchUrl)
+      if (!searchRes.ok) {
+        const err = await searchRes.text()
+        console.error('YouTube search error:', err)
+        return NextResponse.json({ error: 'YouTube arama başarısız' }, { status: 500 })
+      }
+      const searchData = await searchRes.json()
+      const videoIds = (searchData.items || []).map((item: any) => item.id.videoId).filter(Boolean)
+
+      if (videoIds.length === 0) {
+        return NextResponse.json({ results: [] })
+      }
+
+      // Step 2: Get detailed info (duration, view count)
+      const detailUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(',')}&key=${apiKey}`
+      const detailRes = await fetch(detailUrl)
+      if (!detailRes.ok) {
+        return NextResponse.json({ error: 'Video detayları alınamadı' }, { status: 500 })
+      }
+      const detailData = await detailRes.json()
+
+      const results = (detailData.items || []).map((item: any) => ({
+        youtubeId: item.id,
+        title: item.snippet.title,
+        thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
+        channelName: item.snippet.channelTitle,
+        duration: parseDuration(item.contentDetails?.duration || ''),
+        viewCount: parseInt(item.statistics?.viewCount || '0'),
+        viewCountFormatted: formatViewCount(parseInt(item.statistics?.viewCount || '0')),
+        description: item.snippet.description?.substring(0, 200) || '',
+      }))
+
+      return NextResponse.json({ results })
+    }
+
+    // ---- FETCH by URLs/IDs (original functionality) ----
+    const { urls } = body
     if (!Array.isArray(urls) || urls.length === 0) {
       return NextResponse.json({ error: 'En az bir YouTube URL/ID gerekli' }, { status: 400 })
     }
 
-    const apiKey = process.env.YOUTUBE_API_KEY
     const results = []
-
     for (const rawUrl of urls.slice(0, 20)) {
       const videoId = extractYoutubeId(rawUrl)
       if (!videoId) {
@@ -56,7 +113,6 @@ export async function POST(req: NextRequest) {
       }
 
       if (apiKey) {
-        // Use YouTube Data API v3
         try {
           const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${apiKey}`
           const res = await fetch(apiUrl)
@@ -68,10 +124,11 @@ export async function POST(req: NextRequest) {
                 input: rawUrl,
                 youtubeId: videoId,
                 title: item.snippet.title,
-                thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || `https://placehold.co/1200x600/e2e8f0/1e293b?text=YouTube_video_thumbnail_image_of_the_video_with_th`,
+                thumbnailUrl: item.snippet.thumbnails?.high?.url || `https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijpy_g6TMZ4RrsB5N0c6SItE6518yZkTmod_YDJFaTA7eVUI8GrAhr0GMKT-7P81F741m8vbbhL9BfB4ZtUAC4QlX5ovc3QGX1AgN6hOlPJxnukiYcW0Bu2-wc_8XmJk-V_cO1scd4maA/?imgmax=800`,
                 channelName: item.snippet.channelTitle,
                 duration: parseDuration(item.contentDetails.duration),
-                description: item.snippet.description?.substring(0, 200),
+                viewCount: parseInt(item.statistics?.viewCount || '0'),
+                viewCountFormatted: formatViewCount(parseInt(item.statistics?.viewCount || '0')),
               })
               continue
             }
@@ -81,9 +138,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Fallback: use oEmbed (no API key needed)
+      // Fallback: oEmbed
       try {
-        const oembedUrl = `https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicaWjt-kNnL2CT5VUhMY38MNwl0FwRGmToBuoIsxfZ_2O0dmZn0wRV6r_N0MT-oHQDHq8iJYMHeYhOBneDCkWQ2JEqL6e26pPfNwS7flAaPJdpFsBkkMR0IzIUHU5L9e4ICMGvJ3AWupzb/s1600/get-youtube-data-api-key-2.jpg`
+        const oembedUrl = `https://i.ytimg.com/vi/JtYrWqcAxuk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDkmmN2v1Hr7tok88zQfRSuaKdndA`
         const res = await fetch(oembedUrl)
         if (res.ok) {
           const data = await res.json()
@@ -91,26 +148,25 @@ export async function POST(req: NextRequest) {
             input: rawUrl,
             youtubeId: videoId,
             title: data.title || '',
-            thumbnailUrl: `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
+            thumbnailUrl: `https://i.ytimg.com/vi/EP_lJSr90jE/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCgy0LBXIoyjKH0PpOW-HGIBeOzGA`,
             channelName: data.author_name || '',
             duration: '',
-            description: '',
+            viewCount: 0,
+            viewCountFormatted: '0',
           })
           continue
         }
-      } catch (e) {
-        console.error('oEmbed error:', e)
-      }
+      } catch {} 
 
-      // Final fallback
       results.push({
         input: rawUrl,
         youtubeId: videoId,
         title: '',
-        thumbnailUrl: `https://i.ytimg.com/vi/zdpcw6CTkqw/maxresdefault.jpg`,
+        thumbnailUrl: `https://i.ytimg.com/vi/QTnEz3eTl14/maxresdefault.jpg`,
         channelName: '',
         duration: '',
-        description: '',
+        viewCount: 0,
+        viewCountFormatted: '0',
       })
     }
 

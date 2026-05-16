@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2, Edit, FolderPlus, Youtube, Search, ChevronDown, ChevronUp, X, Check, Loader2, ExternalLink, GripVertical, Eye, EyeOff } from 'lucide-react'
+import { Plus, Trash2, Edit, FolderPlus, Youtube, Search, ChevronDown, ChevronUp, X, Check, Loader2, ExternalLink, Eye, EyeOff, CheckSquare, Square, Film } from 'lucide-react'
 import Image from 'next/image'
 
 interface TrendVideoCategory {
@@ -30,14 +30,16 @@ interface TrendVideo {
   createdAt: string
 }
 
-interface YouTubeResult {
-  input: string
-  youtubeId?: string
-  title?: string
-  thumbnailUrl?: string
-  channelName?: string
-  duration?: string
-  error?: string
+interface YouTubeSearchResult {
+  youtubeId: string
+  title: string
+  thumbnailUrl: string
+  channelName: string
+  duration: string
+  viewCount: number
+  viewCountFormatted: string
+  description: string
+  selected?: boolean
 }
 
 export default function AdminTrendVideos() {
@@ -55,14 +57,15 @@ export default function AdminTrendVideos() {
   // Edit category
   const [editCatId, setEditCatId] = useState<string | null>(null)
   const [editCatTitle, setEditCatTitle] = useState('')
-  const [editCatDesc, setEditCatDesc] = useState('')
 
-  // Add videos
-  const [addVideosCatId, setAddVideosCatId] = useState<string | null>(null)
-  const [youtubeUrls, setYoutubeUrls] = useState('')
-  const [fetchingYT, setFetchingYT] = useState(false)
-  const [ytResults, setYtResults] = useState<YouTubeResult[]>([])
+  // Video Ekle modal
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addCatId, setAddCatId] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([])
   const [savingVideos, setSavingVideos] = useState(false)
+  const [searchError, setSearchError] = useState('')
 
   // Edit video
   const [editVideoId, setEditVideoId] = useState<string | null>(null)
@@ -114,14 +117,13 @@ export default function AdminTrendVideos() {
       await fetch('/api/admin/trend-videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_category', id, title: editCatTitle, description: editCatDesc })
+        body: JSON.stringify({ action: 'update_category', id, title: editCatTitle })
       })
       setEditCatId(null)
       fetchData()
     } catch (e) { console.error(e) }
   }
 
-  // Toggle category active
   const handleToggleCategory = async (id: string, isActive: boolean) => {
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
@@ -131,9 +133,8 @@ export default function AdminTrendVideos() {
     fetchData()
   }
 
-  // Delete category
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Bu kategoriyi ve tüm videolarını silmek istediğinize emin misiniz?')) return
+    if (!confirm('Bu kategoriyi ve t\u00fcm videolar\u0131n\u0131 silmek istedi\u011finize emin misiniz?')) return
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -142,40 +143,57 @@ export default function AdminTrendVideos() {
     fetchData()
   }
 
-  // Fetch YouTube info
-  const handleFetchYouTube = async () => {
-    const urls = youtubeUrls.split('\n').map(u => u.trim()).filter(Boolean)
-    if (urls.length === 0) return
-    setFetchingYT(true)
+  // YouTube search
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    setSearching(true)
+    setSearchError('')
+    setSearchResults([])
     try {
       const res = await fetch('/api/admin/trend-videos/youtube', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls })
+        body: JSON.stringify({ action: 'search', query: searchQuery.trim(), maxResults: 20 })
       })
-      if (res.ok) {
-        const data = await res.json()
-        setYtResults(data.results || [])
+      const data = await res.json()
+      if (!res.ok) {
+        setSearchError(data.error || 'Arama ba\u015far\u0131s\u0131z')
+        return
       }
-    } catch (e) { console.error(e) }
-    finally { setFetchingYT(false) }
+      setSearchResults((data.results || []).map((r: any) => ({ ...r, selected: false })))
+    } catch (e) {
+      setSearchError('Bir hata olu\u015ftu')
+    } finally {
+      setSearching(false)
+    }
   }
 
-  // Save fetched videos
-  const handleSaveVideos = async () => {
-    if (!addVideosCatId) return
-    const validVideos = ytResults.filter(r => r.youtubeId && !r.error)
-    if (validVideos.length === 0) return
+  // Toggle video selection
+  const toggleSelect = (idx: number) => {
+    setSearchResults(prev => prev.map((r, i) => i === idx ? { ...r, selected: !r.selected } : r))
+  }
+
+  const toggleSelectAll = () => {
+    const allSelected = searchResults.every(r => r.selected)
+    setSearchResults(prev => prev.map(r => ({ ...r, selected: !allSelected })))
+  }
+
+  const selectedCount = searchResults.filter(r => r.selected).length
+
+  // Save selected videos
+  const handleSaveSelected = async () => {
+    if (!addCatId || selectedCount === 0) return
     setSavingVideos(true)
     try {
+      const selected = searchResults.filter(r => r.selected)
       await fetch('/api/admin/trend-videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_videos_bulk',
-          categoryId: addVideosCatId,
-          videos: validVideos.map(v => ({
-            title: v.title || 'İsimsiz Video',
+          categoryId: addCatId,
+          videos: selected.map(v => ({
+            title: v.title,
             youtubeId: v.youtubeId,
             thumbnailUrl: v.thumbnailUrl,
             channelName: v.channelName,
@@ -183,13 +201,14 @@ export default function AdminTrendVideos() {
           }))
         })
       })
-      setAddVideosCatId(null); setYoutubeUrls(''); setYtResults([])
+      setShowAddModal(false)
+      setSearchResults([])
+      setSearchQuery('')
       fetchData()
     } catch (e) { console.error(e) }
     finally { setSavingVideos(false) }
   }
 
-  // Toggle video active
   const handleToggleVideo = async (id: string, isActive: boolean) => {
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
@@ -199,9 +218,8 @@ export default function AdminTrendVideos() {
     fetchData()
   }
 
-  // Delete video
   const handleDeleteVideo = async (id: string) => {
-    if (!confirm('Bu videoyu silmek istediğinize emin misiniz?')) return
+    if (!confirm('Bu videoyu silmek istedi\u011finize emin misiniz?')) return
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -210,7 +228,6 @@ export default function AdminTrendVideos() {
     fetchData()
   }
 
-  // Update video title
   const handleUpdateVideoTitle = async (id: string) => {
     if (!editVideoTitle.trim()) return
     await fetch('/api/admin/trend-videos', {
@@ -220,11 +237,6 @@ export default function AdminTrendVideos() {
     })
     setEditVideoId(null)
     fetchData()
-  }
-
-  // Remove a result from ytResults
-  const removeYtResult = (idx: number) => {
-    setYtResults(prev => prev.filter((_, i) => i !== idx))
   }
 
   if (loading) {
@@ -244,47 +256,37 @@ export default function AdminTrendVideos() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Youtube className="w-7 h-7 text-red-500" />
-            Trend Videolar Yönetimi
+            Trend Videolar
           </h1>
           <p className="text-sm text-white/50 mt-1">{categories.length} kategori, {totalVideos} video</p>
         </div>
-        <button
-          onClick={() => setShowNewCat(true)}
-          className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-xl text-sm font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-fuchsia-500/20 transition-all"
-        >
-          <FolderPlus className="w-4 h-4" /> Yeni Kategori
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowAddModal(true); setAddCatId(categories[0]?.id || ''); setSearchResults([]); setSearchQuery('') }}
+            className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-red-500/20 transition-all"
+          >
+            <Film className="w-4 h-4" /> Video Ekle
+          </button>
+          <button
+            onClick={() => setShowNewCat(true)}
+            className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-xl text-sm font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-fuchsia-500/20 transition-all"
+          >
+            <FolderPlus className="w-4 h-4" /> Yeni Kategori
+          </button>
+        </div>
       </div>
 
       {/* New category form */}
       <AnimatePresence>
         {showNewCat && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="mb-4 overflow-hidden"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-              <input
-                value={newCatTitle}
-                onChange={e => setNewCatTitle(e.target.value)}
-                placeholder="Kategori başlığı (ör: Burç Videoları)"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50"
-              />
-              <input
-                value={newCatDesc}
-                onChange={e => setNewCatDesc(e.target.value)}
-                placeholder="Açıklama (opsiyonel)"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50"
-              />
+              <input value={newCatTitle} onChange={e => setNewCatTitle(e.target.value)} placeholder="Kategori ba\u015fl\u0131\u011f\u0131 (\u00f6r: Komik Videolar)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
+              <input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} placeholder="A\u00e7\u0131klama (opsiyonel)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
               <div className="flex gap-2">
                 <button onClick={() => setShowNewCat(false)} className="px-4 py-2 bg-white/5 border border-white/10 text-white/60 rounded-lg text-sm">İptal</button>
-                <button
-                  onClick={handleCreateCategory}
-                  disabled={savingCat || !newCatTitle.trim()}
-                  className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold flex items-center gap-2"
-                >
-                  {savingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Oluştur
+                <button onClick={handleCreateCategory} disabled={savingCat || !newCatTitle.trim()} className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
+                  {savingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Oluştur
                 </button>
               </div>
             </div>
@@ -304,25 +306,13 @@ export default function AdminTrendVideos() {
           {categories.map(cat => (
             <div key={cat.id} className={`bg-white/5 border rounded-xl overflow-hidden transition-all ${cat.isActive ? 'border-white/10' : 'border-red-500/20 opacity-60'}`}>
               {/* Category header */}
-              <div
-                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-colors"
-                onClick={() => toggleExpand(cat.id)}
-              >
-                <GripVertical className="w-4 h-4 text-white/20 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => toggleExpand(cat.id)}>
                 <div className="flex-1 min-w-0">
                   {editCatId === cat.id ? (
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                      <input
-                        value={editCatTitle}
-                        onChange={e => setEditCatTitle(e.target.value)}
-                        className="flex-1 px-3 py-1.5 bg-white/5 border border-fuchsia-500/30 rounded-lg text-white text-sm focus:outline-none"
-                      />
-                      <button onClick={() => handleUpdateCategory(cat.id)} className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs">
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setEditCatId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <input value={editCatTitle} onChange={e => setEditCatTitle(e.target.value)} className="flex-1 px-3 py-1.5 bg-white/5 border border-fuchsia-500/30 rounded-lg text-white text-sm focus:outline-none" />
+                      <button onClick={() => handleUpdateCategory(cat.id)} className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-lg text-xs"><Check className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setEditCatId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs"><X className="w-3.5 h-3.5" /></button>
                     </div>
                   ) : (
                     <>
@@ -333,96 +323,65 @@ export default function AdminTrendVideos() {
                 </div>
                 <span className="text-xs text-white/40 flex-shrink-0">{cat.videos.length} video</span>
                 <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleToggleCategory(cat.id, cat.isActive)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                    title={cat.isActive ? 'Gizle' : 'Göster'}
-                  >
+                  <button onClick={() => handleToggleCategory(cat.id, cat.isActive)} className="p-1.5 rounded-lg hover:bg-white/10" title={cat.isActive ? 'Gizle' : 'Göster'}>
                     {cat.isActive ? <Eye className="w-4 h-4 text-green-400" /> : <EyeOff className="w-4 h-4 text-red-400" />}
                   </button>
-                  <button
-                    onClick={() => { setEditCatId(cat.id); setEditCatTitle(cat.title); setEditCatDesc(cat.description || '') }}
-                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                  >
+                  <button onClick={() => { setEditCatId(cat.id); setEditCatTitle(cat.title) }} className="p-1.5 rounded-lg hover:bg-white/10">
                     <Edit className="w-4 h-4 text-blue-400" />
                   </button>
-                  <button
-                    onClick={() => { setAddVideosCatId(cat.id); setYoutubeUrls(''); setYtResults([]) }}
-                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                    title="Video Ekle"
-                  >
-                    <Plus className="w-4 h-4 text-fuchsia-400" />
-                  </button>
-                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg hover:bg-white/10">
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </button>
                 </div>
                 {expandedCats.has(cat.id) ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
               </div>
 
-              {/* Videos list */}
+              {/* Videos */}
               <AnimatePresence>
                 {expandedCats.has(cat.id) && (
-                  <motion.div
-                    initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                    className="overflow-hidden"
-                  >
+                  <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
                     <div className="border-t border-white/5 divide-y divide-white/5">
                       {cat.videos.length === 0 ? (
                         <div className="p-6 text-center text-white/30 text-sm">Henüz video yok</div>
-                      ) : (
-                        cat.videos.map(video => (
-                          <div key={video.id} className={`flex items-center gap-3 px-4 py-3 ${!video.isActive ? 'opacity-40' : ''}`}>
-                            <div className="relative w-24 h-14 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
-                              {video.thumbnailUrl && (
-                                <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover" sizes="96px" />
-                              )}
-                              {video.duration && (
-                                <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded">{video.duration}</span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {editVideoId === video.id ? (
-                                <div className="flex gap-2">
-                                  <input
-                                    value={editVideoTitle}
-                                    onChange={e => setEditVideoTitle(e.target.value)}
-                                    className="flex-1 px-2 py-1 bg-white/5 border border-fuchsia-500/30 rounded text-white text-xs focus:outline-none"
-                                  />
-                                  <button onClick={() => handleUpdateVideoTitle(video.id)} className="px-2 py-1 bg-fuchsia-600 text-white rounded text-xs"><Check className="w-3 h-3" /></button>
-                                  <button onClick={() => setEditVideoId(null)} className="px-2 py-1 bg-white/10 text-white rounded text-xs"><X className="w-3 h-3" /></button>
-                                </div>
-                              ) : (
-                                <>
-                                  <p className="text-white text-xs font-medium truncate">{video.title}</p>
-                                  {video.channelName && <p className="text-white/40 text-[10px] mt-0.5">{video.channelName}</p>}
-                                </>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <a
-                                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
-                                target="_blank" rel="noopener noreferrer"
-                                className="p-1.5 rounded hover:bg-white/10 transition-colors"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5 text-white/40" />
-                              </a>
-                              <button onClick={() => handleToggleVideo(video.id, video.isActive)} className="p-1.5 rounded hover:bg-white/10 transition-colors">
-                                {video.isActive ? <Eye className="w-3.5 h-3.5 text-green-400" /> : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
-                              </button>
-                              <button
-                                onClick={() => { setEditVideoId(video.id); setEditVideoTitle(video.title) }}
-                                className="p-1.5 rounded hover:bg-white/10 transition-colors"
-                              >
-                                <Edit className="w-3.5 h-3.5 text-blue-400" />
-                              </button>
-                              <button onClick={() => handleDeleteVideo(video.id)} className="p-1.5 rounded hover:bg-white/10 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                              </button>
-                            </div>
+                      ) : cat.videos.map(video => (
+                        <div key={video.id} className={`flex items-center gap-3 px-4 py-3 ${!video.isActive ? 'opacity-40' : ''}`}>
+                          <div className="relative w-24 h-14 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                            {video.thumbnailUrl && <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover" sizes="96px" />}
+                            {video.duration && <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded">{video.duration}</span>}
                           </div>
-                        ))
-                      )}
+                          <div className="flex-1 min-w-0">
+                            {editVideoId === video.id ? (
+                              <div className="flex gap-2">
+                                <input value={editVideoTitle} onChange={e => setEditVideoTitle(e.target.value)} className="flex-1 px-2 py-1 bg-white/5 border border-fuchsia-500/30 rounded text-white text-xs focus:outline-none" />
+                                <button onClick={() => handleUpdateVideoTitle(video.id)} className="px-2 py-1 bg-fuchsia-600 text-white rounded text-xs"><Check className="w-3 h-3" /></button>
+                                <button onClick={() => setEditVideoId(null)} className="px-2 py-1 bg-white/10 text-white rounded text-xs"><X className="w-3 h-3" /></button>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-white text-xs font-medium truncate">{video.title}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {video.channelName && <span className="text-white/40 text-[10px]">{video.channelName}</span>}
+                                  <span className="text-white/30 text-[10px]">{video.viewCount.toLocaleString()} görüntülenme</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <a href={`https://www.youtube.com/watch?v=${video.youtubeId}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-white/10">
+                              <ExternalLink className="w-3.5 h-3.5 text-white/40" />
+                            </a>
+                            <button onClick={() => handleToggleVideo(video.id, video.isActive)} className="p-1.5 rounded hover:bg-white/10">
+                              {video.isActive ? <Eye className="w-3.5 h-3.5 text-green-400" /> : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
+                            </button>
+                            <button onClick={() => { setEditVideoId(video.id); setEditVideoTitle(video.title) }} className="p-1.5 rounded hover:bg-white/10">
+                              <Edit className="w-3.5 h-3.5 text-blue-400" />
+                            </button>
+                            <button onClick={() => handleDeleteVideo(video.id)} className="p-1.5 rounded hover:bg-white/10">
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 )}
@@ -432,94 +391,152 @@ export default function AdminTrendVideos() {
         </div>
       )}
 
-      {/* Add Videos Modal */}
+      {/* ===== VIDEO EKLE MODAL ===== */}
       <AnimatePresence>
-        {addVideosCatId && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => { setAddVideosCatId(null); setYtResults([]) }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-[#1a0a2e] to-[#0d0520] border border-fuchsia-500/20 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-5 border-b border-white/10">
+        {showAddModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-gradient-to-br from-[#1a0a2e] to-[#0d0520] border border-fuchsia-500/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="p-5 border-b border-white/10 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Youtube className="w-5 h-5 text-red-500" />
-                    Video Ekle — {categories.find(c => c.id === addVideosCatId)?.title}
+                    <Film className="w-5 h-5 text-red-500" /> Video Ekle
                   </h3>
-                  <button onClick={() => { setAddVideosCatId(null); setYtResults([]) }} className="p-1 rounded-lg hover:bg-white/10">
+                  <button onClick={() => setShowAddModal(false)} className="p-1 rounded-lg hover:bg-white/10">
                     <X className="w-5 h-5 text-white/60" />
                   </button>
                 </div>
-                <p className="text-xs text-white/40 mt-1">YouTube URL veya Video ID girin (her satıra bir tane)</p>
+
+                {/* Category select */}
+                <div className="mt-3">
+                  <label className="text-xs text-white/50 mb-1 block">Kategori Seçin</label>
+                  <select
+                    value={addCatId}
+                    onChange={e => setAddCatId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-fuchsia-500/50 appearance-none"
+                  >
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id} className="bg-[#1a0a2e] text-white">{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search */}
+                <div className="mt-3 flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <input
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                      placeholder="YouTube'da ara (ör: komik, burç, fal)..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-red-500/50"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearch}
+                    disabled={searching || !searchQuery.trim()}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-all flex-shrink-0"
+                  >
+                    {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    Ara
+                  </button>
+                </div>
               </div>
 
-              <div className="p-5 space-y-4">
-                <textarea
-                  value={youtubeUrls}
-                  onChange={e => setYoutubeUrls(e.target.value)}
-                  rows={5}
-                  placeholder={'https://www.youtube.com/watch?v=abc123\nhttps://youtu.be/xyz456\ndQw4w9WgXcQ'}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-fuchsia-500/50 resize-none font-mono"
-                />
+              {/* Results */}
+              <div className="flex-1 overflow-y-auto p-5">
+                {searchError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-300 text-sm mb-4">
+                    {searchError}
+                  </div>
+                )}
 
-                <button
-                  onClick={handleFetchYouTube}
-                  disabled={fetchingYT || !youtubeUrls.trim()}
-                  className="w-full py-2.5 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
-                >
-                  {fetchingYT ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  {fetchingYT ? 'Bilgiler çekiliyor...' : 'YouTube Bilgilerini Çek'}
-                </button>
+                {searching && (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-red-400 mx-auto mb-2" />
+                      <p className="text-white/40 text-sm">YouTube&apos;da aranıyor...</p>
+                    </div>
+                  </div>
+                )}
 
-                {/* Results */}
-                {ytResults.length > 0 && (
+                {!searching && searchResults.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs text-white/60 font-semibold">{ytResults.filter(r => !r.error).length} video bulundu</p>
-                    {ytResults.map((r, idx) => (
-                      <div key={idx} className={`flex items-center gap-3 p-3 rounded-xl ${r.error ? 'bg-red-500/10 border border-red-500/20' : 'bg-white/5 border border-white/10'}`}>
-                        {r.error ? (
-                          <p className="text-red-400 text-xs flex-1">{r.input}: {r.error}</p>
+                    {/* Select all / count */}
+                    <div className="flex items-center justify-between mb-3">
+                      <button onClick={toggleSelectAll} className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors">
+                        {searchResults.every(r => r.selected) ? (
+                          <CheckSquare className="w-4 h-4 text-fuchsia-400" />
                         ) : (
-                          <>
-                            <div className="relative w-20 h-12 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
-                              {r.thumbnailUrl && <Image src={r.thumbnailUrl} alt={r.title || ''} fill className="object-cover" sizes="80px" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <input
-                                value={r.title || ''}
-                                onChange={e => {
-                                  const next = [...ytResults]
-                                  next[idx] = { ...next[idx], title: e.target.value }
-                                  setYtResults(next)
-                                }}
-                                className="w-full bg-transparent text-white text-xs font-medium focus:outline-none border-b border-transparent focus:border-fuchsia-500/30"
-                              />
-                              <p className="text-white/30 text-[10px] mt-0.5">{r.channelName} {r.duration && `· ${r.duration}`}</p>
-                            </div>
-                            <button onClick={() => removeYtResult(idx)} className="p-1 rounded hover:bg-white/10">
-                              <X className="w-3.5 h-3.5 text-white/40" />
-                            </button>
-                          </>
+                          <Square className="w-4 h-4" />
                         )}
+                        Hepsini Seç
+                      </button>
+                      <span className="text-xs text-white/40">
+                        {selectedCount} / {searchResults.length} seçili
+                      </span>
+                    </div>
+
+                    {searchResults.map((r, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => toggleSelect(idx)}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                          r.selected
+                            ? 'bg-fuchsia-500/10 border border-fuchsia-500/30'
+                            : 'bg-white/5 border border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0">
+                          {r.selected ? (
+                            <CheckSquare className="w-5 h-5 text-fuchsia-400" />
+                          ) : (
+                            <Square className="w-5 h-5 text-white/30" />
+                          )}
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div className="relative w-28 h-16 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                          <Image src={r.thumbnailUrl} alt={r.title} fill className="object-cover" sizes="112px" />
+                          {r.duration && <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded">{r.duration}</span>}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-medium line-clamp-2">{r.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-white/40 text-[10px]">{r.channelName}</span>
+                            <span className="text-white/30 text-[10px]">• {r.viewCountFormatted} görüntülenme</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
+                  </div>
+                )}
 
-                    <button
-                      onClick={handleSaveVideos}
-                      disabled={savingVideos || ytResults.filter(r => !r.error).length === 0}
-                      className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                    >
-                      {savingVideos ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      {savingVideos ? 'Kaydediliyor...' : `${ytResults.filter(r => !r.error).length} Video Kaydet`}
-                    </button>
+                {!searching && searchResults.length === 0 && !searchError && (
+                  <div className="text-center py-12">
+                    <Youtube className="w-12 h-12 text-white/10 mx-auto mb-3" />
+                    <p className="text-white/30 text-sm">YouTube&apos;da video aramak için yukarıdaki arama kutusunu kullanın</p>
                   </div>
                 )}
               </div>
+
+              {/* Footer with save */}
+              {selectedCount > 0 && (
+                <div className="p-4 border-t border-white/10 flex-shrink-0">
+                  <button
+                    onClick={handleSaveSelected}
+                    disabled={savingVideos || !addCatId}
+                    className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    {savingVideos ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {savingVideos ? 'Kaydediliyor...' : `${selectedCount} Video Ekle — ${categories.find(c => c.id === addCatId)?.title || ''}`}
+                  </button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
