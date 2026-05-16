@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // ---- SEARCH YouTube ----
     if (action === 'search') {
-      const { query, maxResults = 20 } = body
+      const { query, maxResults = 50 } = body
       if (!query?.trim()) {
         return NextResponse.json({ error: 'Arama terimi gerekli' }, { status: 400 })
       }
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const siteUrl2 = process.env.NEXTAUTH_URL || 'https://canlifal.com'
     const ytHeaders2 = { 'Referer': siteUrl2 }
     const results = []
-    for (const rawUrl of urls.slice(0, 20)) {
+    for (const rawUrl of urls) {
       const videoId = extractYoutubeId(rawUrl)
       if (!videoId) {
         results.push({ input: rawUrl, error: 'Geçersiz YouTube URL/ID' })

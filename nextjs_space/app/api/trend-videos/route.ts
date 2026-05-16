@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const categorySlug = searchParams.get('category')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam) : undefined
     const sortBy = searchParams.get('sort') || 'order' // order | views
 
     const where: any = { isActive: true }

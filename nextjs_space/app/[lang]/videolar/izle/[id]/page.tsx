@@ -41,7 +41,7 @@ export default function VideoWatchPage() {
     const loadVideo = async () => {
       try {
         // Fetch all videos and find the one we need
-        const res = await fetch('/api/trend-videos?limit=100')
+        const res = await fetch('/api/trend-videos')
         if (res.ok) {
           const data = await res.json()
           const allVideos = data.videos || []

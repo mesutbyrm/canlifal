@@ -153,7 +153,7 @@ export default function AdminTrendVideos() {
       const res = await fetch('/api/admin/trend-videos/youtube', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'search', query: searchQuery.trim(), maxResults: 20 })
+        body: JSON.stringify({ action: 'search', query: searchQuery.trim(), maxResults: 50 })
       })
       const data = await res.json()
       if (!res.ok) {

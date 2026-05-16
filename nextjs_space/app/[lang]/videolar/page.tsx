@@ -33,7 +33,7 @@ export default function VideolarPage() {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const res = await fetch('/api/trend-videos?limit=200')
+        const res = await fetch('/api/trend-videos')
         if (res.ok) {
           const data = await res.json()
           setAllVideos(data.videos || [])
