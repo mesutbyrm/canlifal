@@ -62,8 +62,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Step 1: Search for videos
+      const siteUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+      const ytHeaders = { 'Referer': siteUrl }
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query.trim())}&type=video&order=viewCount&maxResults=${Math.min(maxResults, 50)}&key=${apiKey}`
-      const searchRes = await fetch(searchUrl)
+      const searchRes = await fetch(searchUrl, { headers: ytHeaders })
       if (!searchRes.ok) {
         const err = await searchRes.text()
         console.error('YouTube search error:', err)
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
 
       // Step 2: Get detailed info (duration, view count)
       const detailUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(',')}&key=${apiKey}`
-      const detailRes = await fetch(detailUrl)
+      const detailRes = await fetch(detailUrl, { headers: ytHeaders })
       if (!detailRes.ok) {
         return NextResponse.json({ error: 'Video detayları alınamadı' }, { status: 500 })
       }
@@ -104,6 +106,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'En az bir YouTube URL/ID gerekli' }, { status: 400 })
     }
 
+    const siteUrl2 = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+    const ytHeaders2 = { 'Referer': siteUrl2 }
     const results = []
     for (const rawUrl of urls.slice(0, 20)) {
       const videoId = extractYoutubeId(rawUrl)
@@ -115,7 +119,7 @@ export async function POST(req: NextRequest) {
       if (apiKey) {
         try {
           const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${apiKey}`
-          const res = await fetch(apiUrl)
+          const res = await fetch(apiUrl, { headers: ytHeaders2 })
           if (res.ok) {
             const data = await res.json()
             if (data.items && data.items.length > 0) {
