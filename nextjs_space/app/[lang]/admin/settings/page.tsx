@@ -49,6 +49,8 @@ interface PlatformSettings {
   stream_reopen_cooldown: string
   jeton_unit_price: string
 
+  live_matches_enabled: string
+
   chat_marquee_enabled: string
   chat_marquee_effect: string
   chat_marquee_speed: string
@@ -82,6 +84,8 @@ export default function AdminSettingsPage() {
     stream_no_gift_timeout: '15',
     stream_reopen_cooldown: '30',
     jeton_unit_price: '0.50',
+
+    live_matches_enabled: 'true',
 
     chat_marquee_enabled: 'true',
     chat_marquee_effect: 'scroll-left',
@@ -684,6 +688,34 @@ export default function AdminSettingsPage() {
               </div>
             </motion.div>
           ))}
+
+          {/* Live Matches Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.52 }}
+            className="bg-gradient-to-r from-deep-purple-800/50 to-purple-900/30 rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">⚽ Canlı Maçlar</h3>
+            <p className="text-sm text-fuchsia-400 mb-4">Ana sayfada canlı maç skorlarının gösterilip gösterilmeyeceğini ayarlayın</p>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-purple-200">Durum:</span>
+              <button
+                onClick={() => {
+                  const newVal = settings.live_matches_enabled === 'true' ? 'false' : 'true'
+                  setSettings(prev => ({ ...prev, live_matches_enabled: newVal }))
+                  saveSetting('live_matches_enabled', newVal)
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  settings.live_matches_enabled === 'true'
+                    ? 'bg-green-600/20 border-green-500/30 text-green-300'
+                    : 'bg-red-600/20 border-red-500/30 text-red-300'
+                }`}
+              >
+                {settings.live_matches_enabled === 'true' ? '✅ Gösteriliyor' : '❌ Gizli'}
+              </button>
+            </div>
+          </motion.div>
 
           {/* Chat Marquee Settings */}
           <motion.div

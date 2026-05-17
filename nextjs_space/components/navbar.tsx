@@ -375,7 +375,7 @@ export default function Navbar() {
   
   // Check active page
   const isHomeActive = pathname === '/' || pathname === `/${language}`
-  const isStatsActive = pathname?.includes('/panel')
+  const isStatsActive = pathname?.includes('/panel') || pathname?.includes('/admin')
   
   return (
     <>
@@ -409,15 +409,15 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* İstatistikler (Statistics) */}
+            {/* İstatistikler / Panel */}
             <Link
-              href={`/panel`}
+              href={session?.user?.role === 'admin' ? `/admin` : (session?.user as any)?.role === 'yonetici' ? `/admin` : `/panel`}
               className="flex flex-col items-center justify-center py-1.5 group"
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isStatsActive ? iconBgActive : iconBgInactive}`}>
                 <Sparkles className={`w-[18px] h-[18px] ${isStatsActive ? accentColor : iconColor}`} />
               </div>
-              <span className={`text-[9px] font-medium mt-0.5 ${isStatsActive ? accentColor : iconColor}`}>Panelim</span>
+              <span className={`text-[9px] font-medium mt-0.5 ${isStatsActive ? accentColor : iconColor}`}>{session?.user?.role === 'admin' ? 'Admin Paneli' : (session?.user as any)?.role === 'yonetici' ? 'Yönetici Paneli' : 'Panelim'}</span>
             </Link>
 
             {/* Profile */}

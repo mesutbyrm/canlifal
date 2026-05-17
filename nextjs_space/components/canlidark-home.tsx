@@ -161,6 +161,7 @@ export default function CanliDarkHome() {
   const [trendVideos, setTrendVideos] = useState<TrendVideoItem[]>([])
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [liveMatchesEnabled, setLiveMatchesEnabled] = useState(true)
   const videosScrollRef = useRef<HTMLDivElement>(null)
   // Story states
   const [storyGroups, setStoryGroups] = useState<{ user: any; stories: any[] }[]>([])
@@ -188,7 +189,7 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts, storiesData, fanClubsData] = await Promise.all([
+        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
@@ -197,6 +198,7 @@ export default function CanliDarkHome() {
           fetch('/api/trend-videos?limit=12').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
           fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
+          fetch('/api/settings/public?key=live_matches_enabled').then(x => x.ok ? x.json() : null),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
@@ -212,6 +214,7 @@ export default function CanliDarkHome() {
         if (posts?.videos) setTrendVideos(posts.videos)
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
         if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
+        if (matchSetting) setLiveMatchesEnabled(matchSetting.value !== 'false')
       } catch {}
       if (session) {
         try {
@@ -376,9 +379,9 @@ export default function CanliDarkHome() {
             <NotificationBell />
             <span>Bildirim</span>
           </div>
-          <Link href="/panel" className="canlidark-nav-item">
+          <Link href={(session?.user as any)?.role === 'admin' ? '/admin' : (session?.user as any)?.role === 'yonetici' ? '/admin' : '/panel'} className="canlidark-nav-item">
             <Sparkles className="w-5 h-5" />
-            <span>Panelim</span>
+            <span>{(session?.user as any)?.role === 'admin' ? 'Admin Paneli' : (session?.user as any)?.role === 'yonetici' ? 'Yönetici Paneli' : 'Panelim'}</span>
           </Link>
         </div>
       </nav>
@@ -559,9 +562,50 @@ export default function CanliDarkHome() {
       </div>
 
       {/* ═══ 3. CANLI MAÇLAR — LiveMatchTicker component ═══ */}
-      <LiveMatchTicker />
+      {liveMatchesEnabled && <LiveMatchTicker />}
 
-      {/* ═══ 4. TREND VİDEOLAR — auto-scroll left ═══ */}
+      {/* ═══ 4. SESLİ SOHBET ODALARI — yuvarlak ═══ */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
+          <Link href="/sohbet" className="canlidark-section-link">Tüm Odalar</Link>
+        </div>
+        <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide pb-2">
+          {rooms.length > 0 ? rooms.slice(0, 10).map((room, idx) => (
+            <Link key={room.id} href={`/sohbet/${room.slug || room.id}`} className="flex-shrink-0 flex flex-col items-center gap-2 w-[76px]">
+              <div className="relative">
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${ROOM_COLORS[idx % ROOM_COLORS.length]} p-[2px] shadow-lg`} style={{ boxShadow: '0 0 20px rgba(192,38,211,0.3)' }}>
+                  <div className="w-full h-full rounded-full overflow-hidden relative">
+                    {room.backgroundImage ? (
+                      <Image src={room.backgroundImage} alt={room.nameTr} fill className="object-cover" sizes="64px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-2xl">
+                        {room.icon || '🎙️'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-fuchsia-500 flex items-center justify-center border-2 border-[#0a0118]">
+                  <Mic className="w-2.5 h-2.5 text-white" />
+                </div>
+                {(room.onlineCount || 0) > 0 && (
+                  <div className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center border-2 border-[#0a0118] px-1">
+                    <span className="text-[8px] text-white font-bold">{room.onlineCount}</span>
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] font-semibold text-white leading-tight truncate w-[76px]">{room.nameTr}</p>
+                <p className="text-[9px] text-fuchsia-200/60">{room.onlineCount || 0} kişi</p>
+              </div>
+            </Link>
+          )) : (
+            <p className="text-fuchsia-200/60 text-sm py-4 px-2">Aktif sohbet odası yok</p>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ 5. TREND VİDEOLAR — auto-scroll left ═══ */}
       {trendVideos.length > 0 && (
         <div className="mb-1">
           <div className="flex items-center justify-between mb-2">
@@ -625,47 +669,6 @@ export default function CanliDarkHome() {
           </div>
         </div>
       )}
-
-      {/* ═══ 5. SESLİ SOHBET ODALARI — yuvarlak ═══ */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="canlidark-section-title">Sesli Sohbet Odaları</h2>
-          <Link href="/sohbet" className="canlidark-section-link">Tüm Odalar</Link>
-        </div>
-        <div className="flex items-start gap-4 overflow-x-auto scrollbar-hide pb-2">
-          {rooms.length > 0 ? rooms.slice(0, 10).map((room, idx) => (
-            <Link key={room.id} href={`/sohbet/${room.slug || room.id}`} className="flex-shrink-0 flex flex-col items-center gap-2 w-[76px]">
-              <div className="relative">
-                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${ROOM_COLORS[idx % ROOM_COLORS.length]} p-[2px] shadow-lg`} style={{ boxShadow: '0 0 20px rgba(192,38,211,0.3)' }}>
-                  <div className="w-full h-full rounded-full overflow-hidden relative">
-                    {room.backgroundImage ? (
-                      <Image src={room.backgroundImage} alt={room.nameTr} fill className="object-cover" sizes="64px" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-2xl">
-                        {room.icon || '🎙️'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-fuchsia-500 flex items-center justify-center border-2 border-[#0a0118]">
-                  <Mic className="w-2.5 h-2.5 text-white" />
-                </div>
-                {(room.onlineCount || 0) > 0 && (
-                  <div className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center border-2 border-[#0a0118] px-1">
-                    <span className="text-[8px] text-white font-bold">{room.onlineCount}</span>
-                  </div>
-                )}
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-semibold text-white leading-tight truncate w-[76px]">{room.nameTr}</p>
-                <p className="text-[9px] text-fuchsia-200/60">{room.onlineCount || 0} kişi</p>
-              </div>
-            </Link>
-          )) : (
-            <p className="text-fuchsia-200/60 text-sm py-4 px-2">Aktif sohbet odası yok</p>
-          )}
-        </div>
-      </div>
 
       {/* ═══ 5.5 FAN CLUB — en aktif kulüpler ═══ */}
       {popularFanClubs.length > 0 && (

@@ -3,7 +3,7 @@ import { getCachedPlatformSetting, getCachedAllPlatformSettings, CACHE_TTL } fro
 
 export const dynamic = 'force-dynamic'
 
-const allowedKeys = ['chat_room_creation_cost', 'live_session_durations', 'credits_per_minute', 'ad_duration_seconds', 'onesignal_enabled', 'chat_grid_user_limit']
+const allowedKeys = ['chat_room_creation_cost', 'live_session_durations', 'credits_per_minute', 'ad_duration_seconds', 'onesignal_enabled', 'chat_grid_user_limit', 'live_matches_enabled']
 
 export async function GET(req: NextRequest) {
   try {
