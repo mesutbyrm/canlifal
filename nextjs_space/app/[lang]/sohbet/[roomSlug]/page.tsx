@@ -125,6 +125,7 @@ export default function ChatRoomPage() {
   const [roomMuted, setRoomMuted] = useState(false)
   const [myPermissions, setMyPermissions] = useState<MyPermissions | null>(null)
   const [selectedUser, setSelectedUser] = useState<ActiveUser | null>(null)
+  const [userActionTarget, setUserActionTarget] = useState<ActiveUser | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [typingUsers, setTypingUsers] = useState<string[]>([])
@@ -2898,6 +2899,8 @@ export default function ChatRoomPage() {
                           onClick={() => {
                             if (isMe) {
                               if (confirm('Koltuğunuzdan kalkmak istiyor musunuz?')) handleLeaveSeat()
+                            } else if (canManageSeats) {
+                              setUserActionTarget(userActionTarget?.id === seatUser.id ? null : seatUser)
                             } else {
                               openGiftModal(seatUser)
                             }
@@ -3000,6 +3003,131 @@ export default function ChatRoomPage() {
                   )
                 })}
               </div>
+
+              {/* User Action Menu for Mods */}
+              <AnimatePresence>
+                {userActionTarget && canManageSeats && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="mt-2 mx-auto max-w-sm bg-[#1a0a2e]/95 backdrop-blur-md border border-purple-500/30 rounded-2xl p-3 shadow-2xl shadow-purple-900/50 z-30"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-800/50">
+                          {userActionTarget.image ? (
+                            <img src={userActionTarget.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/60 text-sm font-bold">
+                              {(userActionTarget.nickname || userActionTarget.name || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-semibold">{userActionTarget.nickname || userActionTarget.name}</p>
+                          <p className="text-purple-400/60 text-[10px]">{userActionTarget.chatRole || 'Kullanıcı'}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setUserActionTarget(null)} className="p-1 rounded-full hover:bg-white/10 text-purple-400">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {/* Sesi Aç/Kapat */}
+                      {voiceUsers.some(vu => vu.id === userActionTarget.id) ? (
+                        <button
+                          onClick={() => { performModAction('mute_user', userActionTarget.id, { duration: 30 }); setUserActionTarget(null) }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/20 text-yellow-300 transition-all text-[10px]"
+                        >
+                          <VolumeX className="w-4 h-4" />
+                          Sessize Al
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { performModAction('set_role', userActionTarget.id, { role: 'voice' }); setUserActionTarget(null) }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 text-green-300 transition-all text-[10px]"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                          Sesi Aç
+                        </button>
+                      )}
+                      {/* Yer Değiştir */}
+                      <button
+                        onClick={() => {
+                          const otherSeated = activeUsers.filter(u => u.seatIndex >= 0 && u.id !== userActionTarget.id && u.id !== session?.user?.id)
+                          if (otherSeated.length === 0) { alert('Yer değiştirecek başka kullanıcı yok'); return }
+                          const targetName = prompt(`Yer değiştirilecek kullanıcı adı:\n${otherSeated.map(u => u.nickname || u.name).join(', ')}`)
+                          if (!targetName) return
+                          const target = otherSeated.find(u => (u.nickname || u.name || '').toLowerCase() === targetName.toLowerCase())
+                          if (!target) { alert('Kullanıcı bulunamadı'); return }
+                          // Swap seats
+                          const tempSeat = userActionTarget.seatIndex
+                          handleAssignSeat(userActionTarget.id, target.seatIndex)
+                          setTimeout(() => handleAssignSeat(target.id, tempSeat), 300)
+                          setUserActionTarget(null)
+                        }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/20 text-blue-300 transition-all text-[10px]"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                        Yer Değiştir
+                      </button>
+                      {/* Kanaldan At */}
+                      <button
+                        onClick={() => { 
+                          if (confirm(`${userActionTarget.nickname || userActionTarget.name} kanaldan atılsın mı?`)) {
+                            performModAction('kick_user', userActionTarget.id)
+                            setUserActionTarget(null)
+                          }
+                        }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                        Kanaldan At
+                      </button>
+                      {/* Engelle/Ban */}
+                      <button
+                        onClick={() => { 
+                          if (confirm(`${userActionTarget.nickname || userActionTarget.name} engellensin mi?`)) {
+                            performModAction('ban_user', userActionTarget.id)
+                            setUserActionTarget(null)
+                          }
+                        }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
+                      >
+                        <Ban className="w-4 h-4" />
+                        Engelle
+                      </button>
+                      {/* Yetki Ver */}
+                      <button
+                        onClick={() => {
+                          const roles = ['voice', 'op', 'sop', 'founder'].filter(r => {
+                            if (r === 'founder' && !myPermissions?.isRoomOwner && !myPermissions?.isGlobalAdmin) return false
+                            if (r === 'sop' && !myPermissions?.canGiveSop) return false
+                            return true
+                          })
+                          const choice = prompt(`Yetki seç:\n${roles.join(', ')}\n\nŞu anki: ${userActionTarget.chatRole || 'yok'}`)
+                          if (!choice || !roles.includes(choice)) return
+                          performModAction('set_role', userActionTarget.id, { role: choice })
+                          setUserActionTarget(null)
+                        }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/20 text-purple-300 transition-all text-[10px]"
+                      >
+                        <Shield className="w-4 h-4" />
+                        Yetki Ver
+                      </button>
+                      {/* Hediye */}
+                      <button
+                        onClick={() => { openGiftModal(userActionTarget); setUserActionTarget(null) }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 text-amber-300 transition-all text-[10px]"
+                      >
+                        <Gift className="w-4 h-4" />
+                        Hediye
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Voice users bar below grid */}
               {voiceUsers.length > 0 && (
@@ -3519,16 +3647,19 @@ export default function ChatRoomPage() {
 
             {/* Main input row */}
             <div className={`flex items-center gap-1.5 backdrop-blur-md rounded-full px-2 py-1.5 border ${isCanlidark ? 'bg-[#0d0428]/70 border-purple-500/20' : 'bg-black/40 border-white/10'}`}>
-              {/* Speaker / Listen toggle for non-voice users */}
-              {!canUseVoice() && (isListening || voiceUsers.length > 0) && (
+              {/* Speaker / Listen toggle for non-voice users — always visible */}
+              {!canUseVoice() && (
                 <button
                   onClick={isListening ? stopListening : startListening}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-                    isListening ? 'bg-blue-500/40 text-blue-300' : 'bg-white/10 text-white/50 hover:bg-white/20'
+                  className={`rounded-full flex items-center gap-1 transition-all flex-shrink-0 ${
+                    isListening 
+                      ? 'bg-blue-500/40 text-blue-200 px-2.5 py-1.5 border border-blue-400/30' 
+                      : 'bg-green-500/20 text-green-300 px-2.5 py-1.5 border border-green-500/20 hover:bg-green-500/30'
                   }`}
                   title={isListening ? 'Sesi Kapat' : 'Sesi Aç'}
                 >
-                  {isListening ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  {isListening ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] font-medium whitespace-nowrap">{isListening ? 'Sesi Kapat' : 'Sesi Aç'}</span>
                 </button>
               )}
 

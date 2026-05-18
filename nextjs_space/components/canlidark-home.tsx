@@ -162,6 +162,7 @@ export default function CanliDarkHome() {
   const [tiktokVideos, setTiktokVideos] = useState<any[]>([])
   const [tiktokCategories, setTiktokCategories] = useState<any[]>([])
   const [activeTiktokCat, setActiveTiktokCat] = useState<string>('')
+  const [tiktokSectionEnabled, setTiktokSectionEnabled] = useState(true)
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [liveMatchesEnabled, setLiveMatchesEnabled] = useState(true)
@@ -193,7 +194,7 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting, tiktokData] = await Promise.all([
+        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting, tiktokData, tiktokSetting] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
@@ -204,6 +205,7 @@ export default function CanliDarkHome() {
           fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
           fetch('/api/settings/public?key=live_matches_enabled').then(x => x.ok ? x.json() : null),
           fetch('/api/tiktok-videos?limit=10').then(x => x.ok ? x.json() : { videos: [] }),
+          fetch('/api/settings/public?key=tiktok_section_enabled').then(x => x.ok ? x.json() : null),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
@@ -220,6 +222,7 @@ export default function CanliDarkHome() {
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
         if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
         if (matchSetting) setLiveMatchesEnabled(matchSetting.value !== 'false')
+        if (tiktokSetting) setTiktokSectionEnabled(tiktokSetting.value !== 'false')
         if (tiktokData?.videos) setTiktokVideos(tiktokData.videos)
         if (tiktokData?.categories) setTiktokCategories(tiktokData.categories)
       } catch {}
@@ -613,7 +616,7 @@ export default function CanliDarkHome() {
       </div>
 
       {/* ═══ 4.5 TİKTOK VİDEOLARI ═══ */}
-      {tiktokVideos.length > 0 && (
+      {tiktokSectionEnabled && tiktokVideos.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="canlidark-section-title flex items-center gap-1.5">
