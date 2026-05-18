@@ -661,10 +661,8 @@ export default function CanliDarkHome() {
             ).map((video) => (
               <div key={video.id} className="flex-shrink-0 w-[200px]">
                 <div className="canlidark-card overflow-hidden h-full">
-                  <a
-                    href={video.tiktokUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/tiktok/${video.id}`}
                     className="block"
                   >
                     <div className="relative w-full h-[280px] bg-gradient-to-br from-cyan-900/30 to-pink-900/30">
@@ -712,7 +710,7 @@ export default function CanliDarkHome() {
                         </div>
                       )}
                     </div>
-                  </a>
+                  </Link>
                   {video.title && (
                     <div className="p-2">
                       <p className="text-[11px] text-fuchsia-100/80 line-clamp-2 leading-tight">{video.title}</p>

@@ -62,6 +62,9 @@ export default function AdminTikTokVideosPage() {
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
 
+  // TikTok search
+  const [tiktokSearchQuery, setTiktokSearchQuery] = useState('')
+
   // Video category change dropdown
   const [changingCategoryFor, setChangingCategoryFor] = useState<string | null>(null)
 
@@ -345,6 +348,62 @@ export default function AdminTikTokVideosPage() {
           </div>
         </motion.div>
 
+        {/* TikTok Search Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="bg-gradient-to-br from-pink-900/30 via-deep-purple-800/40 to-fuchsia-900/20 rounded-xl p-5 border border-pink-500/20 mb-4"
+        >
+          <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+            <Search className="w-4 h-4 text-pink-400" />
+            TikTok'ta Video Bul
+          </h3>
+          <p className="text-purple-300/70 text-xs mb-3">
+            Aramak istediğiniz konuyu yazın, TikTok'ta arayın, beğendiğiniz videoların linklerini kopyalayıp aşağıya yapıştırın.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={tiktokSearchQuery}
+              onChange={(e) => setTiktokSearchQuery(e.target.value)}
+              placeholder="Örn: komik videolar, astroloji, burçlar, falcı..."
+              className="flex-1 px-4 py-3 bg-deep-purple-900/60 border border-pink-500/30 rounded-xl text-white placeholder-purple-400/50 focus:outline-none focus:border-pink-400/50 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && tiktokSearchQuery.trim()) {
+                  window.open(`https://www.tiktok.com/search?q=${encodeURIComponent(tiktokSearchQuery.trim())}`, '_blank')
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (tiktokSearchQuery.trim()) {
+                  window.open(`https://www.tiktok.com/search?q=${encodeURIComponent(tiktokSearchQuery.trim())}`, '_blank')
+                }
+              }}
+              disabled={!tiktokSearchQuery.trim()}
+              className="px-5 py-3 bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-500 hover:to-fuchsia-500 text-white rounded-xl font-medium disabled:opacity-40 flex items-center gap-2 text-sm transition-all whitespace-nowrap"
+            >
+              <ExternalLink className="w-4 h-4" />
+              TikTok'ta Ara
+            </button>
+          </div>
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            {['komik videolar', 'astroloji', 'burçlar', 'fal', 'tarot', 'motivasyon'].map(tag => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setTiktokSearchQuery(tag)
+                  window.open(`https://www.tiktok.com/search?q=${encodeURIComponent(tag)}`, '_blank')
+                }}
+                className="px-3 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 hover:border-pink-500/40 text-pink-300 rounded-full text-xs transition-all"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Add Videos Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -354,8 +413,8 @@ export default function AdminTikTokVideosPage() {
         >
           <h3 className="text-white font-medium mb-3 flex items-center gap-2">
             <Plus className="w-4 h-4 text-fuchsia-400" />
-            TikTok Videosu Ekle
-            <span className="text-purple-400/60 text-xs font-normal ml-2">Her satıra bir link yapıştırın · Sınırsız ekleme</span>
+            Videoları Ekle
+            <span className="text-purple-400/60 text-xs font-normal ml-2">Bulduğunuz videoların linklerini yapıştırın · Sınırsız ekleme</span>
           </h3>
           <div className="space-y-3">
             <textarea
