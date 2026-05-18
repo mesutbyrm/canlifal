@@ -128,29 +128,42 @@ export default function TikTokWatchPage() {
             >
               {/* TikTok Embed */}
               {tiktokEmbedUrl ? (
-                <div ref={embedRef} className="relative w-full flex justify-center bg-black">
+                <div ref={embedRef} className="relative w-full flex justify-center bg-black/60">
                   <iframe
                     src={tiktokEmbedUrl}
                     className="w-full max-w-[400px] border-0"
                     style={{ height: '740px' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
                     title={video.title || 'TikTok Video'}
+                    onLoad={() => setEmbedLoaded(true)}
                   />
-                </div>
-              ) : video.embedHtml ? (
-                <div
-                  className="flex justify-center p-4"
-                  dangerouslySetInnerHTML={{ __html: video.embedHtml }}
-                />
-              ) : (
-                <div className="relative w-full aspect-[9/16] max-w-[400px] mx-auto bg-gradient-to-br from-purple-900/30 to-fuchsia-900/30 flex items-center justify-center">
-                  <a href={video.tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-3 text-purple-300">
-                    <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-                      <Play className="w-8 h-8 text-white fill-white ml-1" />
+                  {!embedLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <div className="w-10 h-10 border-3 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                    <span className="text-sm">TikTok&apos;ta İzle</span>
-                  </a>
+                  )}
+                </div>
+              ) : (
+                <div className="relative w-full aspect-[9/16] max-w-[400px] mx-auto bg-gradient-to-br from-purple-900/30 to-fuchsia-900/30 flex flex-col items-center justify-center gap-4 p-6">
+                  {video.thumbnailUrl && (
+                    <div className="absolute inset-0 opacity-20">
+                      <Image src={video.thumbnailUrl} alt="" fill className="object-cover" sizes="400px" />
+                    </div>
+                  )}
+                  <div className="relative z-10 flex flex-col items-center gap-4">
+                    <p className="text-purple-300/80 text-sm text-center">Bu video doğrudan embed edilemiyor</p>
+                    <a
+                      href={video.tiktokUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-500 hover:to-fuchsia-500 text-white font-medium transition-all"
+                    >
+                      <Play className="w-5 h-5 fill-white" />
+                      TikTok&apos;ta İzle
+                    </a>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -192,7 +205,7 @@ export default function TikTokWatchPage() {
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-pink-500/20 text-white text-xs flex items-center gap-1.5 hover:from-cyan-500/30 hover:to-pink-500/30 transition-all border border-white/10"
                   >
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" xmlns="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Tiktok_icon.svg/1280px-Tiktok_icon.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
                       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.27a8.16 8.16 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.7z"/>
                     </svg>
                     TikTok&apos;ta Aç

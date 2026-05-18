@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Eye, EyeOff, ExternalLink, ArrowUp, ArrowDown,
   Loader2, Check, Music2, Search, X, FolderPlus, Tag, Filter,
-  Edit2, ChevronDown
+  Edit2, ChevronDown, Wrench
 } from 'lucide-react'
 import AdminBackButton from '@/components/admin-back-button'
 
@@ -64,6 +64,10 @@ export default function AdminTikTokVideosPage() {
 
   // TikTok search
   const [tiktokSearchQuery, setTiktokSearchQuery] = useState('')
+
+  // Repair state
+  const [repairing, setRepairing] = useState(false)
+  const [repairResult, setRepairResult] = useState<{ total: number; fixed: number; errors: string[] } | null>(null)
 
   // Video category change dropdown
   const [changingCategoryFor, setChangingCategoryFor] = useState<string | null>(null)
@@ -213,6 +217,20 @@ export default function AdminTikTokVideosPage() {
     fetchVideos(catId, searchQuery)
   }
 
+  const repairVideos = async () => {
+    setRepairing(true)
+    setRepairResult(null)
+    try {
+      const res = await fetch('/api/admin/tiktok-videos', { method: 'PUT' })
+      if (res.ok) {
+        const data = await res.json()
+        setRepairResult(data)
+        if (data.fixed > 0) fetchVideos()
+      }
+    } catch {}
+    finally { setRepairing(false) }
+  }
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-fuchsia-400" />
@@ -235,15 +253,38 @@ export default function AdminTikTokVideosPage() {
                 <p className="text-fuchsia-300 text-sm">{videos.length} video · {categories.length} kategori</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCategoryPanel(!showCategoryPanel)}
-              className="px-4 py-2 bg-purple-800/50 hover:bg-purple-700/50 border border-purple-500/30 text-white rounded-xl text-sm flex items-center gap-2 transition-colors"
-            >
-              <Tag className="w-4 h-4" />
-              Kategoriler
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={repairVideos}
+                disabled={repairing}
+                className="px-3 py-2 bg-amber-800/40 hover:bg-amber-700/50 border border-amber-500/30 text-amber-200 rounded-xl text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                title="Eksik video ID'lerini onar"
+              >
+                {repairing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wrench className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">Onar</span>
+              </button>
+              <button
+                onClick={() => setShowCategoryPanel(!showCategoryPanel)}
+                className="px-4 py-2 bg-purple-800/50 hover:bg-purple-700/50 border border-purple-500/30 text-white rounded-xl text-sm flex items-center gap-2 transition-colors"
+              >
+                <Tag className="w-4 h-4" />
+                Kategoriler
+              </button>
+            </div>
           </div>
         </motion.div>
+
+        {/* Repair Result */}
+        {repairResult && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-3 rounded-xl bg-amber-900/20 border border-amber-500/20">
+            <p className="text-amber-200 text-sm">
+              🔧 {repairResult.total} eksik video ID bulundu, {repairResult.fixed} tanesi onarıldı
+            </p>
+            {repairResult.errors.length > 0 && (
+              <p className="text-amber-400/60 text-xs mt-1">Onarılamayan: {repairResult.errors.join(', ')}</p>
+            )}
+          </motion.div>
+        )}
 
         {/* Category Management Panel */}
         <AnimatePresence>

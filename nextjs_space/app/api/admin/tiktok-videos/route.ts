@@ -74,9 +74,41 @@ export async function POST(req: NextRequest) {
 
     for (const url of urls) {
       try {
-        // Extract video ID from URL
+        // Extract video ID from URL - handle multiple formats
+        let tiktokId: string | null = null
+
+        // Standard format: tiktok.com/@user/video/1234567890
         const idMatch = url.match(/video\/(\d+)/)
-        const tiktokId = idMatch ? idMatch[1] : null
+        if (idMatch) {
+          tiktokId = idMatch[1]
+        }
+
+        // Fetch oEmbed data (works with both short and long URLs)
+        let embedData: any = {}
+        try {
+          const oembedRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+          })
+          if (oembedRes.ok) {
+            embedData = await oembedRes.json()
+            // Extract tiktokId from embed HTML if not found from URL
+            // oEmbed html contains: cite="https://www.tiktok.com/@user/video/1234567890"
+            if (!tiktokId && embedData.html) {
+              const embedIdMatch = embedData.html.match(/video\/(\d+)/)
+              if (embedIdMatch) tiktokId = embedIdMatch[1]
+            }
+          }
+        } catch {}
+
+        // If still no tiktokId, try following redirect for short URLs (vt.tiktok.com, vm.tiktok.com)
+        if (!tiktokId && (url.includes('vt.tiktok.com') || url.includes('vm.tiktok.com'))) {
+          try {
+            const redirectRes = await fetch(url, { method: 'HEAD', redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } })
+            const finalUrl = redirectRes.url
+            const redirectMatch = finalUrl.match(/video\/(\d+)/)
+            if (redirectMatch) tiktokId = redirectMatch[1]
+          } catch {}
+        }
 
         // Check for duplicate
         if (tiktokId) {
@@ -86,15 +118,12 @@ export async function POST(req: NextRequest) {
             continue
           }
         }
-
-        // Fetch oEmbed data
-        let embedData: any = {}
-        try {
-          const oembedRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`)
-          if (oembedRes.ok) {
-            embedData = await oembedRes.json()
-          }
-        } catch {}
+        // Also check by URL
+        const existingByUrl = await prisma.tikTokVideo.findFirst({ where: { tiktokUrl: url } })
+        if (existingByUrl) {
+          errors.push(`${url} - Bu video zaten ekli`)
+          continue
+        }
 
         const video = await prisma.tikTokVideo.create({
           data: {
@@ -156,6 +185,79 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ video })
   } catch (error) {
     console.error('Admin TikTok update error:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
+}
+
+// PUT - backfill missing tiktokIds for existing videos
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+      return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+    }
+
+    // Find videos with null tiktokId
+    const videos = await prisma.tikTokVideo.findMany({
+      where: { tiktokId: null },
+      select: { id: true, tiktokUrl: true, embedHtml: true },
+    })
+
+    let fixed = 0
+    const fixErrors: string[] = []
+
+    for (const v of videos) {
+      let extractedId: string | null = null
+
+      // Try from embedHtml
+      if (v.embedHtml) {
+        const m = v.embedHtml.match(/video\/(\d+)/)
+        if (m) extractedId = m[1]
+      }
+
+      // Try from URL
+      if (!extractedId && v.tiktokUrl) {
+        const m = v.tiktokUrl.match(/video\/(\d+)/)
+        if (m) extractedId = m[1]
+      }
+
+      // Try oEmbed
+      if (!extractedId) {
+        try {
+          const oembedRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(v.tiktokUrl)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+          })
+          if (oembedRes.ok) {
+            const data = await oembedRes.json()
+            if (data.html) {
+              const m = data.html.match(/video\/(\d+)/)
+              if (m) extractedId = m[1]
+            }
+          }
+        } catch {}
+      }
+
+      // Try following redirect
+      if (!extractedId && (v.tiktokUrl.includes('vt.tiktok.com') || v.tiktokUrl.includes('vm.tiktok.com'))) {
+        try {
+          const redirectRes = await fetch(v.tiktokUrl, { method: 'HEAD', redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } })
+          const finalUrl = redirectRes.url
+          const m = finalUrl.match(/video\/(\d+)/)
+          if (m) extractedId = m[1]
+        } catch {}
+      }
+
+      if (extractedId) {
+        await prisma.tikTokVideo.update({ where: { id: v.id }, data: { tiktokId: extractedId } })
+        fixed++
+      } else {
+        fixErrors.push(v.tiktokUrl)
+      }
+    }
+
+    return NextResponse.json({ total: videos.length, fixed, errors: fixErrors })
+  } catch (error) {
+    console.error('TikTok backfill error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
