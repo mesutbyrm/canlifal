@@ -160,6 +160,8 @@ export default function CanliDarkHome() {
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [trendVideos, setTrendVideos] = useState<TrendVideoItem[]>([])
   const [tiktokVideos, setTiktokVideos] = useState<any[]>([])
+  const [tiktokCategories, setTiktokCategories] = useState<any[]>([])
+  const [activeTiktokCat, setActiveTiktokCat] = useState<string>('')
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [liveMatchesEnabled, setLiveMatchesEnabled] = useState(true)
@@ -219,6 +221,7 @@ export default function CanliDarkHome() {
         if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
         if (matchSetting) setLiveMatchesEnabled(matchSetting.value !== 'false')
         if (tiktokData?.videos) setTiktokVideos(tiktokData.videos)
+        if (tiktokData?.categories) setTiktokCategories(tiktokData.categories)
       } catch {}
       if (session) {
         try {
@@ -612,7 +615,7 @@ export default function CanliDarkHome() {
       {/* ═══ 4.5 TİKTOK VİDEOLARI ═══ */}
       {tiktokVideos.length > 0 && (
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="canlidark-section-title flex items-center gap-1.5">
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-cyan-400" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.27a8.16 8.16 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.7z"/>
@@ -620,11 +623,42 @@ export default function CanliDarkHome() {
               TikTok Videoları
             </h2>
           </div>
+          {/* Category tabs */}
+          {tiktokCategories.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 mb-2">
+              <button
+                onClick={() => setActiveTiktokCat('')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeTiktokCat === ''
+                    ? 'bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-lg shadow-fuchsia-500/20'
+                    : 'bg-purple-800/40 text-purple-300 hover:bg-purple-700/40 border border-purple-500/20'
+                }`}
+              >
+                Tümü
+              </button>
+              {tiktokCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveTiktokCat(cat.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    activeTiktokCat === cat.id
+                      ? 'bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-lg shadow-fuchsia-500/20'
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-700/40 border border-purple-500/20'
+                  }`}
+                >
+                  {cat.title}
+                </button>
+              ))}
+            </div>
+          )}
           <div
             ref={tiktokScrollRef}
             className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2"
           >
-            {tiktokVideos.map((video) => (
+            {(activeTiktokCat
+              ? tiktokVideos.filter(v => v.categoryId === activeTiktokCat || v.category?.id === activeTiktokCat)
+              : tiktokVideos
+            ).map((video) => (
               <div key={video.id} className="flex-shrink-0 w-[200px]">
                 <div className="canlidark-card overflow-hidden h-full">
                   <a
@@ -656,6 +690,14 @@ export default function CanliDarkHome() {
                           <Play className="w-6 h-6 text-white fill-white ml-0.5" />
                         </div>
                       </div>
+                      {/* Category badge */}
+                      {video.category?.title && (
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-[9px] text-cyan-300 font-medium border border-cyan-500/20">
+                            {video.category.title}
+                          </span>
+                        </div>
+                      )}
                       {/* Author info */}
                       {video.authorName && (
                         <div className="absolute bottom-2 left-2 right-2">
@@ -679,6 +721,9 @@ export default function CanliDarkHome() {
                 </div>
               </div>
             ))}
+            {activeTiktokCat && tiktokVideos.filter(v => v.categoryId === activeTiktokCat || v.category?.id === activeTiktokCat).length === 0 && (
+              <p className="text-purple-400/50 text-sm py-8 px-4">Bu kategoride video yok</p>
+            )}
           </div>
         </div>
       )}

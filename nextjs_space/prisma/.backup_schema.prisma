@@ -2864,8 +2864,23 @@ model TrendVideo {
 
 
 // TikTok embedded videos
+model TikTokCategory {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  videos      TikTokVideo[]
+
+  @@index([isActive, sortOrder])
+  @@map("tiktok_categories")
+}
+
 model TikTokVideo {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
   tiktokUrl    String   // Full TikTok video URL
   tiktokId     String?  // Extracted video ID
   title        String?
@@ -2873,11 +2888,14 @@ model TikTokVideo {
   authorAvatar String?
   thumbnailUrl String?
   embedHtml    String?  @db.Text
+  categoryId   String?
+  category     TikTokCategory? @relation(fields: [categoryId], references: [id])
   sortOrder    Int      @default(0)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+  @@index([categoryId])
   @@map("tiktok_videos")
 }
