@@ -2861,3 +2861,23 @@ model TrendVideo {
   @@index([isActive, createdAt])
   @@map("trend_videos")
 }
+
+
+// TikTok embedded videos
+model TikTokVideo {
+  id           String   @id @default(cuid())
+  tiktokUrl    String   // Full TikTok video URL
+  tiktokId     String?  // Extracted video ID
+  title        String?
+  authorName   String?
+  authorAvatar String?
+  thumbnailUrl String?
+  embedHtml    String?  @db.Text
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("tiktok_videos")
+}

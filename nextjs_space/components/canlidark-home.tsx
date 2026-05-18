@@ -159,10 +159,12 @@ export default function CanliDarkHome() {
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
   const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [trendVideos, setTrendVideos] = useState<TrendVideoItem[]>([])
+  const [tiktokVideos, setTiktokVideos] = useState<any[]>([])
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [liveMatchesEnabled, setLiveMatchesEnabled] = useState(true)
   const videosScrollRef = useRef<HTMLDivElement>(null)
+  const tiktokScrollRef = useRef<HTMLDivElement>(null)
   // Story states
   const [storyGroups, setStoryGroups] = useState<{ user: any; stories: any[] }[]>([])
   const [myStories, setMyStories] = useState<any[]>([])
@@ -189,7 +191,7 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting] = await Promise.all([
+        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting, tiktokData] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
@@ -199,6 +201,7 @@ export default function CanliDarkHome() {
           fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
           fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
           fetch('/api/settings/public?key=live_matches_enabled').then(x => x.ok ? x.json() : null),
+          fetch('/api/tiktok-videos?limit=10').then(x => x.ok ? x.json() : { videos: [] }),
         ])
         setStreams(s || [])
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
@@ -215,6 +218,7 @@ export default function CanliDarkHome() {
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
         if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
         if (matchSetting) setLiveMatchesEnabled(matchSetting.value !== 'false')
+        if (tiktokData?.videos) setTiktokVideos(tiktokData.videos)
       } catch {}
       if (session) {
         try {
@@ -604,6 +608,80 @@ export default function CanliDarkHome() {
           )}
         </div>
       </div>
+
+      {/* ═══ 4.5 TİKTOK VİDEOLARI ═══ */}
+      {tiktokVideos.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="canlidark-section-title flex items-center gap-1.5">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-cyan-400" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.27a8.16 8.16 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.7z"/>
+              </svg>
+              TikTok Videoları
+            </h2>
+          </div>
+          <div
+            ref={tiktokScrollRef}
+            className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2"
+          >
+            {tiktokVideos.map((video) => (
+              <div key={video.id} className="flex-shrink-0 w-[200px]">
+                <div className="canlidark-card overflow-hidden h-full">
+                  <a
+                    href={video.tiktokUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <div className="relative w-full h-[280px] bg-gradient-to-br from-cyan-900/30 to-pink-900/30">
+                      {video.thumbnailUrl ? (
+                        <Image
+                          src={video.thumbnailUrl}
+                          alt={video.title || 'TikTok Video'}
+                          fill
+                          className="object-cover"
+                          sizes="200px"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" className="w-12 h-12 fill-current text-white/20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.27a8.16 8.16 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.7z"/>
+                          </svg>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                          <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                        </div>
+                      </div>
+                      {/* Author info */}
+                      {video.authorName && (
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <div className="flex items-center gap-1.5">
+                            {video.authorAvatar && (
+                              <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 relative">
+                                <Image src={video.authorAvatar} alt={video.authorName} fill className="object-cover" sizes="20px" />
+                              </div>
+                            )}
+                            <span className="text-[10px] text-white/90 font-medium truncate">@{video.authorName}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                  {video.title && (
+                    <div className="p-2">
+                      <p className="text-[11px] text-fuchsia-100/80 line-clamp-2 leading-tight">{video.title}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══ 5. TREND VİDEOLAR — auto-scroll left ═══ */}
       {trendVideos.length > 0 && (
