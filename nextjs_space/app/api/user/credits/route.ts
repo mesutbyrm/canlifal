@@ -19,7 +19,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true, jetonBalance: true, withdrawalLimit: true, membership: true, membershipExpiresAt: true },
+      select: { credits: true, jetonBalance: true, cfcBalance: true, withdrawalLimit: true, membership: true, membershipExpiresAt: true },
     })
 
     if (!user) {
@@ -36,6 +36,7 @@ export async function GET() {
     return NextResponse.json({ 
       credits: user.credits, 
       jetonBalance: user.jetonBalance ?? 0,
+      cfcBalance: user.cfcBalance ?? 0,
       jetonTlRate,
       withdrawalLimit: user.withdrawalLimit ?? 0,
       membership: user.membership ?? 'basic',
