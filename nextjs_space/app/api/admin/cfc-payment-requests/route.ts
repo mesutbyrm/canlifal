@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,16 +100,17 @@ export async function PATCH(request: NextRequest) {
         }),
       ])
 
-      // Notify the user
-      await prisma.notification.create({
-        data: {
-          userId: paymentRequest.userId,
-          type: 'cfc_payment_approved',
-          title: 'CFC Yükleme Onaylandı',
-          message: `${paymentRequest.amount} CFC hesabınıza yüklendi! Yeni bakiyeniz: ${(paymentRequest.user.cfcBalance || 0) + paymentRequest.amount} CFC`,
-          data: JSON.stringify({ amount: paymentRequest.amount, requestId }),
-        },
-      })
+      // Notify the user with push
+      createNotificationWithPush({
+        userId: paymentRequest.userId,
+        type: 'cfc_payment_approved',
+        title: '✅ CFC Yükleme Onaylandı',
+        message: `${paymentRequest.amount} CFC hesabınıza yüklendi! Yeni bakiyeniz: ${(paymentRequest.user.cfcBalance || 0) + paymentRequest.amount} CFC`,
+        data: JSON.stringify({ amount: paymentRequest.amount, requestId }),
+        targetPath: '/cfc-store',
+        targetId: requestId,
+        urgent: true,
+      }).catch(err => console.error('CFC approve push error:', err))
 
       return NextResponse.json(updatedRequest)
     } else {
@@ -122,16 +124,17 @@ export async function PATCH(request: NextRequest) {
         },
       })
 
-      // Notify the user
-      await prisma.notification.create({
-        data: {
-          userId: paymentRequest.userId,
-          type: 'cfc_payment_rejected',
-          title: 'CFC Yükleme Reddedildi',
-          message: `${paymentRequest.amount} CFC yükleme talebiniz reddedildi.${reviewNote ? ' Sebep: ' + reviewNote : ''}`,
-          data: JSON.stringify({ amount: paymentRequest.amount, requestId }),
-        },
-      })
+      // Notify the user with push
+      createNotificationWithPush({
+        userId: paymentRequest.userId,
+        type: 'cfc_payment_rejected',
+        title: '❌ CFC Yükleme Reddedildi',
+        message: `${paymentRequest.amount} CFC yükleme talebiniz reddedildi.${reviewNote ? ' Sebep: ' + reviewNote : ''}`,
+        data: JSON.stringify({ amount: paymentRequest.amount, requestId }),
+        targetPath: '/cfc-store',
+        targetId: requestId,
+        urgent: true,
+      }).catch(err => console.error('CFC reject push error:', err))
 
       return NextResponse.json(updatedRequest)
     }

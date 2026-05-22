@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { sendOneSignalPushToMany } from '@/lib/onesignal'
+import { sendPushToMultipleUsers } from '@/lib/onesignal'
 import { logActivity } from '@/lib/activity-logger'
 import { getPlatformSetting } from '@/lib/agency-commission'
 
@@ -10,38 +10,41 @@ import { getPlatformSetting } from '@/lib/agency-commission'
  * Notify all followers of a user that they went live.
  */
 async function notifyFollowersOfLiveStream(userId: string, userName: string, streamId: string, streamTitle: string) {
-  // Get all follower IDs
+  // Get all follower IDs (max 500 for push)
   const followers = await prisma.follow.findMany({
     where: { followingId: userId },
-    select: { followerId: true }
+    select: { followerId: true },
+    take: 500,
   })
 
   if (followers.length === 0) return
 
   const followerIds = followers.map((f: any) => f.followerId)
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://canlifal.com'
+  const title = `${userName} canlı yayında`
+  const body = streamTitle || 'Canlı Fal'
 
   // Create in-app notifications in bulk
   await prisma.notification.createMany({
     data: followerIds.map((fId: any) => ({
       userId: fId,
       type: 'stream_live',
-      title: '🔴 Canlı Yayın Başladı!',
-      message: `${userName} canlı yayına başladı: ${streamTitle || 'Canlı Fal'}`,
+      title: `🔴 ${title}`,
+      message: body,
       fromUserId: userId,
       fromUserName: userName,
       data: JSON.stringify({ streamId }),
     }))
   })
 
-  // Send push notification to all followers at once
-  await sendOneSignalPushToMany(
-    followerIds,
-    '🔴 Canlı Yayın Başladı!',
-    `${userName} canlı yayına başladı: ${streamTitle || 'Canlı Fal'}`,
-    `${baseUrl}/sohbet/video?stream=${streamId}`,
-    { streamId, type: 'stream_live' }
-  )
+  // Send push notification with mobile navigation data
+  sendPushToMultipleUsers(followerIds, {
+    title: `🔴 ${title}`,
+    body,
+    type: 'live',
+    targetPath: '/live',
+    targetId: streamId,
+    urgent: true,
+  }).catch(err => console.error('Live stream push error:', err))
 }
 
 export async function GET() {

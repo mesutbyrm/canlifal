@@ -1,5 +1,5 @@
 import prisma from '@/lib/db'
-import { sendOneSignalPush, getNotificationTitle, getNotificationUrl } from '@/lib/onesignal'
+import { sendPushToUser, sendPushToMultipleUsers, getNotificationTitle } from '@/lib/onesignal'
 
 interface NotifyParams {
   userId: string
@@ -10,12 +10,15 @@ interface NotifyParams {
   fromUserId?: string
   fromUserName?: string
   data?: string // JSON string
+  // Mobile push fields
+  targetPath?: string
+  targetId?: string
+  urgent?: boolean
 }
 
 /**
  * Create a DB notification AND send a OneSignal push notification.
- * This should be used instead of direct prisma.notification.create calls
- * when you also want a push notification.
+ * Push is fire-and-forget: errors logged but never block the response.
  */
 export async function createNotificationWithPush(params: NotifyParams) {
   try {
@@ -33,31 +36,70 @@ export async function createNotificationWithPush(params: NotifyParams) {
       }
     })
 
-    // 2. Send OneSignal push (fire and forget - don't block the response)
+    // 2. Send OneSignal push (fire and forget)
     const pushTitle = params.title || getNotificationTitle(params.type)
-    const pushMessage = params.fromUserName 
+    const pushBody = params.fromUserName
       ? `${params.fromUserName} ${params.message}`
       : params.message
-    
-    let parsedData: Record<string, any> = {}
-    if (params.data) {
-      try { parsedData = JSON.parse(params.data) } catch (e) {}
-    }
-    if (params.postId) parsedData.postId = params.postId
-    
-    const pushUrl = getNotificationUrl(params.type, parsedData)
 
-    sendOneSignalPush({
-      userId: params.userId,
+    sendPushToUser(params.userId, {
       title: pushTitle,
-      message: pushMessage,
-      url: pushUrl,
-      data: parsedData,
+      body: pushBody.slice(0, 200),
+      type: params.type,
+      targetPath: params.targetPath || '',
+      targetId: params.targetId || '',
+      urgent: params.urgent || false,
     }).catch(err => console.error('OneSignal push failed (non-blocking):', err))
 
     return notification
   } catch (error) {
     console.error('createNotificationWithPush error:', error)
     throw error
+  }
+}
+
+/**
+ * Create DB notifications for multiple users AND send a batch push.
+ * Push is fire-and-forget.
+ */
+export async function createBulkNotificationsWithPush(params: {
+  userIds: string[]
+  type: string
+  title: string
+  message: string
+  data?: string
+  fromUserId?: string
+  fromUserName?: string
+  targetPath?: string
+  targetId?: string
+  urgent?: boolean
+}) {
+  if (params.userIds.length === 0) return
+
+  try {
+    // 1. Create DB notifications in bulk
+    await prisma.notification.createMany({
+      data: params.userIds.map(uid => ({
+        userId: uid,
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        data: params.data,
+        fromUserId: params.fromUserId,
+        fromUserName: params.fromUserName,
+      })),
+    })
+
+    // 2. Send batch push (fire and forget)
+    sendPushToMultipleUsers(params.userIds, {
+      title: params.title,
+      body: params.message.slice(0, 200),
+      type: params.type,
+      targetPath: params.targetPath || '',
+      targetId: params.targetId || '',
+      urgent: params.urgent || false,
+    }).catch(err => console.error('OneSignal bulk push failed (non-blocking):', err))
+  } catch (error) {
+    console.error('createBulkNotificationsWithPush error:', error)
   }
 }

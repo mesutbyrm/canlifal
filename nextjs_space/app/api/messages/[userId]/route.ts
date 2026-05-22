@@ -207,14 +207,18 @@ export async function POST(
       }
     })
 
-    // Create notification + push
+    // Create notification + push (with mobile navigation data)
+    const messagePreview = (content?.trim() || '[Görsel]').slice(0, 120)
     createNotificationWithPush({
       userId: otherUserId,
       type: 'message',
       message: 'size bir mesaj gönderdi',
       fromUserId: currentUserId,
       fromUserName: session.user.name || 'Birisi',
-      data: JSON.stringify({ senderId: currentUserId })
+      data: JSON.stringify({ senderId: currentUserId }),
+      targetPath: `/chat/${otherUserId}`,
+      targetId: otherUserId,
+      urgent: true,
     }).catch((err: any) => console.error('Message notification error:', err))
 
     return NextResponse.json({ message })

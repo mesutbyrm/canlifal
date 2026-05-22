@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { createBulkNotificationsWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,15 +62,17 @@ export async function POST(request: NextRequest) {
     const userName = user?.name || user?.username || 'Kullanıcı'
 
     if (adminUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: adminUsers.map((admin) => ({
-          userId: admin.id,
-          type: 'cfc_payment_request',
-          title: 'Yeni CFC Ödeme Talebi',
-          message: `${userName} ${amount} CFC yükleme talebi oluşturdu (${method === 'whatsapp' ? 'WhatsApp' : method === 'papara' ? 'Papara' : 'Banka Transferi'})`,
-          data: JSON.stringify({ paymentRequestId: paymentRequest.id, amount, method }),
-        })),
-      })
+      const methodLabel = method === 'whatsapp' ? 'WhatsApp' : method === 'papara' ? 'Papara' : 'Banka Transferi'
+      createBulkNotificationsWithPush({
+        userIds: adminUsers.map((a) => a.id),
+        type: 'cfc_payment_request',
+        title: 'CFC ödemesi — onay bekliyor',
+        message: `${userName} · ${amount} CFC · ${methodLabel}`,
+        data: JSON.stringify({ paymentRequestId: paymentRequest.id, amount, method }),
+        targetPath: '/admin',
+        targetId: paymentRequest.id,
+        urgent: true,
+      }).catch(err => console.error('CFC payment admin push error:', err))
     }
 
     return NextResponse.json(paymentRequest, { status: 201 })
