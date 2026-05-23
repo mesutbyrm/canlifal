@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // POST create a message request
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const auth = await authenticateRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
     const { receiverId, message } = await request.json()
-    const senderId = session.user.id
+    const senderId = auth.id
 
     if (!receiverId) {
       return NextResponse.json({ error: 'Receiver ID required' }, { status: 400 })
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
     await createNotificationWithPush({
       userId: receiverId,
       fromUserId: senderId,
-      fromUserName: session.user.name || 'Kullanıcı',
+      fromUserName: auth.name || 'Kullanıcı',
       type: 'message',
       message: 'size mesaj göndermek istiyor',
       data: JSON.stringify({ senderId })
@@ -64,14 +63,14 @@ export async function POST(request: NextRequest) {
 
 // PATCH accept/reject a message request
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const auth = await authenticateRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
     const { requestId, action } = await request.json()
-    const userId = session.user.id
+    const userId = auth.id
 
     if (!requestId || !['accept', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
@@ -105,7 +104,7 @@ export async function PATCH(request: NextRequest) {
     await createNotificationWithPush({
       userId: messageRequest.senderId,
       fromUserId: userId,
-      fromUserName: session.user.name || 'Kullanıcı',
+      fromUserName: auth.name || 'Kullanıcı',
       type: 'message',
       message: action === 'accept'
         ? 'mesaj isteğinizi kabul etti'

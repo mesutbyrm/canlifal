@@ -137,6 +137,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
         credits: user.credits,
         jetonBalance: user.jetonBalance,
+        cfcBalance: user.cfcBalance ?? 0,
         membership: user.membership,
         referralCode: user.referralCode,
       },

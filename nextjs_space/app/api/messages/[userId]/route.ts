@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET messages with a specific user
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const auth = await authenticateRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
-    const currentUserId = session.user.id
+    const currentUserId = auth.id
     const otherUserId = params.userId
 
     // Get other user info
@@ -119,13 +118,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const auth = await authenticateRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
-    const currentUserId = session.user.id
+    const currentUserId = auth.id
     const otherUserId = params.userId
     const { content, imageUrl } = await request.json()
 
@@ -214,7 +213,7 @@ export async function POST(
       type: 'message',
       message: 'size bir mesaj gönderdi',
       fromUserId: currentUserId,
-      fromUserName: session.user.name || 'Birisi',
+      fromUserName: auth.name || 'Birisi',
       data: JSON.stringify({ senderId: currentUserId }),
       targetPath: `/chat/${otherUserId}`,
       targetId: otherUserId,

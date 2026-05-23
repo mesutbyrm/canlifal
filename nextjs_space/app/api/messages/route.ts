@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET conversations list or unread count
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  const auth = await authenticateRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
 
   try {
-    const userId = session.user.id
+    const userId = auth.id
     const { searchParams } = new URL(request.url)
     
     // If only unread count is requested
