@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 interface LikeUser {
   id: string
@@ -16,13 +16,13 @@ interface LikeWithUser {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { searchParams } = new URL(req.url)
-    const userId = searchParams.get('userId') || session.user.id
+    const userId = searchParams.get('userId') || auth.id
 
     // Get all posts by this user
     const userPosts = await prisma.socialPost.findMany({

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const savedOnly = searchParams.get('saved') === 'true'
     const pinnedOnly = searchParams.get('pinned') === 'true'
 
-    const where: { userId: string; isSaved?: boolean; isPinned?: boolean } = { userId: session.user.id }
+    const where: { userId: string; isSaved?: boolean; isPinned?: boolean } = { userId: auth.id }
     if (savedOnly) where.isSaved = true
     if (pinnedOnly) where.isPinned = true
 

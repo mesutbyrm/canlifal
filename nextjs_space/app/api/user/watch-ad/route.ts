@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -23,15 +22,15 @@ async function getAdSettings() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(request)
     
-    if (!session?.user?.id) {
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    const userId = auth.id
     const { dailyLimit, creditsPerAd } = await getAdSettings()
 
     // Check daily limit - using a simple approach with settings
@@ -83,15 +82,15 @@ export async function POST(request: Request) {
 }
 
 // Get user's remaining ads for today
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(req)
     
-    if (!session?.user?.id) {
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    const userId = auth.id
     const { dailyLimit, creditsPerAd } = await getAdSettings()
     const today = new Date().toISOString().split('T')[0]
     const limitKey = `ad_watch_${userId}_${today}`

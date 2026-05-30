@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 // POST - Follow a user
 export async function POST(
@@ -9,15 +9,15 @@ export async function POST(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const targetUserId = params.userId
     
     // Can't follow yourself
-    if (session.user.id === targetUserId) {
+    if (auth.id === targetUserId) {
       return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 })
     }
 
@@ -25,7 +25,7 @@ export async function POST(
     const existingFollow = await prisma.follow.findUnique({
       where: {
         followerId_followingId: {
-          followerId: session.user.id,
+          followerId: auth.id,
           followingId: targetUserId
         }
       }
@@ -38,7 +38,7 @@ export async function POST(
     // Create follow
     await prisma.follow.create({
       data: {
-        followerId: session.user.id,
+        followerId: auth.id,
         followingId: targetUserId
       }
     })
@@ -56,8 +56,8 @@ export async function DELETE(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -65,7 +65,7 @@ export async function DELETE(
 
     await prisma.follow.deleteMany({
       where: {
-        followerId: session.user.id,
+        followerId: auth.id,
         followingId: targetUserId
       }
     })

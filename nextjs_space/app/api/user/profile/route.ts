@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -8,13 +7,13 @@ export const dynamic = 'force-dynamic';
 // Get user profile
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       select: {
         id: true,
         name: true,
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
     const likesCount = await prisma.socialLike.count({
       where: {
         post: {
-          userId: session.user.id
+          userId: auth.id
         }
       }
     });
@@ -81,8 +80,8 @@ export async function GET(request: NextRequest) {
 // Update user profile
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -122,7 +121,7 @@ export async function PATCH(request: NextRequest) {
         }
         
         const existingUsername = await prisma.user.findFirst({
-          where: { username: normalizedUsername, NOT: { id: session.user.id } }
+          where: { username: normalizedUsername, NOT: { id: auth.id } }
         });
         if (existingUsername) {
           return NextResponse.json({ 
@@ -137,7 +136,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check email uniqueness
-    if (email !== undefined && email !== session.user.email) {
+    if (email !== undefined && email !== auth.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return NextResponse.json({ 
@@ -147,7 +146,7 @@ export async function PATCH(request: NextRequest) {
       }
       
       const existingEmail = await prisma.user.findFirst({
-        where: { email, NOT: { id: session.user.id } }
+        where: { email, NOT: { id: auth.id } }
       });
       if (existingEmail) {
         return NextResponse.json({ 
@@ -159,7 +158,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       data: updateData,
       select: {
         id: true,

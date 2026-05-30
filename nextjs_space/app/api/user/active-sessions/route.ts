@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -8,14 +7,14 @@ export const dynamic = 'force-dynamic';
 // Get user's active sessions with live tellers
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const activeSessions = await prisma.liveSession.findMany({
       where: {
-        userId: session.user.id,
+        userId: auth.id,
         status: 'active'
       },
       select: {

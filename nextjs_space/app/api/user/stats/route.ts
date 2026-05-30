@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 interface FortuneGroup {
   fortuneType: string
@@ -10,13 +10,13 @@ interface FortuneGroup {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       select: {
         id: true,
         name: true,
@@ -45,20 +45,20 @@ export async function GET(req: NextRequest) {
     // Get fortune breakdown by type
     const fortunesByType = await prisma.fortune.groupBy({
       by: ['fortuneType'],
-      where: { userId: session.user.id },
+      where: { userId: auth.id },
       _count: true
     }) as unknown as FortuneGroup[]
 
     // Get total likes received
     const likesReceived = await prisma.socialLike.count({
       where: {
-        post: { userId: session.user.id }
+        post: { userId: auth.id }
       }
     })
 
     // Get total views
     const totalViews = await prisma.fortune.aggregate({
-      where: { userId: session.user.id },
+      where: { userId: auth.id },
       _sum: { viewCount: true }
     })
 
@@ -96,8 +96,8 @@ export async function GET(req: NextRequest) {
 // Update time spent
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       data: {
         totalTimeSpentMinutes: { increment: minutesToAdd },
         lastActiveAt: new Date()

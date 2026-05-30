@@ -552,6 +552,529 @@ Push notification data payload yapısı:
 }
 
 
+────────────────────────────────────────────────────────
+13) KULLANICI PROFIL DETAYLARI
+   GET /api/users/{userId}
+   Auth: Opsiyonel (Bearer token varsa takip durumu döner)
+────────────────────────────────────────────────────────
+
+Kullanıcı ID veya username ile profil bilgisi çeker.
+Auth varsa isFollowing ve profil görüntüleme kaydı yapılır.
+
+Headers (opsiyonel):
+  Authorization: Bearer <accessToken>
+
+Response (200):
+{
+  "id": "cuid_xxx",
+  "name": "Ad Soyad",
+  "username": "kullanici_adi",
+  "image": "http://test.atomyazilim.com/Images/user.png",
+  "bio": "Hakkımda yazısı",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "zodiacSign": "Koç",
+  "role": "user",
+  "membership": "basic",
+  "specialBadges": "badge1,badge2",
+  "profileEffect": "effect_name",
+  "profileFrame": { "id": "...", "name": "...", "imageUrl": "..." },
+  "postCount": 15,
+  "followerCount": 120,
+  "followingCount": 45,
+  "totalLikes": 350,
+  "isFollowing": false
+}
+
+Hata: 404 → Kullanıcı bulunamadı
+
+
+────────────────────────────────────────────────────────
+14) KULLANICI ARA (USERNAME ile)
+   GET /api/users/lookup/{username}
+   Auth: Opsiyonel
+────────────────────────────────────────────────────────
+
+Doğrudan username ile kullanıcı profili çeker.
+/api/users/{userId} ile aynı response döner.
+
+Örnek: GET /api/users/lookup/mesut_byrm
+
+Response: 13 numaralı endpoint ile aynı.
+
+
+────────────────────────────────────────────────────────
+15) KULLANICI ARA (Metin ile)
+   GET /api/users/search?q={arama_metni}
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+İsim veya username ile kullanıcı arar.
+
+Query Params:
+  q: Arama metni (min 2 karakter)
+
+Response (200):
+[
+  {
+    "id": "cuid_xxx",
+    "name": "Ad Soyad",
+    "username": "kullanici_adi",
+    "image": "https://play-lh.googleusercontent.com/Ha8___ZnUImA7Jtt8Cx7p1S4F-LWFIx9-u64K4Kw8kYu7OU9y9iLw6eqHENDZ9vZ6VWCxK6Xen6uypLEOInmsw=w526-h296-rw",
+    "bio": "..."
+  }
+]
+
+
+────────────────────────────────────────────────────────
+16) TAKİP ET / TAKİPTEN ÇIK
+   POST /api/user/{userId}/follow
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcıyı takip eder veya takipten çıkar (toggle).
+
+Response (200):
+{
+  "following": true,        // veya false
+  "followerCount": 121
+}
+
+
+────────────────────────────────────────────────────────
+17) TAKİP DURUMU KONTROL
+   GET /api/user/{userId}/follow-status
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "isFollowing": true,
+  "isFollowedBy": false
+}
+
+
+────────────────────────────────────────────────────────
+18) TAKİPÇİ LİSTESİ
+   GET /api/user/followers?page=1&limit=20
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "followers": [
+    {
+      "id": "cuid_xxx",
+      "name": "Ad Soyad",
+      "username": "kullanici_adi",
+      "image": "https://i.pinimg.com/280x280_RS/44/81/26/4481269779f31392633e98929c6cb143.jpg"
+    }
+  ],
+  "total": 120,
+  "page": 1,
+  "limit": 20
+}
+
+
+────────────────────────────────────────────────────────
+19) TAKİP EDİLENLER LİSTESİ
+   GET /api/user/following?page=1&limit=20
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response: 18 ile aynı format ("following" yerine).
+
+
+────────────────────────────────────────────────────────
+20) KREDİ BİLGİSİ
+   GET /api/user/credits
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "credits": 50,
+  "membership": "basic",
+  "membershipExpiresAt": null
+}
+
+
+────────────────────────────────────────────────────────
+21) KULLANICI İSTATİSTİKLERİ
+   GET /api/user/stats
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "credits": 50,
+  "totalFortunes": 5,
+  "totalPosts": 12,
+  "followerCount": 120,
+  "followingCount": 45
+}
+
+
+────────────────────────────────────────────────────────
+22) KULLANICI DETAYLI İSTATİSTİKLER
+   GET /api/user/statistics
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Gelişmiş istatistikler (XP, seviye, rozetler vb.)
+
+Response (200):
+{
+  "xp": 1250,
+  "level": 5,
+  "credits": 50,
+  "totalFortunes": 5,
+  "achievements": [...],
+  ...
+}
+
+
+────────────────────────────────────────────────────────
+23) FAL GEÇMİŞİ
+   GET /api/user/fortunes?page=1&limit=10
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "fortunes": [
+    {
+      "id": "cuid_xxx",
+      "type": "tarot",
+      "question": "...",
+      "answer": "...",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "total": 5,
+  "page": 1
+}
+
+
+────────────────────────────────────────────────────────
+24) TEK FAL DETAYI
+   GET /api/user/fortunes/{fortuneId}
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200): Tek fal objesi (fortune detayları).
+
+
+────────────────────────────────────────────────────────
+25) BAŞARIMLAR (Achievements)
+   GET /api/user/achievements
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "achievements": [
+    {
+      "id": "cuid_xxx",
+      "type": "first_fortune",
+      "unlockedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+
+
+────────────────────────────────────────────────────────
+26) BAŞKA KULLANICININ BAŞARIMLARI
+   GET /api/user/{userId}/achievements
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Belirtilen kullanıcının başarımlarını döner.
+
+
+────────────────────────────────────────────────────────
+27) ENGELLİ KULLANICILAR
+   GET /api/user/blocked
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Response (200):
+{
+  "blockedUsers": [
+    {
+      "id": "cuid_xxx",
+      "name": "Ad Soyad",
+      "username": "kullanici_adi",
+      "image": "https://cdn.vectorstock.com/i/1000v/51/87/student-avatar-user-profile-icon-vector-47025187.jpg"
+    }
+  ]
+}
+
+
+────────────────────────────────────────────────────────
+28) ALINAN HEDİYELER
+   GET /api/user/received-gifts
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının aldığı hediyeleri listeler.
+
+
+────────────────────────────────────────────────────────
+29) BEĞENEN KULLANICILAR (Likers)
+   GET /api/user/likers
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının postlarını beğenenleri listeler.
+
+
+────────────────────────────────────────────────────────
+30) TEMA AYARI
+   GET /api/user/theme
+   PATCH /api/user/theme
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+GET: Kullanıcının tema tercihini döner.
+PATCH Body: { "theme": "dark" | "light" }
+
+
+────────────────────────────────────────────────────────
+31) REKLAM İZLE (Kredi Kazan)
+   POST /api/user/watch-ad
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Reklam izleme sonrası kredi kazandırır.
+
+Response (200):
+{
+  "success": true,
+  "creditsEarned": 5,
+  "totalCredits": 55
+}
+
+
+────────────────────────────────────────────────────────
+32) XP GÜNCELLEME
+   POST /api/user/xp
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Body: { "amount": 10, "reason": "daily_login" }
+
+Response (200):
+{
+  "xp": 1260,
+  "level": 5
+}
+
+
+────────────────────────────────────────────────────────
+33) AKTİF OTURUMLAR
+   GET /api/user/active-sessions
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının aktif oturumlarını listeler.
+
+
+────────────────────────────────────────────────────────
+34) CO-BROADCAST DAVETLERİ
+   GET /api/user/co-broadcast-invites
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının co-broadcast davetlerini listeler.
+
+
+────────────────────────────────────────────────────────
+35) YAYIN GEÇMİŞİ (Broadcast History)
+   GET /api/user/broadcast-history?page=1&limit=20&status=ended
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının tüm yayın kayıtlarını listeler.
+
+Query Params:
+  page: Sayfa numarası (varsayılan: 1)
+  limit: Sayfa başına kayıt (varsayılan: 20, max: 50)
+  status: Filtre → "live", "ended" veya boş (tümü)
+
+Response (200):
+{
+  "broadcasts": [
+    {
+      "id": "cuid_xxx",
+      "title": "Tarot Gecesi",
+      "description": "...",
+      "status": "ended",
+      "viewerCount": 45,
+      "likeCount": 120,
+      "roomId": "cuid_room",
+      "category": "fortune",
+      "thumbnailUrl": "https://...",
+      "broadcastImage": null,
+      "isImageMode": false,
+      "startedAt": "2024-06-15T20:00:00.000Z",
+      "endedAt": "2024-06-15T21:30:00.000Z",
+      "createdAt": "2024-06-15T20:00:00.000Z",
+      "commentCount": 250,
+      "giftCount": 30
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 8,
+    "totalPages": 1
+  }
+}
+
+
+────────────────────────────────────────────────────────
+36) AKTİVİTE / BİLDİRİM AKIŞI
+   GET /api/user/activity?page=1&limit=30&type=follow&unread=true
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kullanıcının bildirimlerini/aktivite akışını listeler.
+
+Query Params:
+  page: Sayfa numarası (varsayılan: 1)
+  limit: Sayfa başına kayıt (varsayılan: 30, max: 50)
+  type: Bildirim tipi filtresi (opsiyonel)
+  unread: "true" ise sadece okunmamışlar
+
+Response (200):
+{
+  "notifications": [
+    {
+      "id": "cuid_xxx",
+      "type": "follow",
+      "title": "Yeni Takipçi",
+      "message": "sizi takip etmeye başladı",
+      "data": "{\"followerId\": \"cuid_xxx\"}",
+      "postId": null,
+      "fromUserId": "cuid_xxx",
+      "fromUserName": "Ahmet",
+      "isRead": false,
+      "createdAt": "2024-06-15T10:30:00.000Z"
+    }
+  ],
+  "unreadCount": 5,
+  "pagination": {
+    "page": 1,
+    "limit": 30,
+    "total": 42,
+    "totalPages": 2
+  }
+}
+
+
+────────────────────────────────────────────────────────
+37) BİLDİRİMLERİ OKUNDU İŞARETLE
+   PATCH /api/user/activity
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Tek tek veya toplu bildirim okundu işaretleme.
+
+Body (tek tek):
+{
+  "notificationIds": ["cuid_1", "cuid_2"]
+}
+
+Body (hepsini okundu yap):
+{
+  "markAllRead": true
+}
+
+Response (200):
+{
+  "success": true,
+  "message": "Tüm bildirimler okundu olarak işaretlendi"
+}
+
+
+────────────────────────────────────────────────────────
+38) KULLANICININ POSTLARı
+   GET /api/users/{userId}/posts?page=1&limit=10
+   Auth: Opsiyonel (Bearer token)
+────────────────────────────────────────────────────────
+
+Belirtilen kullanıcının sosyal medya postlarını listeler.
+
+
+────────────────────────────────────────────────────────
+39) KULLANICININ PROFİL BİLGİSİ (Profil Sayfası)
+   GET /api/user/profile
+   Auth: Gerekli (Bearer token)
+────────────────────────────────────────────────────────
+
+Kendi profil sayfası için detaylı bilgi döner
+(settings, tercihler dahil).
+
+
+========================================================
+  TÜM ENDPOINT ÖZETİ
+========================================================
+
+Auth Endpointleri (public):
+  POST /api/auth/mobile-register
+  POST /api/auth/mobile-login
+  POST /api/auth/mobile-google
+  POST /api/auth/mobile-tiktok
+  POST /api/auth/mobile-refresh
+
+Profil:
+  GET  /api/me
+  PATCH /api/me
+  GET  /api/user/profile
+  GET  /api/user/theme
+  PATCH /api/user/theme
+
+Sosyal:
+  GET  /api/users/{userId}           (public profil)
+  GET  /api/users/lookup/{username}  (username ile profil)
+  GET  /api/users/search?q=...       (kullanıcı ara)
+  POST /api/user/{userId}/follow     (takip et/çık)
+  GET  /api/user/{userId}/follow-status
+  GET  /api/user/followers
+  GET  /api/user/following
+  GET  /api/user/blocked
+  GET  /api/user/likers
+  GET  /api/users/{userId}/posts
+
+İçerik:
+  GET  /api/user/fortunes
+  GET  /api/user/fortunes/{fortuneId}
+  GET  /api/user/stats
+  GET  /api/user/statistics
+  GET  /api/user/credits
+  GET  /api/user/achievements
+  GET  /api/user/{userId}/achievements
+  GET  /api/user/received-gifts
+  POST /api/user/watch-ad
+  POST /api/user/xp
+  GET  /api/user/active-sessions
+  GET  /api/user/co-broadcast-invites
+
+Yayın:
+  GET  /api/user/broadcast-history
+
+Aktivite:
+  GET   /api/user/activity
+  PATCH /api/user/activity
+
+DM (Direkt Mesaj):
+  GET  /api/messages/conversations
+  GET  /api/messages/{recipientId}
+  POST /api/messages/{recipientId}
+  POST /api/messages/request/{recipientId}
+  PATCH /api/messages/request/{recipientId}
+
+
 ========================================================
   ÖNEMLİ NOTLAR
 ========================================================

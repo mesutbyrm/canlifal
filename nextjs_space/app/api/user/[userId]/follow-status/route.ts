@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(request)
     const targetUserId = params.userId
 
     // Get follower count
@@ -18,11 +18,11 @@ export async function GET(
 
     // Check if current user is following
     let isFollowing = false
-    if (session?.user?.id) {
+    if (auth?.id) {
       const follow = await prisma.follow.findUnique({
         where: {
           followerId_followingId: {
-            followerId: session.user.id,
+            followerId: auth.id,
             followingId: targetUserId
           }
         }

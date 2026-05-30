@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
+export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const auth = await authenticateRequest(req);
+    if (!auth) {
       return NextResponse.json({ theme: 'mystical' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { email: auth.email },
       select: { theme: true },
     });
 
@@ -24,8 +24,8 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const auth = await authenticateRequest(req);
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     await prisma.user.update({
-      where: { email: session.user.email },
+      where: { email: auth.email },
       data: { theme },
     });
 

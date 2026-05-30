@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(request)
     const { userId } = params
 
     // Find user by ID or username
@@ -67,11 +67,11 @@ export async function GET(
 
     // Check if current user is following this user
     let isFollowing = false
-    if (session?.user?.id && session.user.id !== user.id) {
+    if (auth?.id && auth.id !== user.id) {
       const follow = await prisma.follow.findUnique({
         where: {
           followerId_followingId: {
-            followerId: session.user.id,
+            followerId: auth.id,
             followingId: user.id
           }
         }
@@ -94,7 +94,7 @@ export async function GET(
     }
 
     // Track profile view & send notification (only if viewer is logged in, not own profile)
-    const currentUserId = (session?.user as any)?.id
+    const currentUserId = auth?.id
     if (currentUserId && currentUserId !== user.id) {
       // Check if the viewer has hideProfileViews enabled
       const viewer = await prisma.user.findUnique({
@@ -158,7 +158,7 @@ export async function GET(
       postCount: user._count.socialPosts,
       totalLikes,
       isFollowing,
-      isOwnProfile: session?.user?.id === user.id
+      isOwnProfile: auth?.id === user.id
     })
   } catch (error) {
     console.error('Error fetching user profile:', error)

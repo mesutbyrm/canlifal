@@ -1,16 +1,15 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(req)
     
-    if (!session?.user?.id) {
+    if (!auth) {
       return NextResponse.json(
         { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
@@ -18,7 +17,7 @@ export async function GET() {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       select: { credits: true, jetonBalance: true, cfcBalance: true, withdrawalLimit: true, membership: true, membershipExpiresAt: true },
     })
 

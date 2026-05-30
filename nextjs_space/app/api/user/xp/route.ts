@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 const LEVEL_TITLES: Record<number, string> = {
@@ -20,9 +19,9 @@ const LEVEL_TITLES: Record<number, string> = {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const auth = await authenticateRequest(req)
+    if (!auth) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = auth.id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

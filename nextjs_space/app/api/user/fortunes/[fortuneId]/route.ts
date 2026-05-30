@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 export async function PATCH(req: NextRequest, { params }: { params: { fortuneId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { fortuneId:
 
     // Verify ownership
     const fortune = await prisma.fortune.findFirst({
-      where: { id: fortuneId, userId: session.user.id }
+      where: { id: fortuneId, userId: auth.id }
     })
 
     if (!fortune) {
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { fortuneId:
     } else if (action === 'pin') {
       // Check if user already has 3 pinned fortunes
       const pinnedCount = await prisma.fortune.count({
-        where: { userId: session.user.id, isPinned: true }
+        where: { userId: auth.id, isPinned: true }
       })
 
       if (pinnedCount >= 3 && !fortune.isPinned) {

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 
@@ -42,12 +41,12 @@ const ACHIEVEMENTS = [
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    const userId = auth.id
 
     // Get or create achievements in database
     for (const achievement of ACHIEVEMENTS) {

@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 // GET - Get all users blocked by the current user
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(req)
     
-    if (!session?.user?.id) {
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Get all chat bans where the current user is the banner
     const chatBans = await prisma.chatBan.findMany({
-      where: { bannedBy: session.user.id },
+      where: { bannedBy: auth.id },
       include: {
         user: { select: { id: true, name: true, username: true, image: true } },
         room: { select: { id: true, nameTr: true, nameEn: true, slug: true } }
@@ -26,7 +25,7 @@ export async function GET() {
 
     // Get all stream bans where the current user is the banner (via their stream)
     const userStreams = await prisma.videoStream.findMany({
-      where: { userId: session.user.id },
+      where: { userId: auth.id },
       select: { id: true, title: true }
     })
     const streamIds = userStreams.map((s: any) => s.id)
@@ -84,9 +83,9 @@ export async function GET() {
 // DELETE - Unblock a user
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await authenticateRequest(request)
     
-    if (!session?.user?.id) {
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -102,7 +101,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Ban not found' }, { status: 404 })
       }
 
-      if (ban.bannedBy !== session.user.id) {
+      if (ban.bannedBy !== auth.id) {
         return NextResponse.json({ error: 'You can only unblock users you blocked' }, { status: 403 })
       }
 
@@ -127,7 +126,7 @@ export async function DELETE(request: NextRequest) {
         select: { userId: true }
       })
 
-      if (!stream || stream.userId !== session.user.id) {
+      if (!stream || stream.userId !== auth.id) {
         return NextResponse.json({ error: 'You can only unblock users from your own streams' }, { status: 403 })
       }
 

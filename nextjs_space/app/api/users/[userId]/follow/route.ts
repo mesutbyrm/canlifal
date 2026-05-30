@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { logActivity } from '@/lib/activity-logger'
+export const dynamic = 'force-dynamic'
 
 // Follow or unfollow a user
 export async function POST(
@@ -11,13 +11,13 @@ export async function POST(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { userId } = params
-    const currentUserId = session.user.id
+    const currentUserId = auth.id
 
     // Find target user by ID or username
     const targetUser = await prisma.user.findFirst({
@@ -59,11 +59,11 @@ export async function POST(
         type: 'unfollow',
         message: 'seni takipten çıktı',
         fromUserId: currentUserId,
-        fromUserName: session.user.name || 'Birisi',
+        fromUserName: auth.name || 'Birisi',
         data: JSON.stringify({
           followerId: currentUserId,
-          followerName: session.user.name,
-          followerImage: session.user.image
+          followerName: auth.name,
+          followerImage: auth.image
         })
       }).catch((err: any) => console.error('Unfollow notification error:', err))
 
@@ -84,8 +84,8 @@ export async function POST(
       // Log follow activity
       logActivity({
         userId: currentUserId,
-        userName: session.user.name || 'Kullanıcı',
-        userAvatar: (session.user as any)?.image || null,
+        userName: auth.name || 'Kullanıcı',
+        userAvatar: auth?.image || null,
         activityType: 'follow',
         detail: `${targetUser.name || 'bir kullanıcıyı'} takip etti`,
         targetUrl: `/profil/${targetUser.username || targetUser.id}`,
@@ -97,11 +97,11 @@ export async function POST(
         type: 'follow',
         message: 'seni takip etmeye başladı',
         fromUserId: currentUserId,
-        fromUserName: session.user.name || 'Birisi',
+        fromUserName: auth.name || 'Birisi',
         data: JSON.stringify({
           followerId: currentUserId,
-          followerName: session.user.name,
-          followerImage: session.user.image
+          followerName: auth.name,
+          followerImage: auth.image
         })
       }).catch((err: any) => console.error('Follow notification error:', err))
 

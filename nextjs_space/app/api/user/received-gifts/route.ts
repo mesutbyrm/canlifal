@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Get received chat room gifts
     const chatGifts = await prisma.chatRoomGift.findMany({
-      where: { recipientId: session.user.id },
+      where: { recipientId: auth.id },
       include: {
         sender: { select: { id: true, name: true, username: true, image: true } },
         giftType: { select: { name: true, icon: true, price: true } },
@@ -26,11 +25,11 @@ export async function GET(req: NextRequest) {
 
     // Get totals
     const jetonTotal = await prisma.chatRoomGift.aggregate({
-      where: { recipientId: session.user.id, currencyType: 'jeton' },
+      where: { recipientId: auth.id, currencyType: 'jeton' },
       _sum: { totalPrice: true }
     })
     const cfcTotal = await prisma.chatRoomGift.aggregate({
-      where: { recipientId: session.user.id, currencyType: 'cfc' },
+      where: { recipientId: auth.id, currencyType: 'cfc' },
       _sum: { totalPrice: true }
     })
 

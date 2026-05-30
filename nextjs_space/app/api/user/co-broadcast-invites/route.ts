@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+export const dynamic = 'force-dynamic'
 
 // GET - Get pending co-broadcast invitations for current user
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Find invitations where user is invited
     const invitations = await prisma.streamCoBroadcaster.findMany({
       where: {
-        userId: session.user.id,
+        userId: auth.id,
         status: 'invited'
       },
       orderBy: { invitedAt: 'desc' }
