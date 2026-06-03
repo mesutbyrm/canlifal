@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -52,9 +53,11 @@ export async function POST(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const typingUserId = mobileUser?.id || session?.user?.id
     
-    if (!session?.user?.id) {
+    if (!typingUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -65,7 +68,7 @@ export async function POST(
       where: {
         roomId_userId: {
           roomId,
-          userId: session.user.id
+          userId: typingUserId
         }
       },
       update: {
@@ -75,7 +78,7 @@ export async function POST(
       },
       create: {
         roomId,
-        userId: session.user.id,
+        userId: typingUserId,
         isTyping: isTyping,
         lastTyping: isTyping ? new Date() : null
       }

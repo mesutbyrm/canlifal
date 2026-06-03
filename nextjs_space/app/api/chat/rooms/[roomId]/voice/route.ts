@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,9 @@ async function cleanupInactiveSessions(roomId: string) {
 // GET - Get active voice users list + update UID mapping
 export async function GET(request: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const currentUserId = mobileUser?.id || session?.user?.id
     const { roomId } = await params
 
     await cleanupInactiveSessions(roomId)
@@ -49,9 +52,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }))
 
     // Update caller's ping if they're in voice
-    if (session?.user?.id) {
+    if (currentUserId) {
       await prisma.voiceSession.updateMany({
-        where: { roomId, userId: session.user.id, isActive: true },
+        where: { roomId, userId: currentUserId, isActive: true },
         data: { lastPing: new Date() }
       })
     }
@@ -66,8 +69,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // POST - Join or leave voice
 export async function POST(request: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const mobileUserPost = await authenticateRequest(request)
+    const sessionPost = !mobileUserPost ? await getServerSession(authOptions) : null
+    const voiceUserId = mobileUserPost?.id || sessionPost?.user?.id
+    
+    if (!voiceUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Verify user has voice permission (check role)
     const userRole = await prisma.chatUserRole.findUnique({
-      where: { roomId_userId: { roomId, userId: session.user.id } }
+      where: { roomId_userId: { roomId, userId: voiceUserId } }
     })
 
     const room = await prisma.chatRoom.findUnique({
@@ -85,11 +91,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: voiceUserId },
       select: { role: true, name: true }
     })
 
-    const isOwner = room?.ownerId === session.user.id
+    const isOwner = room?.ownerId === voiceUserId
     const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(user?.role || '')
     const hasVoiceRole = userRole?.role && ['voice', 'op', 'sop', 'admin', 'founder', 'superadmin'].includes(userRole.role)
 
@@ -98,14 +104,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const userName = user?.name || 'Anonymous'
-    const numericUid = userIdToNumericUid(session.user.id)
+    const numericUid = userIdToNumericUid(voiceUserId)
 
     if (type === 'join') {
       await prisma.voiceSession.upsert({
-        where: { roomId_userId: { roomId, userId: session.user.id } },
+        where: { roomId_userId: { roomId, userId: voiceUserId } },
         create: {
           roomId,
-          userId: session.user.id,
+          userId: voiceUserId,
           userName,
           agoraUid: numericUid, // Legacy field, kept for DB compat
           isActive: true
@@ -122,7 +128,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: true, timestamp: Date.now() })
     } else if (type === 'leave') {
       await prisma.voiceSession.updateMany({
-        where: { roomId, userId: session.user.id },
+        where: { roomId, userId: voiceUserId },
         data: { isActive: false }
       })
 

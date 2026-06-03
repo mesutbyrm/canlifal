@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
@@ -12,12 +13,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
+  // Dual auth: web session OR mobile JWT
+  const mobileUser = await authenticateRequest(request)
+  const session = !mobileUser ? await getServerSession(authOptions) : null
+  const currentUserId = mobileUser?.id || session?.user?.id
   const { roomId } = await params
 
+  console.log(`[SSE] Stream opened roomId=${roomId} userId=${currentUserId || 'anonymous'} source=${mobileUser ? 'mobile' : 'web'}`)
+
   // Check if user is banned
-  if (session?.user?.id) {
-    const banned = await isUserBanned(roomId, session.user.id)
+  if (currentUserId) {
+    const banned = await isUserBanned(roomId, currentUserId)
     if (banned) {
       return new Response('Banned from this room', { status: 403 })
     }
@@ -103,7 +109,7 @@ export async function GET(
             const presences = await prisma.chatPresence.findMany({
               where: {
                 roomId,
-                lastSeen: { gte: new Date(Date.now() - 60000) }
+                lastSeen: { gte: new Date(Date.now() - 300000) } // 5 min, matches REST endpoint
               },
               include: {
                 user: { select: { id: true, name: true, role: true } }
@@ -150,7 +156,7 @@ export async function GET(
               roomId,
               isTyping: true,
               lastTyping: { gte: new Date(Date.now() - 3000) },
-              ...(session?.user?.id ? { userId: { not: session.user.id } } : {})
+              ...(currentUserId ? { userId: { not: currentUserId } } : {})
             },
             select: { userId: true, nickname: true }
           })

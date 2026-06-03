@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
 import { logActivity } from '@/lib/activity-logger'
@@ -81,6 +82,7 @@ export async function GET(
       return a.name.localeCompare(b.name)
     })
 
+    console.log(`[PRESENCE] GET roomId=${roomId} activeUsers=${activeUsers.length} users=[${activeUsers.map((u: any) => u.nickname || u.name).join(', ')}]`)
     return NextResponse.json({
       users: activeUsers,
       roomMuted: room?.isMuted || false
@@ -144,9 +146,14 @@ export async function POST(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    // Dual auth: web session OR mobile JWT
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+    const userName = mobileUser?.name || session?.user?.name || 'Kullanıcı'
+    const userImage = mobileUser?.image || (session?.user as any)?.image || null
     
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
@@ -155,6 +162,8 @@ export async function POST(
 
     const { roomId } = await params
     
+    console.log(`[PRESENCE] POST roomId=${roomId} userId=${userId} source=${mobileUser ? 'mobile' : 'web'}`)
+    
     // Handle sendBeacon delete (page unload)
     const isDelete = request.nextUrl.searchParams.get('_delete') === '1'
     const isLeave = request.nextUrl.searchParams.get('leave') === '1'
@@ -162,12 +171,12 @@ export async function POST(
       try {
         // Get nickname before clearing presence
         const presenceRecord = await prisma.chatPresence.findUnique({
-          where: { roomId_userId: { roomId, userId: session.user.id } },
+          where: { roomId_userId: { roomId, userId } },
           select: { nickname: true, seatIndex: true }
         })
         // Only reset seat if explicitly leaving (not just a heartbeat cleanup)
         await prisma.chatPresence.update({
-          where: { roomId_userId: { roomId, userId: session.user.id } },
+          where: { roomId_userId: { roomId, userId: userId } },
           data: { 
             lastSeen: new Date(0),
             ...(isLeave ? { seatIndex: -1 } : {})
@@ -175,7 +184,7 @@ export async function POST(
         })
         // Create leave message only on intentional leave
         if (isLeave) {
-          const displayName = presenceRecord?.nickname || session.user.name || 'Kullanıcı'
+          const displayName = presenceRecord?.nickname || userName || 'Kullanıcı'
           // Delete all previous leave messages, keep only the latest
           await prisma.chatMessage.deleteMany({
             where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
@@ -183,7 +192,7 @@ export async function POST(
           await prisma.chatMessage.create({
             data: {
               roomId,
-              userId: session.user.id,
+              userId: userId,
               content: `[SYSTEM_LEAVE]${displayName}`
             }
           })
@@ -206,14 +215,14 @@ export async function POST(
     }
 
     // Check if user is banned
-    const banned = await isUserBanned(roomId, session.user.id)
+    const banned = await isUserBanned(roomId, userId)
     if (banned) {
       return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
     }
 
     // Check if this is a NEW join (not a heartbeat)
     const existingPresence = await prisma.chatPresence.findUnique({
-      where: { roomId_userId: { roomId, userId: session.user.id } }
+      where: { roomId_userId: { roomId, userId: userId } }
     })
     
     const thirtySecondsAgo = new Date(Date.now() - 30000)
@@ -227,7 +236,7 @@ export async function POST(
           roomId,
           seatIndex,
           lastSeen: { gte: presenceTimeout },
-          userId: { not: session.user.id }
+          userId: { not: userId }
         }
       })
       if (seatTaken) {
@@ -241,7 +250,7 @@ export async function POST(
         where: {
           roomId_userId: {
             roomId,
-            userId: session.user.id
+            userId: userId
           }
         },
         update: { 
@@ -251,7 +260,7 @@ export async function POST(
         },
         create: {
           roomId,
-          userId: session.user.id,
+          userId: userId,
           ...(nickname ? { nickname } : {}),
           seatIndex: seatIndex !== undefined ? seatIndex : -1
         }
@@ -263,7 +272,7 @@ export async function POST(
           where: {
             roomId_userId: {
               roomId,
-              userId: session.user.id
+              userId: userId
             }
           },
           data: { 
@@ -280,18 +289,18 @@ export async function POST(
     // Log chat join activity (only on new joins)
     if (isNewJoin) {
       logActivity({
-        userId: session.user.id,
-        userName: nickname || session.user.name || 'Kullanıcı',
-        userAvatar: (session.user as any)?.image || null,
+        userId: userId,
+        userName: nickname || userName || 'Kullanıcı',
+        userAvatar: userImage || null,
         activityType: 'chat_join',
         detail: 'sohbete katıldı 💬',
         targetUrl: `/sohbet`,
       })
       // Trigger voice room join event announcement
-      const joinUserName = nickname || session.user.name || 'Bir kullanıcı'
+      const joinUserName = nickname || userName || 'Bir kullanıcı'
       prisma.chatRoom.findUnique({ where: { id: roomId }, select: { nameTr: true } }).then(r => {
         const roomName = r?.nameTr || 'Sesli Oda'
-        triggerEventAnnouncement('voice_room_join', { user: joinUserName, room: roomName }, session.user.id, joinUserName, (session.user as any)?.role || 'free').catch(() => {})
+        triggerEventAnnouncement('voice_room_join', { user: joinUserName, room: roomName }, userId, joinUserName, mobileUser?.role || 'free' || 'free').catch(() => {})
       }).catch(() => {})
     }
 
@@ -302,7 +311,7 @@ export async function POST(
       const recentJoinMessage = await prisma.chatMessage.findFirst({
         where: {
           roomId,
-          userId: session.user.id,
+          userId: userId,
           content: { startsWith: '[SYSTEM_' },
           createdAt: { gte: fiveMinutesAgo }
         },
@@ -311,8 +320,8 @@ export async function POST(
       
       // Only create join message if no recent announcement exists
       if (!recentJoinMessage) {
-        const displayName = nickname || session.user.name || 'Kullanıcı'
-        const specialRole = await getUserSpecialRole(roomId, session.user.id)
+        const displayName = nickname || userName || 'Kullanıcı'
+        const specialRole = await getUserSpecialRole(roomId, userId)
         
         // Delete ALL previous join messages in this room (keep only the latest one)
         await prisma.chatMessage.deleteMany({
@@ -334,7 +343,7 @@ export async function POST(
         await prisma.chatMessage.create({
           data: {
             roomId,
-            userId: session.user.id,
+            userId: userId,
             content: systemContent
           }
         })
@@ -424,8 +433,13 @@ export async function DELETE(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: web session OR mobile JWT
+    const mobileUserDel = await authenticateRequest(request)
+    const sessionDel = !mobileUserDel ? await getServerSession(authOptions) : null
+    const delUserId = mobileUserDel?.id || sessionDel?.user?.id
+    const delUserName = mobileUserDel?.name || sessionDel?.user?.name || 'Kullanıcı'
+    
+    if (!delUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -436,11 +450,11 @@ export async function DELETE(
 
     // Get the user's nickname before removing presence
     const presence = await prisma.chatPresence.findUnique({
-      where: { roomId_userId: { roomId, userId: session.user.id } },
+      where: { roomId_userId: { roomId, userId: delUserId } },
       select: { nickname: true }
     })
     
-    const displayName = presence?.nickname || session.user.name || 'Kullanıcı'
+    const displayName = presence?.nickname || delUserName || 'Kullanıcı'
 
     // Set lastSeen to past so user disappears from active list immediately
     // Only reset seat if this is an intentional leave
@@ -449,7 +463,7 @@ export async function DELETE(
         where: {
           roomId_userId: {
             roomId,
-            userId: session.user.id
+            userId: delUserId
           }
         },
         data: {
@@ -470,7 +484,7 @@ export async function DELETE(
       await prisma.chatMessage.create({
         data: {
           roomId,
-          userId: session.user.id,
+          userId: delUserId,
           content: `[SYSTEM_LEAVE]${displayName}`
         }
       })

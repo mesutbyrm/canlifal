@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 
@@ -12,8 +13,11 @@ export async function PATCH(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const seatUserId = mobileUser?.id || session?.user?.id
+    
+    if (!seatUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -25,13 +29,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Geçersiz koltuk numarası' }, { status: 400 })
     }
 
-    const isSelfAction = targetUserId === session.user.id || !targetUserId
-    const actualTargetId = targetUserId || session.user.id
+    const isSelfAction = targetUserId === seatUserId || !targetUserId
+    const actualTargetId = targetUserId || seatUserId
 
     // If moving someone else, check admin/owner permission
     if (!isSelfAction) {
       const currentUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: seatUserId },
         select: { role: true }
       })
       const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(currentUser?.role || '')
@@ -40,12 +44,12 @@ export async function PATCH(
         where: { id: roomId },
         select: { ownerId: true }
       })
-      const isOwner = room?.ownerId === session.user.id
+      const isOwner = room?.ownerId === seatUserId
 
       let myRoleLevel = 0
       if (!isGlobalAdmin && !isOwner) {
         const myRole = await prisma.chatUserRole.findUnique({
-          where: { roomId_userId: { roomId, userId: session.user.id } }
+          where: { roomId_userId: { roomId, userId: seatUserId } }
         })
         myRoleLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
       }

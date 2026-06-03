@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
@@ -12,15 +13,20 @@ export async function GET(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    // Dual auth: web session OR mobile JWT
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const currentUserId = mobileUser?.id || session?.user?.id
+    const currentUserName = mobileUser?.name || session?.user?.name
+    
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') // For polling new messages
     const limit = parseInt(searchParams.get('limit') || '100')
 
     // Check if user is banned (if logged in)
-    if (session?.user?.id) {
-      const banned = await isUserBanned(roomId, session.user.id)
+    if (currentUserId) {
+      const banned = await isUserBanned(roomId, currentUserId)
       if (banned) {
         return NextResponse.json({ error: 'You are banned from this room' }, { status: 403 })
       }
@@ -104,13 +110,13 @@ export async function GET(
     // Get user permissions if logged in
     let myPermissions = null
     let myNickname = null
-    if (session?.user?.id) {
-      myPermissions = await getUserPermissions(roomId, session.user.id)
+    if (currentUserId) {
+      myPermissions = await getUserPermissions(roomId, currentUserId)
       const presence = await prisma.chatPresence.findUnique({
-        where: { roomId_userId: { roomId, userId: session.user.id } },
+        where: { roomId_userId: { roomId, userId: currentUserId } },
         select: { nickname: true }
       })
-      myNickname = presence?.nickname || session.user.name
+      myNickname = presence?.nickname || currentUserName
     }
 
     return NextResponse.json({
@@ -134,12 +140,14 @@ export async function DELETE(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const mobileUserDel = await authenticateRequest(request)
+    const sessionDel = !mobileUserDel ? await getServerSession(authOptions) : null
+    const delUserId = mobileUserDel?.id || sessionDel?.user?.id
+    if (!delUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const { roomId } = await params
-    const permissions = await getUserPermissions(roomId, session.user.id)
+    const permissions = await getUserPermissions(roomId, delUserId)
     const canMod = permissions.isRoomOwner || permissions.isGlobalAdmin || 
       (permissions.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(permissions.role))
     if (!canMod) {
@@ -172,9 +180,11 @@ export async function POST(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const mobileUserPost = await authenticateRequest(request)
+    const sessionPost = !mobileUserPost ? await getServerSession(authOptions) : null
+    const postUserId = mobileUserPost?.id || sessionPost?.user?.id
     
-    if (!session?.user?.id) {
+    if (!postUserId) {
       return NextResponse.json(
         { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
@@ -185,7 +195,7 @@ export async function POST(
     const { content, nickname } = await request.json()
 
     // Check if user can speak
-    const speakCheck = await canUserSpeak(roomId, session.user.id)
+    const speakCheck = await canUserSpeak(roomId, postUserId)
     if (!speakCheck.canSpeak) {
       const errorMessages: Record<string, string> = {
         banned: 'You are banned from this room',
@@ -225,14 +235,14 @@ export async function POST(
     }
 
     // Get user's role for the response
-    const userRole = await getUserRole(roomId, session.user.id)
+    const userRole = await getUserRole(roomId, postUserId)
     const roleSymbol = userRole !== 'none' ? ROLE_SYMBOLS[userRole] || '' : ''
 
     // Create message
     const message = await prisma.chatMessage.create({
       data: {
         roomId,
-        userId: session.user.id,
+        userId: postUserId,
         content: content.trim()
       },
       include: {
@@ -252,13 +262,13 @@ export async function POST(
       where: {
         roomId_userId: {
           roomId,
-          userId: session.user.id
+          userId: postUserId
         }
       },
       update: { lastSeen: new Date() },
       create: {
         roomId,
-        userId: session.user.id
+        userId: postUserId
       }
     })
     

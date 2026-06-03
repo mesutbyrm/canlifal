@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
@@ -12,8 +13,11 @@ export const dynamic = 'force-dynamic'
 // POST - Send a gift in a chat room
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const giftUserId = mobileUser?.id || session?.user?.id
+    
+    if (!giftUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    if (recipientId === session.user.id) {
+    if (recipientId === giftUserId) {
       return NextResponse.json({ error: 'Kendinize hediye gönderemezsiniz' }, { status: 400 })
     }
 
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // Get sender
     const sender = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: giftUserId },
       select: { id: true, name: true, credits: true, jetonBalance: true, role: true }
     })
     if (!sender) {
@@ -78,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Check if recipient is seated (for room owner commission)
     let ownerCommissionAmount = 0
     const roomOwnerId = room.ownerId
-    if (roomOwnerId && roomOwnerId !== recipientId && roomOwnerId !== session.user.id) {
+    if (roomOwnerId && roomOwnerId !== recipientId && roomOwnerId !== giftUserId) {
       // Check if recipient is currently sitting in a seat
       const recipientPresence = await prisma.chatPresence.findUnique({
         where: { roomId_userId: { roomId, userId: recipientId } },
