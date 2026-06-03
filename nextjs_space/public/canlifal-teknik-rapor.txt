@@ -1,0 +1,790 @@
+╔══════════════════════════════════════════════════════════════╗
+║        CANLIFAL.COM - TEKNİK DURUM RAPORU                    ║
+║        Tarih: 3 Haziran 2026                                 ║
+║        Versiyon: Production                                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 1: VERİTABANI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VERİTABANI TÜRÜ: PostgreSQL
+ORM: Prisma 6.7.0
+Şema Dosyası: prisma/schema.prisma (2.925 satır)
+Toplam Tablo: 149
+Toplam Kayıt: ~6.827
+Bağlantı: DATABASE_URL (connection pooling aktif)
+
+AKTİF TABLOLAR VE KAYIT SAYILARI (İlk 30):
+┌───────────────────────────────────┬──────────┐
+│ Tablo                             │ Kayıt    │
+├───────────────────────────────────┼──────────┤
+│ live_activities                    │ 1.405    │
+│ notifications                     │ 1.468    │
+│ site_visits                       │ 501      │
+│ trend_videos                      │ 404      │
+│ user_achievements                 │ 220      │
+│ video_streams                     │ 205      │
+│ translations                      │ 172      │
+│ video_stream_viewers              │ 168      │
+│ video_stream_comments             │ 158      │
+│ celebrities                       │ 152      │
+│ celebrity_follows                 │ 155      │
+│ users                             │ 122      │
+│ user_hourly_activity              │ 119      │
+│ bot_profiles                      │ 100      │
+│ user_daily_activity               │ 99       │
+│ user_login_sessions               │ 86       │
+│ room_signals                      │ 85       │
+│ daily_quests                      │ 72       │
+│ broadcast_images                  │ 67       │
+│ platform_settings                 │ 64       │
+│ sos_games                         │ 59       │
+│ profile_views                     │ 56       │
+│ direct_messages                   │ 54       │
+│ follows                           │ 53       │
+│ stream_gifts                      │ 53       │
+│ stream_co_broadcasters            │ 48       │
+│ chat_presences                    │ 27       │
+│ chat_room_gifts                   │ 25       │
+│ profile_frames                    │ 25       │
+│ mini_games                        │ 21       │
+└───────────────────────────────────┴──────────┘
+
+VERİTABANINI EXPORT ETME:
+  1. Prisma şemasını indir:
+     https://canlifal.com/canlifal-teknik-rapor.txt (bu dosya)
+     veya prisma/schema.prisma dosyasını kopyala
+
+  2. SQL dump almak için pg_dump kullan:
+     pg_dump -h <host> -U <user> -d <dbname> > canlifal_backup.sql
+     (DATABASE_URL'den connection bilgilerini çıkar)
+
+  3. Sadece şema (veri hariç):
+     pg_dump --schema-only -h <host> -U <user> -d <dbname> > schema.sql
+
+  4. Prisma migration oluştur:
+     npx prisma migrate dev --name init
+     (prisma/migrations/ klasörüne SQL dosyası oluşturur)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 2: BACKEND API ENDPOINTLERİ (383 endpoint)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2.1 AUTH (11 endpoint)
+  POST /api/auth/[...nextauth]        → NextAuth (web session)
+  POST /api/auth/mobile-register       → Mobil kayıt (JWT)
+  POST /api/auth/mobile-login          → Mobil giriş (JWT)
+  POST /api/auth/mobile-google         → Mobil Google SSO
+  POST /api/auth/mobile-tiktok         → Mobil TikTok SSO
+  POST /api/auth/mobile-refresh        → Token yenileme
+  POST /api/auth/change-password       → Şifre değiştir
+  POST /api/auth/forgot-password       → Şifremi unuttum
+  POST /api/auth/reset-password        → Şifre sıfırla
+  POST /api/auth/verify-device         → Cihaz doğrulama
+  POST /api/auth/reclaim-device        → Cihaz geri alma
+  POST /api/signup                     → Web kayıt
+
+2.2 KULLANICI PROFİL (25 endpoint)
+  GET/PATCH /api/me                    → Kendi profil
+  GET  /api/user/profile               → Detaylı profil
+  GET  /api/user/stats                 → İstatistikler
+  GET  /api/user/statistics             → Detaylı istatistik
+  GET  /api/user/credits               → Kredi bilgisi
+  GET  /api/user/achievements          → Başarımlar
+  GET  /api/user/followers             → Takipçiler
+  GET  /api/user/following             → Takip edilenler
+  GET  /api/user/blocked               → Engelli kullanıcılar
+  GET  /api/user/received-gifts        → Alınan hediyeler
+  GET  /api/user/likers                → Beğenenler
+  GET/PATCH /api/user/theme            → Tema ayarı
+  POST /api/user/watch-ad              → Reklam izle
+  POST /api/user/xp                    → XP güncelle
+  GET  /api/user/active-sessions       → Aktif oturumlar
+  GET  /api/user/co-broadcast-invites  → Co-broadcast davetleri
+  GET  /api/user/broadcast-history     → Yayın geçmişi
+  GET/PATCH /api/user/activity         → Bildirim akışı
+  GET  /api/user/fortunes              → Fal geçmişi
+  GET  /api/user/fortunes/[id]         → Tek fal detayı
+  POST /api/user/[userId]/follow       → Takip et/çık
+  GET  /api/user/[userId]/follow-status → Takip durumu
+  GET  /api/user/[userId]/achievements → Kullanıcı başarımları
+
+2.3 KULLANICILAR (6 endpoint)
+  GET  /api/users/[userId]             → Profil görüntüle
+  GET  /api/users/lookup/[username]    → Username ile ara
+  GET  /api/users/search               → Kullanıcı ara
+  GET  /api/users/online               → Online kullanıcılar
+  POST /api/users/[userId]/follow      → Takip et
+  GET  /api/users/[userId]/posts       → Kullanıcı postları
+
+2.4 MESAJLAŞMA (3 endpoint)
+  GET  /api/messages                   → Sohbet listesi
+  GET/POST /api/messages/[userId]      → Mesaj gönder/al
+  POST /api/messages/request           → Mesaj isteği
+
+2.5 FAL ENDPOINTLERİ (25 endpoint)
+  POST /api/fortunes/tarot             → Tarot falı
+  POST /api/fortunes/tarot-fali        → Tarot falı (TR)
+  POST /api/fortunes/coffee            → Kahve falı
+  POST /api/fortunes/kahve-fali        → Kahve falı (TR)
+  POST /api/fortunes/dream             → Rüya yorumu
+  POST /api/fortunes/ruya-yorumu       → Rüya yorumu (TR)
+  POST /api/fortunes/horoscope         → Burç yorumu
+  POST /api/fortunes/burc-yorumu       → Burç yorumu (TR)
+  POST /api/fortunes/palm              → El falı
+  POST /api/fortunes/el-fali           → El falı (TR)
+  POST /api/fortunes/love              → Aşk uyumu
+  POST /api/fortunes/ask-uyumu         → Aşk uyumu (TR)
+  POST /api/fortunes/numerology        → Numeroloji
+  POST /api/fortunes/numeroloji        → Numeroloji (TR)
+  POST /api/fortunes/angel             → Melek kartları
+  POST /api/fortunes/melek-kartlari    → Melek kartları (TR)
+  POST /api/fortunes/aura              → Aura analizi
+  POST /api/fortunes/aura-analizi      → Aura analizi (TR)
+  POST /api/fortunes/birthchart        → Doğum haritası
+  POST /api/fortunes/dogum-haritasi    → Doğum haritası (TR)
+  POST /api/fortunes/yesno             → Evet/Hayır
+  POST /api/fortunes/evet-hayir        → Evet/Hayır (TR)
+  POST /api/fortunes/katina            → Katina falı
+  POST /api/fortunes/istihare          → İstihare
+  POST /api/fortunes/kursundokme       → Kurşun dökme
+  POST /api/fortunes/coffee-image      → Kahve fotoğraf analiz
+  POST /api/fortunes/kahve-fali-image  → Kahve foto analiz (TR)
+
+2.6 CANLI YAYIN (20 endpoint)
+  GET/POST /api/video-streams          → Yayın listele/oluştur
+  GET/PATCH /api/video-streams/[id]    → Yayın detay/güncelle
+  POST /api/video-streams/[id]/join    → Yayına katıl
+  GET  /api/video-streams/[id]/viewers → İzleyiciler
+  GET/POST /api/video-streams/[id]/comments → Yorumlar
+  POST /api/video-streams/[id]/like    → Beğen
+  GET/POST /api/video-streams/[id]/gifts → Hediye gönder
+  POST /api/video-streams/[id]/ban     → Kullanıcı yasakla
+  POST /api/video-streams/[id]/mute    → Sessiz yap
+  POST /api/video-streams/[id]/co-broadcast → Co-broadcast
+  GET  /api/video-streams/[id]/moderators → Moderatörler
+  POST /api/video-streams/[id]/auto-close → Otomatik kapat
+  POST /api/video-streams/[id]/live-started → Yayın başladı
+  GET/POST /api/video-streams/[id]/fortune-requests → Fal isteği
+  GET  /api/video-streams/[id]/fortune-requests/my-status
+  POST /api/video-streams/signal       → WebRTC sinyal
+  GET  /api/video-streams/gifts        → Hediye tipleri
+  GET/POST /api/video-streams/pk       → PK düelloları
+  GET  /api/video-streams/pk/list      → PK listesi
+  POST /api/video-streams/pk/score     → PK skor
+
+2.7 SOHBET ODALARI (15 endpoint)
+  GET  /api/chat/rooms                 → Oda listesi
+  POST /api/chat/rooms/create          → Oda oluştur
+  GET/POST /api/chat/rooms/[id]/messages → Mesajlar
+  POST /api/chat/rooms/[id]/presence   → Varlık bildirimi
+  POST /api/chat/rooms/[id]/gifts      → Hediye gönder
+  POST /api/chat/rooms/[id]/moderation → Moderasyon
+  POST /api/chat/rooms/[id]/typing     → Yazıyor...
+  POST /api/chat/rooms/[id]/voice      → Sesli sohbet
+  POST /api/chat/rooms/[id]/seats      → Koltuk yönetimi
+  GET/POST /api/chat/rooms/[id]/stream → Yayın
+  POST /api/chat/rooms/[id]/settings   → Oda ayarları
+  POST /api/chat/rooms/[id]/dj         → DJ modu
+  POST /api/chat/rooms/[id]/music      → Müzik
+  POST /api/chat/rooms/[id]/song-request → Şarkı isteği
+  POST /api/chat/rooms/[id]/transfer-ownership → Sahiplik devret
+  POST /api/chat/cleanup               → Temizlik
+
+2.8 OYUNLAR (18 endpoint)
+  GET  /api/games                      → Oyun listesi
+  POST /api/games/play                 → Oyun oyna
+  GET  /api/games/profile              → Oyun profili
+  GET  /api/games/leaderboard          → Skor tablosu
+  GET  /api/games/quests               → Görevler
+  POST /api/games/daily-reward         → Günlük ödül
+  POST /api/games/daily-spin           → Çark çevir
+  POST /api/games/lamba-cini           → Lamba Cini
+  GET  /api/games/grid-settings        → Grid ayarları
+  GET  /api/games/lobby                → Lobi
+  POST /api/games/room                 → Oda oluştur
+  GET  /api/games/room/[id]            → Oda detay
+  GET  /api/games/room/[id]/chat       → Oda sohbeti
+  GET  /api/games/room/[id]/viewers    → İzleyiciler
+  POST /api/games/room/[id]/replace-ai → AI oyuncu
+  POST /api/games/sos                  → SOS oyunu
+  GET  /api/games/sos/[id]             → SOS detay
+  GET  /api/games/sos/[id]/chat        → SOS sohbet
+  GET  /api/games/sos/[id]/viewers     → SOS izleyiciler
+
+2.9 SOSYAL (5 endpoint)
+  GET/POST /api/social/posts           → Post listele/oluştur
+  GET/PATCH/DELETE /api/social/posts/[id] → Post yönet
+  GET/POST /api/social/posts/[id]/comments → Yorumlar
+  POST /api/social/posts/[id]/likes    → Beğeni
+  POST /api/social/posts/[id]/view     → Görüntüleme
+
+2.10 ÜNLÜLER (12 endpoint)
+  GET  /api/celebrities                → Ünlü listesi
+  GET  /api/celebrities/[slug]         → Ünlü detay
+  POST /api/celebrities/[slug]/follow  → Takip et
+  GET  /api/celebrities/[slug]/posts   → Postlar
+  POST /api/celebrities/[slug]/posts/like → Beğen
+  POST /api/celebrities/[slug]/posts/comments → Yorum
+  GET  /api/celebrities/[slug]/fan-club → Fan kulübü
+  POST /api/celebrities/[slug]/fan-club/join → Katıl
+  GET  /api/celebrities/[slug]/fan-club/members → Üyeler
+  GET  /api/celebrities/[slug]/fan-club/posts → FC postları
+  POST /api/celebrities/[slug]/fan-club/posts/like → FC beğen
+  GET  /api/celebrities/[slug]/fan-club/polls → Anketler
+  GET  /api/celebrities/posts/latest   → Son postlar
+
+2.11 BLOG (8 endpoint)
+  GET  /api/blog                       → Blog listesi
+  GET  /api/blog/categories            → Kategoriler
+  GET/POST /api/blog/comments          → Yorumlar
+  POST /api/blog/like                  → Beğen
+  POST /api/blog/favorite              → Favori
+  GET  /api/blog/interactions          → Etkileşimler
+  GET  /api/blog/related               → İlgili yazılar
+  GET  /api/blog/zodiac                → Burç blogları
+
+2.12 RÜYA TABIRI (12 endpoint)
+  GET  /api/dreams                     → Rüya listesi
+  GET  /api/dreams/[slug]              → Rüya detay
+  POST /api/dreams/interpret           → Rüya yorumu
+  POST /api/dreams/generate            → AI rüya üret
+  GET  /api/dreams/trends              → Trend rüyalar
+  GET  /api/dreams/recommendations     → Öneriler
+  GET  /api/dreams/favorites           → Favoriler
+  POST /api/dreams/[slug]/comments     → Yorum
+  POST /api/dreams/[slug]/favorite     → Favori
+  POST /api/dreams/[slug]/view         → Görüntüleme
+  GET  /api/dream-symbols              → Rüya sembolleri
+  GET  /api/dream-symbols/[slug]       → Sembol detay
+  GET  /api/dream-diary                → Rüya günlüğü
+  GET  /api/dream-stats                → Rüya istatistik
+  GET  /api/dream-contest              → Yarışma
+  POST /api/dream-contest/[id]/entries → Katılım
+  POST /api/dream-contest/[id]/vote    → Oy ver
+  GET  /api/weekly-dream-report        → Haftalık rapor
+
+2.13 ÖDEME / KREDİ (12 endpoint)
+  GET  /api/credit-packages            → Kredi paketleri
+  GET  /api/payment-methods            → Ödeme yöntemleri
+  POST /api/payment/requests           → Ödeme talebi
+  GET  /api/payment/config             → Ödeme ayarları
+  POST /api/payments/notify            → Ödeme bildirimi
+  GET  /api/payment-settings           → Ödeme ayarları
+  GET/POST /api/jeton                  → Jeton sistemi
+  POST /api/memberships/purchase       → Üyelik satın al
+  GET  /api/memberships                → Üyelik planları
+  GET  /api/membership-badges          → Üyelik rozetleri
+  POST /api/withdrawals                → Para çekme
+  POST /api/gifts/send                 → Hediye gönder
+  GET  /api/gifts/types                → Hediye tipleri
+  GET  /api/gifts/recent-big           → Son büyük hediyeler
+  GET  /api/gifts/check-reciprocal     → Karşılıklı hediye
+
+2.14 CANLI FAL (FORTUNE TELLER) (12 endpoint)
+  GET  /api/fortune-tellers            → Falcı listesi
+  GET  /api/fortune-tellers/[id]       → Falcı detay
+  POST /api/fortune-tellers/[id]/session → Oturum başlat
+  GET  /api/fortune-tellers/[id]/reviews → Değerlendirmeler
+  POST /api/fortune-tellers/apply      → Falcı başvurusu
+  GET  /api/fortune-tellers/sessions   → Oturumlar
+  PATCH /api/fortune-tellers/sessions/[id] → Oturum güncelle
+  GET  /api/fortune-tellers/my-profile → Kendi profil
+  POST /api/fortune-tellers/toggle-online → Online durumu
+  GET  /api/fortune-tellers/awards     → Ödüller
+  GET  /api/fortune-tellers/gifts      → Hediyeler
+  GET  /api/fortune-request-types      → İstek tipleri
+
+2.15 ADMİN (98 endpoint)
+  [Kullanıcı, blog, rüya, oyun, sohbet, finans, ajans,
+   yayın, ünlü, hediye, ayarlar, moderasyon, istatistik,
+   bildirim, popüp, SEO, video, ticket, profil çerçeve,
+   badge, membership, ödeme, CFC, broadcast image, trend
+   video, TikTok, dreams bulk import, awards, bots vb.]
+
+2.16 DİĞER
+  GET  /api/activities                 → Aktivite akışı
+  GET  /api/announcements              → Duyurular
+  GET  /api/homepage-buttons           → Ana sayfa butonları
+  GET  /api/homepage-fortune-cards     → Fal kartları
+  GET  /api/homepage-ticker            → Ticker mesajları
+  GET  /api/horoscope/daily            → Günlük burç
+  GET  /api/leaderboard                → Genel sıralama
+  GET  /api/leaderboards               → Liderlik tabloları
+  GET  /api/notifications              → Bildirimler
+  GET  /api/online-fal                 → Online fal bölümü
+  GET  /api/popups                     → Popüplar
+  GET  /api/presence                   → Online varlık
+  GET  /api/profile-frames             → Profil çerçeveleri
+  GET  /api/public-stats               → Genel istatistikler
+  GET  /api/referral                   → Referans sistemi
+  GET  /api/search                     → Genel arama
+  GET  /api/search/advanced            → Gelişmiş arama
+  GET  /api/stories                    → Hikayeler
+  GET  /api/trend-videos               → Trend videolar
+  GET  /api/trends                     → Trendler
+  GET  /api/tiktok-videos              → TikTok videoları
+  GET  /api/translations               → Çeviriler
+  POST /api/upload/presigned           → Dosya upload URL
+  POST /api/upload/get-url             → Upload URL al
+  POST /api/agora/token                → Agora token
+  POST /api/trtc/usersig               → TRTC imza
+  GET  /api/football                   → Canlı maçlar
+  GET  /api/daily-login                → Günlük giriş
+  GET  /api/daily-missions             → Günlük görevler
+  GET  /api/tournaments                → Turnuvalar
+  POST /api/anonymous                  → Anonim fal
+  POST /api/anonymous/watch-ad         → Anonim reklam
+  POST /api/contact                    → İletişim formu
+  POST /api/share-card                 → Paylaşım kartı
+  GET  /api/download-docs              → Doküman indir
+  ...
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 3: DEPOLAMA (STORAGE) SİSTEMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TÜR: AWS S3 (Abacus AI tarafından yönetilen)
+SDK: @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+
+Kullanım Alanları:
+  • Kullanıcı avatarları
+  • Sosyal medya post görselleri
+  • Kahve falı fotoğrafları
+  • Yayın thumbnail'ları
+  • Broadcast görselleri
+  • Chat medya dosyaları
+  • Blog görselleri
+  • El falı fotoğrafları
+
+Yükleme Mekanizması:
+  1. Client → /api/upload/presigned (presigned URL al)
+  2. Client → S3'e doğrudan upload
+  3. S3 URL'si veritabanına kaydedilir
+
+Statik Assets: public/ klasörü (65 MB)
+  • Fal görselleri, ünlü fotoğrafları, ikonlar
+  • Firebase config dosyaları
+  • API dokümantasyonu
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 4: KULLANILAN SERVİSLER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.1 TEMEL SERVİSLER
+┌────────────────────┬────────────────────┬─────────────────┐
+│ Servis             │ Kullanım           │ Bağımlılık      │
+├────────────────────┼────────────────────┼─────────────────┤
+│ PostgreSQL         │ Ana veritabanı     │ Standart        │
+│ Prisma ORM         │ DB erişimi         │ Standart        │
+│ NextAuth           │ Web authentication │ Standart        │
+│ JWT (jsonwebtoken) │ Mobil auth         │ Standart        │
+│ bcryptjs           │ Şifre hashleme     │ Standart        │
+│ AWS S3             │ Dosya depolama     │ Abacus-managed  │
+│ Agora              │ Video/ses yayın    │ Standart        │
+│ TRTC               │ WebRTC alternatif  │ Standart        │
+│ OneSignal          │ Push bildirimler   │ Standart        │
+│ Google Auth        │ Google SSO         │ Standart        │
+│ TikTok Auth        │ TikTok SSO         │ Standart        │
+│ TMDB API           │ Film/dizi verileri │ Standart        │
+│ YouTube API        │ Video arama        │ Standart        │
+│ Football Data API  │ Canlı maç skorları │ Standart        │
+└────────────────────┴────────────────────┴─────────────────┘
+
+4.2 ABACUS.AI BAĞIMLI SERVİSLER
+┌────────────────────┬────────────────────┬──────────────────────┐
+│ Servis             │ Kullanım           │ Alternatif           │
+├────────────────────┼────────────────────┼──────────────────────┤
+│ Abacus LLM API     │ Fal üretimi, AI    │ OpenAI, Anthropic,   │
+│                    │ blog, rüya yorumu  │ Google Gemini vb.    │
+│ Abacus Email API   │ E-posta bildirimi  │ SendGrid, Resend,    │
+│                    │                    │ Mailgun, SES         │
+│ Abacus Hosting     │ App deployment     │ Vercel, AWS, GCP,    │
+│                    │                    │ DigitalOcean         │
+│ Abacus S3 (managed)│ Dosya depolama     │ AWS S3 direkt,       │
+│                    │                    │ Cloudflare R2, GCS   │
+│ Abacus PostgreSQL  │ Yönetilen DB       │ Supabase, Neon,      │
+│                    │                    │ AWS RDS, PlanetScale │
+└────────────────────┴────────────────────┴──────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 5: KOD ANALİZİ VE PROJE İSTATİSTİKLERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Toplam Dosya: 771 (.ts/.tsx)
+Toplam Satır: 113.004
+Komponentler: 146 adet
+Sayfalar: 161 adet
+API Route: 383 adet
+Lib/Utility: 41 dosya
+Production Dep: 83 paket
+Dev Dep: 22 paket
+
+KOD DAĞILIMI:
+  app/api/          → 383 endpoint (backend)
+  app/[lang]/       → 161 sayfa (frontend)
+  components/       → 146 komponent (UI)
+  lib/              → 41 utility (ortak kod)
+  prisma/           → 1 schema (2.925 satır)
+  public/           → 272 dosya (65 MB)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 6: ABACUS.AI BAĞIMLILIK ANALİZİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1 ABACUS.AI'YE ÖZEL BİLEŞENLER:
+
+  1. LLM API (lib/llm.ts, lib/fortune-handler.ts)
+     → 17 dosyada kullanılıyor
+     → Fal üretimi, blog yazımı, rüya yorumu
+     → Abacus RouteLLM API formatı (OpenAI uyumlu)
+
+  2. E-posta Servisi (lib/email-service.ts, lib/credit-checker.ts)
+     → 7 dosyada kullanılıyor
+     → sendNotificationEmail fonksiyonu
+
+  3. Hosting Altyapısı
+     → next.config.js (standalone build)
+     → .env dosyası (NEXTAUTH_URL otomatik set edilir)
+     → deployment komutları
+
+  4. S3 Storage (lib/s3.ts, lib/aws-config.ts)
+     → AWS_BUCKET_NAME Abacus tarafından yönetilir
+     → Standart AWS S3 SDK kullanıyor
+
+6.2 STANDART TEKNOLOJİ (Taşınabilir):
+
+  • Next.js 14 (React 18) → Framework
+  • Prisma 6.7 → ORM
+  • PostgreSQL → Veritabanı
+  • NextAuth → Authentication
+  • JWT → Mobil auth
+  • Tailwind CSS → Styling
+  • Framer Motion → Animasyon
+  • Radix UI → UI komponentleri
+  • TanStack Query → Data fetching
+  • Agora/TRTC → Video/ses
+  • OneSignal → Push notification
+  • bcryptjs → Şifreleme
+  • Zod/Yup → Validation
+  • Chart.js/Recharts → Grafikler
+  • SWR → Caching
+  • Zustand/Jotai → State management
+
+6.3 TAŞINAB İLİRLİK ORANI:
+
+  ┌─────────────────────────┬────────┬────────────────────┐
+  │ Kategori                │ Oran   │ Açıklama           │
+  ├─────────────────────────┼────────┼────────────────────┤
+  │ Frontend (React/Next)   │ %100   │ Tamamen taşınabilir│
+  │ Backend API Routes      │ %95    │ LLM+email değişir  │
+  │ Veritabanı (Prisma)     │ %100   │ Tamamen taşınabilir│
+  │ Authentication          │ %100   │ NextAuth+JWT       │
+  │ Storage                 │ %95    │ S3 SDK standart    │
+  │ Lib/Utility             │ %90    │ 4/41 Abacus bağımlı│
+  │ Push Notifications      │ %100   │ OneSignal standart │
+  │ Video/Ses               │ %100   │ Agora/TRTC standart│
+  ├─────────────────────────┼────────┼────────────────────┤
+  │ TOPLAM                  │ ~%95   │ Büyük çoğunluk OK  │
+  └─────────────────────────┴────────┴────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 7: VPS'E TAŞIMA REHBERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7.1 DEĞİŞTİRİLMESİ GEREKEN PARÇALAR:
+
+  1. LLM API (4 dosya)
+     lib/llm.ts → OpenAI SDK'ya geçiş
+     lib/fortune-handler.ts → API key değişikliği
+     Değişiklik: ABACUSAI_API_KEY → OPENAI_API_KEY
+     Zorluk: Düşük (API formatı zaten OpenAI uyumlu)
+
+  2. E-posta Servisi (2 dosya)
+     lib/email-service.ts → SendGrid/Resend'e geçiş
+     lib/credit-checker.ts → sendNotificationEmail değişimi
+     Zorluk: Düşük
+
+  3. S3 Storage (2 dosya)
+     lib/aws-config.ts → Kendi AWS credentials
+     lib/s3.ts → Bucket değişikliği
+     Zorluk: Çok düşük (zaten standart AWS SDK)
+
+  4. Hosting
+     Zorluk: Orta
+
+7.2 VPS TAŞIMA ADIMLARI:
+
+  Adım 1: VPS Hazırlığı
+    • Ubuntu 22.04+ VPS (min 2 CPU, 4GB RAM)
+    • Node.js 18+ kurulumu
+    • PostgreSQL 15+ kurulumu
+    • Nginx reverse proxy kurulumu
+    • SSL sertifikası (Let's Encrypt)
+
+  Adım 2: Kaynak Kodu Taşıma
+    • nextjs_space/ klasörünü VPS'e kopyala
+    • yarn install
+    • .env dosyasını yapılandır
+    • prisma/schema.prisma → output path'i düzelt
+    • yarn prisma generate
+    • yarn prisma db push
+
+  Adım 3: Veritabanı Taşıma
+    • pg_dump ile mevcut DB'yi export et
+    • VPS PostgreSQL'e import et
+    • DATABASE_URL güncelle
+
+  Adım 4: Bağımlılık Değişiklikleri
+    • lib/llm.ts: base_url → api.openai.com
+    • lib/email-service.ts: sendNotificationEmail → SendGrid
+    • lib/aws-config.ts: Kendi S3 bucket credentials
+    • .env: Tüm API key'leri güncelle
+
+  Adım 5: Build & Deploy
+    • yarn build (standalone output)
+    • PM2 ile process management
+    • Nginx config (port 3000 → 80/443)
+
+  Adım 6: DNS
+    • canlifal.com A kaydını VPS IP'ye yönlendir
+    • SSL sertifikasını yapılandır
+
+7.3 TAHMİNİ GEÇİŞ MALİYETİ:
+
+  ┌──────────────────────────┬─────────────────────┐
+  │ Kalem                    │ Tahmini Maliyet     │
+  ├──────────────────────────┼─────────────────────┤
+  │ VPS (2CPU/4GB/80GB SSD)  │ $10-30/ay           │
+  │ PostgreSQL (managed)     │ $15-50/ay           │
+  │  veya VPS'te kendi DB    │ $0 (VPS dahil)      │
+  │ S3 Storage               │ $5-20/ay            │
+  │ OpenAI API (LLM)         │ $20-100/ay          │
+  │ SendGrid (email)         │ $0-20/ay            │
+  │ Domain + SSL             │ $0 (mevcut)         │
+  │ Geliştirici iş gücü      │ 3-5 gün             │
+  ├──────────────────────────┼─────────────────────┤
+  │ TOPLAM (aylık)           │ $50-220/ay          │
+  │ Tek seferlik geçiş       │ 3-5 iş günü         │
+  └──────────────────────────┴─────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 8: VENDOR LOCK-IN RİSK ANALİZİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RİSK SEVİYESİ: DÜŞÜK
+
+Nedenleri:
+  ✅ Framework: Next.js → Standart, her yerde çalışır
+  ✅ Veritabanı: PostgreSQL + Prisma → Tamamen taşınabilir
+  ✅ Auth: NextAuth + JWT → Standart kütüphaneler
+  ✅ UI: React + Tailwind → Platform bağımsız
+  ✅ Storage: AWS S3 SDK → Standart
+  ✅ Video: Agora/TRTC → Standart SDK'lar
+  ✅ Push: OneSignal → Standart
+
+  ⚠️ LLM API: Abacus RouteLLM → OpenAI uyumlu format,
+     geçiş kolay (sadece base_url ve API key değişir)
+
+  ⚠️ E-posta: Abacus Notification API → 3. parti servis
+     ile değiştirilmeli (7 dosyada küçük değişiklik)
+
+  ⚠️ Hosting: Abacus deployment pipeline → Standart
+     Next.js standalone build, her yere deploy edilebilir
+
+Sonuç: Kodun %95'i hiçbir değişiklik yapmadan
+herhangi bir platformda çalışabilir. Kalan %5
+(LLM + email) birkaç saatlik çalışmayla değiştirilebilir.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 9: ÖLÇEKLENEBİLİRLİK VE DARBOĞAZ ANALİZİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9.1 → 1.000 AKTİF KULLANICI
+  Durum: ✅ Mevcut altyapı yeterli
+  DB: ~25 bağlantı yeterli
+  CPU: Tek instance yeterli
+  Darboğaz: Yok
+  Tahmini maliyet: Mevcut plan
+
+9.2 → 10.000 AKTİF KULLANICI
+  Durum: ⚠️ Optimizasyon gerekli
+  Darboğazlar:
+    • DB bağlantı havuzu (max 25) → Connection pooler ekle
+      (PgBouncer veya Prisma Accelerate)
+    • Canlı yayın WebRTC sinyalleri → Agora yükü artar
+    • Bildirim tablosu (1.468 kayıt → ~50.000+) → Index'le
+    • Concurrent API istekleri → Rate limiting güçlendir
+    • S3 bandwidth → CDN (CloudFront) ekle
+  Çözümler:
+    • Redis cache katmanı ekle
+    • DB read replica ekle
+    • CDN ile statik asset'leri dağıt
+    • Horizontal scaling (load balancer)
+  Tahmini maliyet: $100-300/ay
+
+9.3 → 100.000 AKTİF KULLANICI
+  Durum: 🔴 Ciddi mimari değişiklik gerekli
+  Darboğazlar:
+    • Tek PostgreSQL instance yetersiz
+    • WebRTC sinyal tablosu patlayabilir
+    • live_activities tablosu → 500+ temizleme yetmez
+    • Notifications → milyonlarca kayıt
+    • Video stream viewer tracking → çok yoğun write
+    • OneSignal bulk push → segment bazlı olmalı
+    • LLM API rate limits → queue sistemi gerekli
+  Çözümler:
+    • PostgreSQL → Read replica + sharding
+    • Redis/Memcached → Session + cache
+    • Bull/BullMQ → Job queue (LLM, email, push)
+    • Kubernetes → Auto-scaling
+    • Elasticsearch → Arama
+    • WebSocket server ayrıştır (Socket.io/Ably)
+    • Agora → Enterprise plan
+  Tahmini maliyet: $500-2000+/ay
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 10: MİMARİ DİYAGRAM (Metin Tabanlı)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                    ┌─────────────┐
+                    │   Client    │
+                    │ (Web/Mobil) │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │   Nginx /   │
+                    │   CDN       │
+                    └──────┬──────┘
+                           │
+              ┌────────────▼────────────┐
+              │   Next.js App Server    │
+              │   (Node.js Runtime)     │
+              │                        │
+              │  ┌──────────────────┐   │
+              │  │ API Routes (383) │   │
+              │  │ Pages (161)      │   │
+              │  │ Components (146) │   │
+              │  └──────────────────┘   │
+              └───┬──────┬──────┬──────┘
+                  │      │      │
+    ┌─────────────▼┐ ┌───▼───┐ ┌▼──────────────┐
+    │ PostgreSQL   │ │AWS S3 │ │ External APIs │
+    │ (149 tablo)  │ │Storage│ │               │
+    │ via Prisma   │ │       │ │ • Abacus LLM  │
+    └──────────────┘ └───────┘ │ • OneSignal   │
+                               │ • Agora/TRTC  │
+                               │ • Google Auth │
+                               │ • TikTok Auth │
+                               │ • TMDB        │
+                               │ • YouTube     │
+                               │ • Football    │
+                               └───────────────┘
+
+  AUTH AKIŞI:
+  ┌──────┐    JWT Token    ┌───────────┐
+  │Mobil │ ◄────────────► │mobile-auth│
+  │ App  │                │ (lib/)    │
+  └──────┘                └───────────┘
+
+  ┌──────┐  Session Cookie ┌──────────┐
+  │ Web  │ ◄─────────────► │ NextAuth │
+  │ App  │                 │          │
+  └──────┘                 └──────────┘
+
+  Her iki yol da → authenticateRequest() → AuthenticatedUser
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 11: EXPORT VE GITHUB BAĞLANTISI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11.1 KAYNAK KODU EXPORT:
+  Tüm kaynak kodlar nextjs_space/ klasöründe mevcuttur.
+  Dosyalar standart Next.js proje yapısındadır.
+  İndirmek için: zip -r canlifal-source.zip nextjs_space/
+  (node_modules hariç)
+
+11.2 GITHUB BAĞLANTISI:
+  Evet, GitHub'a bağlanabilirsiniz.
+  Mevcut repo: mesutbyrm/Cursor-Flutter- (Flutter app)
+  Web backend için ayrı bir repo oluşturabilirsiniz.
+  Git remote eklenip push yapılabilir.
+
+11.3 VERİTABANI ŞEMASI EXPORT:
+  Prisma schema dosyası: prisma/schema.prisma
+  SQL export: pg_dump komutu ile
+  Migration: npx prisma migrate dev
+
+11.4 OPENAPI/SWAGGER:
+  Şu anda otomatik OpenAPI dokümanı yok.
+  Manuel API dokümantasyonu:
+  https://canlifal.com/canlifal-flutter-api-docs.txt
+  OpenAPI üretimi için next-swagger-doc paketi eklenebilir.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 12: MALİYET TABLOSU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Abacus.AI platformu cömert bir ücretsiz katman sunar.
+Detaylı fiyatlandırma için:
+https://abacus.ai/help/chatllm-ai-super-assistant/pricing-apps
+
+Trafik arttığında potansiyel ek maliyet kalemleri:
+  • Hosting (compute/bandwidth)
+  • Veritabanı (storage/connections)
+  • S3 Storage (dosya boyutu/bandwidth)
+  • LLM API kullanımı (token başına)
+  • OneSignal (push hacmi)
+  • Agora/TRTC (video dakikası)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BÖLÜM 13: .ENV DEĞİŞKENLERİ (37 adet)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DATABASE_URL              → PostgreSQL bağlantı
+  NEXTAUTH_SECRET           → Auth şifreleme anahtarı
+  ABACUSAI_API_KEY          → LLM API erişim
+  AWS_BUCKET_NAME           → S3 bucket adı
+  AWS_REGION                → S3 bölge
+  AWS_FOLDER_PREFIX         → S3 klasör ön eki
+  AWS_PROFILE               → AWS profil
+  GOOGLE_CLIENT_ID          → Google OAuth
+  GOOGLE_CLIENT_SECRET      → Google OAuth gizli
+  GOOGLE_SITE_VERIFICATION  → Google Search Console
+  TIKTOK_CLIENT_KEY         → TikTok OAuth
+  TIKTOK_CLIENT_SECRET      → TikTok OAuth gizli
+  AGORA_APP_ID              → Agora video servisi
+  AGORA_APP_CERTIFICATE     → Agora sertifika
+  NEXT_PUBLIC_AGORA_APP_ID  → Agora client-side
+  TRTC_SDK_APP_ID           → Tencent TRTC
+  TRTC_SDK_SECRET_KEY       → TRTC gizli anahtar
+  NEXT_PUBLIC_TRTC_SDK_APP_ID → TRTC client-side
+  ONESIGNAL_REST_API_KEY    → OneSignal push
+  NEXT_PUBLIC_ONESIGNAL_APP_ID → OneSignal client-side
+  TMDB_API_KEY              → Film/dizi API
+  YOUTUBE_API_KEY           → YouTube arama
+  FOOTBALL_DATA_API_KEY     → Maç skorları
+  BOT_CRON_SECRET           → Bot zamanlama
+  WEB_APP_ID                → Abacus app ID
+  NOTIF_ID_*                → E-posta bildirim ID'leri (12 adet)
+
+
+═══════════════════════════════════════════════════════════════
+  RAPOR SONU
+  Oluşturulma: 3 Haziran 2026
+  Platform: canlifal.com
+═══════════════════════════════════════════════════════════════
