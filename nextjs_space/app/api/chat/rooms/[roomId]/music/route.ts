@@ -48,6 +48,19 @@ async function canControlMusic(roomId: string, userId: string) {
   }
 }
 
+// Helper: parse duration string "3:45" or "1:02:30" to seconds
+function parseDurationToSeconds(dur: string | null | undefined): number {
+  if (!dur) return 0
+  const parts = dur.split(':').map(Number)
+  if (parts.some(isNaN)) return 0
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return parts[0] || 0
+}
+
+// Max duration if unknown: 6 minutes
+const DEFAULT_MAX_DURATION_SECONDS = 360
+
 // GET: Get currently playing music for a room
 export async function GET(
   req: NextRequest,
@@ -65,6 +78,90 @@ export async function GET(
     })
     if (!room) {
       return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+    }
+
+    // ── Server-side auto-cleanup: if song has been playing longer than its duration, auto-advance ──
+    if (room.currentMusicVideoId && room.currentMusicStartedAt) {
+      const durationSec = parseDurationToSeconds(room.currentMusicDuration) || DEFAULT_MAX_DURATION_SECONDS
+      const elapsedSec = (Date.now() - new Date(room.currentMusicStartedAt).getTime()) / 1000
+      
+      if (elapsedSec > durationSec + 5) { // +5s buffer
+        // Song expired — try to play next from queue
+        const nextInQueue = await prisma.chatMessage.findFirst({
+          where: {
+            roomId: params.roomId,
+            content: { startsWith: '[SONG_REQUEST' },
+            NOT: { content: { contains: '[PLAYED]' } },
+          },
+          orderBy: { createdAt: 'asc' },
+        })
+
+        if (nextInQueue) {
+          const isPaid = nextInQueue.content.startsWith('[SONG_REQUEST_PAID]')
+          const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
+          const data = nextInQueue.content.replace(prefix, '')
+          const parts = data.split('|')
+          const nextVideoId = parts[0]
+          const nextTitle = parts[1]
+          const nextDuration = isPaid ? (parts[4] || '') : (parts[2] || '')
+
+          // Mark as played
+          await prisma.chatMessage.update({
+            where: { id: nextInQueue.id },
+            data: { content: nextInQueue.content + '[PLAYED]' }
+          })
+
+          // Set new song
+          await prisma.chatRoom.update({
+            where: { id: params.roomId },
+            data: {
+              currentMusicVideoId: nextVideoId || null,
+              currentMusicTitle: nextTitle || null,
+              currentMusicStartedAt: new Date(),
+              currentMusicDuration: nextDuration || null,
+            }
+          })
+
+          await emitDjUpdate(params.roomId)
+
+          // Return updated state
+          const djPayload = await buildDjPayload(params.roomId)
+          return NextResponse.json({
+            videoId: nextVideoId || null,
+            title: nextTitle || null,
+            startedAt: new Date(),
+            duration: nextDuration || null,
+            playing: djPayload.playing,
+            nowPlaying: djPayload.nowPlaying,
+            musicUrl: djPayload.musicUrl,
+            musicQueue: djPayload.musicQueue,
+          })
+        } else {
+          // No queue — stop music
+          await prisma.chatRoom.update({
+            where: { id: params.roomId },
+            data: {
+              currentMusicVideoId: null,
+              currentMusicTitle: null,
+              currentMusicStartedAt: null,
+              currentMusicDuration: null,
+            }
+          })
+          await emitDjUpdate(params.roomId)
+
+          const djPayload = await buildDjPayload(params.roomId)
+          return NextResponse.json({
+            videoId: null,
+            title: null,
+            startedAt: null,
+            duration: null,
+            playing: false,
+            nowPlaying: null,
+            musicUrl: null,
+            musicQueue: djPayload.musicQueue,
+          })
+        }
+      }
     }
 
     // Build full DJ payload for Flutter compatibility
@@ -93,12 +190,16 @@ export async function POST(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: mobile JWT OR web session
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const allowed = await canControlMusic(params.roomId, session.user.id)
+    const allowed = await canControlMusic(params.roomId, userId)
     if (!allowed) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }
@@ -120,14 +221,14 @@ export async function POST(
       await prisma.chatMessage.create({
         data: {
           roomId: params.roomId,
-          userId: session.user.id,
+          userId,
           content: `[SONG_REQUEST_FREE] ${videoId}|${title}|${durText}`,
         }
       })
 
       // Get user name for system message
       const djUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: userId },
         select: { name: true, username: true }
       })
       const djName = djUser?.name || djUser?.username || 'DJ'
@@ -135,7 +236,7 @@ export async function POST(
       await prisma.chatMessage.create({
         data: {
           roomId: params.roomId,
-          userId: session.user.id,
+          userId,
           content: `🎧 ${djName} sıraya şarkı ekledi: ${title}`,
         }
       })
@@ -159,7 +260,7 @@ export async function POST(
     await prisma.chatMessage.create({
       data: {
         roomId: params.roomId,
-        userId: session.user.id,
+        userId,
         content: `🎶 Şu an çalıyor: ${title}`,
       }
     })
@@ -178,12 +279,16 @@ export async function DELETE(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: mobile JWT OR web session
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const allowed = await canControlMusic(params.roomId, session.user.id)
+    const allowed = await canControlMusic(params.roomId, userId)
     if (!allowed) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }

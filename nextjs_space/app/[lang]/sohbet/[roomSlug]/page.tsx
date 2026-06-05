@@ -889,13 +889,11 @@ export default function ChatRoomPage() {
 
     if (!currentMusicVideoId || musicPaused) return
 
-    const totalSeconds = parseDurationToSeconds(currentMusicDuration)
     const roomId = room?.id
     if (!roomId) return
 
-    // If we have duration info, set timer for when song ends
-    // If no duration, we rely on the queue polling (15s) to check
-    if (totalSeconds <= 0) return
+    // Use parsed duration or default 6 minutes if unknown
+    const totalSeconds = parseDurationToSeconds(currentMusicDuration) || 360
 
     const elapsed = musicPausedAtRef.current || 0
     const remaining = Math.max((totalSeconds - elapsed) * 1000 + 3000, 1000) // +3s buffer
