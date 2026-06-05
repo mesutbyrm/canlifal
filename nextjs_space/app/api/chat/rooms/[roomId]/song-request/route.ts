@@ -3,10 +3,58 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitDjUpdate } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 
 const SONG_REQUEST_COST = 10
+
+/** Helper: parse queue from DB messages */
+async function parseQueue(roomId: string) {
+  const requests = await prisma.chatMessage.findMany({
+    where: {
+      roomId,
+      content: { startsWith: '[SONG_REQUEST' },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 30,
+    include: {
+      user: { select: { id: true, name: true, username: true } }
+    }
+  })
+
+  const queue = requests.map(msg => {
+    const isPaid = msg.content.startsWith('[SONG_REQUEST_PAID]')
+    const isPlayed = msg.content.includes('[PLAYED]')
+    if (isPlayed) return null
+
+    const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
+    const data = msg.content.replace(prefix, '')
+    const parts = data.split('|')
+
+    return {
+      id: msg.id,
+      videoId: parts[0] || '',
+      title: parts[1] || '',
+      dedication: isPaid ? (parts[2] || '') : '',
+      note: isPaid ? (parts[3] || '') : '',
+      duration: isPaid ? (parts[4] || '') : (parts[2] || ''),
+      isPaid,
+      userId: msg.userId,
+      userName: msg.user?.name || msg.user?.username || 'Anonim',
+      createdAt: msg.createdAt,
+    }
+  }).filter(Boolean)
+
+  // Sort: paid first, then by createdAt
+  queue.sort((a: any, b: any) => {
+    if (a.isPaid && !b.isPaid) return -1
+    if (!a.isPaid && b.isPaid) return 1
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  })
+
+  return queue
+}
 
 // GET: Get pending song requests (queue) for a room
 export async function GET(
@@ -14,77 +62,67 @@ export async function GET(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    // Find messages with song request prefix that are pending
-    const requests = await prisma.chatMessage.findMany({
-      where: {
-        roomId: params.roomId,
-        content: { startsWith: '[SONG_REQUEST' },
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
-      include: {
-        user: { select: { id: true, name: true, username: true } }
+    const queue = await parseQueue(params.roomId)
+
+    // Also get current playing info for Flutter compatibility
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: params.roomId },
+      select: {
+        currentMusicVideoId: true,
+        currentMusicTitle: true,
+        currentMusicStartedAt: true,
+        currentMusicDuration: true,
       }
     })
 
-    // Parse requests and separate paid vs free
-    const queue = requests.map(msg => {
-      const isPaid = msg.content.startsWith('[SONG_REQUEST_PAID]')
-      const isPlayed = msg.content.includes('[PLAYED]')
-      if (isPlayed) return null
+    const playing = !!room?.currentMusicVideoId
+    const nowPlaying = room?.currentMusicVideoId ? {
+      videoId: room.currentMusicVideoId,
+      title: room.currentMusicTitle || '',
+      startedAt: room.currentMusicStartedAt,
+      duration: room.currentMusicDuration || '',
+    } : null
 
-      // Parse: [SONG_REQUEST_PAID] videoId|title|dedication|note
-      // or:    [SONG_REQUEST_FREE] videoId|title
-      const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
-      const data = msg.content.replace(prefix, '')
-      const parts = data.split('|')
-
-      return {
-        id: msg.id,
-        videoId: parts[0] || '',
-        title: parts[1] || '',
-        dedication: isPaid ? (parts[2] || '') : '',
-        note: isPaid ? (parts[3] || '') : '',
-        isPaid,
-        userId: msg.userId,
-        userName: msg.user?.name || msg.user?.username || 'Anonim',
-        createdAt: msg.createdAt,
-      }
-    }).filter(Boolean)
-
-    // Sort: paid first, then by createdAt
-    queue.sort((a: any, b: any) => {
-      if (a.isPaid && !b.isPaid) return -1
-      if (!a.isPaid && b.isPaid) return 1
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    return NextResponse.json({
+      queue,
+      playing,
+      nowPlaying,
+      musicUrl: room?.currentMusicVideoId
+        ? `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
+        : null,
+      musicQueue: queue,
     })
-
-    return NextResponse.json({ queue })
   } catch (error) {
     console.error('Get song queue error:', error)
-    return NextResponse.json({ queue: [] })
+    return NextResponse.json({ queue: [], playing: false, nowPlaying: null, musicUrl: null, musicQueue: [] })
   }
 }
 
-// POST: Submit a paid song request (costs jetons)
+// POST: Submit a song request
+// body: { videoId, title, duration?, dedication?, note?, priority?, skipPayment? }
 export async function POST(
   req: NextRequest,
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: web session OR mobile JWT
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const { videoId, title, dedication, note, duration } = await req.json()
+    const body = await req.json()
+    const { videoId, title, dedication, note, duration, priority, skipPayment } = body
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
 
-    // Check jeton balance
+    // Get user info
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { jetonBalance: true, name: true, username: true, role: true }
     })
 
@@ -93,20 +131,21 @@ export async function POST(
     }
 
     const isStaff = user.role === 'admin' || user.role === 'yonetici'
+    const shouldSkipPayment = skipPayment === true || isStaff
 
-    if (!isStaff && user.jetonBalance < SONG_REQUEST_COST) {
-      return NextResponse.json({ error: `Yetersiz jeton. ${SONG_REQUEST_COST} jeton gerekiyor.` }, { status: 400 })
-    }
+    // Deduct jetons only if not skipping payment
+    if (!shouldSkipPayment) {
+      if (user.jetonBalance < SONG_REQUEST_COST) {
+        return NextResponse.json({ error: `Yetersiz jeton. ${SONG_REQUEST_COST} jeton gerekiyor.` }, { status: 400 })
+      }
 
-    // Deduct jetons (staff skip)
-    if (!isStaff) {
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: userId },
         data: { jetonBalance: { decrement: SONG_REQUEST_COST } }
       })
       await prisma.jetonTransaction.create({
         data: {
-          userId: session.user.id,
+          userId,
           amount: -SONG_REQUEST_COST,
           type: 'spend',
           description: `Şarkı isteği: ${title}`,
@@ -116,55 +155,63 @@ export async function POST(
       })
     }
 
-    const dedText = dedication ? dedication.trim() : ''
-    const noteText = note ? note.trim() : ''
+    const dedText = dedication ? String(dedication).trim() : ''
+    const noteText = note ? String(note).trim() : ''
+    const durText = duration ? String(duration).trim() : ''
+    const isPaidRequest = !shouldSkipPayment
+    const prefix = isPaidRequest ? '[SONG_REQUEST_PAID]' : '[SONG_REQUEST_FREE]'
 
-    // Create song request message (hidden format - parsed by queue)
-    const durText = duration ? duration.trim() : ''
+    // Create song request message
     await prisma.chatMessage.create({
       data: {
         roomId: params.roomId,
-        userId: session.user.id,
-        content: `[SONG_REQUEST_PAID] ${videoId}|${title}|${dedText}|${noteText}|${durText}`,
+        userId,
+        content: `${prefix} ${videoId}|${title}|${dedText}|${noteText}|${durText}`,
       }
     })
 
     // Create visible system message
     const userName = user.name || user.username || 'Biri'
-    let visibleMsg = `🎵 ${userName} şarkı isteği gönderdi: ${title}`
+    let visibleMsg = shouldSkipPayment
+      ? `🎵 ${userName} şarkı isteği gönderdi: ${title}`
+      : `🎵 ${userName} şarkı isteği gönderdi: ${title}`
     if (dedText) visibleMsg += ` (${dedText} için)`
     if (noteText) visibleMsg += ` — "${noteText}"`
-    visibleMsg += ` [10 💎]`
+    if (!shouldSkipPayment) visibleMsg += ` [${SONG_REQUEST_COST} 💎]`
 
     await prisma.chatMessage.create({
       data: {
         roomId: params.roomId,
-        userId: session.user.id,
+        userId,
         content: visibleMsg,
       }
     })
 
-    // If no music is currently playing, start this song immediately
+    // Check current music state
     const room = await prisma.chatRoom.findUnique({
       where: { id: params.roomId },
       select: { currentMusicVideoId: true }
     })
-    if (!room?.currentMusicVideoId) {
+
+    const shouldPlayNow = !room?.currentMusicVideoId || (priority === true)
+
+    if (shouldPlayNow) {
+      // If priority: stop current + play this. If no music: play this.
       await prisma.chatRoom.update({
         where: { id: params.roomId },
         data: {
           currentMusicVideoId: videoId,
           currentMusicTitle: title,
           currentMusicStartedAt: new Date(),
-          currentMusicDuration: duration || null,
+          currentMusicDuration: durText || null,
         }
       })
-      // Mark request message as played
+      // Mark request as played
       const reqMsg = await prisma.chatMessage.findFirst({
         where: {
           roomId: params.roomId,
-          userId: session.user.id,
-          content: { startsWith: `[SONG_REQUEST_PAID] ${videoId}` },
+          userId,
+          content: { startsWith: `${prefix} ${videoId}` },
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -176,9 +223,13 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      newBalance: isStaff ? user.jetonBalance : user.jetonBalance - SONG_REQUEST_COST 
+    // Emit DJ update event for SSE listeners (web + Flutter)
+    await emitDjUpdate(params.roomId)
+
+    return NextResponse.json({
+      success: true,
+      newBalance: shouldSkipPayment ? user.jetonBalance : user.jetonBalance - SONG_REQUEST_COST,
+      queued: !shouldPlayNow,
     })
   } catch (error) {
     console.error('Song request error:', error)
@@ -192,8 +243,12 @@ export async function PATCH(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -202,7 +257,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'İstek ID eksik' }, { status: 400 })
     }
 
-    // Mark as played by appending [PLAYED]
+    // Mark as played
     const msg = await prisma.chatMessage.findUnique({ where: { id: requestId } })
     if (msg && msg.content.startsWith('[SONG_REQUEST') && !msg.content.includes('[PLAYED]')) {
       await prisma.chatMessage.update({
@@ -210,7 +265,6 @@ export async function PATCH(
         data: { content: msg.content + '[PLAYED]' }
       })
 
-      // Parse videoId, title, and duration from message
       const isPaid = msg.content.startsWith('[SONG_REQUEST_PAID]')
       const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
       const data = msg.content.replace(prefix, '')
@@ -220,7 +274,6 @@ export async function PATCH(
       const duration = isPaid ? (parts[4] || '') : (parts[2] || '')
 
       if (videoId && title) {
-        // Set as currently playing music
         await prisma.chatRoom.update({
           where: { id: params.roomId },
           data: {
@@ -232,6 +285,9 @@ export async function PATCH(
         })
       }
     }
+
+    // Emit DJ update
+    await emitDjUpdate(params.roomId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
+import { getLatestDjEvent } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -40,6 +41,7 @@ export async function GET(
 
   let lastMessageTime = new Date()
   let lastPresenceCheck = new Date()
+  let lastDjCheck = Date.now()
   let isActive = true
 
   const encoder = new TextEncoder()
@@ -148,6 +150,13 @@ export async function GET(
             })}\n\n`))
 
             lastPresenceCheck = now
+          }
+
+          // Check DJ updates (music/queue changes)
+          const djEvent = getLatestDjEvent(roomId, lastDjCheck)
+          if (djEvent) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(djEvent)}\n\n`))
+            lastDjCheck = Date.now()
           }
 
           // Check typing indicators
