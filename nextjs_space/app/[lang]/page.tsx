@@ -203,7 +203,7 @@ export default function HomePage() {
         const res = await fetch('/api/video-streams')
         if (res.ok) {
           const data = await res.json()
-          setLiveStreams(data || [])
+          setLiveStreams(Array.isArray(data) ? data : (data?.streams || data?.items || []))
         }
       } catch (e) {}
     }

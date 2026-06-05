@@ -207,7 +207,7 @@ export default function CanliDarkHome() {
           fetch('/api/tiktok-videos?limit=10').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/settings/public?key=tiktok_section_enabled').then(x => x.ok ? x.json() : null),
         ])
-        setStreams(s || [])
+        setStreams(Array.isArray(s) ? s : (s?.streams || s?.items || []))
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
         setTellers((t?.tellers || []).slice(0, 12))
         if (Array.isArray(m)) setMembershipPlans(m.slice(0, 4))
