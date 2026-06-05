@@ -1424,13 +1424,31 @@ export default function ChatRoomPage() {
       (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))
 
     if (cmd === '!istek' && arg) {
-      // Send song request - visible only to authorized users as flashing text
+      // Search YouTube for the song, then submit as free song request
       try {
-        await fetch(`/api/chat/rooms/${room.id}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `🎵 [İSTEK] ${arg}`, isCommand: true })
-        })
+        const searchRes = await fetch(`/api/youtube/search?q=${encodeURIComponent(arg)}`)
+        const searchData = await searchRes.json()
+        const firstVideo = searchData.videos?.[0]
+        if (firstVideo) {
+          // Submit as free song request (skipPayment = true for !istek command)
+          await fetch(`/api/chat/rooms/${room.id}/song-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              videoId: firstVideo.id,
+              title: firstVideo.title,
+              duration: firstVideo.duration || '',
+              skipPayment: true,
+            })
+          })
+        } else {
+          // No results found, just send text message
+          await fetch(`/api/chat/rooms/${room.id}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `🎵 [İSTEK] ${arg} (bulunamadı)` })
+          })
+        }
         fetchMessages()
       } catch {}
       return true

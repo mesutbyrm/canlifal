@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,11 +66,20 @@ export async function GET(
     if (!room) {
       return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
     }
+
+    // Build full DJ payload for Flutter compatibility
+    const djPayload = await buildDjPayload(params.roomId)
+
     return NextResponse.json({
       videoId: room.currentMusicVideoId,
       title: room.currentMusicTitle,
       startedAt: room.currentMusicStartedAt,
       duration: room.currentMusicDuration,
+      // Flutter-compatible fields
+      playing: djPayload.playing,
+      nowPlaying: djPayload.nowPlaying,
+      musicUrl: djPayload.musicUrl,
+      musicQueue: djPayload.musicQueue,
     })
   } catch (error) {
     console.error('Get music error:', error)
@@ -130,6 +140,7 @@ export async function POST(
         }
       })
 
+      await emitDjUpdate(params.roomId)
       return NextResponse.json({ success: true, queued: true })
     }
 
@@ -153,6 +164,7 @@ export async function POST(
       }
     })
 
+    await emitDjUpdate(params.roomId)
     return NextResponse.json({ success: true, queued: false })
   } catch (error) {
     console.error('Set music error:', error)
@@ -186,6 +198,7 @@ export async function DELETE(
       }
     })
 
+    await emitDjUpdate(params.roomId)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Stop music error:', error)

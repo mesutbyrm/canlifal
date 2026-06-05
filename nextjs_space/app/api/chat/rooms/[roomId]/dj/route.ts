@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { buildDjPayload, emitDjUpdate } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +78,9 @@ export async function GET(
       }
     }
 
+    // Build DJ music payload for Flutter compatibility
+    const djPayload = await buildDjPayload(params.roomId)
+
     return NextResponse.json({
       djUsers: djUsers.map(u => ({
         id: u.id,
@@ -88,6 +92,11 @@ export async function GET(
       ownerPresent,
       canPlayMusic,
       isOwner: room.ownerId === userId,
+      // Flutter-compatible music state
+      playing: djPayload.playing,
+      nowPlaying: djPayload.nowPlaying,
+      musicUrl: djPayload.musicUrl,
+      musicQueue: djPayload.musicQueue,
     })
   } catch (error) {
     console.error('Get DJ list error:', error)
@@ -167,6 +176,7 @@ export async function POST(
         return NextResponse.json({ error: 'Bu kullanıcı DJ listesinde değil' }, { status: 400 })
       }
       await prisma.chatRoom.update({ where: { id: params.roomId }, data: { activeDjId: targetUserId } })
+      await emitDjUpdate(params.roomId)
       return NextResponse.json({ success: true, activeDjId: targetUserId })
 
     } else {

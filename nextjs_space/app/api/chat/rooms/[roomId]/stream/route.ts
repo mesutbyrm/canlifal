@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
-import { getLatestDjEvent } from '@/lib/chat-dj-events'
+import { getLatestDjEvent, buildDjPayload } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -50,6 +50,14 @@ export async function GET(
     async start(controller) {
       // Send initial connection event
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', roomId })}\n\n`))
+
+      // Send initial DJ state so Flutter gets music info on joinRoom
+      try {
+        const initialDj = await buildDjPayload(roomId)
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialDj)}\n\n`))
+      } catch (e) {
+        console.error('[SSE] Initial DJ payload error:', e)
+      }
 
       const checkForUpdates = async () => {
         if (!isActive) return
