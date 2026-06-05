@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitStreamEvent } from '@/lib/stream-events'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
@@ -28,7 +32,7 @@ export async function GET(
     })
 
     if (!stream) {
-      return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Yayın bulunamadı' }, { status: 404 })
     }
 
     // Count active viewers (those who haven't left)
@@ -41,12 +45,21 @@ export async function GET(
 
     return NextResponse.json({
       ...stream,
+      streamId: stream.id,
+      isLive: stream.status === 'live',
       viewerCount: activeViewerCount,
-      likeCount: stream.likeCount,  // Use direct field, not _count.likes
+      viewers: activeViewerCount,
+      watching: activeViewerCount,
+      likeCount: stream.likeCount,
       commentCount: stream._count.comments,
       broadcastImage: stream.broadcastImage,
       isImageMode: stream.isImageMode,
-      backgroundUrl: stream.backgroundUrl
+      backgroundUrl: stream.backgroundUrl,
+      thumbnailUrl: stream.thumbnailUrl || stream.broadcastImage || null,
+      coverUrl: stream.thumbnailUrl || stream.broadcastImage || null,
+      broadcasterId: stream.userId,
+      hostUserId: stream.userId,
+      streamerName: stream.user?.name || 'Anonim',
     })
   } catch (error) {
     console.error('Error fetching stream:', error)
@@ -59,20 +72,27 @@ export async function PATCH(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { status, title, description, broadcastImage, isImageMode, backgroundUrl } = await request.json()
 
-    // Verify ownership
+    // Verify ownership (or admin)
     const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId }
     })
 
-    if (!stream || stream.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 403 })
+    const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    const isAdmin = userRecord?.role === 'admin' || userRecord?.role === 'yonetici'
+
+    if (!stream || (stream.userId !== userId && !isAdmin)) {
+      return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }
 
     const updated = await prisma.videoStream.update({
@@ -86,6 +106,19 @@ export async function PATCH(
         ...(backgroundUrl !== undefined && { backgroundUrl })
       }
     })
+
+    // If stream ended, emit event + clear viewers
+    if (status === 'ended') {
+      emitStreamEvent(params.streamId, 'streamEnded', {
+        type: 'streamEnded',
+        event: 'STREAM_ENDED',
+        streamId: params.streamId,
+      })
+      await prisma.videoStreamViewer.updateMany({
+        where: { streamId: params.streamId, leftAt: null },
+        data: { leftAt: new Date() }
+      })
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

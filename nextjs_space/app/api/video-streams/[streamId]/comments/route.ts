@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitStreamEvent } from '@/lib/stream-events'
 
 export async function GET(
   request: NextRequest,
@@ -49,8 +49,9 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: mobile JWT or web session
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -63,7 +64,7 @@ export async function POST(
     const comment = await prisma.videoStreamComment.create({
       data: {
         streamId: params.streamId,
-        userId: session.user.id,
+        userId: authUser.id,
         content: content.trim(),
         nickname: nickname || null,
         isHidden: isHidden || false
@@ -82,14 +83,24 @@ export async function POST(
 
     // Return comment with display name (nickname if set, otherwise real name)
     const displayName = comment.isHidden ? (comment.nickname || 'Anonim') : (comment.nickname || comment.user.name)
-    return NextResponse.json({
+    const commentPayload = {
       ...comment,
       user: {
         ...comment.user,
+        id: authUser.id,
         name: displayName,
         image: comment.isHidden ? null : comment.user.image
       }
+    }
+
+    // Emit streamMessage event for SSE listeners
+    emitStreamEvent(params.streamId, 'streamMessage', {
+      type: 'streamMessage',
+      streamId: params.streamId,
+      message: commentPayload,
     })
+
+    return NextResponse.json(commentPayload)
   } catch (error) {
     console.error('Error creating comment:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

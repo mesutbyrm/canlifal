@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Generate TRTC UserSig on the server side.
  * SDKSecretKey never leaves the server.
- * 
- * Allows both authenticated users and guest viewers.
- * Guest viewers use a temporary viewer_xxx userId.
+ *
+ * Supports both mobile JWT and web session auth.
+ * Also allows guest viewers with viewer_xxx userId.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, roomId } = await request.json()
+    const body = await request.json()
+    let { userId, roomId } = body
+
+    // Dual auth: try mobile JWT first, fall back to NextAuth session
+    const authUser = await authenticateRequest(request)
+    // If userId not provided, use authenticated user id
+    if (!userId && authUser) {
+      userId = authUser.id
+    }
 
     if (!userId || !roomId) {
       return NextResponse.json({ error: 'userId and roomId are required' }, { status: 400 })
     }
 
-    const sdkAppId = parseInt(process.env.TRTC_SDK_APP_ID || '0')
-    const secretKey = process.env.TRTC_SDK_SECRET_KEY
+    // Support alternative env var names
+    const sdkAppId = parseInt(
+      process.env.TRTC_SDK_APP_ID ||
+      process.env.TENCENT_TRTC_SDK_APP_ID ||
+      '0'
+    )
+    const secretKey =
+      process.env.TRTC_SDK_SECRET_KEY ||
+      process.env.TRTC_SECRET_KEY ||
+      process.env.TENCENT_TRTC_SECRET_KEY ||
+      ''
 
     if (!sdkAppId || !secretKey) {
       console.error('TRTC credentials not configured')
@@ -28,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Generate UserSig using tls-sig-api-v2
     const TLSSigAPIv2 = require('tls-sig-api-v2')
     const api = new TLSSigAPIv2.Api(sdkAppId, secretKey)
-    
+
     // UserSig valid for 24 hours
     const expireTime = 86400
     const userSig = api.genSig(userId, expireTime)

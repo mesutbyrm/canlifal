@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
 import { isExcludedFromFinance } from '@/lib/admin-check'
@@ -8,6 +9,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { emitStreamEvent } from '@/lib/stream-events'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -84,8 +86,14 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: mobile JWT or web session
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+    const userName = mobileUser?.name || session?.user?.name || 'Kullanıcı'
+    const userImage = mobileUser?.image || (session?.user as any)?.image || null
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -108,7 +116,7 @@ export async function POST(
 
     // Check user jeton balance (stream gifts require jetons)
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { id: true, name: true, jetonBalance: true, role: true }
     })
 
@@ -129,13 +137,13 @@ export async function POST(
     }
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
-    const senderExcluded = await isExcludedFromFinance(session.user.id)
+    const senderExcluded = await isExcludedFromFinance(userId)
 
     const txOps: any[] = [
       prisma.streamGift.create({
         data: {
           streamId: params.streamId,
-          senderId: session.user.id,
+          senderId: userId,
           giftTypeId,
           quantity,
           totalPrice: senderExcluded ? 0 : totalPrice
@@ -151,7 +159,7 @@ export async function POST(
     if (!senderExcluded) {
       txOps.push(
         prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: userId },
           data: { jetonBalance: { decrement: totalPrice } }
         })
       )
@@ -194,9 +202,9 @@ export async function POST(
 
     // Log gift activity
     logActivity({
-      userId: session.user.id,
-      userName: session.user.name || 'Kullanıcı',
-      userAvatar: (session.user as any)?.image || null,
+      userId: userId,
+      userName: userName || 'Kullanıcı',
+      userAvatar: userImage,
       activityType: 'gift_sent',
       detail: `hediye gönderdi 🎁`,
       targetUrl: `/sohbet/video`,
@@ -208,14 +216,14 @@ export async function POST(
       type: 'stream_gift',
       title: 'Canlı Yayın Hediyesi! 🎁',
       message: `${giftType.name} hediye gönderdi!`,
-      fromUserId: session.user.id,
-      fromUserName: session.user.name || 'Kullanıcı',
+      fromUserId: userId,
+      fromUserName: userName || 'Kullanıcı',
       data: JSON.stringify({
         giftTypeId: giftType.id,
         giftName: giftType.name,
         giftIcon: giftType.icon,
-        senderId: session.user.id,
-        senderName: session.user.name || 'Kullanıcı',
+        senderId: userId,
+        senderName: userName || 'Kullanıcı',
         recipientName: '',
         streamId: params.streamId,
         amount: totalPrice
@@ -225,7 +233,7 @@ export async function POST(
     // Auto-create scrolling announcement (settings determine threshold)
     const streamUser = await prisma.user.findUnique({ where: { id: stream.userId }, select: { name: true, username: true } })
     createStreamGiftAnnouncement(
-      session.user.name || 'Kullanıcı', (session.user as any).username || null,
+      userName || 'Kullanıcı', null || null,
       streamUser?.name || 'Kullanıcı', streamUser?.username || null,
       giftType.icon, giftType.name, totalPrice, giftType.id
     ).catch(err => console.error('Stream gift announcement error:', err))
@@ -255,6 +263,20 @@ export async function POST(
     // Trigger gift sent event announcement
     const giftSenderName = user?.name || 'Bir kullanıcı'
     triggerEventAnnouncement('gift_sent', { user: giftSenderName, gift: giftType.name }, user?.id, giftSenderName, user?.role || 'free').catch(() => {})
+
+    // Emit gift event to SSE listeners
+    emitStreamEvent(params.streamId, 'gift', {
+      type: 'gift',
+      streamId: params.streamId,
+      gift: {
+        id: gift.id,
+        senderName: userName,
+        giftName: giftType.name,
+        giftIcon: giftType.icon,
+        quantity,
+        totalPrice: senderExcluded ? 0 : totalPrice,
+      }
+    })
 
     return NextResponse.json({
       success: true,

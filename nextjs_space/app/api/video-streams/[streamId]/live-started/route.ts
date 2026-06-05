@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { sendPushToMultipleUsers } from '@/lib/onesignal'
 
@@ -10,14 +9,15 @@ export const dynamic = 'force-dynamic'
  * POST /api/video-streams/:streamId/live-started
  * Called by mobile app when stream actually goes live.
  * Triggers push notifications to followers if not already sent during create.
+ * Auth: Bearer JWT (mobile) or NextAuth session (web).
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -36,20 +36,20 @@ export async function POST(
       return NextResponse.json({ error: 'Yayın bulunamadı' }, { status: 404 })
     }
 
-    if (stream.userId !== session.user.id) {
+    if (stream.userId !== authUser.id) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
     // Get followers (max 500)
     const followers = await prisma.follow.findMany({
-      where: { followingId: session.user.id },
+      where: { followingId: authUser.id },
       select: { followerId: true },
       take: 500,
     })
 
     if (followers.length > 0) {
       const followerIds = followers.map((f: any) => f.followerId)
-      const userName = stream.user.name || session.user.name || 'Falcı'
+      const userName = stream.user.name || authUser.name || 'Falcı'
       const title = `${userName} canlı yayında`
       const body = stream.title || 'Canlı Fal'
 
@@ -60,7 +60,7 @@ export async function POST(
           type: 'stream_live',
           title: `🔴 ${title}`,
           message: body,
-          fromUserId: session.user.id,
+          fromUserId: authUser.id,
           fromUserName: userName,
           data: JSON.stringify({ streamId: stream.id }),
         })),

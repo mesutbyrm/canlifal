@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { sendPushToMultipleUsers } from '@/lib/onesignal'
 import { logActivity } from '@/lib/activity-logger'
 import { getPlatformSetting } from '@/lib/agency-commission'
@@ -47,57 +48,96 @@ async function notifyFollowersOfLiveStream(userId: string, userName: string, str
   }).catch(err => console.error('Live stream push error:', err))
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1') || 1
+    const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '30') || 30, 100)
+    const skip = (page - 1) * limit
+
     // Cache live stream list for 10 seconds - prevents DB storm from concurrent homepage polls
     const { getCached } = await import('@/lib/cache')
-    const result = await getCached('streams:live_list', 10, async () => {
-      const streams = await prisma.videoStream.findMany({
-        where: { status: 'live' },
-        orderBy: { startedAt: 'desc' },
-        include: {
-          user: {
-            select: { id: true, name: true, image: true }
-          },
-          _count: {
-            select: { comments: true, likes: true }
+    const cacheKey = `streams:live_list:${page}:${limit}`
+    const result = await getCached(cacheKey, 10, async () => {
+      const [streams, totalCount] = await Promise.all([
+        prisma.videoStream.findMany({
+          where: { status: 'live' },
+          orderBy: { startedAt: 'desc' },
+          skip,
+          take: limit,
+          include: {
+            user: {
+              select: { id: true, name: true, image: true }
+            },
+            _count: {
+              select: { comments: true, likes: true }
+            }
           }
-        }
-      })
+        }),
+        prisma.videoStream.count({ where: { status: 'live' } })
+      ])
 
       const streamIds = streams.map((s: any) => s.id)
-      const viewerCounts = await prisma.videoStreamViewer.groupBy({
+      const viewerCounts = streamIds.length > 0 ? await prisma.videoStreamViewer.groupBy({
         by: ['streamId'],
         where: { streamId: { in: streamIds }, leftAt: null },
         _count: { id: true }
-      })
+      }) : []
       const viewerCountMap = new Map(viewerCounts.map((v: any) => [v.streamId, v._count.id]))
 
-      return streams.map((s: any) => ({
-        ...s,
-        viewerCount: viewerCountMap.get(s.id) || 0,
-        likeCount: s._count.likes,
-        commentCount: s._count.comments
-      }))
+      const items = streams.map((s: any) => {
+        const vc = viewerCountMap.get(s.id) || 0
+        return {
+          ...s,
+          streamId: s.id,
+          isLive: s.status === 'live',
+          viewerCount: vc,
+          viewers: vc,
+          watching: vc,
+          likeCount: s._count.likes,
+          commentCount: s._count.comments,
+          thumbnailUrl: s.thumbnailUrl || s.broadcastImage || null,
+          coverUrl: s.thumbnailUrl || s.broadcastImage || null,
+          broadcasterId: s.userId,
+          hostUserId: s.userId,
+          streamerName: s.user?.name || 'Anonim',
+        }
+      })
+
+      return {
+        streams: items,
+        items,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        }
+      }
     })
 
     return NextResponse.json(result)
   } catch (error) {
     console.error('Error fetching streams:', error)
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json({ streams: [], items: [], pagination: { page: 1, limit: 30, total: 0, totalPages: 0 } }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Dual auth: mobile JWT or web session
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || session?.user?.id
+    const userName = mobileUser?.name || session?.user?.name || 'Kullanıcı'
+    const userImage = mobileUser?.image || (session?.user as any)?.image || null
+
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if user is an approved live fortune teller
     const teller = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       select: {
         id: true,
         applicationStatus: true,
@@ -137,7 +177,7 @@ export async function POST(request: NextRequest) {
     if (cooldownMinutes > 0) {
       const lastAutoClosedStream = await prisma.videoStream.findFirst({
         where: {
-          userId: session.user.id,
+          userId,
           autoClosedAt: { not: null }
         },
         orderBy: { autoClosedAt: 'desc' },
@@ -158,14 +198,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { title, description, category } = await request.json()
+    const body = await request.json()
+    const { title, description, category, tags, thumbnailUrl, coverUrl } = body
 
     const stream = await prisma.videoStream.create({
       data: {
-        userId: session.user.id,
+        userId,
         title,
         description,
         category: category || 'general',
+        thumbnailUrl: thumbnailUrl || coverUrl || null,
         status: 'live'
       },
       include: {
@@ -180,21 +222,32 @@ export async function POST(request: NextRequest) {
     })
 
     // Notify followers that this teller went live (fire-and-forget)
-    notifyFollowersOfLiveStream(session.user.id, session.user.name || 'Falcı', stream.id, title).catch(err =>
+    notifyFollowersOfLiveStream(userId, userName || 'Falcı', stream.id, title).catch(err =>
       console.error('Live stream follower notification error:', err)
     )
 
     // Log activity
     logActivity({
-      userId: session.user.id,
-      userName: session.user.name || 'Kullanıcı',
-      userAvatar: (session.user as any)?.image || null,
+      userId,
+      userName: userName || 'Kullanıcı',
+      userAvatar: userImage,
       activityType: 'stream_started',
       detail: 'canlı yayın başlattı 🔴',
       targetUrl: `/sohbet/video`,
     })
 
-    return NextResponse.json(stream)
+    // Flutter-compatible response
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...stream,
+        streamId: stream.id,
+        isLive: true,
+        broadcasterId: userId,
+        hostUserId: userId,
+        streamerName: userName,
+      }
+    })
   } catch (error) {
     console.error('Error creating stream:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

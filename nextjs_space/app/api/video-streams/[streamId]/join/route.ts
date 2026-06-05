@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitStreamEvent } from '@/lib/stream-events'
 
-// Join a stream as viewer
+export const dynamic = 'force-dynamic'
+
+// POST: Join a stream as viewer
 export async function POST(
   request: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const viewerId = session?.user?.id || `guest_${Date.now()}`
-    const viewerName = session?.user?.name || 'Misafir'
+    // Dual auth: mobile JWT or web session
+    const authUser = await authenticateRequest(request)
+    const viewerId = authUser?.id || `guest_${Date.now()}`
+    const viewerName = authUser?.name || 'Misafir'
 
     // Upsert viewer record - handles re-joining after leaving
     const viewer = await prisma.videoStreamViewer.upsert({
@@ -39,21 +42,33 @@ export async function POST(
       data: { viewerCount: { increment: 1 } }
     })
 
-    return NextResponse.json({ viewerId: viewer.id, joined: true })
+    // Get accurate count and emit viewerCount event
+    const activeCount = await prisma.videoStreamViewer.count({
+      where: { streamId: params.streamId, leftAt: null }
+    })
+    emitStreamEvent(params.streamId, 'viewerCount', {
+      type: 'viewerCount',
+      streamId: params.streamId,
+      viewerCount: activeCount,
+      viewers: activeCount,
+    })
+
+    return NextResponse.json({ viewerId: viewer.id, joined: true, viewerCount: activeCount })
   } catch (error) {
     console.error('Error joining stream:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
 
-// Leave a stream
+// POST /api/video-streams/:id/leave alias (Flutter uses POST for leave too)
+// Also supports DELETE for backward compatibility
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const viewerId = session?.user?.id || request.nextUrl.searchParams.get('viewerId')
+    const authUser = await authenticateRequest(request)
+    const viewerId = authUser?.id || request.nextUrl.searchParams.get('viewerId')
 
     if (!viewerId) {
       return NextResponse.json({ error: 'viewerId required' }, { status: 400 })
@@ -75,7 +90,18 @@ export async function DELETE(
       data: { viewerCount: { decrement: 1 } }
     })
 
-    return NextResponse.json({ left: true })
+    // Get accurate count and emit viewerCount event
+    const activeCount = await prisma.videoStreamViewer.count({
+      where: { streamId: params.streamId, leftAt: null }
+    })
+    emitStreamEvent(params.streamId, 'viewerCount', {
+      type: 'viewerCount',
+      streamId: params.streamId,
+      viewerCount: activeCount,
+      viewers: activeCount,
+    })
+
+    return NextResponse.json({ left: true, viewerCount: activeCount })
   } catch (error) {
     console.error('Error leaving stream:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
