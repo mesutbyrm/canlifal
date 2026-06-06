@@ -3,7 +3,9 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -53,8 +55,11 @@ export async function GET(req: NextRequest) {
 // POST - Create PK battle request or accept/reject/cancel
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    // Dual auth: mobile JWT OR web session
+    const mobileUser = await authenticateRequest(req)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const currentUserId = mobileUser?.id || session?.user?.id
+    if (!currentUserId) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const body = await req.json()
     const { action, streamId, targetStreamId, battleId, duration } = body
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
 
       // Check streams are live
       const [myStream, targetStream] = await Promise.all([
-        prisma.videoStream.findFirst({ where: { id: streamId, userId: session.user.id, status: 'live' } }),
+        prisma.videoStream.findFirst({ where: { id: streamId, userId: currentUserId, status: 'live' } }),
         prisma.videoStream.findFirst({ where: { id: targetStreamId, status: 'live' } })
       ])
 
@@ -84,19 +89,49 @@ export async function POST(req: NextRequest) {
           status: { in: ['pending', 'active'] }
         }
       })
-
       if (existingPK) return NextResponse.json({ error: 'Zaten aktif bir PK mevcut' }, { status: 400 })
+
+      // Check if either USER already has a pending/active PK (even from a different stream)
+      const userPk = await prisma.pKBattle.findFirst({
+        where: {
+          OR: [
+            { user1Id: { in: [currentUserId, targetStream.userId] } },
+            { user2Id: { in: [currentUserId, targetStream.userId] } }
+          ],
+          status: { in: ['pending', 'active'] }
+        }
+      })
+      if (userPk) return NextResponse.json({ error: 'Taraflardan biri zaten bir PK\'da' }, { status: 400 })
 
       const battle = await prisma.pKBattle.create({
         data: {
           stream1Id: streamId,
           stream2Id: targetStreamId,
-          user1Id: session.user.id,
+          user1Id: currentUserId,
           user2Id: targetStream.userId,
           duration: duration || 180,
           status: 'pending'
         }
       })
+
+      // 3) Send push notification to opponent
+      const challenger = await prisma.user.findUnique({ where: { id: currentUserId }, select: { name: true } })
+      createNotificationWithPush({
+        userId: targetStream.userId,
+        type: 'pk_invite',
+        title: 'PK Daveti! ⚔️',
+        message: `${challenger?.name || 'Bir yayıncı'} sizi PK\'ya davet etti!`,
+        fromUserId: currentUserId,
+        fromUserName: challenger?.name || undefined,
+        targetPath: '/pk',
+        targetId: battle.id,
+        data: JSON.stringify({
+          type: 'pk:invite',
+          battleId: battle.id,
+          challengerStreamId: streamId,
+          opponentStreamId: targetStreamId,
+        })
+      }).catch(err => console.error('PK invite push error:', err))
 
       return NextResponse.json(battle)
     }
@@ -106,15 +141,35 @@ export async function POST(req: NextRequest) {
       
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
-      if (battle.user2Id !== session.user.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      
+      // Authorization: user2 (opponent) can accept.
+      // Also allow opponent's voice room owner/moderator to accept on their behalf.
+      let canAccept = battle.user2Id === session.user.id
+      if (!canAccept && body.opponentVoiceRoomId) {
+        // Check if the current user is the owner or moderator of the opponent's voice room
+        const opponentRoom = await prisma.chatRoom.findUnique({
+          where: { id: body.opponentVoiceRoomId },
+          select: { ownerId: true }
+        })
+        if (opponentRoom?.ownerId === session.user.id) canAccept = true
+        if (!canAccept) {
+          const modRole = await prisma.chatUserRole.findUnique({
+            where: { roomId_userId: { roomId: body.opponentVoiceRoomId, userId: session.user.id } }
+          })
+          if (modRole && (modRole.role === 'moderator' || modRole.role === 'admin')) canAccept = true
+        }
+      }
+      
+      if (!canAccept) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş' }, { status: 400 })
 
+      const endTime = new Date(Date.now() + (battle.duration || 180) * 1000)
       const updated = await prisma.pKBattle.update({
         where: { id: battleId },
         data: { status: 'active', startedAt: new Date() }
       })
 
-      return NextResponse.json(updated)
+      return NextResponse.json({ ...updated, endTime })
     }
 
     if (action === 'reject' || action === 'cancel') {
@@ -124,7 +179,7 @@ export async function POST(req: NextRequest) {
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
       
       // Either party can cancel/reject
-      if (battle.user1Id !== session.user.id && battle.user2Id !== session.user.id) {
+      if (battle.user1Id !== currentUserId && battle.user2Id !== currentUserId) {
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       }
 

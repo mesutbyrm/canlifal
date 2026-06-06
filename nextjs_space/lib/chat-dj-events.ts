@@ -70,15 +70,28 @@ export async function buildDjPayload(roomId: string) {
     duration: room.currentMusicDuration || '',
   } : null
 
+  // Resolve musicUrl: try Piped stream URL, fallback to YouTube watch URL
+  let musicUrl: string | null = null
+  if (room?.currentMusicVideoId) {
+    musicUrl = `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
+    try {
+      const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${room.currentMusicVideoId}`, { signal: AbortSignal.timeout(3000) })
+      if (pipedRes.ok) {
+        const pipedData = await pipedRes.json()
+        const audioStream = pipedData?.audioStreams?.find((s: any) => s.mimeType?.startsWith('audio/'))
+        if (audioStream?.url) musicUrl = audioStream.url
+      }
+    } catch { /* Piped fail → keep YouTube URL */ }
+  }
+
   return {
     type: 'dj' as const,
     event: 'QUEUE_UPDATED',
     playing,
     nowPlaying,
-    musicUrl: room?.currentMusicVideoId
-      ? `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
-      : null,
+    musicUrl,
     musicQueue: queue,
+    queueLength: queue.length,
   }
 }
 

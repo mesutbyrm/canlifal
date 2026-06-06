@@ -7,6 +7,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
+import { emitChatEvent } from '@/lib/chat-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,11 +23,23 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     }
 
     const { roomId } = params
-    const { recipientId, giftTypeId, paymentType: _pt } = await req.json()
+    const body = await req.json()
+    const { giftTypeId, quantity: rawQuantity, senderName: _sn, receiverName: _rn, platform: _pl } = body
+    let { recipientId } = body
     const paymentType = 'jeton' // Only jeton is supported in chat rooms
+    const quantity = Math.max(1, Math.min(100, parseInt(rawQuantity) || 1))
 
-    if (!recipientId || !giftTypeId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!giftTypeId) {
+      return NextResponse.json({ error: 'giftTypeId gerekli' }, { status: 400 })
+    }
+
+    // If no recipientId, fallback to room owner
+    if (!recipientId) {
+      const room0 = await prisma.chatRoom.findUnique({ where: { id: roomId }, select: { ownerId: true } })
+      recipientId = room0?.ownerId
+      if (!recipientId) {
+        return NextResponse.json({ error: 'Alıcı bulunamadı' }, { status: 400 })
+      }
     }
 
     if (recipientId === giftUserId) {
@@ -57,7 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
 
-    const price = giftType.price
+    const unitPrice = giftType.price
+    const price = unitPrice * quantity
     const isStaff = sender.role === 'admin' || sender.role === 'yonetici'
 
     // Check jeton balance (staff skip)
@@ -170,11 +184,21 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         senderId: sender.id,
         recipientId: recipient.id,
         giftTypeId: giftType.id,
-        quantity: 1,
+        quantity,
         totalPrice: price,
         currencyType: paymentType,
         commissionAmount: totalCommission,
         beneficiaryId: ownerCommissionAmount > 0 ? roomOwnerId : null
+      }
+    })
+
+    // Create system chat message for the gift
+    const qtyText = quantity > 1 ? ` x${quantity}` : ''
+    await prisma.chatMessage.create({
+      data: {
+        roomId,
+        userId: sender.id,
+        content: `🎁 ${sender.name || 'Biri'} → ${recipient.name || 'Biri'}: ${giftType.icon} ${giftType.name}${qtyText} [${price} 💎]`,
       }
     })
 
@@ -203,17 +227,65 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Trigger gift sent event announcement
     triggerEventAnnouncement('gift_sent', { user: sender.name || 'Bir kullanıcı', gift: giftType.name }, sender.id, sender.name, sender.role || 'free').catch(() => {})
 
+    // PK Battle: if a PK is active and side/battleId is provided, update PK score
+    let pkUpdate = null
+    const { battleId: pkBattleId, side: pkSide, streamId: pkStreamId } = body
+    if (pkBattleId || pkStreamId) {
+      try {
+        const whereClause: any = { status: 'active' }
+        if (pkBattleId) whereClause.id = pkBattleId
+        else if (pkStreamId) {
+          whereClause.OR = [
+            { stream1Id: pkStreamId },
+            { stream2Id: pkStreamId }
+          ]
+        }
+        const activePK = await prisma.pKBattle.findFirst({ where: whereClause })
+        if (activePK) {
+          // Determine side: explicit side param, or streamId match, or default to challenger
+          let isStream1 = true
+          if (pkSide === 'opponent') isStream1 = false
+          else if (pkSide === 'challenger') isStream1 = true
+          else if (pkStreamId) isStream1 = activePK.stream1Id === pkStreamId
+          
+          const updated = await prisma.pKBattle.update({
+            where: { id: activePK.id },
+            data: isStream1 ? { score1: { increment: price } } : { score2: { increment: price } }
+          })
+          pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
+        }
+      } catch (pkErr) { console.error('Chat gift PK score error:', pkErr) }
+    }
+
+    // Emit gift event to SSE via in-memory chat event bus
+    emitChatEvent(roomId, 'gift', {
+      senderId: sender.id,
+      senderName: sender.name,
+      recipientId: recipient.id,
+      recipientName: recipient.name,
+      giftTypeId: giftType.id,
+      giftName: giftType.name,
+      giftIcon: giftType.icon,
+      quantity,
+      amount: price,
+      currencyType: paymentType,
+    })
+
     return NextResponse.json({
       success: true,
       gift: {
         id: gift.id,
+        senderId: sender.id,
         senderName: sender.name,
+        recipientId: recipient.id,
         recipientName: recipient.name,
         giftIcon: giftType.icon,
         giftName: giftType.name,
+        quantity,
         amount: price,
         currencyType: paymentType
-      }
+      },
+      pkUpdate
     })
   } catch (error) {
     console.error('Chat room gift error:', error)

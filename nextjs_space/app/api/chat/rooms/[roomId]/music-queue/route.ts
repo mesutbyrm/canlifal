@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { buildDjPayload } from '@/lib/chat-dj-events'
 
 /**
  * Flutter-friendly music queue alias.
@@ -71,7 +72,17 @@ export async function GET(
     }
 
     const queue = await parseQueue(params.roomId)
-    return NextResponse.json({ queue, total: queue.length })
+    const djPayload = await buildDjPayload(params.roomId)
+
+    return NextResponse.json({
+      queue,
+      total: queue.length,
+      playing: djPayload.playing,
+      nowPlaying: djPayload.nowPlaying,
+      musicUrl: djPayload.musicUrl,
+      musicQueue: queue,
+      queueLength: queue.length,
+    })
   } catch (error) {
     console.error('Music-queue GET error:', error)
     return NextResponse.json({ queue: [], total: 0 })

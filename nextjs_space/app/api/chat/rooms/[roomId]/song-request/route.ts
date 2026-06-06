@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { emitDjUpdate } from '@/lib/chat-dj-events'
+import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -226,10 +226,23 @@ export async function POST(
     // Emit DJ update event for SSE listeners (web + Flutter)
     await emitDjUpdate(params.roomId)
 
+    // Build full response with queue + nowPlaying for Flutter parity
+    const djPayload = await buildDjPayload(params.roomId)
+    const updatedQueue = await parseQueue(params.roomId)
+    const queuePosition = updatedQueue.findIndex((q: any) => q?.videoId === videoId) + 1
+
     return NextResponse.json({
       success: true,
       newBalance: shouldSkipPayment ? user.jetonBalance : user.jetonBalance - SONG_REQUEST_COST,
       queued: !shouldPlayNow,
+      startedImmediately: shouldPlayNow,
+      queuePosition: shouldPlayNow ? 0 : queuePosition,
+      playing: djPayload.playing,
+      nowPlaying: djPayload.nowPlaying,
+      musicUrl: djPayload.musicUrl,
+      queue: updatedQueue,
+      musicQueue: updatedQueue,
+      queueLength: updatedQueue.length,
     })
   } catch (error) {
     console.error('Song request error:', error)
