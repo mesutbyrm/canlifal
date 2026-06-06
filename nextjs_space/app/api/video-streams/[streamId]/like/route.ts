@@ -26,11 +26,19 @@ export async function POST(
 ) {
   try {
     // Allow both logged-in users and guests to like
-    // Each tap adds a like (no toggling - TikTok style)
+    // Each tap adds likes (no toggling - TikTok style)
+    // Flutter sends { count } for batch likes; default to 1
+    let count = 1
+    try {
+      const body = await request.json()
+      if (body.count && typeof body.count === 'number' && body.count > 0) {
+        count = Math.min(Math.floor(body.count), 100) // cap at 100 per request
+      }
+    } catch {}
     
     const stream = await prisma.videoStream.update({
       where: { id: params.streamId },
-      data: { likeCount: { increment: 1 } },
+      data: { likeCount: { increment: count } },
       select: { likeCount: true }
     })
 

@@ -7,6 +7,11 @@ export default withAuth(
     const isAuth = !!token
     const pathname = req.nextUrl.pathname
 
+    // Serve FLUTTER_CURSOR_PROMPT.md as raw markdown via API route
+    if (pathname === '/FLUTTER_CURSOR_PROMPT.md') {
+      return NextResponse.rewrite(new URL('/api/flutter-prompt', req.url))
+    }
+
     // Extract first segment
     const firstSegment = pathname.split('/')?.[1]
 
