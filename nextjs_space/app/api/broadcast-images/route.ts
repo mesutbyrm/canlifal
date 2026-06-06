@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getCached, CACHE_TTL } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,15 +14,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
-    const images = await prisma.broadcastImage.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      select: {
-        id: true,
-        name: true,
-        imageUrl: true,
-        sortOrder: true
-      }
+    const images = await getCached('broadcast:images', CACHE_TTL.HOMEPAGE_CARDS, async () => {
+      return prisma.broadcastImage.findMany({
+        where: { isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true,
+          sortOrder: true
+        }
+      })
     })
     
     return NextResponse.json(images)

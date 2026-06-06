@@ -65,13 +65,22 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
   const authHeader = req.headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
+    
+    // Check auth cache first (avoids DB hit on every request)
+    const { getCachedAuth, setCachedAuth } = await import('@/lib/perf')
+    const cached = getCachedAuth(token)
+    if (cached) return cached
+    
     const payload = verifyMobileToken(token)
     if (payload && payload.type === 'access') {
       const user = await prisma.user.findUnique({
         where: { id: payload.userId },
         select: { id: true, email: true, name: true, role: true, image: true },
       })
-      if (user) return user
+      if (user) {
+        setCachedAuth(token, user)
+        return user
+      }
     }
     return null // Invalid token
   }

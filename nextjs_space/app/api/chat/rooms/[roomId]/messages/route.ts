@@ -274,14 +274,22 @@ export async function POST(
     
     // Messages are NOT auto-deleted - only deleted when room empties
 
-    return NextResponse.json({
+    const responsePayload = {
       ...message,
       user: {
         ...message.user,
         chatRole: userRole !== 'none' ? userRole : null,
         roleSymbol
       }
-    })
+    }
+
+    // Emit to in-memory event bus for SSE consumers
+    try {
+      const { emitChatEvent } = await import('@/lib/chat-events')
+      emitChatEvent(roomId, 'message', responsePayload)
+    } catch {}
+
+    return NextResponse.json(responsePayload)
   } catch (error) {
     console.error('Error sending message:', error)
     return NextResponse.json(

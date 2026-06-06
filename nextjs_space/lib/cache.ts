@@ -105,6 +105,15 @@ export const CACHE_TTL = {
   ANNOUNCEMENT_SETTINGS: 300, // 5 minutes
   HOMEPAGE_CARDS: 600,      // 10 minutes
   THEMES: 600,              // 10 minutes
+  HOMEPAGE_BUTTONS: 600,    // 10 minutes
+  FORTUNE_REQUEST_TYPES: 600, // 10 minutes  
+  BADGES: 600,              // 10 minutes
+  MEMBERSHIPS: 600,         // 10 minutes
+  TELLER_LIST: 15,          // 15 seconds - moderate refresh
+  CHAT_ROOMS: 10,           // 10 seconds - homepage polls
+  LIVE_STREAMS: 10,         // 10 seconds - homepage polls
+  USER_PROFILE: 30,         // 30 seconds
+  ACHIEVEMENTS: 600,        // 10 minutes
 } as const
 
 /**
@@ -166,6 +175,54 @@ export async function getCachedCreditPackages() {
   return getCached('payments:packages', CACHE_TTL.CREDIT_PACKAGES, async () => {
     return prisma.creditPackage.findMany({
       where: { isActive: true },
+      orderBy: { sortOrder: 'asc' }
+    })
+  })
+}
+
+/**
+ * Cached homepage buttons. 10-minute TTL.
+ */
+export async function getCachedHomepageButtons() {
+  return getCached('homepage:buttons', CACHE_TTL.HOMEPAGE_BUTTONS, async () => {
+    return prisma.homepageButton.findMany({
+      where: { isVisible: true },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, key: true, label: true, icon: true, href: true, sortOrder: true, isVisible: true, specialBehavior: true }
+    })
+  })
+}
+
+/**
+ * Cached homepage fortune cards. 10-minute TTL.
+ */
+export async function getCachedHomepageFortuneCards() {
+  return getCached('homepage:fortune-cards', CACHE_TTL.HOMEPAGE_CARDS, async () => {
+    return prisma.homepageFortuneCard.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' }
+    })
+  })
+}
+
+/**
+ * Cached fortune request types. 10-minute TTL.
+ */
+export async function getCachedFortuneRequestTypes() {
+  return getCached('fortune:request-types', CACHE_TTL.FORTUNE_REQUEST_TYPES, async () => {
+    return prisma.fortuneRequestType.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' }
+    })
+  })
+}
+
+/**
+ * Cached achievements list. 10-minute TTL.
+ */
+export async function getCachedAchievements() {
+  return getCached('achievements:all', CACHE_TTL.ACHIEVEMENTS, async () => {
+    return prisma.achievement.findMany({
       orderBy: { sortOrder: 'asc' }
     })
   })

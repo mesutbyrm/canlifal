@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { subDays, startOfDay, format } from 'date-fns'
+import { getCached } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,18 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = auth.id
+    
+    // Cache per-user statistics for 30 seconds (heavy query, 16+ DB calls)
+    const stats = await getCached(`user:stats:${userId}`, 30, () => fetchUserStatistics(userId))
+    return NextResponse.json(stats)
+  } catch (error) {
+    console.error('Error fetching user statistics:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
+}
 
+async function fetchUserStatistics(userId: string) {
+  try {
     // Fetch user with all related counts
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -427,9 +439,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(statistics)
+    return statistics
   } catch (error) {
     console.error('Statistics error:', error)
-    return NextResponse.json({ error: 'Failed to fetch statistics' }, { status: 500 })
+    return { error: 'Failed to fetch statistics' }
   }
 }

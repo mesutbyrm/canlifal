@@ -84,6 +84,15 @@ export async function POST(
       }
     })
 
+    // Emit typing event to in-memory bus for SSE consumers
+    if (isTyping) {
+      try {
+        const { emitChatEvent } = await import('@/lib/chat-events')
+        const userName = mobileUser?.name || session?.user?.name || 'User'
+        emitChatEvent(roomId, 'typing', { userId: typingUserId, nickname: userName })
+      } catch {}
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating typing status:', error)
