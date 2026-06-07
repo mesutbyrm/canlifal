@@ -40,7 +40,7 @@ export async function GET(
     return new Response('Room not found', { status: 404 })
   }
 
-  let lastDjCheck = Date.now()
+  let lastDjCheck = 0 // Start at 0 so first poll cycle sends DJ state immediately
   let isActive = true
 
   const encoder = new TextEncoder()
@@ -50,13 +50,7 @@ export async function GET(
       // Send initial connection event
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', roomId })}\n\n`))
 
-      // Send initial DJ state so Flutter gets music info on joinRoom
-      try {
-        const initialDj = await buildDjPayload(roomId)
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialDj)}\n\n`))
-      } catch (e) {
-        console.error('[SSE] Initial DJ payload error:', e)
-      }
+      // DJ state will be sent on the first poll cycle (2s) — no blocking initial payload
 
       let lastEventCheck = Date.now()
       let presenceCheckCount = 0
@@ -125,11 +119,20 @@ export async function GET(
             })}\n\n`))
           }
 
-          // 3. DJ updates from in-memory event bus (no DB hit)
-          const djEvent = getLatestDjEvent(roomId, lastDjCheck)
-          if (djEvent) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(djEvent)}\n\n`))
+          // 3. DJ updates: first poll fetches full state, subsequent polls check in-memory bus
+          if (lastDjCheck === 0) {
+            // First poll — build full DJ payload so client gets initial music state
+            try {
+              const initialDj = await buildDjPayload(roomId)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialDj)}\n\n`))
+            } catch { /* ignore */ }
             lastDjCheck = Date.now()
+          } else {
+            const djEvent = getLatestDjEvent(roomId, lastDjCheck)
+            if (djEvent) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(djEvent)}\n\n`))
+              lastDjCheck = Date.now()
+            }
           }
 
           // 4. Typing from in-memory event bus (no DB hit)
