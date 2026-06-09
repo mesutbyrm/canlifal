@@ -73,17 +73,14 @@ async function resolveFromPiped(videoId: string, instance: string): Promise<Stre
 
 export async function GET(req: NextRequest) {
   try {
-    // Dual auth: mobil JWT veya web session
-    const mobileUser = await authenticateRequest(req)
-    const session = !mobileUser ? await getServerSession(authOptions) : null
-    const userId = mobileUser?.id || session?.user?.id
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Oturum açmanız gerekiyor' },
-        { status: 401 }
-      )
-    }
+    // Auth opsiyonel — stream URL çözümleme herkese açık
+    // (Flutter YoutubeStreamResolver auth header göndermeyebilir)
+    let userId: string | undefined
+    try {
+      const mobileUser = await authenticateRequest(req)
+      const session = !mobileUser ? await getServerSession(authOptions) : null
+      userId = mobileUser?.id || session?.user?.id
+    } catch { /* auth başarısız olsa da devam et */ }
 
     const videoId = req.nextUrl.searchParams.get('videoId') || req.nextUrl.searchParams.get('v') || ''
     if (!videoId || videoId.length < 5) {
