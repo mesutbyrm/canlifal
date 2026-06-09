@@ -130,6 +130,7 @@ model User {
   // CFC (CanlıFal Coin) balance
   cfcBalance            Int                  @default(0)
   cfcPaymentRequests    CfcPaymentRequest[]
+  devices               UserDevice[]
 
   @@index([referralCode])
   @@index([isBot])
@@ -1962,6 +1963,23 @@ model PushNotificationLog {
   @@index([createdAt])
   @@index([targetType])
   @@map("push_notification_logs")
+}
+
+model UserDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   // FCM or APNs token
+  platform  String   @default("android") // android | ios | web
+  appVersion String? // e.g. "1.2.3"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([token])
+  @@map("user_devices")
 }
 
 model DreamInterpretation {
