@@ -131,6 +131,10 @@ model User {
   cfcBalance            Int                  @default(0)
   cfcPaymentRequests    CfcPaymentRequest[]
   devices               UserDevice[]
+  shortVideos           ShortVideo[]
+  shortVideoLikes       ShortVideoLike[]
+  shortVideoComments    ShortVideoComment[]
+  shortVideoViews       ShortVideoView[]
 
   @@index([referralCode])
   @@index([isBot])
@@ -2943,4 +2947,74 @@ model CfcPaymentRequest {
   @@index([status])
   @@index([createdAt])
   @@map("cfc_payment_requests")
+}
+
+// ═══════════════════════════════════════════════════════════
+// Short Videos (TikTok-style)
+// ═══════════════════════════════════════════════════════════
+
+model ShortVideo {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoUrl      String   // R2/CDN full URL
+  thumbnailUrl  String?  // R2/CDN thumbnail URL
+  description   String?  @db.VarChar(500)
+  durationSec   Float?
+  viewsCount    Int      @default(0)
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  likes    ShortVideoLike[]
+  comments ShortVideoComment[]
+  views    ShortVideoView[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("short_videos")
+}
+
+model ShortVideoLike {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([videoId, userId])
+  @@index([videoId])
+  @@index([userId])
+  @@map("short_video_likes")
+}
+
+model ShortVideoComment {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([videoId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("short_video_comments")
+}
+
+model ShortVideoView {
+  id         String   @id @default(cuid())
+  videoId    String
+  video      ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchedSec Float?
+  createdAt  DateTime @default(now())
+
+  @@unique([videoId, userId])
+  @@index([videoId])
+  @@index([userId])
+  @@map("short_video_views")
 }
