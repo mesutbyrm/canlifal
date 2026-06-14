@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu, Search, Trophy, Type, Send, Newspaper
+  Users, ChevronRight, Menu, Search, Trophy, Type, Send, Newspaper, Upload, Film
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -164,7 +164,9 @@ export default function CanliDarkHome() {
   const [activeTiktokCat, setActiveTiktokCat] = useState<string>('')
   const [tiktokSectionEnabled, setTiktokSectionEnabled] = useState(true)
   const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
+  const [shortVideos, setShortVideos] = useState<any[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [fabMenuOpen, setFabMenuOpen] = useState(false)
   const [liveMatchesEnabled, setLiveMatchesEnabled] = useState(true)
   const videosScrollRef = useRef<HTMLDivElement>(null)
   const tiktokScrollRef = useRef<HTMLDivElement>(null)
@@ -207,6 +209,10 @@ export default function CanliDarkHome() {
           fetch('/api/tiktok-videos?limit=10').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/settings/public?key=tiktok_section_enabled').then(x => x.ok ? x.json() : null),
         ])
+        // Fetch short videos (Reels)
+        fetch('/api/short-videos?limit=10').then(x => x.ok ? x.json() : null).then(d => {
+          if (d?.success && d?.data?.videos) setShortVideos(d.data.videos)
+        }).catch(() => {})
         setStreams(Array.isArray(s) ? s : (s?.streams || s?.items || []))
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
         setTellers((t?.tellers || []).slice(0, 12))
@@ -506,8 +512,8 @@ export default function CanliDarkHome() {
           <Link href="/sohbet/video" className="canlidark-section-link">Tümünü gör</Link>
         </div>
         <div className="grid grid-cols-4 gap-2">
-          {/* Yayın Başlat card */}
-          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="flex flex-col items-center gap-1.5">
+          {/* Yayın Başlat / Video Yükle card — 2 seçenek */}
+          <div className="flex flex-col items-center gap-1.5">
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden canlidark-glass border border-pink-500/30" style={{ boxShadow: '0 4px 16px rgba(236,72,153,0.35)' }}>
               <div className="absolute inset-0 bg-gradient-to-br from-pink-600/40 via-fuchsia-600/30 to-purple-700/40" />
               <motion.div
@@ -515,19 +521,24 @@ export default function CanliDarkHome() {
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               />
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 z-10">
-                <motion.div
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 flex items-center justify-center border-2 border-pink-300/50"
-                  animate={{ scale: [1, 1.15, 1], boxShadow: ['0 0 10px rgba(236,72,153,0.4)', '0 0 25px rgba(236,72,153,0.8)', '0 0 10px rgba(236,72,153,0.4)'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <Plus className="w-5 h-5 text-white" />
-                </motion.div>
-                <span className="text-[9px] text-white font-bold">Yayın Başlat</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 z-10">
+                <Link href={session ? '/sohbet/video/setup' : '/giris'} className="flex flex-col items-center gap-0.5 hover:scale-105 transition-transform">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center border border-pink-300/50">
+                    <Video className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-[7px] text-white font-bold">Canlı Yayın</span>
+                </Link>
+                <div className="w-6 h-px bg-white/20 my-0.5" />
+                <Link href={session ? '/video-yukle' : '/giris'} className="flex flex-col items-center gap-0.5 hover:scale-105 transition-transform">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center border border-fuchsia-300/50">
+                    <Upload className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-[7px] text-white font-bold">Video Yükle</span>
+                </Link>
               </div>
             </div>
-            <p className="text-[10px] font-semibold text-white text-center">Canlı Yayın</p>
-          </Link>
+            <p className="text-[10px] font-semibold text-white text-center">Yayın / Video</p>
+          </div>
 
           {visibleStreams.length > 0 ? (
             visibleStreams.map((s) => {
@@ -725,6 +736,87 @@ export default function CanliDarkHome() {
             {activeTiktokCat && tiktokVideos.filter(v => v.categoryId === activeTiktokCat || v.category?.id === activeTiktokCat).length === 0 && (
               <p className="text-purple-400/50 text-sm py-8 px-4">Bu kategoride video yok</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 4.7 VİDEO & REELS ═══ */}
+      {shortVideos.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="canlidark-section-title flex items-center gap-1.5">
+              <Film className="w-4 h-4 text-pink-400" /> Video & Reels
+            </h2>
+          </div>
+          <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {shortVideos.map((video: any) => (
+              <div key={video.id} className="flex-shrink-0 w-[140px]">
+                <div className="canlidark-card overflow-hidden h-full">
+                  <div className="relative w-full h-[200px] bg-gradient-to-br from-fuchsia-900/30 to-purple-900/30">
+                    {video.thumbnailUrl ? (
+                      <Image
+                        src={video.thumbnailUrl}
+                        alt={video.description || 'Video'}
+                        fill
+                        className="object-cover"
+                        sizes="140px"
+                      />
+                    ) : video.videoUrl ? (
+                      <video
+                        src={video.videoUrl}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Film className="w-10 h-10 text-fuchsia-400/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                      </div>
+                    </div>
+                    {/* Duration badge */}
+                    {video.durationSec && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <span className="px-1.5 py-0.5 rounded bg-black/60 text-[8px] text-white font-medium">
+                          {video.durationSec}s
+                        </span>
+                      </div>
+                    )}
+                    {/* Stats */}
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {video.author?.avatarUrl && (
+                          <div className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 relative">
+                            <Image src={video.author.avatarUrl} alt={video.author.displayName || ''} fill className="object-cover" sizes="16px" />
+                          </div>
+                        )}
+                        <span className="text-[9px] text-white/90 font-medium truncate">{video.author?.displayName || 'Kullanıcı'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[8px] text-white/60 flex items-center gap-0.5">
+                          <Eye className="w-2.5 h-2.5" /> {video.viewsCount || 0}
+                        </span>
+                        <span className="text-[8px] text-white/60 flex items-center gap-0.5">
+                          <Heart className="w-2.5 h-2.5" /> {video.likesCount || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {video.description && (
+                    <div className="p-1.5">
+                      <p className="text-[10px] text-fuchsia-100/80 line-clamp-2 leading-tight">{video.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1290,9 +1382,51 @@ export default function CanliDarkHome() {
             <Globe className="w-5 h-5" />
             <span>Sosyal</span>
           </Link>
-          <Link href={session ? '/sohbet/video/setup' : '/giris'} className="canlidark-nav-fab" aria-label="Yayın Başlat">
-            <Camera className="w-7 h-7" />
-          </Link>
+          <div className="relative">
+            <button onClick={() => setFabMenuOpen(!fabMenuOpen)} className="canlidark-nav-fab" aria-label="İçerik Oluştur">
+              <Plus className={`w-7 h-7 transition-transform ${fabMenuOpen ? 'rotate-45' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {fabMenuOpen && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-40"
+                    onClick={() => setFabMenuOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                    className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 bg-[#1a0030]/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-2 shadow-2xl shadow-fuchsia-500/20 min-w-[160px]"
+                  >
+                    <Link
+                      href={session ? '/sohbet/video/setup' : '/giris'}
+                      onClick={() => setFabMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-purple-500/15 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+                        <Video className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-white">Canlı Yayın</span>
+                    </Link>
+                    <Link
+                      href={session ? '/video-yukle' : '/giris'}
+                      onClick={() => setFabMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-purple-500/15 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
+                        <Upload className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-white">Video Yükle</span>
+                    </Link>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
           <Link href="/jeton" className="canlidark-nav-item">
             <Coins className="w-5 h-5" />
             <span>Jeton Al</span>

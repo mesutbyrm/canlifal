@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 
-import { motion } from 'framer-motion'
-import { User, Home, Camera, MessageCircle, Coins } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { User, Home, Camera, MessageCircle, Coins, Plus, Video, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { useSiteTheme } from '@/lib/theme-context'
 import FramedAvatar from './framed-avatar'
@@ -21,6 +21,7 @@ export default function MobileFooter() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [profileFrameUrl, setProfileFrameUrl] = useState<string | null>(null)
+  const [fabMenuOpen, setFabMenuOpen] = useState(false)
   
   // Hide footer on certain pages (including individual chat conversations)
   const hiddenPaths = ['/canli-oda', '/sohbet/video', '/giris', '/kayit-ol']
@@ -162,17 +163,57 @@ export default function MobileFooter() {
               const isJeton = 'isJeton' in item && item.isJeton
               
               if (item.isCenter) {
-                // Center CAMERA button - bigger, raised above footer
+                // Center FAB button - bigger, raised above footer, with popup menu
                 return (
                   <div key={index} className="flex flex-col items-center justify-center relative">
-                    <Link href={item.href} className="absolute -top-9 group">
+                    <button onClick={() => setFabMenuOpen(!fabMenuOpen)} className="absolute -top-9 group">
                       <div 
                         className={`relative w-[72px] h-[72px] rounded-full flex items-center justify-center ${centerBtnGradient} shadow-xl ring-4 ${ringColor}`}
                         style={{ boxShadow: isLight ? '0 2px 8px rgba(24, 119, 242, 0.3)' : '0 0 30px rgba(217, 70, 239, 0.5)' }}
                       >
-                        <Camera className="w-9 h-9 text-white group-hover:scale-110 transition-transform" />
+                        <Plus className={`w-9 h-9 text-white transition-transform ${fabMenuOpen ? 'rotate-45' : ''}`} />
                       </div>
-                    </Link>
+                    </button>
+                    <AnimatePresence>
+                      {fabMenuOpen && (
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-40"
+                            onClick={() => setFabMenuOpen(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                            className={`absolute bottom-14 left-1/2 -translate-x-1/2 z-50 ${isLight ? 'bg-white border-gray-200' : 'bg-[#1a0030]/95 border-purple-500/30'} backdrop-blur-xl border rounded-2xl p-2 shadow-2xl min-w-[160px]`}
+                          >
+                            <Link
+                              href={session ? '/sohbet/video/setup' : '/giris'}
+                              onClick={() => setFabMenuOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isLight ? 'hover:bg-gray-100' : 'hover:bg-purple-500/15'} transition-colors`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+                                <Video className="w-4 h-4 text-white" />
+                              </div>
+                              <span className={`text-sm font-medium ${isLight ? 'text-gray-800' : 'text-white'}`}>Canlı Yayın</span>
+                            </Link>
+                            <Link
+                              href={session ? '/video-yukle' : '/giris'}
+                              onClick={() => setFabMenuOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isLight ? 'hover:bg-gray-100' : 'hover:bg-purple-500/15'} transition-colors`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
+                                <Upload className="w-4 h-4 text-white" />
+                              </div>
+                              <span className={`text-sm font-medium ${isLight ? 'text-gray-800' : 'text-white'}`}>Video Yükle</span>
+                            </Link>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )
               }
