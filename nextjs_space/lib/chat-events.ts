@@ -7,7 +7,7 @@
 
 interface ChatEvent {
   timestamp: number
-  type: 'message' | 'presence' | 'typing' | 'system' | 'gift'
+  type: 'message' | 'presence' | 'typing' | 'system' | 'gift' | 'pk'
   data: any
 }
 
