@@ -5,6 +5,7 @@ import prisma from '@/lib/db';
 import { createNotificationWithPush } from '@/lib/notify';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
+import { emitTellerEvent } from '@/lib/room-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,6 +154,14 @@ export async function PATCH(
       where: { id: params.sessionId },
       data: updateData
     });
+
+    // Emit SSE event for teller's stream (cancel/reject removes from pending list)
+    if (action === 'cancel' || action === 'reject') {
+      emitTellerEvent(liveSession.tellerId, 'session_cancelled', {
+        sessionId: liveSession.id,
+        action
+      });
+    }
 
     // Send notification to the user
     await createNotificationWithPush({

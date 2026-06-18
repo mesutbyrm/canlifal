@@ -2112,6 +2112,388 @@ class IncomingRequestDialog extends StatelessWidget {
 
 ---
 
+---
+
+## 21. SSE — Gerçek Zamanlı Oda Mesajları
+
+> **ÖNCEKİ DURUM:** Mesajlar 3 sn polling ile alınıyordu. Artık SSE stream var.
+
+### 21.1 Endpoint
+
+```
+GET /api/room/{sessionId}/stream
+Authorization: Bearer {JWT}
+```
+
+### 21.2 SSE Event Formatları
+
+```
+event: connected
+data: {"sessionId":"...","timerStarted":true,"timerStartedAt":"..."}
+
+event: message
+data: {"id":"msg_...","senderId":"user_...","message":"Merhaba","createdAt":"..."}
+
+event: timer_started
+data: {"timerStartedAt":"2026-06-18T12:00:00.000Z"}
+
+event: time_extended
+data: {"addedMinutes":5,"newMaxMinutes":15,"by":"user|teller"}
+
+event: session_ended
+data: {"actualMinutesUsed":8,"actualCost":80,"refundAmount":20,"endedBy":"teller"}
+
+event: heartbeat
+data: {"ts":1718712345678}
+```
+
+### 21.3 Flutter Service — `RoomSseService`
+
+```dart
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class RoomSseService {
+  final String baseUrl;
+  final String token;
+  http.Client? _client;
+  StreamController<Map<String, dynamic>>? _controller;
+  bool _isActive = false;
+
+  RoomSseService({required this.baseUrl, required this.token});
+
+  Stream<Map<String, dynamic>> connect(String sessionId) {
+    _controller = StreamController<Map<String, dynamic>>.broadcast();
+    _isActive = true;
+    _startListening(sessionId);
+    return _controller!.stream;
+  }
+
+  void _startListening(String sessionId) async {
+    while (_isActive) {
+      try {
+        _client = http.Client();
+        final request = http.Request(
+          'GET',
+          Uri.parse('$baseUrl/api/room/$sessionId/stream'),
+        );
+        request.headers['Authorization'] = 'Bearer $token';
+        request.headers['Accept'] = 'text/event-stream';
+        request.headers['Cache-Control'] = 'no-cache';
+
+        final response = await _client!.send(request);
+        if (response.statusCode != 200) {
+          await Future.delayed(Duration(seconds: 3));
+          continue;
+        }
+
+        String buffer = '';
+        await for (final chunk in response.stream.transform(utf8.decoder)) {
+          buffer += chunk;
+          while (buffer.contains('\n\n')) {
+            final idx = buffer.indexOf('\n\n');
+            final raw = buffer.substring(0, idx);
+            buffer = buffer.substring(idx + 2);
+
+            String? eventType;
+            String? data;
+            for (final line in raw.split('\n')) {
+              if (line.startsWith('event: ')) eventType = line.substring(7).trim();
+              if (line.startsWith('data: ')) data = line.substring(6).trim();
+            }
+            if (data != null && eventType != null && eventType != 'heartbeat') {
+              try {
+                final parsed = jsonDecode(data) as Map<String, dynamic>;
+                parsed['_event'] = eventType;
+                _controller?.add(parsed);
+              } catch (_) {}
+            }
+          }
+        }
+      } catch (e) {
+        if (!_isActive) break;
+        await Future.delayed(Duration(seconds: 3));
+      }
+    }
+  }
+
+  void disconnect() {
+    _isActive = false;
+    _client?.close();
+    _controller?.close();
+  }
+}
+```
+
+### 21.4 Kullanım
+
+```dart
+final sseSvc = RoomSseService(baseUrl: 'https://canlifal.com', token: jwt);
+final stream = sseSvc.connect(sessionId);
+
+stream.listen((event) {
+  switch (event['_event']) {
+    case 'message':
+      // Mesajı listeye ekle
+      setState(() => messages.add(ChatMessage.fromJson(event)));
+      break;
+    case 'timer_started':
+      setState(() => timerStarted = true);
+      break;
+    case 'time_extended':
+      setState(() => maxMinutes = event['newMaxMinutes']);
+      break;
+    case 'session_ended':
+      _handleSessionEnd(event);
+      break;
+  }
+});
+
+// Temizlik
+@override
+void dispose() {
+  sseSvc.disconnect();
+  super.dispose();
+}
+```
+
+> **ÖNEMLİ:** SSE bağlantısı açıkken polling yapılmamalı. Fallback olarak SSE bağlanamazsa 3s polling'e dön.
+
+---
+
+## 22. SSE — Falcı İçin Gelen Seans Talepleri
+
+> **ÖNCEKİ DURUM:** Falcı gelen talepleri 3-5s polling ile alıyordu. Artık SSE var.
+
+### 22.1 Endpoint
+
+```
+GET /api/fortune-tellers/sessions/stream
+Authorization: Bearer {JWT}
+```
+
+### 22.2 SSE Event Formatları
+
+```
+event: connected
+data: {"tellerId":"...","pendingSessions":[...]}
+
+event: session_request
+data: {"sessionId":"...","userId":"...","userName":"Ali","fortuneType":"coffee","duration":10}
+
+event: session_cancelled
+data: {"sessionId":"...","action":"cancel"}
+
+event: pending_sessions
+data: [{"id":"...","userId":"...","fortuneType":"tarot",...}]
+
+event: heartbeat
+data: {"ts":1718712345678}
+```
+
+### 22.3 Flutter Service — `TellerSseService`
+
+```dart
+class TellerSseService {
+  final String baseUrl;
+  final String token;
+  http.Client? _client;
+  StreamController<Map<String, dynamic>>? _controller;
+  bool _isActive = false;
+
+  TellerSseService({required this.baseUrl, required this.token});
+
+  Stream<Map<String, dynamic>> connect() {
+    _controller = StreamController<Map<String, dynamic>>.broadcast();
+    _isActive = true;
+    _startListening();
+    return _controller!.stream;
+  }
+
+  void _startListening() async {
+    while (_isActive) {
+      try {
+        _client = http.Client();
+        final request = http.Request(
+          'GET',
+          Uri.parse('$baseUrl/api/fortune-tellers/sessions/stream'),
+        );
+        request.headers['Authorization'] = 'Bearer $token';
+        request.headers['Accept'] = 'text/event-stream';
+        request.headers['Cache-Control'] = 'no-cache';
+
+        final response = await _client!.send(request);
+        if (response.statusCode != 200) {
+          await Future.delayed(Duration(seconds: 3));
+          continue;
+        }
+
+        String buffer = '';
+        await for (final chunk in response.stream.transform(utf8.decoder)) {
+          buffer += chunk;
+          while (buffer.contains('\n\n')) {
+            final idx = buffer.indexOf('\n\n');
+            final raw = buffer.substring(0, idx);
+            buffer = buffer.substring(idx + 2);
+
+            String? eventType;
+            String? data;
+            for (final line in raw.split('\n')) {
+              if (line.startsWith('event: ')) eventType = line.substring(7).trim();
+              if (line.startsWith('data: ')) data = line.substring(6).trim();
+            }
+            if (data != null && eventType != null && eventType != 'heartbeat') {
+              try {
+                final parsed = jsonDecode(data);
+                if (parsed is Map<String, dynamic>) {
+                  parsed['_event'] = eventType;
+                  _controller?.add(parsed);
+                } else if (parsed is List && eventType == 'pending_sessions') {
+                  _controller?.add({'_event': eventType, 'sessions': parsed});
+                }
+              } catch (_) {}
+            }
+          }
+        }
+      } catch (e) {
+        if (!_isActive) break;
+        await Future.delayed(Duration(seconds: 3));
+      }
+    }
+  }
+
+  void disconnect() {
+    _isActive = false;
+    _client?.close();
+    _controller?.close();
+  }
+}
+```
+
+---
+
+## 23. Müzik Picker — Jeton Bypass Düzeltmesi
+
+> **BUG:** `skipPayment: true` parametresi müzik picker'da jeton kontrolünü bypass ediyor.
+
+### 23.1 Sorun
+
+Mevcut kodda:
+```dart
+// ❌ YANLIŞ — jeton düşülmeden müzik seçilebiliyor
+await api.selectMusic(streamId: streamId, musicId: id, skipPayment: true);
+```
+
+### 23.2 Çözüm
+
+```dart
+// ✅ DOĞRU — her zaman jeton kontrolü yap
+await api.selectMusic(streamId: streamId, musicId: id);
+// skipPayment parametresini ASLA gönderme
+// Backend zaten staff kullanıcıları için jeton düşmüyor
+```
+
+### 23.3 Kontrol Noktaları
+
+- `skipPayment` parametresini arayın: `grep -r 'skipPayment' lib/`
+- `skip_payment` query param olarak da kullanılmış olabilir
+- Backend'de staff kontrolü otomatik: `user.role === 'admin' || user.role === 'yonetici'` → jeton düşülmez
+- Tüm `skipPayment: true` referanslarını kaldırın
+
+---
+
+## 24. Hediye SSE Entegrasyonu
+
+> **ÖNCEKİ DURUM:** Canlı yayın hediye SSE event'i `voice_room_sse_service.dart`'ta noop.
+
+### 24.1 Mevcut SSE Event Formatı (Canlı Yayın)
+
+Canlı yayın stream'inde zaten `gift` event'i gönderiliyor:
+```
+event: gift
+data: {"giftId":"...","giftName":"Kalp","giftImage":"...","quantity":1,"senderName":"Ali","senderId":"...","targetId":"..."}
+```
+
+### 24.2 Flutter'da İşleme
+
+`voice_room_sse_service.dart`'ta gift event handler'ını implement edin:
+
+```dart
+case 'gift':
+  final giftData = jsonDecode(data);
+  // 1. Hediye animasyonunu göster
+  _showGiftAnimation(GiftModel(
+    id: giftData['giftId'],
+    name: giftData['giftName'],
+    image: giftData['giftImage'],
+    quantity: giftData['quantity'] ?? 1,
+    senderName: giftData['senderName'],
+  ));
+  // 2. Toplam hediye sayısını güncelle
+  if (mounted) {
+    setState(() {
+      totalGiftsReceived += giftData['quantity'] ?? 1;
+    });
+  }
+  break;
+```
+
+---
+
+## 25. E2E Smoke Test Önerileri
+
+### 25.1 JWT Auth Smoke Test
+
+```dart
+// test/e2e/auth_smoke_test.dart
+import 'package:http/http.dart' as http;
+import 'package:test/test.dart';
+
+const baseUrl = 'https://canlifal.com';
+
+void main() {
+  String? jwt;
+
+  test('Login ve JWT al', () async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/auth/mobile-login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': 'test@test.com', 'password': 'test123'}),
+    );
+    expect(res.statusCode, 200);
+    final body = jsonDecode(res.body);
+    jwt = body['token'];
+    expect(jwt, isNotNull);
+  });
+
+  test('Profil bilgisi al', () async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/auth/profile'),
+      headers: {'Authorization': 'Bearer $jwt'},
+    );
+    expect(res.statusCode, 200);
+  });
+
+  test('Falcı listesi al', () async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/fortune-tellers'),
+      headers: {'Authorization': 'Bearer $jwt'},
+    );
+    expect(res.statusCode, 200);
+    final list = jsonDecode(res.body);
+    expect(list, isList);
+  });
+
+  test('Room SSE bağlantısı', () async {
+    // Not: Gerçek sessionId gerekir, mock session oluştur
+    // Bu test CI'da skip edilebilir
+  }, skip: 'Gerçek session gerekli');
+}
+```
+
+---
+
 ## ÖNEMLİ NOTLAR
 
 ### Auth Header
@@ -2125,14 +2507,16 @@ Authorization: Bearer {JWT_TOKEN}
 https://canlifal.com
 ```
 
-### Polling Aralıkları
-| Ne | Aralık | Kim |
-|----|--------|-----|
-| Bekleyen talepler | 3-5 sn | Falcı (çevrimiçiyken) |
-| Mesajlar | 2-3 sn | Her iki taraf (odadayken) |
-| WebRTC sinyalleri | 1-1.5 sn | Her iki taraf (odadayken) |
-| Ping | 60 sn | Her iki taraf (odadayken) |
-| Seans durumu | 3 sn | Kullanıcı (bekleme ekranında) |
+### İletişim Stratejisi (Güncellenmiş)
+
+| Ne | Yöntem | Fallback |
+|----|--------|----------|
+| Oda mesajları | **SSE** `/api/room/{id}/stream` | 3 sn polling |
+| Falcı talepleri | **SSE** `/api/fortune-tellers/sessions/stream` | 5 sn polling |
+| Canlı yayın | **SSE** `/api/video-streams/{id}/stream` | yok |
+| WebRTC sinyalleri | 1-1.5 sn polling | — |
+| Ping | 60 sn | — |
+| Seans durumu | SSE (room stream) | 3 sn polling |
 
 ### Jeton Hesaplama Formülü
 ```
@@ -2153,4 +2537,5 @@ active  → cancelled (cancel action)
 ---
 
 > **Bu prompt canlifal.com backend API'leri ile tam uyumludur.**  
-> **Tüm endpoint'ler, request/response formatları ve iş mantığı gerçek backend kodundan çıkarılmıştır.**
+> **Tüm endpoint'ler, request/response formatları ve iş mantığı gerçek backend kodundan çıkarılmıştır.**  
+> **Son güncelleme: Haziran 2026 — SSE endpoint'leri eklendi.**

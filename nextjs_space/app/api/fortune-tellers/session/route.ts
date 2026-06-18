@@ -7,6 +7,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { emitTellerEvent } from '@/lib/room-events'
 
 /**
  * Flutter-friendly session route without tellerId in URL.
@@ -106,6 +107,17 @@ export async function POST(request: NextRequest) {
         creditsCharged: totalCost,
         duration
       })
+    })
+
+    // Emit SSE event for teller's real-time stream
+    emitTellerEvent(teller.id, 'session_request', {
+      sessionId: liveSession.id,
+      userId,
+      userName: user.name,
+      fortuneType: fortuneType || 'general',
+      duration,
+      creditsCharged: isStaff ? 0 : totalCost,
+      createdAt: liveSession.createdAt
     })
 
     return NextResponse.json({

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
+import { emitRoomEvent, clearRoomEvents } from '@/lib/room-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +15,10 @@ export async function GET(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const mobileUser = await authenticateRequest(request);
+    const webSession = !mobileUser ? await getServerSession(authOptions) : null;
+    const userId = mobileUser?.id || webSession?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -39,8 +43,8 @@ export async function GET(
     }
 
     // Verify user is part of this session
-    const isUser = liveSession.userId === session.user.id;
-    const isTeller = liveSession.teller.userId === session.user.id;
+    const isUser = liveSession.userId === userId;
+    const isTeller = liveSession.teller.userId === userId;
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -83,8 +87,10 @@ export async function PATCH(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const mobileUser = await authenticateRequest(request);
+    const webSession = !mobileUser ? await getServerSession(authOptions) : null;
+    const currentUserId = mobileUser?.id || webSession?.user?.id;
+    if (!currentUserId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -100,8 +106,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    const isUser = liveSession.userId === session.user.id;
-    const isTeller = liveSession.teller.userId === session.user.id;
+    const isUser = liveSession.userId === currentUserId;
+    const isTeller = liveSession.teller.userId === currentUserId;
     const sessionUserIsStaff = liveSession.user.role === 'admin' || liveSession.user.role === 'yonetici';
 
     if (!isUser && !isTeller) {
@@ -155,6 +161,9 @@ export async function PATCH(
           }
         });
 
+        // Emit SSE event
+        emitRoomEvent(params.sessionId, 'timer_started', { timerStartedAt: now.toISOString() });
+
         return NextResponse.json({ timerStarted: true, timerStartedAt: now });
       }
 
@@ -201,6 +210,13 @@ export async function PATCH(
           );
         }
         await prisma.$transaction(addTimeTx);
+
+        // Emit SSE event
+        emitRoomEvent(params.sessionId, 'time_extended', {
+          addedMinutes: addMinutes,
+          newMaxMinutes: liveSession.maxMinutes + addMinutes,
+          by: 'teller'
+        });
 
         return NextResponse.json({ 
           added: addMinutes, 
@@ -252,6 +268,13 @@ export async function PATCH(
           );
         }
         await prisma.$transaction(extTx);
+
+        // Emit SSE event
+        emitRoomEvent(params.sessionId, 'time_extended', {
+          addedMinutes: extendMinutes,
+          newMaxMinutes: liveSession.maxMinutes + extendMinutes,
+          by: 'user'
+        });
 
         return NextResponse.json({ 
           extended: extendMinutes, 
@@ -342,6 +365,16 @@ export async function PATCH(
             message: `Canlı fal seansı tamamlandı. ${actualMinutesUsed} dakika sürdü.`
           });
         }
+
+        // Emit SSE event & cleanup
+        emitRoomEvent(params.sessionId, 'session_ended', {
+          actualMinutesUsed,
+          actualCost,
+          refundAmount,
+          endedBy: isTeller ? 'teller' : 'user'
+        });
+        // Clear event buffer after a short delay to let SSE deliver
+        setTimeout(() => clearRoomEvents(params.sessionId), 10000);
 
         return NextResponse.json({ 
           ended: true, 
