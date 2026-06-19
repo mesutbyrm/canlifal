@@ -45,7 +45,7 @@ export async function checkAndDeductCredits(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { credits: true, jetonBalance: true, email: true, name: true, preferredLanguage: true },
+      select: { credits: true, jetonBalance: true, email: true, name: true, preferredLanguage: true, role: true },
     })
 
     if (!user) {
@@ -55,6 +55,13 @@ export async function checkAndDeductCredits(
     // Determine which currency to use
     let useCfc = false
     let useJeton = false
+
+    // Staff (admin/yönetici) exempt from credit deduction
+    const isStaff = user.role === 'admin' || user.role === 'yonetici'
+    if (isStaff) {
+      const staffBalance = currencyType === 'jeton' ? (user.jetonBalance ?? 0) : user.credits
+      return { success: true, message: 'Personel muafiyeti', newBalance: staffBalance }
+    }
 
     if (currencyType === 'cfc') {
       if (user.credits < cost) {

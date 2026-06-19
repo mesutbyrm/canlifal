@@ -115,7 +115,7 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { videoId, title, dedication, note, duration, priority, skipPayment } = body
+    const { videoId, title, dedication, note, duration, priority } = body
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
@@ -131,7 +131,8 @@ export async function POST(
     }
 
     const isStaff = user.role === 'admin' || user.role === 'yonetici'
-    const shouldSkipPayment = skipPayment === true || isStaff
+    // Staff always skip payment — client skipPayment param removed for security
+    const shouldSkipPayment = isStaff
 
     // Deduct jetons only if not skipping payment
     if (!shouldSkipPayment) {
