@@ -28,6 +28,13 @@ interface ChatRoom {
   ownerId?: string | null
   owner?: { id: string; name: string | null; username: string | null } | null
   recentUsers: RecentUser[]
+  roomType?: string
+}
+
+const ROOM_TYPE_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
+  FREE: { label: 'Ücretsiz', color: 'bg-green-500/20 text-green-300 border-green-500/30', emoji: '🆓' },
+  NORMAL: { label: 'Normal', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', emoji: '⭐' },
+  VIP: { label: 'VIP', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', emoji: '👑' },
 }
 
 const ROOM_ICONS = ['🔮', '⭐', '🌙', '💬', '❤️', '🌟', '🔥', '🌌', '🧧', '🎭', '🎵', '🌺', '🦋', '👑', '💎', '🌈']
@@ -39,7 +46,7 @@ export default function ChatRoomsPage() {
   const [rooms, setRooms] = useState<ChatRoom[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [createForm, setCreateForm] = useState({ name: '', description: '', icon: '💬', paymentType: 'jeton' as 'jeton' | 'cfc' })
+  const [createForm, setCreateForm] = useState({ name: '', description: '', icon: '💬', paymentType: 'jeton' as 'jeton' | 'cfc', roomType: 'FREE' as 'FREE' | 'NORMAL' | 'VIP' })
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
   const [roomCost, setRoomCost] = useState(100)
@@ -97,7 +104,7 @@ export default function ChatRoomsPage() {
       const data = await res.json()
       if (res.ok && data.success) {
         setShowCreateModal(false)
-        setCreateForm({ name: '', description: '', icon: '💬', paymentType: 'jeton' })
+        setCreateForm({ name: '', description: '', icon: '💬', paymentType: 'jeton', roomType: 'FREE' })
         fetchRooms()
       } else {
         setCreateError(data.message || data.error || 'Error creating room')
@@ -223,6 +230,15 @@ export default function ChatRoomsPage() {
                         <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                     </div>
+
+                    {/* Room Type Badge */}
+                    {room.roomType && room.roomType !== 'FREE' && (
+                      <div className="absolute top-1.5 left-1.5 z-10">
+                        <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${ROOM_TYPE_LABELS[room.roomType]?.color || ''}`}>
+                          {ROOM_TYPE_LABELS[room.roomType]?.emoji} {ROOM_TYPE_LABELS[room.roomType]?.label}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Icon */}
                     <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 transform group-hover:scale-110 transition-transform text-center">
@@ -365,6 +381,29 @@ export default function ChatRoomsPage() {
                     rows={3}
                     maxLength={200}
                   />
+                </div>
+
+                {/* Room Type */}
+                <div>
+                  <label className={`${descColor} text-sm block mb-2`}>
+                    {'Oda Tipi'}
+                  </label>
+                  <div className="flex gap-2">
+                    {(['FREE', 'NORMAL', 'VIP'] as const).map((rt) => (
+                      <button
+                        key={rt}
+                        onClick={() => setCreateForm({ ...createForm, roomType: rt })}
+                        className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                          createForm.roomType === rt
+                            ? ROOM_TYPE_LABELS[rt].color + ' ring-1 ring-white/20'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{ROOM_TYPE_LABELS[rt].emoji}</span>
+                        <span>{ROOM_TYPE_LABELS[rt].label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Payment Type */}

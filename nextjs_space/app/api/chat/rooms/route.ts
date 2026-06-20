@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
       icon: room.icon,
       ownerId: room.ownerId,
       owner: room.owner,
+      roomType: (room as any).roomType || 'FREE',
       backgroundImage: (room as any).backgroundImage || null,
       bannedWords: (room as any).bannedWords || null,
       djUserIds: (room as any).djUserIds || null,

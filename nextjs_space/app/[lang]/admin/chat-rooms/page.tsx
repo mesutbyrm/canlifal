@@ -673,6 +673,18 @@ export default function AdminChatRoomsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Kendime Ata butonu */}
+              {session?.user?.id && showOwnerModal.ownerId !== session.user.id && (
+                <button
+                  onClick={() => assignOwner(session.user.id)}
+                  disabled={assigningOwner}
+                  className="w-full mb-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Crown className="w-4 h-4" />
+                  {'Sahipliği Devral (Kendime Ata)'}
+                </button>
+              )}
               
               <div className="space-y-3">
                 <div className="flex gap-2">
