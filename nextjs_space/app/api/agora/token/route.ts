@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { RtcTokenBuilder, RtcRole } from 'agora-token'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // ÖNCEKİ HATA: sadece getServerSession (web) kontrol ediliyordu,
+    // mobil Bearer JWT hiç tanınmıyordu — Flutter her zaman 401 alıyordu.
+    // authenticateRequest hem web session hem mobil Bearer token'ı destekler.
+    const user = await authenticateRequest(request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
